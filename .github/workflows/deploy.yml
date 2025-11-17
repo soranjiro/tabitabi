@@ -37,22 +37,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Inject D1 database_id into API wrangler config
+      - name: Copy wrangler.toml from example
+        run: cp wrangler.toml.example wrangler.toml
+
+      - name: Generate API wrangler.toml from example
         working-directory: apps/api
         run: |
-          set -eu
-          if grep -q 'database_name\s*=\s*"tabitabi"' wrangler.toml; then
-            if ! grep -q 'database_id' wrangler.toml; then
-              echo "Injecting database_id into apps/api/wrangler.toml"
-              awk 'BEGIN{added=0} {
-                print;
-                if ($0 ~ /database_name\s*=\s*"tabitabi"/ && added==0) {
-                  printf("database_id = \"%s\"\n", ENVIRON["CLOUDFLARE_DATABASE_ID"]);
-                  added=1;
-                }
-              }' wrangler.toml > wrangler.toml.tmp && mv wrangler.toml.tmp wrangler.toml
-            fi
-          fi
+          cp wrangler.toml.example wrangler.toml
+          sed -i "s/PLACEHOLDER_DATABASE_ID/${CLOUDFLARE_DATABASE_ID}/g" wrangler.toml
 
       - name: Build all packages
         run: pnpm run build

@@ -8,5 +8,17 @@ enabled = true
 [[d1_databases]]
 binding = "DB"
 database_name = "tabitabi"
+database_id = "PLACEHOLDER_DATABASE_ID"
+migrations_dir = "../../migrations"
 
+[env.production]
+name = "tabitabi-api"
+
+[env.production.observability]
+enabled = true
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "tabitabi"
+database_id = "PLACEHOLDER_DATABASE_ID"
 migrations_dir = "../../migrations"

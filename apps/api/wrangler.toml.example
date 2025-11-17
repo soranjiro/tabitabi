@@ -1,0 +1,12 @@
+name = "tabitabi-api"
+main = "src/index.ts"
+compatibility_date = "2024-09-17"
+
+[observability]
+enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tabitabi"
+# database_id は環境変数 CLOUDFLARE_DATABASE_ID で設定
+migrations_dir = "../../migrations"

@@ -57,7 +57,7 @@ jobs:
 
       - name: Apply D1 migrations (api)
         working-directory: apps/api
-        run: pnpm wrangler d1 migrations apply tabitabi --env production
+        run: pnpm wrangler d1 migrations apply tabitabi --remote
 
       - name: Deploy API (Workers)
         working-directory: apps/api

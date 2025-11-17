@@ -2,6 +2,9 @@
 CREATE TABLE itineraries (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
+  start_date TEXT,
+  end_date TEXT,
+  theme_id TEXT DEFAULT 'standard',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

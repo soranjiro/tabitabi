@@ -3,10 +3,12 @@
 ## 1. アーキテクチャ概要
 
 ### 1.1 基本方針
-- **テーマ駆動アーキテクチャ**: テーマがUI/UX/機能を完全に制御
-- **軽量・高速**: 必要なデータのみを取得し、初期ロードを最小化
-- **疎結合設計**: 機能ごとに独立したエンドポイント・テーブル
-- **拡張性**: 新機能追加時の既存コードへの影響を最小限に
+- **ミニマルファースト**: 必要最小限の機能で最大の価値を提供
+- **超軽量・超高速**: 初期ロード1秒以内を目標、必要なデータのみを取得
+- **完全疎結合設計**: 各機能は独立したテーブル・エンドポイント・サービスで完結
+- **テーマの独立性**: HTML/CSSのみで新テーマ作成可能、APIラッパー経由で機能利用
+- **DRY原則**: コードの重複を徹底的に排除、再利用性を最大化
+- **Readability重視**: 誰でも読みやすく、編集しやすいコード構造
 
 ### 1.2 技術スタック
 ```
@@ -36,23 +38,19 @@ itinerary-app/
 │   ├── web/                          # フロントエンド (SvelteKit)
 │   │   ├── src/
 │   │   │   ├── lib/
-│   │   │   │   ├── api/              # APIクライアント
-│   │   │   │   │   ├── client.ts
-│   │   │   │   │   ├── itinerary.ts
-│   │   │   │   │   ├── timeline.ts
-│   │   │   │   │   ├── checklist.ts
-│   │   │   │   │   ├── budget.ts
-│   │   │   │   │   └── memo.ts
+│   │   │   │   ├── api/              # APIラッパー（すべてのAPI呼び出しはここ経由）
+│   │   │   │   │   ├── client.ts    # 基本HTTPクライアント
+│   │   │   │   │   ├── itinerary.ts # しおりCRUD
+│   │   │   │   │   └── step.ts      # 予定CRUD
 │   │   │   │   ├── components/       # 共通コンポーネント
 │   │   │   │   │   ├── ui/           # 基本UIコンポーネント
 │   │   │   │   │   └── layout/       # レイアウトコンポーネント
 │   │   │   │   ├── stores/           # 状態管理
 │   │   │   │   │   ├── itinerary.ts
 │   │   │   │   │   └── theme.ts
-│   │   │   │   ├── themes/           # テーマシステム
-│   │   │   │   │   ├── types.ts
-│   │   │   │   │   ├── registry.ts
-│   │   │   │   │   └── loader.ts
+│   │   │   │   └── themes/           # テーマシステム（軽量・疎結合）
+│   │   │   │   │   ├── index.ts     # テーマ読み込み・切り替え
+│   │   │   │   │   └── types.ts     # テーマ型定義
 │   │   │   │   └── utils/
 │   │   │   ├── routes/
 │   │   │   │   ├── +layout.svelte
@@ -65,28 +63,14 @@ itinerary-app/
 │   │   │   │   └── themes/
 │   │   │   │       └── +page.svelte   # テーマ選択
 │   │   │   └── themes/                # テーマパッケージ
-│   │   │       ├── minimal/
-│   │   │       │   ├── index.ts
-│   │   │       │   ├── theme.json
-│   │   │       │   ├── components/
-│   │   │       │   │   ├── ItineraryView.svelte
-│   │   │       │   │   ├── TimelineEditor.svelte
-│   │   │       │   │   └── Header.svelte
-│   │   │       │   └── styles/
-│   │   │       │       └── theme.css
-│   │   │       ├── standard/
-│   │   │       │   ├── index.ts
-│   │   │       │   ├── theme.json
-│   │   │       │   ├── components/
-│   │   │       │   │   ├── ItineraryView.svelte
-│   │   │       │   │   ├── TimelineEditor.svelte
-│   │   │       │   │   ├── ChecklistPanel.svelte
-│   │   │       │   │   ├── BudgetPanel.svelte
-│   │   │       │   │   └── MapView.svelte
-│   │   │       │   └── styles/
-│   │   │       │       └── theme.css
-│   │   │       └── business/
-│   │   │           └── (同様の構成)
+│   │   │       └── minimal/           # ミニマルテーマ（初期実装）
+│   │   │           ├── index.ts       # テーマエントリーポイント
+│   │   │           ├── theme.json     # テーマメタデータ
+│   │   │           ├── components/
+│   │   │           │   ├── ItineraryView.svelte  # しおり表示
+│   │   │           │   └── StepList.svelte       # 予定リスト（時系列表示）
+│   │   │           └── styles/
+│   │   │               └── theme.css  # ミニマルスタイル
 │   │   ├── static/
 │   │   ├── package.json
 │   │   └── svelte.config.js
@@ -94,19 +78,12 @@ itinerary-app/
 │   └── api/                           # バックエンド (Cloudflare Workers)
 │       ├── src/
 │       │   ├── index.ts               # エントリーポイント
-│       │   ├── routes/                # ルート定義
+│       │   ├── routes/                # ルート定義（完全なCRUD）
 │       │   │   ├── itineraries.ts     # しおりCRUD
-│       │   │   ├── timeline.ts        # 旅程管理
-│       │   │   ├── checklist.ts       # 持ち物リスト
-│       │   │   ├── budget.ts          # 予算管理
-│       │   │   ├── memo.ts            # メモ
-│       │   │   └── map.ts             # 地図連携
-│       │   ├── services/              # ビジネスロジック
+│       │   │   └── steps.ts           # 予定CRUD
+│       │   ├── services/              # ビジネスロジック（DRY原則）
 │       │   │   ├── itinerary.service.ts
-│       │   │   ├── timeline.service.ts
-│       │   │   ├── checklist.service.ts
-│       │   │   ├── budget.service.ts
-│       │   │   └── memo.service.ts
+│       │   │   └── step.service.ts
 │       │   ├── db/
 │       │   │   ├── client.ts
 │       │   │   └── schema.ts          # 型定義
@@ -115,30 +92,18 @@ itinerary-app/
 │       │   │   └── auth.ts            # 将来的な認証
 │       │   └── utils/
 │       ├── migrations/                # DB マイグレーション
-│       │   ├── 0001_init.sql
-│       │   ├── 0002_add_checklist.sql
-│       │   ├── 0003_add_budget.sql
-│       │   └── 0004_add_memo.sql
+│       │   └── 0001_init.sql          # 初期スキーマ（itineraries + steps）
 │       ├── package.json
 │       └── wrangler.toml
 │
 ├── packages/                          # 共有パッケージ
-│   ├── types/                         # 型定義パッケージ
-│   │   ├── src/
-│   │   │   ├── index.ts
-│   │   │   ├── itinerary.ts
-│   │   │   ├── timeline.ts
-│   │   │   ├── checklist.ts
-│   │   │   ├── budget.ts
-│   │   │   ├── memo.ts
-│   │   │   └── theme.ts
-│   │   └── package.json
-│   │
-│   └── theme-kit/                     # テーマ開発キット
+│   └── types/                         # 型定義パッケージ
 │       ├── src/
 │       │   ├── index.ts
-│       │   ├── validator.ts           # テーマバリデーション
-│       │   └── helpers.ts
+│       │   ├── itinerary.ts           # しおり型定義
+│       │   ├── step.ts                # 予定型定義
+│       │   ├── theme.ts               # テーマ型定義
+│       │   └── api.ts                 # API共通型定義
 │       └── package.json
 │
 ├── docs/
@@ -166,76 +131,41 @@ itinerary-app/
 
 ```sql
 -- コア: しおりマスタ
+-- シンプルな構造で、日付範囲は予定（steps）から自動計算
 CREATE TABLE itineraries (
-  id TEXT PRIMARY KEY,
+  id TEXT PRIMARY KEY,              -- 長いランダムID（例: 32文字の英数字）
   title TEXT NOT NULL,
-  start_date TEXT NOT NULL,
-  end_date TEXT NOT NULL,
-  theme_id TEXT NOT NULL DEFAULT 'standard',
+  theme_id TEXT NOT NULL DEFAULT 'minimal',
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
 
--- 機能1: タイムライン (必須機能)
-CREATE TABLE timeline_steps (
+-- 機能1: 予定管理 (コア機能)
+-- タイトル・日付・時間が必須、場所とメモはオプション
+-- 時系列順に自動ソートされる（step_orderは不要）
+CREATE TABLE steps (
   id TEXT PRIMARY KEY,
   itinerary_id TEXT NOT NULL,
-  step_order INTEGER NOT NULL,
-  title TEXT NOT NULL,
-  start_time TEXT,
-  end_time TEXT,
-  duration_minutes INTEGER,
-  location TEXT,
-  latitude REAL,
-  longitude REAL,
-  notes TEXT,
-  created_at TEXT NOT NULL,
-  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
-);
-
--- 機能2: 持ち物チェックリスト (オプション機能)
-CREATE TABLE checklist_items (
-  id TEXT PRIMARY KEY,
-  itinerary_id TEXT NOT NULL,
-  category TEXT,
-  item_name TEXT NOT NULL,
-  is_checked INTEGER DEFAULT 0,
-  quantity INTEGER DEFAULT 1,
-  priority TEXT DEFAULT 'normal',
-  created_at TEXT NOT NULL,
-  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
-);
-
--- 機能3: 予算管理 (オプション機能)
-CREATE TABLE budget_items (
-  id TEXT PRIMARY KEY,
-  itinerary_id TEXT NOT NULL,
-  category TEXT NOT NULL,
-  item_name TEXT NOT NULL,
-  planned_amount REAL NOT NULL,
-  actual_amount REAL,
-  currency TEXT DEFAULT 'JPY',
-  notes TEXT,
-  created_at TEXT NOT NULL,
-  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
-);
-
--- 機能4: メモ (オプション機能)
-CREATE TABLE memos (
-  id TEXT PRIMARY KEY,
-  itinerary_id TEXT NOT NULL,
-  content TEXT NOT NULL,
+  title TEXT NOT NULL,              -- 必須
+  date TEXT NOT NULL,               -- 必須: YYYY-MM-DD形式
+  time TEXT NOT NULL,               -- 必須: HH:mm形式
+  location TEXT,                    -- オプション
+  notes TEXT,                       -- オプション
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
 );
 
--- インデックス
-CREATE INDEX idx_timeline_itinerary ON timeline_steps(itinerary_id);
-CREATE INDEX idx_timeline_order ON timeline_steps(itinerary_id, step_order);
-CREATE INDEX idx_checklist_itinerary ON checklist_items(itinerary_id);
-CREATE INDEX idx_budget_itinerary ON budget_items(itinerary_id);
-CREATE INDEX idx_memos_itinerary ON memos(itinerary_id);
+-- 将来の拡張機能用テーブル（ミニマル版では未実装）
+-- 必要に応じて以下のようなテーブルを追加可能：
+-- - checklist_items: 持ち物管理
+-- - budget_items: 予算管理
+-- - memos: メモ機能
+-- - locations: 地図連携
+
+-- インデックス: 時系列ソートのパフォーマンス最適化
+CREATE INDEX idx_steps_itinerary ON steps(itinerary_id);
+CREATE INDEX idx_steps_datetime ON steps(itinerary_id, date, time);
 ```
 
 ## 4. API設計
@@ -247,37 +177,26 @@ Base URL: /api/v1
 
 【しおり管理】
 GET    /itineraries              # しおり一覧取得
-GET    /itineraries/:id          # しおり詳細取得
-POST   /itineraries              # しおり作成
+GET    /itineraries/:id          # しおり詳細取得（基本情報のみ）
+POST   /itineraries              # しおり作成（長いランダムIDを自動生成）
 PUT    /itineraries/:id          # しおり更新
 DELETE /itineraries/:id          # しおり削除
 
-【タイムライン】
-GET    /itineraries/:id/timeline           # タイムライン取得
-POST   /itineraries/:id/timeline/steps     # ステップ追加
-PUT    /timeline/steps/:stepId             # ステップ更新
-DELETE /timeline/steps/:stepId             # ステップ削除
-POST   /timeline/steps/:stepId/reorder     # 並び替え
+【予定管理】
+# 完全なCRUD操作を提供する独立したエンドポイント
+GET    /steps?itinerary_id=:id   # 予定一覧取得（時系列順に自動ソート）
+GET    /steps/:stepId            # 予定詳細取得
+POST   /steps                    # 予定作成（itinerary_id, title, date, timeは必須）
+PUT    /steps/:stepId            # 予定更新
+DELETE /steps/:stepId            # 予定削除
 
-【持ち物チェックリスト】
-GET    /itineraries/:id/checklist          # チェックリスト取得
-POST   /itineraries/:id/checklist/items    # アイテム追加
-PUT    /checklist/items/:itemId            # アイテム更新
-DELETE /checklist/items/:itemId            # アイテム削除
-PATCH  /checklist/items/:itemId/check      # チェック切替
-
-【予算管理】
-GET    /itineraries/:id/budget             # 予算取得
-POST   /itineraries/:id/budget/items       # 予算項目追加
-PUT    /budget/items/:itemId               # 予算項目更新
-DELETE /budget/items/:itemId               # 予算項目削除
-GET    /itineraries/:id/budget/summary     # 予算サマリー
-
-【メモ】
-GET    /itineraries/:id/memos              # メモ一覧取得
-POST   /itineraries/:id/memos              # メモ作成
-PUT    /memos/:memoId                      # メモ更新
-DELETE /memos/:memoId                      # メモ削除
+【将来の拡張エンドポイント】
+# 新機能追加時は同様の独立したCRUD構造で実装
+# 例:
+# GET    /checklist?itinerary_id=:id
+# POST   /checklist
+# PUT    /checklist/:itemId
+# DELETE /checklist/:itemId
 ```
 
 ### 4.2 レスポンス形式
@@ -323,48 +242,29 @@ GET /itineraries?page=1&limit=20
 
 ```json
 {
-  "id": "standard",
-  "name": "スタンダード",
+  "id": "minimal",
+  "name": "ミニマル",
   "version": "1.0.0",
-  "description": "基本的な旅のしおりテーマ",
-  "author": "Your Name",
+  "description": "必要最小限のシンプルなテーマ",
+  "author": "Tabitabi Team",
   "features": {
-    "timeline": {
+    "steps": {
       "enabled": true,
       "required": true
-    },
-    "checklist": {
-      "enabled": true,
-      "required": false
-    },
-    "budget": {
-      "enabled": true,
-      "required": false
-    },
-    "memo": {
-      "enabled": true,
-      "required": false
-    },
-    "map": {
-      "enabled": true,
-      "required": false
     }
   },
   "ui": {
-    "layout": "tabs",
+    "layout": "single",
     "colorScheme": "light",
     "customColors": {
-      "primary": "#3B82F6",
-      "secondary": "#10B981",
-      "accent": "#F59E0B"
+      "primary": "#000000",
+      "background": "#FFFFFF",
+      "text": "#333333"
     }
   },
   "components": {
     "ItineraryView": "./components/ItineraryView.svelte",
-    "TimelineEditor": "./components/TimelineEditor.svelte",
-    "ChecklistPanel": "./components/ChecklistPanel.svelte",
-    "BudgetPanel": "./components/BudgetPanel.svelte",
-    "Header": "./components/Header.svelte"
+    "StepList": "./components/StepList.svelte"
   },
   "styles": "./styles/theme.css"
 }
@@ -373,20 +273,21 @@ GET /itineraries?page=1&limit=20
 ### 5.2 テーマローダー
 
 ```typescript
-// lib/themes/loader.ts
-export interface Theme {
-  id: string;
-  name: string;
-  features: Record<string, FeatureConfig>;
-  components: Record<string, any>;
-  styles?: string;
-}
+// lib/themes/index.ts
+import type { Theme } from './types';
 
+/**
+ * テーマを動的に読み込む
+ * HTML/CSSのみのテーマもサポート
+ */
 export async function loadTheme(themeId: string): Promise<Theme> {
-  const module = await import(`../themes/${themeId}/index.ts`);
+  const module = await import(`../../themes/${themeId}/index.ts`);
   return module.default;
 }
 
+/**
+ * テーマで有効な機能のリストを取得
+ */
 export function getEnabledFeatures(theme: Theme): string[] {
   return Object.entries(theme.features)
     .filter(([_, config]) => config.enabled)
@@ -396,31 +297,31 @@ export function getEnabledFeatures(theme: Theme): string[] {
 
 ### 5.3 テーマ例
 
-#### Minimal テーマ
+#### Minimal テーマ（初期実装）
 ```json
 {
   "id": "minimal",
   "name": "ミニマル",
   "features": {
-    "timeline": { "enabled": true, "required": true },
-    "checklist": { "enabled": false },
-    "budget": { "enabled": false },
-    "memo": { "enabled": true }
+    "steps": { "enabled": true, "required": true }
+  },
+  "ui": {
+    "layout": "single",
+    "colorScheme": "light"
   }
 }
 ```
 
-#### Business テーマ
+#### 将来の拡張テーマ例
 ```json
 {
-  "id": "business",
-  "name": "ビジネス出張",
+  "id": "standard",
+  "name": "スタンダード",
   "features": {
-    "timeline": { "enabled": true, "required": true },
+    "steps": { "enabled": true, "required": true },
     "checklist": { "enabled": true },
     "budget": { "enabled": true },
-    "receipt": { "enabled": true },  // 独自機能
-    "expense_report": { "enabled": true }  // 独自機能
+    "map": { "enabled": true }
   }
 }
 ```
@@ -446,31 +347,26 @@ export function getEnabledFeatures(theme: Theme): string[] {
 ### 6.2 ページローダー例
 
 ```typescript
-// routes/itineraries/[id]/+page.ts
-import { loadTheme, getEnabledFeatures } from '$lib/themes/loader';
+// routes/[id]/+page.ts
+import { getItinerary } from '$lib/api/itinerary';
+import { getSteps } from '$lib/api/step';
+import { loadTheme } from '$lib/themes';
 import type { PageLoad } from './$types';
 
-export const load: PageLoad = async ({ params, fetch }) => {
-  // しおり基本情報を取得
-  const itinerary = await fetch(`/api/v1/itineraries/${params.id}`).then(r => r.json());
+export const load: PageLoad = async ({ params }) => {
+  // しおり基本情報を取得（APIラッパー経由）
+  const itinerary = await getItinerary(params.id);
 
   // テーマを読み込み
-  const theme = await loadTheme(itinerary.data.theme_id);
-  const features = getEnabledFeatures(theme);
+  const theme = await loadTheme(itinerary.theme_id);
 
-  // 有効な機能のデータのみを取得
-  const dataPromises = features.map(feature =>
-    fetch(`/api/v1/itineraries/${params.id}?include=${feature}`).then(r => r.json())
-  );
-
-  const featureData = await Promise.all(dataPromises);
+  // 予定リストを取得（時系列順に自動ソート）
+  const steps = await getSteps(params.id);
 
   return {
-    itinerary: itinerary.data,
+    itinerary,
     theme,
-    features: Object.fromEntries(
-      features.map((name, i) => [name, featureData[i].data])
-    )
+    steps
   };
 };
 ```
@@ -478,7 +374,7 @@ export const load: PageLoad = async ({ params, fetch }) => {
 ### 6.3 動的コンポーネントロード
 
 ```svelte
-<!-- routes/itineraries/[id]/+page.svelte -->
+<!-- routes/[id]/+page.svelte -->
 <script lang="ts">
   import { onMount } from 'svelte';
   export let data;
@@ -486,6 +382,7 @@ export const load: PageLoad = async ({ params, fetch }) => {
   let ItineraryView;
 
   onMount(async () => {
+    // テーマコンポーネントを動的にロード
     ItineraryView = data.theme.components.ItineraryView;
   });
 </script>
@@ -494,18 +391,20 @@ export const load: PageLoad = async ({ params, fetch }) => {
   <svelte:component
     this={ItineraryView}
     itinerary={data.itinerary}
-    features={data.features}
+    steps={data.steps}
   />
 {/if}
 ```
 
 ## 7. パフォーマンス最適化
 
-### 7.1 初期ロード最適化
-- **Code Splitting**: テーマごとに独立したチャンク
-- **Lazy Loading**: 使用する機能のみを動的インポート
-- **SSR**: 初期HTMLに必要最小限のデータを埋め込み
-- **Preloading**: 次に表示する可能性が高いデータを先読み
+### 7.1 初期ロード最適化（目標: 1秒以内）
+- **超軽量HTML**: 初期HTMLは10KB以下を目標
+- **最小限のJS**: 必須JSは30KB以下（gzip圧縮後）
+- **最小限のCSS**: クリティカルCSSのインライン化、その他は遅延読み込み
+- **Code Splitting**: テーマごとに独立したチャンク、動的インポート
+- **SSR**: 初期HTMLに予定リストを埋め込み、即座に表示
+- **画像最適化**: WebP形式、遅延読み込み、適切なサイズ
 
 ### 7.2 キャッシング戦略
 ```typescript
@@ -513,17 +412,26 @@ export const load: PageLoad = async ({ params, fetch }) => {
 const cache = caches.default;
 const cacheKey = new Request(request.url, request);
 
-// 静的データは長時間キャッシュ
-response.headers.set('Cache-Control', 'public, max-age=3600');
+// しおりデータは短時間キャッシュ（頻繁に更新される可能性）
+response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
 
-// 動的データは短時間キャッシュ
-response.headers.set('Cache-Control', 'public, max-age=60');
+// テーマファイルは長時間キャッシュ（めったに変更されない）
+response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
 ```
 
 ### 7.3 データベースクエリ最適化
-- **インデックスの活用**
-- **N+1問題の回避**: 関連データを一度に取得
-- **ページネーション**: 大量データの分割取得
+- **インデックスの活用**: 時系列ソート用のインデックス
+- **シンプルなクエリ**: JOINを避け、必要最小限のSELECT
+- **prepared statements**: SQLインジェクション対策とパフォーマンス向上
+- **ページネーション**: 予定が多い場合の分割取得（将来実装）
+
+```sql
+-- 予定取得クエリ（時系列順）
+SELECT id, title, date, time, location, notes
+FROM steps
+WHERE itinerary_id = ?
+ORDER BY date ASC, time ASC;
+```
 
 ## 8. セキュリティ設計
 
@@ -587,57 +495,119 @@ ALLOWED_ORIGINS = "https://yourapp.com"
 
 ## 10. 開発フロー
 
-### 10.1 新機能追加の流れ
+### 10.1 新機能追加の流れ（完全疎結合）
 
-1. **DB設計**
+1. **DB設計**（独立したテーブル）
    ```sql
-   -- 新テーブル追加
-   CREATE TABLE new_feature_data (...);
+   CREATE TABLE new_feature_items (
+     id TEXT PRIMARY KEY,
+     itinerary_id TEXT NOT NULL,
+     -- 機能固有のカラム
+     created_at TEXT NOT NULL,
+     updated_at TEXT NOT NULL,
+     FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+   );
+   CREATE INDEX idx_new_feature_itinerary ON new_feature_items(itinerary_id);
    ```
 
-2. **バックエンド実装**
-   ```typescript
-   // apps/api/src/routes/new-feature.ts
-   // apps/api/src/services/new-feature.service.ts
-   ```
-
-3. **型定義**
+2. **型定義**（DRY原則）
    ```typescript
    // packages/types/src/new-feature.ts
+   export interface NewFeatureItem {
+     id: string;
+     itinerary_id: string;
+     // 機能固有のフィールド
+     created_at: string;
+     updated_at: string;
+   }
    ```
 
-4. **APIクライアント**
+3. **バックエンド実装**（完全なCRUD）
+   ```typescript
+   // apps/api/src/services/new-feature.service.ts（ビジネスロジック）
+   // apps/api/src/routes/new-feature.ts（エンドポイント）
+   // GET /new-feature?itinerary_id=:id
+   // GET /new-feature/:itemId
+   // POST /new-feature
+   // PUT /new-feature/:itemId
+   // DELETE /new-feature/:itemId
+   ```
+
+4. **APIラッパー**（フロントエンド）
    ```typescript
    // apps/web/src/lib/api/new-feature.ts
+   export async function getNewFeatureItems(itineraryId: string) { ... }
+   export async function createNewFeatureItem(data: ...) { ... }
+   export async function updateNewFeatureItem(id: string, data: ...) { ... }
+   export async function deleteNewFeatureItem(id: string) { ... }
    ```
 
-5. **テーマへの統合**
+5. **テーマへの統合**（オプション）
    ```json
    // apps/web/src/themes/standard/theme.json
    {
      "features": {
        "new_feature": { "enabled": true }
+     },
+     "components": {
+       "NewFeaturePanel": "./components/NewFeaturePanel.svelte"
      }
    }
    ```
 
-### 10.2 新テーマ追加の流れ
+### 10.2 新テーマ追加の流れ（HTML/CSSのみでもOK）
 
 1. **テーマディレクトリ作成**
    ```
    apps/web/src/themes/my-theme/
+   ├── index.ts           # エントリーポイント
+   ├── theme.json         # メタデータ
+   ├── components/        # Svelteコンポーネント（またはHTML）
+   └── styles/            # CSS
    ```
 
-2. **theme.json定義**
-
-3. **コンポーネント実装**
-
-4. **スタイル定義**
-
-5. **テーマレジストリに登録**
-   ```typescript
-   // apps/web/src/lib/themes/registry.ts
+2. **theme.json定義**（最小限）
+   ```json
+   {
+     "id": "my-theme",
+     "name": "マイテーマ",
+     "features": {
+       "steps": { "enabled": true, "required": true }
+     },
+     "components": {
+       "ItineraryView": "./components/ItineraryView.svelte"
+     },
+     "styles": "./styles/theme.css"
+   }
    ```
+
+3. **コンポーネント実装**（APIラッパーを呼ぶだけ）
+   ```svelte
+   <script>
+     import { getSteps, createStep } from '$lib/api/step';
+     export let itinerary;
+     export let steps;
+   </script>
+
+   <div class="my-theme">
+     <h1>{itinerary.title}</h1>
+     {#each steps as step}
+       <div class="step">
+         <h2>{step.title}</h2>
+         <p>{step.date} {step.time}</p>
+       </div>
+     {/each}
+   </div>
+   ```
+
+4. **スタイル定義**（独自のデザイン）
+   ```css
+   .my-theme {
+     /* カスタムスタイル */
+   }
+   ```
+
+5. **テーマ登録**（自動検出）
 
 ## 11. テスト戦略
 
@@ -678,27 +648,34 @@ test('theme definition is valid', () => {
 
 ## 13. 今後の拡張案
 
-### 13.1 Phase 1（MVP）
-- しおりCRUD
-- タイムライン機能
-- 3つの基本テーマ（Minimal, Standard, Business）
+### 13.1 Phase 1（MVP - ミニマル）
+- [x] しおりCRUD（長いランダムID）
+- [x] 予定CRUD（タイトル・日付・時間が必須）
+- [x] 時系列自動ソート
+- [x] ミニマルテーマ
+- [x] 超軽量・超高速（初期ロード1秒以内）
 
-### 13.2 Phase 2
-- 持ち物チェックリスト
-- 予算管理
-- 地図連携
+### 13.2 Phase 2（機能拡張）
+- [ ] 地図連携（場所の視覚化）
+- [ ] 持ち物チェックリスト
+- [ ] スタンダードテーマ
 
-### 13.3 Phase 3
-- ユーザー認証
-- 共有機能
-- コメント機能
-- テンプレート機能
+### 13.3 Phase 3（高度な機能）
+- [ ] 予算管理
+- [ ] メモ機能
+- [ ] ビジネステーマ
 
-### 13.4 Phase 4
-- PWA対応
-- オフライン機能
-- プッシュ通知
-- カレンダー連携
+### 13.4 Phase 4（共有・協力）
+- [ ] ユーザー認証
+- [ ] しおり共有機能
+- [ ] コメント機能
+- [ ] テンプレート機能
+
+### 13.5 Phase 5（PWA）
+- [ ] PWA対応
+- [ ] オフライン機能
+- [ ] プッシュ通知
+- [ ] カレンダー連携
 
 ## 14. 命名案
 
@@ -722,11 +699,16 @@ test('theme definition is valid', () => {
 
 この設計により以下が実現できます:
 
-✅ **軽量**: 必要な機能・データのみを取得
-✅ **拡張性**: 新機能追加が容易（独立したテーブル・エンドポイント）
-✅ **テーマ駆動**: UI/UX/機能をテーマで完全制御
+✅ **超軽量・超高速**: 初期ロード1秒以内、必要最小限のJS/CSS
+✅ **ミニマルファースト**: 予定管理に集中したシンプルなUI/UX
+✅ **完全疎結合**: 各機能は独立したテーブル・エンドポイント・サービス
+✅ **DRY原則**: APIラッパーでコード重複を排除
+✅ **テーマの独立性**: HTML/CSSのみで新テーマ作成可能
+✅ **拡張性**: 新機能追加が容易（既存コードへの影響ゼロ）
+✅ **Readability**: 誰でも読みやすく、編集しやすいコード
 ✅ **OSS対応**: テーマを誰でも開発・追加可能
-✅ **保守性**: 疎結合で依存関係が少ない
-✅ **パフォーマンス**: Code Splitting, Lazy Loading, SSR
 
-次のステップ: 実装開始に向けた詳細API仕様書とテーマ開発ガイドの作成
+次のステップ:
+1. ミニマルテーマの実装
+2. API実装（しおり・予定のCRUD）
+3. パフォーマンス測定と最適化

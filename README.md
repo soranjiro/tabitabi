@@ -11,7 +11,7 @@
 
 ## 🚀 デプロイ済み
 
-- **フロントエンド**: https://a4df757f.tabitabi.pages.dev
+- **フロントエンド**: https://tabitabi.pages.dev
 - **API**: https://tabitabi-api.soranjiro.workers.dev
 
 ## 📦 プロジェクト構成

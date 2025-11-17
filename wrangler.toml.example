@@ -1,4 +1,4 @@
-name = "axi-itinerary"
+name = "tabitabi"
 compatibility_date = "2024-09-17"
 compatibility_flags = ["nodejs_compat"]
 main = "apps/web/.svelte-kit/cloudflare/_worker.js"
@@ -13,4 +13,4 @@ enabled = true
 [[d1_databases]]
 binding = "DB"
 database_name = "tabitabi"
-# database_id は環境変数 CLOUDFLARE_DATABASE_ID で設定
+# database_id is set via the environment variable CLOUDFLARE_DATABASE_ID

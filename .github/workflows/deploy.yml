@@ -35,14 +35,34 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Inject D1 database_id into API wrangler config
+        working-directory: apps/api
+        run: |
+          set -eu
+          if grep -q 'database_name\s*=\s*"tabitabi"' wrangler.toml; then
+            if ! grep -q 'database_id' wrangler.toml; then
+              echo "Injecting database_id into apps/api/wrangler.toml"
+              awk 'BEGIN{added=0} {
+                print;
+                if ($0 ~ /database_name\s*=\s*"tabitabi"/ && added==0) {
+                  printf("database_id = \"%s\"\n", ENVIRON["CLOUDFLARE_DATABASE_ID"]);
+                  added=1;
+                }
+              }' wrangler.toml > wrangler.toml.tmp && mv wrangler.toml.tmp wrangler.toml
+            fi
+          fi
+
       - name: Build all packages
         run: pnpm run build
 
       - name: Apply D1 migrations (api)
-        run: pnpm --filter api wrangler d1 migrations apply tabitabi --env production
+        working-directory: apps/api
+        run: pnpm wrangler d1 migrations apply tabitabi --env production
 
       - name: Deploy API (Workers)
-        run: pnpm --filter api wrangler deploy --env production
+        working-directory: apps/api
+        run: pnpm wrangler deploy --env production
 
-      - name: Deploy Web (Workers)
-        run: pnpm --filter web wrangler deploy --env production
+      - name: Deploy Web (Pages)
+        working-directory: apps/web
+        run: pnpm wrangler pages deploy .svelte-kit/cloudflare --project-name=tabitabi --branch=main

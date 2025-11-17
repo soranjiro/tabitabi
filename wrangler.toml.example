@@ -13,4 +13,4 @@ enabled = true
 [[d1_databases]]
 binding = "DB"
 database_name = "tabitabi"
-# database_id is set via the environment variable CLOUDFLARE_DATABASE_ID
+database_id = "PLACEHOLDER_DATABASE_ID"

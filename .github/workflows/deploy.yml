@@ -37,8 +37,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Copy wrangler.toml from example
-        run: cp wrangler.toml.example wrangler.toml
+      - name: Generate wrangler.toml from example
+        run: |
+          cp wrangler.toml.example wrangler.toml
+          sed -i "s/PLACEHOLDER_DATABASE_ID/${CLOUDFLARE_DATABASE_ID}/g" wrangler.toml
 
       - name: Generate API wrangler.toml from example
         working-directory: apps/api

@@ -65,10 +65,11 @@
         <h2 class="text-xl font-semibold mb-4">新しいしおりを作成</h2>
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="itinerary-title" class="block text-sm font-medium text-gray-700 mb-1">
               タイトル
             </label>
             <input
+              id="itinerary-title"
               type="text"
               bind:value={newItinerary.title}
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
@@ -77,20 +78,22 @@
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+              <label for="itinerary-startDate" class="block text-sm font-medium text-gray-700 mb-1">
                 開始日
               </label>
               <input
+                id="itinerary-startDate"
                 type="date"
                 bind:value={newItinerary.startDate}
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+              <label for="itinerary-endDate" class="block text-sm font-medium text-gray-700 mb-1">
                 終了日
               </label>
               <input
+                id="itinerary-endDate"
                 type="date"
                 bind:value={newItinerary.endDate}
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
@@ -98,10 +101,11 @@
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="itinerary-theme" class="block text-sm font-medium text-gray-700 mb-1">
               テーマ
             </label>
             <select
+              id="itinerary-theme"
               bind:value={newItinerary.themeId}
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
             >

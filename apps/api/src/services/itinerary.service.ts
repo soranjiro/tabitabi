@@ -5,6 +5,14 @@ import { generateId, getCurrentTimestamp } from '../utils';
 export class ItineraryService {
   constructor(private db: D1Database) {}
 
+  async list(): Promise<Itinerary[]> {
+    const result = await this.db
+      .prepare('SELECT * FROM itineraries ORDER BY created_at DESC')
+      .all();
+
+    return result.results ? result.results.map(row => this.mapToItinerary(row)) : [];
+  }
+
   async get(id: string): Promise<Itinerary | null> {
     const result = await this.db
       .prepare('SELECT * FROM itineraries WHERE id = ?')
@@ -15,21 +23,20 @@ export class ItineraryService {
   }
 
   async create(input: CreateItineraryInput): Promise<Itinerary> {
-    const id = generateId(8);
+    const id = generateId(32);
     const now = getCurrentTimestamp();
 
     const itinerary: Itinerary = {
       id,
       title: input.title,
-      startDate: input.startDate,
-      endDate: input.endDate,
-      themeId: input.themeId || 'standard',
-      createdAt: now,
+      theme_id: input.theme_id || 'minimal',
+      created_at: now,
+      updated_at: now,
     };
 
     await this.db
-      .prepare('INSERT INTO itineraries (id, title, start_date, end_date, theme_id, created_at) VALUES (?, ?, ?, ?, ?, ?)')
-      .bind(itinerary.id, itinerary.title, itinerary.startDate, itinerary.endDate, itinerary.themeId, itinerary.createdAt)
+      .prepare('INSERT INTO itineraries (id, title, theme_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.created_at, itinerary.updated_at)
       .run();
 
     return itinerary;
@@ -39,32 +46,20 @@ export class ItineraryService {
     const existing = await this.get(id);
     if (!existing) return null;
 
-    const updated: Itinerary = {
-      ...existing,
-      ...input,
-    };
-
-    const fields = [];
-    const values = [];
+    const now = getCurrentTimestamp();
+    const fields = ['updated_at = ?'];
+    const values = [now];
 
     if (input.title !== undefined) {
       fields.push('title = ?');
       values.push(input.title);
     }
-    if (input.startDate !== undefined) {
-      fields.push('start_date = ?');
-      values.push(input.startDate);
-    }
-    if (input.endDate !== undefined) {
-      fields.push('end_date = ?');
-      values.push(input.endDate);
-    }
-    if (input.themeId !== undefined) {
+    if (input.theme_id !== undefined) {
       fields.push('theme_id = ?');
-      values.push(input.themeId);
+      values.push(input.theme_id);
     }
 
-    if (fields.length > 0) {
+    if (fields.length > 1) {
       values.push(id);
       await this.db
         .prepare(`UPDATE itineraries SET ${fields.join(', ')} WHERE id = ?`)
@@ -72,7 +67,7 @@ export class ItineraryService {
         .run();
     }
 
-    return updated;
+    return await this.get(id);
   }
 
   async delete(id: string): Promise<boolean> {
@@ -88,10 +83,9 @@ export class ItineraryService {
     return {
       id: row.id,
       title: row.title,
-      startDate: row.start_date,
-      endDate: row.end_date,
-      themeId: row.theme_id,
-      createdAt: row.created_at,
+      theme_id: row.theme_id,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
     };
   }
 }

@@ -1,4 +1,3 @@
-// API Response types
 export interface ApiResponse<T = unknown> {
   success: true;
   data: T;

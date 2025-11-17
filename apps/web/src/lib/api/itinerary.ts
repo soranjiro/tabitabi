@@ -2,6 +2,8 @@ import type { Itinerary, CreateItineraryInput, UpdateItineraryInput } from '@tab
 import { apiClient } from './client';
 
 export const itineraryApi = {
+  list: () => apiClient.get<Itinerary[]>('/itineraries'),
+
   get: (id: string) => apiClient.get<Itinerary>(`/itineraries/${id}`),
 
   create: (data: CreateItineraryInput) =>

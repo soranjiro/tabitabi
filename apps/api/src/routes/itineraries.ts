@@ -4,14 +4,12 @@ import { ItineraryService } from '../services/itinerary.service';
 
 const itineraries = new Hono<{ Bindings: Env }>();
 
-// List itineraries
 itineraries.get('/', async (c) => {
   const service = new ItineraryService(c.env.DB);
   const data = await service.list();
   return c.json({ success: true, data });
 });
 
-// Get itinerary by ID
 itineraries.get('/:id', async (c) => {
   const id = c.req.param('id');
   const service = new ItineraryService(c.env.DB);
@@ -24,7 +22,6 @@ itineraries.get('/:id', async (c) => {
   return c.json({ success: true, data });
 });
 
-// Create itinerary
 itineraries.post('/', async (c) => {
   const input = await c.req.json();
   const service = new ItineraryService(c.env.DB);
@@ -32,7 +29,6 @@ itineraries.post('/', async (c) => {
   return c.json({ success: true, data }, 201);
 });
 
-// Update itinerary
 itineraries.put('/:id', async (c) => {
   const id = c.req.param('id');
   const input = await c.req.json();
@@ -46,7 +42,6 @@ itineraries.put('/:id', async (c) => {
   return c.json({ success: true, data });
 });
 
-// Delete itinerary
 itineraries.delete('/:id', async (c) => {
   const id = c.req.param('id');
   const service = new ItineraryService(c.env.DB);

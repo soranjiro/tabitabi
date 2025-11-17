@@ -11,7 +11,6 @@
     creating = true;
     try {
       const created = await itineraryApi.create({ title: title.trim() });
-      // 作成したしおりのURLに直接遷移
       goto(`/${created.id}`);
     } catch (error) {
       console.error("Failed to create:", error);

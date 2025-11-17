@@ -7,49 +7,52 @@ export class StepService {
 
   async list(itineraryId: string): Promise<Step[]> {
     const result = await this.db
-      .prepare('SELECT * FROM steps WHERE itinerary_id = ? ORDER BY order_num ASC')
+      .prepare('SELECT * FROM steps WHERE itinerary_id = ? ORDER BY date ASC, time ASC')
       .bind(itineraryId)
       .all();
 
     return (result.results || []).map(row => this.mapToStep(row));
   }
 
-  async create(itineraryId: string, input: CreateStepInput): Promise<Step> {
-    const id = generateId(12);
+  async get(stepId: string): Promise<Step | null> {
+    const result = await this.db
+      .prepare('SELECT * FROM steps WHERE id = ?')
+      .bind(stepId)
+      .first();
+
+    return result ? this.mapToStep(result) : null;
+  }
+
+  async create(input: CreateStepInput): Promise<Step> {
+    const id = generateId(32);
     const now = getCurrentTimestamp();
-
-    // 次の順番を取得
-    const maxOrder = await this.db
-      .prepare('SELECT MAX(order_num) as max_order FROM steps WHERE itinerary_id = ?')
-      .bind(itineraryId)
-      .first<{ max_order: number | null }>();
-
-    const orderNum = (maxOrder?.max_order || 0) + 1;
 
     const step: Step = {
       id,
-      itineraryId,
-      orderNum,
+      itinerary_id: input.itinerary_id,
       title: input.title,
-      time: input.time ?? null,
+      date: input.date,
+      time: input.time,
       location: input.location ?? null,
-      note: input.note ?? null,
-      createdAt: now,
+      notes: input.notes ?? null,
+      created_at: now,
+      updated_at: now,
     };
 
     await this.db
       .prepare(
-        'INSERT INTO steps (id, itinerary_id, order_num, title, time, location, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO steps (id, itinerary_id, title, date, time, location, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
       )
       .bind(
         step.id,
-        step.itineraryId,
-        step.orderNum,
+        step.itinerary_id,
         step.title,
-        step.time ?? null,
-        step.location ?? null,
-        step.note ?? null,
-        step.createdAt
+        step.date,
+        step.time,
+        step.location,
+        step.notes,
+        step.created_at,
+        step.updated_at
       )
       .run();
 
@@ -57,26 +60,41 @@ export class StepService {
   }
 
   async update(stepId: string, input: UpdateStepInput): Promise<Step | null> {
-    const existing = await this.db
-      .prepare('SELECT * FROM steps WHERE id = ?')
-      .bind(stepId)
-      .first();
-
+    const existing = await this.get(stepId);
     if (!existing) return null;
 
-    const updated: Step = {
-      ...this.mapToStep(existing),
-      ...input,
-    };
+    const now = getCurrentTimestamp();
+    const fields = ['updated_at = ?'];
+    const values: any[] = [now];
 
+    if (input.title !== undefined) {
+      fields.push('title = ?');
+      values.push(input.title);
+    }
+    if (input.date !== undefined) {
+      fields.push('date = ?');
+      values.push(input.date);
+    }
+    if (input.time !== undefined) {
+      fields.push('time = ?');
+      values.push(input.time);
+    }
+    if (input.location !== undefined) {
+      fields.push('location = ?');
+      values.push(input.location);
+    }
+    if (input.notes !== undefined) {
+      fields.push('notes = ?');
+      values.push(input.notes);
+    }
+
+    values.push(stepId);
     await this.db
-      .prepare(
-        'UPDATE steps SET title = ?, time = ?, location = ?, note = ? WHERE id = ?'
-      )
-      .bind(updated.title, updated.time, updated.location, updated.note, stepId)
+      .prepare(`UPDATE steps SET ${fields.join(', ')} WHERE id = ?`)
+      .bind(...values)
       .run();
 
-    return updated;
+    return await this.get(stepId);
   }
 
   async delete(stepId: string): Promise<boolean> {
@@ -91,13 +109,14 @@ export class StepService {
   private mapToStep(row: any): Step {
     return {
       id: row.id,
-      itineraryId: row.itinerary_id,
-      orderNum: row.order_num,
+      itinerary_id: row.itinerary_id,
       title: row.title,
+      date: row.date,
       time: row.time,
       location: row.location,
-      note: row.note,
-      createdAt: row.created_at,
+      notes: row.notes,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
     };
   }
 }

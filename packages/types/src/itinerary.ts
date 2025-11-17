@@ -1,23 +1,17 @@
-// Itinerary types
 export interface Itinerary {
-  id: string;
+  id: string;                    // 長いランダムID（32文字）
   title: string;
-  startDate?: string;
-  endDate?: string;
-  themeId?: string;
-  createdAt: string;
+  theme_id: string;              // デフォルト: 'minimal'
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreateItineraryInput {
   title: string;
-  startDate?: string;
-  endDate?: string;
-  themeId?: string;
+  theme_id?: string;             // オプション、デフォルト: 'minimal'
 }
 
 export interface UpdateItineraryInput {
   title?: string;
-  startDate?: string;
-  endDate?: string;
-  themeId?: string;
+  theme_id?: string;
 }

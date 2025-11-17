@@ -1,4 +1,4 @@
-.PHONY: build deploy deploy-api deploy-web dev
+.PHONY: build deploy deploy-api deploy-web dev migrate
 
 build:
 	pnpm run build
@@ -13,3 +13,6 @@ deploy-web:
 
 dev:
 	pnpm run dev
+
+migrate:
+	cd apps/api && pnpm wrangler d1 execute tabitabi --local --file=../../migrations/0001_simple_schema.sql

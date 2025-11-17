@@ -1,18 +1,20 @@
-import { minimalTheme } from './minimal/config';
-import { standardTheme } from './standard/config';
-import type { ThemeConfig } from '@tabitabi/types';
+import type { Theme } from '@tabitabi/types';
+import minimalTheme from './minimal';
 
-const themes: Record<string, ThemeConfig> = {
-  minimal: minimalTheme,
-  standard: standardTheme,
+const themes: Record<string, Theme> = {
+  minimal: minimalTheme
 };
 
-export function getTheme(themeId: string): ThemeConfig {
-  return themes[themeId] || themes.standard;
+export async function loadTheme(themeId: string): Promise<Theme> {
+  const theme = themes[themeId] || themes.minimal;
+  return theme;
 }
 
-export function getAvailableThemes(): ThemeConfig[] {
-  return Object.values(themes);
+export function getEnabledFeatures(theme: Theme): string[] {
+  return Object.entries(theme.features)
+    .filter(([_, config]) => config?.enabled)
+    .map(([name]) => name);
 }
 
-export { minimalTheme, standardTheme };
+export const availableThemes = ['minimal', 'standard'] as const;
+export type AvailableTheme = typeof availableThemes[number];

@@ -146,7 +146,6 @@ dist/
 .wrangler/
 
 00_memo
-memo*
 
 # TurboRepo cache
 .turbo/

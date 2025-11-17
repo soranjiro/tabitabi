@@ -1,3 +1,4 @@
 export * from './itinerary';
-export * from './timeline';
+export * from './step';
+export * from './theme';
 export * from './api';

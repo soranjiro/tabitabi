@@ -3,14 +3,17 @@ import { apiClient } from './client';
 
 export const stepApi = {
   list: (itineraryId: string) =>
-    apiClient.get<Step[]>(`/itineraries/${itineraryId}/steps`),
+    apiClient.get<Step[]>(`/steps?itinerary_id=${itineraryId}`),
 
-  create: (itineraryId: string, data: CreateStepInput) =>
-    apiClient.post<Step>(`/itineraries/${itineraryId}/steps`, data),
+  get: (stepId: string) =>
+    apiClient.get<Step>(`/steps/${stepId}`),
+
+  create: (data: CreateStepInput) =>
+    apiClient.post<Step>('/steps', data),
 
   update: (stepId: string, data: UpdateStepInput) =>
-    apiClient.put<Step>(`/itineraries/steps/${stepId}`, data),
+    apiClient.put<Step>(`/steps/${stepId}`, data),
 
   delete: (stepId: string) =>
-    apiClient.delete(`/itineraries/steps/${stepId}`),
+    apiClient.delete(`/steps/${stepId}`),
 };

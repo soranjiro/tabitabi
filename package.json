@@ -13,6 +13,6 @@
   },
   "devDependencies": {
     "turbo": "^2.3.3",
-    "wrangler": "^4.38.0"
+    "wrangler": "^4.47.0"
   }
 }

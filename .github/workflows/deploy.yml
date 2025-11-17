@@ -39,10 +39,10 @@ jobs:
         run: pnpm run build
 
       - name: Apply D1 migrations (api)
-        run: pnpm -C apps/api wrangler d1 migrations apply tabitabi --env production
+        run: pnpm --filter api wrangler d1 migrations apply tabitabi --env production
 
       - name: Deploy API (Workers)
-        run: pnpm -C apps/api wrangler deploy --env production
+        run: pnpm --filter api wrangler deploy --env production
 
       - name: Deploy Web (Workers)
-        run: pnpm wrangler deploy --env production
+        run: pnpm --filter web wrangler deploy --env production

@@ -33,18 +33,20 @@ export async function corsMiddleware(c: Context<{ Bindings: Env }>, next: () => 
       // Not allowed origin: log details for troubleshooting
       try {
         const url = new URL(c.req.url);
-        console.warn('[CORS] Blocked request', {
+        console.warn('[CORS_BLOCK]', JSON.stringify({
           method: c.req.method,
           path: url.pathname,
           origin,
           allowedOrigins,
-        });
+          timestamp: new Date().toISOString(),
+        }));
       } catch (_) {
-        console.warn('[CORS] Blocked request', {
+        console.warn('[CORS_BLOCK]', JSON.stringify({
           method: c.req.method,
           origin,
           allowedOrigins,
-        });
+          timestamp: new Date().toISOString(),
+        }));
       }
       if (c.req.method === 'OPTIONS') {
         return c.text('Forbidden', 403);
@@ -63,7 +65,8 @@ export async function corsMiddleware(c: Context<{ Bindings: Env }>, next: () => 
   c.header('Access-Control-Max-Age', '86400');
 
   if (c.req.method === 'OPTIONS') {
-    return new Response(null, { status: 204 });
+    // Hono のコンテキスト経由で返すことで設定したヘッダーを維持
+    return c.body(null, 204);
   }
 
   await next();

@@ -1,11 +1,12 @@
 import type { Theme } from '@tabitabi/types';
 import ItineraryView from './ItineraryView.svelte';
+import StepList from './StepList.svelte';
 
 const standardTheme: Theme = {
   id: 'standard',
   name: 'スタンダード',
   version: '1.0.0',
-  description: '充実した機能を持つスタンダードテーマ',
+  description: 'ふわふわとした色合いのオシャレなテーマ',
   author: 'Tabitabi',
   features: {
     steps: {
@@ -26,16 +27,17 @@ const standardTheme: Theme = {
     }
   },
   ui: {
-    layout: 'sidebar',
-    colorScheme: 'auto',
+    layout: 'single',
+    colorScheme: 'light',
     customColors: {
-      primary: '#0ea5e9',
-      secondary: '#64748b',
-      accent: '#f59e0b'
+      primary: '#a78bfa',
+      secondary: '#f9a8d4',
+      accent: '#fbbf24'
     }
   },
   components: {
-    ItineraryView
+    ItineraryView,
+    StepList
   }
 };
 

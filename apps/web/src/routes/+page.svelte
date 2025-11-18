@@ -4,7 +4,7 @@
   import { getAvailableThemes } from "$lib/themes";
 
   let title = $state("");
-  let theme_id = $state("minimal");
+  let theme_id = $state("standard");
   let creating = $state(false);
 
   const themes = getAvailableThemes();

@@ -5,7 +5,7 @@
 
   let { data } = $props();
 
-  const ItineraryView = data.theme.components.ItineraryView;
+  let ItineraryView = $derived(data.theme.components.ItineraryView);
 
   async function handleUpdateItinerary(updateData: {
     title?: string;

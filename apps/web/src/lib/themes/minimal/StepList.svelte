@@ -20,6 +20,14 @@
 
   let editingStepId = $state<string | null>(null);
   let editedStep = $state<Partial<Step>>({});
+  let editStepHour = $state("09");
+  let editStepMinute = $state("00");
+
+  $effect(() => {
+    if (editingStepId && editStepHour && editStepMinute) {
+      editedStep.time = `${editStepHour}:${editStepMinute}`;
+    }
+  });
 
   function formatDate(dateStr: string): string {
     const date = new Date(dateStr);
@@ -33,11 +41,16 @@
   function startEdit(step: Step) {
     editingStepId = step.id;
     editedStep = { ...step };
+    const [hour, minute] = step.time.split(":");
+    editStepHour = hour;
+    editStepMinute = minute;
   }
 
   function cancelEdit() {
     editingStepId = null;
     editedStep = {};
+    editStepHour = "09";
+    editStepMinute = "00";
   }
 
   async function handleUpdate() {
@@ -63,6 +76,8 @@
 
     editingStepId = null;
     editedStep = {};
+    editStepHour = "09";
+    editStepMinute = "00";
   }
 
   async function handleDelete(stepId: string) {
@@ -95,11 +110,20 @@
               bind:value={editedStep.date}
               class="minimal-input"
             />
-            <input
-              type="time"
-              bind:value={editedStep.time}
-              class="minimal-input"
-            />
+            <div class="minimal-time-picker">
+              <select bind:value={editStepHour} class="minimal-select">
+                {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
+                  <option value={hour}>{hour}</option>
+                {/each}
+              </select>
+              <span class="minimal-time-separator">:</span>
+              <select bind:value={editStepMinute} class="minimal-select">
+                <option value="00">00</option>
+                <option value="15">15</option>
+                <option value="30">30</option>
+                <option value="45">45</option>
+              </select>
+            </div>
           </div>
           <input
             type="text"

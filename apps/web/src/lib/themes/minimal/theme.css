@@ -103,6 +103,28 @@
   gap: 0.5rem;
 }
 
+.minimal-time-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.minimal-select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  background: #fff;
+  cursor: pointer;
+  flex: 1;
+}
+
+.minimal-time-separator {
+  font-weight: 600;
+  color: #666;
+}
+
 .minimal-form-actions,
 .minimal-step-actions {
   display: flex;

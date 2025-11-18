@@ -54,6 +54,13 @@
     notes: "",
   });
 
+  let newStepHour = $state("09");
+  let newStepMinute = $state("00");
+
+  $effect(() => {
+    newStep.time = `${newStepHour}:${newStepMinute}`;
+  });
+
   async function handleTitleUpdate() {
     if (!editedTitle.trim() || editedTitle === itinerary.title) {
       isEditingTitle = false;
@@ -93,12 +100,16 @@
 
       // フォームをリセット
       newStep = { title: "", date: "", time: "", location: "", notes: "" };
+      newStepHour = "09";
+      newStepMinute = "00";
       isAddingStep = false;
     }
   }
 
   function cancelAddStep() {
     newStep = { title: "", date: "", time: "", location: "", notes: "" };
+    newStepHour = "09";
+    newStepMinute = "00";
     isAddingStep = false;
   }
 </script>
@@ -161,12 +172,20 @@
             class="minimal-input"
             required
           />
-          <input
-            type="time"
-            bind:value={newStep.time}
-            class="minimal-input"
-            required
-          />
+          <div class="minimal-time-picker">
+            <select bind:value={newStepHour} class="minimal-select" required>
+              {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
+                <option value={hour}>{hour}</option>
+              {/each}
+            </select>
+            <span class="minimal-time-separator">:</span>
+            <select bind:value={newStepMinute} class="minimal-select" required>
+              <option value="00">00</option>
+              <option value="15">15</option>
+              <option value="30">30</option>
+              <option value="45">45</option>
+            </select>
+          </div>
         </div>
         <input
           type="text"

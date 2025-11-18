@@ -1,4 +1,4 @@
-/* スタンダードテーマ - ふわふわとした色合いのオシャレなデザイン */
+/* スタンダードテーマ */
 
 .standard-theme {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
@@ -431,4 +431,29 @@
   .standard-btn {
     width: 100%;
   }
+}
+
+/* ナビゲーション */
+.standard-nav {
+  margin-bottom: 1.5rem;
+}
+
+.standard-home-btn {
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(135deg, #fff 0%, #faf5ff 100%);
+  border: 2px solid rgba(167, 139, 250, 0.2);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #7c3aed;
+}
+
+.standard-home-btn:hover {
+  background: linear-gradient(135deg, #faf5ff 0%, #f5edff 100%);
+  border-color: #a78bfa;
+  box-shadow: 0 2px 8px rgba(167, 139, 250, 0.12);
+  transform: translateY(-1px);
 }

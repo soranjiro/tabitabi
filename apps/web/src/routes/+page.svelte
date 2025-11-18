@@ -1,13 +1,28 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { onMount } from "svelte";
   import { itineraryApi } from "$lib/api/itinerary";
   import { getAvailableThemes } from "$lib/themes";
+  import {
+    getRecentItineraries,
+    type RecentItinerary,
+  } from "$lib/utils/recentItineraries";
 
   let title = $state("");
   let theme_id = $state("standard");
   let creating = $state(false);
+  let recentItineraries = $state<RecentItinerary[]>([]);
+  let showRecent = $state(false);
 
   const themes = getAvailableThemes();
+
+  // Load recent itineraries with delay for performance
+  onMount(() => {
+    setTimeout(() => {
+      recentItineraries = getRecentItineraries();
+      showRecent = true;
+    }, 300);
+  });
 
   async function createItinerary() {
     if (!title.trim()) return;
@@ -77,5 +92,47 @@
         URLが発行されます。仲間と共有しよう！
       </p>
     </div>
+
+    <!-- Recent Itineraries -->
+    {#if showRecent && recentItineraries.length > 0}
+      <div class="mt-8 bg-white rounded-2xl shadow-xl p-6 animate-fade-in">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">📚 最近の項目</h2>
+        <div class="space-y-2">
+          {#each recentItineraries as item}
+            <button
+              onclick={() => goto(`/${item.id}`)}
+              class="w-full text-left px-4 py-3 rounded-lg bg-gray-50 hover:bg-indigo-50 hover:border-indigo-200 border-2 border-transparent transition-all duration-200"
+            >
+              <div class="font-medium text-gray-800">{item.title}</div>
+              <div class="text-xs text-gray-500 mt-1">
+                {new Date(item.visitedAt).toLocaleDateString("ja-JP", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </div>
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
   </div>
 </div>
+
+<style>
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.4s ease-out;
+  }
+</style>

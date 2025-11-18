@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+
   import type { Itinerary, Step } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import StepList from "./StepList.svelte";
@@ -115,8 +117,20 @@
 
 <div class="standard-theme">
   <div class="standard-container">
+    <nav class="standard-nav">
+      <button
+        type="button"
+        onclick={() => goto("/")}
+        class="standard-home-btn"
+        title="ホームに戻る"
+      >
+        ← ホーム
+      </button>
+    </nav>
+
     <header class="standard-header">
       <div class="standard-header-content">
+
         {#if isEditingTitle}
           <input
             type="text"

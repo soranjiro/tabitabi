@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import type { Itinerary, Step } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import StepList from "./StepList.svelte";
@@ -58,7 +59,7 @@
   let newStepMinute = $state("00");
 
   $effect(() => {
-    newStep.time = `${newStepHour}:${newStepMinute}`;
+    newStep.time = `\${newStepHour}:\${newStepMinute}`;
   });
 
   async function handleTitleUpdate() {
@@ -98,7 +99,6 @@
         notes: newStep.notes.trim() || undefined,
       });
 
-      // フォームをリセット
       newStep = { title: "", date: "", time: "", location: "", notes: "" };
       newStepHour = "09";
       newStepMinute = "00";
@@ -115,6 +115,17 @@
 </script>
 
 <div class="minimal-theme">
+  <nav class="minimal-nav">
+    <button
+      type="button"
+      onclick={() => goto("/")}
+      class="minimal-home-btn"
+      title="ホームに戻る"
+    >
+      ← ホーム
+    </button>
+  </nav>
+
   <header class="minimal-header">
     {#if isEditingTitle}
       <input

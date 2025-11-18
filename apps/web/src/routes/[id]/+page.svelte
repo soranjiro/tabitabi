@@ -2,10 +2,17 @@
   import { invalidateAll } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
   import { stepApi } from "$lib/api/step";
+  import { saveRecentItinerary } from "$lib/utils/recentItineraries";
+  import { onMount } from "svelte";
 
   let { data } = $props();
 
   let ItineraryView = $derived(data.theme.components.ItineraryView);
+
+  // Save to recent itineraries on mount
+  onMount(() => {
+    saveRecentItinerary(data.itinerary.id, data.itinerary.title);
+  });
 
   async function handleUpdateItinerary(updateData: {
     title?: string;

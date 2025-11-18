@@ -6,7 +6,7 @@ const standardTheme: Theme = {
   id: 'standard',
   name: 'スタンダード',
   version: '1.0.0',
-  description: 'ふわふわとした色合いのオシャレなテーマ',
+  description: 'デフォルトテーマ',
   author: 'Tabitabi',
   features: {
     steps: {

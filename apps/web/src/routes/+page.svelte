@@ -1,16 +1,23 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
+  import { getAvailableThemes } from "$lib/themes";
 
   let title = $state("");
+  let theme_id = $state("minimal");
   let creating = $state(false);
+
+  const themes = getAvailableThemes();
 
   async function createItinerary() {
     if (!title.trim()) return;
 
     creating = true;
     try {
-      const created = await itineraryApi.create({ title: title.trim() });
+      const created = await itineraryApi.create({
+        title: title.trim(),
+        theme_id,
+      });
       goto(`/${created.id}`);
     } catch (error) {
       console.error("Failed to create:", error);
@@ -46,8 +53,17 @@
         placeholder="旅のタイトルを入力..."
         class="w-full text-xl px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors mb-4"
         disabled={creating}
-        autofocus
       />
+
+      <select
+        bind:value={theme_id}
+        class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors mb-4"
+        disabled={creating}
+      >
+        {#each themes as theme}
+          <option value={theme.id}>{theme.name} - {theme.description}</option>
+        {/each}
+      </select>
 
       <button
         onclick={createItinerary}

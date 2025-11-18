@@ -3,9 +3,23 @@
 
   interface Props {
     steps: Step[];
+    onUpdateStep?: (
+      stepId: string,
+      data: {
+        title?: string;
+        date?: string;
+        time?: string;
+        location?: string;
+        notes?: string;
+      },
+    ) => Promise<void>;
+    onDeleteStep?: (stepId: string) => Promise<void>;
   }
 
-  let { steps }: Props = $props();
+  let { steps, onUpdateStep, onDeleteStep }: Props = $props();
+
+  let editingStepId = $state<string | null>(null);
+  let editedStep = $state<Partial<Step>>({});
 
   function formatDate(dateStr: string): string {
     const date = new Date(dateStr);
@@ -14,6 +28,49 @@
       day: "numeric",
       weekday: "short",
     });
+  }
+
+  function startEdit(step: Step) {
+    editingStepId = step.id;
+    editedStep = { ...step };
+  }
+
+  function cancelEdit() {
+    editingStepId = null;
+    editedStep = {};
+  }
+
+  async function handleUpdate() {
+    if (
+      !editingStepId ||
+      !editedStep.title?.trim() ||
+      !editedStep.date ||
+      !editedStep.time
+    ) {
+      alert("タイトル、日付、時刻は必須です");
+      return;
+    }
+
+    if (onUpdateStep) {
+      await onUpdateStep(editingStepId, {
+        title: editedStep.title.trim(),
+        date: editedStep.date,
+        time: editedStep.time,
+        location: editedStep.location?.trim() || undefined,
+        notes: editedStep.notes?.trim() || undefined,
+      });
+    }
+
+    editingStepId = null;
+    editedStep = {};
+  }
+
+  async function handleDelete(stepId: string) {
+    if (!confirm("この予定を削除しますか?")) return;
+
+    if (onDeleteStep) {
+      await onDeleteStep(stepId);
+    }
   }
 </script>
 
@@ -24,19 +81,75 @@
 {:else}
   <div class="minimal-steps">
     {#each steps as step}
-      <div class="minimal-step">
-        <div class="minimal-step-time">
-          {formatDate(step.date)}
-          {step.time}
+      {#if editingStepId === step.id}
+        <div class="minimal-step minimal-step-editing">
+          <input
+            type="text"
+            bind:value={editedStep.title}
+            placeholder="予定のタイトル *"
+            class="minimal-input"
+          />
+          <div class="minimal-datetime">
+            <input
+              type="date"
+              bind:value={editedStep.date}
+              class="minimal-input"
+            />
+            <input
+              type="time"
+              bind:value={editedStep.time}
+              class="minimal-input"
+            />
+          </div>
+          <input
+            type="text"
+            bind:value={editedStep.location}
+            placeholder="場所 (任意)"
+            class="minimal-input"
+          />
+          <textarea
+            bind:value={editedStep.notes}
+            placeholder="メモ (任意)"
+            class="minimal-textarea"
+            rows="3"
+          ></textarea>
+          <div class="minimal-step-actions">
+            <button
+              onclick={handleUpdate}
+              class="minimal-btn minimal-btn-primary">保存</button
+            >
+            <button
+              onclick={cancelEdit}
+              class="minimal-btn minimal-btn-secondary">キャンセル</button
+            >
+          </div>
         </div>
-        <h2 class="minimal-step-title">{step.title}</h2>
-        {#if step.location}
-          <div class="minimal-step-location">📍 {step.location}</div>
-        {/if}
-        {#if step.notes}
-          <div class="minimal-step-notes">{step.notes}</div>
-        {/if}
-      </div>
+      {:else}
+        <div class="minimal-step">
+          <div class="minimal-step-time">
+            {formatDate(step.date)}
+            {step.time}
+          </div>
+          <h2 class="minimal-step-title">{step.title}</h2>
+          {#if step.location}
+            <div class="minimal-step-location">📍 {step.location}</div>
+          {/if}
+          {#if step.notes}
+            <div class="minimal-step-notes">{step.notes}</div>
+          {/if}
+          <div class="minimal-step-actions">
+            <button
+              onclick={() => startEdit(step)}
+              class="minimal-btn minimal-btn-small">編集</button
+            >
+            <button
+              onclick={() => handleDelete(step.id)}
+              class="minimal-btn minimal-btn-small minimal-btn-danger"
+              >削除</button
+            >
+          </div>
+        </div>
+      {/if}
     {/each}
   </div>
 {/if}

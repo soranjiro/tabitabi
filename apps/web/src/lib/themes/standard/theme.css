@@ -264,7 +264,36 @@
 .standard-steps {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 2.5rem;
+}
+
+.standard-date-group {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  padding: 1.5rem;
+  border: 2px solid rgba(167, 139, 250, 0.15);
+}
+
+.standard-date-header {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #7c3aed;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid rgba(167, 139, 250, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.standard-date-icon {
+  font-size: 1.5rem;
+}
+
+.standard-date-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .standard-step {
@@ -288,19 +317,17 @@
   box-shadow: 0 4px 20px rgba(251, 191, 36, 0.15);
 }
 
-.standard-step-number {
+.standard-step-time-badge {
   flex-shrink: 0;
-  width: 2.5rem;
-  height: 2.5rem;
+  padding: 0.5rem 1rem;
   background: linear-gradient(135deg, #fce7f3 0%, #fef3f7 100%);
   border: 2px solid #f9a8d4;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 12px;
   font-weight: 700;
-  font-size: 1.125rem;
+  font-size: 1rem;
   color: #ec4899;
+  align-self: flex-start;
+  white-space: nowrap;
 }
 
 .standard-step-content {
@@ -311,32 +338,15 @@
 .standard-step-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 1rem;
-  margin-bottom: 0.75rem;
 }
 
 .standard-step-title {
   font-size: 1.125rem;
   font-weight: 600;
   color: #7c3aed;
-  margin: 0 0 0.5rem 0;
-}
-
-.standard-step-meta {
-  display: flex;
-  gap: 1rem;
-  font-size: 0.875rem;
-  color: #666;
-}
-
-.standard-step-date {
-  font-weight: 500;
-}
-
-.standard-step-time {
-  color: #ec4899;
-  font-weight: 500;
+  margin: 0;
 }
 
 .standard-step-location {
@@ -360,7 +370,6 @@
 .standard-step-actions {
   display: flex;
   gap: 0.5rem;
-  margin-top: 0.75rem;
 }
 
 /* 空の状態 */

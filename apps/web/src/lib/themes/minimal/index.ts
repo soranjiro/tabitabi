@@ -18,7 +18,7 @@ const minimalTheme: Theme = {
     layout: 'single',
     colorScheme: 'light',
     customColors: {
-      primary: '#000000',
+      primary: '#2b2b2b',
       background: '#FFFFFF',
       text: '#333333'
     }

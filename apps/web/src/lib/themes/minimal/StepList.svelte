@@ -29,9 +29,33 @@
     }
   });
 
+  // 日付ごとにグループ化
+  const groupedSteps = $derived(() => {
+    const groups = new Map<string, Step[]>();
+
+    for (const step of steps) {
+      const date = step.date;
+      if (!groups.has(date)) {
+        groups.set(date, []);
+      }
+      groups.get(date)!.push(step);
+    }
+
+    // 各グループ内を時刻順にソート
+    for (const [_, groupSteps] of groups) {
+      groupSteps.sort((a, b) => a.time.localeCompare(b.time));
+    }
+
+    // 日付順にソート
+    return Array.from(groups.entries()).sort((a, b) =>
+      a[0].localeCompare(b[0]),
+    );
+  });
+
   function formatDate(dateStr: string): string {
     const date = new Date(dateStr);
     return date.toLocaleDateString("ja-JP", {
+      year: "numeric",
       month: "long",
       day: "numeric",
       weekday: "short",
@@ -95,85 +119,89 @@
   </div>
 {:else}
   <div class="minimal-steps">
-    {#each steps as step}
-      {#if editingStepId === step.id}
-        <div class="minimal-step minimal-step-editing">
-          <input
-            type="text"
-            bind:value={editedStep.title}
-            placeholder="予定のタイトル *"
-            class="minimal-input"
-          />
-          <div class="minimal-datetime">
-            <input
-              type="date"
-              bind:value={editedStep.date}
-              class="minimal-input"
-            />
-            <div class="minimal-time-picker">
-              <select bind:value={editStepHour} class="minimal-select">
-                {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
-                  <option value={hour}>{hour}</option>
-                {/each}
-              </select>
-              <span class="minimal-time-separator">:</span>
-              <select bind:value={editStepMinute} class="minimal-select">
-                <option value="00">00</option>
-                <option value="15">15</option>
-                <option value="30">30</option>
-                <option value="45">45</option>
-              </select>
-            </div>
-          </div>
-          <input
-            type="text"
-            bind:value={editedStep.location}
-            placeholder="場所 (任意)"
-            class="minimal-input"
-          />
-          <textarea
-            bind:value={editedStep.notes}
-            placeholder="メモ (任意)"
-            class="minimal-textarea"
-            rows="3"
-          ></textarea>
-          <div class="minimal-step-actions">
-            <button
-              onclick={handleUpdate}
-              class="minimal-btn minimal-btn-primary">保存</button
-            >
-            <button
-              onclick={cancelEdit}
-              class="minimal-btn minimal-btn-secondary">キャンセル</button
-            >
-          </div>
+    {#each groupedSteps() as [date, dateSteps]}
+      <div class="minimal-date-group">
+        <h2 class="minimal-date-header">{formatDate(date)}</h2>
+        <div class="minimal-date-steps">
+          {#each dateSteps as step}
+            {#if editingStepId === step.id}
+              <div class="minimal-step minimal-step-editing">
+                <input
+                  type="text"
+                  bind:value={editedStep.title}
+                  placeholder="予定のタイトル *"
+                  class="minimal-input"
+                />
+                <div class="minimal-datetime">
+                  <input
+                    type="date"
+                    bind:value={editedStep.date}
+                    class="minimal-input"
+                  />
+                  <div class="minimal-time-picker">
+                    <select bind:value={editStepHour} class="minimal-select">
+                      {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
+                        <option value={hour}>{hour}</option>
+                      {/each}
+                    </select>
+                    <span class="minimal-time-separator">:</span>
+                    <select bind:value={editStepMinute} class="minimal-select">
+                      <option value="00">00</option>
+                      <option value="15">15</option>
+                      <option value="30">30</option>
+                      <option value="45">45</option>
+                    </select>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  bind:value={editedStep.location}
+                  placeholder="場所 (任意)"
+                  class="minimal-input"
+                />
+                <textarea
+                  bind:value={editedStep.notes}
+                  placeholder="メモ (任意)"
+                  class="minimal-textarea"
+                  rows="3"
+                ></textarea>
+                <div class="minimal-step-actions">
+                  <button
+                    onclick={handleUpdate}
+                    class="minimal-btn minimal-btn-primary">保存</button
+                  >
+                  <button
+                    onclick={cancelEdit}
+                    class="minimal-btn minimal-btn-secondary">キャンセル</button
+                  >
+                </div>
+              </div>
+            {:else}
+              <div class="minimal-step">
+                <div class="minimal-step-time">{step.time}</div>
+                <h3 class="minimal-step-title">{step.title}</h3>
+                {#if step.location}
+                  <div class="minimal-step-location">📍 {step.location}</div>
+                {/if}
+                {#if step.notes}
+                  <div class="minimal-step-notes">{step.notes}</div>
+                {/if}
+                <div class="minimal-step-actions">
+                  <button
+                    onclick={() => startEdit(step)}
+                    class="minimal-btn minimal-btn-small">編集</button
+                  >
+                  <button
+                    onclick={() => handleDelete(step.id)}
+                    class="minimal-btn minimal-btn-small minimal-btn-danger"
+                    >削除</button
+                  >
+                </div>
+              </div>
+            {/if}
+          {/each}
         </div>
-      {:else}
-        <div class="minimal-step">
-          <div class="minimal-step-time">
-            {formatDate(step.date)}
-            {step.time}
-          </div>
-          <h2 class="minimal-step-title">{step.title}</h2>
-          {#if step.location}
-            <div class="minimal-step-location">📍 {step.location}</div>
-          {/if}
-          {#if step.notes}
-            <div class="minimal-step-notes">{step.notes}</div>
-          {/if}
-          <div class="minimal-step-actions">
-            <button
-              onclick={() => startEdit(step)}
-              class="minimal-btn minimal-btn-small">編集</button
-            >
-            <button
-              onclick={() => handleDelete(step.id)}
-              class="minimal-btn minimal-btn-small minimal-btn-danger"
-              >削除</button
-            >
-          </div>
-        </div>
-      {/if}
+      </div>
     {/each}
   </div>
 {/if}

@@ -50,6 +50,8 @@ jobs:
 
       - name: Build all packages
         run: pnpm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Create D1 database (remote)
         working-directory: apps/api

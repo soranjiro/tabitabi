@@ -14,3 +14,6 @@ enabled = true
 binding = "DB"
 database_name = "tabitabi"
 database_id = "PLACEHOLDER_DATABASE_ID"
+
+[env.production]
+VITE_API_URL = "https://tabitabi-api.soranjiro.workers.dev/api/v1"

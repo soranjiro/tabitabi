@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS steps;;
+DROP TABLE IF EXISTS steps;
 DROP TABLE IF EXISTS itineraries;
 
 CREATE TABLE IF NOT EXISTS itineraries (

@@ -1,5 +1,6 @@
 export interface Env {
   DB: D1Database;
+  ALLOWED_ORIGINS?: string;
 }
 
 export function generateId(length: number = 32): string {

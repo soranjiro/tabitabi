@@ -59,7 +59,7 @@
   let newStepMinute = $state("00");
 
   $effect(() => {
-    newStep.time = `\${newStepHour}:\${newStepMinute}`;
+    newStep.time = `${newStepHour}:${newStepMinute}`;
   });
 
   async function handleTitleUpdate() {

@@ -11,8 +11,14 @@ database_name = "tabitabi"
 database_id = "PLACEHOLDER_DATABASE_ID"
 migrations_dir = "../../migrations"
 
+[vars]
+ALLOWED_ORIGINS = "*"
+
 [env.production]
 name = "tabitabi-api"
+
+[env.production.vars]
+ALLOWED_ORIGINS = "https://tabitabi.pages.dev"
 
 [env.production.observability]
 enabled = true

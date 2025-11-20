@@ -64,6 +64,28 @@
 
 .standard-controls {
   flex-shrink: 0;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.standard-share-btn {
+  padding: 0.625rem 1rem;
+  border: 2px solid rgba(167, 139, 250, 0.3);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #7c3aed;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.standard-share-btn:hover {
+  border-color: #a78bfa;
+  box-shadow: 0 2px 8px rgba(167, 139, 250, 0.12);
+  background: #faf5ff;
 }
 
 .standard-select {

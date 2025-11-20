@@ -3,6 +3,8 @@
 
   import type { Itinerary, Step } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
+  import { copyToClipboard } from "$lib/utils/clipboard";
+  import Toast from "$lib/components/Toast.svelte";
   import StepList from "./StepList.svelte";
   import "./theme.css";
 
@@ -47,6 +49,8 @@
   let isEditingTitle = $state(false);
   let editedTitle = $state(itinerary.title);
   let isAddingStep = $state(false);
+  let toastMessage = $state<string | null>(null);
+  let toastType = $state<'success' | 'error'>('success');
 
   let newStep = $state({
     title: "",
@@ -82,6 +86,19 @@
 
     if (newThemeId !== itinerary.theme_id && onUpdateItinerary) {
       await onUpdateItinerary({ theme_id: newThemeId });
+    }
+  }
+
+  async function handleShareUrl() {
+    const url = window.location.href;
+    const success = await copyToClipboard(url);
+    
+    if (success) {
+      toastMessage = "URLをコピーしました";
+      toastType = "success";
+    } else {
+      toastMessage = "コピーに失敗しました";
+      toastType = "error";
     }
   }
 
@@ -152,6 +169,14 @@
         {/if}
 
         <div class="standard-controls">
+          <button
+            type="button"
+            onclick={handleShareUrl}
+            class="standard-share-btn"
+            title="URLをコピー"
+          >
+            🔗 共有
+          </button>
           <select
             value={itinerary.theme_id}
             onchange={handleThemeChange}
@@ -255,3 +280,11 @@
     <StepList {steps} {onUpdateStep} {onDeleteStep} />
   </div>
 </div>
+
+{#if toastMessage}
+  <Toast 
+    message={toastMessage} 
+    type={toastType}
+    onClose={() => { toastMessage = null; }}
+  />
+{/if}

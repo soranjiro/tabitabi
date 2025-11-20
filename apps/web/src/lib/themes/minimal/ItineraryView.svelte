@@ -171,7 +171,7 @@
         class="minimal-share-btn"
         title="URLをコピー"
       >
-        🔗 共有
+        共有
       </button>
       <select
         value={itinerary.theme_id}

@@ -49,7 +49,7 @@ body {
 }
 
 .standard-autumn-title-button {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 400;
   color: var(--standard-autumn-text);
   background: none;
@@ -61,7 +61,7 @@ body {
 }
 
 .standard-autumn-title-input {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 400;
   text-align: center;
   width: 100%;
@@ -82,7 +82,7 @@ body {
 
 .standard-autumn-share-icon {
   position: absolute;
-  top: 1rem;
+  top: 1.5rem;
   right: 1rem;
   background: none;
   border: none;
@@ -140,7 +140,7 @@ body {
 .standard-autumn-carousel {
   width: 100%;
   overflow: visible;
-  padding: 0;
+  padding: 0.5rem 0;
   position: relative;
 }
 
@@ -183,6 +183,7 @@ body {
   filter: blur(0);
   z-index: 2;
   cursor: default;
+  margin: 10px 0;
 }
 
 .standard-autumn-card {
@@ -520,7 +521,7 @@ body {
   justify-content: center;
   align-items: center;
   gap: 1.5rem;
-  padding: 1rem 0;
+  padding: 0.5rem 0;
 }
 
 .standard-autumn-carousel-controls-top {
@@ -638,7 +639,7 @@ body {
 
   .standard-autumn-title-button,
   .standard-autumn-title-input {
-    font-size: 1.25rem;
+    font-size: 1.75rem;
   }
 
   .standard-autumn-memo {

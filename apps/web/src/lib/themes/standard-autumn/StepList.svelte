@@ -157,57 +157,63 @@
 {:else}
   <div class="standard-autumn-carousel-wrapper">
     <!-- Top Carousel Controls -->
-    <div
-      class="standard-autumn-carousel-controls standard-autumn-carousel-controls-top"
-      tabindex="0"
-      onkeydown={handleKey}
-      role="toolbar"
-      aria-label="カルーセル操作"
-    >
-      <button
-        type="button"
-        class="standard-autumn-carousel-btn"
-        onclick={prev}
-        disabled={activeIndex === 0}
-        aria-label="前の日"
+    {#if groupedSteps().length > 1}
+      <div
+        class="standard-autumn-carousel-controls standard-autumn-carousel-controls-top"
+        tabindex="0"
+        onkeydown={handleKey}
+        role="toolbar"
+        aria-label="カルーセル操作"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
+        <button
+          type="button"
+          class="standard-autumn-carousel-btn"
+          onclick={prev}
+          disabled={activeIndex === 0}
+          aria-label="前の日"
         >
-          <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-        </svg>
-      </button>
-      <div class="standard-autumn-page-dots" role="tablist" aria-label="日選択">
-        {#each Array.from({ length: groupedSteps().length }) as _, i}
-          <button
-            type="button"
-            role="tab"
-            aria-selected={i === activeIndex}
-            class:active={i === activeIndex}
-            onclick={() => goTo(i)}
-            onkeydown={(e) => (e.key === "Enter" || e.key === " ") && goTo(i)}
-            aria-label={`日 ${i + 1}`}
-          ></button>
-        {/each}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+          </svg>
+        </button>
+        <div
+          class="standard-autumn-page-dots"
+          role="tablist"
+          aria-label="日選択"
+        >
+          {#each Array.from({ length: groupedSteps().length }) as _, i}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={i === activeIndex}
+              class:active={i === activeIndex}
+              onclick={() => goTo(i)}
+              onkeydown={(e) => (e.key === "Enter" || e.key === " ") && goTo(i)}
+              aria-label={`日 ${i + 1}`}
+            ></button>
+          {/each}
+        </div>
+        <button
+          type="button"
+          class="standard-autumn-carousel-btn"
+          onclick={next}
+          disabled={activeIndex === groupedSteps().length - 1}
+          aria-label="次の日"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+          </svg>
+        </button>
       </div>
-      <button
-        type="button"
-        class="standard-autumn-carousel-btn"
-        onclick={next}
-        disabled={activeIndex === groupedSteps().length - 1}
-        aria-label="次の日"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-        >
-          <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-        </svg>
-      </button>
-    </div>
+    {/if}
 
     <div
       class="standard-autumn-carousel"
@@ -266,7 +272,9 @@
                                   <option value={hour}>{hour}</option>
                                 {/each}
                               </select>
-                              <span class="standard-autumn-time-separator">:</span>
+                              <span class="standard-autumn-time-separator"
+                                >:</span
+                              >
                               <select
                                 bind:value={editStepMinute}
                                 class="standard-autumn-select-time"
@@ -294,7 +302,8 @@
                         <div class="standard-autumn-form-actions">
                           <button
                             onclick={handleUpdate}
-                            class="standard-autumn-btn standard-autumn-btn-primary">保存</button
+                            class="standard-autumn-btn standard-autumn-btn-primary"
+                            >保存</button
                           >
                           <button
                             onclick={cancelEdit}
@@ -358,7 +367,9 @@
                           </div>
                         {/if}
                         {#if step.notes}
-                          <div class="standard-autumn-step-notes">{step.notes}</div>
+                          <div class="standard-autumn-step-notes">
+                            {step.notes}
+                          </div>
                         {/if}
                       </div>
                     {/if}
@@ -372,56 +383,62 @@
     </div>
 
     <!-- Bottom Carousel Controls -->
-    <div
-      class="standard-autumn-carousel-controls standard-autumn-carousel-controls-bottom"
-      tabindex="0"
-      onkeydown={handleKey}
-      role="toolbar"
-      aria-label="カルーセル操作"
-    >
-      <button
-        type="button"
-        class="standard-autumn-carousel-btn"
-        onclick={prev}
-        disabled={activeIndex === 0}
-        aria-label="前の日"
+    {#if groupedSteps().length > 1}
+      <div
+        class="standard-autumn-carousel-controls standard-autumn-carousel-controls-bottom"
+        tabindex="0"
+        onkeydown={handleKey}
+        role="toolbar"
+        aria-label="カルーセル操作"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
+        <button
+          type="button"
+          class="standard-autumn-carousel-btn"
+          onclick={prev}
+          disabled={activeIndex === 0}
+          aria-label="前の日"
         >
-          <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-        </svg>
-      </button>
-      <div class="standard-autumn-page-dots" role="tablist" aria-label="日選択">
-        {#each Array.from({ length: groupedSteps().length }) as _, i}
-          <button
-            type="button"
-            role="tab"
-            aria-selected={i === activeIndex}
-            class:active={i === activeIndex}
-            onclick={() => goTo(i)}
-            onkeydown={(e) => (e.key === "Enter" || e.key === " ") && goTo(i)}
-            aria-label={`日 ${i + 1}`}
-          ></button>
-        {/each}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+          </svg>
+        </button>
+        <div
+          class="standard-autumn-page-dots"
+          role="tablist"
+          aria-label="日選択"
+        >
+          {#each Array.from({ length: groupedSteps().length }) as _, i}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={i === activeIndex}
+              class:active={i === activeIndex}
+              onclick={() => goTo(i)}
+              onkeydown={(e) => (e.key === "Enter" || e.key === " ") && goTo(i)}
+              aria-label={`日 ${i + 1}`}
+            ></button>
+          {/each}
+        </div>
+        <button
+          type="button"
+          class="standard-autumn-carousel-btn"
+          onclick={next}
+          disabled={activeIndex === groupedSteps().length - 1}
+          aria-label="次の日"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+          </svg>
+        </button>
       </div>
-      <button
-        type="button"
-        class="standard-autumn-carousel-btn"
-        onclick={next}
-        disabled={activeIndex === groupedSteps().length - 1}
-        aria-label="次の日"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-        >
-          <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-        </svg>
-      </button>
-    </div>
+    {/if}
   </div>
 {/if}

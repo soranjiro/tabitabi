@@ -6,7 +6,7 @@ const fallTheme: Theme = {
   id: 'fall',
   name: 'オータム',
   version: '1.0.0',
-  description: '秋色のやさしい配色で読みやすさ重視',
+  description: '秋',
   author: 'Tabitabi Team',
   features: {
     steps: { enabled: true, required: true },

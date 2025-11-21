@@ -9,7 +9,7 @@
   } from "$lib/utils/recentItineraries";
 
   let title = $state("");
-  let theme_id = $state("ai-generated");
+  let theme_id = $state("standard-autumn");
   let creating = $state(false);
   let recentItineraries = $state<RecentItinerary[]>([]);
   let showRecent = $state(false);
@@ -91,16 +91,6 @@
       <p class="text-sm text-gray-500 mt-6">
         URLが発行されます。仲間と共有しよう！
       </p>
-      <div class="mt-6 pt-6 border-t border-gray-200">
-        <button
-          onclick={() => goto("/demo/standard-autumn")}
-          class="w-full bg-orange-500/90 hover:bg-orange-600 text-white font-semibold text-base py-3 px-6 rounded-lg transition-colors"
-          type="button">🍁 スタンダードオータムテーマの例を見る</button
-        >
-        <p class="text-xs text-gray-500 mt-2">
-          サンプルしおりでレイアウトを確認できます
-        </p>
-      </div>
     </div>
 
     <!-- Recent Itineraries -->

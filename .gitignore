@@ -152,3 +152,6 @@ dist/
 
 # SvelteKit build cache
 **/.svelte-kit/
+
+# Playwright MCP
+.playwright-mcp

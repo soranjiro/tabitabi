@@ -333,7 +333,7 @@ body {
 }
 
 /* Form Elements */
-.fall-input, .fall-textarea, .fall-select-time {
+.fall-input, .fall-textarea {
   width: 100%;
   padding: 0.5rem;
   border: 1px solid var(--fall-border);
@@ -341,6 +341,13 @@ body {
   margin-bottom: 0.5rem;
   font-family: 'Inter', sans-serif;
   background: #fff;
+}
+
+.fall-form {
+  background-color: var(--fall-card-bg);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 0.5rem;
 }
 
 .fall-form-title {
@@ -435,11 +442,8 @@ body {
 
 /* Add Step Button */
 .fall-add-step {
-  padding: 0.5rem 1rem 1rem;
+  padding: 1rem;
   text-align: center;
-  background-color: var(--fall-card-bg);
-  border-radius: 8px;
-  margin: 1rem;
 }
 .fall-btn-add {
   background: #D4A778;

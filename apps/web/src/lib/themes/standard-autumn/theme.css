@@ -1,35 +1,35 @@
 /* Fall Theme - WCAG AA Compliant (4.5:1 contrast ratio) */
 
 :root {
-  --fall-bg: #FEF6EC;
-  --fall-header-bg: #DFB89A;
-  --fall-card-bg: #F7E3CC;
-  --fall-surface: #FFFFFF;
-  --fall-primary: #B8834E;
+  --standard-autumn-bg: #FEF6EC;
+  --standard-autumn-header-bg: #DFB89A;
+  --standard-autumn-card-bg: #F7E3CC;
+  --standard-autumn-surface: #FFFFFF;
+  --standard-autumn-primary: #B8834E;
   /* Contrast: 4.52:1 */
-  --fall-secondary: #F7E3CC;
-  --fall-text: #333333;
-  --fall-accent: #75482a;
+  --standard-autumn-secondary: #F7E3CC;
+  --standard-autumn-text: #333333;
+  --standard-autumn-accent: #75482a;
   /* Contrast: 8.35:1 */
-  --fall-muted: #5a5a5a;
+  --standard-autumn-muted: #5a5a5a;
   /* Contrast: 7.5:1 */
-  --fall-border: #B8834E;
-  --fall-dot-bg: #DFB89A;
-  --fall-line-color: #DFB89A;
+  --standard-autumn-border: #B8834E;
+  --standard-autumn-dot-bg: #DFB89A;
+  --standard-autumn-line-color: #DFB89A;
 }
 
 body {
   overflow-x: hidden;
 }
 
-.fall-theme {
+.standard-autumn-theme {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   min-height: 100vh;
-  background: var(--fall-bg);
-  color: var(--fall-text);
+  background: var(--standard-autumn-bg);
+  color: var(--standard-autumn-text);
 }
 
-.fall-container {
+.standard-autumn-container {
   max-width: 100%;
   margin: 0 auto;
   padding: 0;
@@ -41,17 +41,17 @@ body {
 }
 
 /* Header */
-.fall-header {
+.standard-autumn-header {
   text-align: center;
   padding: 2rem 1rem 1rem;
   background: transparent;
   position: relative;
 }
 
-.fall-title-button {
+.standard-autumn-title-button {
   font-size: 2rem;
   font-weight: 400;
-  color: var(--fall-text);
+  color: var(--standard-autumn-text);
   background: none;
   border: none;
   padding: 0;
@@ -60,51 +60,51 @@ body {
   cursor: pointer;
 }
 
-.fall-title-input {
+.standard-autumn-title-input {
   font-size: 2rem;
   font-weight: 400;
   text-align: center;
   width: 100%;
-  border: 1px solid var(--fall-primary);
+  border: 1px solid var(--standard-autumn-primary);
   background: transparent;
-  color: var(--fall-text);
+  color: var(--standard-autumn-text);
   font-family: 'Inter', sans-serif;
   border-radius: 8px;
   padding: 0.25rem;
 }
 
-.fall-memo {
+.standard-autumn-memo {
   font-size: 0.875rem;
-  color: var(--fall-text);
+  color: var(--standard-autumn-text);
   margin-top: 0.5rem;
   font-family: 'Inter', sans-serif;
 }
 
-.fall-share-icon {
+.standard-autumn-share-icon {
   position: absolute;
   top: 1rem;
   right: 1rem;
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--fall-text);
+  color: var(--standard-autumn-text);
   padding: 0.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-.fall-share-icon svg {
+.standard-autumn-share-icon svg {
   width: 20px;
   height: 20px;
 }
 
-.fall-copy-msg {
+.standard-autumn-copy-msg {
   position: absolute;
   top: 1.2rem;
   right: 3rem;
   font-size: 0.8rem;
-  color: var(--fall-primary);
+  color: var(--standard-autumn-primary);
   background: rgba(255, 255, 255, 0.9);
   padding: 2px 8px;
   border-radius: 4px;
@@ -127,7 +127,7 @@ body {
 }
 
 /* Carousel */
-.fall-carousel-wrapper {
+.standard-autumn-carousel-wrapper {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -137,14 +137,14 @@ body {
   overflow: visible;
 }
 
-.fall-carousel {
+.standard-autumn-carousel {
   width: 100%;
   overflow: visible;
   padding: 0;
   position: relative;
 }
 
-.fall-carousel-track {
+.standard-autumn-carousel-track {
   display: flex;
   width: auto;
   transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -156,7 +156,7 @@ body {
   align-items: flex-start;
 }
 
-.fall-carousel-card {
+.standard-autumn-carousel-card {
   flex: 0 0 85vw;
   width: 85vw;
   max-width: 420px;
@@ -172,12 +172,12 @@ body {
   height: auto;
 }
 
-.fall-carousel-card:hover:not([aria-hidden="false"]) {
+.standard-autumn-carousel-card:hover:not([aria-hidden="false"]) {
   opacity: 0.55;
   transform: scale(0.93);
 }
 
-.fall-carousel-card[aria-hidden="false"] {
+.standard-autumn-carousel-card[aria-hidden="false"] {
   opacity: 1;
   transform: scale(1);
   filter: blur(0);
@@ -185,7 +185,7 @@ body {
   cursor: default;
 }
 
-.fall-card {
+.standard-autumn-card {
   background: transparent;
   padding: 0;
   border: none;
@@ -198,32 +198,32 @@ body {
 }
 
 /* Custom Scrollbar */
-.fall-card::-webkit-scrollbar {
+.standard-autumn-card::-webkit-scrollbar {
   width: 4px;
 }
 
-.fall-card::-webkit-scrollbar-track {
+.standard-autumn-card::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.fall-card::-webkit-scrollbar-thumb {
-  background: var(--fall-primary);
+.standard-autumn-card::-webkit-scrollbar-thumb {
+  background: var(--standard-autumn-primary);
   border-radius: 2px;
 }
 
-.fall-card::-webkit-scrollbar-thumb:hover {
-  background: var(--fall-accent);
+.standard-autumn-card::-webkit-scrollbar-thumb:hover {
+  background: var(--standard-autumn-accent);
 }
 
-.fall-card-header {
+.standard-autumn-card-header {
   font-size: 2.25rem;
-  color: var(--fall-text);
+  color: var(--standard-autumn-text);
   font-weight: 400;
   margin-bottom: 1.5rem;
   padding: 2.5rem 1rem;
   text-align: center;
   font-family: 'Inter', sans-serif;
-  background: var(--fall-header-bg);
+  background: var(--standard-autumn-header-bg);
   border-radius: 20px 20px 0 0;
   position: sticky;
   /* Stick to top */
@@ -234,13 +234,13 @@ body {
   /* Slight shadow when sticky */
 }
 
-.fall-card-body {
+.standard-autumn-card-body {
   position: relative;
   padding: 2rem 1rem 0.5rem 1rem;
 }
 
 /* Timeline (Schedule List) */
-.fall-timeline-item {
+.standard-autumn-timeline-item {
   display: flex;
   position: relative;
   margin-bottom: 2rem;
@@ -248,28 +248,28 @@ body {
 }
 
 /* Vertical Line - Dashed */
-.fall-timeline-line {
+.standard-autumn-timeline-line {
   position: absolute;
   left: 50px;
   top: 14px;
   bottom: -30px;
   width: 2px;
   background: transparent;
-  background-image: linear-gradient(to bottom, var(--fall-line-color) 50%, transparent 50%);
+  background-image: linear-gradient(to bottom, var(--standard-autumn-line-color) 50%, transparent 50%);
   background-size: 2px 8px;
   background-repeat: repeat-y;
   z-index: 0;
 }
 
-.fall-timeline-item:last-child .fall-timeline-line {
+.standard-autumn-timeline-item:last-child .standard-autumn-timeline-line {
   display: none;
 }
 
-.fall-step-time {
+.standard-autumn-step-time {
   width: 45px;
   text-align: right;
   font-size: 0.9375rem;
-  color: var(--fall-text);
+  color: var(--standard-autumn-text);
   font-weight: 400;
   padding-right: 10px;
   flex-shrink: 0;
@@ -277,10 +277,10 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
-.fall-step-dot {
+.standard-autumn-step-dot {
   width: 14px;
   height: 14px;
-  background: var(--fall-dot-bg);
+  background: var(--standard-autumn-dot-bg);
   border-radius: 50%;
   flex-shrink: 0;
   margin-top: 3px;
@@ -288,19 +288,19 @@ body {
   position: relative;
 }
 
-.fall-step-content {
+.standard-autumn-step-content {
   flex: 1;
   padding: 1rem 1.25rem;
   padding-top: 0;
-  background: var(--fall-card-bg);
+  background: var(--standard-autumn-card-bg);
   border-radius: 8px;
   margin-left: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.fall-step-location {
+.standard-autumn-step-location {
   font-size: 0.9rem;
-  color: var(--fall-text);
+  color: var(--standard-autumn-text);
   margin-bottom: 0.5rem;
   font-family: 'Inter', sans-serif;
   display: flex;
@@ -309,16 +309,16 @@ body {
   opacity: 0.8;
 }
 
-.fall-icon-location {
+.standard-autumn-icon-location {
   width: 16px;
   height: 16px;
-  color: var(--fall-primary);
+  color: var(--standard-autumn-primary);
 }
 
-.fall-step-title {
+.standard-autumn-step-title {
   font-size: 1.25rem;
   font-weight: 500;
-  color: var(--fall-text);
+  color: var(--standard-autumn-text);
   margin: 0 0 0.25rem 0;
   padding-top: 1rem;
   font-family: 'Inter', sans-serif;
@@ -328,84 +328,84 @@ body {
   line-height: 1.5;
 }
 
-.fall-step-notes {
+.standard-autumn-step-notes {
   font-size: 1rem;
-  color: var(--fall-text);
+  color: var(--standard-autumn-text);
   font-family: 'Inter', sans-serif;
   line-height: 1.6;
   padding-bottom: 0;
 }
 
 /* Edit Mode */
-.fall-step-editing {
+.standard-autumn-step-editing {
   background: rgba(255, 255, 255, 0.8);
   padding: 1rem;
   border-radius: 8px;
-  border: 1px solid var(--fall-primary);
+  border: 1px solid var(--standard-autumn-primary);
   margin-left: 1rem;
   flex: 1;
 }
 
 /* Form Elements */
-.fall-input,
-.fall-textarea {
+.standard-autumn-input,
+.standard-autumn-textarea {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid var(--fall-border);
+  border: 1px solid var(--standard-autumn-border);
   border-radius: 4px;
   margin-bottom: 0.5rem;
   font-family: 'Inter', sans-serif;
   background: #fff;
 }
 
-.fall-form {
-  background-color: var(--fall-card-bg);
+.standard-autumn-form {
+  background-color: var(--standard-autumn-card-bg);
   border-radius: 8px;
   padding: 1rem;
   margin: 0.5rem;
 }
 
-.fall-form-title {
+.standard-autumn-form-title {
   margin-top: 0;
   margin-bottom: 1rem;
   font-size: 1.1rem;
-  color: var(--fall-text);
+  color: var(--standard-autumn-text);
 }
 
-.fall-form-grid {
+.standard-autumn-form-grid {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.fall-datetime {
+.standard-autumn-datetime {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
 }
 
-.fall-time-picker {
+.standard-autumn-time-picker {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  border: 1px solid var(--fall-border);
+  border: 1px solid var(--standard-autumn-border);
   border-radius: 4px;
   padding: 0.25rem 0.5rem;
   background: #fff;
 }
 
-.fall-time-separator {
+.standard-autumn-time-separator {
   font-weight: 600;
   margin: 0 0.25rem;
 }
 
-.fall-form-actions {
+.standard-autumn-form-actions {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
-.fall-btn {
+.standard-autumn-btn {
   padding: 0.5rem 1rem;
   border-radius: 4px;
   border: none;
@@ -414,34 +414,34 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
-.fall-btn-primary {
-  background: var(--fall-primary);
+.standard-autumn-btn-primary {
+  background: var(--standard-autumn-primary);
   color: #fff;
 }
 
-.fall-btn-secondary {
+.standard-autumn-btn-secondary {
   background: #fff;
   color: #333;
-  border: 1px solid var(--fall-border);
+  border: 1px solid var(--standard-autumn-border);
 }
 
 /* Bottom Navigation */
-.fall-bottom-nav {
+.standard-autumn-bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   height: 80px;
-  background: var(--fall-bg);
+  background: var(--standard-autumn-bg);
   display: flex;
   justify-content: space-around;
   align-items: center;
-  border-top: 1px solid var(--fall-secondary);
+  border-top: 1px solid var(--standard-autumn-secondary);
   z-index: 100;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-.fall-bottom-btn {
+.standard-autumn-bottom-btn {
   background: none;
   border: none;
   cursor: pointer;
@@ -449,28 +449,28 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: var(--fall-text);
+  color: var(--standard-autumn-text);
   gap: 4px;
 }
 
-.fall-bottom-btn svg {
+.standard-autumn-bottom-btn svg {
   width: 24px;
   height: 24px;
 }
 
-.fall-bottom-btn span {
+.standard-autumn-bottom-btn span {
   font-size: 0.7rem;
   margin-top: 2px;
   font-family: 'Inter', sans-serif;
 }
 
 /* Add Step Button */
-.fall-add-step {
+.standard-autumn-add-step {
   padding: 1rem;
   text-align: center;
 }
 
-.fall-btn-add {
+.standard-autumn-btn-add {
   background: #D4A778;
   color: #fff;
   border: none;
@@ -482,18 +482,18 @@ body {
   transition: background 0.2s;
 }
 
-.fall-btn-add:hover {
-  background: var(--fall-primary);
+.standard-autumn-btn-add:hover {
+  background: var(--standard-autumn-primary);
 }
 
 /* Dots for carousel */
-.fall-page-dots {
+.standard-autumn-page-dots {
   display: flex;
   justify-content: center;
   gap: 8px;
 }
 
-.fall-page-dots button {
+.standard-autumn-page-dots button {
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -504,18 +504,18 @@ body {
   transition: all 0.2s ease;
 }
 
-.fall-page-dots button:hover {
+.standard-autumn-page-dots button:hover {
   background: #bbb;
 }
 
-.fall-page-dots button.active {
-  background: var(--fall-primary);
+.standard-autumn-page-dots button.active {
+  background: var(--standard-autumn-primary);
   width: 12px;
   height: 12px;
 }
 
 /* Carousel Controls (Arrows) */
-.fall-carousel-controls {
+.standard-autumn-carousel-controls {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -523,18 +523,18 @@ body {
   padding: 1rem 0;
 }
 
-.fall-carousel-controls-top {
+.standard-autumn-carousel-controls-top {
   margin-bottom: 0.5rem;
 }
 
-.fall-carousel-controls-bottom {
+.standard-autumn-carousel-controls-bottom {
   margin-top: 1rem;
 }
 
-.fall-carousel-btn {
+.standard-autumn-carousel-btn {
   background: rgba(255, 255, 255, 0.95);
-  border: 2px solid var(--fall-primary);
-  color: var(--fall-primary);
+  border: 2px solid var(--standard-autumn-primary);
+  color: var(--standard-autumn-primary);
   cursor: pointer;
   padding: 0;
   width: 44px;
@@ -546,32 +546,32 @@ body {
   transition: all 0.2s ease;
 }
 
-.fall-carousel-btn svg {
+.standard-autumn-carousel-btn svg {
   width: 24px;
   height: 24px;
 }
 
-.fall-carousel-btn:hover:not(:disabled) {
-  background: var(--fall-primary);
+.standard-autumn-carousel-btn:hover:not(:disabled) {
+  background: var(--standard-autumn-primary);
   color: white;
   transform: scale(1.05);
 }
 
-.fall-carousel-btn:disabled {
+.standard-autumn-carousel-btn:disabled {
   opacity: 0.3;
   cursor: default;
   border-color: #ddd;
   color: #ddd;
 }
 
-.fall-empty {
+.standard-autumn-empty {
   text-align: center;
   padding: 2rem;
-  color: var(--fall-muted);
+  color: var(--standard-autumn-muted);
   font-family: 'Inter', sans-serif;
 }
 
-.fall-btn-icon {
+.standard-autumn-btn-icon {
   background: none;
   border: none;
   cursor: pointer;
@@ -583,19 +583,19 @@ body {
   transition: opacity 0.2s;
 }
 
-.fall-step-actions {
+.standard-autumn-step-actions {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
 }
 
-.fall-btn-icon svg {
+.standard-autumn-btn-icon svg {
   width: 18px;
   height: 18px;
 }
 
-.fall-btn-icon:hover {
+.standard-autumn-btn-icon:hover {
   opacity: 1;
 }
 
@@ -603,11 +603,11 @@ body {
 
 /* Tablet and Desktop (830px+) */
 @media (min-width: 830px) {
-  .fall-carousel-track {
+  .standard-autumn-carousel-track {
     margin-left: calc(50vw - 32.5vw - (var(--active, 0) * (65vw + 16px)));
   }
 
-  .fall-carousel-card {
+  .standard-autumn-carousel-card {
     flex: 0 0 65vw;
     width: 65vw;
   }
@@ -615,131 +615,131 @@ body {
 
 /* Tablet (768px-) */
 @media (max-width: 768px) {
-  .fall-card-header {
+  .standard-autumn-card-header {
     font-size: 1.75rem;
     margin-bottom: 1.5rem;
   }
 
-  .fall-step-title {
+  .standard-autumn-step-title {
     font-size: 1.125rem;
   }
 
-  .fall-step-location,
-  .fall-step-notes {
+  .standard-autumn-step-location,
+  .standard-autumn-step-notes {
     font-size: 0.9375rem;
   }
 }
 
 /* Mobile (480px-) */
 @media (max-width: 480px) {
-  .fall-header {
+  .standard-autumn-header {
     padding: 1.5rem 0.75rem 0.75rem;
   }
 
-  .fall-title-button,
-  .fall-title-input {
+  .standard-autumn-title-button,
+  .standard-autumn-title-input {
     font-size: 1.25rem;
   }
 
-  .fall-memo {
+  .standard-autumn-memo {
     font-size: 0.8125rem;
   }
 
-  .fall-card-header {
+  .standard-autumn-card-header {
     font-size: 1.5rem;
     margin-bottom: 1.25rem;
     padding: 0 0.75rem;
   }
 
-  .fall-card-body {
+  .standard-autumn-card-body {
     padding: 0 0.25rem 0 0.5rem;
   }
 
-  .fall-timeline-line {
+  .standard-autumn-timeline-line {
     left: 42px;
   }
 
-  .fall-step-time {
+  .standard-autumn-step-time {
     width: 38px;
     font-size: 0.875rem;
     padding-right: 8px;
   }
 
-  .fall-step-dot {
+  .standard-autumn-step-dot {
     width: 12px;
     height: 12px;
   }
 
-  .fall-step-content {
+  .standard-autumn-step-content {
     padding-left: 1rem;
   }
 
-  .fall-step-title {
+  .standard-autumn-step-title {
     font-size: 1rem;
   }
 
-  .fall-step-location,
-  .fall-step-notes {
+  .standard-autumn-step-location,
+  .standard-autumn-step-notes {
     font-size: 0.875rem;
   }
 
-  .fall-carousel-card {
+  .standard-autumn-carousel-card {
     flex: 0 0 88vw;
     width: 88vw;
     min-width: 260px;
   }
 
-  .fall-carousel-track {
+  .standard-autumn-carousel-track {
     margin-left: calc(50vw - 44vw - (var(--active, 0) * (88vw + 12px)));
     gap: 12px;
   }
 
-  .fall-carousel-controls {
+  .standard-autumn-carousel-controls {
     margin-top: 1rem;
   }
 
-  .fall-page-dots button {
+  .standard-autumn-page-dots button {
     width: 8px;
     height: 8px;
   }
 
-  .fall-page-dots button.active {
+  .standard-autumn-page-dots button.active {
     width: 10px;
     height: 10px;
   }
 
-  .fall-bottom-nav {
+  .standard-autumn-bottom-nav {
     height: 70px;
   }
 
-  .fall-bottom-btn svg {
+  .standard-autumn-bottom-btn svg {
     width: 20px;
     height: 20px;
   }
 
-  .fall-bottom-btn span {
+  .standard-autumn-bottom-btn span {
     font-size: 0.625rem;
   }
 }
 
 /* Small Mobile (360px-) */
 @media (max-width: 360px) {
-  .fall-carousel-card {
+  .standard-autumn-carousel-card {
     flex: 0 0 90vw;
     width: 90vw;
     min-width: 280px;
   }
 
-  .fall-carousel-track {
+  .standard-autumn-carousel-track {
     margin-left: calc(50vw - 45vw - (var(--active, 0) * (90vw + 10px)));
     gap: 10px;
   }
 
-  .fall-card-header {
+  .standard-autumn-card-header {
     font-size: 1.375rem;
   }
 
-  .fall-step-title {
+  .standard-autumn-step-title {
     font-size: 0.9375rem;
   }
 }

@@ -153,12 +153,12 @@
 </script>
 
 {#if steps.length === 0}
-  <div class="fall-empty">予定がまだ登録されていません</div>
+  <div class="standard-autumn-empty">予定がまだ登録されていません</div>
 {:else}
-  <div class="fall-carousel-wrapper">
+  <div class="standard-autumn-carousel-wrapper">
     <!-- Top Carousel Controls -->
     <div
-      class="fall-carousel-controls fall-carousel-controls-top"
+      class="standard-autumn-carousel-controls standard-autumn-carousel-controls-top"
       tabindex="0"
       onkeydown={handleKey}
       role="toolbar"
@@ -166,7 +166,7 @@
     >
       <button
         type="button"
-        class="fall-carousel-btn"
+        class="standard-autumn-carousel-btn"
         onclick={prev}
         disabled={activeIndex === 0}
         aria-label="前の日"
@@ -179,7 +179,7 @@
           <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
         </svg>
       </button>
-      <div class="fall-page-dots" role="tablist" aria-label="日選択">
+      <div class="standard-autumn-page-dots" role="tablist" aria-label="日選択">
         {#each Array.from({ length: groupedSteps().length }) as _, i}
           <button
             type="button"
@@ -194,7 +194,7 @@
       </div>
       <button
         type="button"
-        class="fall-carousel-btn"
+        class="standard-autumn-carousel-btn"
         onclick={next}
         disabled={activeIndex === groupedSteps().length - 1}
         aria-label="次の日"
@@ -210,7 +210,7 @@
     </div>
 
     <div
-      class="fall-carousel"
+      class="standard-autumn-carousel"
       role="region"
       aria-label="日カルーセル"
       ontouchstart={onTouchStart}
@@ -218,58 +218,58 @@
       ontouchend={onTouchEnd}
     >
       <div
-        class="fall-carousel-track"
+        class="standard-autumn-carousel-track"
         bind:this={trackEl}
         style={`--active:${activeIndex};`}
       >
         {#each groupedSteps() as [date, dateSteps], idx}
           <section
-            class="fall-carousel-card"
+            class="standard-autumn-carousel-card"
             aria-hidden={idx !== activeIndex}
             onclick={() => handleCardClick(idx)}
             role="button"
             tabindex="0"
           >
-            <div class="fall-card">
-              <header class="fall-card-header">
+            <div class="standard-autumn-card">
+              <header class="standard-autumn-card-header">
                 {formatDate(date)}
               </header>
-              <div class="fall-card-body">
+              <div class="standard-autumn-card-body">
                 {#each dateSteps as step}
-                  <div class="fall-timeline-item">
-                    <div class="fall-step-time">{step.time}</div>
-                    <div class="fall-timeline-line"></div>
-                    <div class="fall-step-dot"></div>
+                  <div class="standard-autumn-timeline-item">
+                    <div class="standard-autumn-step-time">{step.time}</div>
+                    <div class="standard-autumn-timeline-line"></div>
+                    <div class="standard-autumn-step-dot"></div>
 
                     {#if editingStepId === step.id}
-                      <div class="fall-step-editing">
-                        <h3 class="fall-form-title">予定を編集</h3>
-                        <div class="fall-form-grid">
+                      <div class="standard-autumn-step-editing">
+                        <h3 class="standard-autumn-form-title">予定を編集</h3>
+                        <div class="standard-autumn-form-grid">
                           <input
                             type="text"
                             bind:value={editedStep.title}
                             placeholder="予定のタイトル *"
-                            class="fall-input"
+                            class="standard-autumn-input"
                           />
-                          <div class="fall-datetime">
+                          <div class="standard-autumn-datetime">
                             <input
                               type="date"
                               bind:value={editedStep.date}
-                              class="fall-input"
+                              class="standard-autumn-input"
                             />
-                            <div class="fall-time-picker">
+                            <div class="standard-autumn-time-picker">
                               <select
                                 bind:value={editStepHour}
-                                class="fall-select-time"
+                                class="standard-autumn-select-time"
                               >
                                 {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
                                   <option value={hour}>{hour}</option>
                                 {/each}
                               </select>
-                              <span class="fall-time-separator">:</span>
+                              <span class="standard-autumn-time-separator">:</span>
                               <select
                                 bind:value={editStepMinute}
-                                class="fall-select-time"
+                                class="standard-autumn-select-time"
                               >
                                 <option value="00">00</option>
                                 <option value="15">15</option>
@@ -282,35 +282,35 @@
                             type="text"
                             bind:value={editedStep.location}
                             placeholder="場所 (任意)"
-                            class="fall-input"
+                            class="standard-autumn-input"
                           />
                           <textarea
                             bind:value={editedStep.notes}
                             placeholder="メモ (任意)"
-                            class="fall-textarea"
+                            class="standard-autumn-textarea"
                             rows="3"
                           ></textarea>
                         </div>
-                        <div class="fall-form-actions">
+                        <div class="standard-autumn-form-actions">
                           <button
                             onclick={handleUpdate}
-                            class="fall-btn fall-btn-primary">保存</button
+                            class="standard-autumn-btn standard-autumn-btn-primary">保存</button
                           >
                           <button
                             onclick={cancelEdit}
-                            class="fall-btn fall-btn-secondary"
+                            class="standard-autumn-btn standard-autumn-btn-secondary"
                             >キャンセル</button
                           >
                         </div>
                       </div>
                     {:else}
-                      <div class="fall-step-content">
-                        <div class="fall-step-title">
+                      <div class="standard-autumn-step-content">
+                        <div class="standard-autumn-step-title">
                           {step.title}
-                          <div class="fall-step-actions">
+                          <div class="standard-autumn-step-actions">
                             <button
                               onclick={() => startEdit(step)}
-                              class="fall-btn-icon"
+                              class="standard-autumn-btn-icon"
                               title="編集"
                               aria-label="編集"
                             >
@@ -326,7 +326,7 @@
                             </button>
                             <button
                               onclick={() => handleDelete(step.id)}
-                              class="fall-btn-icon"
+                              class="standard-autumn-btn-icon"
                               title="削除"
                               aria-label="削除"
                             >
@@ -343,12 +343,12 @@
                           </div>
                         </div>
                         {#if step.location}
-                          <div class="fall-step-location">
+                          <div class="standard-autumn-step-location">
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
                               viewBox="0 0 24 24"
                               fill="currentColor"
-                              class="fall-icon-location"
+                              class="standard-autumn-icon-location"
                             >
                               <path
                                 d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
@@ -358,7 +358,7 @@
                           </div>
                         {/if}
                         {#if step.notes}
-                          <div class="fall-step-notes">{step.notes}</div>
+                          <div class="standard-autumn-step-notes">{step.notes}</div>
                         {/if}
                       </div>
                     {/if}
@@ -373,7 +373,7 @@
 
     <!-- Bottom Carousel Controls -->
     <div
-      class="fall-carousel-controls fall-carousel-controls-bottom"
+      class="standard-autumn-carousel-controls standard-autumn-carousel-controls-bottom"
       tabindex="0"
       onkeydown={handleKey}
       role="toolbar"
@@ -381,7 +381,7 @@
     >
       <button
         type="button"
-        class="fall-carousel-btn"
+        class="standard-autumn-carousel-btn"
         onclick={prev}
         disabled={activeIndex === 0}
         aria-label="前の日"
@@ -394,7 +394,7 @@
           <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
         </svg>
       </button>
-      <div class="fall-page-dots" role="tablist" aria-label="日選択">
+      <div class="standard-autumn-page-dots" role="tablist" aria-label="日選択">
         {#each Array.from({ length: groupedSteps().length }) as _, i}
           <button
             type="button"
@@ -409,7 +409,7 @@
       </div>
       <button
         type="button"
-        class="fall-carousel-btn"
+        class="standard-autumn-carousel-btn"
         onclick={next}
         disabled={activeIndex === groupedSteps().length - 1}
         aria-label="次の日"

@@ -114,52 +114,52 @@
 </script>
 
 {#if steps.length === 0}
-  <div class="standard-empty">
-    <div class="standard-empty-icon">📅</div>
-    <p class="standard-empty-text">予定がまだ登録されていません</p>
-    <p class="standard-empty-subtext">上の「＋予定を追加」から始めましょう</p>
+  <div class="ai-generated-empty">
+    <div class="ai-generated-empty-icon">📅</div>
+    <p class="ai-generated-empty-text">予定がまだ登録されていません</p>
+    <p class="ai-generated-empty-subtext">上の「＋予定を追加」から始めましょう</p>
   </div>
 {:else}
-  <div class="standard-steps">
+  <div class="ai-generated-steps">
     {#each groupedSteps() as [date, dateSteps], groupIndex}
-      <div class="standard-date-group">
-        <h2 class="standard-date-header">
-          <span class="standard-date-icon">📅</span>
+      <div class="ai-generated-date-group">
+        <h2 class="ai-generated-date-header">
+          <span class="ai-generated-date-icon">📅</span>
           {formatDate(date)}
         </h2>
-        <div class="standard-date-steps">
+        <div class="ai-generated-date-steps">
           {#each dateSteps as step, index}
             {#if editingStepId === step.id}
-              <div class="standard-step standard-step-editing">
-                <div class="standard-step-time-badge">{step.time}</div>
-                <div class="standard-step-content">
-                  <h3 class="standard-form-title">予定を編集</h3>
-                  <div class="standard-form-grid">
+              <div class="ai-generated-step ai-generated-step-editing">
+                <div class="ai-generated-step-time-badge">{step.time}</div>
+                <div class="ai-generated-step-content">
+                  <h3 class="ai-generated-form-title">予定を編集</h3>
+                  <div class="ai-generated-form-grid">
                     <input
                       type="text"
                       bind:value={editedStep.title}
                       placeholder="予定のタイトル *"
-                      class="standard-input"
+                      class="ai-generated-input"
                     />
-                    <div class="standard-datetime">
+                    <div class="ai-generated-datetime">
                       <input
                         type="date"
                         bind:value={editedStep.date}
-                        class="standard-input"
+                        class="ai-generated-input"
                       />
-                      <div class="standard-time-picker">
+                      <div class="ai-generated-time-picker">
                         <select
                           bind:value={editStepHour}
-                          class="standard-select-time"
+                          class="ai-generated-select-time"
                         >
                           {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
                             <option value={hour}>{hour}</option>
                           {/each}
                         </select>
-                        <span class="standard-time-separator">:</span>
+                        <span class="ai-generated-time-separator">:</span>
                         <select
                           bind:value={editStepMinute}
-                          class="standard-select-time"
+                          class="ai-generated-select-time"
                         >
                           <option value="00">00</option>
                           <option value="15">15</option>
@@ -172,25 +172,25 @@
                       type="text"
                       bind:value={editedStep.location}
                       placeholder="📍 場所 (任意)"
-                      class="standard-input"
+                      class="ai-generated-input"
                     />
                     <textarea
                       bind:value={editedStep.notes}
                       placeholder="📝 メモ (任意)"
-                      class="standard-textarea"
+                      class="ai-generated-textarea"
                       rows="3"
                     ></textarea>
                   </div>
-                  <div class="standard-step-actions">
+                  <div class="ai-generated-step-actions">
                     <button
                       onclick={handleUpdate}
-                      class="standard-btn standard-btn-primary"
+                      class="ai-generated-btn ai-generated-btn-primary"
                     >
                       保存
                     </button>
                     <button
                       onclick={cancelEdit}
-                      class="standard-btn standard-btn-secondary"
+                      class="ai-generated-btn ai-generated-btn-secondary"
                     >
                       キャンセル
                     </button>
@@ -198,22 +198,22 @@
                 </div>
               </div>
             {:else}
-              <div class="standard-step">
-                <div class="standard-step-time-badge">{step.time}</div>
-                <div class="standard-step-content">
-                  <div class="standard-step-header">
-                    <h3 class="standard-step-title">{step.title}</h3>
-                    <div class="standard-step-actions">
+              <div class="ai-generated-step">
+                <div class="ai-generated-step-time-badge">{step.time}</div>
+                <div class="ai-generated-step-content">
+                  <div class="ai-generated-step-header">
+                    <h3 class="ai-generated-step-title">{step.title}</h3>
+                    <div class="ai-generated-step-actions">
                       <button
                         onclick={() => startEdit(step)}
-                        class="standard-btn-icon"
+                        class="ai-generated-btn-icon"
                         title="編集"
                       >
                         ✏️
                       </button>
                       <button
                         onclick={() => handleDelete(step.id)}
-                        class="standard-btn-icon standard-btn-danger"
+                        class="ai-generated-btn-icon ai-generated-btn-danger"
                         title="削除"
                       >
                         🗑️
@@ -221,10 +221,10 @@
                     </div>
                   </div>
                   {#if step.location}
-                    <div class="standard-step-location">📍 {step.location}</div>
+                    <div class="ai-generated-step-location">📍 {step.location}</div>
                   {/if}
                   {#if step.notes}
-                    <div class="standard-step-notes">{step.notes}</div>
+                    <div class="ai-generated-step-notes">{step.notes}</div>
                   {/if}
                 </div>
               </div>

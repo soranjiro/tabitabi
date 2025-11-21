@@ -49,7 +49,7 @@
   let showCopyMessage = $state(false);
 
   let showThemeSelect = $state(false);
-  let selectedThemeId = $state(itinerary.theme_id || "fall");
+  let selectedThemeId = $state(itinerary.theme_id || "standard-autumn");
 
   let newStep = $state({
     title: "",
@@ -126,12 +126,12 @@
   }
 </script>
 
-<div class="fall-theme">
-  <div class="fall-container">
-    <header class="fall-header">
+<div class="standard-autumn-theme">
+  <div class="standard-autumn-container">
+    <header class="standard-autumn-header">
       <button
         type="button"
-        class="fall-share-icon"
+        class="standard-autumn-share-icon"
         onclick={handleShare}
         aria-label="共有リンクをコピー"
         title="リンクをコピー"
@@ -155,7 +155,7 @@
         </svg>
       </button>
       {#if showCopyMessage}
-        <div class="fall-copy-msg">コピーしました</div>
+        <div class="standard-autumn-copy-msg">コピーしました</div>
       {/if}
       {#if isEditingTitle}
         <input
@@ -163,7 +163,7 @@
           bind:value={editedTitle}
           onblur={handleTitleUpdate}
           onkeydown={(e) => e.key === "Enter" && handleTitleUpdate()}
-          class="fall-title-input"
+          class="standard-autumn-title-input"
         />
       {:else}
         <button
@@ -171,51 +171,51 @@
           onclick={() => {
             isEditingTitle = true;
           }}
-          class="fall-title-button">{itinerary.title}</button
+          class="standard-autumn-title-button">{itinerary.title}</button
         >
       {/if}
-      <div class="fall-memo">メモ</div>
+      <div class="standard-autumn-memo">メモ</div>
     </header>
 
-    <div class="fall-add-step">
+    <div class="standard-autumn-add-step">
       {#if isAddingStep}
         <form
-          class="fall-form"
+          class="standard-autumn-form"
           onsubmit={(e) => {
             e.preventDefault();
             handleAddStep();
           }}
         >
-          <h3 class="fall-form-title">新しい予定を追加</h3>
-          <div class="fall-form-grid">
+          <h3 class="standard-autumn-form-title">新しい予定を追加</h3>
+          <div class="standard-autumn-form-grid">
             <input
               type="text"
               bind:value={newStep.title}
               placeholder="予定のタイトル *"
-              class="fall-input"
+              class="standard-autumn-input"
               required
             />
-            <div class="fall-datetime">
+            <div class="standard-autumn-datetime">
               <input
                 type="date"
                 bind:value={newStep.date}
-                class="fall-input"
+                class="standard-autumn-input"
                 required
               />
-              <div class="fall-time-picker">
+              <div class="standard-autumn-time-picker">
                 <select
                   bind:value={newStepHour}
-                  class="fall-select-time"
+                  class="standard-autumn-select-time"
                   required
                 >
                   {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
                     <option value={hour}>{hour}</option>
                   {/each}
                 </select>
-                <span class="fall-time-separator">:</span>
+                <span class="standard-autumn-time-separator">:</span>
                 <select
                   bind:value={newStepMinute}
-                  class="fall-select-time"
+                  class="standard-autumn-select-time"
                   required
                 >
                   <option value="00">00</option>
@@ -229,23 +229,26 @@
               type="text"
               bind:value={newStep.location}
               placeholder="場所 (任意)"
-              class="fall-input"
+              class="standard-autumn-input"
             />
             <textarea
               bind:value={newStep.notes}
               placeholder="メモ (任意)"
-              class="fall-textarea"
+              class="standard-autumn-textarea"
               rows="3"
             ></textarea>
           </div>
-          <div class="fall-form-actions">
-            <button type="submit" class="fall-btn fall-btn-primary"
+          <div class="standard-autumn-form-actions">
+            <button
+              type="submit"
+              class="standard-autumn-btn standard-autumn-btn-primary"
               >追加する</button
             >
             <button
               type="button"
               onclick={cancelAddStep}
-              class="fall-btn fall-btn-secondary">キャンセル</button
+              class="standard-autumn-btn standard-autumn-btn-secondary"
+              >キャンセル</button
             >
           </div>
         </form>
@@ -254,16 +257,16 @@
           onclick={() => {
             isAddingStep = true;
           }}
-          class="fall-btn-add">＋ 予定を追加</button
+          class="standard-autumn-btn-add">＋ 予定を追加</button
         >
       {/if}
     </div>
 
     <StepList {steps} {onUpdateStep} {onDeleteStep} />
 
-    <nav class="fall-bottom-nav" aria-label="フッターメニュー">
+    <nav class="standard-autumn-bottom-nav" aria-label="フッターメニュー">
       <button
-        class="fall-bottom-btn"
+        class="standard-autumn-bottom-btn"
         title="ホーム"
         aria-label="ホーム"
         onclick={() => goto("/")}
@@ -278,7 +281,7 @@
         <span>Home</span>
       </button>
       <button
-        class="fall-bottom-btn"
+        class="standard-autumn-bottom-btn"
         title="カレンダー"
         aria-label="カレンダー"
       >
@@ -296,7 +299,7 @@
 
       <div style="position: relative;">
         <button
-          class="fall-bottom-btn"
+          class="standard-autumn-bottom-btn"
           title="設定"
           aria-label="設定"
           onclick={() => (showThemeSelect = !showThemeSelect)}
@@ -314,18 +317,18 @@
         </button>
         {#if showThemeSelect}
           <div
-            style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--fall-card-bg); border: 1px solid var(--fall-border); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 0.5rem 1rem; z-index: 200; min-width: 180px;"
+            style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--standard-autumn-card-bg); border: 1px solid var(--standard-autumn-border); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 0.5rem 1rem; z-index: 200; min-width: 180px;"
           >
             <label
               for="theme-select"
-              style="font-size: 0.95rem; color: var(--fall-text); margin-bottom: 0.5rem; display: block;"
+              style="font-size: 0.95rem; color: var(--standard-autumn-text); margin-bottom: 0.5rem; display: block;"
               >テーマを選択</label
             >
             <select
               id="theme-select"
               value={selectedThemeId}
               onchange={handleThemeChange}
-              style="width: 100%; font-size: 1rem; padding: 0.3rem; border-radius: 4px; border: 1px solid var(--fall-border); background: #fff; color: var(--fall-text);"
+              style="width: 100%; font-size: 1rem; padding: 0.3rem; border-radius: 4px; border: 1px solid var(--standard-autumn-border); background: #fff; color: var(--standard-autumn-text);"
             >
               {#each themes as theme}
                 <option value={theme.id}>{theme.name}</option>

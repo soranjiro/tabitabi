@@ -61,6 +61,16 @@
     newStep.time = `${newStepHour}:${newStepMinute}`;
   });
 
+  async function handleShare() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      alert("リンクをコピーしました！");
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      alert("リンクのコピーに失敗しました");
+    }
+  }
+
   async function handleTitleUpdate() {
     if (!editedTitle.trim() || editedTitle === itinerary.title) {
       isEditingTitle = false;
@@ -107,11 +117,9 @@
       <button
         type="button"
         class="fall-share-icon"
-        onclick={() => {
-          navigator.clipboard.writeText(location.href);
-        }}
+        onclick={handleShare}
         aria-label="共有する"
-        title="共有する"
+        title="リンクをコピー"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -142,7 +150,7 @@
           class="fall-title-button">{itinerary.title}</button
         >
       {/if}
-      <div class="fall-memo">メモメモメモメモメモメモ</div>
+      <div class="fall-memo">メモ</div>
     </header>
 
     <div class="fall-add-step">

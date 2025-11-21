@@ -231,7 +231,7 @@
             tabindex="0"
           >
             <div class="fall-card">
-              <header class="fall-card-header fall-sticky-header">
+              <header class="fall-card-header">
                 {formatDate(date)}
               </header>
               <div class="fall-card-body">

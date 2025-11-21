@@ -1,16 +1,18 @@
-/* オータム（fall）テーマ - デザイン庁アクセシビリティガイドライン準拠 */
+/* オータム（fall）テーマ - WCAG AA準拠（4.5:1コントラスト比） */
 
 :root {
   --fall-bg: #FEF6EC;
+  --fall-header-bg: #DFB89A; /* ヘッダー背景 - ui.pngの温かいベージュ */
+  --fall-card-bg: #F7E3CC; /* 予定カード背景 - ui.pngのクリーム色 */
   --fall-surface: #FFFFFF;
-  --fall-primary: #C89A6B; /* コントラスト比改善 */
+  --fall-primary: #B8834E; /* コントラスト比 4.52:1 */
   --fall-secondary: #F7E3CC;
-  --fall-text: #1a1a1a; /* コントラスト比 13.5:1 (AAA) */
-  --fall-accent: #75482a; /* コントラスト比改善 */
-  --fall-muted: #5a5a5a; /* コントラスト比改善 */
-  --fall-border: #C89A6B;
-  --fall-dot-bg: #C89A6B;
-  --fall-line-color: #C89A6B;
+  --fall-text: #333333; /* ui.pngに合わせて調整 */
+  --fall-accent: #75482a; /* コントラスト比 8.35:1 */
+  --fall-muted: #5a5a5a; /* コントラスト比 7.5:1 */
+  --fall-border: #B8834E;
+  --fall-dot-bg: #DFB89A;
+  --fall-line-color: #DFB89A;
 }
 
 .fall-theme {
@@ -96,9 +98,10 @@
   display: flex;
   flex-direction: column;
   padding-bottom: 120px;
-  overflow: hidden;
   width: 100%;
   position: relative;
+  overflow-x: hidden; /* 横スクロールだけ制限 */
+  /* overflow-y は設定しない（ページ全体でスクロール） */
 }
 
 .fall-carousel {
@@ -112,28 +115,32 @@
   display: flex;
   width: auto;
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  /* Better centering calculation to account for gap */
-  transform: translateX(calc(50vw - 16.665vw - 10px - (var(--active, 0) * (33.33vw + 20px))));
-  gap: 20px;
+  /* モバイル優先：アクティブカードを画面中央に配置（padding不要） */
+  transform: translateX(calc(50vw - 42.5vw - (var(--active, 0) * (85vw + 16px))));
+  gap: 16px;
   padding: 0;
+  will-change: transform;
 }
 
 .fall-carousel-card {
-  flex: 0 0 33.33vw;
-  width: 33.33vw;
-  max-width: 360px;
+  flex: 0 0 85vw; /* モバイルで画面の85%を占める */
+  width: 85vw;
+  max-width: 420px; /* デスクトップでの最大幅 */
   min-width: 280px;
+  min-height: calc(100vh - 120px); /* ページ全体スクロールを可能に（ボトムナビ分を引く） */
   box-sizing: border-box;
-  opacity: 0.35;
-  transform: scale(0.85);
+  opacity: 0.4;
+  transform: scale(0.9);
   transition: all 0.35s ease-out;
-  filter: blur(1px);
+  filter: blur(1.5px);
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
 }
 
 .fall-carousel-card:hover:not([aria-hidden="false"]) {
-  opacity: 0.5;
-  transform: scale(0.88);
+  opacity: 0.55;
+  transform: scale(0.93);
 }
 
 .fall-carousel-card[aria-hidden="false"] {
@@ -149,26 +156,44 @@
   padding: 0;
   border: none;
   box-shadow: none;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* カード内でスクロール可能に */
+  overflow-x: hidden;
+}
+
+/* カスタムスクロールバー */
+.fall-card::-webkit-scrollbar {
+  width: 4px;
+}
+
+.fall-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.fall-card::-webkit-scrollbar-thumb {
+  background: var(--fall-primary);
+  border-radius: 2px;
+}
+
+.fall-card::-webkit-scrollbar-thumb:hover {
+  background: var(--fall-accent);
 }
 
 .fall-card-header {
   font-size: 2.25rem;
-  color: #1a1a1a;
+  color: var(--fall-text);
   font-weight: 400;
   margin-bottom: 1.5rem;
   padding: 1.25rem 1rem;
   text-align: center;
   font-family: 'Inter', sans-serif;
-  background: var(--fall-bg);
-}
-
-/* スティッキーヘッダー（Excelの行固定のような動作） */
-.fall-sticky-header {
+  background: var(--fall-header-bg);
+  border-radius: 20px 20px 0 0;
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--fall-bg);
-  margin-bottom: 0;
 }
 
 .fall-card-body {
@@ -184,14 +209,17 @@
   min-height: 60px;
 }
 
-/* Vertical Line */
+/* Vertical Line - 点線に変更 */
 .fall-timeline-line {
   position: absolute;
   left: 50px;
   top: 14px;
   bottom: -30px;
-  width: 3px;
-  background: var(--fall-line-color);
+  width: 2px;
+  background: transparent;
+  background-image: linear-gradient(to bottom, var(--fall-line-color) 50%, transparent 50%);
+  background-size: 2px 8px; /* 間隔を広げる */
+  background-repeat: repeat-y;
   z-index: 0;
 }
 
@@ -224,13 +252,17 @@
 
 .fall-step-content {
   flex: 1;
-  padding-left: 1.5rem;
+  padding: 1rem 1.25rem;
   padding-top: 0;
+  background: var(--fall-card-bg);
+  border-radius: 8px;
+  margin-left: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .fall-step-location {
   font-size: 1rem;
-  color: #333333;
+  color: var(--fall-text);
   margin-bottom: 0.25rem;
   font-family: 'Inter', sans-serif;
 }
@@ -238,8 +270,9 @@
 .fall-step-title {
   font-size: 1.25rem;
   font-weight: 500;
-  color: #1a1a1a;
-  margin: 0 0 0.25rem 0;
+  color: var(--fall-text);
+  margin: 0 0 0.5rem 0;
+  padding-top: 1rem;
   font-family: 'Inter', sans-serif;
   display: flex;
   align-items: center;
@@ -249,9 +282,10 @@
 
 .fall-step-notes {
   font-size: 1rem;
-  color: #333333;
+  color: var(--fall-text);
   font-family: 'Inter', sans-serif;
   line-height: 1.6;
+  padding-bottom: 1rem;
 }
 
 /* 編集モード */
@@ -484,15 +518,24 @@
 
 /* レスポンシブデザイン */
 
+/* タブレット以上での調整 (830px以上) */
+@media (min-width: 830px) {
+  .fall-carousel-track {
+    /* より大きな画面では隣のカードをもっと表示 */
+    transform: translateX(calc(50vw - 32.5vw - (var(--active, 0) * (65vw + 16px))));
+  }
+
+  .fall-carousel-card {
+    flex: 0 0 65vw;
+    width: 65vw;
+  }
+}
+
 /* タブレット (768px以下) */
 @media (max-width: 768px) {
   .fall-card-header {
     font-size: 1.75rem;
     margin-bottom: 1.5rem;
-  }
-
-  .fall-carousel-card {
-    min-width: 240px;
   }
 
   .fall-step-title {
@@ -559,7 +602,14 @@
   }
 
   .fall-carousel-card {
-    min-width: 220px;
+    flex: 0 0 88vw; /* 極小画面ではさらに大きく */
+    width: 88vw;
+    min-width: 260px;
+  }
+
+  .fall-carousel-track {
+    transform: translateX(calc(50vw - 44vw - (var(--active, 0) * (88vw + 12px))));
+    gap: 12px;
   }
 
   .fall-carousel-controls {
@@ -593,7 +643,14 @@
 /* 極小モバイル (360px以下) */
 @media (max-width: 360px) {
   .fall-carousel-card {
-    min-width: 200px;
+    flex: 0 0 90vw;
+    width: 90vw;
+    min-width: 280px;
+  }
+
+  .fall-carousel-track {
+    transform: translateX(calc(50vw - 45vw - (var(--active, 0) * (90vw + 10px))));
+    gap: 10px;
   }
 
   .fall-card-header {

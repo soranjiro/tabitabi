@@ -42,7 +42,7 @@
 }
 
 .fall-title-button {
-  font-size: 1.5rem;
+  font-size: 2rem; /* タイトルを大きく */
   font-weight: 400;
   color: var(--fall-text);
   background: none;
@@ -54,7 +54,7 @@
 }
 
 .fall-title-input {
-  font-size: 1.5rem;
+  font-size: 2rem; /* 入力時も大きく */
   font-weight: 400;
   text-align: center;
   width: 100%;
@@ -90,6 +90,25 @@
 .fall-share-icon svg {
   width: 20px;
   height: 20px;
+}
+
+.fall-copy-msg {
+  position: absolute;
+  top: 1.2rem;
+  right: 3rem;
+  font-size: 0.8rem;
+  color: var(--fall-primary);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  animation: fadeOut 2s forwards;
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 /* カルーセル */
@@ -186,7 +205,7 @@
   color: var(--fall-text);
   font-weight: 400;
   margin-bottom: 1.5rem;
-  padding: 1.25rem 1rem;
+  padding: 2.5rem 1rem; /* 日付の背景の高さを増やす */
   text-align: center;
   font-family: 'Inter', sans-serif;
   background: var(--fall-header-bg);
@@ -198,7 +217,7 @@
 
 .fall-card-body {
   position: relative;
-  padding: 0 1rem 2rem 1rem;
+  padding: 2rem 1rem 1rem 1rem; /* 上の余白を増やし、下の余白を減らす */
 }
 
 /* タイムライン (Schedule List) */
@@ -261,17 +280,27 @@
 }
 
 .fall-step-location {
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: var(--fall-text);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
   font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.8;
+}
+
+.fall-icon-location {
+  width: 16px;
+  height: 16px;
+  color: var(--fall-primary);
 }
 
 .fall-step-title {
   font-size: 1.25rem;
   font-weight: 500;
   color: var(--fall-text);
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.25rem 0; /* 下のマージンを少し減らす */
   padding-top: 1rem;
   font-family: 'Inter', sans-serif;
   display: flex;
@@ -285,7 +314,7 @@
   color: var(--fall-text);
   font-family: 'Inter', sans-serif;
   line-height: 1.6;
-  padding-bottom: 1rem;
+  padding-bottom: 0;
 }
 
 /* 編集モード */
@@ -367,11 +396,11 @@
   left: 0;
   right: 0;
   height: 80px;
-  background: #fff;
+  background: var(--fall-bg); /* フッターの色をテーマに合わせる */
   display: flex;
   justify-content: space-around;
   align-items: center;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--fall-secondary);
   z-index: 100;
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -405,14 +434,18 @@
   text-align: center;
 }
 .fall-btn-add {
-  background: var(--fall-primary);
+  background: #D4A778; /* 背景色を少し明るく */
   color: #fff;
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1.2rem; /* 少し小さく */
   border-radius: 20px;
-  font-size: 1rem;
+  font-size: 0.9rem; /* 文字も少し小さく */
   cursor: pointer;
   font-family: 'Inter', sans-serif;
+  transition: background 0.2s;
+}
+.fall-btn-add:hover {
+  background: var(--fall-primary);
 }
 
 /* Dots for carousel */

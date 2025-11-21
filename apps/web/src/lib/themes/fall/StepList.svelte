@@ -23,7 +23,7 @@
   let editStepHour = $state("09");
   let editStepMinute = $state("00");
 
-  // カルーセル管理
+  // Carousel management
   let activeIndex = $state(0);
   let trackEl = $state<HTMLDivElement | null>(null);
   let touchStartX = $state<number | null>(null);
@@ -35,7 +35,7 @@
     }
   });
 
-  // 日付ごとにグループ化
+  // Group steps by date
   const groupedSteps = $derived(() => {
     const groups = new Map<string, Step[]>();
     for (const step of steps) {
@@ -92,7 +92,7 @@
     touchDeltaX = 0;
   }
 
-  // カードクリックでそのカードに移動
+  // Navigate to card on click
   function handleCardClick(index: number) {
     if (index !== activeIndex) {
       goTo(index);
@@ -156,7 +156,7 @@
   <div class="fall-empty">予定がまだ登録されていません</div>
 {:else}
   <div class="fall-carousel-wrapper">
-    <!-- 上部のカルーセルコントロール -->
+    <!-- Top Carousel Controls -->
     <div
       class="fall-carousel-controls fall-carousel-controls-top"
       tabindex="0"
@@ -367,7 +367,7 @@
       </div>
     </div>
 
-    <!-- 下部のカルーセルコントロール -->
+    <!-- Bottom Carousel Controls -->
     <div
       class="fall-carousel-controls fall-carousel-controls-bottom"
       tabindex="0"

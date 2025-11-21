@@ -1,18 +1,22 @@
-/* オータム（fall）テーマ - WCAG AA準拠（4.5:1コントラスト比） */
+/* Fall Theme - WCAG AA Compliant (4.5:1 contrast ratio) */
 
 :root {
   --fall-bg: #FEF6EC;
-  --fall-header-bg: #DFB89A; /* ヘッダー背景 - ui.pngの温かいベージュ */
-  --fall-card-bg: #F7E3CC; /* 予定カード背景 - ui.pngのクリーム色 */
+  --fall-header-bg: #DFB89A;
+  --fall-card-bg: #F7E3CC;
   --fall-surface: #FFFFFF;
-  --fall-primary: #B8834E; /* コントラスト比 4.52:1 */
+  --fall-primary: #B8834E; /* Contrast: 4.52:1 */
   --fall-secondary: #F7E3CC;
-  --fall-text: #333333; /* ui.pngに合わせて調整 */
-  --fall-accent: #75482a; /* コントラスト比 8.35:1 */
-  --fall-muted: #5a5a5a; /* コントラスト比 7.5:1 */
+  --fall-text: #333333;
+  --fall-accent: #75482a; /* Contrast: 8.35:1 */
+  --fall-muted: #5a5a5a; /* Contrast: 7.5:1 */
   --fall-border: #B8834E;
   --fall-dot-bg: #DFB89A;
   --fall-line-color: #DFB89A;
+}
+
+body {
+  overflow-x: hidden;
 }
 
 .fall-theme {
@@ -20,7 +24,6 @@
   min-height: 100vh;
   background: var(--fall-bg);
   color: var(--fall-text);
-  overflow-x: hidden;
 }
 
 .fall-container {
@@ -33,7 +36,7 @@
   position: relative;
 }
 
-/* ヘッダー */
+/* Header */
 .fall-header {
   text-align: center;
   padding: 2rem 1rem 1rem;
@@ -42,7 +45,7 @@
 }
 
 .fall-title-button {
-  font-size: 2rem; /* タイトルを大きく */
+  font-size: 2rem;
   font-weight: 400;
   color: var(--fall-text);
   background: none;
@@ -54,7 +57,7 @@
 }
 
 .fall-title-input {
-  font-size: 2rem; /* 入力時も大きく */
+  font-size: 2rem;
   font-weight: 400;
   text-align: center;
   width: 100%;
@@ -111,7 +114,7 @@
   100% { opacity: 0; }
 }
 
-/* カルーセル */
+/* Carousel */
 .fall-carousel-wrapper {
   flex: 1;
   display: flex;
@@ -119,8 +122,7 @@
   padding-bottom: 120px;
   width: 100%;
   position: relative;
-  overflow-x: hidden; /* 横スクロールだけ制限 */
-  /* overflow-y は設定しない（ページ全体でスクロール） */
+  overflow: visible;
 }
 
 .fall-carousel {
@@ -133,20 +135,20 @@
 .fall-carousel-track {
   display: flex;
   width: auto;
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  /* モバイル優先：アクティブカードを画面中央に配置（padding不要） */
-  transform: translateX(calc(50vw - 42.5vw - (var(--active, 0) * (85vw + 16px))));
+  transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Use margin-left for movement to enable sticky headers */
+  margin-left: calc(50vw - 42.5vw - (var(--active, 0) * (85vw + 16px)));
   gap: 16px;
   padding: 0;
-  will-change: transform;
+  will-change: margin-left;
+  align-items: flex-start;
 }
 
 .fall-carousel-card {
-  flex: 0 0 85vw; /* モバイルで画面の85%を占める */
+  flex: 0 0 85vw;
   width: 85vw;
-  max-width: 420px; /* デスクトップでの最大幅 */
+  max-width: 420px;
   min-width: 280px;
-  min-height: calc(100vh - 120px); /* ページ全体スクロールを可能に（ボトムナビ分を引く） */
   box-sizing: border-box;
   opacity: 0.4;
   transform: scale(0.9);
@@ -155,6 +157,7 @@
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  height: auto;
 }
 
 .fall-carousel-card:hover:not([aria-hidden="false"]) {
@@ -178,11 +181,11 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto; /* カード内でスクロール可能に */
-  overflow-x: hidden;
+  overflow: visible;
+  height: auto;
 }
 
-/* カスタムスクロールバー */
+/* Custom Scrollbar */
 .fall-card::-webkit-scrollbar {
   width: 4px;
 }
@@ -205,22 +208,23 @@
   color: var(--fall-text);
   font-weight: 400;
   margin-bottom: 1.5rem;
-  padding: 2.5rem 1rem; /* 日付の背景の高さを増やす */
+  padding: 2.5rem 1rem;
   text-align: center;
   font-family: 'Inter', sans-serif;
   background: var(--fall-header-bg);
   border-radius: 20px 20px 0 0;
-  position: sticky;
+  position: sticky; /* Stick to top */
   top: 0;
-  z-index: 10;
+  z-index: 100; /* Above content */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); /* Slight shadow when sticky */
 }
 
 .fall-card-body {
   position: relative;
-  padding: 2rem 1rem 1rem 1rem; /* 上の余白を増やし、下の余白を減らす */
+  padding: 2rem 1rem 0.5rem 1rem;
 }
 
-/* タイムライン (Schedule List) */
+/* Timeline (Schedule List) */
 .fall-timeline-item {
   display: flex;
   position: relative;
@@ -228,7 +232,7 @@
   min-height: 60px;
 }
 
-/* Vertical Line - 点線に変更 */
+/* Vertical Line - Dashed */
 .fall-timeline-line {
   position: absolute;
   left: 50px;
@@ -237,7 +241,7 @@
   width: 2px;
   background: transparent;
   background-image: linear-gradient(to bottom, var(--fall-line-color) 50%, transparent 50%);
-  background-size: 2px 8px; /* 間隔を広げる */
+  background-size: 2px 8px;
   background-repeat: repeat-y;
   z-index: 0;
 }
@@ -300,7 +304,7 @@
   font-size: 1.25rem;
   font-weight: 500;
   color: var(--fall-text);
-  margin: 0 0 0.25rem 0; /* 下のマージンを少し減らす */
+  margin: 0 0 0.25rem 0;
   padding-top: 1rem;
   font-family: 'Inter', sans-serif;
   display: flex;
@@ -317,7 +321,7 @@
   padding-bottom: 0;
 }
 
-/* 編集モード */
+/* Edit Mode */
 .fall-step-editing {
   background: rgba(255, 255, 255, 0.8);
   padding: 1rem;
@@ -327,7 +331,7 @@
   flex: 1;
 }
 
-/* フォーム要素 */
+/* Form Elements */
 .fall-input, .fall-textarea, .fall-select-time {
   width: 100%;
   padding: 0.5rem;
@@ -389,14 +393,14 @@
 .fall-btn-primary { background: var(--fall-primary); color: #fff; }
 .fall-btn-secondary { background: #fff; color: #333; border: 1px solid var(--fall-border); }
 
-/* ナビゲーション (Bottom Nav) */
+/* Bottom Navigation */
 .fall-bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   height: 80px;
-  background: var(--fall-bg); /* フッターの色をテーマに合わせる */
+  background: var(--fall-bg);
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -434,12 +438,12 @@
   text-align: center;
 }
 .fall-btn-add {
-  background: #D4A778; /* 背景色を少し明るく */
+  background: #D4A778;
   color: #fff;
   border: none;
-  padding: 0.5rem 1.2rem; /* 少し小さく */
+  padding: 0.5rem 1.2rem;
   border-radius: 20px;
-  font-size: 0.9rem; /* 文字も少し小さく */
+  font-size: 0.9rem;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: background 0.2s;
@@ -549,13 +553,12 @@
   opacity: 1;
 }
 
-/* レスポンシブデザイン */
+/* Responsive Design */
 
-/* タブレット以上での調整 (830px以上) */
+/* Tablet and Desktop (830px+) */
 @media (min-width: 830px) {
   .fall-carousel-track {
-    /* より大きな画面では隣のカードをもっと表示 */
-    transform: translateX(calc(50vw - 32.5vw - (var(--active, 0) * (65vw + 16px))));
+    margin-left: calc(50vw - 32.5vw - (var(--active, 0) * (65vw + 16px)));
   }
 
   .fall-carousel-card {
@@ -564,7 +567,7 @@
   }
 }
 
-/* タブレット (768px以下) */
+/* Tablet (768px-) */
 @media (max-width: 768px) {
   .fall-card-header {
     font-size: 1.75rem;
@@ -581,7 +584,7 @@
   }
 }
 
-/* モバイル (480px以下) */
+/* Mobile (480px-) */
 @media (max-width: 480px) {
   .fall-header {
     padding: 1.5rem 0.75rem 0.75rem;
@@ -635,13 +638,13 @@
   }
 
   .fall-carousel-card {
-    flex: 0 0 88vw; /* 極小画面ではさらに大きく */
+    flex: 0 0 88vw;
     width: 88vw;
     min-width: 260px;
   }
 
   .fall-carousel-track {
-    transform: translateX(calc(50vw - 44vw - (var(--active, 0) * (88vw + 12px))));
+    margin-left: calc(50vw - 44vw - (var(--active, 0) * (88vw + 12px)));
     gap: 12px;
   }
 
@@ -673,7 +676,7 @@
   }
 }
 
-/* 極小モバイル (360px以下) */
+/* Small Mobile (360px-) */
 @media (max-width: 360px) {
   .fall-carousel-card {
     flex: 0 0 90vw;
@@ -682,7 +685,7 @@
   }
 
   .fall-carousel-track {
-    transform: translateX(calc(50vw - 45vw - (var(--active, 0) * (90vw + 10px))));
+    margin-left: calc(50vw - 45vw - (var(--active, 0) * (90vw + 10px)));
     gap: 10px;
   }
 

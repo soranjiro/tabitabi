@@ -48,6 +48,9 @@
   let isAddingStep = $state(false);
   let showCopyMessage = $state(false);
 
+  let showThemeSelect = $state(false);
+  let selectedThemeId = $state(itinerary.theme_id || "fall");
+
   let newStep = $state({
     title: "",
     date: "",
@@ -111,6 +114,15 @@
     newStepHour = "09";
     newStepMinute = "00";
     isAddingStep = false;
+  }
+
+  async function handleThemeChange(e: Event) {
+    const themeId = (e.target as HTMLSelectElement).value;
+    selectedThemeId = themeId;
+    showThemeSelect = false;
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({ theme_id: themeId });
+    }
   }
 </script>
 
@@ -281,18 +293,47 @@
         </svg>
         <span>Calendar</span>
       </button>
-      <button class="fall-bottom-btn" title="設定" aria-label="設定">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
+
+      <div style="position: relative;">
+        <button
+          class="fall-bottom-btn"
+          title="設定"
+          aria-label="設定"
+          onclick={() => (showThemeSelect = !showThemeSelect)}
         >
-          <path
-            d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
-          />
-        </svg>
-        <span>Settings</span>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path
+              d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+            />
+          </svg>
+          <span>Settings</span>
+        </button>
+        {#if showThemeSelect}
+          <div
+            style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--fall-card-bg); border: 1px solid var(--fall-border); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 0.5rem 1rem; z-index: 200; min-width: 180px;"
+          >
+            <label
+              for="theme-select"
+              style="font-size: 0.95rem; color: var(--fall-text); margin-bottom: 0.5rem; display: block;"
+              >テーマを選択</label
+            >
+            <select
+              id="theme-select"
+              value={selectedThemeId}
+              onchange={handleThemeChange}
+              style="width: 100%; font-size: 1rem; padding: 0.3rem; border-radius: 4px; border: 1px solid var(--fall-border); background: #fff; color: var(--fall-text);"
+            >
+              {#each themes as theme}
+                <option value={theme.id}>{theme.name}</option>
+              {/each}
+            </select>
+          </div>
+        {/if}
+      </div>
     </nav>
   </div>
 </div>

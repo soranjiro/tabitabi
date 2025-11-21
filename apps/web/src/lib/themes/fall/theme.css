@@ -5,11 +5,14 @@
   --fall-header-bg: #DFB89A;
   --fall-card-bg: #F7E3CC;
   --fall-surface: #FFFFFF;
-  --fall-primary: #B8834E; /* Contrast: 4.52:1 */
+  --fall-primary: #B8834E;
+  /* Contrast: 4.52:1 */
   --fall-secondary: #F7E3CC;
   --fall-text: #333333;
-  --fall-accent: #75482a; /* Contrast: 8.35:1 */
-  --fall-muted: #5a5a5a; /* Contrast: 7.5:1 */
+  --fall-accent: #75482a;
+  /* Contrast: 8.35:1 */
+  --fall-muted: #5a5a5a;
+  /* Contrast: 7.5:1 */
   --fall-border: #B8834E;
   --fall-dot-bg: #DFB89A;
   --fall-line-color: #DFB89A;
@@ -110,9 +113,17 @@ body {
 }
 
 @keyframes fadeOut {
-  0% { opacity: 1; }
-  70% { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
 /* Carousel */
@@ -214,10 +225,13 @@ body {
   font-family: 'Inter', sans-serif;
   background: var(--fall-header-bg);
   border-radius: 20px 20px 0 0;
-  position: sticky; /* Stick to top */
+  position: sticky;
+  /* Stick to top */
   top: 0;
-  z-index: 100; /* Above content */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); /* Slight shadow when sticky */
+  z-index: 100;
+  /* Above content */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  /* Slight shadow when sticky */
 }
 
 .fall-card-body {
@@ -333,7 +347,8 @@ body {
 }
 
 /* Form Elements */
-.fall-input, .fall-textarea {
+.fall-input,
+.fall-textarea {
   width: 100%;
   padding: 0.5rem;
   border: 1px solid var(--fall-border);
@@ -398,8 +413,17 @@ body {
   font-weight: bold;
   font-family: 'Inter', sans-serif;
 }
-.fall-btn-primary { background: var(--fall-primary); color: #fff; }
-.fall-btn-secondary { background: #fff; color: #333; border: 1px solid var(--fall-border); }
+
+.fall-btn-primary {
+  background: var(--fall-primary);
+  color: #fff;
+}
+
+.fall-btn-secondary {
+  background: #fff;
+  color: #333;
+  border: 1px solid var(--fall-border);
+}
 
 /* Bottom Navigation */
 .fall-bottom-nav {
@@ -445,6 +469,7 @@ body {
   padding: 1rem;
   text-align: center;
 }
+
 .fall-btn-add {
   background: #D4A778;
   color: #fff;
@@ -456,6 +481,7 @@ body {
   font-family: 'Inter', sans-serif;
   transition: background 0.2s;
 }
+
 .fall-btn-add:hover {
   background: var(--fall-primary);
 }
@@ -466,6 +492,7 @@ body {
   justify-content: center;
   gap: 8px;
 }
+
 .fall-page-dots button {
   width: 10px;
   height: 10px;
@@ -476,9 +503,11 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
 }
+
 .fall-page-dots button:hover {
   background: #bbb;
 }
+
 .fall-page-dots button.active {
   background: var(--fall-primary);
   width: 12px;
@@ -553,10 +582,19 @@ body {
   justify-content: center;
   transition: opacity 0.2s;
 }
+
+.fall-step-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .fall-btn-icon svg {
   width: 18px;
   height: 18px;
 }
+
 .fall-btn-icon:hover {
   opacity: 1;
 }

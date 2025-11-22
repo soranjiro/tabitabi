@@ -4,6 +4,7 @@
   interface Props {
     steps: Step[];
     hasEditPermission?: boolean;
+    focusedDate?: string | null;
     onUpdateStep?: (
       stepId: string,
       data: {
@@ -20,6 +21,7 @@
   let {
     steps,
     hasEditPermission = false,
+    focusedDate = $bindable(null),
     onUpdateStep,
     onDeleteStep,
   }: Props = $props();
@@ -38,6 +40,36 @@
   $effect(() => {
     if (editingStepId && editStepHour && editStepMinute) {
       editedStep.time = `${editStepHour}:${editStepMinute}`;
+    }
+  });
+
+  // Initialize activeIndex to the closest date to today
+  $effect(() => {
+    const groups = groupedSteps();
+    if (groups.length === 0) return;
+
+    const today = new Date().toISOString().split("T")[0];
+    let closestIndex = 0;
+    let minDiff = Infinity;
+
+    groups.forEach(([date], index) => {
+      const diff = Math.abs(
+        new Date(date).getTime() - new Date(today).getTime(),
+      );
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIndex = index;
+      }
+    });
+
+    activeIndex = closestIndex;
+  });
+
+  // Update focusedDate when activeIndex changes
+  $effect(() => {
+    const groups = groupedSteps();
+    if (groups.length > 0 && groups[activeIndex]) {
+      focusedDate = groups[activeIndex][0];
     }
   });
 

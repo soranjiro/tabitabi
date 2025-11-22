@@ -450,7 +450,7 @@ body {
   left: 0;
   right: 0;
   height: 80px;
-  background: rgba(250, 248, 245, 0.95);
+  background: var(--standard-autumn-header-bg);
   backdrop-filter: blur(10px);
   display: flex;
   justify-content: space-around;

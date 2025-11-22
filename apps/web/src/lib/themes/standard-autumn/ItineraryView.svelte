@@ -447,7 +447,7 @@
         </svg>
         <span>Home</span>
       </button>
-      <button
+      <!-- <button
         class="standard-autumn-bottom-btn"
         title="カレンダー"
         aria-label="カレンダー"
@@ -462,7 +462,7 @@
           />
         </svg>
         <span>Calendar</span>
-      </button>
+      </button> -->
 
       <div style="position: relative;">
         <button

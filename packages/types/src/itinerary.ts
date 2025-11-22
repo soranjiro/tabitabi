@@ -1,9 +1,9 @@
 export interface Itinerary {
-  id: string;                    // 長いランダムID（32文字）
+  id: string;
   title: string;
-  theme_id: string;              // デフォルト: 'minimal'
-  memo?: string;
-  password?: string;
+  theme_id: string;
+  memo?: string | null;
+  password?: string | null;
   created_at: string;
   updated_at: string;
 }

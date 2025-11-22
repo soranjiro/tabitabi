@@ -3,8 +3,10 @@ import type { Theme } from '@tabitabi/types';
 // 動的 import に切り替え（未選択テーマをバンドルしない）
 export async function loadTheme(themeId: string): Promise<Theme> {
   switch (themeId) {
-    case 'standard':
-      return (await import('./standard')).default;
+    case 'standard-autumn':
+      return (await import('./standard-autumn')).default;
+    case 'ai-generated':
+      return (await import('./ai-generated')).default;
     case 'minimal':
     default:
       return (await import('./minimal')).default;
@@ -19,13 +21,14 @@ export function getEnabledFeatures(theme: Theme): string[] {
 
 // メタ情報だけを静的に保持（テーマ本体は読み込まない）
 const THEME_CATALOG: Array<{ id: AvailableTheme; name: string; description: string }> = [
-  { id: 'minimal', name: 'ミニマル', description: '必要最小限のシンプルなテーマ' },
-  { id: 'standard', name: 'スタンダード', description: 'デフォルトテーマ' }
+  { id: 'minimal', name: 'ミニマル', description: '軽量で最低限' },
+  { id: 'ai-generated', name: 'AI Generated', description: 'purple' },
+  { id: 'standard-autumn', name: '標準', description: 'モチーフ秋' }
 ];
 
 export function getAvailableThemes(): Array<{ id: string; name: string; description: string }> {
   return THEME_CATALOG;
 }
 
-export const availableThemes = ['minimal', 'standard'] as const;
+export const availableThemes = ['minimal', 'ai-generated', 'standard-autumn'] as const;
 export type AvailableTheme = typeof availableThemes[number];

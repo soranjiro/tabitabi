@@ -115,21 +115,21 @@
   }
 </script>
 
-<div class="standard-theme">
-  <div class="standard-container">
-    <nav class="standard-nav">
+<div class="ai-generated-theme">
+  <div class="ai-generated-container">
+    <nav class="ai-generated-nav">
       <button
         type="button"
         onclick={() => goto("/")}
-        class="standard-home-btn"
+        class="ai-generated-home-btn"
         title="ホームに戻る"
       >
         ← ホーム
       </button>
     </nav>
 
-    <header class="standard-header">
-      <div class="standard-header-content">
+    <header class="ai-generated-header">
+      <div class="ai-generated-header-content">
 
         {#if isEditingTitle}
           <input
@@ -137,7 +137,7 @@
             bind:value={editedTitle}
             onblur={handleTitleUpdate}
             onkeydown={(e) => e.key === "Enter" && handleTitleUpdate()}
-            class="standard-title-input"
+            class="ai-generated-title-input"
           />
         {:else}
           <button
@@ -145,17 +145,17 @@
             onclick={() => {
               isEditingTitle = true;
             }}
-            class="standard-title-button"
+            class="ai-generated-title-button"
           >
             ✈️ {itinerary.title}
           </button>
         {/if}
 
-        <div class="standard-controls">
+        <div class="ai-generated-controls">
           <select
             value={itinerary.theme_id}
             onchange={handleThemeChange}
-            class="standard-select"
+            class="ai-generated-select"
           >
             {#each themes as theme}
               <option value={theme.id}>{theme.name}</option>
@@ -165,45 +165,45 @@
       </div>
     </header>
 
-    <div class="standard-add-step">
+    <div class="ai-generated-add-step">
       {#if isAddingStep}
         <form
-          class="standard-form"
+          class="ai-generated-form"
           onsubmit={(e) => {
             e.preventDefault();
             handleAddStep();
           }}
         >
-          <h3 class="standard-form-title">✨ 新しい予定を追加</h3>
-          <div class="standard-form-grid">
+          <h3 class="ai-generated-form-title">✨ 新しい予定を追加</h3>
+          <div class="ai-generated-form-grid">
             <input
               type="text"
               bind:value={newStep.title}
               placeholder="予定のタイトル *"
-              class="standard-input"
+              class="ai-generated-input"
               required
             />
-            <div class="standard-datetime">
+            <div class="ai-generated-datetime">
               <input
                 type="date"
                 bind:value={newStep.date}
-                class="standard-input"
+                class="ai-generated-input"
                 required
               />
-              <div class="standard-time-picker">
+              <div class="ai-generated-time-picker">
                 <select
                   bind:value={newStepHour}
-                  class="standard-select-time"
+                  class="ai-generated-select-time"
                   required
                 >
                   {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
                     <option value={hour}>{hour}</option>
                   {/each}
                 </select>
-                <span class="standard-time-separator">:</span>
+                <span class="ai-generated-time-separator">:</span>
                 <select
                   bind:value={newStepMinute}
-                  class="standard-select-time"
+                  class="ai-generated-select-time"
                   required
                 >
                   <option value="00">00</option>
@@ -217,23 +217,23 @@
               type="text"
               bind:value={newStep.location}
               placeholder="📍 場所 (任意)"
-              class="standard-input"
+              class="ai-generated-input"
             />
             <textarea
               bind:value={newStep.notes}
               placeholder="📝 メモ (任意)"
-              class="standard-textarea"
+              class="ai-generated-textarea"
               rows="3"
             ></textarea>
           </div>
-          <div class="standard-form-actions">
-            <button type="submit" class="standard-btn standard-btn-primary">
+          <div class="ai-generated-form-actions">
+            <button type="submit" class="ai-generated-btn ai-generated-btn-primary">
               追加する
             </button>
             <button
               type="button"
               onclick={cancelAddStep}
-              class="standard-btn standard-btn-secondary"
+              class="ai-generated-btn ai-generated-btn-secondary"
             >
               キャンセル
             </button>
@@ -244,9 +244,9 @@
           onclick={() => {
             isAddingStep = true;
           }}
-          class="standard-btn-add"
+          class="ai-generated-btn-add"
         >
-          <span class="standard-btn-add-icon">＋</span>
+          <span class="ai-generated-btn-add-icon">＋</span>
           <span>予定を追加</span>
         </button>
       {/if}

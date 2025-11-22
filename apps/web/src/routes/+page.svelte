@@ -9,7 +9,7 @@
   } from "$lib/utils/recentItineraries";
 
   let title = $state("");
-  let theme_id = $state("standard");
+  let theme_id = $state("standard-autumn");
   let creating = $state(false);
   let recentItineraries = $state<RecentItinerary[]>([]);
   let showRecent = $state(false);

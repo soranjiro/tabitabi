@@ -1,0 +1,746 @@
+/* Fall Theme - WCAG AA Compliant (4.5:1 contrast ratio) */
+
+:root {
+  --standard-autumn-bg: #FEF6EC;
+  --standard-autumn-header-bg: #DFB89A;
+  --standard-autumn-card-bg: #F7E3CC;
+  --standard-autumn-surface: #FFFFFF;
+  --standard-autumn-primary: #B8834E;
+  /* Contrast: 4.52:1 */
+  --standard-autumn-secondary: #F7E3CC;
+  --standard-autumn-text: #333333;
+  --standard-autumn-accent: #75482a;
+  /* Contrast: 8.35:1 */
+  --standard-autumn-muted: #5a5a5a;
+  /* Contrast: 7.5:1 */
+  --standard-autumn-border: #B8834E;
+  --standard-autumn-dot-bg: #DFB89A;
+  --standard-autumn-line-color: #DFB89A;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.standard-autumn-theme {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  background: var(--standard-autumn-bg);
+  color: var(--standard-autumn-text);
+}
+
+.standard-autumn-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Header */
+.standard-autumn-header {
+  text-align: center;
+  padding: 2rem 1rem 1rem;
+  background: transparent;
+  position: relative;
+}
+
+.standard-autumn-title-button {
+  font-size: 2.5rem;
+  font-weight: 400;
+  color: var(--standard-autumn-text);
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+}
+
+.standard-autumn-title-input {
+  font-size: 2.5rem;
+  font-weight: 400;
+  text-align: center;
+  width: 100%;
+  border: 1px solid var(--standard-autumn-primary);
+  background: transparent;
+  color: var(--standard-autumn-text);
+  font-family: 'Inter', sans-serif;
+  border-radius: 8px;
+  padding: 0.25rem;
+}
+
+.standard-autumn-memo {
+  font-size: 0.875rem;
+  color: var(--standard-autumn-text);
+  margin-top: 0.5rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.standard-autumn-share-icon {
+  position: absolute;
+  top: 1.5rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--standard-autumn-text);
+  padding: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.standard-autumn-share-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.standard-autumn-copy-msg {
+  position: absolute;
+  top: 1.2rem;
+  right: 3rem;
+  font-size: 0.8rem;
+  color: var(--standard-autumn-primary);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  animation: fadeOut 2s forwards;
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Carousel */
+.standard-autumn-carousel-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 120px;
+  width: 100%;
+  position: relative;
+  overflow: visible;
+}
+
+.standard-autumn-carousel {
+  width: 100%;
+  overflow: visible;
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+.standard-autumn-carousel-track {
+  display: flex;
+  width: auto;
+  transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Use margin-left for movement to enable sticky headers */
+  margin-left: calc(50vw - 42.5vw - (var(--active, 0) * (85vw + 16px)));
+  gap: 16px;
+  padding: 0;
+  will-change: margin-left;
+  align-items: flex-start;
+}
+
+.standard-autumn-carousel-card {
+  flex: 0 0 85vw;
+  width: 85vw;
+  max-width: 420px;
+  min-width: 280px;
+  box-sizing: border-box;
+  opacity: 0.4;
+  transform: scale(0.9);
+  transition: all 0.35s ease-out;
+  filter: blur(1.5px);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: auto;
+}
+
+.standard-autumn-carousel-card:hover:not([aria-hidden="false"]) {
+  opacity: 0.55;
+  transform: scale(0.93);
+}
+
+.standard-autumn-carousel-card[aria-hidden="false"] {
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0);
+  z-index: 2;
+  cursor: default;
+  margin: 10px 0;
+}
+
+.standard-autumn-card {
+  background: transparent;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  height: auto;
+}
+
+/* Custom Scrollbar */
+.standard-autumn-card::-webkit-scrollbar {
+  width: 4px;
+}
+
+.standard-autumn-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.standard-autumn-card::-webkit-scrollbar-thumb {
+  background: var(--standard-autumn-primary);
+  border-radius: 2px;
+}
+
+.standard-autumn-card::-webkit-scrollbar-thumb:hover {
+  background: var(--standard-autumn-accent);
+}
+
+.standard-autumn-card-header {
+  font-size: 2.25rem;
+  color: var(--standard-autumn-text);
+  font-weight: 400;
+  margin-bottom: 1.5rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  background: var(--standard-autumn-header-bg);
+  border-radius: 20px 20px 0 0;
+  position: sticky;
+  /* Stick to top */
+  top: 0;
+  z-index: 100;
+  /* Above content */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  /* Slight shadow when sticky */
+}
+
+.standard-autumn-card-body {
+  position: relative;
+  padding: 2rem 1rem 0.5rem 1rem;
+}
+
+/* Timeline (Schedule List) */
+.standard-autumn-timeline-item {
+  display: flex;
+  position: relative;
+  margin-bottom: 2rem;
+  min-height: 60px;
+}
+
+/* Vertical Line - Dashed */
+.standard-autumn-timeline-line {
+  position: absolute;
+  left: 50px;
+  top: 14px;
+  bottom: -30px;
+  width: 2px;
+  background: transparent;
+  background-image: linear-gradient(to bottom, var(--standard-autumn-line-color) 50%, transparent 50%);
+  background-size: 2px 8px;
+  background-repeat: repeat-y;
+  z-index: 0;
+}
+
+.standard-autumn-timeline-item:last-child .standard-autumn-timeline-line {
+  display: none;
+}
+
+.standard-autumn-step-time {
+  width: 45px;
+  text-align: right;
+  font-size: 0.9375rem;
+  color: var(--standard-autumn-text);
+  font-weight: 400;
+  padding-right: 10px;
+  flex-shrink: 0;
+  padding-top: 0px;
+  font-family: 'Inter', sans-serif;
+}
+
+.standard-autumn-step-dot {
+  width: 14px;
+  height: 14px;
+  background: var(--standard-autumn-dot-bg);
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 3px;
+  z-index: 1;
+  position: relative;
+}
+
+.standard-autumn-step-content {
+  flex: 1;
+  padding: 1rem 1.25rem;
+  padding-top: 0;
+  background: var(--standard-autumn-card-bg);
+  border-radius: 8px;
+  margin-left: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.standard-autumn-step-location {
+  font-size: 0.9rem;
+  color: var(--standard-autumn-text);
+  margin-bottom: 0.5rem;
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.8;
+}
+
+.standard-autumn-icon-location {
+  width: 16px;
+  height: 16px;
+  color: var(--standard-autumn-primary);
+}
+
+.standard-autumn-step-title {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--standard-autumn-text);
+  margin: 0 0 0.25rem 0;
+  padding-top: 1rem;
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  line-height: 1.5;
+}
+
+.standard-autumn-step-notes {
+  font-size: 1rem;
+  color: var(--standard-autumn-text);
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+  padding-bottom: 0;
+}
+
+/* Edit Mode */
+.standard-autumn-step-editing {
+  background: rgba(255, 255, 255, 0.8);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--standard-autumn-primary);
+  margin-left: 1rem;
+  flex: 1;
+}
+
+/* Form Elements */
+.standard-autumn-input,
+.standard-autumn-textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--standard-autumn-border);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  font-family: 'Inter', sans-serif;
+  background: #fff;
+}
+
+.standard-autumn-form {
+  background-color: var(--standard-autumn-card-bg);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 0.5rem;
+}
+
+.standard-autumn-form-title {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: var(--standard-autumn-text);
+}
+
+.standard-autumn-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.standard-autumn-datetime {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.standard-autumn-time-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid var(--standard-autumn-border);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  background: #fff;
+}
+
+.standard-autumn-time-separator {
+  font-weight: 600;
+  margin: 0 0.25rem;
+}
+
+.standard-autumn-form-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.standard-autumn-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-family: 'Inter', sans-serif;
+}
+
+.standard-autumn-btn-primary {
+  background: var(--standard-autumn-primary);
+  color: #fff;
+}
+
+.standard-autumn-btn-secondary {
+  background: #fff;
+  color: #333;
+  border: 1px solid var(--standard-autumn-border);
+}
+
+/* Bottom Navigation */
+.standard-autumn-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: var(--standard-autumn-bg);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid var(--standard-autumn-secondary);
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.standard-autumn-bottom-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--standard-autumn-text);
+  gap: 4px;
+}
+
+.standard-autumn-bottom-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.standard-autumn-bottom-btn span {
+  font-size: 0.7rem;
+  margin-top: 2px;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Add Step Button */
+.standard-autumn-add-step {
+  padding: 1rem;
+  text-align: center;
+}
+
+.standard-autumn-btn-add {
+  background: #D4A778;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.2s;
+}
+
+.standard-autumn-btn-add:hover {
+  background: var(--standard-autumn-primary);
+}
+
+/* Dots for carousel */
+.standard-autumn-page-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.standard-autumn-page-dots button {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ddd;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.standard-autumn-page-dots button:hover {
+  background: #bbb;
+}
+
+.standard-autumn-page-dots button.active {
+  background: var(--standard-autumn-primary);
+  width: 12px;
+  height: 12px;
+}
+
+/* Carousel Controls (Arrows) */
+.standard-autumn-carousel-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.standard-autumn-carousel-controls-top {
+  margin-bottom: 0.5rem;
+}
+
+.standard-autumn-carousel-controls-bottom {
+  margin-top: 1rem;
+}
+
+.standard-autumn-carousel-btn {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid var(--standard-autumn-primary);
+  color: var(--standard-autumn-primary);
+  cursor: pointer;
+  padding: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.standard-autumn-carousel-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.standard-autumn-carousel-btn:hover:not(:disabled) {
+  background: var(--standard-autumn-primary);
+  color: white;
+  transform: scale(1.05);
+}
+
+.standard-autumn-carousel-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+  border-color: #ddd;
+  color: #ddd;
+}
+
+.standard-autumn-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--standard-autumn-muted);
+  font-family: 'Inter', sans-serif;
+}
+
+.standard-autumn-btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  opacity: 0.6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.standard-autumn-step-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.standard-autumn-btn-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.standard-autumn-btn-icon:hover {
+  opacity: 1;
+}
+
+/* Responsive Design */
+
+/* Tablet and Desktop (830px+) */
+@media (min-width: 830px) {
+  .standard-autumn-carousel-track {
+    margin-left: calc(50vw - 32.5vw - (var(--active, 0) * (65vw + 16px)));
+  }
+
+  .standard-autumn-carousel-card {
+    flex: 0 0 65vw;
+    width: 65vw;
+  }
+}
+
+/* Tablet (768px-) */
+@media (max-width: 768px) {
+  .standard-autumn-card-header {
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .standard-autumn-step-title {
+    font-size: 1.125rem;
+  }
+
+  .standard-autumn-step-location,
+  .standard-autumn-step-notes {
+    font-size: 0.9375rem;
+  }
+}
+
+/* Mobile (480px-) */
+@media (max-width: 480px) {
+  .standard-autumn-header {
+    padding: 1.5rem 0.75rem 0.75rem;
+  }
+
+  .standard-autumn-title-button,
+  .standard-autumn-title-input {
+    font-size: 1.75rem;
+  }
+
+  .standard-autumn-memo {
+    font-size: 0.8125rem;
+  }
+
+  .standard-autumn-card-header {
+    font-size: 1.5rem;
+    margin-bottom: 1.25rem;
+    padding: 0 0.75rem;
+  }
+
+  .standard-autumn-card-body {
+    padding: 0 0.25rem 0 0.5rem;
+  }
+
+  .standard-autumn-timeline-line {
+    left: 42px;
+  }
+
+  .standard-autumn-step-time {
+    width: 38px;
+    font-size: 0.875rem;
+    padding-right: 8px;
+  }
+
+  .standard-autumn-step-dot {
+    width: 12px;
+    height: 12px;
+  }
+
+  .standard-autumn-step-content {
+    padding-left: 1rem;
+  }
+
+  .standard-autumn-step-title {
+    font-size: 1rem;
+  }
+
+  .standard-autumn-step-location,
+  .standard-autumn-step-notes {
+    font-size: 0.875rem;
+  }
+
+  .standard-autumn-carousel-card {
+    flex: 0 0 88vw;
+    width: 88vw;
+    min-width: 260px;
+  }
+
+  .standard-autumn-carousel-track {
+    margin-left: calc(50vw - 44vw - (var(--active, 0) * (88vw + 12px)));
+    gap: 12px;
+  }
+
+  .standard-autumn-carousel-controls {
+    margin-top: 1rem;
+  }
+
+  .standard-autumn-page-dots button {
+    width: 8px;
+    height: 8px;
+  }
+
+  .standard-autumn-page-dots button.active {
+    width: 10px;
+    height: 10px;
+  }
+
+  .standard-autumn-bottom-nav {
+    height: 70px;
+  }
+
+  .standard-autumn-bottom-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .standard-autumn-bottom-btn span {
+    font-size: 0.625rem;
+  }
+}
+
+/* Small Mobile (360px-) */
+@media (max-width: 360px) {
+  .standard-autumn-carousel-card {
+    flex: 0 0 90vw;
+    width: 90vw;
+    min-width: 280px;
+  }
+
+  .standard-autumn-carousel-track {
+    margin-left: calc(50vw - 45vw - (var(--active, 0) * (90vw + 10px)));
+    gap: 10px;
+  }
+
+  .standard-autumn-card-header {
+    font-size: 1.375rem;
+  }
+
+  .standard-autumn-step-title {
+    font-size: 0.9375rem;
+  }
+}

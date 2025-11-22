@@ -80,6 +80,30 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
+.standard-autumn-controls {
+  margin-top: 1rem;
+}
+
+.standard-autumn-memo-display {
+  font-size: 0.9rem;
+  color: var(--standard-autumn-text);
+  background: rgba(193, 120, 85, 0.05);
+  border: 1px solid rgba(193, 120, 85, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: all 0.2s;
+  max-width: 400px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.standard-autumn-memo-display:hover {
+  background: rgba(193, 120, 85, 0.08);
+  border-color: rgba(193, 120, 85, 0.3);
+}
+
 .standard-autumn-share-icon {
   position: absolute;
   top: 1.5rem;
@@ -226,13 +250,6 @@ body {
   font-family: 'Inter', sans-serif;
   background: var(--standard-autumn-header-bg);
   border-radius: 20px 20px 0 0;
-  position: sticky;
-  /* Stick to top */
-  top: 0;
-  z-index: 100;
-  /* Above content */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  /* Slight shadow when sticky */
 }
 
 .standard-autumn-card-body {
@@ -433,7 +450,8 @@ body {
   left: 0;
   right: 0;
   height: 80px;
-  background: var(--standard-autumn-bg);
+  background: rgba(250, 248, 245, 0.95);
+  backdrop-filter: blur(10px);
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -836,4 +854,50 @@ body {
 .standard-autumn-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.standard-autumn-settings-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--standard-autumn-card-bg);
+  border: 1px solid var(--standard-autumn-border);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 200;
+  min-width: 200px;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  max-width: calc(100vw - 2rem);
+}
+
+.standard-autumn-settings-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--standard-autumn-border);
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  color: var(--standard-autumn-text);
+  text-align: left;
+}
+
+.standard-autumn-settings-item:last-child {
+  border-bottom: none;
+}
+
+.standard-autumn-settings-item:hover {
+  background: rgba(193, 120, 85, 0.05);
+}
+
+.standard-autumn-settings-item svg {
+  flex-shrink: 0;
+  color: var(--standard-autumn-primary, #c17855);
 }

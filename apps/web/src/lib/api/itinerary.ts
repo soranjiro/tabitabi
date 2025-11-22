@@ -7,10 +7,10 @@ export const itineraryApi = {
   get: (id: string) => apiClient.get<Itinerary>(`/itineraries/${id}`),
 
   create: (data: CreateItineraryInput) =>
-    apiClient.post<Itinerary>('/itineraries', data),
+    apiClient.post<Itinerary & { token: string }>('/itineraries', data),
 
   update: (id: string, data: UpdateItineraryInput) =>
-    apiClient.put<Itinerary>(`/itineraries/${id}`, data),
+    apiClient.put<Itinerary>(`/itineraries/${id}`, data, id),
 
-  delete: (id: string) => apiClient.delete(`/itineraries/${id}`),
+  delete: (id: string) => apiClient.delete(`/itineraries/${id}`, id),
 };

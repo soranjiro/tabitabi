@@ -3,6 +3,7 @@
 
   interface Props {
     steps: Step[];
+    hasEditPermission?: boolean;
     onUpdateStep?: (
       stepId: string,
       data: {
@@ -16,7 +17,12 @@
     onDeleteStep?: (stepId: string) => Promise<void>;
   }
 
-  let { steps, onUpdateStep, onDeleteStep }: Props = $props();
+  let {
+    steps,
+    hasEditPermission = false,
+    onUpdateStep,
+    onDeleteStep,
+  }: Props = $props();
 
   let editingStepId = $state<string | null>(null);
   let editedStep = $state<Partial<Step>>({});
@@ -189,12 +195,13 @@
                 <div class="minimal-step-actions">
                   <button
                     onclick={() => startEdit(step)}
-                    class="minimal-btn minimal-btn-small">編集</button
+                    class="minimal-btn minimal-btn-small"
+                    disabled={!hasEditPermission}>編集</button
                   >
                   <button
                     onclick={() => handleDelete(step.id)}
                     class="minimal-btn minimal-btn-small minimal-btn-danger"
-                    >削除</button
+                    disabled={!hasEditPermission}>削除</button
                   >
                 </div>
               </div>

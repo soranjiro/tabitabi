@@ -825,8 +825,16 @@ body {
 }
 
 .standard-autumn-share-option-icon {
-  font-size: 1.5rem;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--standard-autumn-primary, #c17855);
+}
+
+.standard-autumn-share-option-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
 .standard-autumn-share-option-content {

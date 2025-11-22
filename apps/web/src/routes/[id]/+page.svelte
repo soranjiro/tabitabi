@@ -11,14 +11,15 @@
   let backgroundColor = $derived(
     data.theme.ui.customColors?.background || "#f9fafb",
   );
-  let themeColor = $derived(data.theme.ui.customColors?.primary || "#4f46e5");
 
   onMount(() => {
     auth.updateAccessTime(data.itinerary.id, data.itinerary.title);
     document.body.style.backgroundColor = backgroundColor;
+    document.documentElement.style.backgroundColor = backgroundColor;
 
     return () => {
       document.body.style.backgroundColor = "";
+      document.documentElement.style.backgroundColor = "";
     };
   });
 

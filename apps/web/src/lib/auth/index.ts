@@ -97,6 +97,12 @@ export const auth = {
     localStorage.removeItem(STORAGE_KEY);
   },
 
+  removeFromHistory(shioriId: string): void {
+    const history = this.getHistory();
+    const filtered = history.filter(h => h.shioriId !== shioriId);
+    this.saveHistory(filtered);
+  },
+
   getRecentItineraries(limit: number = 5) {
     const history = this.getHistory();
     return history

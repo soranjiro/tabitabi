@@ -3,8 +3,8 @@
   "short_name": "たびたび",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
+  "background_color": "#f9fafb",
+  "theme_color": "#f9fafb",
   "lang": "ja-JP",
   "icons": [
     {

@@ -30,8 +30,8 @@ export class ItineraryService {
       id,
       title: input.title,
       theme_id: input.theme_id || 'minimal',
-      memo: input.memo,
-      password: input.password,
+      memo: input.memo ?? null,
+      password: input.password ?? null,
       created_at: now,
       updated_at: now,
     };

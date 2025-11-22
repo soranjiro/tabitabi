@@ -67,6 +67,7 @@
 
 <svelte:head>
   <title>たびたび - 旅のしおり</title>
+  <meta name="theme-color" content="#f9fafb" />
 </svelte:head>
 
 <div

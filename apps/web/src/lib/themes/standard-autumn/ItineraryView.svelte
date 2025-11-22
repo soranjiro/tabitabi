@@ -2,6 +2,9 @@
   import { goto } from "$app/navigation";
   import type { Itinerary, Step } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
+  import { auth } from "$lib/auth";
+  import { authApi } from "$lib/api/auth";
+  import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
   import "./theme.css";
 
@@ -11,6 +14,7 @@
     onUpdateItinerary?: (data: {
       title?: string;
       theme_id?: string;
+      memo?: string;
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
@@ -47,6 +51,13 @@
   let editedTitle = $state(itinerary.title);
   let isAddingStep = $state(false);
   let showCopyMessage = $state(false);
+  let showShareDialog = $state(false);
+  let hasEditPermission = $state(false);
+  let showPasswordDialog = $state(false);
+  let showMemoDialog = $state(false);
+  let editedMemo = $state(itinerary.memo || "");
+  let password = $state("");
+  let isAuthenticating = $state(false);
 
   let showThemeSelect = $state(false);
   let selectedThemeId = $state(itinerary.theme_id || "standard-autumn");
@@ -65,9 +76,62 @@
     newStep.time = `${newStepHour}:${newStepMinute}`;
   });
 
-  async function handleShare() {
+  onMount(() => {
+    const token = auth.extractTokenFromUrl();
+    if (token) {
+      auth.setToken(itinerary.id, itinerary.title, token);
+    }
+    hasEditPermission = auth.hasEditPermission(itinerary.id);
+    auth.updateAccessTime(itinerary.id, itinerary.title);
+  });
+
+  async function handlePasswordAuth() {
+    if (!password.trim()) {
+      alert("パスワードを入力してください");
+      return;
+    }
+
+    isAuthenticating = true;
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      const token = await authApi.authenticateWithPassword(
+        itinerary.id,
+        password,
+      );
+      auth.setToken(itinerary.id, itinerary.title, token);
+      hasEditPermission = true;
+      showPasswordDialog = false;
+      password = "";
+    } catch (error) {
+      alert("パスワードが正しくありません");
+    } finally {
+      isAuthenticating = false;
+    }
+  }
+
+  async function handleMemoUpdate() {
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({ memo: editedMemo.trim() || undefined });
+    }
+    showMemoDialog = false;
+  }
+
+  function handleShare() {
+    showShareDialog = true;
+  }
+
+  async function copyShareLink(includeToken: boolean) {
+    try {
+      let url = window.location.origin + window.location.pathname;
+      
+      if (includeToken && hasEditPermission) {
+        const token = auth.getToken(itinerary.id);
+        if (token) {
+          url += `?token=${token}`;
+        }
+      }
+      
+      await navigator.clipboard.writeText(url);
+      showShareDialog = false;
       showCopyMessage = true;
       setTimeout(() => {
         showCopyMessage = false;
@@ -171,10 +235,31 @@
           onclick={() => {
             isEditingTitle = true;
           }}
-          class="standard-autumn-title-button">{itinerary.title}</button
+          class="standard-autumn-title-button"
+          disabled={!hasEditPermission}>{itinerary.title}</button
         >
       {/if}
-      <div class="standard-autumn-memo">メモ</div>
+      <div class="standard-autumn-controls">
+        {#if !hasEditPermission}
+          <button
+            onclick={() => {
+              showPasswordDialog = true;
+            }}
+            class="standard-autumn-btn standard-autumn-btn-edit"
+          >
+            🔒 編集
+          </button>
+        {/if}
+        <button
+          onclick={() => {
+            editedMemo = itinerary.memo || "";
+            showMemoDialog = true;
+          }}
+          class="standard-autumn-btn standard-autumn-btn-edit"
+        >
+          📝 メモ
+        </button>
+      </div>
     </header>
 
     <div class="standard-autumn-add-step">
@@ -257,12 +342,13 @@
           onclick={() => {
             isAddingStep = true;
           }}
-          class="standard-autumn-btn-add">＋ 予定を追加</button
+          class="standard-autumn-btn-add"
+          disabled={!hasEditPermission}>＋ 予定を追加</button
         >
       {/if}
     </div>
 
-    <StepList {steps} {onUpdateStep} {onDeleteStep} />
+    <StepList {steps} {onUpdateStep} {onDeleteStep} {hasEditPermission} />
 
     <nav class="standard-autumn-bottom-nav" aria-label="フッターメニュー">
       <button
@@ -339,4 +425,157 @@
       </div>
     </nav>
   </div>
+
+  {#if showMemoDialog}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="standard-autumn-dialog-overlay"
+      onclick={() => {
+        showMemoDialog = false;
+        editedMemo = "";
+      }}
+    >
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="standard-autumn-dialog" onclick={(e) => e.stopPropagation()}>
+        <h3 class="standard-autumn-dialog-title">メモ</h3>
+        <textarea
+          bind:value={editedMemo}
+          placeholder="メモを入力..."
+          class="standard-autumn-textarea"
+          rows="6"
+          disabled={!hasEditPermission}
+        ></textarea>
+        <div class="standard-autumn-dialog-actions">
+          {#if hasEditPermission}
+            <button
+              onclick={handleMemoUpdate}
+              class="standard-autumn-btn standard-autumn-btn-primary"
+            >
+              保存
+            </button>
+          {/if}
+          <button
+            onclick={() => {
+              showMemoDialog = false;
+              editedMemo = "";
+            }}
+            class="standard-autumn-btn standard-autumn-btn-secondary"
+          >
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if showPasswordDialog}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="standard-autumn-dialog-overlay"
+      onclick={() => {
+        showPasswordDialog = false;
+        password = "";
+      }}
+    >
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="standard-autumn-dialog" onclick={(e) => e.stopPropagation()}>
+        <h3 class="standard-autumn-dialog-title">編集パスワード</h3>
+        <form
+          onsubmit={(e) => {
+            e.preventDefault();
+            handlePasswordAuth();
+          }}
+        >
+          <input
+            type="password"
+            bind:value={password}
+            placeholder="パスワードを入力"
+            class="standard-autumn-input"
+            disabled={isAuthenticating}
+          />
+          <div class="standard-autumn-dialog-actions">
+            <button
+              type="submit"
+              class="standard-autumn-btn standard-autumn-btn-primary"
+              disabled={isAuthenticating}
+            >
+              {isAuthenticating ? "認証中..." : "認証"}
+            </button>
+            <button
+              type="button"
+              onclick={() => {
+                showPasswordDialog = false;
+                password = "";
+              }}
+              class="standard-autumn-btn standard-autumn-btn-secondary"
+              disabled={isAuthenticating}
+            >
+              キャンセル
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {/if}
+
+  {#if showShareDialog}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="standard-autumn-dialog-overlay"
+      onclick={() => {
+        showShareDialog = false;
+      }}
+    >
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="standard-autumn-dialog" onclick={(e) => e.stopPropagation()}>
+        <h3 class="standard-autumn-dialog-title">リンクを共有</h3>
+        <p class="standard-autumn-dialog-description">
+          どのリンクをコピーしますか?
+        </p>
+        <div class="standard-autumn-share-options">
+          {#if hasEditPermission}
+            <button
+              onclick={() => copyShareLink(true)}
+              class="standard-autumn-share-option"
+            >
+              <div class="standard-autumn-share-option-icon">🔓</div>
+              <div class="standard-autumn-share-option-content">
+                <div class="standard-autumn-share-option-title">編集用リンク</div>
+                <div class="standard-autumn-share-option-desc">
+                  誰でも編集できるリンクをコピー
+                </div>
+              </div>
+            </button>
+          {/if}
+          <button
+            onclick={() => copyShareLink(false)}
+            class="standard-autumn-share-option"
+          >
+            <div class="standard-autumn-share-option-icon">👁️</div>
+            <div class="standard-autumn-share-option-content">
+              <div class="standard-autumn-share-option-title">閲覧用リンク</div>
+              <div class="standard-autumn-share-option-desc">
+                閲覧のみ可能なリンクをコピー
+              </div>
+            </div>
+          </button>
+        </div>
+        <button
+          onclick={() => {
+            showShareDialog = false;
+          }}
+          class="standard-autumn-btn standard-autumn-btn-secondary"
+          style="width: 100%; margin-top: 0.5rem;"
+        >
+          キャンセル
+        </button>
+      </div>
+    </div>
+  {/if}
 </div>

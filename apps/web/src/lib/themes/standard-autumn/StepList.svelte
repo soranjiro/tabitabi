@@ -3,6 +3,7 @@
 
   interface Props {
     steps: Step[];
+    hasEditPermission?: boolean;
     onUpdateStep?: (
       stepId: string,
       data: {
@@ -16,7 +17,12 @@
     onDeleteStep?: (stepId: string) => Promise<void>;
   }
 
-  let { steps, onUpdateStep, onDeleteStep }: Props = $props();
+  let {
+    steps,
+    hasEditPermission = false,
+    onUpdateStep,
+    onDeleteStep,
+  }: Props = $props();
 
   let editingStepId = $state<string | null>(null);
   let editedStep = $state<Partial<Step>>({});
@@ -322,6 +328,7 @@
                               class="standard-autumn-btn-icon"
                               title="編集"
                               aria-label="編集"
+                              disabled={!hasEditPermission}
                             >
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -338,6 +345,7 @@
                               class="standard-autumn-btn-icon"
                               title="削除"
                               aria-label="削除"
+                              disabled={!hasEditPermission}
                             >
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"

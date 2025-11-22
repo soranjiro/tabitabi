@@ -8,12 +8,12 @@ export const stepApi = {
   get: (stepId: string) =>
     apiClient.get<Step>(`/steps/${stepId}`),
 
-  create: (data: CreateStepInput) =>
-    apiClient.post<Step>('/steps', data),
+  create: (data: CreateStepInput, itineraryId: string) =>
+    apiClient.post<Step>('/steps', data, itineraryId),
 
-  update: (stepId: string, data: UpdateStepInput) =>
-    apiClient.put<Step>(`/steps/${stepId}`, data),
+  update: (stepId: string, data: UpdateStepInput, itineraryId: string) =>
+    apiClient.put<Step>(`/steps/${stepId}`, data, itineraryId),
 
-  delete: (stepId: string) =>
-    apiClient.delete(`/steps/${stepId}`),
+  delete: (stepId: string, itineraryId: string) =>
+    apiClient.delete(`/steps/${stepId}`, itineraryId),
 };

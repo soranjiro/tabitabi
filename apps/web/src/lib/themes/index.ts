@@ -22,8 +22,8 @@ export function getEnabledFeatures(theme: Theme): string[] {
 // メタ情報だけを静的に保持（テーマ本体は読み込まない）
 const THEME_CATALOG: Array<{ id: AvailableTheme; name: string; description: string }> = [
   { id: 'minimal', name: 'ミニマル', description: '軽量で最低限' },
+  { id: 'standard-autumn', name: '標準', description: 'モチーフ秋' },
   { id: 'ai-generated', name: 'AI Generated', description: 'purple' },
-  { id: 'standard-autumn', name: '標準', description: 'モチーフ秋' }
 ];
 
 export function getAvailableThemes(): Array<{ id: string; name: string; description: string }> {

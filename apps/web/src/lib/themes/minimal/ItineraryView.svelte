@@ -2,6 +2,9 @@
   import { goto } from "$app/navigation";
   import type { Itinerary, Step } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
+  import { auth } from "$lib/auth";
+  import { authApi } from "$lib/api/auth";
+  import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
   import "./theme.css";
 
@@ -11,6 +14,7 @@
     onUpdateItinerary?: (data: {
       title?: string;
       theme_id?: string;
+      memo?: string;
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
@@ -46,6 +50,44 @@
   let isEditingTitle = $state(false);
   let editedTitle = $state(itinerary.title);
   let isAddingStep = $state(false);
+  let hasEditPermission = $state(false);
+  let showPasswordDialog = $state(false);
+  let showMemoDialog = $state(false);
+  let editedMemo = $state(itinerary.memo || "");
+  let password = $state("");
+  let isAuthenticating = $state(false);
+
+  onMount(() => {
+    const token = auth.extractTokenFromUrl();
+    if (token) {
+      auth.setToken(itinerary.id, itinerary.title, token);
+    }
+    hasEditPermission = auth.hasEditPermission(itinerary.id);
+    auth.updateAccessTime(itinerary.id, itinerary.title);
+  });
+
+  async function handlePasswordAuth() {
+    if (!password.trim()) {
+      alert("パスワードを入力してください");
+      return;
+    }
+
+    isAuthenticating = true;
+    try {
+      const token = await authApi.authenticateWithPassword(
+        itinerary.id,
+        password,
+      );
+      auth.setToken(itinerary.id, itinerary.title, token);
+      hasEditPermission = true;
+      showPasswordDialog = false;
+      password = "";
+    } catch (error) {
+      alert("パスワードが正しくありません");
+    } finally {
+      isAuthenticating = false;
+    }
+  }
 
   let newStep = $state({
     title: "",
@@ -112,6 +154,13 @@
     newStepMinute = "00";
     isAddingStep = false;
   }
+
+  async function handleMemoUpdate() {
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({ memo: editedMemo.trim() || undefined });
+    }
+    showMemoDialog = false;
+  }
 </script>
 
 <div class="minimal-theme">
@@ -142,16 +191,37 @@
           isEditingTitle = true;
         }}
         class="minimal-title-button"
+        disabled={!hasEditPermission}
       >
         {itinerary.title}
       </button>
     {/if}
 
     <div class="minimal-controls">
+      {#if !hasEditPermission}
+        <button
+          onclick={() => {
+            showPasswordDialog = true;
+          }}
+          class="minimal-btn minimal-btn-edit"
+        >
+          編集
+        </button>
+      {/if}
+      <button
+        onclick={() => {
+          editedMemo = itinerary.memo || "";
+          showMemoDialog = true;
+        }}
+        class="minimal-btn minimal-btn-edit"
+      >
+        📝 メモ
+      </button>
       <select
         value={itinerary.theme_id}
         onchange={handleThemeChange}
         class="minimal-theme-select"
+        disabled={!hasEditPermission}
       >
         {#each themes as theme}
           <option value={theme.id}>{theme.name}</option>
@@ -161,7 +231,7 @@
   </header>
 
   <div class="minimal-add-step">
-    {#if isAddingStep}
+    {#if isAddingStep && hasEditPermission}
       <form
         class="minimal-step-form"
         onsubmit={(e) => {
@@ -227,11 +297,105 @@
           isAddingStep = true;
         }}
         class="minimal-btn minimal-btn-add"
+        disabled={!hasEditPermission}
       >
         ＋ 予定を追加
       </button>
     {/if}
   </div>
 
-  <StepList {steps} {onUpdateStep} {onDeleteStep} />
+  {#if showMemoDialog}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="minimal-dialog-overlay"
+      onclick={() => {
+        showMemoDialog = false;
+      }}
+    >
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="minimal-dialog" onclick={(e) => e.stopPropagation()}>
+        <h3 class="minimal-dialog-title">メモ</h3>
+        <textarea
+          bind:value={editedMemo}
+          rows="6"
+          class="minimal-textarea"
+          readonly={!hasEditPermission}
+        ></textarea>
+        <div class="minimal-dialog-actions">
+          {#if hasEditPermission}
+            <button
+              onclick={handleMemoUpdate}
+              class="minimal-btn minimal-btn-primary"
+            >
+              保存
+            </button>
+          {/if}
+          <button
+            onclick={() => {
+              showMemoDialog = false;
+            }}
+            class="minimal-btn minimal-btn-secondary"
+          >
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if showPasswordDialog}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="minimal-dialog-overlay"
+      onclick={() => {
+        showPasswordDialog = false;
+        password = "";
+      }}
+    >
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="minimal-dialog" onclick={(e) => e.stopPropagation()}>
+        <h3 class="minimal-dialog-title">編集パスワード</h3>
+        <form
+          onsubmit={(e) => {
+            e.preventDefault();
+            handlePasswordAuth();
+          }}
+        >
+          <input
+            type="password"
+            bind:value={password}
+            placeholder="パスワードを入力"
+            class="minimal-input"
+            disabled={isAuthenticating}
+          />
+          <div class="minimal-dialog-actions">
+            <button
+              type="submit"
+              class="minimal-btn minimal-btn-primary"
+              disabled={isAuthenticating}
+            >
+              {isAuthenticating ? "認証中..." : "認証"}
+            </button>
+            <button
+              type="button"
+              onclick={() => {
+                showPasswordDialog = false;
+                password = "";
+              }}
+              class="minimal-btn minimal-btn-secondary"
+              disabled={isAuthenticating}
+            >
+              キャンセル
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {/if}
+
+  <StepList {steps} {onUpdateStep} {onDeleteStep} {hasEditPermission} />
 </div>

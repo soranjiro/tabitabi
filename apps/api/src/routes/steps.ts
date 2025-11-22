@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { Env } from '../utils';
 import { StepService } from '../services/step.service';
+import { ItineraryService } from '../services/itinerary.service';
+import { authMiddleware } from '../middleware/auth';
 
 const steps = new Hono<{ Bindings: Env }>();
 
@@ -34,7 +36,7 @@ steps.get('/:stepId', async (c) => {
   return c.json({ success: true, data });
 });
 
-steps.post('/', async (c) => {
+steps.post('/', authMiddleware, async (c) => {
   const input = await c.req.json();
 
   if (!input.itinerary_id || !input.title || !input.date || !input.time) {
@@ -47,39 +49,65 @@ steps.post('/', async (c) => {
     }, 400);
   }
 
+  const shioriId = c.get('shioriId');
+  if (input.itinerary_id !== shioriId) {
+    return c.json({
+      success: false,
+      error: { code: 'FORBIDDEN', message: 'You can only add steps to your own itinerary' }
+    }, 403);
+  }
+
   const service = new StepService(c.env.DB);
   const data = await service.create(input);
   return c.json({ success: true, data }, 201);
 });
 
-steps.put('/:stepId', async (c) => {
+steps.put('/:stepId', authMiddleware, async (c) => {
   const stepId = c.req.param('stepId');
   const input = await c.req.json();
   const service = new StepService(c.env.DB);
-  const data = await service.update(stepId, input);
 
-  if (!data) {
+  const existingStep = await service.get(stepId);
+  if (!existingStep) {
     return c.json({
       success: false,
       error: { code: 'NOT_FOUND', message: 'Step not found' }
     }, 404);
   }
 
+  const shioriId = c.get('shioriId');
+  if (existingStep.itinerary_id !== shioriId) {
+    return c.json({
+      success: false,
+      error: { code: 'FORBIDDEN', message: 'You can only edit steps in your own itinerary' }
+    }, 403);
+  }
+
+  const data = await service.update(stepId, input);
   return c.json({ success: true, data });
 });
 
-steps.delete('/:stepId', async (c) => {
+steps.delete('/:stepId', authMiddleware, async (c) => {
   const stepId = c.req.param('stepId');
   const service = new StepService(c.env.DB);
-  const success = await service.delete(stepId);
 
-  if (!success) {
+  const existingStep = await service.get(stepId);
+  if (!existingStep) {
     return c.json({
       success: false,
       error: { code: 'NOT_FOUND', message: 'Step not found' }
     }, 404);
   }
 
+  const shioriId = c.get('shioriId');
+  if (existingStep.itinerary_id !== shioriId) {
+    return c.json({
+      success: false,
+      error: { code: 'FORBIDDEN', message: 'You can only delete steps in your own itinerary' }
+    }, 403);
+  }
+
+  const success = await service.delete(stepId);
   return c.json({ success: true, data: null });
 });
 

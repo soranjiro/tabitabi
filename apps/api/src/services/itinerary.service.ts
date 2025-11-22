@@ -30,13 +30,15 @@ export class ItineraryService {
       id,
       title: input.title,
       theme_id: input.theme_id || 'minimal',
+      memo: input.memo ?? null,
+      password: input.password ?? null,
       created_at: now,
       updated_at: now,
     };
 
     await this.db
-      .prepare('INSERT INTO itineraries (id, title, theme_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
-      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.created_at, itinerary.updated_at)
+      .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.memo, itinerary.password, itinerary.created_at, itinerary.updated_at)
       .run();
 
     return itinerary;
@@ -57,6 +59,14 @@ export class ItineraryService {
     if (input.theme_id !== undefined) {
       fields.push('theme_id = ?');
       values.push(input.theme_id);
+    }
+    if (input.memo !== undefined) {
+      fields.push('memo = ?');
+      values.push(input.memo);
+    }
+    if (input.password !== undefined) {
+      fields.push('password = ?');
+      values.push(input.password);
     }
 
     if (fields.length > 1) {
@@ -84,6 +94,8 @@ export class ItineraryService {
       id: row.id,
       title: row.title,
       theme_id: row.theme_id,
+      memo: row.memo,
+      password: row.password,
       created_at: row.created_at,
       updated_at: row.updated_at,
     };

@@ -2,37 +2,48 @@
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { itineraryApi } from "$lib/api/itinerary";
+  import { auth } from "$lib/auth";
   import { getAvailableThemes } from "$lib/themes";
-  import {
-    getRecentItineraries,
-    type RecentItinerary,
-  } from "$lib/utils/recentItineraries";
 
   let title = $state("");
+  let password = $state("");
   let theme_id = $state("standard-autumn");
   let creating = $state(false);
-  let recentItineraries = $state<RecentItinerary[]>([]);
+  let titleError = $state("");
+  let recentItineraries = $state<
+    Array<{ id: string; title: string; visitedAt: number }>
+  >([]);
   let showRecent = $state(false);
 
   const themes = getAvailableThemes();
 
-  // Load recent itineraries with delay for performance
   onMount(() => {
     setTimeout(() => {
-      recentItineraries = getRecentItineraries();
+      recentItineraries = auth.getRecentItineraries();
       showRecent = true;
     }, 300);
   });
 
   async function createItinerary() {
-    if (!title.trim()) return;
+    titleError = "";
+
+    if (!title.trim()) {
+      titleError = "タイトルを入力してください";
+      return;
+    }
 
     creating = true;
     try {
       const created = await itineraryApi.create({
         title: title.trim(),
         theme_id,
+        password: password.trim() || undefined,
       });
+
+      if (created.token) {
+        auth.setToken(created.id, created.title, created.token);
+      }
+
       goto(`/${created.id}`);
     } catch (error) {
       console.error("Failed to create:", error);
@@ -50,40 +61,74 @@
 </script>
 
 <svelte:head>
-  <title>Tabitabi - 旅のしおり</title>
+  <title>たびたび - 旅のしおり</title>
 </svelte:head>
 
 <div
-  class="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-blue-50 to-indigo-100"
+  class="min-h-screen flex flex-col justify-center px-4 py-8 bg-gradient-to-br from-blue-50 to-indigo-100"
 >
-  <div class="text-center max-w-lg w-full">
-    <h1 class="text-5xl font-bold text-indigo-600 mb-3">✈️ Tabitabi</h1>
-    <p class="text-lg text-gray-600 mb-12">旅のしおりを、サクッと作成</p>
+  <div class="text-center max-w-lg w-full mx-auto">
+    <h1 class="text-5xl text-indigo-600 mt-6 mb-2" style="font-family: 'Hiragino Maru Gothic ProN', 'ヒラギノ丸ゴ ProN', '游ゴシック体', YuGothic, 'Yu Gothic Medium', 'メイリオ', Meiryo, sans-serif; font-weight: 1000; letter-spacing: 0.05em;">✈️ たびたび</h1>
+    <p class="text-lg text-gray-600 mb-6">旅のしおりを、サクッと作成</p>
 
     <div class="bg-white rounded-2xl shadow-xl p-8">
-      <input
-        type="text"
-        bind:value={title}
-        onkeypress={handleKeyPress}
-        placeholder="旅のタイトルを入力..."
-        class="w-full text-xl px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors mb-4"
-        disabled={creating}
-      />
+      <div class="mb-6">
+        <label
+          for="title"
+          class="block text-sm font-semibold text-gray-700 mb-2"
+        >
+          タイトル <span class="text-red-500">*</span>
+        </label>
+        <input
+          id="title"
+          type="text"
+          bind:value={title}
+          onkeypress={handleKeyPress}
+          class="w-full text-xl px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors {titleError
+            ? 'border-red-500 focus:border-red-500'
+            : 'border-gray-200 focus:border-indigo-500'}"
+        />
+        {#if titleError}
+          <p class="text-red-500 text-sm mt-1">{titleError}</p>
+        {/if}
+      </div>
 
-      <select
-        bind:value={theme_id}
-        class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors mb-4"
-        disabled={creating}
-      >
-        {#each themes as theme}
-          <option value={theme.id}>{theme.name} - {theme.description}</option>
-        {/each}
-      </select>
+      <div class="mb-6">
+        <label
+          for="theme"
+          class="block text-sm font-semibold text-gray-700 mb-2"
+        >
+          テーマ
+        </label>
+        <select
+          id="theme"
+          bind:value={theme_id}
+          class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors"
+        >
+          {#each themes as theme}
+            <option value={theme.id}>{theme.name} - {theme.description}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div class="mb-6">
+        <label
+          for="password"
+          class="block text-sm font-semibold text-gray-700 mb-2"
+        >
+          編集用パスワード
+        </label>
+        <input
+          id="password"
+          type="password"
+          bind:value={password}
+          class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors"
+        />
+      </div>
 
       <button
         onclick={createItinerary}
-        disabled={!title.trim() || creating}
-        class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-lg py-3 px-6 rounded-lg transition-colors"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-lg py-4 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
       >
         {creating ? "作成中..." : "しおりを作成 →"}
       </button>

@@ -2,25 +2,28 @@
   import { invalidateAll } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
   import { stepApi } from "$lib/api/step";
-  import { saveRecentItinerary } from "$lib/utils/recentItineraries";
+  import { auth } from "$lib/auth";
   import { onMount } from "svelte";
 
   let { data } = $props();
 
   let ItineraryView = $derived(data.theme.components.ItineraryView);
 
-  // Save to recent itineraries on mount
   onMount(() => {
-    saveRecentItinerary(data.itinerary.id, data.itinerary.title);
+    auth.updateAccessTime(data.itinerary.id, data.itinerary.title);
   });
 
   async function handleUpdateItinerary(updateData: {
     title?: string;
     theme_id?: string;
+    memo?: string;
   }) {
     try {
       await itineraryApi.update(data.itinerary.id, updateData);
       await invalidateAll();
+      if (updateData.title) {
+        auth.updateAccessTime(data.itinerary.id, updateData.title);
+      }
     } catch (error) {
       console.error("Failed to update itinerary:", error);
       alert("しおりの更新に失敗しました");
@@ -35,10 +38,13 @@
     notes?: string;
   }) {
     try {
-      await stepApi.create({
-        itinerary_id: data.itinerary.id,
-        ...stepData,
-      });
+      await stepApi.create(
+        {
+          itinerary_id: data.itinerary.id,
+          ...stepData,
+        },
+        data.itinerary.id,
+      );
       await invalidateAll();
     } catch (error) {
       console.error("Failed to create step:", error);
@@ -57,7 +63,7 @@
     },
   ) {
     try {
-      await stepApi.update(stepId, updateData);
+      await stepApi.update(stepId, updateData, data.itinerary.id);
       await invalidateAll();
     } catch (error) {
       console.error("Failed to update step:", error);
@@ -67,7 +73,7 @@
 
   async function handleDeleteStep(stepId: string) {
     try {
-      await stepApi.delete(stepId);
+      await stepApi.delete(stepId, data.itinerary.id);
       await invalidateAll();
     } catch (error) {
       console.error("Failed to delete step:", error);
@@ -77,7 +83,7 @@
 </script>
 
 <svelte:head>
-  <title>{data.itinerary.title} - Tabitabi</title>
+  <title>{data.itinerary.title} - たびたび</title>
 </svelte:head>
 
 <ItineraryView

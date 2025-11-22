@@ -58,6 +58,11 @@
       createItinerary();
     }
   }
+
+  function removeRecent(id: string) {
+    auth.removeFromHistory(id);
+    recentItineraries = auth.getRecentItineraries();
+  }
 </script>
 
 <svelte:head>
@@ -68,7 +73,12 @@
   class="min-h-screen flex flex-col justify-center px-4 py-8 bg-gradient-to-br from-blue-50 to-indigo-100"
 >
   <div class="text-center max-w-lg w-full mx-auto">
-    <h1 class="text-5xl text-indigo-600 mt-6 mb-2" style="font-family: 'Hiragino Maru Gothic ProN', 'ヒラギノ丸ゴ ProN', '游ゴシック体', YuGothic, 'Yu Gothic Medium', 'メイリオ', Meiryo, sans-serif; font-weight: 1000; letter-spacing: 0.05em;">✈️ たびたび</h1>
+    <h1
+      class="text-5xl text-indigo-600 mt-6 mb-2"
+      style="font-family: 'Hiragino Maru Gothic ProN', 'ヒラギノ丸ゴ ProN', '游ゴシック体', YuGothic, 'Yu Gothic Medium', 'メイリオ', Meiryo, sans-serif; font-weight: 1000; letter-spacing: 0.05em;"
+    >
+      ✈️ たびたび
+    </h1>
     <p class="text-lg text-gray-600 mb-6">旅のしおりを、サクッと作成</p>
 
     <div class="bg-white rounded-2xl shadow-xl p-8">
@@ -144,20 +154,30 @@
         <h2 class="text-xl font-semibold text-gray-800 mb-4">📚 最近の項目</h2>
         <div class="space-y-2">
           {#each recentItineraries as item}
-            <button
-              onclick={() => goto(`/${item.id}`)}
-              class="w-full text-left px-4 py-3 rounded-lg bg-gray-50 hover:bg-indigo-50 hover:border-indigo-200 border-2 border-transparent transition-all duration-200"
-            >
-              <div class="font-medium text-gray-800">{item.title}</div>
-              <div class="text-xs text-gray-500 mt-1">
-                {new Date(item.visitedAt).toLocaleDateString("ja-JP", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </div>
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                onclick={() => goto(`/${item.id}`)}
+                class="flex-1 text-left px-4 py-3 rounded-lg bg-gray-50 hover:bg-indigo-50 hover:border-indigo-200 border-2 border-transparent transition-all duration-200"
+              >
+                <div class="font-medium text-gray-800">{item.title}</div>
+                <div class="text-xs text-gray-500 mt-1">
+                  {new Date(item.visitedAt).toLocaleDateString("ja-JP", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </div>
+              </button>
+              <button
+                type="button"
+                onclick={() => removeRecent(item.id)}
+                class="shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors text-sm"
+                aria-label="履歴から削除"
+              >
+                ✕
+              </button>
+            </div>
           {/each}
         </div>
       </div>

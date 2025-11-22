@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { Env } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth';
 import { generateToken } from '../utils/jwt';
 
 const itineraries = new Hono<{ Bindings: Env }>();
@@ -34,19 +34,27 @@ itineraries.post('/', async (c) => {
   return c.json({ success: true, data: { ...data, token } }, 201);
 });
 
-itineraries.put('/:id', authMiddleware, async (c) => {
+itineraries.put('/:id', optionalAuthMiddleware, async (c) => {
   const id = c.req.param('id');
-  const shioriId = c.get('shioriId');
-
-  if (id !== shioriId) {
-    return c.json({
-      success: false,
-      error: { code: 'FORBIDDEN', message: 'You can only edit your own itinerary' }
-    }, 403);
-  }
-
   const input = await c.req.json();
   const service = new ItineraryService(c.env.DB);
+  const existing = await service.get(id);
+
+  if (!existing) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+  }
+
+  if (existing.password) {
+    const shioriId = c.get('shioriId');
+
+    if (id !== shioriId) {
+      return c.json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You can only edit your own itinerary' }
+      }, 403);
+    }
+  }
+
   const data = await service.update(id, input);
 
   if (!data) {
@@ -56,18 +64,26 @@ itineraries.put('/:id', authMiddleware, async (c) => {
   return c.json({ success: true, data });
 });
 
-itineraries.delete('/:id', authMiddleware, async (c) => {
+itineraries.delete('/:id', optionalAuthMiddleware, async (c) => {
   const id = c.req.param('id');
-  const shioriId = c.get('shioriId');
+  const service = new ItineraryService(c.env.DB);
+  const existing = await service.get(id);
 
-  if (id !== shioriId) {
-    return c.json({
-      success: false,
-      error: { code: 'FORBIDDEN', message: 'You can only delete your own itinerary' }
-    }, 403);
+  if (!existing) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   }
 
-  const service = new ItineraryService(c.env.DB);
+  if (existing.password) {
+    const shioriId = c.get('shioriId');
+
+    if (id !== shioriId) {
+      return c.json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You can only delete your own itinerary' }
+      }, 403);
+    }
+  }
+
   const success = await service.delete(id);
 
   if (!success) {

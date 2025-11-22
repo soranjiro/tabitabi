@@ -4,6 +4,8 @@ import { stepApi } from '$lib/api/step';
 import { loadTheme } from '$lib/themes';
 import { error } from '@sveltejs/kit';
 
+export const prerender = false;
+
 export const load: PageLoad = async ({ params }) => {
   try {
     const itinerary = await itineraryApi.get(params.id);

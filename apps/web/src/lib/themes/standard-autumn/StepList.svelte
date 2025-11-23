@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { marked } from "marked";
 
   interface Props {
     steps: Step[];
@@ -187,6 +188,17 @@
     if (onDeleteStep) {
       await onDeleteStep(stepId);
     }
+  }
+
+  // Configure marked for safe rendering
+  marked.setOptions({
+    breaks: true, // Convert line breaks to <br>
+    gfm: true, // Enable GitHub Flavored Markdown
+  });
+
+  // Function to render markdown safely
+  function renderMarkdown(text: string): string {
+    return marked.parse(text, { async: false }) as string;
   }
 </script>
 
@@ -407,8 +419,18 @@
                           </div>
                         {/if}
                         {#if step.notes}
-                          <div class="standard-autumn-step-notes">
-                            {step.notes}
+                          <!-- svelte-ignore a11y_click_events_have_key_events -->
+                          <!-- svelte-ignore a11y_no_static_element_interactions -->
+                          <div
+                            class="standard-autumn-step-notes"
+                            onclick={(e) => {
+                              // Allow link clicks to propagate
+                              if ((e.target as HTMLElement).tagName === "A") {
+                                e.stopPropagation();
+                              }
+                            }}
+                          >
+                            {@html renderMarkdown(step.notes)}
                           </div>
                         {/if}
                       </div>

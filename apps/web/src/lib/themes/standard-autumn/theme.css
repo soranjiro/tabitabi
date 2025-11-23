@@ -335,20 +335,17 @@ body {
 .standard-autumn-step-content {
   flex: 1;
   padding: 1.25rem;
-  background: #fff;
-  border-radius: 16px;
+  background: #fffcf9; /* Slightly warm white */
+  border-radius: 4px; /* More traditional, less rounded */
   margin-left: 1.5rem;
-  box-shadow: var(--standard-autumn-shadow-sm);
+  box-shadow: none;
   border: 1px solid var(--standard-autumn-border);
-  transition: all 0.2s;
+  border-left: 4px solid var(--standard-autumn-primary); /* Accent border on left */
   position: relative;
 }
 
-.standard-autumn-step-content:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.06);
-  border-color: var(--standard-autumn-secondary);
-}
+/* Removed hover transform animation as requested */
+/* .standard-autumn-step-content:hover { ... } */
 
 .standard-autumn-step-location {
   font-size: 0.85rem;
@@ -373,17 +370,20 @@ body {
   color: var(--standard-autumn-text);
   margin: 0 0 0.5rem 0;
   line-height: 1.4;
+  display: flex;
+  justify-content: space-between; /* Ensure title and actions are spaced */
+  align-items: flex-start;
 }
 
 .standard-autumn-step-notes {
   font-size: 0.95rem;
   color: var(--standard-autumn-text-light);
   line-height: 1.7;
-  background: var(--standard-autumn-bg);
+  background: rgba(230, 180, 34, 0.05); /* Very light gold bg */
   padding: 1rem;
-  border-radius: 8px;
+  border-radius: 4px;
   margin-top: 0.75rem;
-  border-left: 3px solid var(--standard-autumn-secondary);
+  border: 1px dashed var(--standard-autumn-line-color);
 }
 
 /* Form Elements */

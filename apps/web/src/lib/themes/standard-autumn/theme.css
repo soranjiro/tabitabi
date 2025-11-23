@@ -1,18 +1,19 @@
+/* Fall Theme - "Kyoto Autumn" Style */
 :root {
-  --standard-autumn-bg: #fdfbf7;
-  --standard-autumn-primary: #bf360c;
-  --standard-autumn-primary-light: #d84315;
-  --standard-autumn-secondary: #fff3e0;
-  --standard-autumn-accent: #e65100;
-  --standard-autumn-text: #3e2723;
-  --standard-autumn-text-light: #5d4037;
+  --standard-autumn-bg: #fcf9f2; /* Washi paper off-white */
+  --standard-autumn-primary: #a93529; /* Momiji (Maple) Red */
+  --standard-autumn-primary-light: #c75b4e;
+  --standard-autumn-secondary: #e6b422; /* Icho (Ginkgo) Gold */
+  --standard-autumn-accent: #d4762c; /* Kaki (Persimmon) Orange */
+  --standard-autumn-text: #4a3b32; /* Dark Brown (Chestnut) */
+  --standard-autumn-text-light: #786b60;
   --standard-autumn-card-bg: #ffffff;
   --standard-autumn-header-bg: transparent;
-  --standard-autumn-border: #efebe9;
-  --standard-autumn-line-color: #d7ccc8;
-  --standard-autumn-dot-bg: #bf360c;
-  --standard-autumn-shadow: 0 10px 30px -10px rgba(62, 39, 35, 0.1);
-  --standard-autumn-shadow-sm: 0 2px 8px -2px rgba(62, 39, 35, 0.05);
+  --standard-autumn-border: #e8e0d5;
+  --standard-autumn-line-color: #dccbba;
+  --standard-autumn-dot-bg: #a93529;
+  --standard-autumn-shadow: 0 12px 36px -8px rgba(74, 59, 50, 0.12);
+  --standard-autumn-shadow-sm: 0 4px 12px -2px rgba(74, 59, 50, 0.08);
 }
 
 body {
@@ -21,12 +22,14 @@ body {
 }
 
 .standard-autumn-theme {
-  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Inter", sans-serif;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Times New Roman", serif;
   min-height: 100vh;
   background-color: var(--standard-autumn-bg);
+  /* Subtle texture and gradient */
   background-image:
-    radial-gradient(circle at 100% 0%, #ffe0b2 0%, transparent 25%),
-    radial-gradient(circle at 0% 100%, #ffccbc 0%, transparent 25%);
+    radial-gradient(circle at 5% 5%, rgba(230, 180, 34, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 95% 95%, rgba(169, 53, 41, 0.08) 0%, transparent 40%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a93529' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   color: var(--standard-autumn-text);
   -webkit-font-smoothing: antialiased;
 }
@@ -45,13 +48,13 @@ body {
 /* Header */
 .standard-autumn-header {
   text-align: center;
-  padding: 3rem 1.5rem 1.5rem;
+  padding: 3.5rem 1.5rem 1.5rem;
   position: relative;
 }
 
 .standard-autumn-title-button {
   font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 600;
   color: var(--standard-autumn-text);
   background: none;
@@ -59,10 +62,11 @@ body {
   padding: 0.5rem 1rem;
   margin: 0;
   cursor: pointer;
-  line-height: 1.4;
-  letter-spacing: 0.05em;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
   position: relative;
   transition: opacity 0.2s;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .standard-autumn-title-button:hover {
@@ -71,7 +75,7 @@ body {
 
 .standard-autumn-title-input {
   font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 600;
   text-align: center;
   width: 100%;
@@ -90,64 +94,80 @@ body {
 }
 
 .standard-autumn-memo-display {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
   font-size: 0.95rem;
   color: var(--standard-autumn-text-light);
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.7);
   border: 1px solid var(--standard-autumn-border);
-  border-radius: 16px;
-  padding: 1rem 1.5rem;
-  line-height: 1.7;
+  border-radius: 12px;
+  padding: 1.2rem 1.5rem;
+  line-height: 1.8;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   max-width: 90%;
   width: 100%;
   margin: 0 auto;
   backdrop-filter: blur(4px);
   white-space: pre-wrap;
   word-break: break-word;
+  position: relative;
+}
+
+.standard-autumn-memo-display::before {
+  content: '"';
+  position: absolute;
+  top: -10px;
+  left: 10px;
+  font-size: 3rem;
+  color: var(--standard-autumn-secondary);
+  opacity: 0.3;
+  font-family: serif;
 }
 
 .standard-autumn-memo-display:hover {
-  background: rgba(255, 255, 255, 0.8);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
   box-shadow: var(--standard-autumn-shadow-sm);
+  border-color: var(--standard-autumn-secondary);
 }
 
 .standard-autumn-share-icon {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.6);
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  border: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid transparent;
   cursor: pointer;
   color: var(--standard-autumn-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.3s;
 }
 
 .standard-autumn-share-icon:hover {
   background: #fff;
-  transform: scale(1.05);
+  border-color: var(--standard-autumn-primary-light);
+  transform: rotate(15deg);
   box-shadow: var(--standard-autumn-shadow-sm);
 }
 
 .standard-autumn-copy-msg {
   position: absolute;
   top: 1.5rem;
-  right: 3.5rem;
+  right: 4rem;
   font-size: 0.8rem;
   color: #fff;
   background: var(--standard-autumn-primary);
-  padding: 4px 12px;
+  padding: 6px 16px;
   border-radius: 20px;
   pointer-events: none;
   animation: fadeOut 2s forwards;
-  box-shadow: 0 2px 8px rgba(191, 54, 12, 0.2);
+  box-shadow: 0 4px 12px rgba(169, 53, 41, 0.2);
+  font-weight: 600;
 }
 
 @keyframes fadeOut {
@@ -177,9 +197,9 @@ body {
 .standard-autumn-carousel-track {
   display: flex;
   width: auto;
-  transition: margin-left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-  margin-left: calc(50vw - 42.5vw - (var(--active, 0) * (85vw + 20px)));
-  gap: 20px;
+  transition: margin-left 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  margin-left: calc(50vw - 42.5vw - (var(--active, 0) * (85vw + 24px)));
+  gap: 24px;
   padding: 0;
   will-change: margin-left;
   align-items: flex-start;
@@ -191,18 +211,31 @@ body {
   max-width: 420px;
   min-width: 280px;
   box-sizing: border-box;
-  opacity: 0.6;
-  transform: scale(0.92) translateY(10px);
-  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  opacity: 0.5;
+  transform: scale(0.9) translateY(15px);
+  transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
   cursor: pointer;
   display: flex;
   flex-direction: column;
   height: auto;
   border-radius: 24px;
   background: var(--standard-autumn-card-bg);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.04);
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.8);
+  position: relative;
+}
+
+.standard-autumn-carousel-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--standard-autumn-primary), var(--standard-autumn-secondary));
+  opacity: 0;
+  transition: opacity 0.3s;
 }
 
 .standard-autumn-carousel-card[aria-hidden="false"] {
@@ -212,6 +245,10 @@ body {
   cursor: default;
   box-shadow: var(--standard-autumn-shadow);
   border-color: #fff;
+}
+
+.standard-autumn-carousel-card[aria-hidden="false"]::after {
+  opacity: 1;
 }
 
 .standard-autumn-card {
@@ -227,25 +264,26 @@ body {
 
 .standard-autumn-card-header {
   font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
-  font-size: 1.75rem;
+  font-size: 1.8rem;
   color: var(--standard-autumn-text);
   font-weight: 600;
-  padding: 2rem 1.5rem 1.5rem;
+  padding: 2.5rem 1.5rem 1.5rem;
   text-align: center;
-  background: linear-gradient(to bottom, #fff3e0 0%, rgba(255,243,224,0) 100%);
+  background: linear-gradient(to bottom, #fffcf5 0%, rgba(255,255,255,0) 100%);
   letter-spacing: 0.05em;
+  border-bottom: 1px dashed var(--standard-autumn-line-color);
 }
 
 .standard-autumn-card-body {
   position: relative;
-  padding: 0 1.5rem 2rem;
+  padding: 2rem 1.5rem;
 }
 
 /* Timeline */
 .standard-autumn-timeline-item {
   display: flex;
   position: relative;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
   min-height: 60px;
 }
 
@@ -253,7 +291,7 @@ body {
   position: absolute;
   left: 48px;
   top: 16px;
-  bottom: -40px;
+  bottom: -45px;
   width: 1px;
   background: var(--standard-autumn-line-color);
   z-index: 0;
@@ -266,26 +304,32 @@ body {
 .standard-autumn-step-time {
   width: 48px;
   text-align: right;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--standard-autumn-primary);
-  font-weight: 600;
-  padding-right: 12px;
+  font-weight: 700;
+  padding-right: 14px;
   flex-shrink: 0;
-  padding-top: 2px;
+  padding-top: 0;
   font-family: "Inter", sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .standard-autumn-step-dot {
-  width: 12px;
-  height: 12px;
-  background: #fff;
-  border: 2px solid var(--standard-autumn-primary);
-  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  background: var(--standard-autumn-primary);
+  border-radius: 0 50% 0 50%; /* Leaf shape */
+  transform: rotate(-45deg);
   flex-shrink: 0;
   margin-top: 4px;
   z-index: 1;
   position: relative;
-  box-shadow: 0 0 0 4px #fff;
+  box-shadow: 0 2px 5px rgba(169, 53, 41, 0.3);
+  transition: transform 0.3s;
+}
+
+.standard-autumn-timeline-item:hover .standard-autumn-step-dot {
+  transform: rotate(-45deg) scale(1.2);
 }
 
 .standard-autumn-step-content {
@@ -296,11 +340,14 @@ body {
   margin-left: 1.5rem;
   box-shadow: var(--standard-autumn-shadow-sm);
   border: 1px solid var(--standard-autumn-border);
-  transition: transform 0.2s;
+  transition: all 0.2s;
+  position: relative;
 }
 
-.standard-autumn-step-content:active {
-  transform: scale(0.98);
+.standard-autumn-step-content:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+  border-color: var(--standard-autumn-secondary);
 }
 
 .standard-autumn-step-location {
@@ -310,6 +357,7 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  font-weight: 500;
 }
 
 .standard-autumn-icon-location {
@@ -319,7 +367,8 @@ body {
 }
 
 .standard-autumn-step-title {
-  font-size: 1.1rem;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  font-size: 1.15rem;
   font-weight: 600;
   color: var(--standard-autumn-text);
   margin: 0 0 0.5rem 0;
@@ -329,11 +378,12 @@ body {
 .standard-autumn-step-notes {
   font-size: 0.95rem;
   color: var(--standard-autumn-text-light);
-  line-height: 1.6;
+  line-height: 1.7;
   background: var(--standard-autumn-bg);
-  padding: 0.75rem;
+  padding: 1rem;
   border-radius: 8px;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
+  border-left: 3px solid var(--standard-autumn-secondary);
 }
 
 /* Form Elements */
@@ -341,14 +391,15 @@ body {
 .standard-autumn-textarea,
 .standard-autumn-select-time {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.8rem;
   border: 1px solid var(--standard-autumn-border);
   border-radius: 12px;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.8rem;
   font-family: inherit;
   background: #fff;
   font-size: 1rem;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
+  color: var(--standard-autumn-text);
 }
 
 .standard-autumn-input:focus,
@@ -356,7 +407,8 @@ body {
 .standard-autumn-select-time:focus {
   outline: none;
   border-color: var(--standard-autumn-primary);
-  box-shadow: 0 0 0 3px rgba(191, 54, 12, 0.1);
+  box-shadow: 0 0 0 3px rgba(169, 53, 41, 0.1);
+  background: #fffcf9;
 }
 
 .standard-autumn-form {
@@ -365,6 +417,7 @@ body {
   padding: 1.5rem;
   margin: 1rem;
   box-shadow: var(--standard-autumn-shadow);
+  border: 1px solid var(--standard-autumn-border);
 }
 
 .standard-autumn-form-title {
@@ -374,56 +427,62 @@ body {
   color: var(--standard-autumn-text);
   text-align: center;
   font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-weight: 600;
 }
 
 .standard-autumn-btn {
-  padding: 0.75rem 1.5rem;
+  padding: 0.8rem 1.5rem;
   border-radius: 50px;
   border: none;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.95rem;
   transition: all 0.2s;
+  letter-spacing: 0.02em;
 }
 
 .standard-autumn-btn-primary {
-  background: var(--standard-autumn-primary);
+  background: linear-gradient(135deg, var(--standard-autumn-primary), var(--standard-autumn-accent));
   color: #fff;
-  box-shadow: 0 4px 12px rgba(191, 54, 12, 0.3);
+  box-shadow: 0 4px 12px rgba(169, 53, 41, 0.3);
 }
 
 .standard-autumn-btn-primary:hover {
-  background: var(--standard-autumn-primary-light);
   transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(169, 53, 41, 0.4);
 }
 
 .standard-autumn-btn-secondary {
-  background: #f5f5f5;
+  background: #fff;
   color: var(--standard-autumn-text);
+  border: 1px solid var(--standard-autumn-border);
 }
 
 .standard-autumn-btn-secondary:hover {
-  background: #eeeeee;
+  background: var(--standard-autumn-bg);
+  border-color: var(--standard-autumn-primary);
+  color: var(--standard-autumn-primary);
 }
 
-/* Bottom Navigation - Floating */
+/* Bottom Navigation - Floating Glass */
 .standard-autumn-bottom-nav {
   position: fixed;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  height: 64px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(16px);
+  height: 68px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 24px;
-  border-radius: 32px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  gap: 32px;
+  border-radius: 34px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   z-index: 100;
-  padding: 0 24px;
+  padding: 0 32px;
   min-width: 280px;
 }
 
@@ -454,6 +513,7 @@ body {
 .standard-autumn-bottom-btn span {
   font-size: 0.65rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 /* Add Step Button */
@@ -466,20 +526,23 @@ body {
   background: #fff;
   color: var(--standard-autumn-primary);
   border: 2px solid var(--standard-autumn-primary);
-  padding: 0.75rem 2rem;
+  padding: 0.8rem 2.5rem;
   border-radius: 50px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: var(--standard-autumn-shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .standard-autumn-btn-add:hover {
   background: var(--standard-autumn-primary);
   color: #fff;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(191, 54, 12, 0.2);
+  box-shadow: 0 6px 16px rgba(169, 53, 41, 0.25);
 }
 
 /* Dialogs */
@@ -489,8 +552,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(62, 39, 35, 0.4);
-  backdrop-filter: blur(4px);
+  background: rgba(74, 59, 50, 0.4);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -500,20 +563,21 @@ body {
 .standard-autumn-dialog {
   background: #fff;
   border-radius: 24px;
-  padding: 2rem;
+  padding: 2.5rem;
   max-width: 360px;
   width: 90%;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-  animation: dialogSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: dialogSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255,255,255,0.5);
 }
 
 @keyframes dialogSlideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .standard-autumn-dialog-title {
-  margin: 0 0 1rem 0;
+  margin: 0 0 1.5rem 0;
   font-size: 1.4rem;
   font-weight: 600;
   color: var(--standard-autumn-text);
@@ -549,6 +613,7 @@ body {
   font-size: 0.95rem;
   color: var(--standard-autumn-text);
   border-radius: 12px;
+  font-family: inherit;
 }
 
 .standard-autumn-settings-item:hover {
@@ -556,43 +621,133 @@ body {
   color: var(--standard-autumn-primary);
 }
 
-/* Responsive */
-@media (min-width: 830px) {
-  .standard-autumn-carousel-track {
-    margin-left: calc(50vw - 32.5vw - (var(--active, 0) * (65vw + 20px)));
-  }
-  .standard-autumn-carousel-card {
-    flex: 0 0 65vw;
-    width: 65vw;
-  }
+/* Carousel Controls */
+.standard-autumn-carousel-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
 }
 
-@media (max-width: 480px) {
-  .standard-autumn-header {
-    padding: 2rem 1rem 1rem;
-  }
+.standard-autumn-carousel-controls-top {
+  margin-bottom: 0.5rem;
+}
 
-  .standard-autumn-title-button,
-  .standard-autumn-title-input {
-    font-size: 1.75rem;
-  }
+.standard-autumn-carousel-controls-bottom {
+  margin-top: 1rem;
+}
 
-  .standard-autumn-carousel-card {
-    flex: 0 0 88vw;
-    width: 88vw;
-  }
+.standard-autumn-carousel-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--standard-autumn-border);
+  color: var(--standard-autumn-primary);
+  cursor: pointer;
+  padding: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: var(--standard-autumn-shadow-sm);
+}
 
-  .standard-autumn-carousel-track {
-    margin-left: calc(50vw - 44vw - (var(--active, 0) * (88vw + 16px)));
-    gap: 16px;
-  }
+.standard-autumn-carousel-btn:hover:not(:disabled) {
+  background: var(--standard-autumn-primary);
+  color: white;
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(169, 53, 41, 0.3);
+  border-color: var(--standard-autumn-primary);
+}
 
-  .standard-autumn-bottom-nav {
-    bottom: 20px;
-    height: 60px;
-    padding: 0 20px;
-    gap: 20px;
-  }
+.standard-autumn-carousel-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+  border-color: #eee;
+  color: #ccc;
+  box-shadow: none;
+}
+
+.standard-autumn-page-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.standard-autumn-page-dots button {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #dccbba;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.standard-autumn-page-dots button:hover {
+  background: #a93529;
+  opacity: 0.5;
+}
+
+.standard-autumn-page-dots button.active {
+  background: var(--standard-autumn-primary);
+  width: 24px;
+  border-radius: 10px;
+}
+
+.standard-autumn-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--standard-autumn-text-light);
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-size: 1.1rem;
+  font-style: italic;
+}
+
+.standard-autumn-step-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.standard-autumn-btn-icon {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: var(--standard-autumn-text-light);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.standard-autumn-btn-icon:hover {
+  background: #fff;
+  color: var(--standard-autumn-primary);
+  border-color: var(--standard-autumn-border);
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.standard-autumn-btn-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.standard-autumn-step-editing {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 2px solid var(--standard-autumn-primary);
+  margin-left: 1rem;
+  flex: 1;
+  box-shadow: var(--standard-autumn-shadow);
 }
 
 .standard-autumn-btn-wrapper {
@@ -639,127 +794,117 @@ body {
   margin-top: 0.5rem;
 }
 
-/* Restored/Updated Carousel Controls */
-.standard-autumn-carousel-controls {
+.standard-autumn-share-options {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 0.5rem 0;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
-.standard-autumn-carousel-controls-top {
-  margin-bottom: 0.5rem;
-}
-
-.standard-autumn-carousel-controls-bottom {
-  margin-top: 1rem;
-}
-
-.standard-autumn-carousel-btn {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid var(--standard-autumn-primary);
-  color: var(--standard-autumn-primary);
-  cursor: pointer;
-  padding: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+.standard-autumn-share-option {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  box-shadow: var(--standard-autumn-shadow-sm);
-}
-
-.standard-autumn-carousel-btn:hover:not(:disabled) {
-  background: var(--standard-autumn-primary);
-  color: white;
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(191, 54, 12, 0.3);
-}
-
-.standard-autumn-carousel-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
-  border-color: #ddd;
-  color: #ddd;
-  box-shadow: none;
-}
-
-.standard-autumn-page-dots {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-
-.standard-autumn-page-dots button {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #e0e0e0;
-  border: none;
-  padding: 0;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid var(--standard-autumn-border);
+  border-radius: 12px;
+  background: #fff;
   cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.standard-autumn-page-dots button:hover {
-  background: #bdbdbd;
-}
-
-.standard-autumn-page-dots button.active {
-  background: var(--standard-autumn-primary);
-  width: 24px;
-  border-radius: 10px;
-}
-
-.standard-autumn-empty {
-  text-align: center;
-  padding: 3rem;
-  color: var(--standard-autumn-text-light);
-  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
-  font-size: 1.1rem;
-}
-
-.standard-autumn-step-actions {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.standard-autumn-btn-icon {
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid transparent;
-  border-radius: 50%;
-  cursor: pointer;
-  padding: 0.4rem;
-  color: var(--standard-autumn-text-light);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   transition: all 0.2s;
+  text-align: left;
+  width: 100%;
 }
 
-.standard-autumn-btn-icon:hover {
-  background: #fff;
+.standard-autumn-share-option:hover {
+  border-color: var(--standard-autumn-primary);
+  background: #fffcf9;
+}
+
+.standard-autumn-share-option-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--standard-autumn-primary);
-  border-color: var(--standard-autumn-border);
-  transform: scale(1.1);
+  background: rgba(169, 53, 41, 0.1);
+  padding: 8px;
+  border-radius: 50%;
 }
 
-.standard-autumn-btn-icon svg {
-  width: 18px;
-  height: 18px;
+.standard-autumn-share-option-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
-.standard-autumn-step-editing {
-  background: #fff;
-  padding: 1.5rem;
-  border-radius: 16px;
-  border: 2px solid var(--standard-autumn-primary);
-  margin-left: 1rem;
+.standard-autumn-share-option-content {
   flex: 1;
-  box-shadow: var(--standard-autumn-shadow);
+}
+
+.standard-autumn-share-option-title {
+  font-weight: 600;
+  color: var(--standard-autumn-text);
+  margin-bottom: 0.25rem;
+}
+
+.standard-autumn-share-option-desc {
+  font-size: 0.85rem;
+  color: var(--standard-autumn-text-light);
+  line-height: 1.4;
+}
+
+.standard-autumn-dialog-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.standard-autumn-dialog-description {
+  margin: 0 0 1.5rem 0;
+  color: var(--standard-autumn-text-light);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* Responsive */
+@media (min-width: 830px) {
+  .standard-autumn-carousel-track {
+    margin-left: calc(50vw - 32.5vw - (var(--active, 0) * (65vw + 24px)));
+  }
+  .standard-autumn-carousel-card {
+    flex: 0 0 65vw;
+    width: 65vw;
+  }
+}
+
+@media (max-width: 480px) {
+  .standard-autumn-header {
+    padding: 2.5rem 1rem 1rem;
+  }
+
+  .standard-autumn-title-button,
+  .standard-autumn-title-input {
+    font-size: 1.8rem;
+  }
+
+  .standard-autumn-carousel-card {
+    flex: 0 0 88vw;
+    width: 88vw;
+  }
+
+  .standard-autumn-carousel-track {
+    margin-left: calc(50vw - 44vw - (var(--active, 0) * (88vw + 16px)));
+    gap: 16px;
+  }
+
+  .standard-autumn-bottom-nav {
+    bottom: 20px;
+    height: 64px;
+    padding: 0 24px;
+    gap: 24px;
+  }
+
+  .standard-autumn-card-header {
+    font-size: 1.5rem;
+  }
 }

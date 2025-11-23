@@ -97,11 +97,13 @@
   <meta name="theme-color" content={backgroundColor} />
 </svelte:head>
 
-<ItineraryView
-  itinerary={data.itinerary}
-  steps={data.steps}
-  onUpdateItinerary={handleUpdateItinerary}
-  onCreateStep={handleCreateStep}
-  onUpdateStep={handleUpdateStep}
-  onDeleteStep={handleDeleteStep}
-/>
+{#key data.itinerary.theme_id}
+  <ItineraryView
+    itinerary={data.itinerary}
+    steps={data.steps}
+    onUpdateItinerary={handleUpdateItinerary}
+    onCreateStep={handleCreateStep}
+    onUpdateStep={handleUpdateStep}
+    onDeleteStep={handleDeleteStep}
+  />
+{/key}

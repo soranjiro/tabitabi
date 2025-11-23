@@ -89,6 +89,25 @@
     }
   }
 
+  async function attemptEditModeActivation() {
+    const token = auth.getToken(itinerary.id);
+
+    if (token) {
+      const isValid = await authApi.verifyToken(itinerary.id);
+      if (isValid) {
+        hasEditPermission = true;
+        return;
+      }
+    }
+
+    if (!itinerary.password) {
+      hasEditPermission = true;
+      return;
+    }
+
+    showPasswordDialog = true;
+  }
+
   let newStep = $state({
     title: "",
     date: "",
@@ -200,9 +219,7 @@
     <div class="minimal-controls">
       {#if !hasEditPermission}
         <button
-          onclick={() => {
-            showPasswordDialog = true;
-          }}
+          onclick={attemptEditModeActivation}
           class="minimal-btn minimal-btn-edit"
         >
           編集

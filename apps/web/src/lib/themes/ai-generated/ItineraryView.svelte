@@ -3,6 +3,9 @@
 
   import type { Itinerary, Step } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
+  import { auth } from "$lib/auth";
+  import { authApi } from "$lib/api/auth";
+  import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
   import "./theme.css";
 
@@ -47,6 +50,61 @@
   let isEditingTitle = $state(false);
   let editedTitle = $state(itinerary.title);
   let isAddingStep = $state(false);
+  let hasEditPermission = $state(false);
+  let showPasswordDialog = $state(false);
+  let password = $state("");
+  let isAuthenticating = $state(false);
+
+  onMount(() => {
+    const token = auth.extractTokenFromUrl();
+    if (token) {
+      auth.setToken(itinerary.id, itinerary.title, token);
+    }
+    hasEditPermission = auth.hasEditPermission(itinerary.id);
+    auth.updateAccessTime(itinerary.id, itinerary.title);
+  });
+
+  async function handlePasswordAuth() {
+    if (!password.trim()) {
+      alert("パスワードを入力してください");
+      return;
+    }
+
+    isAuthenticating = true;
+    try {
+      const token = await authApi.authenticateWithPassword(
+        itinerary.id,
+        password,
+      );
+      auth.setToken(itinerary.id, itinerary.title, token);
+      hasEditPermission = true;
+      showPasswordDialog = false;
+      password = "";
+    } catch (error) {
+      alert("パスワードが正しくありません");
+    } finally {
+      isAuthenticating = false;
+    }
+  }
+
+  async function attemptEditModeActivation() {
+    const token = auth.getToken(itinerary.id);
+
+    if (token) {
+      const isValid = await authApi.verifyToken(itinerary.id);
+      if (isValid) {
+        hasEditPermission = true;
+        return;
+      }
+    }
+
+    if (!itinerary.password) {
+      hasEditPermission = true;
+      return;
+    }
+
+    showPasswordDialog = true;
+  }
 
   let newStep = $state({
     title: "",
@@ -130,7 +188,6 @@
 
     <header class="ai-generated-header">
       <div class="ai-generated-header-content">
-
         {#if isEditingTitle}
           <input
             type="text"
@@ -146,16 +203,26 @@
               isEditingTitle = true;
             }}
             class="ai-generated-title-button"
+            disabled={!hasEditPermission}
           >
             ✈️ {itinerary.title}
           </button>
         {/if}
 
         <div class="ai-generated-controls">
+          {#if !hasEditPermission}
+            <button
+              onclick={attemptEditModeActivation}
+              class="ai-generated-btn-edit"
+            >
+              編集
+            </button>
+          {/if}
           <select
             value={itinerary.theme_id}
             onchange={handleThemeChange}
             class="ai-generated-select"
+            disabled={!hasEditPermission}
           >
             {#each themes as theme}
               <option value={theme.id}>{theme.name}</option>
@@ -166,7 +233,7 @@
     </header>
 
     <div class="ai-generated-add-step">
-      {#if isAddingStep}
+      {#if isAddingStep && hasEditPermission}
         <form
           class="ai-generated-form"
           onsubmit={(e) => {
@@ -227,7 +294,10 @@
             ></textarea>
           </div>
           <div class="ai-generated-form-actions">
-            <button type="submit" class="ai-generated-btn ai-generated-btn-primary">
+            <button
+              type="submit"
+              class="ai-generated-btn ai-generated-btn-primary"
+            >
               追加する
             </button>
             <button
@@ -242,7 +312,11 @@
       {:else}
         <button
           onclick={() => {
-            isAddingStep = true;
+            if (hasEditPermission) {
+              isAddingStep = true;
+            } else {
+              attemptEditModeActivation();
+            }
           }}
           class="ai-generated-btn-add"
         >
@@ -254,4 +328,57 @@
 
     <StepList {steps} {onUpdateStep} {onDeleteStep} />
   </div>
+
+  {#if showPasswordDialog}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="ai-generated-dialog-overlay"
+      onclick={() => {
+        showPasswordDialog = false;
+        password = "";
+      }}
+    >
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="ai-generated-dialog" onclick={(e) => e.stopPropagation()}>
+        <h3 class="ai-generated-dialog-title">編集パスワード</h3>
+        <form
+          onsubmit={(e) => {
+            e.preventDefault();
+            handlePasswordAuth();
+          }}
+        >
+          <input
+            type="password"
+            bind:value={password}
+            placeholder="パスワードを入力"
+            class="ai-generated-input"
+            disabled={isAuthenticating}
+            style="margin-bottom: 1rem;"
+          />
+          <div class="ai-generated-dialog-actions">
+            <button
+              type="submit"
+              class="ai-generated-btn ai-generated-btn-primary"
+              disabled={isAuthenticating}
+            >
+              {isAuthenticating ? "認証中..." : "認証"}
+            </button>
+            <button
+              type="button"
+              onclick={() => {
+                showPasswordDialog = false;
+                password = "";
+              }}
+              class="ai-generated-btn ai-generated-btn-secondary"
+              disabled={isAuthenticating}
+            >
+              キャンセル
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {/if}
 </div>

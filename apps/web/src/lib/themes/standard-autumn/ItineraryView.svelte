@@ -250,9 +250,17 @@
   }
 
   async function handleThemeChange(e: Event) {
-    const themeId = (e.target as HTMLSelectElement).value;
+    const target = e.target as HTMLSelectElement;
+    const themeId = target.value;
+
+    if (themeId === itinerary.theme_id) {
+      showThemeSelect = false;
+      return;
+    }
+
     selectedThemeId = themeId;
     showThemeSelect = false;
+
     if (onUpdateItinerary) {
       await onUpdateItinerary({ theme_id: themeId });
     }

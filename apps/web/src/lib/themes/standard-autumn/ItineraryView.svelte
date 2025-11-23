@@ -110,6 +110,12 @@
       auth.setToken(itinerary.id, itinerary.title, token);
     }
     hasEditPermission = auth.hasEditPermission(itinerary.id);
+
+    // Auto-activate edit mode if no password and no token yet
+    if (!hasEditPermission && !itinerary.password) {
+      attemptEditModeActivation();
+    }
+
     auth.updateAccessTime(itinerary.id, itinerary.title);
   });
 

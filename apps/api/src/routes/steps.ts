@@ -28,30 +28,31 @@ steps.get('/', async (c) => {
   }
 
   const stepService = new StepService(c.env.DB);
+  const itineraryService = new ItineraryService(c.env.DB);
+  const itinerary = await itineraryService.get(itineraryId);
 
-  // If not in edit mode, check if secret mode is enabled for this itinerary
-  if (!isEditMode) {
-    const itineraryService = new ItineraryService(c.env.DB);
-    const itinerary = await itineraryService.get(itineraryId);
+  if (itinerary?.secret_settings?.enabled) {
+    // Get current time in JST (UTC+9) because DB stores local time
+    const now = new Date();
+    const jstOffset = 9 * 60 * 60 * 1000;
+    const jstTime = new Date(now.getTime() + jstOffset).toISOString().replace('Z', '');
 
-    if (itinerary?.secret_settings?.enabled) {
-      // Get current time in JST (UTC+9) because DB stores local time
-      const now = new Date();
-      const jstOffset = 9 * 60 * 60 * 1000;
-      const jstTime = new Date(now.getTime() + jstOffset).toISOString().replace('Z', '');
+    const offsetMinutes = itinerary.secret_settings.offset_minutes || 60;
 
-      const offsetMinutes = itinerary.secret_settings.offset_minutes || 60;
+    // Filter steps based on time
+    // If isEditMode is true OR itinerary has no password, we DO NOT mask secrets (maskSecrets: false)
+    // But we still pass time/offset so is_hidden is calculated
+    const hasEditPermission = isEditMode || !itinerary.password;
 
-      // Filter steps based on time
-      const data = await stepService.list(itineraryId, {
-        currentTime: jstTime,
-        offsetMinutes: offsetMinutes
-      });
-      return c.json({ success: true, data });
-    }
+    const data = await stepService.list(itineraryId, {
+      currentTime: jstTime,
+      offsetMinutes: offsetMinutes,
+      maskSecrets: !hasEditPermission
+    });
+    return c.json({ success: true, data });
   }
 
-  // Edit mode or secret mode disabled: return all steps
+  // Secret mode disabled: return all steps
   const data = await stepService.list(itineraryId);
   return c.json({ success: true, data });
 });

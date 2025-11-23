@@ -3,7 +3,7 @@ import { apiClient } from './client';
 
 export const stepApi = {
   list: (itineraryId: string) =>
-    apiClient.get<Step[]>(`/steps?itinerary_id=${itineraryId}`),
+    apiClient.get<Step[]>(`/steps?itinerary_id=${itineraryId}`, itineraryId),
 
   get: (stepId: string) =>
     apiClient.get<Step>(`/steps/${stepId}`),

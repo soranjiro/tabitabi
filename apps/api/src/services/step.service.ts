@@ -5,7 +5,7 @@ import { generateId, getCurrentTimestamp } from '../utils';
 export class StepService {
   constructor(private db: D1Database) {}
 
-  async list(itineraryId: string, options?: { currentTime?: string; offsetMinutes?: number }): Promise<Step[]> {
+  async list(itineraryId: string, options?: { currentTime?: string; offsetMinutes?: number; maskSecrets?: boolean }): Promise<Step[]> {
     let query = 'SELECT * FROM steps WHERE itinerary_id = ?';
     const bindings: any[] = [itineraryId];
 
@@ -34,7 +34,7 @@ export class StepService {
       .bind(...bindings)
       .all();
 
-    return (result.results || []).map(row => this.mapToStep(row));
+    return (result.results || []).map(row => this.mapToStep(row, options?.maskSecrets));
   }
 
   async get(stepId: string): Promise<Step | null> {
@@ -129,7 +129,7 @@ export class StepService {
     return result.success;
   }
 
-  private mapToStep(row: any): Step {
+  private mapToStep(row: any, maskSecrets: boolean = true): Step {
     const step: Step = {
       id: row.id,
       itinerary_id: row.itinerary_id,
@@ -143,7 +143,7 @@ export class StepService {
       updated_at: row.updated_at,
     };
 
-    if (step.is_hidden) {
+    if (step.is_hidden && maskSecrets) {
       step.title = '?????';
       step.location = null;
       step.notes = null;

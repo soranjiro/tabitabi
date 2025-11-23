@@ -149,10 +149,17 @@
       }
     }
 
-    // パスワードが設定されていない場合は即座に編集モードに切り替え
+    // パスワードが設定されていない場合は、空パスワードで認証してトークンを取得
     if (!itinerary.password) {
-      hasEditPermission = true;
-      showSettingsMenu = false;
+      try {
+        const token = await authApi.authenticateWithPassword(itinerary.id, "");
+        auth.setToken(itinerary.id, itinerary.title, token);
+        hasEditPermission = true;
+        showSettingsMenu = false;
+      } catch (e) {
+        console.error("Failed to authenticate without password", e);
+        alert("認証に失敗しました");
+      }
       return;
     }
 

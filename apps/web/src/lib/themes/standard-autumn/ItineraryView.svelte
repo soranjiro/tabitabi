@@ -472,7 +472,7 @@
         <span>Calendar</span>
       </button> -->
 
-      <div style="position: relative;">
+      <div class="standard-autumn-btn-wrapper">
         <button
           class="standard-autumn-bottom-btn"
           title={hasEditPermission
@@ -509,7 +509,7 @@
         </button>
       </div>
       {#if hasEditPermission}
-        <div style="position: relative;">
+        <div class="standard-autumn-btn-wrapper">
           <button
             class="standard-autumn-bottom-btn"
             title="設定"
@@ -555,19 +555,16 @@
             </div>
           {/if}
           {#if showThemeSelect}
-            <div
-              style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--standard-autumn-card-bg); border: 1px solid var(--standard-autumn-border); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 0.5rem 1rem; z-index: 200; min-width: 180px; max-width: calc(100vw - 2rem); margin-bottom: 0.5rem;"
-            >
+            <div class="standard-autumn-theme-select-popup">
               <label
                 for="theme-select"
-                style="font-size: 0.95rem; color: var(--standard-autumn-text); margin-bottom: 0.5rem; display: block;"
-                >テーマを選択</label
+                class="standard-autumn-theme-select-label">テーマを選択</label
               >
               <select
                 id="theme-select"
                 value={selectedThemeId}
                 onchange={handleThemeChange}
-                style="width: 100%; font-size: 1rem; padding: 0.3rem; border-radius: 4px; border: 1px solid var(--standard-autumn-border); background: #fff; color: var(--standard-autumn-text);"
+                class="standard-autumn-theme-select-input"
               >
                 {#each themes as theme}
                   <option value={theme.id}>{theme.name}</option>
@@ -750,8 +747,7 @@
           onclick={() => {
             showShareDialog = false;
           }}
-          class="standard-autumn-btn standard-autumn-btn-secondary"
-          style="width: 100%; margin-top: 0.5rem;"
+          class="standard-autumn-btn standard-autumn-btn-secondary standard-autumn-btn-full"
         >
           キャンセル
         </button>

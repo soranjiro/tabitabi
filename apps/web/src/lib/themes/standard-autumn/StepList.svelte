@@ -365,13 +365,8 @@
                         </div>
                       </div>
                     {:else if step.is_hidden}
-                      <div
-                        class="standard-autumn-step-content standard-autumn-step-hidden"
-                      >
-                        <div class="standard-autumn-step-title">
-                          <span class="standard-autumn-secret-text"
-                            >Secret Event</span
-                          >
+                      <div>
+                        <div>
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"

@@ -101,7 +101,14 @@
     }
 
     if (!itinerary.password) {
-      hasEditPermission = true;
+      try {
+        const token = await authApi.authenticateWithPassword(itinerary.id, "");
+        auth.setToken(itinerary.id, itinerary.title, token);
+        hasEditPermission = true;
+      } catch (e) {
+        console.error("Failed to authenticate without password", e);
+        alert("認証に失敗しました");
+      }
       return;
     }
 

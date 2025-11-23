@@ -19,11 +19,11 @@ const fallTheme: Theme = {
     layout: 'single',
     colorScheme: 'light',
     customColors: {
-      primary: '#DFB89A',
-      secondary: '#F7E3CC',
-      background: '#FEF6EC',
-      text: '#333333',
-      accent: '#8b5e3c'
+      primary: '#a93529',
+      secondary: '#e6b422',
+      background: '#fcf9f2',
+      text: '#4a3b32',
+      accent: '#d4762c'
     }
   },
   components: {

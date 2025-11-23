@@ -35,10 +35,10 @@ auth.post('/verify', async (c) => {
 auth.post('/password', async (c) => {
   const { shioriId, password }: PasswordAuthRequest = await c.req.json();
 
-  if (!shioriId || !password) {
+  if (!shioriId) {
     return c.json({
       success: false,
-      error: { code: 'INVALID_INPUT', message: 'shioriId and password are required' }
+      error: { code: 'INVALID_INPUT', message: 'shioriId is required' }
     }, 400);
   }
 
@@ -52,11 +52,17 @@ auth.post('/password', async (c) => {
     }, 404);
   }
 
-  if (itinerary.password !== password) {
+  // If itinerary has a password, verify it
+  if (itinerary.password && itinerary.password !== password) {
     return c.json({
       success: false,
       error: { code: 'UNAUTHORIZED', message: 'Invalid password' }
     }, 401);
+  }
+
+  // If itinerary has no password, allow access (password can be anything or empty)
+  if (!itinerary.password) {
+    // No check needed
   }
 
   const token = await generateToken(shioriId, c.env.JWT_SECRET);

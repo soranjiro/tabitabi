@@ -7,7 +7,12 @@ export class ItineraryService {
 
   async list(): Promise<Itinerary[]> {
     const result = await this.db
-      .prepare('SELECT * FROM itineraries ORDER BY created_at DESC')
+      .prepare(`
+        SELECT i.*, s.enabled as secret_enabled, s.offset_minutes as secret_offset
+        FROM itineraries i
+        LEFT JOIN itinerary_secrets s ON i.id = s.itinerary_id
+        ORDER BY i.created_at DESC
+      `)
       .all();
 
     return result.results ? result.results.map(row => this.mapToItinerary(row)) : [];
@@ -15,7 +20,12 @@ export class ItineraryService {
 
   async get(id: string): Promise<Itinerary | null> {
     const result = await this.db
-      .prepare('SELECT * FROM itineraries WHERE id = ?')
+      .prepare(`
+        SELECT i.*, s.enabled as secret_enabled, s.offset_minutes as secret_offset
+        FROM itineraries i
+        LEFT JOIN itinerary_secrets s ON i.id = s.itinerary_id
+        WHERE i.id = ?
+      `)
       .bind(id)
       .first();
 
@@ -32,14 +42,33 @@ export class ItineraryService {
       theme_id: input.theme_id || 'minimal',
       memo: input.memo ?? null,
       password: input.password ?? null,
+      secret_settings: input.secret_settings ? {
+        enabled: input.secret_settings.enabled,
+        offset_minutes: input.secret_settings.offset_minutes
+      } : null,
       created_at: now,
       updated_at: now,
     };
 
+    // Insert into main table
     await this.db
       .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.memo, itinerary.password, itinerary.created_at, itinerary.updated_at)
       .run();
+
+    // Insert into secrets table if settings exist
+    if (itinerary.secret_settings) {
+      await this.db
+        .prepare('INSERT INTO itinerary_secrets (itinerary_id, enabled, offset_minutes, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
+        .bind(
+          itinerary.id,
+          itinerary.secret_settings.enabled ? 1 : 0,
+          itinerary.secret_settings.offset_minutes,
+          now,
+          now
+        )
+        .run();
+    }
 
     return itinerary;
   }
@@ -50,7 +79,7 @@ export class ItineraryService {
 
     const now = getCurrentTimestamp();
     const fields = ['updated_at = ?'];
-    const values = [now];
+    const values: any[] = [now];
 
     if (input.title !== undefined) {
       fields.push('title = ?');
@@ -77,10 +106,45 @@ export class ItineraryService {
         .run();
     }
 
+    // Handle secret settings update
+    if (input.secret_settings !== undefined) {
+      if (input.secret_settings === null) {
+        // Remove settings
+        await this.db
+          .prepare('DELETE FROM itinerary_secrets WHERE itinerary_id = ?')
+          .bind(id)
+          .run();
+      } else {
+        // Upsert settings
+        // Check if exists first (D1 doesn't support INSERT OR REPLACE nicely with timestamps preservation if we want that, but here we just overwrite)
+        // Actually, standard SQL UPSERT or just DELETE+INSERT or UPDATE/INSERT check.
+        // Let's try INSERT OR REPLACE
+        await this.db
+          .prepare(`
+            INSERT INTO itinerary_secrets (itinerary_id, enabled, offset_minutes, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(itinerary_id) DO UPDATE SET
+            enabled = excluded.enabled,
+            offset_minutes = excluded.offset_minutes,
+            updated_at = excluded.updated_at
+          `)
+          .bind(
+            id,
+            input.secret_settings.enabled ? 1 : 0,
+            input.secret_settings.offset_minutes,
+            now,
+            now
+          )
+          .run();
+      }
+    }
+
     return await this.get(id);
   }
 
   async delete(id: string): Promise<boolean> {
+    // Foreign key cascade should handle the secrets table, but let's be safe or rely on DB
+    // Since we defined ON DELETE CASCADE in migration, deleting from itineraries is enough.
     const result = await this.db
       .prepare('DELETE FROM itineraries WHERE id = ?')
       .bind(id)
@@ -90,7 +154,7 @@ export class ItineraryService {
   }
 
   private mapToItinerary(row: any): Itinerary {
-    return {
+    const itinerary: Itinerary = {
       id: row.id,
       title: row.title,
       theme_id: row.theme_id,
@@ -99,5 +163,14 @@ export class ItineraryService {
       created_at: row.created_at,
       updated_at: row.updated_at,
     };
+
+    if (row.secret_enabled !== null && row.secret_enabled !== undefined) {
+      itinerary.secret_settings = {
+        enabled: row.secret_enabled === 1,
+        offset_minutes: row.secret_offset
+      };
+    }
+
+    return itinerary;
   }
 }

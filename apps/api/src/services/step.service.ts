@@ -5,10 +5,33 @@ import { generateId, getCurrentTimestamp } from '../utils';
 export class StepService {
   constructor(private db: D1Database) {}
 
-  async list(itineraryId: string): Promise<Step[]> {
+  async list(itineraryId: string, options?: { currentTime?: string; offsetMinutes?: number }): Promise<Step[]> {
+    let query = 'SELECT * FROM steps WHERE itinerary_id = ?';
+    const bindings: any[] = [itineraryId];
+
+    // If time filtering is enabled (secret mode)
+    if (options?.currentTime && options?.offsetMinutes !== undefined) {
+      // Calculate is_hidden_flag: 1 if (step_time > current_time + offset), else 0
+      // We select all steps but mark them as hidden if they are in the future beyond the offset
+      query = `
+        SELECT *,
+        (datetime(date || ' ' || time) > datetime(?, '+' || ? || ' minutes')) as is_hidden_flag
+        FROM steps
+        WHERE itinerary_id = ?
+      `;
+
+      // Bindings order: currentTime, offsetMinutes, itineraryId
+      bindings.length = 0;
+      bindings.push(options.currentTime);
+      bindings.push(options.offsetMinutes.toString());
+      bindings.push(itineraryId);
+    }
+
+    query += ' ORDER BY date ASC, time ASC';
+
     const result = await this.db
-      .prepare('SELECT * FROM steps WHERE itinerary_id = ? ORDER BY date ASC, time ASC')
-      .bind(itineraryId)
+      .prepare(query)
+      .bind(...bindings)
       .all();
 
     return (result.results || []).map(row => this.mapToStep(row));
@@ -107,7 +130,7 @@ export class StepService {
   }
 
   private mapToStep(row: any): Step {
-    return {
+    const step: Step = {
       id: row.id,
       itinerary_id: row.itinerary_id,
       title: row.title,
@@ -115,8 +138,17 @@ export class StepService {
       time: row.time,
       location: row.location,
       notes: row.notes,
+      is_hidden: !!row.is_hidden_flag,
       created_at: row.created_at,
       updated_at: row.updated_at,
     };
+
+    if (step.is_hidden) {
+      step.title = '?????';
+      step.location = null;
+      step.notes = null;
+    }
+
+    return step;
   }
 }

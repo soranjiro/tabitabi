@@ -16,8 +16,43 @@ steps.get('/', async (c) => {
     }, 400);
   }
 
-  const service = new StepService(c.env.DB);
-  const data = await service.list(itineraryId);
+  // Check if user is authenticated (edit mode)
+  const authHeader = c.req.header('Authorization');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  let isEditMode = false;
+  if (token) {
+    const { verifyToken } = await import('../utils/jwt');
+    const payload = await verifyToken(token, c.env.JWT_SECRET);
+    isEditMode = !!payload;
+  }
+
+  const stepService = new StepService(c.env.DB);
+
+  // If not in edit mode, check if secret mode is enabled for this itinerary
+  if (!isEditMode) {
+    const itineraryService = new ItineraryService(c.env.DB);
+    const itinerary = await itineraryService.get(itineraryId);
+
+    if (itinerary?.secret_settings?.enabled) {
+      // Get current time in JST (UTC+9) because DB stores local time
+      const now = new Date();
+      const jstOffset = 9 * 60 * 60 * 1000;
+      const jstTime = new Date(now.getTime() + jstOffset).toISOString().replace('Z', '');
+
+      const offsetMinutes = itinerary.secret_settings.offset_minutes || 60;
+
+      // Filter steps based on time
+      const data = await stepService.list(itineraryId, {
+        currentTime: jstTime,
+        offsetMinutes: offsetMinutes
+      });
+      return c.json({ success: true, data });
+    }
+  }
+
+  // Edit mode or secret mode disabled: return all steps
+  const data = await stepService.list(itineraryId);
   return c.json({ success: true, data });
 });
 

@@ -1,6 +1,3 @@
-DROP TABLE IF EXISTS steps;
-DROP TABLE IF EXISTS itineraries;
-
 CREATE TABLE IF NOT EXISTS itineraries (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,

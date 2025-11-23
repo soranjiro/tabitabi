@@ -23,7 +23,7 @@
   const themes = getAvailableThemes();
 
   onMount(() => {
-    isPwaMode = true;
+    isPwaMode = isPwa();
     setTimeout(() => {
       recentItineraries = auth.getRecentItineraries();
       showRecent = true;

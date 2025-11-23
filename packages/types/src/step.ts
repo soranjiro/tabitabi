@@ -6,6 +6,7 @@ export interface Step {
   time: string;                  // 必須: HH:mm形式
   location?: string | null;      // オプション
   notes?: string | null;         // オプション
+  is_hidden?: boolean;           // シークレットモード用
   created_at: string;
   updated_at: string;
 }

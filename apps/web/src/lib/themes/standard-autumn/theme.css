@@ -25,13 +25,58 @@ body {
   font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Times New Roman", serif;
   min-height: 100vh;
   background-color: var(--standard-autumn-bg);
-  /* Subtle texture and gradient */
+  /* Subtle texture and gradient with autumn leaf pattern */
   background-image:
+    url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23a93529' fill-opacity='0.04' d='M30 30 L33 45 L43 38 L38 50 L53 53 L38 56 L43 68 L33 61 L30 76 L27 61 L17 68 L22 56 L7 53 L22 50 L17 38 L27 45 Z M130 80 L133 95 L143 88 L138 100 L153 103 L138 106 L143 118 L133 111 L130 126 L127 111 L117 118 L122 106 L107 103 L122 100 L117 88 L127 95 Z M80 150 L83 165 L93 158 L88 170 L103 173 L88 176 L93 188 L83 181 L80 196 L77 181 L67 188 L72 176 L57 173 L72 170 L67 158 L77 165 Z'/%3E%3C/svg%3E"),
     radial-gradient(circle at 5% 5%, rgba(230, 180, 34, 0.08) 0%, transparent 40%),
     radial-gradient(circle at 95% 95%, rgba(169, 53, 41, 0.08) 0%, transparent 40%),
     url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a93529' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   color: var(--standard-autumn-text);
   -webkit-font-smoothing: antialiased;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Autumn bookmark decorations - lightweight SVG icons */
+.standard-autumn-theme::before,
+.standard-autumn-theme::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Maple leaves scattered decoration - top right */
+.standard-autumn-theme::before {
+  top: 10%;
+  right: 5%;
+  width: 120px;
+  height: 120px;
+  opacity: 0.12;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23a93529' d='M50 10 L55 35 L70 25 L60 45 L85 50 L60 55 L70 75 L55 65 L50 90 L45 65 L30 75 L40 55 L15 50 L40 45 L30 25 L45 35 Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(15deg);
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Additional autumn motifs - bottom left */
+.standard-autumn-theme::after {
+  bottom: 15%;
+  left: 8%;
+  width: 100px;
+  height: 100px;
+  opacity: 0.10;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23d4762c' d='M50 10 L55 35 L70 25 L60 45 L85 50 L60 55 L70 75 L55 65 L50 90 L45 65 L30 75 L40 55 L15 50 L40 45 L30 25 L45 35 Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(-20deg);
+  animation: float 8s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(15deg); }
+  50% { transform: translateY(-10px) rotate(15deg); }
 }
 
 .standard-autumn-container {
@@ -45,11 +90,86 @@ body {
   overflow: hidden;
 }
 
+/* Decorative autumn elements - scattered around the page */
+/* Top right - smaller maple leaf */
+.standard-autumn-container::before {
+  content: "";
+  position: absolute;
+  top: 80px;
+  right: 30px;
+  width: 80px;
+  height: 80px;
+  opacity: 0.15;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23e6b422' d='M50 10 L55 35 L70 25 L60 45 L85 50 L60 55 L70 75 L55 65 L50 90 L45 65 L30 75 L40 55 L15 50 L40 45 L30 25 L45 35 Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(-45deg);
+  pointer-events: none;
+  z-index: 0;
+  animation: gentleFloat 5s ease-in-out infinite;
+}
+
+/* Bottom right - chestnut */
+.standard-autumn-container::after {
+  content: "";
+  position: absolute;
+  bottom: 180px;
+  right: 40px;
+  width: 70px;
+  height: 70px;
+  opacity: 0.12;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle fill='%238b4513' cx='50' cy='60' r='35'/%3E%3Cpath fill='%23d2691e' d='M45 35 Q50 25 55 35 L50 50 Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(20deg);
+  pointer-events: none;
+  z-index: 0;
+  animation: gentleFloat 7s ease-in-out infinite;
+}
+
+@keyframes gentleFloat {
+  0%, 100% { transform: translateY(0) rotate(-45deg); }
+  50% { transform: translateY(-8px) rotate(-45deg); }
+}
+
 /* Header */
 .standard-autumn-header {
   text-align: center;
   padding: 3.5rem 1.5rem 1.5rem;
   position: relative;
+}
+
+/* Header decorations - hot spring symbol */
+.standard-autumn-header::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 60px;
+  height: 60px;
+  opacity: 0.10;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cellipse fill='%236ba3d4' cx='50' cy='70' rx='40' ry='25'/%3E%3Cpath fill='%236ba3d4' d='M30 60 Q32 45 34 60 M45 55 Q47 40 49 55 M60 58 Q62 43 64 58' stroke='%236ba3d4' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Header decorations - ginkgo leaf */
+.standard-autumn-header::after {
+  content: "";
+  position: absolute;
+  top: 15px;
+  right: 10%;
+  width: 50px;
+  height: 50px;
+  opacity: 0.12;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23e6b422' d='M50 90 L50 60 Q50 40 35 35 Q25 30 20 20 Q25 35 35 38 Q45 40 50 40 Q55 40 65 38 Q75 35 80 20 Q75 30 65 35 Q50 40 50 60 Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(10deg);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .standard-autumn-title-button {
@@ -188,6 +308,40 @@ body {
   overflow: visible;
 }
 
+/* Carousel decorations - left side acorn */
+.standard-autumn-carousel-wrapper::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 40%;
+  width: 60px;
+  height: 60px;
+  opacity: 0.10;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cellipse fill='%238b4513' cx='50' cy='65' rx='30' ry='35'/%3E%3Cpath fill='%23d2691e' d='M50 30 L55 45 L45 45 Z'/%3E%3Ccircle fill='%238b4513' cx='50' cy='28' r='3'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(-15deg);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Carousel decorations - right side maple leaves cluster */
+.standard-autumn-carousel-wrapper::after {
+  content: "";
+  position: absolute;
+  right: 15px;
+  top: 60%;
+  width: 70px;
+  height: 70px;
+  opacity: 0.08;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23a93529' d='M30 40 L33 55 L43 48 L38 60 L53 63 L38 66 L43 78 L33 71 L30 86 L27 71 L17 78 L22 66 L7 63 L22 60 L17 48 L27 55 Z'/%3E%3Cpath fill='%23d4762c' d='M60 15 L62 26 L69 21 L66 30 L77 32 L66 34 L69 43 L62 38 L60 49 L58 38 L51 43 L54 34 L43 32 L54 30 L51 21 L58 26 Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(25deg);
+  pointer-events: none;
+  z-index: 0;
+}
+
 .standard-autumn-carousel {
   width: 100%;
   overflow: visible;
@@ -238,6 +392,22 @@ body {
   transition: opacity 0.3s;
 }
 
+/* Bookmark ribbon decoration */
+.standard-autumn-carousel-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 20px;
+  width: 40px;
+  height: 60px;
+  background: linear-gradient(135deg, var(--standard-autumn-primary) 0%, var(--standard-autumn-accent) 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%);
+  z-index: 10;
+  box-shadow: 0 4px 8px rgba(169, 53, 41, 0.3);
+}
+
 .standard-autumn-carousel-card[aria-hidden="false"] {
   opacity: 1;
   transform: scale(1) translateY(0);
@@ -249,6 +419,10 @@ body {
 
 .standard-autumn-carousel-card[aria-hidden="false"]::after {
   opacity: 1;
+}
+
+.standard-autumn-carousel-card[aria-hidden="false"]::before {
+  opacity: 0.9;
 }
 
 .standard-autumn-card {

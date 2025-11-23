@@ -11,14 +11,15 @@
   let backgroundColor = $derived(
     data.theme.ui.customColors?.background || "#f9fafb",
   );
-  let themeColor = $derived(data.theme.ui.customColors?.primary || "#4f46e5");
 
   onMount(() => {
     auth.updateAccessTime(data.itinerary.id, data.itinerary.title);
     document.body.style.backgroundColor = backgroundColor;
+    document.documentElement.style.backgroundColor = backgroundColor;
 
     return () => {
       document.body.style.backgroundColor = "";
+      document.documentElement.style.backgroundColor = "";
     };
   });
 
@@ -96,11 +97,13 @@
   <meta name="theme-color" content={backgroundColor} />
 </svelte:head>
 
-<ItineraryView
-  itinerary={data.itinerary}
-  steps={data.steps}
-  onUpdateItinerary={handleUpdateItinerary}
-  onCreateStep={handleCreateStep}
-  onUpdateStep={handleUpdateStep}
-  onDeleteStep={handleDeleteStep}
-/>
+{#key data.itinerary.theme_id}
+  <ItineraryView
+    itinerary={data.itinerary}
+    steps={data.steps}
+    onUpdateItinerary={handleUpdateItinerary}
+    onCreateStep={handleCreateStep}
+    onUpdateStep={handleUpdateStep}
+    onDeleteStep={handleDeleteStep}
+  />
+{/key}

@@ -1,187 +1,72 @@
-# Authentication & Authorization - Product Requirements Document
+# 認証システム
 
-## Overview
-JWT-based stateless authentication system that balances ease of use (no user registration required) with security and UX optimization.
+## 概要
 
-## Architecture
+たびたびアプリケーションでは、JWT（JSON Web Token）を用いた認証システムにより、旅程の編集権限を管理しています。
 
-### Core Components
-- **Authentication Method**: JWT (JSON Web Token) - stateless authentication
-- **Token Storage**: Browser localStorage for persistent sessions
-- **Authorization Model**:
-  - Password: Master key (recovery & new login)
-  - Token: Daily use key (convenience access)
+## 認証フロー
 
-## User Flows
+### 1. 閲覧モードから編集モードへの切り替え
 
-### Flow A: Creation (Auto-login)
-1. User sets password and creates a "shiori"
-2. Server returns edit token in response
-3. Browser stores token immediately
-4. Redirect to edit mode
+ユーザーが「編集」ボタンをクリックすると、以下の手順で編集モードへの切り替えが試行されます：
 
-### Flow B: Edit URL Access (Shortcut)
-1. User accesses `example.com/s/xxx?token=abc...`
-2. JavaScript extracts token from URL parameter
-3. Store token in localStorage
-4. **Critical**: Remove token from URL using `history.replaceState` (prevent accidental sharing)
-5. Display edit mode using stored token
+1. **ローカルトークンの確認**
+   - ブラウザのローカルストレージに保存されている編集用トークンを確認します。
 
-### Flow C: Password Authentication (Recovery/Alternative Device)
-1. User accesses without edit URL or lost token
-2. Click "Edit" button and enter password
-3. Server issues new token on success
-4. Store token (no password required for subsequent access)
+2. **トークンの検証（トークンが存在する場合）**
+   - APIサーバーに問い合わせてトークンの有効性を検証します。
+   - 有効な場合：即座に編集モードに切り替わります。
 
-## Data Structure
+3. **パスワード設定の確認（トークンがない、または無効な場合）**
+   - 旅程にパスワードが設定されているかを確認します。
+   - **パスワードなし**：空パスワードで認証APIを呼び出し、トークンを取得して編集モードに入ります。
+   - **パスワードあり**：パスワード入力ダイアログを表示します。
 
-### LocalStorage Schema
-Integrated with existing browsing history feature as unified object array.
+4. **パスワード認証**
+   - ユーザーがパスワードを入力して送信します。
+   - 認証成功：サーバーからトークンが発行され、ブラウザに保存して編集モードに入ります。
+   - 認証失敗：「パスワードが正しくありません」とアラート表示し、編集モードには入りません。
 
-**Key**: `shiori_history`
+### 2. 予定の追加・編集・削除時の認証
 
-```json
-[
-  {
-    "shioriId": "xyz12345",
-    "title": "Autumn Kyoto Trip",
-    "accessedAt": 1715000000,
-    "token": "eyJhbGciOi..."
-  },
-  {
-    "shioriId": "abc98765",
-    "title": "Friend's Shiori",
-    "accessedAt": 1716000000,
-    "token": null
-  }
-]
-```
+すべての編集操作（POST, PUT, DELETE）では、以下の認証プロセスが実行されます：
 
-**Authorization Logic**: Search by `shioriId`. If `token` exists, attach to API header for edit permission. If `token` is `null`, viewer mode only.
+1. **クライアント側（フロントエンド）**
+   - APIリクエストのヘッダーに、ローカルストレージから取得したトークンを付与します。
+   - 形式：`Authorization: Bearer <トークン>`
 
-## Implementation Requirements
+2. **サーバー側（バックエンド）**
+   - `authMiddleware` がリクエストを受信します。
+   - ヘッダーからトークンを抽出し、署名と有効期限を検証します。
+   - 検証成功時、トークンに含まれる `shioriId`（旅程ID）をリクエストコンテキストに保存します。
+   - 検証失敗時、`401 Unauthorized` エラーを返します。
 
-| Item | Requirement | Rationale |
-|---|---|---|
-| URL Sanitization | Immediately remove `?token=...` from URL bar after edit URL access | Prevent accidental permission sharing when user shares URL |
-| Recovery Mechanism | Password authentication must be implemented | Enable recovery when edit URL is lost or browser cache is cleared |
-| Brute Force Protection | Rate limiting on password authentication API | Protect against attacks on fixed ID system (e.g., lock after 5 failed attempts per minute) |
+3. **権限チェック**
+   - 各APIエンドポイント内で、操作対象の旅程IDとトークンの `shioriId` が一致するかを確認します。
+   - 不一致の場合、`403 Forbidden` エラーを返します。
 
-## Security Considerations
-- No user registration reduces friction but requires robust rate limiting
-- Token-based daily access minimizes password exposure
-- URL sanitization prevents social engineering vulnerabilities
-- Password as fallback ensures account recovery
+## パスワードなし旅程の扱い
 
-## Edit Mode Permission Flow
+パスワードが設定されていない旅程については、以下の仕様です：
 
-すべてのテーマ（minimal、ai-generated、standard-autumn）で統一された編集モード移行フローを実装しています。
+- **認証API (`/api/v1/auth/password`)**
+  - `password` フィールドが空またはnullでもリクエストを受け付けます。
+  - 旅程にパスワードが設定されていなければ、パスワードチェックをスキップして有効なトークンを発行します。
 
-### 編集モード移行の判定ロジック
+- **フロントエンド**
+  - パスワードなしの旅程でも、空文字列で認証APIを呼び出してトークンを取得します。
+  - これにより、その後の編集操作で認証エラーが発生しません。
 
-ユーザーが「編集」ボタンをクリックした際の処理フロー：
+## 実装ファイル
 
-#### 1. トークン確認フェーズ
-```
-ユーザーが「編集」ボタンをクリック
-  ↓
-localStorageにトークンが存在するか確認
-  ↓
-YES → サーバーでトークンを検証
-       ↓
-       有効 → 編集モードに移行（パスワード不要）
-       ↓
-       無効 → フェーズ2へ
-  ↓
-NO → フェーズ2へ
-```
+- **フロントエンド**
+  - `/apps/web/src/lib/auth/index.ts` - トークン管理
+  - `/apps/web/src/lib/api/auth.ts` - 認証API呼び出し
+  - `/apps/web/src/lib/api/client.ts` - API通信時のトークン付与
+  - `/apps/web/src/lib/themes/*/ItineraryView.svelte` - 編集モード切り替えロジック
 
-#### 2. パスワード存在チェックフェーズ
-```
-しおりにパスワードが設定されているか確認
-  ↓
-NO（パスワード未設定）→ 即座に編集モードに移行
-  ↓
-  理由: パスワード未設定 = 公開編集可能なしおり
-  ↓
-YES（パスワード設定済）→ パスワードダイアログを表示
-  ↓
-  ユーザーがパスワードを入力
-  ↓
-  サーバーで認証
-  ↓
-  成功 → 新しいトークンを発行・保存
-       → 編集モードに移行
-  ↓
-  失敗 → エラーメッセージ表示
-```
-
-### 実装関数
-
-各テーマの `ItineraryView.svelte` に以下の関数を実装：
-
-#### `attemptEditModeActivation()`
-編集モード移行を試みるメイン関数
-
-```typescript
-async function attemptEditModeActivation() {
-  // 1. localStorageからトークンを取得
-  const token = auth.getToken(itinerary.id);
-
-  if (token) {
-    // 2. トークンが存在する場合、サーバーで検証
-    const isValid = await authApi.verifyToken(itinerary.id);
-    if (isValid) {
-      hasEditPermission = true;
-      return; // 編集モード移行完了
-    }
-  }
-
-  // 3. トークンがない、または無効な場合、パスワードチェック
-  if (!itinerary.password) {
-    // パスワード未設定の場合は即座に編集モードへ
-    hasEditPermission = true;
-    return;
-  }
-
-  // 4. パスワードが設定されている場合はダイアログ表示
-  showPasswordDialog = true;
-}
-```
-
-#### `handlePasswordAuth()`
-パスワード認証処理
-
-```typescript
-async function handlePasswordAuth() {
-  if (!password.trim()) {
-    alert("パスワードを入力してください");
-    return;
-  }
-
-  isAuthenticating = true;
-  try {
-    // サーバーでパスワード認証
-    const token = await authApi.authenticateWithPassword(
-      itinerary.id,
-      password,
-    );
-    // 認証成功：トークンをlocalStorageに保存
-    auth.setToken(itinerary.id, itinerary.title, token);
-    hasEditPermission = true;
-    showPasswordDialog = false;
-    password = "";
-  } catch (error) {
-    alert("パスワードが正しくありません");
-  } finally {
-    isAuthenticating = false;
-  }
-}
-```
-
-### セキュリティ上の利点
-
-1. **トークン優先**: 一度認証したユーザーは、次回以降パスワード入力不要
-2. **公開編集の容易性**: パスワード未設定のしおりは誰でも自由に編集可能
-3. **プライベート編集の保護**: パスワード設定済みのしおりは認証必須
-4. **トークン期限切れ対策**: トークンが無効になった場合でも、パスワードで再認証可能
+- **バックエンド**
+  - `/apps/api/src/routes/auth.ts` - 認証エンドポイント
+  - `/apps/api/src/middleware/auth.ts` - 認証ミドルウェア
+  - `/apps/api/src/routes/steps.ts` - 予定操作のエンドポイント（ミドルウェア適用）
+  - `/apps/api/src/utils/jwt.ts` - JWT生成/検証ユーティリティ

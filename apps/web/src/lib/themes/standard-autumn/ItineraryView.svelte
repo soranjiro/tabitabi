@@ -15,6 +15,10 @@
       title?: string;
       theme_id?: string;
       memo?: string;
+      secret_settings?: {
+        enabled: boolean;
+        offset_minutes: number;
+      } | null;
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
@@ -63,6 +67,11 @@
   let showSettingsMenu = $state(false);
   let selectedThemeId = $state(itinerary.theme_id || "standard-autumn");
 
+  let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
+  let secretModeOffset = $state(
+    itinerary.secret_settings?.offset_minutes ?? 60,
+  );
+
   let newStep = $state({
     title: "",
     date: "",
@@ -101,6 +110,12 @@
       auth.setToken(itinerary.id, itinerary.title, token);
     }
     hasEditPermission = auth.hasEditPermission(itinerary.id);
+
+    // Auto-activate edit mode if no password and no token yet
+    if (!hasEditPermission && !itinerary.password) {
+      attemptEditModeActivation();
+    }
+
     auth.updateAccessTime(itinerary.id, itinerary.title);
   });
 
@@ -270,6 +285,17 @@
 
     if (onUpdateItinerary) {
       await onUpdateItinerary({ theme_id: themeId });
+    }
+  }
+
+  async function handleSecretModeUpdate() {
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({
+        secret_settings: {
+          enabled: secretModeEnabled,
+          offset_minutes: secretModeOffset,
+        },
+      });
     }
   }
 </script>
@@ -559,6 +585,56 @@
                 </svg>
                 テーマを変更
               </button>
+
+              <div class="standard-autumn-settings-divider"></div>
+
+              <div class="standard-autumn-settings-group">
+                <label class="standard-autumn-settings-toggle">
+                  <span class="standard-autumn-settings-label-text">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      width="20"
+                      height="20"
+                    >
+                      <path
+                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                      />
+                    </svg>
+                    シークレットモード
+                  </span>
+                  <input
+                    type="checkbox"
+                    bind:checked={secretModeEnabled}
+                    onchange={handleSecretModeUpdate}
+                    class="standard-autumn-toggle-input"
+                  />
+                  <span class="standard-autumn-toggle-slider"></span>
+                </label>
+
+                {#if secretModeEnabled}
+                  <div class="standard-autumn-settings-subitem">
+                    <span class="standard-autumn-settings-sublabel"
+                      >表示開始:</span
+                    >
+                    <select
+                      bind:value={secretModeOffset}
+                      onchange={handleSecretModeUpdate}
+                      class="standard-autumn-settings-select"
+                    >
+                      <option value={15}>15分前</option>
+                      <option value={30}>30分前</option>
+                      <option value={60}>1時間前</option>
+                      <option value={120}>2時間前</option>
+                      <option value={180}>3時間前</option>
+                      <option value={300}>5時間前</option>
+                      <option value={720}>12時間前</option>
+                      <option value={1440}>24時間前</option>
+                    </select>
+                  </div>
+                {/if}
+              </div>
             </div>
           {/if}
           {#if showThemeSelect}

@@ -12,16 +12,47 @@
     data.theme.ui.customColors?.background || "#f9fafb",
   );
 
-  onMount(() => {
+  // Use local state for steps to allow client-side updates (e.g. unmasking secrets)
+  let steps = $state(data.steps);
+
+  // Update steps when data changes (e.g. after invalidateAll)
+  $effect(() => {
+    steps = data.steps;
+  });
+
+  onMount(async () => {
     auth.updateAccessTime(data.itinerary.id, data.itinerary.title);
     document.body.style.backgroundColor = backgroundColor;
     document.documentElement.style.backgroundColor = backgroundColor;
+
+    // Check if we have edit permission and need to re-fetch steps to reveal secrets
+    const token =
+      auth.extractTokenFromUrl() || auth.getToken(data.itinerary.id);
+    if (token) {
+      // If we have a token, we might be in edit mode.
+      // If the initial load was SSR, steps might be masked.
+      // We should re-fetch to get the unmasked data.
+      // We can check if any step is hidden or just force re-fetch if secret mode is enabled.
+      if (data.itinerary.secret_settings?.enabled) {
+        try {
+          const unmaskedSteps = await stepApi.list(data.itinerary.id);
+          steps = unmaskedSteps;
+        } catch (e) {
+          console.error("Failed to re-fetch steps:", e);
+        }
+      }
+    }
 
     return () => {
       document.body.style.backgroundColor = "";
       document.documentElement.style.backgroundColor = "";
     };
   });
+
+  // ... existing functions ...
+
+  // Update the ItineraryView prop to use `steps` instead of `data.steps`
+  // We need to find where ItineraryView is used.
 
   async function handleUpdateItinerary(updateData: {
     title?: string;
@@ -100,7 +131,7 @@
 {#key data.itinerary.theme_id}
   <ItineraryView
     itinerary={data.itinerary}
-    steps={data.steps}
+    {steps}
     onUpdateItinerary={handleUpdateItinerary}
     onCreateStep={handleCreateStep}
     onUpdateStep={handleUpdateStep}

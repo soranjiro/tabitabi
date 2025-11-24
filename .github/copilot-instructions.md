@@ -1,3 +1,7 @@
+# Development
+
+You must follow the development rules in `docs/development.md`.
+
 ## Mind these key points
 - light web site
 - update readability

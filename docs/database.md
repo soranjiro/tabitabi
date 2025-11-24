@@ -1,5 +1,9 @@
 # Database Schema
 
+- itinerariesテーブルはシンプルにする
+- 機能追加の場合は別でitinerariesに依存したテーブルを作成する
+- そのため、itinerariesテーブルにはカラムを追加することはないと考えられる。
+
 ## ER Diagram
 
 ```mermaid

@@ -41,6 +41,7 @@ export class ItineraryService {
       title: input.title,
       theme_id: input.theme_id || 'minimal',
       memo: input.memo ?? null,
+      walica_id: input.walica_id ?? null,
       password: input.password ?? null,
       secret_settings: input.secret_settings ? {
         enabled: input.secret_settings.enabled,
@@ -52,8 +53,8 @@ export class ItineraryService {
 
     // Insert into main table
     await this.db
-      .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.memo, itinerary.password, itinerary.created_at, itinerary.updated_at)
+      .prepare('INSERT INTO itineraries (id, title, theme_id, memo, walica_id, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.memo, itinerary.walica_id, itinerary.password, itinerary.created_at, itinerary.updated_at)
       .run();
 
     // Insert into secrets table if settings exist
@@ -93,6 +94,10 @@ export class ItineraryService {
       fields.push('memo = ?');
       values.push(input.memo);
     }
+    if (input.walica_id !== undefined) {
+      fields.push('walica_id = ?');
+      values.push(input.walica_id);
+    }
     if (input.password !== undefined) {
       fields.push('password = ?');
       values.push(input.password);
@@ -116,9 +121,6 @@ export class ItineraryService {
           .run();
       } else {
         // Upsert settings
-        // Check if exists first (D1 doesn't support INSERT OR REPLACE nicely with timestamps preservation if we want that, but here we just overwrite)
-        // Actually, standard SQL UPSERT or just DELETE+INSERT or UPDATE/INSERT check.
-        // Let's try INSERT OR REPLACE
         await this.db
           .prepare(`
             INSERT INTO itinerary_secrets (itinerary_id, enabled, offset_minutes, created_at, updated_at)
@@ -159,6 +161,7 @@ export class ItineraryService {
       title: row.title,
       theme_id: row.theme_id,
       memo: row.memo,
+      walica_id: row.walica_id,
       password: row.password,
       created_at: row.created_at,
       updated_at: row.updated_at,

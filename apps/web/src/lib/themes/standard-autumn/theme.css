@@ -1303,3 +1303,65 @@ body {
     font-size: 1.5rem;
   }
 }
+
+/* Walica Overlay */
+.standard-autumn-walica-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #fff;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.standard-autumn-walica-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: var(--standard-autumn-bg);
+  border-bottom: 1px solid var(--standard-autumn-border);
+  box-shadow: var(--standard-autumn-shadow-sm);
+}
+
+.standard-autumn-walica-close-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--standard-autumn-primary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.standard-autumn-walica-close-btn:hover {
+  background: rgba(169, 53, 41, 0.1);
+}
+
+.standard-autumn-walica-title {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--standard-autumn-text);
+}
+
+.standard-autumn-walica-frame {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: #fff;
+}

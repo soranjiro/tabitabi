@@ -228,9 +228,49 @@ body {
   width: 100%;
   margin: 0 auto;
   backdrop-filter: blur(4px);
-  white-space: pre-wrap;
+  white-space: normal;
   word-break: break-word;
   position: relative;
+  text-align: left;
+}
+
+.standard-autumn-memo-display p {
+  margin: 0 0 0.5em 0;
+}
+
+.standard-autumn-memo-display p:last-child {
+  margin-bottom: 0;
+}
+
+.standard-autumn-memo-display a {
+  color: var(--standard-autumn-primary);
+  text-decoration: underline;
+  font-weight: 600;
+  position: relative;
+  z-index: 5;
+  transition: color 0.2s;
+}
+
+.standard-autumn-memo-display a:hover {
+  color: var(--standard-autumn-accent);
+}
+
+.standard-autumn-memo-display ul,
+.standard-autumn-memo-display ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.standard-autumn-memo-display ul {
+  list-style-type: disc;
+}
+
+.standard-autumn-memo-display ol {
+  list-style-type: decimal;
+}
+
+.standard-autumn-memo-display li {
+  margin: 0.25em 0;
 }
 
 .standard-autumn-memo-display::before {
@@ -273,6 +313,11 @@ body {
   border-color: var(--standard-autumn-primary-light);
   transform: rotate(15deg);
   box-shadow: var(--standard-autumn-shadow-sm);
+}
+
+.standard-autumn-share-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
 .standard-autumn-copy-msg {
@@ -997,6 +1042,11 @@ body {
   justify-content: center;
   transition: all 0.2s ease;
   box-shadow: var(--standard-autumn-shadow-sm);
+}
+
+.standard-autumn-carousel-btn svg {
+  width: 24px;
+  height: 24px;
 }
 
 .standard-autumn-carousel-btn:hover:not(:disabled) {

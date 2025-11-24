@@ -6,6 +6,7 @@
   import { authApi } from "$lib/api/auth";
   import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
+  import { marked } from "marked";
   import "./theme.css";
 
   interface Props {
@@ -184,7 +185,7 @@
 
   async function handleMemoUpdate() {
     if (onUpdateItinerary) {
-      await onUpdateItinerary({ memo: editedMemo.trim() || undefined });
+      await onUpdateItinerary({ memo: editedMemo.trim() });
     }
     showMemoDialog = false;
   }
@@ -298,6 +299,16 @@
       });
     }
   }
+
+  // Configure marked options
+  marked.setOptions({
+    breaks: true,
+    gfm: true,
+  });
+
+  function renderMarkdown(text: string): string {
+    return marked.parse(text, { async: false }) as string;
+  }
 </script>
 
 <div class="standard-autumn-theme">
@@ -355,14 +366,17 @@
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
             class="standard-autumn-memo-display"
-            onclick={() => {
+            onclick={(e) => {
+              // Don't open edit dialog if clicking a link
+              if ((e.target as HTMLElement).closest("a")) return;
+
               if (hasEditPermission) {
                 editedMemo = itinerary.memo || "";
                 showMemoDialog = true;
               }
             }}
           >
-            {itinerary.memo}
+            {@html renderMarkdown(itinerary.memo)}
           </div>
         {:else if hasEditPermission}
           <button
@@ -623,6 +637,7 @@
                       onchange={handleSecretModeUpdate}
                       class="standard-autumn-settings-select"
                     >
+                      <option value={0}>即時</option>
                       <option value={15}>15分前</option>
                       <option value={30}>30分前</option>
                       <option value={60}>1時間前</option>

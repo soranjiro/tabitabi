@@ -1,7 +1,7 @@
 -- Migration: Create itinerary_secrets table
 -- Date: 2025-11-24
 
-CREATE TABLE itinerary_secrets (
+CREATE TABLE IF NOT EXISTS itinerary_secrets (
   itinerary_id TEXT PRIMARY KEY,
   enabled BOOLEAN DEFAULT FALSE,
   offset_minutes INTEGER DEFAULT 60,

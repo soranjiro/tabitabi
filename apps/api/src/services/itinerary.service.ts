@@ -8,9 +8,12 @@ export class ItineraryService {
   async list(): Promise<Itinerary[]> {
     const result = await this.db
       .prepare(`
-        SELECT i.*, s.enabled as secret_enabled, s.offset_minutes as secret_offset
+        SELECT i.*,
+               s.enabled as secret_enabled, s.offset_minutes as secret_offset,
+               w.walica_id as walica_id
         FROM itineraries i
         LEFT JOIN itinerary_secrets s ON i.id = s.itinerary_id
+        LEFT JOIN itinerary_walica_settings w ON i.id = w.itinerary_id
         ORDER BY i.created_at DESC
       `)
       .all();
@@ -21,9 +24,12 @@ export class ItineraryService {
   async get(id: string): Promise<Itinerary | null> {
     const result = await this.db
       .prepare(`
-        SELECT i.*, s.enabled as secret_enabled, s.offset_minutes as secret_offset
+        SELECT i.*,
+               s.enabled as secret_enabled, s.offset_minutes as secret_offset,
+               w.walica_id as walica_id
         FROM itineraries i
         LEFT JOIN itinerary_secrets s ON i.id = s.itinerary_id
+        LEFT JOIN itinerary_walica_settings w ON i.id = w.itinerary_id
         WHERE i.id = ?
       `)
       .bind(id)
@@ -41,6 +47,7 @@ export class ItineraryService {
       title: input.title,
       theme_id: input.theme_id || 'minimal',
       memo: input.memo ?? null,
+      walica_id: input.walica_id ?? null,
       password: input.password ?? null,
       secret_settings: input.secret_settings ? {
         enabled: input.secret_settings.enabled,
@@ -67,6 +74,14 @@ export class ItineraryService {
           now,
           now
         )
+        .run();
+    }
+
+    // Insert into walica table if exists
+    if (itinerary.walica_id) {
+      await this.db
+        .prepare('INSERT INTO itinerary_walica_settings (itinerary_id, walica_id, created_at, updated_at) VALUES (?, ?, ?, ?)')
+        .bind(itinerary.id, itinerary.walica_id, now, now)
         .run();
     }
 
@@ -116,9 +131,6 @@ export class ItineraryService {
           .run();
       } else {
         // Upsert settings
-        // Check if exists first (D1 doesn't support INSERT OR REPLACE nicely with timestamps preservation if we want that, but here we just overwrite)
-        // Actually, standard SQL UPSERT or just DELETE+INSERT or UPDATE/INSERT check.
-        // Let's try INSERT OR REPLACE
         await this.db
           .prepare(`
             INSERT INTO itinerary_secrets (itinerary_id, enabled, offset_minutes, created_at, updated_at)
@@ -139,12 +151,34 @@ export class ItineraryService {
       }
     }
 
+    // Handle walica settings update
+    if (input.walica_id !== undefined) {
+      if (input.walica_id === null) {
+        // Remove settings
+        await this.db
+          .prepare('DELETE FROM itinerary_walica_settings WHERE itinerary_id = ?')
+          .bind(id)
+          .run();
+      } else {
+        // Upsert settings
+        await this.db
+          .prepare(`
+            INSERT INTO itinerary_walica_settings (itinerary_id, walica_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(itinerary_id) DO UPDATE SET
+            walica_id = excluded.walica_id,
+            updated_at = excluded.updated_at
+          `)
+          .bind(id, input.walica_id, now, now)
+          .run();
+      }
+    }
+
     return await this.get(id);
   }
 
   async delete(id: string): Promise<boolean> {
-    // Foreign key cascade should handle the secrets table, but let's be safe or rely on DB
-    // Since we defined ON DELETE CASCADE in migration, deleting from itineraries is enough.
+    // Foreign key cascade should handle the secrets and walica tables
     const result = await this.db
       .prepare('DELETE FROM itineraries WHERE id = ?')
       .bind(id)
@@ -159,6 +193,7 @@ export class ItineraryService {
       title: row.title,
       theme_id: row.theme_id,
       memo: row.memo,
+      walica_id: row.walica_id,
       password: row.password,
       created_at: row.created_at,
       updated_at: row.updated_at,

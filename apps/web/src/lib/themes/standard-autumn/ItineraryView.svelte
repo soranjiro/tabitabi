@@ -16,6 +16,7 @@
       title?: string;
       theme_id?: string;
       memo?: string;
+      walica_id?: string | null;
       secret_settings?: {
         enabled: boolean;
         offset_minutes: number;
@@ -72,6 +73,11 @@
   let secretModeOffset = $state(
     itinerary.secret_settings?.offset_minutes ?? 60,
   );
+
+  let walicaUrl = $state(
+    itinerary.walica_id ? `https://walica.jp/group/${itinerary.walica_id}` : "",
+  );
+  let showWalica = $state(false);
 
   let newStep = $state({
     title: "",
@@ -300,6 +306,20 @@
     }
   }
 
+  async function handleWalicaUpdate() {
+    // Basic validation for walica.jp domain
+    if (walicaUrl && !walicaUrl.startsWith("https://walica.jp/group/")) {
+      alert("WalicaのURLは https://walica.jp/group/ で始まる必要があります");
+      return;
+    }
+
+    const walicaId = walicaUrl ? walicaUrl.split("/group/")[1] : null;
+
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({ walica_id: walicaId });
+    }
+  }
+
   // Configure marked options
   marked.setOptions({
     breaks: true,
@@ -519,6 +539,26 @@
         <span>Calendar</span>
       </button> -->
 
+      {#if itinerary.walica_id}
+        <button
+          class="standard-autumn-bottom-btn"
+          title="Walica"
+          aria-label="Walica"
+          onclick={() => (showWalica = true)}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path
+              d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"
+            />
+          </svg>
+          <span>Walica</span>
+        </button>
+      {/if}
+
       <div class="standard-autumn-btn-wrapper">
         <button
           class="standard-autumn-bottom-btn"
@@ -650,6 +690,23 @@
                   </div>
                 {/if}
               </div>
+
+              <div class="standard-autumn-settings-divider"></div>
+
+              <div class="standard-autumn-settings-group">
+                <label class="standard-autumn-settings-label">
+                  <span class="standard-autumn-settings-label-text">
+                    Walica URL
+                  </span>
+                  <input
+                    type="text"
+                    bind:value={walicaUrl}
+                    onblur={handleWalicaUpdate}
+                    placeholder="https://walica.jp/group/..."
+                    class="standard-autumn-input standard-autumn-settings-input"
+                  />
+                </label>
+              </div>
             </div>
           {/if}
           {#if showThemeSelect}
@@ -768,6 +825,39 @@
           </div>
         </form>
       </div>
+    </div>
+  {/if}
+
+  {#if showWalica && itinerary.walica_id}
+    <div class="standard-autumn-walica-overlay">
+      <div class="standard-autumn-walica-header">
+        <button
+          onclick={() => (showWalica = false)}
+          class="standard-autumn-walica-close-btn"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            width="24"
+            height="24"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          閉じる
+        </button>
+        <span class="standard-autumn-walica-title">Walica</span>
+      </div>
+      <iframe
+        src={`https://walica.jp/group/${itinerary.walica_id}`}
+        title="Walica"
+        class="standard-autumn-walica-frame"
+      ></iframe>
     </div>
   {/if}
 

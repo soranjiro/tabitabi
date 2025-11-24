@@ -15,7 +15,7 @@ dev:
 	pnpm run dev
 
 migrate-local:
-	cd apps/api && pnpm wrangler d1 execute tabitabi --local --file=../../migrations/0001_simple_schema.sql
+	cd apps/api && pnpm wrangler d1 migrations apply tabitabi --local
 
 migrate-remote:
-	cd apps/api && pnpm wrangler d1 execute tabitabi --remote --file=../../migrations/0001_simple_schema.sql
+	cd apps/api && pnpm wrangler d1 migrations apply tabitabi --remote

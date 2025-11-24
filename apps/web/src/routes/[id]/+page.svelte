@@ -20,28 +20,32 @@
     steps = data.steps;
   });
 
-  onMount(async () => {
-    auth.updateAccessTime(data.itinerary.id, data.itinerary.title);
-    document.body.style.backgroundColor = backgroundColor;
-    document.documentElement.style.backgroundColor = backgroundColor;
+  onMount(() => {
+    const init = async () => {
+      auth.updateAccessTime(data.itinerary.id, data.itinerary.title);
+      document.body.style.backgroundColor = backgroundColor;
+      document.documentElement.style.backgroundColor = backgroundColor;
 
-    // Check if we have edit permission and need to re-fetch steps to reveal secrets
-    const token =
-      auth.extractTokenFromUrl() || auth.getToken(data.itinerary.id);
-    if (token) {
-      // If we have a token, we might be in edit mode.
-      // If the initial load was SSR, steps might be masked.
-      // We should re-fetch to get the unmasked data.
-      // We can check if any step is hidden or just force re-fetch if secret mode is enabled.
-      if (data.itinerary.secret_settings?.enabled) {
-        try {
-          const unmaskedSteps = await stepApi.list(data.itinerary.id);
-          steps = unmaskedSteps;
-        } catch (e) {
-          console.error("Failed to re-fetch steps:", e);
+      // Check if we have edit permission and need to re-fetch steps to reveal secrets
+      const token =
+        auth.extractTokenFromUrl() || auth.getToken(data.itinerary.id);
+      if (token) {
+        // If we have a token, we might be in edit mode.
+        // If the initial load was SSR, steps might be masked.
+        // We should re-fetch to get the unmasked data.
+        // We can check if any step is hidden or just force re-fetch if secret mode is enabled.
+        if (data.itinerary.secret_settings?.enabled) {
+          try {
+            const unmaskedSteps = await stepApi.list(data.itinerary.id);
+            steps = unmaskedSteps;
+          } catch (e) {
+            console.error("Failed to re-fetch steps:", e);
+          }
         }
       }
-    }
+    };
+
+    init();
 
     return () => {
       document.body.style.backgroundColor = "";
@@ -58,6 +62,11 @@
     title?: string;
     theme_id?: string;
     memo?: string;
+    walica_id?: string | null;
+    secret_settings?: {
+      enabled: boolean;
+      offset_minutes: number;
+    } | null;
   }) {
     try {
       await itineraryApi.update(data.itinerary.id, updateData);

@@ -1,111 +1,30 @@
-# Tabitabi (たびたび)
+# Tabitabi
 
-旅のしおり管理アプリ - テーマで変わるデザイン、あなただけの旅の記録を作りましょう。
+Tabitabiは、旅のしおりを作成・共有できる多機能Webアプリケーションです。
 
-## 🌟 特徴
+[実際に使ってみる](https://tabitabi.pages.dev)
 
-- **テーマ駆動アーキテクチャ**: テーマを切り替えるだけでUI/UXが完全に変わります
-- **軽量・高速**: 必要な機能とデータのみを取得する効率的な設計
-- **拡張性**: 新機能の追加が容易な疎結合アーキテクチャ
-- **モダンな技術スタック**: SvelteKit + Cloudflare Workers + D1
+## 主な機能
 
-## 🚀 デプロイ済み
+### 1. しおりの作成
 
-- **フロントエンド**: https://tabitabi.pages.dev
-- **API**: https://tabitabi-api.soranjiro.workers.dev
+旅行の予定を日程ごとに整理し、場所や時間、メモを記録できます。
+編集パスワードを設定することも可能です。
 
-## 📦 プロジェクト構成
+<img src="./assets/home.png" width="300" alt="ホーム画面">
 
-```
-tabitabi/
-├── apps/
-│   ├── api/          # Cloudflare Workers API
-│   └── web/          # SvelteKit Frontend
-├── packages/
-│   └── types/        # 共有型定義
-└── migrations/       # D1 Database migrations
-```
+### 2. テーマの変更
 
-## 🛠️ 開発
+見た目や使える機能がテーマごとに異なります。用途に応じて最適なテーマを選択できます。
 
-### 必要なもの
+テーマは随時作成中で、デザインテーマのみをhtml,css,jsのみで作成することも可能なため、デザインアイデアなども募集中です！
 
-- Node.js 18+
-- pnpm
-- Cloudflare Account (デプロイ時)
+<img src="./assets/view.png" width="300" alt="閲覧画面"> <img src="./assets/minimal.png" width="300" alt="ミニマルテーマ">
 
-### セットアップ
+## 開発者向け
 
-```bash
-# 依存関係のインストール
-pnpm install
+開発環境のセットアップや詳細な仕様については、[docs/development.md](./docs/development.md)を参照してください。
 
-# データベースマイグレーション
-cd apps/api
-pnpm wrangler d1 migrations apply tabitabi-db --local
-
-# 開発サーバー起動
-pnpm dev
-```
-
-### ローカル開発
-
-```bash
-# APIサーバー
-cd apps/api
-pnpm dev
-
-# フロントエンド
-cd apps/web
-pnpm dev
-```
-
-## 🚀 デプロイ
-
-```bash
-# API デプロイ
-cd apps/api
-pnpm deploy
-
-# フロントエンド デプロイ
-cd apps/web
-pnpm deploy
-```
-
-## 📝 API エンドポイント
-
-### しおり管理
-- \`GET /api/v1/itineraries\` - しおり一覧
-- \`GET /api/v1/itineraries/:id\` - しおり詳細
-- \`POST /api/v1/itineraries\` - しおり作成
-- \`PUT /api/v1/itineraries/:id\` - しおり更新
-- \`DELETE /api/v1/itineraries/:id\` - しおり削除
-
-### タイムライン
-- \`GET /api/v1/itineraries/:id/timeline\` - タイムライン取得
-- \`POST /api/v1/itineraries/:id/timeline/steps\` - ステップ追加
-- \`PUT /api/v1/itineraries/timeline/steps/:stepId\` - ステップ更新
-- \`DELETE /api/v1/itineraries/timeline/steps/:stepId\` - ステップ削除
-
-## 🎨 テーマ
-
-現在利用可能なテーマ:
-
-- **Minimal**: シンプルで必要最小限の機能
-- **AI Generated**: AI生成デザイン
-- **Standard Autumn**: 秋色のやさしい配色で読みやすさ重視
-
-## 📄 ライセンス
+## ライセンス
 
 MIT
-
-## 🤝 コントリビューション
-
-プルリクエスト、Issue、機能リクエストを歓迎します!
-
-## 📚 ドキュメント
-
-詳細な設計と仕様は [docs/](./docs/) ディレクトリを参照してください。
-
-- [PRD (要件定義書)](./docs/prd.md)
-- [詳細設計書](./docs/detailed-design.md)

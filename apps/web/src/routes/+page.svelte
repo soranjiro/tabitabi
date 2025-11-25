@@ -18,6 +18,7 @@
   let url = $state("");
   let urlError = $state("");
   let currentPreview = $state(0);
+  let showScrollButton = $state(false);
 
   const themes = getAvailableThemes();
 
@@ -64,8 +65,24 @@
       currentPreview = (currentPreview + 1) % previewItineraries.length;
     }, 4000);
 
-    return () => clearInterval(interval);
+    const handleScroll = () => {
+      showScrollButton = window.scrollY > 300;
+    };
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("scroll", handleScroll);
+    };
   });
+
+  function scrollToCreate() {
+    document.getElementById("create")?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   function scrollToFeatures() {
     document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
@@ -184,7 +201,7 @@
 </svelte:head>
 
 <div class="home-page">
-  <!-- Hero Section with Form -->
+  <!-- Hero Section -->
   <section class="hero">
     <div class="hero-main">
       <div class="hero-content">
@@ -199,82 +216,18 @@
           たびたび
         </h1>
         <p class="hero-subtitle">旅のしおりを、サクッと作成・共有</p>
+        <p class="hero-description">
+          友達や家族との旅行計画を、シンプルに美しくまとめよう
+        </p>
 
-        <!-- Inline Form -->
-        <div class="hero-form">
-          <div class="tab-bar">
-            <button
-              onclick={() => (activeTab = "create")}
-              class="tab-btn {activeTab === 'create' ? 'active' : ''}"
-            >
-              新規作成
-            </button>
-            <button
-              onclick={() => (activeTab = "add")}
-              class="tab-btn {activeTab === 'add' ? 'active' : ''}"
-            >
-              URL入力
-            </button>
-          </div>
-
-          {#if activeTab === "create"}
-            <div class="form-row">
-              <input
-                type="text"
-                bind:value={title}
-                onkeypress={handleKeyPress}
-                placeholder="しおりのタイトル（例: 沖縄旅行 2025）"
-                class="form-input-hero {titleError ? 'error' : ''}"
-              />
-              <button
-                onclick={createItinerary}
-                disabled={creating}
-                class="btn-create"
-              >
-                {creating ? "..." : "作成"}
-              </button>
-            </div>
-            {#if titleError}
-              <p class="form-error-hero">{titleError}</p>
-            {/if}
-            <div class="form-options">
-              <select bind:value={theme_id} class="form-select-mini">
-                {#each themes as theme}
-                  <option value={theme.id}>{theme.name}</option>
-                {/each}
-              </select>
-              <button onclick={scrollToFeatures} class="link-features">
-                機能を見る ↓
-              </button>
-            </div>
-          {:else}
-            <div class="form-row">
-              <input
-                type="text"
-                bind:value={url}
-                onkeypress={handleUrlKeyPress}
-                placeholder="共有されたURLを貼り付け"
-                class="form-input-hero {urlError ? 'error' : ''}"
-              />
-              <button onclick={handleUrlSubmit} class="btn-create">開く</button>
-            </div>
-            {#if urlError}
-              <p class="form-error-hero">{urlError}</p>
-            {/if}
-          {/if}
+        <div class="hero-cta">
+          <button onclick={scrollToCreate} class="btn-primary">
+            無料でしおりを作成
+          </button>
+          <button onclick={scrollToFeatures} class="btn-secondary">
+            機能を見る ↓
+          </button>
         </div>
-
-        <!-- Recent Itineraries inline -->
-        {#if showRecent && recentItineraries.length > 0}
-          <div class="hero-recent">
-            <span class="recent-label">最近:</span>
-            {#each recentItineraries.slice(0, 3) as item}
-              <button onclick={() => goto(`/${item.id}`)} class="recent-chip">
-                {item.title}
-              </button>
-            {/each}
-          </div>
-        {/if}
       </div>
 
       <!-- Preview Carousel -->
@@ -404,6 +357,137 @@
     </div>
   </section>
 
+  <!-- Create Form Section -->
+  <section id="create" class="create-section">
+    <div class="create-container">
+      <div class="form-card">
+        <div class="tab-bar">
+          <button
+            onclick={() => (activeTab = "create")}
+            class="tab-btn {activeTab === 'create' ? 'active' : ''}"
+          >
+            作成
+          </button>
+          <button
+            onclick={() => (activeTab = "add")}
+            class="tab-btn {activeTab === 'add' ? 'active' : ''}"
+          >
+            URL入力
+          </button>
+        </div>
+
+        {#if activeTab === "create"}
+          <div class="form-body">
+            <div class="form-group">
+              <label for="title" class="form-label">
+                タイトル <span class="required">*</span>
+              </label>
+              <input
+                id="title"
+                type="text"
+                bind:value={title}
+                onkeypress={handleKeyPress}
+                placeholder="例: 沖縄旅行 2025"
+                class="form-input {titleError ? 'error' : ''}"
+              />
+              {#if titleError}
+                <p class="form-error">{titleError}</p>
+              {/if}
+            </div>
+
+            <div class="form-group">
+              <label for="theme" class="form-label">テーマ</label>
+              <select id="theme" bind:value={theme_id} class="form-select">
+                {#each themes as theme}
+                  <option value={theme.id}>{theme.name}</option>
+                {/each}
+              </select>
+            </div>
+
+            <details class="advanced-options">
+              <summary>詳細設定</summary>
+              <div class="form-group">
+                <label for="password" class="form-label">編集用パスワード</label
+                >
+                <input
+                  id="password"
+                  type="password"
+                  bind:value={password}
+                  placeholder="任意"
+                  class="form-input"
+                />
+                <p class="form-hint">
+                  設定するとパスワードなしでは編集できません
+                </p>
+              </div>
+            </details>
+
+            <button
+              onclick={createItinerary}
+              disabled={creating}
+              class="btn-submit"
+            >
+              {creating ? "作成中..." : "しおりを作成 →"}
+            </button>
+          </div>
+        {:else}
+          <div class="form-body">
+            <p class="form-description">共有されたしおりのURLを貼り付け</p>
+            <div class="form-group">
+              <label for="url" class="form-label">
+                しおりのURL <span class="required">*</span>
+              </label>
+              <input
+                id="url"
+                type="text"
+                bind:value={url}
+                onkeypress={handleUrlKeyPress}
+                placeholder="https://tabitabi.pages.dev/..."
+                class="form-input {urlError ? 'error' : ''}"
+              />
+              {#if urlError}
+                <p class="form-error">{urlError}</p>
+              {/if}
+            </div>
+
+            <button onclick={handleUrlSubmit} class="btn-submit">
+              開く →
+            </button>
+          </div>
+        {/if}
+      </div>
+
+      {#if showRecent && recentItineraries.length > 0}
+        <div class="recent-section">
+          <h3 class="recent-title">最近のしおり</h3>
+          <div class="recent-list">
+            {#each recentItineraries as item}
+              <div class="recent-item">
+                <button onclick={() => goto(`/${item.id}`)} class="recent-link">
+                  <span class="recent-name">{item.title}</span>
+                  <span class="recent-date">
+                    {new Date(item.visitedAt).toLocaleDateString("ja-JP", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onclick={() => removeRecent(item.id)}
+                  class="recent-remove"
+                  aria-label="削除"
+                >
+                  ×
+                </button>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer class="footer">
     <div class="footer-content">
@@ -444,6 +528,23 @@
       <p class="footer-copy">たびたび - 旅をもっと楽しく</p>
     </div>
   </footer>
+
+  <!-- Scroll to top button -->
+  {#if showScrollButton}
+    <button onclick={scrollToTop} class="scroll-top-btn">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        width="20"
+        height="20"
+      >
+        <path d="M12 19V5M5 12l7-7 7 7" />
+      </svg>
+      しおりを作成
+    </button>
+  {/if}
 </div>
 
 <style>
@@ -521,162 +622,64 @@
   .hero-subtitle {
     font-size: 1.1rem;
     opacity: 0.9;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
     font-weight: 500;
   }
 
-  /* Hero Form */
-  .hero-form {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  }
-
-  .tab-bar {
-    display: flex;
-    background: rgba(0, 0, 0, 0.03);
-  }
-
-  .tab-btn {
-    flex: 1;
-    padding: 0.75rem;
-    background: none;
-    border: none;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #9ca3af;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-  }
-
-  .tab-btn.active {
-    color: #6b8cce;
-    background: white;
-  }
-
-  .form-row {
-    display: flex;
-    padding: 1rem;
-    gap: 0.5rem;
-  }
-
-  .form-input-hero {
-    flex: 1;
-    padding: 0.75rem 1rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 10px;
+  .hero-description {
     font-size: 0.95rem;
-    transition: all 0.2s;
-    min-width: 0;
-  }
-
-  .form-input-hero:focus {
-    outline: none;
-    border-color: #6b8cce;
-  }
-
-  .form-input-hero.error {
-    border-color: #ef4444;
-  }
-
-  .form-error-hero {
-    color: #ef4444;
-    font-size: 0.75rem;
-    padding: 0 1rem 0.5rem;
-    margin-top: -0.5rem;
-  }
-
-  .btn-create {
-    background: linear-gradient(135deg, #6b8cce, #8b7dc9);
-    color: white;
-    font-size: 0.95rem;
-    font-weight: 700;
-    padding: 0.75rem 1.25rem;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .btn-create:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(107, 140, 206, 0.4);
-  }
-
-  .btn-create:disabled {
-    opacity: 0.7;
-  }
-
-  .form-options {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 1rem 1rem;
-    gap: 1rem;
-  }
-
-  .form-select-mini {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    color: #374151;
-    background: white;
-    cursor: pointer;
-  }
-
-  .link-features {
-    background: none;
-    border: none;
-    color: #6b8cce;
-    font-size: 0.8rem;
-    cursor: pointer;
-    padding: 0.5rem;
     opacity: 0.8;
-    transition: opacity 0.2s;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
   }
 
-  .link-features:hover {
-    opacity: 1;
-  }
-
-  /* Hero Recent */
-  .hero-recent {
+  .hero-cta {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0.75rem;
     align-items: center;
-    gap: 0.5rem;
-    margin-top: 1rem;
-    justify-content: center;
   }
 
   @media (min-width: 900px) {
-    .hero-recent {
-      justify-content: flex-start;
+    .hero-cta {
+      flex-direction: row;
+      align-items: flex-start;
     }
   }
 
-  .recent-label {
-    font-size: 0.8rem;
-    opacity: 0.7;
+  .btn-primary {
+    background: white;
+    color: #6b8cce;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0.875rem 2rem;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   }
 
-  .recent-chip {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-secondary {
     color: white;
-    padding: 0.4rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 9999px;
     cursor: pointer;
     transition: all 0.2s;
   }
 
-  .recent-chip:hover {
-    background: rgba(255, 255, 255, 0.3);
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.6);
   }
 
   /* Preview Carousel */
@@ -939,5 +942,274 @@
   .footer-copy {
     color: #6b7280;
     font-size: 0.7rem;
+  }
+
+  /* Create Section */
+  .create-section {
+    background: #f9fafb;
+    padding: 4rem 1rem;
+  }
+
+  .create-container {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .form-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  .tab-bar {
+    display: flex;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 1rem;
+    background: none;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .tab-btn.active {
+    color: #6b8cce;
+  }
+
+  .tab-btn.active::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #6b8cce;
+    border-radius: 3px 3px 0 0;
+  }
+
+  .form-body {
+    padding: 1.5rem;
+  }
+
+  .form-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+
+  .required {
+    color: #ef4444;
+  }
+
+  .form-input,
+  .form-select {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.2s;
+    box-sizing: border-box;
+  }
+
+  .form-input:focus,
+  .form-select:focus {
+    outline: none;
+    border-color: #6b8cce;
+    box-shadow: 0 0 0 3px rgba(107, 140, 206, 0.15);
+  }
+
+  .form-input.error {
+    border-color: #ef4444;
+  }
+
+  .form-error {
+    color: #ef4444;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+  }
+
+  .form-hint {
+    color: #9ca3af;
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .advanced-options {
+    margin-bottom: 1.25rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .advanced-options summary {
+    padding: 0.875rem 1rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #6b7280;
+    background: #f9fafb;
+  }
+
+  .advanced-options[open] summary {
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .advanced-options .form-group {
+    padding: 1rem;
+    margin-bottom: 0;
+  }
+
+  .btn-submit {
+    width: 100%;
+    background: linear-gradient(135deg, #6b8cce, #8b7dc9);
+    color: white;
+    font-size: 1.125rem;
+    font-weight: 700;
+    padding: 1rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-submit:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(107, 140, 206, 0.4);
+  }
+
+  .btn-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  /* Recent Section */
+  .recent-section {
+    margin-top: 2rem;
+  }
+
+  .recent-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 0.75rem;
+  }
+
+  .recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .recent-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .recent-link {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+
+  .recent-link:hover {
+    border-color: #6b8cce;
+    background: rgba(107, 140, 206, 0.05);
+  }
+
+  .recent-name {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9rem;
+  }
+
+  .recent-date {
+    font-size: 0.75rem;
+    color: #9ca3af;
+  }
+
+  .recent-remove {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: none;
+    color: #9ca3af;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-size: 1rem;
+  }
+
+  .recent-remove:hover {
+    background: #fef2f2;
+    color: #ef4444;
+  }
+
+  /* Scroll to top button */
+  .scroll-top-btn {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: linear-gradient(135deg, #6b8cce, #8b7dc9);
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: 9999px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(107, 140, 206, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    z-index: 100;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .scroll-top-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(107, 140, 206, 0.5);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 </style>

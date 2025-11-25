@@ -333,7 +333,7 @@
 
   .btn-submit {
     width: 100%;
-    background: linear-gradient(135deg, #6b8cce, #8b7dc9);
+    background: linear-gradient(145deg, #6ba0ce 0%, #7d88c9 80%, #9b8bca 100%);
     color: white;
     font-size: 1.125rem;
     font-weight: 700;

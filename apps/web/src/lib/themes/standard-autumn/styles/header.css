@@ -1,0 +1,230 @@
+.standard-autumn-header {
+  text-align: center;
+  padding: 3.5rem 1.5rem 1.5rem;
+  position: relative;
+}
+
+.standard-autumn-header::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 60px;
+  height: 60px;
+  opacity: 0.10;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cellipse fill='%236ba3d4' cx='50' cy='70' rx='40' ry='25'/%3E%3Cpath fill='%236ba3d4' d='M30 60 Q32 45 34 60 M45 55 Q47 40 49 55 M60 58 Q62 43 64 58' stroke='%236ba3d4' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.standard-autumn-header::after {
+  content: "";
+  position: absolute;
+  top: 15px;
+  right: 10%;
+  width: 50px;
+  height: 50px;
+  opacity: 0.12;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23e6b422' d='M50 90 L50 60 Q50 40 35 35 Q25 30 20 20 Q25 35 35 38 Q45 40 50 40 Q55 40 65 38 Q75 35 80 20 Q75 30 65 35 Q50 40 50 60 Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(10deg);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.standard-autumn-title-button {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: var(--standard-autumn-text);
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  margin: 0;
+  cursor: pointer;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  position: relative;
+  transition: opacity 0.2s;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.standard-autumn-title-button:hover {
+  opacity: 0.7;
+}
+
+.standard-autumn-title-input {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-size: 2.2rem;
+  font-weight: 600;
+  text-align: center;
+  width: 100%;
+  border: none;
+  border-bottom: 2px solid var(--standard-autumn-primary);
+  background: transparent;
+  color: var(--standard-autumn-text);
+  padding: 0.25rem;
+  outline: none;
+}
+
+.standard-autumn-controls {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.standard-autumn-memo-display {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  font-size: 0.95rem;
+  color: var(--standard-autumn-text-light);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--standard-autumn-border);
+  border-radius: 12px;
+  padding: 1.2rem 1.5rem;
+  line-height: 1.8;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  max-width: 90%;
+  width: 100%;
+  margin: 0 auto;
+  backdrop-filter: blur(4px);
+  white-space: normal;
+  word-break: break-word;
+  position: relative;
+  text-align: left;
+}
+
+.standard-autumn-memo-display p {
+  margin: 0 0 0.5em 0;
+}
+
+.standard-autumn-memo-display p:last-child {
+  margin-bottom: 0;
+}
+
+.standard-autumn-memo-display a {
+  color: var(--standard-autumn-primary);
+  text-decoration: underline;
+  font-weight: 600;
+  position: relative;
+  z-index: 5;
+  transition: color 0.2s;
+}
+
+.standard-autumn-memo-display a:hover {
+  color: var(--standard-autumn-accent);
+}
+
+.standard-autumn-memo-display ul,
+.standard-autumn-memo-display ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.standard-autumn-memo-display ul {
+  list-style-type: disc;
+}
+
+.standard-autumn-memo-display ol {
+  list-style-type: decimal;
+}
+
+.standard-autumn-memo-display li {
+  margin: 0.25em 0;
+}
+
+.standard-autumn-memo-display::before {
+  content: '"';
+  position: absolute;
+  top: -10px;
+  left: 10px;
+  font-size: 3rem;
+  color: var(--standard-autumn-secondary);
+  opacity: 0.3;
+  font-family: serif;
+}
+
+.standard-autumn-memo-display:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: var(--standard-autumn-shadow-sm);
+  border-color: var(--standard-autumn-secondary);
+}
+
+.standard-autumn-share-icon {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  color: var(--standard-autumn-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.standard-autumn-share-icon:hover {
+  background: #fff;
+  border-color: var(--standard-autumn-primary-light);
+  transform: rotate(15deg);
+  box-shadow: var(--standard-autumn-shadow-sm);
+}
+
+.standard-autumn-share-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.standard-autumn-copy-msg {
+  position: absolute;
+  top: 1.5rem;
+  right: 4rem;
+  font-size: 0.8rem;
+  color: #fff;
+  background: var(--standard-autumn-primary);
+  padding: 6px 16px;
+  border-radius: 20px;
+  pointer-events: none;
+  animation: fadeOut 2s forwards;
+  box-shadow: 0 4px 12px rgba(169, 53, 41, 0.2);
+  font-weight: 600;
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .standard-autumn-header {
+    padding: 2.5rem 1rem 1rem;
+  }
+
+  .standard-autumn-title-button,
+  .standard-autumn-title-input {
+    font-size: 1.8rem;
+  }
+}

@@ -1,0 +1,259 @@
+.standard-autumn-carousel-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 140px;
+  width: 100%;
+  position: relative;
+  overflow: visible;
+}
+
+.standard-autumn-carousel-wrapper::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 40%;
+  width: 60px;
+  height: 60px;
+  opacity: 0.10;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cellipse fill='%238b4513' cx='50' cy='65' rx='30' ry='35'/%3E%3Cpath fill='%23d2691e' d='M50 30 L55 45 L45 45 Z'/%3E%3Ccircle fill='%238b4513' cx='50' cy='28' r='3'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(-15deg);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.standard-autumn-carousel-wrapper::after {
+  content: "";
+  position: absolute;
+  right: 15px;
+  top: 60%;
+  width: 70px;
+  height: 70px;
+  opacity: 0.08;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23a93529' d='M30 40 L33 55 L43 48 L38 60 L53 63 L38 66 L43 78 L33 71 L30 86 L27 71 L17 78 L22 66 L7 63 L22 60 L17 48 L27 55 Z'/%3E%3Cpath fill='%23d4762c' d='M60 15 L62 26 L69 21 L66 30 L77 32 L66 34 L69 43 L62 38 L60 49 L58 38 L51 43 L54 34 L43 32 L54 30 L51 21 L58 26 Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(25deg);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.standard-autumn-carousel {
+  width: 100%;
+  overflow: visible;
+  padding: 1rem 0;
+}
+
+.standard-autumn-carousel-track {
+  display: flex;
+  width: auto;
+  transition: margin-left 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  margin-left: calc(50vw - 42.5vw - (var(--active, 0) * (85vw + 24px)));
+  gap: 24px;
+  padding: 0;
+  will-change: margin-left;
+  align-items: flex-start;
+}
+
+.standard-autumn-carousel-card {
+  flex: 0 0 85vw;
+  width: 85vw;
+  max-width: 420px;
+  min-width: 280px;
+  box-sizing: border-box;
+  opacity: 0.5;
+  transform: scale(0.9) translateY(15px);
+  transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  border-radius: 24px;
+  background: var(--standard-autumn-card-bg);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  position: relative;
+}
+
+.standard-autumn-carousel-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--standard-autumn-primary), var(--standard-autumn-secondary));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.standard-autumn-carousel-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 20px;
+  width: 40px;
+  height: 60px;
+  background: linear-gradient(135deg, var(--standard-autumn-primary) 0%, var(--standard-autumn-accent) 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%);
+  z-index: 10;
+  box-shadow: 0 4px 8px rgba(169, 53, 41, 0.3);
+}
+
+.standard-autumn-carousel-card[aria-hidden="false"] {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  z-index: 2;
+  cursor: default;
+  box-shadow: var(--standard-autumn-shadow);
+  border-color: #fff;
+}
+
+.standard-autumn-carousel-card[aria-hidden="false"]::after {
+  opacity: 1;
+}
+
+.standard-autumn-carousel-card[aria-hidden="false"]::before {
+  opacity: 0.9;
+}
+
+.standard-autumn-card {
+  background: transparent;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: auto;
+}
+
+.standard-autumn-card-header {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-size: 1.8rem;
+  color: var(--standard-autumn-text);
+  font-weight: 600;
+  padding: 2.5rem 1.5rem 1.5rem;
+  text-align: center;
+  background: linear-gradient(to bottom, #fffcf5 0%, rgba(255, 255, 255, 0) 100%);
+  letter-spacing: 0.05em;
+  border-bottom: 1px dashed var(--standard-autumn-line-color);
+}
+
+.standard-autumn-card-body {
+  position: relative;
+  padding: 2rem 1.5rem;
+}
+
+.standard-autumn-carousel-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.standard-autumn-carousel-controls-top {
+  margin-bottom: 0.5rem;
+}
+
+.standard-autumn-carousel-controls-bottom {
+  margin-top: 1rem;
+}
+
+.standard-autumn-carousel-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--standard-autumn-border);
+  color: var(--standard-autumn-primary);
+  cursor: pointer;
+  padding: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: var(--standard-autumn-shadow-sm);
+}
+
+.standard-autumn-carousel-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.standard-autumn-carousel-btn:hover:not(:disabled) {
+  background: var(--standard-autumn-primary);
+  color: white;
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(169, 53, 41, 0.3);
+  border-color: var(--standard-autumn-primary);
+}
+
+.standard-autumn-carousel-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+  border-color: #eee;
+  color: #ccc;
+  box-shadow: none;
+}
+
+.standard-autumn-page-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.standard-autumn-page-dots button {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #dccbba;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.standard-autumn-page-dots button:hover {
+  background: #a93529;
+  opacity: 0.5;
+}
+
+.standard-autumn-page-dots button.active {
+  background: var(--standard-autumn-primary);
+  width: 24px;
+  border-radius: 10px;
+}
+
+@media (min-width: 830px) {
+  .standard-autumn-carousel-track {
+    margin-left: calc(50vw - 32.5vw - (var(--active, 0) * (65vw + 24px)));
+  }
+
+  .standard-autumn-carousel-card {
+    flex: 0 0 65vw;
+    width: 65vw;
+  }
+}
+
+@media (max-width: 480px) {
+  .standard-autumn-carousel-card {
+    flex: 0 0 88vw;
+    width: 88vw;
+  }
+
+  .standard-autumn-carousel-track {
+    margin-left: calc(50vw - 44vw - (var(--active, 0) * (88vw + 16px)));
+    gap: 16px;
+  }
+
+  .standard-autumn-card-header {
+    font-size: 1.5rem;
+  }
+}

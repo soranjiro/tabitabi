@@ -9,7 +9,10 @@
     "build": "turbo build",
     "deploy": "turbo deploy",
     "deploy:api": "pnpm --filter api deploy",
-    "deploy:web": "pnpm --filter web deploy"
+    "deploy:web": "pnpm --filter web deploy",
+    "test": "turbo test:run",
+    "test:api": "pnpm --filter api test:run",
+    "test:web": "pnpm --filter web test:run"
   },
   "devDependencies": {
     "turbo": "^2.3.3",

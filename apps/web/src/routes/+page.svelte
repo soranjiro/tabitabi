@@ -1,116 +1,92 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
-  import { itineraryApi } from "$lib/api/itinerary";
   import { auth } from "$lib/auth";
-  import { getAvailableThemes } from "$lib/themes";
+  import {
+    PreviewCarousel,
+    FeatureCard,
+    CreateForm,
+    RecentItineraries,
+    Footer,
+    ScrollTopButton,
+    previewItineraries,
+    FlyingAirplane,
+  } from "./home";
+  import {
+    IconAirplane,
+    IconPhone,
+    IconLink,
+    IconPalette,
+    IconBolt,
+  } from "./home/icons";
 
-  let title = $state("");
-  let password = $state("");
-  let theme_id = $state("standard-autumn");
-  let creating = $state(false);
-  let titleError = $state("");
   let recentItineraries = $state<
     Array<{ id: string; title: string; visitedAt: number }>
   >([]);
   let showRecent = $state(false);
-  let activeTab = $state<"create" | "add">("create");
-  let url = $state("");
-  let urlError = $state("");
+  let currentPreview = $state(0);
+  let showScrollButton = $state(false);
 
-  const themes = getAvailableThemes();
+  let flyingAirplanes = $state<number[]>([]);
+  let airplaneIdCounter = 0;
+  let heroIconRef = $state<HTMLButtonElement | null>(null);
+  let isFlying = $derived(flyingAirplanes.length > 0);
+
+  function spawnFlyingAirplane() {
+    if (!heroIconRef || isFlying) return;
+
+    const id = airplaneIdCounter++;
+    flyingAirplanes = [...flyingAirplanes, id];
+  }
+
+  function removeAirplane(id: number) {
+    flyingAirplanes = flyingAirplanes.filter((a) => a !== id);
+  }
+
+  function getHeroIconPosition(): { x: number; y: number } {
+    if (!heroIconRef) return { x: 10, y: 30 };
+    const rect = heroIconRef.getBoundingClientRect();
+    return {
+      x: ((rect.left + rect.width / 2) / window.innerWidth) * 100,
+      y: ((rect.top + rect.height / 2) / window.innerHeight) * 100,
+    };
+  }
 
   onMount(() => {
     setTimeout(() => {
       recentItineraries = auth.getRecentItineraries();
       showRecent = true;
     }, 300);
+
+    const interval = setInterval(() => {
+      currentPreview = (currentPreview + 1) % previewItineraries.length;
+    }, 4000);
+
+    const handleScroll = () => {
+      showScrollButton = window.scrollY > 300;
+    };
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("scroll", handleScroll);
+    };
   });
 
-  async function createItinerary() {
-    titleError = "";
-
-    if (!title.trim()) {
-      titleError = "タイトルを入力してください";
-      return;
-    }
-
-    creating = true;
-    try {
-      const created = await itineraryApi.create({
-        title: title.trim(),
-        theme_id,
-        password: password.trim() || undefined,
-      });
-
-      if (created.token) {
-        auth.setToken(created.id, created.title, created.token);
-      }
-
-      goto(`/${created.id}`);
-    } catch (error) {
-      console.error("Failed to create:", error);
-      alert("しおりの作成に失敗しました");
-    } finally {
-      creating = false;
-    }
+  function scrollToCreate() {
+    document.getElementById("create")?.scrollIntoView({ behavior: "smooth" });
   }
 
-  function handleKeyPress(event: KeyboardEvent) {
-    if (event.key === "Enter" && !creating) {
-      createItinerary();
-    }
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function scrollToFeatures() {
+    document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
   }
 
   function removeRecent(id: string) {
     auth.removeFromHistory(id);
     recentItineraries = auth.getRecentItineraries();
-  }
-
-  function handleUrlSubmit() {
-    urlError = "";
-
-    if (!url.trim()) {
-      urlError = "URLを入力してください";
-      return;
-    }
-
-    try {
-      const urlObj = new URL(url.trim(), window.location.origin);
-
-      if (urlObj.origin !== window.location.origin) {
-        urlError = "このサイトのURLを入力してください";
-        return;
-      }
-
-      const pathname = urlObj.pathname;
-
-      // Extract ID from pathname (format: /[id] or /[id]/...)
-      const match = pathname.match(/^\/([a-zA-Z0-9_-]+)/);
-
-      if (!match) {
-        urlError = "無効なURLです";
-        return;
-      }
-
-      const id = match[1];
-      const token = urlObj.searchParams.get("token");
-
-      // Navigate to the itinerary
-      if (token) {
-        goto(`/${id}?token=${token}`);
-      } else {
-        goto(`/${id}`);
-      }
-    } catch (error) {
-      urlError = "無効なURLです";
-    }
-  }
-
-  function handleUrlKeyPress(event: KeyboardEvent) {
-    if (event.key === "Enter") {
-      handleUrlSubmit();
-    }
   }
 </script>
 
@@ -139,195 +115,276 @@
   <link rel="canonical" href="https://tabitabi.pages.dev/" />
 </svelte:head>
 
-<div
-  class="min-h-screen flex flex-col justify-center px-4 py-8 bg-gradient-to-br from-blue-50 to-indigo-100"
->
-  <div class="text-center max-w-lg w-full mx-auto">
-    <h1
-      class="text-5xl text-indigo-600 mt-6 mb-2"
-      style="font-family: 'Hiragino Maru Gothic ProN', 'ヒラギノ丸ゴ ProN', '游ゴシック体', YuGothic, 'Yu Gothic Medium', 'メイリオ', Meiryo, sans-serif; font-weight: 1000; letter-spacing: 0.05em;"
-    >
-      ✈️ たびたび
-    </h1>
-    <p class="text-lg text-gray-600 mb-6">旅のしおりを、サクッと作成</p>
+<div class="home-page">
+  {#each flyingAirplanes as id (id)}
+    {@const pos = getHeroIconPosition()}
+    <FlyingAirplane
+      startX={pos.x}
+      startY={pos.y}
+      onComplete={() => removeAirplane(id)}
+    />
+  {/each}
 
-    <div class="bg-white rounded-2xl shadow-xl p-8">
-      <div class="flex gap-2 mb-6 border-b-2 border-gray-100 justify-center">
-        <button
-          onclick={() => (activeTab = "create")}
-          class="px-4 py-2 font-semibold transition-all duration-200 {activeTab ===
-          'create'
-            ? 'text-indigo-600 border-b-2 border-indigo-600 -mb-0.5'
-            : 'text-gray-500 hover:text-gray-700'}"
-        >
-          作成
-        </button>
-        <button
-          onclick={() => (activeTab = "add")}
-          class="px-4 py-2 font-semibold transition-all duration-200 {activeTab ===
-          'add'
-            ? 'text-indigo-600 border-b-2 border-indigo-600 -mb-0.5'
-            : 'text-gray-500 hover:text-gray-700'}"
-        >
-          追加
-        </button>
+  <section class="hero">
+    <div class="hero-main">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          <button
+            class="hero-icon"
+            class:hero-icon-hidden={isFlying}
+            bind:this={heroIconRef}
+            onclick={spawnFlyingAirplane}
+            aria-label="飛行機を飛ばす"
+          >
+            <IconAirplane size={44} />
+          </button>
+          たびたび
+        </h1>
+        <p class="hero-subtitle">旅のしおりを、サクッと作成・共有</p>
+
+        <div class="hero-cta">
+          <button onclick={scrollToCreate} class="btn-primary">
+            無料でしおりを作成
+          </button>
+          <button onclick={scrollToFeatures} class="btn-secondary">
+            機能を見る ↓
+          </button>
+        </div>
       </div>
 
-      <!-- Create Tab -->
-      {#if activeTab === "create"}
-        <div class="mb-6">
-          <label
-            for="title"
-            class="block text-sm font-semibold text-gray-700 mb-2"
-          >
-            タイトル <span class="text-red-500">*</span>
-          </label>
-          <input
-            id="title"
-            type="text"
-            bind:value={title}
-            onkeypress={handleKeyPress}
-            class="w-full text-xl px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors {titleError
-              ? 'border-red-500 focus:border-red-500'
-              : 'border-gray-200 focus:border-indigo-500'}"
-          />
-          {#if titleError}
-            <p class="text-red-500 text-sm mt-1">{titleError}</p>
-          {/if}
-        </div>
+      <PreviewCarousel
+        previews={previewItineraries}
+        currentIndex={currentPreview}
+        onSelect={(i) => (currentPreview = i)}
+      />
+    </div>
+  </section>
 
-        <div class="mb-6">
-          <label
-            for="theme"
-            class="block text-sm font-semibold text-gray-700 mb-2"
-          >
-            テーマ
-          </label>
-          <select
-            id="theme"
-            bind:value={theme_id}
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors"
-          >
-            {#each themes as theme}
-              <option value={theme.id}
-                >{theme.name} - {theme.description}</option
-              >
-            {/each}
-          </select>
-        </div>
+  <section id="features" class="features">
+    <h2 class="section-title">シンプルに、便利に</h2>
+    <div class="features-grid">
+      <FeatureCard
+        title="スマホ最適化"
+        description="どこでも旅程を確認。アプリ不要"
+      >
+        {#snippet icon()}
+          <IconPhone size={32} />
+        {/snippet}
+      </FeatureCard>
+      <FeatureCard title="URL共有" description="リンク1つで仲間と共有">
+        {#snippet icon()}
+          <IconLink size={32} />
+        {/snippet}
+      </FeatureCard>
+      <FeatureCard title="テーマ選択" description="シーンに合ったデザイン">
+        {#snippet icon()}
+          <IconPalette size={32} />
+        {/snippet}
+      </FeatureCard>
+      <FeatureCard title="軽量・高速" description="表示まで1秒。ストレスゼロ">
+        {#snippet icon()}
+          <IconBolt size={32} />
+        {/snippet}
+      </FeatureCard>
+    </div>
+  </section>
 
-        <div class="mb-6">
-          <label
-            for="password"
-            class="block text-sm font-semibold text-gray-700 mb-2"
-          >
-            編集用パスワード
-          </label>
-          <input
-            id="password"
-            type="password"
-            bind:value={password}
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors"
-          />
-        </div>
+  <section id="create" class="create-section">
+    <div class="create-container">
+      <CreateForm />
 
-        <button
-          onclick={createItinerary}
-          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-lg py-4 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
-        >
-          {creating ? "作成中..." : "しおりを作成 →"}
-        </button>
-
-        <p class="text-sm text-gray-500 mt-6">
-          URLが発行されます。仲間と共有しよう！
-        </p>
-      {:else}
-        <!-- Add Tab (URL Import) -->
-        <div class="mb-6">
-          <label
-            for="url"
-            class="block text-sm font-semibold text-gray-700 mb-2"
-          >
-            しおりのURL <span class="text-red-500">*</span>
-          </label>
-          <input
-            id="url"
-            type="text"
-            bind:value={url}
-            onkeypress={handleUrlKeyPress}
-            placeholder="https://..."
-            class="w-full text-xl px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors {urlError
-              ? 'border-red-500 focus:border-red-500'
-              : 'border-gray-200 focus:border-indigo-500'}"
-          />
-          {#if urlError}
-            <p class="text-red-500 text-sm mt-1">{urlError}</p>
-          {/if}
-        </div>
-
-        <button
-          onclick={handleUrlSubmit}
-          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-lg py-4 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
-        >
-          開く →
-        </button>
-
-        <p class="text-sm text-gray-500 mt-6">
-          共有されたしおりのURLを貼り付けてください
-        </p>
+      {#if showRecent}
+        <RecentItineraries items={recentItineraries} onRemove={removeRecent} />
       {/if}
     </div>
+  </section>
 
-    <!-- Recent Itineraries -->
-    {#if showRecent && recentItineraries.length > 0}
-      <div class="mt-8 bg-white rounded-2xl shadow-xl p-6 animate-fade-in">
-        <h2 class="text-xl font-semibold text-gray-800 mb-4">📚 最近の項目</h2>
-        <div class="space-y-2">
-          {#each recentItineraries as item}
-            <div class="flex items-center gap-2">
-              <button
-                onclick={() => goto(`/${item.id}`)}
-                class="flex-1 text-left px-4 py-3 rounded-lg bg-gray-50 hover:bg-indigo-50 hover:border-indigo-200 border-2 border-transparent transition-all duration-200"
-              >
-                <div class="font-medium text-gray-800">{item.title}</div>
-                <div class="text-xs text-gray-500 mt-1">
-                  {new Date(item.visitedAt).toLocaleDateString("ja-JP", {
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
-              </button>
-              <button
-                type="button"
-                onclick={() => removeRecent(item.id)}
-                class="shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors text-sm"
-                aria-label="履歴から削除"
-              >
-                ✕
-              </button>
-            </div>
-          {/each}
-        </div>
-      </div>
-    {/if}
-  </div>
+  <Footer />
+
+  <ScrollTopButton visible={showScrollButton} onclick={scrollToTop} />
 </div>
 
 <style>
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+  .home-page {
+    min-height: 100vh;
+    background: linear-gradient(145deg, #84c6ff 0%, #a6b3ff 40%, #b5daf8 100%);
+  }
+
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .hero-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    max-width: 1100px;
+    width: 100%;
+  }
+
+  @media (min-width: 900px) {
+    .hero-main {
+      flex-direction: row;
+      justify-content: space-between;
+      gap: 1rem;
     }
   }
 
-  .animate-fade-in {
-    animation: fade-in 0.4s ease-out;
+  .hero-content {
+    color: white;
+    max-width: 420px;
+    text-align: center;
+  }
+
+  @media (min-width: 900px) {
+    .hero-content {
+      text-align: left;
+    }
+  }
+
+  .hero-title {
+    font-size: 3rem;
+    font-weight: 900;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+
+  @media (min-width: 900px) {
+    .hero-title {
+      justify-content: flex-start;
+      font-size: 3.5rem;
+    }
+  }
+
+  .hero-icon {
+    color: white;
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition:
+      transform 0.2s,
+      opacity 0.2s;
+  }
+
+  .hero-icon-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .hero-icon:hover {
+    transform: scale(1.1);
+  }
+
+  .hero-icon:active {
+    transform: scale(0.95);
+  }
+
+  .hero-icon :global(svg) {
+    transform: rotate(-45deg);
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
+  }
+
+  .hero-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+
+  .hero-cta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  @media (min-width: 900px) {
+    .hero-cta {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+  }
+
+  .btn-primary {
+    background: white;
+    color: #6b8cce;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0.875rem 2rem;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-secondary {
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+
+  .features {
+    background: white;
+    padding: 4rem 1rem;
+  }
+
+  .section-title {
+    text-align: center;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #374151;
+    margin-bottom: 2.5rem;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 768px) {
+    .features-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .create-section {
+    background: #f9fafb;
+    padding: 4rem 1rem;
+  }
+
+  .create-container {
+    max-width: 480px;
+    margin: 0 auto;
   }
 </style>

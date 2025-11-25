@@ -100,9 +100,6 @@
           たびたび
         </h1>
         <p class="hero-subtitle">旅のしおりを、サクッと作成・共有</p>
-        <p class="hero-description">
-          友達や家族との旅行計画を、シンプルに美しくまとめよう
-        </p>
 
         <div class="hero-cta">
           <button onclick={scrollToCreate} class="btn-primary">
@@ -193,7 +190,7 @@
     .hero-main {
       flex-direction: row;
       justify-content: space-between;
-      gap: 3rem;
+      gap: 1rem;
     }
   }
 
@@ -240,15 +237,8 @@
   .hero-subtitle {
     font-size: 1.1rem;
     opacity: 0.9;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
     font-weight: 500;
-  }
-
-  .hero-description {
-    font-size: 0.95rem;
-    opacity: 0.8;
-    margin-bottom: 1.5rem;
-    line-height: 1.5;
   }
 
   .hero-cta {

@@ -170,6 +170,12 @@
     height: 100%;
   }
 
+  @media (min-width: 900px) {
+    .hero-visual {
+      margin-right: 2rem;
+    }
+  }
+
   .preview-card {
     position: absolute;
     top: 0;

@@ -175,6 +175,15 @@
   color: var(--standard-autumn-text);
 }
 
+.standard-autumn-walica-link {
+  color: #0066cc;
+  text-decoration: underline;
+}
+
+.standard-autumn-walica-link:hover {
+  color: #004499;
+}
+
 .standard-autumn-walica-frame {
   flex: 1;
   width: 100%;

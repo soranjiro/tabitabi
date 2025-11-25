@@ -17,7 +17,18 @@
         {@html CloseIcon}
         閉じる
       </button>
-      <span class="standard-autumn-walica-title">Walica</span>
+
+      <span class="standard-autumn-walica-title">
+        外部サイト:
+        <a
+          href="https://walica.jp"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="standard-autumn-walica-link"
+        >
+          walica.jp
+        </a>
+      </span>
     </div>
     <iframe
       src={`https://walica.jp/group/${walicaId}`}

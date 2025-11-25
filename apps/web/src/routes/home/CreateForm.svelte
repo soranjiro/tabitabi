@@ -287,12 +287,6 @@
     margin-top: 0.5rem;
   }
 
-  .form-hint {
-    color: #9ca3af;
-    font-size: 0.75rem;
-    margin-top: 0.5rem;
-  }
-
   .checkbox-group {
     margin-bottom: 1rem;
   }

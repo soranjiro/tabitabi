@@ -431,27 +431,6 @@
     opacity: 0.9;
   }
 
-  .nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.1rem;
-    opacity: 0.5;
-  }
-
-  .nav-item.active {
-    opacity: 1;
-  }
-
-  .nav-icon {
-    font-size: 0.6rem;
-  }
-
-  .nav-label {
-    font-size: 0.45rem;
-    color: var(--text);
-  }
-
   .timeline-step.active .timeline-dot {
     background: var(--primary);
     box-shadow: 0 0 0 2px rgba(169, 53, 41, 0.2);
@@ -470,33 +449,6 @@
     font-weight: 700;
     color: var(--text);
     text-align: center;
-  }
-
-  .theme-dropdown {
-    font-weight: 600;
-  }
-
-  .dropdown-arrow {
-    font-size: 0.5rem;
-    opacity: 0.7;
-  }
-
-  .card-add-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    border: 1px dashed var(--border);
-    border-radius: 8px;
-    padding: 0.35rem;
-    font-size: 0.6rem;
-    color: var(--text);
-    background: rgba(255, 255, 255, 0.5);
-    opacity: 0.8;
-  }
-
-  .add-icon {
-    font-weight: 600;
   }
 
   .card-date-header {
@@ -576,18 +528,6 @@
     font-size: 0.55rem;
     color: var(--primary);
     opacity: 0.8;
-  }
-
-  .card-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    align-items: center;
-  }
-
-  .action-icon {
-    font-size: 0.6rem;
-    opacity: 0.6;
   }
 
   /* Dots */

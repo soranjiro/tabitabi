@@ -1,0 +1,13 @@
+name = "tabitabi-api-test"
+main = "src/index.ts"
+compatibility_date = "2024-09-17"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tabitabi-test"
+database_id = "test-database-id"
+migrations_dir = "./migrations"
+
+[vars]
+ALLOWED_ORIGINS = "*"
+JWT_SECRET = "test-secret-for-ci"

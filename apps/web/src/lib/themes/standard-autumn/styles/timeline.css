@@ -1,0 +1,244 @@
+.standard-autumn-timeline-item {
+  display: flex;
+  position: relative;
+  margin-bottom: 2.5rem;
+  min-height: 60px;
+}
+
+.standard-autumn-timeline-line {
+  position: absolute;
+  left: 48px;
+  top: 16px;
+  bottom: -45px;
+  width: 1px;
+  background: var(--standard-autumn-line-color);
+  z-index: 0;
+}
+
+.standard-autumn-timeline-item:last-child .standard-autumn-timeline-line {
+  display: none;
+}
+
+.standard-autumn-step-time {
+  width: 48px;
+  text-align: right;
+  font-size: 0.95rem;
+  color: var(--standard-autumn-primary);
+  font-weight: 700;
+  padding-right: 14px;
+  flex-shrink: 0;
+  padding-top: 0;
+  font-family: "Inter", sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.standard-autumn-step-dot {
+  width: 14px;
+  height: 14px;
+  background: var(--standard-autumn-primary);
+  border-radius: 0 50% 0 50%;
+  transform: rotate(-45deg);
+  flex-shrink: 0;
+  margin-top: 4px;
+  z-index: 1;
+  position: relative;
+  box-shadow: 0 2px 5px rgba(169, 53, 41, 0.3);
+  transition: transform 0.3s;
+}
+
+.standard-autumn-timeline-item:hover .standard-autumn-step-dot {
+  transform: rotate(-45deg) scale(1.2);
+}
+
+.standard-autumn-step-content {
+  flex: 1;
+  padding: 1.25rem;
+  background: #fffcf9;
+  border-radius: 4px;
+  margin-left: 1.5rem;
+  box-shadow: none;
+  border: 1px solid var(--standard-autumn-border);
+  border-left: 4px solid var(--standard-autumn-primary);
+  position: relative;
+}
+
+.standard-autumn-step-location {
+  font-size: 0.85rem;
+  color: var(--standard-autumn-text-light);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.standard-autumn-icon-location {
+  width: 14px;
+  height: 14px;
+  color: var(--standard-autumn-accent);
+}
+
+.standard-autumn-step-title {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--standard-autumn-text);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.standard-autumn-step-notes {
+  font-size: 0.95rem;
+  color: var(--standard-autumn-text-light);
+  line-height: 1.7;
+  background: rgba(230, 180, 34, 0.05);
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 0.75rem;
+  border: 1px dashed var(--standard-autumn-line-color);
+}
+
+.standard-autumn-step-notes p {
+  margin: 0 0 0.75em 0;
+}
+
+.standard-autumn-step-notes p:last-child {
+  margin-bottom: 0;
+}
+
+.standard-autumn-step-notes a {
+  color: var(--standard-autumn-primary);
+  text-decoration: underline;
+  font-weight: 600;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.standard-autumn-step-notes a:hover {
+  color: var(--standard-autumn-accent);
+  text-decoration: none;
+}
+
+.standard-autumn-step-notes ul,
+.standard-autumn-step-notes ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.standard-autumn-step-notes ul {
+  list-style-type: disc;
+}
+
+.standard-autumn-step-notes ol {
+  list-style-type: decimal;
+}
+
+.standard-autumn-step-notes li {
+  margin: 0.25em 0;
+  display: list-item;
+}
+
+.standard-autumn-step-notes strong {
+  font-weight: 700;
+  color: var(--standard-autumn-text);
+}
+
+.standard-autumn-step-notes em {
+  font-style: italic;
+}
+
+.standard-autumn-step-notes code {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.standard-autumn-step-notes pre {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.75em;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+
+.standard-autumn-step-notes pre code {
+  background: none;
+  padding: 0;
+}
+
+.standard-autumn-step-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.standard-autumn-btn-icon {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: var(--standard-autumn-text-light);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.standard-autumn-btn-icon:hover {
+  background: #fff;
+  color: var(--standard-autumn-primary);
+  border-color: var(--standard-autumn-border);
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.standard-autumn-btn-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.standard-autumn-step-editing {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 2px solid var(--standard-autumn-primary);
+  margin-left: 1rem;
+  flex: 1;
+  box-shadow: var(--standard-autumn-shadow);
+}
+
+.standard-autumn-step-hidden {
+  opacity: 0.8;
+}
+
+.standard-autumn-secret-text {
+  font-style: italic;
+  color: var(--standard-autumn-text-light);
+}
+
+.standard-autumn-lock-icon {
+  margin-left: 0.5rem;
+  color: var(--standard-autumn-text-light);
+}
+
+.standard-autumn-secret-blur {
+  margin-top: 0.5rem;
+}
+
+.standard-autumn-secret-line {
+  height: 8px;
+  background: linear-gradient(90deg, var(--standard-autumn-line-color) 0%, transparent 100%);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.standard-autumn-secret-line.short {
+  width: 60%;
+}

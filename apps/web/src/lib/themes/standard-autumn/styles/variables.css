@@ -1,0 +1,16 @@
+:root {
+  --standard-autumn-bg: #fcf9f2;
+  --standard-autumn-primary: #a93529;
+  --standard-autumn-primary-light: #c75b4e;
+  --standard-autumn-secondary: #e6b422;
+  --standard-autumn-accent: #d4762c;
+  --standard-autumn-text: #4a3b32;
+  --standard-autumn-text-light: #786b60;
+  --standard-autumn-card-bg: #ffffff;
+  --standard-autumn-header-bg: transparent;
+  --standard-autumn-border: #e8e0d5;
+  --standard-autumn-line-color: #dccbba;
+  --standard-autumn-dot-bg: #a93529;
+  --standard-autumn-shadow: 0 12px 36px -8px rgba(74, 59, 50, 0.12);
+  --standard-autumn-shadow-sm: 0 4px 12px -2px rgba(74, 59, 50, 0.08);
+}

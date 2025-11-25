@@ -12,6 +12,56 @@
 - 遅延読み込み（lazy loading）を活用する
 
 ## 開発の進め方
+### ディレクトリ構成
+
+```
+tabitabi/
+├── apps/
+│   ├── api/                    # バックエンド (Cloudflare Workers + Hono)
+│   │   ├── src/
+│   │   │   ├── index.ts        # エントリーポイント
+│   │   │   ├── routes/         # APIエンドポイント
+│   │   │   ├── services/       # ビジネスロジック
+│   │   │   ├── middleware/     # 認証・CORSなど
+│   │   │   └── utils/          # ユーティリティ
+│   │   └── migrations/         # DBマイグレーション
+│   │
+│   └── web/                    # フロントエンド (SvelteKit)
+│       └── src/
+│           ├── lib/
+│           │   ├── api/        # APIラッパー（バックエンド呼び出し）
+│           │   ├── auth/       # 認証関連
+│           │   └── themes/     # テーマ（UIコンポーネント）
+│           └── routes/         # ページ
+│
+├── packages/
+│   └── types/                  # 共有型定義
+│
+└── docs/                       # ドキュメント
+```
+
+## 開発時の注意点
+
+### テーマは独立させる
+
+- 各テーマは `apps/web/src/lib/themes/` 配下に作成
+- テーマ間でコードを共有しない（コピペOK）
+- 共通ロジックはAPIラッパー経由で利用
+
+### APIラッパーを経由する
+
+テーマから直接fetchしない。必ず `lib/api/` のラッパー関数を使う。
+
+```typescript
+// ❌ NG
+const res = await fetch('/api/v1/steps');
+
+// ✅ OK
+import { getSteps } from '$lib/api/step';
+const steps = await getSteps(itineraryId);
+```
+
+### 機能追加の流れ
 
 複数のテーマを作成するので、重要なもの（認証など）以外はテーマ間で独立して作成できるようにする。
 

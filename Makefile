@@ -1,4 +1,4 @@
-.PHONY: build deploy deploy-api deploy-web dev migrate-local migrate-remote
+.PHONY: build deploy deploy-api deploy-web dev migrate-local migrate-remote test test-api test-web
 
 build:
 	pnpm run build
@@ -19,3 +19,12 @@ migrate-local:
 
 migrate-remote:
 	cd apps/api && pnpm wrangler d1 migrations apply tabitabi --remote
+
+test:
+	pnpm run test
+
+test-api:
+	pnpm run test:api
+
+test-web:
+	pnpm run test:web

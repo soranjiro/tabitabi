@@ -1,6 +1,14 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
-  import { marked } from "marked";
+  import { renderMarkdown } from "./utils/markdown";
+  import {
+    EditIcon,
+    DeleteIcon,
+    LocationIcon,
+    LockIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+  } from "./components/icons/index.svelte";
 
   interface Props {
     steps: Step[];
@@ -32,7 +40,6 @@
   let editStepHour = $state("09");
   let editStepMinute = $state("00");
 
-  // Carousel management
   let activeIndex = $state(0);
   let trackEl = $state<HTMLDivElement | null>(null);
   let touchStartX = $state<number | null>(null);
@@ -44,7 +51,6 @@
     }
   });
 
-  // Initialize activeIndex to the closest date to today
   $effect(() => {
     const groups = groupedSteps();
     if (groups.length === 0) return;
@@ -66,7 +72,6 @@
     activeIndex = closestIndex;
   });
 
-  // Update focusedDate when activeIndex changes
   $effect(() => {
     const groups = groupedSteps();
     if (groups.length > 0 && groups[activeIndex]) {
@@ -74,7 +79,6 @@
     }
   });
 
-  // Group steps by date
   const groupedSteps = $derived(() => {
     const groups = new Map<string, Step[]>();
     for (const step of steps) {
@@ -96,33 +100,34 @@
     if (i >= total) return total - 1;
     return i;
   }
+
   function goTo(i: number) {
     activeIndex = clampIndex(i);
   }
+
   function next() {
     goTo(activeIndex + 1);
   }
+
   function prev() {
     goTo(activeIndex - 1);
   }
 
   function handleKey(e: KeyboardEvent) {
-    if (e.key === "ArrowRight") {
-      next();
-    }
-    if (e.key === "ArrowLeft") {
-      prev();
-    }
+    if (e.key === "ArrowRight") next();
+    if (e.key === "ArrowLeft") prev();
   }
 
   function onTouchStart(e: TouchEvent) {
     touchStartX = e.touches[0].clientX;
     touchDeltaX = 0;
   }
+
   function onTouchMove(e: TouchEvent) {
     if (touchStartX == null) return;
     touchDeltaX = e.touches[0].clientX - touchStartX;
   }
+
   function onTouchEnd() {
     if (touchStartX == null) return;
     if (touchDeltaX < -50) next();
@@ -131,7 +136,6 @@
     touchDeltaX = 0;
   }
 
-  // Navigate to card on click
   function handleCardClick(index: number) {
     if (index !== activeIndex) {
       goTo(index);
@@ -188,17 +192,6 @@
     if (onDeleteStep) {
       await onDeleteStep(stepId);
     }
-  }
-
-  // Configure marked for safe rendering
-  marked.setOptions({
-    breaks: true, // Convert line breaks to <br>
-    gfm: true, // Enable GitHub Flavored Markdown
-  });
-
-  // Function to render markdown safely
-  function renderMarkdown(text: string): string {
-    return marked.parse(text, { async: false }) as string;
   }
 </script>
 

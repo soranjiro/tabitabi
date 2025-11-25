@@ -169,7 +169,7 @@
 <style>
   .home-page {
     min-height: 100vh;
-    background: linear-gradient(145deg, #6ba0ce 0%, #7d88c9 40%, #9b8bca 100%);
+    background: linear-gradient(145deg, #6ba0ce 0%, #8691cf 40%, #9295c9 100%);
   }
 
   .hero {

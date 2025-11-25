@@ -28,7 +28,7 @@
     position: fixed;
     bottom: 1.5rem;
     right: 1.5rem;
-    background: linear-gradient(145deg, #6ba0ce 0%, #7d88c9 40%, #9b8bca 100%);
+    background: linear-gradient(145deg, #7d88c9 40%, #9b8bca 100%);
     color: white;
     font-size: 0.875rem;
     font-weight: 600;

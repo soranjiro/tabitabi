@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { IconAirplane } from "./icons";
+
   interface Props {
     visible: boolean;
     onclick: () => void;
@@ -9,44 +11,67 @@
 
 {#if visible}
   <button {onclick} class="scroll-top-btn">
+    <IconAirplane size={36} />
     <svg
-      viewBox="0 0 24 24"
+      width="44"
+      height="12"
+      viewBox="0 0 44 12"
       fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      width="20"
-      height="20"
+      xmlns="http://www.w3.org/2000/svg"
+      style="margin-top: -4px;"
     >
-      <path d="M12 19V5M5 12l7-7 7 7" />
+      <line
+        x1="11"
+        y1="2"
+        x2="11"
+        y2="40"
+        stroke="#b5daf8"
+        stroke-width="2"
+      />
+      <line
+        x1="21"
+        y1="2"
+        x2="21"
+        y2="10"
+        stroke="#b5daf8"
+        stroke-width="2"
+      />
+      <line
+        x1="31"
+        y1="2"
+        x2="31"
+        y2="40"
+        stroke="#b5daf8"
+        stroke-width="2"
+      />
     </svg>
-    トップへ戻る
   </button>
 {/if}
 
 <style>
   .scroll-top-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     position: fixed;
     bottom: 1.5rem;
     right: 1.5rem;
-    background: linear-gradient(145deg, #85d4ff 40%, #9ad1fc 100%);
-    color: white;
+    color: #5d8bff;
     font-size: 0.875rem;
     font-weight: 600;
     padding: 0.75rem 1.25rem;
     border: none;
     border-radius: 9999px;
     cursor: pointer;
-    box-shadow: 0 4px 20px rgba(107, 140, 206, 0.4);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
     z-index: 100;
     animation: fadeIn 0.3s ease;
   }
 
   .scroll-top-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(107, 140, 206, 0.5);
+    transform: translateY(-4px);
   }
 
   @keyframes fadeIn {

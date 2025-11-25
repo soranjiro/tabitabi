@@ -13,6 +13,7 @@
   let x = $state(startX);
   let y = $state(startY);
   let rotation = $state(-45);
+  let visible = $state(true);
   let trail = $state<
     Array<{ x: number; y: number; opacity: number; id: number }>
   >([]);
@@ -147,27 +148,59 @@
       let newY = centerY + Math.sin(currentArcAngle) * radius;
 
       let didWrap = false;
-      if (newX < -5) {
-        newX += 110;
+      if (newX < -3) {
+        newX += 106;
         didWrap = true;
-      } else if (newX > 105) {
-        newX -= 110;
+      } else if (newX > 103) {
+        newX -= 106;
         didWrap = true;
       }
-      if (newY < -5) {
-        newY += 110;
+      if (newY < -3) {
+        newY += 106;
         didWrap = true;
-      } else if (newY > 105) {
-        newY -= 110;
+      } else if (newY > 103) {
+        newY -= 106;
         didWrap = true;
       }
 
       if (didWrap) {
-        centerX += newX - (centerX + Math.cos(currentArcAngle) * radius);
-        centerY += newY - (centerY + Math.sin(currentArcAngle) * radius);
+        visible = false;
+        trail = [];
+
         currentX = newX;
         currentY = newY;
-        trail = [];
+
+        const towardsCenterAngle = Math.atan2(50 - newY, 50 - newX);
+        currentAngle =
+          towardsCenterAngle + (Math.random() - 0.5) * (Math.PI / 4);
+
+        radius = 20 + Math.random() * 25;
+        clockwise = Math.random() > 0.5;
+        arcLength = Math.PI / 3 + Math.random() * (Math.PI / 3);
+
+        const perpAngle =
+          currentAngle + (clockwise ? -Math.PI / 2 : Math.PI / 2);
+        centerX = currentX + Math.cos(perpAngle) * radius;
+        centerY = currentY + Math.sin(perpAngle) * radius;
+        arcStartAngle = perpAngle + Math.PI;
+
+        stepsInArc = Math.ceil(arcLength / 0.025);
+        arcProgress = 0;
+
+        x = newX;
+        y = newY;
+        const tangent = clockwise
+          ? arcStartAngle - Math.PI / 2
+          : arcStartAngle + Math.PI / 2;
+        rotation = (tangent * 180) / Math.PI + 90;
+
+        setTimeout(() => {
+          visible = true;
+        }, 50);
+
+        const speed = 28 + Math.random() * 12;
+        setTimeout(animate, speed);
+        return;
       }
 
       const tangentAngle = clockwise
@@ -211,6 +244,7 @@
 
   <div
     class="flying-airplane"
+    class:hidden={!visible}
     style="left: {x}%; top: {y}%; transform: translate(-50%, -50%) rotate({rotation}deg);"
   >
     <IconAirplane size={44} />
@@ -233,6 +267,11 @@
       left 0.03s linear,
       top 0.03s linear,
       transform 0.05s linear;
+  }
+
+  .flying-airplane.hidden {
+    opacity: 0;
+    transition: none;
   }
 
   .trail-dot {

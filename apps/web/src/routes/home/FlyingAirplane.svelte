@@ -35,6 +35,12 @@
     let arcProgress = 0;
     let stepsInArc = 0;
 
+    let returnProgress = 0;
+    let returnSteps = 0;
+    let returnStartX = 0;
+    let returnStartY = 0;
+    let returnAngle = 0;
+
     function setupNextArc() {
       if (returning) {
         return false;
@@ -42,32 +48,14 @@
 
       if (totalArcs >= maxArcs) {
         returning = true;
+        returnStartX = currentX;
+        returnStartY = currentY;
         const dx = startX - currentX;
         const dy = startY - currentY;
         const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < 5) {
-          return false;
-        }
-
-        const midX = (currentX + startX) / 2;
-        const midY = (currentY + startY) / 2;
-        const directAngle = Math.atan2(dy, dx);
-        const curveOffset = 8 + Math.random() * 12;
-        clockwise = Math.random() > 0.5;
-        const sign = clockwise ? 1 : -1;
-
-        centerX =
-          midX + Math.cos(directAngle + Math.PI / 2) * curveOffset * sign;
-        centerY =
-          midY + Math.sin(directAngle + Math.PI / 2) * curveOffset * sign;
-        radius = Math.sqrt(
-          Math.pow(currentX - centerX, 2) + Math.pow(currentY - centerY, 2),
-        );
-        arcStartAngle = Math.atan2(currentY - centerY, currentX - centerX);
-        arcLength = Math.PI;
-        stepsInArc = Math.ceil(arcLength / 0.025);
-        arcProgress = 0;
+        returnAngle = Math.atan2(dy, dx);
+        returnSteps = Math.ceil(distance / 0.8);
+        returnProgress = 0;
         return true;
       }
 
@@ -90,6 +78,48 @@
     setupNextArc();
 
     const animate = () => {
+      if (returning) {
+        if (returnProgress >= returnSteps) {
+          x = startX;
+          y = startY;
+          rotation = -45;
+          trail = [];
+          setTimeout(() => {
+            onComplete();
+          }, 100);
+          return;
+        }
+
+        const t = returnProgress / returnSteps;
+        const newX = returnStartX + (startX - returnStartX) * t;
+        const newY = returnStartY + (startY - returnStartY) * t;
+
+        const tailOffsetX = Math.cos(returnAngle) * 1.5;
+        const tailOffsetY = Math.sin(returnAngle) * 1.5;
+
+        trail = [
+          {
+            x: newX - tailOffsetX,
+            y: newY - tailOffsetY,
+            opacity: 0.7,
+            id: trailId++,
+          },
+          ...trail
+            .slice(0, 15)
+            .map((t) => ({ ...t, opacity: t.opacity * 0.88 })),
+        ].filter((t) => t.opacity > 0.05);
+
+        x = newX;
+        y = newY;
+        rotation = (returnAngle * 180) / Math.PI + 90;
+
+        returnProgress++;
+
+        const speed = 28 + Math.random() * 12;
+        setTimeout(animate, speed);
+        return;
+      }
+
       if (arcProgress >= stepsInArc) {
         const endAngle = clockwise
           ? arcStartAngle - arcLength
@@ -100,14 +130,10 @@
           ? endAngle - Math.PI / 2
           : endAngle + Math.PI / 2;
 
-        if (!setupNextArc()) {
-          x = startX;
-          y = startY;
-          rotation = -45;
-          trail = [];
-          setTimeout(() => {
-            onComplete();
-          }, 100);
+        setupNextArc();
+        if (returning) {
+          const speed = 28 + Math.random() * 12;
+          setTimeout(animate, speed);
           return;
         }
       }
@@ -120,30 +146,28 @@
       let newX = centerX + Math.cos(currentArcAngle) * radius;
       let newY = centerY + Math.sin(currentArcAngle) * radius;
 
-      if (!returning) {
-        let didWrap = false;
-        if (newX < -5) {
-          newX += 110;
-          didWrap = true;
-        } else if (newX > 105) {
-          newX -= 110;
-          didWrap = true;
-        }
-        if (newY < -5) {
-          newY += 110;
-          didWrap = true;
-        } else if (newY > 105) {
-          newY -= 110;
-          didWrap = true;
-        }
+      let didWrap = false;
+      if (newX < -5) {
+        newX += 110;
+        didWrap = true;
+      } else if (newX > 105) {
+        newX -= 110;
+        didWrap = true;
+      }
+      if (newY < -5) {
+        newY += 110;
+        didWrap = true;
+      } else if (newY > 105) {
+        newY -= 110;
+        didWrap = true;
+      }
 
-        if (didWrap) {
-          centerX += newX - (centerX + Math.cos(currentArcAngle) * radius);
-          centerY += newY - (centerY + Math.sin(currentArcAngle) * radius);
-          currentX = newX;
-          currentY = newY;
-          trail = [];
-        }
+      if (didWrap) {
+        centerX += newX - (centerX + Math.cos(currentArcAngle) * radius);
+        centerY += newY - (centerY + Math.sin(currentArcAngle) * radius);
+        currentX = newX;
+        currentY = newY;
+        trail = [];
       }
 
       const tangentAngle = clockwise

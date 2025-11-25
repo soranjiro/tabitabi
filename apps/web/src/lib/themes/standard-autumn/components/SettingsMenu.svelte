@@ -46,7 +46,6 @@
   });
 
   function handleSecretToggle() {
-    localSecretEnabled = !localSecretEnabled;
     onSecretModeChange(localSecretEnabled, localSecretOffset);
   }
 

@@ -19,6 +19,9 @@
         "build"
       ],
       "cache": false
+    },
+    "test:run": {
+      "cache": false
     }
   }
 }

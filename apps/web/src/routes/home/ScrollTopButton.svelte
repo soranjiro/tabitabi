@@ -54,8 +54,8 @@
     flex-direction: column;
     align-items: center;
     position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
+    bottom: 0.5rem;
+    right: 0rem;
     color: #5d8bff;
     font-size: 0.875rem;
     font-weight: 600;

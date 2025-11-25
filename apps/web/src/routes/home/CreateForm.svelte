@@ -108,7 +108,7 @@
       onclick={() => (activeTab = "add")}
       class="tab-btn {activeTab === 'add' ? 'active' : ''}"
     >
-      URL入力
+      追加
     </button>
   </div>
 

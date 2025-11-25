@@ -9,6 +9,7 @@
     Footer,
     ScrollTopButton,
     previewItineraries,
+    FlyingAirplane,
   } from "./home";
   import {
     IconAirplane,
@@ -25,60 +26,29 @@
   let currentPreview = $state(0);
   let showScrollButton = $state(false);
 
-  interface FlyingAirplane {
-    id: number;
-    x: number;
-    y: number;
-    rotation: number;
-    scale: number;
-  }
-  let flyingAirplanes = $state<FlyingAirplane[]>([]);
+  let flyingAirplanes = $state<number[]>([]);
   let airplaneIdCounter = 0;
+  let heroIconRef = $state<HTMLButtonElement | null>(null);
+  let isFlying = $derived(flyingAirplanes.length > 0);
 
   function spawnFlyingAirplane() {
+    if (!heroIconRef || isFlying) return;
+
     const id = airplaneIdCounter++;
-    const startX = Math.random() * 80 + 10;
-    const startY = Math.random() * 60 + 20;
-
-    flyingAirplanes = [
-      ...flyingAirplanes,
-      {
-        id,
-        x: startX,
-        y: startY,
-        rotation: Math.random() * 360,
-        scale: 0.8 + Math.random() * 0.4,
-      },
-    ];
-
-    animateAirplane(id);
+    flyingAirplanes = [...flyingAirplanes, id];
   }
 
-  function animateAirplane(id: number) {
-    let steps = 0;
-    const maxSteps = 8;
+  function removeAirplane(id: number) {
+    flyingAirplanes = flyingAirplanes.filter((a) => a !== id);
+  }
 
-    const moveStep = () => {
-      if (steps >= maxSteps) {
-        flyingAirplanes = flyingAirplanes.filter((a) => a.id !== id);
-        return;
-      }
-
-      flyingAirplanes = flyingAirplanes.map((a) => {
-        if (a.id !== id) return a;
-        const newX = Math.random() * 80 + 10;
-        const newY = Math.random() * 70 + 10;
-        const dx = newX - a.x;
-        const dy = newY - a.y;
-        const rotation = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-        return { ...a, x: newX, y: newY, rotation };
-      });
-
-      steps++;
-      setTimeout(moveStep, 600 + Math.random() * 400);
+  function getHeroIconPosition(): { x: number; y: number } {
+    if (!heroIconRef) return { x: 10, y: 30 };
+    const rect = heroIconRef.getBoundingClientRect();
+    return {
+      x: ((rect.left + rect.width / 2) / window.innerWidth) * 100,
+      y: ((rect.top + rect.height / 2) / window.innerHeight) * 100,
     };
-
-    setTimeout(moveStep, 100);
   }
 
   onMount(() => {
@@ -146,14 +116,13 @@
 </svelte:head>
 
 <div class="home-page">
-  {#each flyingAirplanes as airplane (airplane.id)}
-    <div
-      class="flying-airplane"
-      style="left: {airplane.x}%; top: {airplane.y}%; transform: rotate({airplane.rotation -
-        45}deg) scale({airplane.scale});"
-    >
-      <IconAirplane size={36} />
-    </div>
+  {#each flyingAirplanes as id (id)}
+    {@const pos = getHeroIconPosition()}
+    <FlyingAirplane
+      startX={pos.x}
+      startY={pos.y}
+      onComplete={() => removeAirplane(id)}
+    />
   {/each}
 
   <section class="hero">
@@ -162,6 +131,8 @@
         <h1 class="hero-title">
           <button
             class="hero-icon"
+            class:hero-icon-hidden={isFlying}
+            bind:this={heroIconRef}
             onclick={spawnFlyingAirplane}
             aria-label="飛行機を飛ばす"
           >
@@ -301,7 +272,14 @@
     border: none;
     padding: 0;
     cursor: pointer;
-    transition: transform 0.2s;
+    transition:
+      transform 0.2s,
+      opacity 0.2s;
+  }
+
+  .hero-icon-hidden {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .hero-icon:hover {
@@ -315,29 +293,6 @@
   .hero-icon :global(svg) {
     transform: rotate(-45deg);
     filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
-  }
-
-  .flying-airplane {
-    position: fixed;
-    pointer-events: none;
-    z-index: 100;
-    color: white;
-    filter: drop-shadow(2px 2px 6px rgba(0, 0, 0, 0.3));
-    transition:
-      left 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-      top 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-      transform 0.3s ease;
-    animation: airplaneAppear 0.3s ease-out;
-  }
-
-  @keyframes airplaneAppear {
-    from {
-      opacity: 0;
-      transform: scale(0) rotate(0deg);
-    }
-    to {
-      opacity: 1;
-    }
   }
 
   .hero-subtitle {

@@ -115,8 +115,28 @@
 </script>
 
 <svelte:head>
-  <title>たびたび - 旅のしおり</title>
+  <title>たびたび - 旅のしおり作成アプリ</title>
+  <meta
+    name="description"
+    content="たびたびは、旅のしおりをサクッと作成・共有できる無料Webアプリです。友達や家族との旅行計画に。"
+  />
   <meta name="theme-color" content="#f9fafb" />
+  <meta property="og:title" content="たびたび - 旅のしおり作成アプリ" />
+  <meta
+    property="og:description"
+    content="旅のしおりをサクッと作成・共有できる無料Webアプリ。友達や家族との旅行計画に。"
+  />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://tabitabi.pages.dev/" />
+  <meta property="og:locale" content="ja_JP" />
+  <meta property="og:site_name" content="たびたび" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="たびたび - 旅のしおり作成アプリ" />
+  <meta
+    name="twitter:description"
+    content="旅のしおりをサクッと作成・共有できる無料Webアプリ。"
+  />
+  <link rel="canonical" href="https://tabitabi.pages.dev/" />
 </svelte:head>
 
 <div

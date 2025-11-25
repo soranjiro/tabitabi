@@ -1,0 +1,131 @@
+body {
+  overflow-x: hidden;
+  background-color: var(--standard-autumn-bg);
+}
+
+.standard-autumn-theme {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Times New Roman", serif;
+  min-height: 100vh;
+  background-color: var(--standard-autumn-bg);
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23a93529' fill-opacity='0.04' d='M30 30 L33 45 L43 38 L38 50 L53 53 L38 56 L43 68 L33 61 L30 76 L27 61 L17 68 L22 56 L7 53 L22 50 L17 38 L27 45 Z M130 80 L133 95 L143 88 L138 100 L153 103 L138 106 L143 118 L133 111 L130 126 L127 111 L117 118 L122 106 L107 103 L122 100 L117 88 L127 95 Z M80 150 L83 165 L93 158 L88 170 L103 173 L88 176 L93 188 L83 181 L80 196 L77 181 L67 188 L72 176 L57 173 L72 170 L67 158 L77 165 Z'/%3E%3C/svg%3E"),
+    radial-gradient(circle at 5% 5%, rgba(230, 180, 34, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 95% 95%, rgba(169, 53, 41, 0.08) 0%, transparent 40%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a93529' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  color: var(--standard-autumn-text);
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  overflow: hidden;
+}
+
+.standard-autumn-theme::before,
+.standard-autumn-theme::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.standard-autumn-theme::before {
+  top: 10%;
+  right: 5%;
+  width: 120px;
+  height: 120px;
+  opacity: 0.12;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23a93529' d='M50 10 L55 35 L70 25 L60 45 L85 50 L60 55 L70 75 L55 65 L50 90 L45 65 L30 75 L40 55 L15 50 L40 45 L30 25 L45 35 Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(15deg);
+  animation: float 6s ease-in-out infinite;
+}
+
+.standard-autumn-theme::after {
+  bottom: 15%;
+  left: 8%;
+  width: 100px;
+  height: 100px;
+  opacity: 0.10;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23d4762c' d='M50 10 L55 35 L70 25 L60 45 L85 50 L60 55 L70 75 L55 65 L50 90 L45 65 L30 75 L40 55 L15 50 L40 45 L30 25 L45 35 Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(-20deg);
+  animation: float 8s ease-in-out infinite;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(15deg);
+  }
+
+  50% {
+    transform: translateY(-10px) rotate(15deg);
+  }
+}
+
+.standard-autumn-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.standard-autumn-container::before {
+  content: "";
+  position: absolute;
+  top: 80px;
+  right: 30px;
+  width: 80px;
+  height: 80px;
+  opacity: 0.15;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23e6b422' d='M50 10 L55 35 L70 25 L60 45 L85 50 L60 55 L70 75 L55 65 L50 90 L45 65 L30 75 L40 55 L15 50 L40 45 L30 25 L45 35 Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(-45deg);
+  pointer-events: none;
+  z-index: 0;
+  animation: gentleFloat 5s ease-in-out infinite;
+}
+
+.standard-autumn-container::after {
+  content: "";
+  position: absolute;
+  bottom: 180px;
+  right: 40px;
+  width: 70px;
+  height: 70px;
+  opacity: 0.12;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle fill='%238b4513' cx='50' cy='60' r='35'/%3E%3Cpath fill='%23d2691e' d='M45 35 Q50 25 55 35 L50 50 Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: rotate(20deg);
+  pointer-events: none;
+  z-index: 0;
+  animation: gentleFloat 7s ease-in-out infinite;
+}
+
+@keyframes gentleFloat {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(-45deg);
+  }
+
+  50% {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+}
+
+.standard-autumn-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--standard-autumn-text-light);
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-size: 1.1rem;
+  font-style: italic;
+}

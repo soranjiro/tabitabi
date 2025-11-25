@@ -3,6 +3,7 @@
     time: string;
     label: string;
     icon: string;
+    location?: string;
   }
 
   interface ThemeColors {
@@ -32,6 +33,15 @@
   }
 
   let { previews, currentIndex, onSelect }: Props = $props();
+
+  function getDateDisplay(): string {
+    const today = new Date();
+    const month = today.getMonth() + 1;
+    const day = today.getDate();
+    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+    const weekday = weekdays[today.getDay()];
+    return `${today.getFullYear()}年${month}月${day}日(${weekday})`;
+  }
 </script>
 
 <div class="hero-visual">
@@ -72,31 +82,51 @@
             </div>
           {:else if preview.layout === "timeline"}
             <div class="timeline-preview">
-              <div class="timeline-header">{preview.title}</div>
-              <div class="timeline-steps">
-                {#each preview.steps as step, j}
-                  <div class="timeline-step {j === 1 ? 'active' : ''}">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-line"></div>
-                    <div class="timeline-time">{step.time}</div>
-                    <div class="timeline-content">
-                      <span class="timeline-icon">{step.icon}</span>
-                      <span class="timeline-label">{step.label}</span>
+              <div class="timeline-title">{preview.title}</div>
+              <div class="timeline-day-card">
+                <div class="timeline-ribbon"></div>
+                <div class="timeline-date-header">11月25日</div>
+                <div class="timeline-steps">
+                  {#each preview.steps as step, j}
+                    <div class="timeline-step {j === 0 ? 'active' : ''}">
+                      <div class="timeline-time-col">
+                        <span class="timeline-time">{step.time}</span>
+                        <div class="timeline-dot"></div>
+                        {#if j < preview.steps.length - 1}
+                          <div class="timeline-line"></div>
+                        {/if}
+                      </div>
+                      <div class="timeline-content-card">
+                        <div class="timeline-content-main">
+                          <span class="timeline-label">{step.label}</span>
+                          {#if step.location}
+                            <span class="timeline-location"
+                              >📍 {step.location}</span
+                            >
+                          {/if}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                {/each}
+                  {/each}
+                </div>
               </div>
             </div>
           {:else}
             <div class="card-preview">
               <div class="card-title">{preview.title}</div>
+              <div class="card-date-header">
+                <span class="date-icon">🗓️</span>
+                <span class="date-text">{getDateDisplay()}</span>
+              </div>
               <div class="card-steps">
                 {#each preview.steps as step, j}
                   <div class="card-step">
                     <div class="card-time-badge">{step.time}</div>
-                    <div class="card-content">
-                      <span class="card-icon">{step.icon}</span>
+                    <div class="card-main-content">
                       <span class="card-label">{step.label}</span>
+                      {#if step.location}
+                        <span class="card-location">📍 {step.location}</span>
+                      {/if}
                     </div>
                   </div>
                 {/each}
@@ -155,6 +185,10 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+  }
+
+  .preview-card.card {
+    background: linear-gradient(135deg, #fdf2f8 0%, #faf5ff 50%, #f5f3ff 100%);
   }
 
   .preview-card.active {
@@ -277,158 +311,277 @@
   /* Standard-Autumn - Timeline Style */
   .timeline-preview {
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    position: relative;
   }
 
-  .timeline-header {
-    font-size: 0.85rem;
+  .timeline-title {
+    font-size: 0.9rem;
     font-weight: 700;
     color: var(--text);
-    margin-bottom: 0.6rem;
-    padding-bottom: 0.4rem;
-    border-bottom: 2px solid var(--primary);
+    text-align: center;
+  }
+
+  .timeline-day-card {
+    background: linear-gradient(135deg, #fffdf8 0%, #fcf9f2 100%);
+    border-radius: 12px;
+    padding: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+  }
+
+  .timeline-ribbon {
+    position: absolute;
+    top: 0;
+    left: 0.75rem;
+    width: 1.2rem;
+    height: 2rem;
+    background: linear-gradient(180deg, var(--primary) 0%, var(--accent) 100%);
+    clip-path: polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%);
+  }
+
+  .timeline-date-header {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+    padding: 0.25rem 0 0.35rem;
+    border-bottom: 1px dashed var(--border);
+    margin-bottom: 0.35rem;
   }
 
   .timeline-steps {
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
-    position: relative;
-    padding-left: 1rem;
+    gap: 0.25rem;
   }
 
   .timeline-step {
     display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    position: relative;
-    padding: 0.3rem 0;
+    align-items: stretch;
+    gap: 0.35rem;
   }
 
-  .timeline-dot {
-    position: absolute;
-    left: -1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 8px;
-    height: 8px;
-    background: var(--secondary);
-    border-radius: 50%;
-    border: 2px solid var(--bg);
-    z-index: 2;
-  }
-
-  .timeline-step.active .timeline-dot {
-    background: var(--primary);
-    width: 10px;
-    height: 10px;
-  }
-
-  .timeline-line {
-    position: absolute;
-    left: calc(-1rem + 3px);
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: var(--border);
-  }
-
-  .timeline-step:first-child .timeline-line {
-    top: 50%;
-  }
-
-  .timeline-step:last-child .timeline-line {
-    bottom: 50%;
+  .timeline-time-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 2.5rem;
+    flex-shrink: 0;
   }
 
   .timeline-time {
     font-size: 0.6rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--primary);
-    min-width: 32px;
   }
 
-  .timeline-content {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
+  .timeline-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--primary);
+    border-radius: 50%;
+    margin: 0.15rem 0;
+  }
+
+  .timeline-line {
     flex: 1;
+    width: 2px;
+    background: var(--primary);
+    min-height: 0.5rem;
   }
 
-  .timeline-icon {
-    font-size: 0.75rem;
+  .timeline-content-card {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    background: white;
+    border-radius: 6px;
+    padding: 0.35rem 0.4rem;
+    border-left: 3px solid var(--primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+
+  .timeline-content-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
   }
 
   .timeline-label {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: var(--text);
-    font-weight: 500;
+    font-weight: 600;
   }
 
-  .timeline-step.active {
-    background: color-mix(in srgb, var(--primary) 10%, transparent);
-    border-radius: 6px;
-    margin: 0 -0.25rem;
-    padding: 0.3rem 0.25rem;
+  .timeline-location {
+    font-size: 0.5rem;
+    color: var(--accent);
+    opacity: 0.9;
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    opacity: 0.5;
+  }
+
+  .nav-item.active {
+    opacity: 1;
+  }
+
+  .nav-icon {
+    font-size: 0.6rem;
+  }
+
+  .nav-label {
+    font-size: 0.45rem;
+    color: var(--text);
+  }
+
+  .timeline-step.active .timeline-dot {
+    background: var(--primary);
+    box-shadow: 0 0 0 2px rgba(169, 53, 41, 0.2);
   }
 
   /* AI Generated - Card Style */
   .card-preview {
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
   }
 
   .card-title {
     font-size: 0.85rem;
     font-weight: 700;
     color: var(--text);
-    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  .theme-dropdown {
+    font-weight: 600;
+  }
+
+  .dropdown-arrow {
+    font-size: 0.5rem;
+    opacity: 0.7;
+  }
+
+  .card-add-button {
     display: flex;
     align-items: center;
-    gap: 0.3rem;
+    justify-content: center;
+    gap: 0.25rem;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.35rem;
+    font-size: 0.6rem;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0.8;
+  }
+
+  .add-icon {
+    font-weight: 600;
+  }
+
+  .card-date-header {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.9),
+      rgba(255, 255, 255, 0.7)
+    );
+    border-radius: 8px;
+    padding: 0.4rem 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .date-icon {
+    font-size: 0.7rem;
+  }
+
+  .date-text {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text);
   }
 
   .card-steps {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
 
   .card-step {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    align-items: flex-start;
+    gap: 0.4rem;
     padding: 0.4rem;
-    background: white;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.95),
+      rgba(255, 255, 255, 0.85)
+    );
     border-radius: 8px;
-    border: 1px solid var(--border);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    position: relative;
   }
 
   .card-time-badge {
     font-size: 0.55rem;
     font-weight: 700;
-    color: white;
-    background: var(--primary);
-    padding: 0.2rem 0.4rem;
-    border-radius: 4px;
+    color: var(--primary);
+    background: linear-gradient(
+      135deg,
+      rgba(232, 121, 169, 0.15),
+      rgba(168, 85, 247, 0.1)
+    );
+    padding: 0.25rem 0.4rem;
+    border-radius: 12px;
     min-width: 36px;
     text-align: center;
   }
 
-  .card-content {
+  .card-main-content {
     display: flex;
-    align-items: center;
-    gap: 0.35rem;
+    flex-direction: column;
+    gap: 0.15rem;
     flex: 1;
-  }
-
-  .card-icon {
-    font-size: 0.8rem;
   }
 
   .card-label {
     font-size: 0.7rem;
     color: var(--text);
-    font-weight: 500;
+    font-weight: 600;
+  }
+
+  .card-location {
+    font-size: 0.55rem;
+    color: var(--primary);
+    opacity: 0.8;
+  }
+
+  .card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    align-items: center;
+  }
+
+  .action-icon {
+    font-size: 0.6rem;
+    opacity: 0.6;
   }
 
   /* Dots */

@@ -2,6 +2,7 @@ export interface PreviewStep {
   time: string;
   label: string;
   icon: string;
+  location?: string;
 }
 
 export interface ThemeColors {

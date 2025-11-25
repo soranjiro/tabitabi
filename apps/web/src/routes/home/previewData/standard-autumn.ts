@@ -18,7 +18,6 @@ export const standardAutumnPreview: PreviewItinerary = {
     { time: "09:00", label: "清水寺", icon: "⛩️" },
     { time: "12:00", label: "祇園ランチ", icon: "🍱" },
     { time: "15:00", label: "金閣寺", icon: "✨" },
-    { time: "18:00", label: "夕食", icon: "🍜" },
   ],
   features: ["日カード", "secret機能", "walica連携"],
 };

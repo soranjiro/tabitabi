@@ -166,7 +166,7 @@
 <style>
   .home-page {
     min-height: 100vh;
-    background: linear-gradient(145deg, #6ba0ce 0%, #8691cf 40%, #9295c9 100%);
+    background: linear-gradient(145deg, #84c6ff 0%, #a6b3ff 40%, #b5daf8 100%);
   }
 
   .hero {

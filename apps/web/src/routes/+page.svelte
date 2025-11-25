@@ -17,7 +17,7 @@
   let activeTab = $state<"create" | "add">("create");
   let url = $state("");
   let urlError = $state("");
-  let showCreateForm = $state(false);
+  let showCreateForm = $state(true);
 
   const themes = getAvailableThemes();
 
@@ -25,9 +25,6 @@
     setTimeout(() => {
       recentItineraries = auth.getRecentItineraries();
       showRecent = true;
-      if (recentItineraries.length > 0) {
-        showCreateForm = true;
-      }
     }, 300);
   });
 
@@ -36,6 +33,10 @@
     setTimeout(() => {
       document.getElementById("create")?.scrollIntoView({ behavior: "smooth" });
     }, 100);
+  }
+
+  function scrollToFeatures() {
+    document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
   }
 
   async function createItinerary() {
@@ -157,7 +158,9 @@
       <h1 class="hero-title">
         <span class="hero-icon">
           <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48">
-            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+            <path
+              d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"
+            />
           </svg>
         </span>
         たびたび
@@ -166,20 +169,17 @@
       <p class="hero-description">
         友達や家族との旅行計画を、シンプルに美しくまとめよう
       </p>
-      
+
       <div class="hero-cta">
-        <button 
-          onclick={scrollToCreate}
-          class="btn-primary"
-        >
+        <button onclick={scrollToCreate} class="btn-primary">
           無料でしおりを作成
         </button>
-        <a href="#features" class="btn-secondary">
+        <button onclick={scrollToFeatures} class="btn-secondary">
           機能を見る ↓
-        </a>
+        </button>
       </div>
     </div>
-    
+
     <div class="hero-visual">
       <div class="preview-card">
         <div class="preview-header">
@@ -218,9 +218,16 @@
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
-            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-            <line x1="12" y1="18" x2="12" y2="18"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="32"
+            height="32"
+          >
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+            <line x1="12" y1="18" x2="12" y2="18" />
           </svg>
         </div>
         <h3>スマホ最適化</h3>
@@ -228,9 +235,20 @@
       </div>
       <div class="feature-card">
         <div class="feature-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="32"
+            height="32"
+          >
+            <path
+              d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+            />
+            <path
+              d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+            />
           </svg>
         </div>
         <h3>URL共有</h3>
@@ -238,12 +256,21 @@
       </div>
       <div class="feature-card">
         <div class="feature-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
-            <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
-            <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
-            <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
-            <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
-            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.555C21.965 6.012 17.461 2 12 2z"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="32"
+            height="32"
+          >
+            <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+            <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+            <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+            <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+            <path
+              d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.555C21.965 6.012 17.461 2 12 2z"
+            />
           </svg>
         </div>
         <h3>テーマ選択</h3>
@@ -251,8 +278,15 @@
       </div>
       <div class="feature-card">
         <div class="feature-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="32"
+            height="32"
+          >
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
           </svg>
         </div>
         <h3>軽量・高速</h3>
@@ -262,18 +296,19 @@
   </section>
 
   <!-- Create Form Section -->
-  <section id="create" class="create-section" class:expanded={showCreateForm || recentItineraries.length > 0}>
+  <section
+    id="create"
+    class="create-section"
+    class:expanded={showCreateForm || recentItineraries.length > 0}
+  >
     <div class="create-container">
       {#if !showCreateForm && recentItineraries.length === 0}
-        <button 
-          onclick={scrollToCreate}
-          class="create-trigger"
-        >
+        <button onclick={scrollToCreate} class="create-trigger">
           <span class="create-trigger-icon">+</span>
           新しいしおりを作成
         </button>
       {:else}
-        <div class="form-card" class:visible={showCreateForm}>
+        <div class="form-card">
           <div class="tab-bar">
             <button
               onclick={() => (activeTab = "create")}
@@ -320,7 +355,9 @@
               <details class="advanced-options">
                 <summary>詳細設定</summary>
                 <div class="form-group">
-                  <label for="password" class="form-label">編集用パスワード</label>
+                  <label for="password" class="form-label"
+                    >編集用パスワード</label
+                  >
                   <input
                     id="password"
                     type="password"
@@ -328,7 +365,9 @@
                     placeholder="任意"
                     class="form-input"
                   />
-                  <p class="form-hint">設定するとパスワードなしでは編集できません</p>
+                  <p class="form-hint">
+                    設定するとパスワードなしでは編集できません
+                  </p>
                 </div>
               </details>
 
@@ -342,6 +381,7 @@
             </div>
           {:else}
             <div class="form-body">
+              <p class="form-description">共有されたしおりのURLを貼り付け</p>
               <div class="form-group">
                 <label for="url" class="form-label">
                   しおりのURL <span class="required">*</span>
@@ -405,26 +445,35 @@
   <footer class="footer">
     <div class="footer-content">
       <div class="footer-links">
-        <a 
-          href="https://github.com/user/tabitabi/tree/main/docs" 
-          target="_blank" 
+        <a
+          href="https://github.com/user/tabitabi/tree/main/docs"
+          target="_blank"
           rel="noopener noreferrer"
           class="footer-link"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="18"
+            height="18"
+          >
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
           </svg>
           ドキュメント
         </a>
-        <a 
-          href="https://github.com/user/tabitabi" 
-          target="_blank" 
+        <a
+          href="https://github.com/user/tabitabi"
+          target="_blank"
           rel="noopener noreferrer"
           class="footer-link"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            <path
+              d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+            />
           </svg>
           GitHub
         </a>
@@ -437,18 +486,62 @@
 <style>
   .home-page {
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 15s ease infinite;
+  }
+
+  @keyframes gradientShift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
   }
 
   /* Hero Section */
   .hero {
-    min-height: 85vh;
+    min-height: 70vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 2rem 1rem;
     gap: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 50%
+    );
+    animation: pulse 8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.5;
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 0.3;
+    }
   }
 
   @media (min-width: 768px) {
@@ -456,7 +549,7 @@
       flex-direction: row;
       gap: 4rem;
       padding: 2rem 4rem;
-      min-height: 80vh;
+      min-height: 65vh;
     }
   }
 
@@ -464,6 +557,8 @@
     text-align: center;
     color: white;
     max-width: 480px;
+    position: relative;
+    z-index: 1;
   }
 
   @media (min-width: 768px) {
@@ -491,17 +586,29 @@
   }
 
   .hero-icon {
-    animation: float 3s ease-in-out infinite;
+    animation: fly 4s ease-in-out infinite;
     color: white;
   }
 
   .hero-icon svg {
     display: block;
+    transform: rotate(-45deg);
   }
 
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+  @keyframes fly {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+    25% {
+      transform: translate(4px, -6px);
+    }
+    50% {
+      transform: translate(0, -10px);
+    }
+    75% {
+      transform: translate(-4px, -6px);
+    }
   }
 
   .hero-subtitle {
@@ -544,17 +651,43 @@
     color: #667eea;
     font-size: 1.125rem;
     font-weight: 700;
-    padding: 1rem 2rem;
+    padding: 1rem 2.5rem;
     border-radius: 9999px;
     border: none;
     cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    transition: left 0.5s;
+  }
+
+  .btn-primary:hover::before {
+    left: 100%;
   }
 
   .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  }
+
+  .btn-primary:active {
+    transform: translateY(-1px) scale(1);
   }
 
   .btn-secondary {
@@ -564,29 +697,39 @@
     padding: 0.75rem 1.5rem;
     text-decoration: none;
     opacity: 0.9;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 9999px;
+    cursor: pointer;
   }
 
   .btn-secondary:hover {
     opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.6);
   }
 
   /* Preview Card */
   .hero-visual {
     perspective: 1000px;
+    position: relative;
+    z-index: 1;
   }
 
   .preview-card {
     background: white;
-    border-radius: 16px;
-    box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+    border-radius: 20px;
+    box-shadow:
+      0 25px 50px rgba(0, 0, 0, 0.25),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
     width: 280px;
-    transform: rotateY(-5deg) rotateX(5deg);
-    transition: transform 0.3s;
+    transform: rotateY(-8deg) rotateX(5deg);
+    transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   .preview-card:hover {
-    transform: rotateY(0) rotateX(0);
+    transform: rotateY(0) rotateX(0) scale(1.02);
   }
 
   .preview-header {
@@ -604,9 +747,15 @@
     background: #d1d5db;
   }
 
-  .preview-dot:nth-child(1) { background: #ef4444; }
-  .preview-dot:nth-child(2) { background: #eab308; }
-  .preview-dot:nth-child(3) { background: #22c55e; }
+  .preview-dot:nth-child(1) {
+    background: #ef4444;
+  }
+  .preview-dot:nth-child(2) {
+    background: #eab308;
+  }
+  .preview-dot:nth-child(3) {
+    background: #22c55e;
+  }
 
   .preview-content {
     padding: 1.25rem;
@@ -761,24 +910,13 @@
 
   .form-card {
     background: white;
-    border-radius: 20px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    border-radius: 24px;
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.12),
+      0 0 0 1px rgba(0, 0, 0, 0.05);
     overflow: hidden;
-    opacity: 0;
-    transform: translateY(20px);
-    animation: slideUp 0.3s ease forwards;
-  }
-
-  .form-card.visible {
     opacity: 1;
     transform: translateY(0);
-  }
-
-  @keyframes slideUp {
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
   }
 
   .tab-bar {
@@ -804,7 +942,7 @@
   }
 
   .tab-btn.active::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: -1px;
     left: 0;
@@ -816,6 +954,13 @@
 
   .form-body {
     padding: 1.5rem;
+  }
+
+  .form-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+    text-align: center;
   }
 
   .form-group {
@@ -918,8 +1063,6 @@
   /* Recent Section */
   .recent-section {
     margin-top: 2rem;
-    animation: slideUp 0.3s ease 0.1s forwards;
-    opacity: 0;
   }
 
   .recent-title {

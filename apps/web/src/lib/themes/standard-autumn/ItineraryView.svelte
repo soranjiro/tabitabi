@@ -428,8 +428,5 @@
     onClose={() => (showShareDialog = false)}
   />
 
-  <FloatingActions
-    {hasEditPermission}
-    onAddStep={openAddStepForm}
-  />
+  <FloatingActions {hasEditPermission} onAddStep={openAddStepForm} />
 </div>

@@ -2,6 +2,7 @@
 @import './base.css';
 @import './header.css';
 @import './timeline.css';
+@import './components.css';
 @import './form.css';
 @import './button.css';
 @import './dialog.css';

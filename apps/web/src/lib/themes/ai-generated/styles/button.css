@@ -1,0 +1,107 @@
+.ai-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: var(--ai-radius-md);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-btn-primary {
+  background: var(--ai-accent);
+  color: white;
+}
+
+.ai-btn-primary:hover:not(:disabled) {
+  background: var(--ai-accent-dark);
+}
+
+.ai-btn-secondary {
+  background: var(--ai-surface-hover);
+  color: var(--ai-text-secondary);
+}
+
+.ai-btn-secondary:hover:not(:disabled) {
+  background: var(--ai-border);
+  color: var(--ai-text-primary);
+}
+
+.ai-btn-ghost {
+  background: transparent;
+  color: var(--ai-text-secondary);
+  padding: 0.5rem;
+}
+
+.ai-btn-ghost:hover {
+  background: var(--ai-surface-hover);
+  color: var(--ai-accent);
+}
+
+.ai-btn-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ai-radius-sm);
+  background: var(--ai-surface-hover);
+  border: none;
+  color: var(--ai-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+}
+
+.ai-btn-icon:hover {
+  background: var(--ai-border);
+  color: var(--ai-text-primary);
+}
+
+.ai-btn-icon-danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.ai-btn-add {
+  width: 100%;
+  padding: 1rem;
+  background: var(--ai-surface);
+  border: 1px dashed var(--ai-border);
+  border-radius: var(--ai-radius-md);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--ai-text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.ai-btn-add:hover:not(:disabled) {
+  border-color: var(--ai-accent);
+  color: var(--ai-accent);
+}
+
+.ai-btn-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-btn-add-icon {
+  font-size: 1.25rem;
+  font-weight: 300;
+}

@@ -1,6 +1,6 @@
 # Development
 
-You must follow the development rules in `docs/development.md`.
+You must follow and read all of the development rules in `docs/development.md` and `docs/*`.
 
 ## Mind these key points
 - light web site

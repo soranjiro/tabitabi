@@ -1,0 +1,156 @@
+.ai-theme {
+  font-family: var(--ai-font-sans);
+  min-height: 100vh;
+  background: var(--ai-bg);
+  color: var(--ai-text-primary);
+  line-height: 1.6;
+}
+
+.ai-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem;
+  padding-bottom: 8rem;
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  .ai-container {
+    padding: 1.5rem;
+    padding-bottom: 8rem;
+  }
+}
+
+.ai-card {
+  background: var(--ai-surface);
+  border-radius: var(--ai-radius-lg);
+  border: 1px solid var(--ai-border-light);
+  box-shadow: var(--ai-shadow-md);
+  transition: transform var(--ai-transition-fast), box-shadow var(--ai-transition-fast);
+}
+
+.ai-card:hover {
+  box-shadow: var(--ai-shadow-lg);
+}
+
+.ai-glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .ai-glass {
+    background: rgba(30, 41, 59, 0.8);
+  }
+}
+
+.ai-copy-toast {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, var(--ai-primary) 0%, var(--ai-secondary) 100%);
+  color: white;
+  font-weight: 600;
+  border-radius: var(--ai-radius-full);
+  box-shadow: var(--ai-shadow-lg), var(--ai-glow-primary);
+  z-index: 1000;
+  animation: toastIn 0.3s ease, toastOut 0.3s ease 1.7s forwards;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+}
+
+.ai-memo-section {
+  margin: 1rem 0;
+  cursor: pointer;
+}
+
+.ai-memo-card {
+  padding: 1rem 1.25rem;
+  background: var(--ai-surface);
+  border: 1px solid var(--ai-border);
+  border-radius: var(--ai-radius-lg);
+  transition: all 0.3s ease;
+}
+
+.ai-memo-card:hover {
+  border-color: var(--ai-primary-light);
+  box-shadow: var(--ai-shadow-md);
+}
+
+.ai-memo-header {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ai-primary);
+  margin-bottom: 0.5rem;
+}
+
+.ai-memo-content {
+  font-size: 0.875rem;
+  color: var(--ai-text-secondary);
+  line-height: 1.7;
+}
+
+.ai-btn-memo {
+  width: 100%;
+  margin: 1rem 0;
+  padding: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  background: var(--ai-surface);
+  border: 2px dashed var(--ai-border);
+  border-radius: var(--ai-radius-lg);
+  color: var(--ai-text-muted);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.ai-btn-memo:hover {
+  border-color: var(--ai-primary);
+  color: var(--ai-primary);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.ai-add-step-form {
+  margin: 1.5rem 0;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

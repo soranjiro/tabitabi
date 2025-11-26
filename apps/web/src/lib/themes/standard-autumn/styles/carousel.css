@@ -233,12 +233,12 @@
 
 @media (min-width: 830px) {
   .standard-autumn-carousel-track {
-    margin-left: calc(50vw - 32.5vw - (var(--active, 0) * (65vw + 24px)));
+    margin-left: calc(50% - 210px - (var(--active, 0) * (420px + 24px)));
   }
 
   .standard-autumn-carousel-card {
-    flex: 0 0 65vw;
-    width: 65vw;
+    flex: 0 0 420px;
+    width: 420px;
   }
 }
 

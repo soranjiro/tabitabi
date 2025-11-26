@@ -65,6 +65,7 @@
   from {
     transform: translateY(100%);
   }
+
   to {
     transform: translateY(0);
   }
@@ -208,4 +209,3 @@
   outline: none;
   border-color: var(--ai-accent);
 }
-

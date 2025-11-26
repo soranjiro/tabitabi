@@ -41,19 +41,25 @@
 }
 
 @keyframes ai-float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-8px);
   }
 }
 
 @keyframes ai-bounce {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
     opacity: 0.3;
   }
+
   50% {
     transform: translateY(-6px);
     opacity: 1;
@@ -90,6 +96,7 @@
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -154,6 +161,7 @@
     opacity: 0;
     transform: translateX(-12px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -199,9 +207,12 @@
 }
 
 @keyframes ai-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.3);
   }
+
   50% {
     box-shadow: 0 0 0 6px rgba(14, 165, 233, 0);
   }
@@ -265,9 +276,12 @@
 }
 
 @keyframes ai-pulseDot {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.3;
   }
@@ -380,6 +394,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .ai-date-section,
   .ai-step,
   .ai-empty-plane,
@@ -420,6 +435,7 @@
     opacity: 0;
     transform: translateX(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -507,10 +523,12 @@
 }
 
 @keyframes ai-currentPulse {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.4;
   }

@@ -248,6 +248,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -293,6 +294,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -322,12 +324,15 @@
     transform: translateY(100vh);
     opacity: 0;
   }
+
   10% {
     opacity: 0.15;
   }
+
   90% {
     opacity: 0.15;
   }
+
   100% {
     transform: translateY(-50px);
     opacity: 0;

@@ -211,14 +211,14 @@
     border: none;
     font-size: 1rem;
     font-weight: 600;
-    color: #9ca3af;
+    color: #6b7280;
     cursor: pointer;
     transition: all 0.2s;
     position: relative;
   }
 
   .tab-btn.active {
-    color: #6b8cce;
+    color: #4b6cb7;
   }
 
   .tab-btn.active::after {
@@ -238,7 +238,7 @@
 
   .form-description {
     font-size: 0.875rem;
-    color: #6b7280;
+    color: #4b5563;
     margin-bottom: 1rem;
     text-align: center;
   }

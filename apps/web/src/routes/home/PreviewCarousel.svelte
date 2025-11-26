@@ -541,14 +541,15 @@
   }
 
   .dot {
-    width: 8px;
-    height: 8px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.4);
     border: none;
     cursor: pointer;
     transition: all 0.2s;
-    padding: 0;
+    padding: 4px;
+    box-sizing: content-box;
   }
 
   .dot.active {

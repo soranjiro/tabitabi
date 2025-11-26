@@ -50,13 +50,15 @@
   }
 
   .footer-link {
-    color: #9ca3af;
+    color: #d1d5db;
     text-decoration: none;
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     transition: color 0.2s;
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    min-height: 44px;
   }
 
   .footer-link :global(svg) {
@@ -68,7 +70,7 @@
   }
 
   .footer-copy {
-    color: #6b7280;
-    font-size: 0.7rem;
+    color: #9ca3af;
+    font-size: 0.75rem;
   }
 </style>

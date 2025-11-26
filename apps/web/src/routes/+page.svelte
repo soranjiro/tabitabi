@@ -176,7 +176,10 @@
           <IconLink size={32} />
         {/snippet}
       </FeatureCard>
-      <FeatureCard title="テーマ選択" description="シーンに合ったデザイン{'\n'}カスタマイズ自在">
+      <FeatureCard
+        title="テーマ選択"
+        description="シーンに合ったデザイン{'\n'}カスタマイズ自在"
+      >
         {#snippet icon()}
           <IconPalette size={32} />
         {/snippet}
@@ -210,11 +213,7 @@
 <style>
   .home-page {
     min-height: 100vh;
-    background: linear-gradient(
-      145deg,
-    #84c6ff 0%,
-    #a6b3ff 40%,
-    #b5daf8 100%);
+    background: linear-gradient(145deg, #84c6ff 0%, #a6b3ff 40%, #b5daf8 100%);
   }
 
   .hero {
@@ -304,9 +303,10 @@
 
   .hero-subtitle {
     font-size: 1.1rem;
-    opacity: 0.9;
+    opacity: 1;
     margin-bottom: 1rem;
     font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   }
 
   .hero-cta {
@@ -346,16 +346,16 @@
     font-size: 0.9rem;
     font-weight: 600;
     padding: 0.75rem 1.25rem;
-    background: transparent;
-    border: 2px solid rgba(255, 255, 255, 0.4);
+    background: rgba(0, 0, 0, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.6);
     border-radius: 9999px;
     cursor: pointer;
     transition: all 0.2s;
   }
 
   .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.8);
   }
 
   .features {

@@ -61,12 +61,14 @@
     transition: transform 0.3s;
     background: none;
     border: none;
-    padding: 0.5rem;
+    padding: 0.75rem;
     cursor: pointer;
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    min-width: 48px;
+    min-height: 48px;
   }
 
   .feature-icon:hover {
@@ -194,7 +196,7 @@
 
   .feature-card p {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: #4b5563;
     line-height: 1.4;
     white-space: pre-line;
   }

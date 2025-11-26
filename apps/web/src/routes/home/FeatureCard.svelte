@@ -196,5 +196,6 @@
     font-size: 0.75rem;
     color: #6b7280;
     line-height: 1.4;
+    white-space: pre-line;
   }
 </style>

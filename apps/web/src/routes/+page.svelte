@@ -210,7 +210,11 @@
 <style>
   .home-page {
     min-height: 100vh;
-    background: linear-gradient(145deg, #84c6ff 0%, #a6b3ff 40%, #b5daf8 100%);
+    background: linear-gradient(
+      145deg,
+    #84c6ff 0%,
+    #a6b3ff 40%,
+    #b5daf8 100%);
   }
 
   .hero {
@@ -382,7 +386,13 @@
   }
 
   .create-section {
-    background: #f9fafb;
+    background: linear-gradient(
+      to bottom,
+      white 0%,
+      #dceeff 2%,
+      #e1e6ff 20%,
+      #e4f3ff 100%
+    );
     padding: 4rem 1rem;
   }
 

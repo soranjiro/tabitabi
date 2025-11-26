@@ -165,7 +165,7 @@
     <div class="features-grid">
       <FeatureCard
         title="スマホ最適化"
-        description="どこでも旅程を確認。アプリ不要"
+        description="どこでも旅程を確認{'\n'}アプリ不要"
       >
         {#snippet icon()}
           <IconPhone size={32} />
@@ -176,12 +176,15 @@
           <IconLink size={32} />
         {/snippet}
       </FeatureCard>
-      <FeatureCard title="テーマ選択" description="シーンに合ったデザイン">
+      <FeatureCard title="テーマ選択" description="シーンに合ったデザイン{'\n'}カスタマイズ自在">
         {#snippet icon()}
           <IconPalette size={32} />
         {/snippet}
       </FeatureCard>
-      <FeatureCard title="軽量・高速" description="表示まで1秒。ストレスゼロ">
+      <FeatureCard
+        title="軽量・高速"
+        description="表示まで1秒{'\n'}ストレスゼロ"
+      >
         {#snippet icon()}
           <IconBolt size={32} />
         {/snippet}

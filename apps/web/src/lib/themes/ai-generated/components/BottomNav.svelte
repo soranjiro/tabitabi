@@ -95,7 +95,7 @@
     <h3 class="ai-settings-title">設定</h3>
 
     <div class="ai-settings-section">
-      <label class="ai-settings-label">テーマ</label>
+      <span class="ai-settings-label">テーマ</span>
       <div class="ai-theme-grid">
         {#each themes as theme}
           <button
@@ -113,7 +113,7 @@
 
     {#if hasEditPermission}
       <div class="ai-settings-section">
-        <label class="ai-settings-label">機能</label>
+        <span class="ai-settings-label">機能</span>
 
         <div class="ai-toggle-row">
           <div class="ai-toggle-info">
@@ -127,15 +127,19 @@
             onclick={() =>
               onSecretModeChange(!secretModeEnabled, secretModeOffset)}
             aria-pressed={secretModeEnabled}
+            aria-label="シークレットモードを切り替え"
           ></button>
         </div>
 
         {#if secretModeEnabled}
           <div style="padding: 0 0.75rem; margin-bottom: 0.75rem;">
-            <label class="ai-settings-label" style="margin-bottom: 0.5rem;"
-              >公開タイミング</label
+            <label
+              class="ai-settings-label"
+              style="margin-bottom: 0.5rem;"
+              for="secret-timing">公開タイミング</label
             >
             <select
+              id="secret-timing"
               class="ai-select"
               value={secretModeOffset}
               onchange={(e) =>
@@ -157,8 +161,9 @@
       </div>
 
       <div class="ai-settings-section">
-        <label class="ai-settings-label">💰 Walica連携</label>
+        <label class="ai-settings-label" for="walica-url">💰 Walica連携</label>
         <input
+          id="walica-url"
           type="url"
           bind:value={localWalicaUrl}
           placeholder="https://walica.jp/group/..."

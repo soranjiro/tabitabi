@@ -7,6 +7,7 @@
   --ai-accent: #14b8a6;
   --ai-accent-light: #2dd4bf;
 
+  --ai-bg: #fafafa;
   --ai-bg-gradient-start: #faf5ff;
   --ai-bg-gradient-mid: #f0f9ff;
   --ai-bg-gradient-end: #f0fdf4;
@@ -23,18 +24,65 @@
   --ai-border-light: #f1f5f9;
   --ai-border-focus: var(--ai-primary);
 
+  --ai-success: #10b981;
+  --ai-warning: #f59e0b;
+  --ai-error: #ef4444;
+
   --ai-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --ai-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
   --ai-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --ai-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  --ai-glow-primary: 0 0 20px rgba(99, 102, 241, 0.3);
+  --ai-glow-secondary: 0 0 20px rgba(236, 72, 153, 0.3);
+  --ai-glow-accent: 0 0 20px rgba(20, 184, 166, 0.3);
 
   --ai-radius-sm: 8px;
   --ai-radius-md: 12px;
   --ai-radius-lg: 16px;
   --ai-radius-xl: 24px;
+  --ai-radius-full: 9999px;
 
   --ai-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
 
   --ai-transition-fast: 0.15s ease;
   --ai-transition-normal: 0.25s ease;
   --ai-transition-slow: 0.35s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ai-primary: #818cf8;
+    --ai-primary-light: #a5b4fc;
+    --ai-primary-dark: #6366f1;
+    --ai-secondary: #f472b6;
+    --ai-secondary-light: #f9a8d4;
+    --ai-accent: #2dd4bf;
+    --ai-accent-light: #5eead4;
+
+    --ai-bg: #0f172a;
+    --ai-bg-gradient-start: #1e1b4b;
+    --ai-bg-gradient-mid: #0c1929;
+    --ai-bg-gradient-end: #042f2e;
+
+    --ai-text-primary: #f1f5f9;
+    --ai-text-secondary: #cbd5e1;
+    --ai-text-muted: #64748b;
+
+    --ai-surface: #1e293b;
+    --ai-surface-hover: #334155;
+    --ai-surface-active: #475569;
+
+    --ai-border: #334155;
+    --ai-border-light: #1e293b;
+
+    --ai-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --ai-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --ai-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    --ai-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+
+    --ai-glow-primary: 0 0 30px rgba(129, 140, 248, 0.4);
+    --ai-glow-secondary: 0 0 30px rgba(244, 114, 182, 0.4);
+    --ai-glow-accent: 0 0 30px rgba(45, 212, 191, 0.4);
+  }
 }

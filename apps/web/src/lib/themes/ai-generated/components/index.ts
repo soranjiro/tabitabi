@@ -5,3 +5,8 @@ export { default as ShareDialog } from './ShareDialog.svelte';
 export { default as AddStepForm } from './AddStepForm.svelte';
 export { default as BottomNav } from './BottomNav.svelte';
 export { default as WalicaOverlay } from './WalicaOverlay.svelte';
+export { default as TripProgress } from './TripProgress.svelte';
+export { default as HeroHeader } from './HeroHeader.svelte';
+export { default as FloatingActions } from './FloatingActions.svelte';
+export { default as ParticleBackground } from './ParticleBackground.svelte';
+export { default as StepCard } from './StepCard.svelte';

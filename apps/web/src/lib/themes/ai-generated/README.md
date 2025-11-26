@@ -52,3 +52,13 @@ ai-generated/
 2. **Accessible**: Semantic HTML with ARIA attributes
 3. **Readable**: Well-organized code structure
 4. **Consistent**: Unified color scheme and spacing
+
+# prompt
+
+AI generatedテーマに、できるだけ機能を追加して、デザインも良くして、他の従来のしおりとは違い個性が溢れるが、シンプルでみやすく誰もが使いやすいものにしてください。
+ただし、初めにdocs/フォルダにあるmarkdownファイルを全て読み、プロダクトの方針に沿った内容にしてください。
+また、Readabilityを上げるために、ファイル分割やディレクトリ構成をこのディレクトリ内で作成・編集してください。他のテーマに干渉しないようにこのテーマ内で完結させてください。
+
+もっとより、個性的な独自機能などを足して良いです。
+デザインやUIUXも面白い個性的なデザインにして
+100人このサイトを見たら98人が次も使いたい・このデザイン好きとなるようなものを目指してください

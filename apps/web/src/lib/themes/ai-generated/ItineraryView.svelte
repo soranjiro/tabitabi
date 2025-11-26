@@ -13,6 +13,10 @@
     ShareDialog,
     WalicaOverlay,
   } from "./components";
+  import TripProgress from "./components/TripProgress.svelte";
+  import HeroHeader from "./components/HeroHeader.svelte";
+  import FloatingActions from "./components/FloatingActions.svelte";
+  import ParticleBackground from "./components/ParticleBackground.svelte";
   import { renderMarkdown } from "./utils/markdown";
   import "./styles/index.css";
 
@@ -291,95 +295,60 @@
       await onUpdateItinerary({ walica_id: walicaId });
     }
   }
+
+  const tripDates = $derived(() => {
+    if (steps.length === 0) return { start: undefined, end: undefined };
+    const dates = [...new Set(steps.map((s) => s.date))].sort();
+    return { start: dates[0], end: dates[dates.length - 1] };
+  });
 </script>
 
 <div class="ai-theme">
+  <ParticleBackground />
+
   <div class="ai-container">
     {#if showCopyMessage}
       <div class="ai-copy-toast">✓ コピーしました</div>
     {/if}
 
-    <header class="ai-header ai-card ai-glass">
-      <div class="ai-header-content">
-        <div class="ai-nav-row">
-          <button type="button" onclick={() => goto("/")} class="ai-back-btn">
-            ← ホーム
-          </button>
-          <button
-            type="button"
-            class="ai-share-btn"
-            onclick={handleShare}
-            aria-label="共有"
-          >
-            🔗
-          </button>
-        </div>
+    <HeroHeader
+      title={itinerary.title}
+      startDate={tripDates().start}
+      endDate={tripDates().end}
+    />
 
-        <span class="ai-trip-icon">✈️</span>
+    <TripProgress {steps} title={itinerary.title} />
 
-        <div class="ai-title-wrap">
-          {#if isEditingTitle}
-            <input
-              type="text"
-              bind:value={editedTitle}
-              onblur={handleTitleUpdate}
-              onkeydown={(e) => e.key === "Enter" && handleTitleUpdate()}
-              class="ai-title-input"
-            />
-          {:else}
-            <button
-              type="button"
-              onclick={() => {
-                if (hasEditPermission) isEditingTitle = true;
-              }}
-              class="ai-title"
-              disabled={!hasEditPermission}
-            >
-              {itinerary.title}
-            </button>
-          {/if}
-        </div>
-
-        {#if itinerary.memo}
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div class="ai-memo-section" onclick={() => (showMemoDialog = true)}>
-            <div class="ai-memo-card ai-card">
-              <div class="ai-memo-header">📝 メモ</div>
-              <div class="ai-memo-content">
-                {@html renderMarkdown(itinerary.memo)}
-              </div>
-            </div>
+    {#if itinerary.memo}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="ai-memo-section" onclick={() => (showMemoDialog = true)}>
+        <div class="ai-memo-card ai-card">
+          <div class="ai-memo-header">📝 メモ</div>
+          <div class="ai-memo-content">
+            {@html renderMarkdown(itinerary.memo)}
           </div>
-        {:else if hasEditPermission}
-          <button
-            type="button"
-            class="ai-btn ai-btn-secondary"
-            onclick={() => (showMemoDialog = true)}
-            style="margin-top: 0.5rem;"
-          >
-            📝 メモを追加
-          </button>
-        {/if}
+        </div>
       </div>
-    </header>
+    {:else if hasEditPermission}
+      <button
+        type="button"
+        class="ai-btn ai-btn-secondary ai-btn-memo"
+        onclick={() => (showMemoDialog = true)}
+      >
+        📝 メモを追加
+      </button>
+    {/if}
 
-    {#if hasEditPermission}
-      <div class="ai-add-step" style="margin-bottom: 1.5rem;">
-        {#if isAddingStep}
-          <AddStepForm
-            bind:newStep
-            bind:newStepHour
-            bind:newStepMinute
-            onSubmit={handleAddStep}
-            onCancel={cancelAddStep}
-          />
-        {:else}
-          <button type="button" onclick={openAddStepForm} class="ai-btn-add">
-            <span class="ai-btn-add-icon">＋</span>
-            <span>予定を追加</span>
-          </button>
-        {/if}
+    {#if hasEditPermission && isAddingStep}
+      <div class="ai-add-step-form">
+        <AddStepForm
+          bind:newStep
+          bind:newStepHour
+          bind:newStepMinute
+          onSubmit={handleAddStep}
+          onCancel={cancelAddStep}
+        />
       </div>
     {/if}
 
@@ -393,6 +362,11 @@
       {onDeleteStep}
     />
   </div>
+
+  <FloatingActions
+    onAdd={hasEditPermission ? openAddStepForm : undefined}
+    onShare={handleShare}
+  />
 
   <BottomNav
     {hasEditPermission}

@@ -1,11 +1,11 @@
 import type { ThemeConfig } from '@tabitabi/types';
 
-export const standardTheme: ThemeConfig = {
-  id: 'standard',
-  name: 'スタンダード',
-  version: '1.0.0',
-  description: '充実した機能を持つスタンダードテーマ',
-  author: 'Tabitabi',
+export const aiGeneratedTheme: ThemeConfig = {
+  id: 'ai-generated',
+  name: 'AI Generated',
+  version: '2.0.0',
+  description: 'Modern and feature-rich theme with timeline view, secret mode, Walica integration, and Markdown support',
+  author: 'Tabitabi AI',
   features: {
     timeline: {
       enabled: true,
@@ -23,14 +23,23 @@ export const standardTheme: ThemeConfig = {
     map: {
       enabled: true,
     },
+    secretMode: {
+      enabled: true,
+    },
+    walica: {
+      enabled: true,
+    },
+    markdown: {
+      enabled: true,
+    },
   },
   ui: {
-    layout: 'sidebar',
+    layout: 'single',
     colorScheme: 'auto',
     customColors: {
-      primary: '#0ea5e9',
-      secondary: '#64748b',
-      accent: '#f59e0b',
+      primary: '#6366f1',
+      secondary: '#ec4899',
+      accent: '#14b8a6',
     },
   },
 };

@@ -1,0 +1,42 @@
+.ai-theme {
+  font-family: var(--ai-font-sans);
+  min-height: 100vh;
+  background: linear-gradient(135deg,
+      var(--ai-bg-gradient-start) 0%,
+      var(--ai-bg-gradient-mid) 50%,
+      var(--ai-bg-gradient-end) 100%);
+  color: var(--ai-text-primary);
+  line-height: 1.6;
+}
+
+.ai-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem;
+  padding-bottom: 5rem;
+}
+
+@media (min-width: 640px) {
+  .ai-container {
+    padding: 1.5rem;
+    padding-bottom: 6rem;
+  }
+}
+
+.ai-card {
+  background: var(--ai-surface);
+  border-radius: var(--ai-radius-lg);
+  border: 1px solid var(--ai-border-light);
+  box-shadow: var(--ai-shadow-md);
+  transition: transform var(--ai-transition-fast), box-shadow var(--ai-transition-fast);
+}
+
+.ai-card:hover {
+  box-shadow: var(--ai-shadow-lg);
+}
+
+.ai-glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}

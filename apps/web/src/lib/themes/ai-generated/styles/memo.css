@@ -1,0 +1,163 @@
+.ai-memo-section {
+  margin-bottom: 1.5rem;
+}
+
+.ai-memo-card {
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: all var(--ai-transition-fast);
+}
+
+.ai-memo-card:hover {
+  transform: translateY(-2px);
+}
+
+.ai-memo-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ai-primary);
+}
+
+.ai-memo-content {
+  font-size: 0.9375rem;
+  color: var(--ai-text-secondary);
+  line-height: 1.7;
+}
+
+.ai-memo-content :global(h1),
+.ai-memo-content :global(h2),
+.ai-memo-content :global(h3) {
+  color: var(--ai-text-primary);
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.ai-memo-content :global(h1) {
+  font-size: 1.25rem;
+}
+
+.ai-memo-content :global(h2) {
+  font-size: 1.125rem;
+}
+
+.ai-memo-content :global(h3) {
+  font-size: 1rem;
+}
+
+.ai-memo-content :global(ul),
+.ai-memo-content :global(ol) {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.ai-memo-content :global(li) {
+  margin: 0.25rem 0;
+}
+
+.ai-memo-content :global(input[type="checkbox"]) {
+  margin-right: 0.5rem;
+  accent-color: var(--ai-primary);
+}
+
+.ai-memo-content :global(a) {
+  color: var(--ai-primary);
+  text-decoration: underline;
+}
+
+.ai-memo-content :global(strong) {
+  color: var(--ai-text-primary);
+  font-weight: 600;
+}
+
+.ai-memo-content :global(code) {
+  padding: 0.125rem 0.375rem;
+  background: var(--ai-surface-active);
+  border-radius: var(--ai-radius-sm);
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 0.875em;
+}
+
+.ai-memo-content :global(blockquote) {
+  margin: 0.75rem 0;
+  padding: 0.5rem 1rem;
+  border-left: 3px solid var(--ai-primary-light);
+  background: var(--ai-surface-hover);
+  border-radius: 0 var(--ai-radius-sm) var(--ai-radius-sm) 0;
+}
+
+.ai-memo-empty {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--ai-text-muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--ai-transition-fast);
+}
+
+.ai-memo-empty:hover {
+  background: var(--ai-surface-hover);
+  color: var(--ai-text-secondary);
+}
+
+.ai-memo-dialog-content {
+  min-height: 200px;
+}
+
+.ai-memo-textarea {
+  width: 100%;
+  min-height: 300px;
+  padding: 1rem;
+  border: 1.5px solid var(--ai-border);
+  border-radius: var(--ai-radius-md);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  resize: vertical;
+  background: var(--ai-surface);
+  color: var(--ai-text-primary);
+}
+
+.ai-memo-textarea:focus {
+  outline: none;
+  border-color: var(--ai-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.ai-memo-preview {
+  padding: 1rem;
+  background: var(--ai-surface-hover);
+  border-radius: var(--ai-radius-md);
+  min-height: 100px;
+}
+
+.ai-memo-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ai-memo-tab {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1.5px solid var(--ai-border);
+  border-radius: var(--ai-radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ai-text-secondary);
+  cursor: pointer;
+  transition: all var(--ai-transition-fast);
+}
+
+.ai-memo-tab:hover {
+  background: var(--ai-surface-hover);
+}
+
+.ai-memo-tab.active {
+  background: var(--ai-primary);
+  border-color: var(--ai-primary);
+  color: white;
+}

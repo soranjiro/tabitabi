@@ -1,0 +1,213 @@
+.ai-timeline {
+  position: relative;
+}
+
+.ai-date-section {
+  margin-bottom: 2rem;
+}
+
+.ai-date-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, var(--ai-primary) 0%, var(--ai-primary-light) 100%);
+  border-radius: var(--ai-radius-md);
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: var(--ai-shadow-md);
+}
+
+.ai-date-icon {
+  font-size: 1.25rem;
+}
+
+.ai-date-text {
+  flex: 1;
+}
+
+.ai-day-badge {
+  padding: 0.25rem 0.625rem;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--ai-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.ai-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+  padding-left: 2rem;
+}
+
+.ai-steps-list::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--ai-primary-light), var(--ai-secondary-light));
+  border-radius: 1px;
+}
+
+.ai-step {
+  position: relative;
+  padding: 1rem 1.25rem;
+  transition: transform var(--ai-transition-fast);
+}
+
+.ai-step:hover {
+  transform: translateX(4px);
+}
+
+.ai-step::before {
+  content: '';
+  position: absolute;
+  left: calc(-2rem + 0.5rem - 5px);
+  top: 1.25rem;
+  width: 12px;
+  height: 12px;
+  background: var(--ai-primary);
+  border-radius: 50%;
+  border: 2px solid var(--ai-surface);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  z-index: 1;
+}
+
+.ai-step-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.ai-step-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  background: linear-gradient(135deg, var(--ai-secondary) 0%, var(--ai-secondary-light) 100%);
+  color: white;
+  border-radius: var(--ai-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ai-step-title {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ai-text-primary);
+  margin: 0;
+}
+
+.ai-step-actions {
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity var(--ai-transition-fast);
+}
+
+.ai-step:hover .ai-step-actions {
+  opacity: 1;
+}
+
+.ai-step-location {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--ai-accent);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.ai-step-notes {
+  font-size: 0.875rem;
+  color: var(--ai-text-secondary);
+  padding: 0.75rem;
+  background: var(--ai-surface-active);
+  border-radius: var(--ai-radius-sm);
+  border-left: 3px solid var(--ai-primary-light);
+  line-height: 1.6;
+}
+
+.ai-step-notes :global(p) {
+  margin: 0.5rem 0;
+}
+
+.ai-step-notes :global(p:first-child) {
+  margin-top: 0;
+}
+
+.ai-step-notes :global(p:last-child) {
+  margin-bottom: 0;
+}
+
+.ai-step-notes :global(ul),
+.ai-step-notes :global(ol) {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+
+.ai-step-notes :global(a) {
+  color: var(--ai-primary);
+  text-decoration: underline;
+}
+
+.ai-step-secret {
+  opacity: 0.6;
+  filter: blur(0);
+  transition: all var(--ai-transition-normal);
+}
+
+.ai-step-secret .ai-step-title,
+.ai-step-secret .ai-step-location,
+.ai-step-secret .ai-step-notes {
+  filter: blur(4px);
+  user-select: none;
+}
+
+.ai-step-secret-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  background: var(--ai-text-muted);
+  color: white;
+  border-radius: var(--ai-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-left: 0.5rem;
+}
+
+.ai-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.ai-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.ai-empty-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ai-text-secondary);
+  margin: 0 0 0.5rem 0;
+}
+
+.ai-empty-text {
+  font-size: 0.875rem;
+  color: var(--ai-text-muted);
+  margin: 0;
+}

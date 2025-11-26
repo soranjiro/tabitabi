@@ -1,13 +1,20 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-
   import type { Itinerary, Step } from "@tabitabi/types";
-  import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
   import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
-  import "./theme.css";
+  import {
+    AddStepForm,
+    BottomNav,
+    MemoDialog,
+    PasswordDialog,
+    ShareDialog,
+    WalicaOverlay,
+  } from "./components";
+  import { renderMarkdown } from "./utils/markdown";
+  import "./styles/index.css";
 
   interface Props {
     itinerary: Itinerary;
@@ -15,6 +22,12 @@
     onUpdateItinerary?: (data: {
       title?: string;
       theme_id?: string;
+      memo?: string;
+      walica_id?: string | null;
+      secret_settings?: {
+        enabled: boolean;
+        offset_minutes: number;
+      } | null;
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
@@ -45,15 +58,45 @@
     onDeleteStep,
   }: Props = $props();
 
-  const themes = getAvailableThemes();
-
   let isEditingTitle = $state(false);
   let editedTitle = $state(itinerary.title);
   let isAddingStep = $state(false);
+  let showCopyMessage = $state(false);
+  let showShareDialog = $state(false);
   let hasEditPermission = $state(false);
   let showPasswordDialog = $state(false);
-  let password = $state("");
+  let showMemoDialog = $state(false);
   let isAuthenticating = $state(false);
+
+  let selectedThemeId = $state(itinerary.theme_id || "ai-generated");
+  let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
+  let secretModeOffset = $state(
+    itinerary.secret_settings?.offset_minutes ?? 60,
+  );
+  let walicaUrl = $state(
+    itinerary.walica_id ? `https://walica.jp/group/${itinerary.walica_id}` : "",
+  );
+  let showWalica = $state(false);
+
+  let newStep = $state({
+    title: "",
+    date: "",
+    time: "",
+    location: "",
+    notes: "",
+  });
+  let newStepHour = $state("09");
+  let newStepMinute = $state("00");
+  let focusedDate = $state<string | null>(null);
+
+  function openAddStepForm() {
+    isAddingStep = true;
+    if (focusedDate) {
+      newStep.date = focusedDate;
+    } else {
+      newStep.date = "";
+    }
+  }
 
   onMount(() => {
     const token = auth.extractTokenFromUrl();
@@ -61,10 +104,15 @@
       auth.setToken(itinerary.id, itinerary.title, token);
     }
     hasEditPermission = auth.hasEditPermission(itinerary.id);
+
+    if (!hasEditPermission && !itinerary.password) {
+      attemptEditModeActivation();
+    }
+
     auth.updateAccessTime(itinerary.id, itinerary.title);
   });
 
-  async function handlePasswordAuth() {
+  async function handlePasswordAuth(password: string) {
     if (!password.trim()) {
       alert("パスワードを入力してください");
       return;
@@ -79,11 +127,18 @@
       auth.setToken(itinerary.id, itinerary.title, token);
       hasEditPermission = true;
       showPasswordDialog = false;
-      password = "";
     } catch (error) {
       alert("パスワードが正しくありません");
     } finally {
       isAuthenticating = false;
+    }
+  }
+
+  function handleEditModeToggle() {
+    if (hasEditPermission) {
+      hasEditPermission = false;
+    } else {
+      attemptEditModeActivation();
     }
   }
 
@@ -113,20 +168,55 @@
     showPasswordDialog = true;
   }
 
-  let newStep = $state({
-    title: "",
-    date: "",
-    time: "",
-    location: "",
-    notes: "",
-  });
+  async function handleMemoUpdate(memo: string) {
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({ memo });
+    }
+    showMemoDialog = false;
+  }
 
-  let newStepHour = $state("09");
-  let newStepMinute = $state("00");
+  function handleShare() {
+    if (hasEditPermission) {
+      showShareDialog = true;
+    } else {
+      copyViewOnlyLink();
+    }
+  }
 
-  $effect(() => {
-    newStep.time = `${newStepHour}:${newStepMinute}`;
-  });
+  async function copyViewOnlyLink() {
+    try {
+      const url = window.location.origin + window.location.pathname;
+      await navigator.clipboard.writeText(url);
+      showCopyMessage = true;
+      setTimeout(() => {
+        showCopyMessage = false;
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  }
+
+  async function copyShareLink(includeToken: boolean) {
+    try {
+      let url = window.location.origin + window.location.pathname;
+
+      if (includeToken && hasEditPermission) {
+        const token = auth.getToken(itinerary.id);
+        if (token) {
+          url += `?token=${token}`;
+        }
+      }
+
+      await navigator.clipboard.writeText(url);
+      showShareDialog = false;
+      showCopyMessage = true;
+      setTimeout(() => {
+        showCopyMessage = false;
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  }
 
   async function handleTitleUpdate() {
     if (!editedTitle.trim() || editedTitle === itinerary.title) {
@@ -134,20 +224,10 @@
       editedTitle = itinerary.title;
       return;
     }
-
     if (onUpdateItinerary) {
       await onUpdateItinerary({ title: editedTitle.trim() });
     }
     isEditingTitle = false;
-  }
-
-  async function handleThemeChange(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    const newThemeId = target.value;
-
-    if (newThemeId !== itinerary.theme_id && onUpdateItinerary) {
-      await onUpdateItinerary({ theme_id: newThemeId });
-    }
   }
 
   async function handleAddStep() {
@@ -155,7 +235,6 @@
       alert("タイトル、日付、時刻は必須です");
       return;
     }
-
     if (onCreateStep) {
       await onCreateStep({
         title: newStep.title.trim(),
@@ -164,7 +243,6 @@
         location: newStep.location.trim() || undefined,
         notes: newStep.notes.trim() || undefined,
       });
-
       newStep = { title: "", date: "", time: "", location: "", notes: "" };
       newStepHour = "09";
       newStepMinute = "00";
@@ -178,214 +256,184 @@
     newStepMinute = "00";
     isAddingStep = false;
   }
+
+  async function handleThemeChange(themeId: string) {
+    if (themeId === itinerary.theme_id) {
+      return;
+    }
+    selectedThemeId = themeId;
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({ theme_id: themeId });
+    }
+  }
+
+  async function handleSecretModeUpdate(enabled: boolean, offset: number) {
+    secretModeEnabled = enabled;
+    secretModeOffset = offset;
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({
+        secret_settings: {
+          enabled,
+          offset_minutes: offset,
+        },
+      });
+    }
+  }
+
+  async function handleWalicaUpdate(url: string) {
+    if (url && !url.startsWith("https://walica.jp/group/")) {
+      alert("WalicaのURLは https://walica.jp/group/ で始まる必要があります");
+      return;
+    }
+    walicaUrl = url;
+    const walicaId = url ? url.split("/group/")[1] : null;
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({ walica_id: walicaId });
+    }
+  }
 </script>
 
-<div class="ai-generated-theme">
-  <div class="ai-generated-container">
-    <nav class="ai-generated-nav">
-      <button
-        type="button"
-        onclick={() => goto("/")}
-        class="ai-generated-home-btn"
-        title="ホームに戻る"
-      >
-        ← ホーム
-      </button>
-    </nav>
+<div class="ai-theme">
+  <div class="ai-container">
+    {#if showCopyMessage}
+      <div class="ai-copy-toast">✓ コピーしました</div>
+    {/if}
 
-    <header class="ai-generated-header">
-      <div class="ai-generated-header-content">
-        {#if isEditingTitle}
-          <input
-            type="text"
-            bind:value={editedTitle}
-            onblur={handleTitleUpdate}
-            onkeydown={(e) => e.key === "Enter" && handleTitleUpdate()}
-            class="ai-generated-title-input"
-          />
-        {:else}
+    <header class="ai-header ai-card ai-glass">
+      <div class="ai-header-content">
+        <div class="ai-nav-row">
+          <button type="button" onclick={() => goto("/")} class="ai-back-btn">
+            ← ホーム
+          </button>
           <button
             type="button"
-            onclick={() => {
-              isEditingTitle = true;
-            }}
-            class="ai-generated-title-button"
-            disabled={!hasEditPermission}
+            class="ai-share-btn"
+            onclick={handleShare}
+            aria-label="共有"
           >
-            ✈️ {itinerary.title}
+            🔗
           </button>
-        {/if}
-
-        <div class="ai-generated-controls">
-          {#if !hasEditPermission}
-            <button
-              onclick={attemptEditModeActivation}
-              class="ai-generated-btn-edit"
-            >
-              編集
-            </button>
-          {/if}
-          <select
-            value={itinerary.theme_id}
-            onchange={handleThemeChange}
-            class="ai-generated-select"
-            disabled={!hasEditPermission}
-          >
-            {#each themes as theme}
-              <option value={theme.id}>{theme.name}</option>
-            {/each}
-          </select>
         </div>
-      </div>
-    </header>
 
-    <div class="ai-generated-add-step">
-      {#if isAddingStep && hasEditPermission}
-        <form
-          class="ai-generated-form"
-          onsubmit={(e) => {
-            e.preventDefault();
-            handleAddStep();
-          }}
-        >
-          <h3 class="ai-generated-form-title">✨ 新しい予定を追加</h3>
-          <div class="ai-generated-form-grid">
+        <span class="ai-trip-icon">✈️</span>
+
+        <div class="ai-title-wrap">
+          {#if isEditingTitle}
             <input
               type="text"
-              bind:value={newStep.title}
-              placeholder="予定のタイトル *"
-              class="ai-generated-input"
-              required
+              bind:value={editedTitle}
+              onblur={handleTitleUpdate}
+              onkeydown={(e) => e.key === "Enter" && handleTitleUpdate()}
+              class="ai-title-input"
             />
-            <div class="ai-generated-datetime">
-              <input
-                type="date"
-                bind:value={newStep.date}
-                class="ai-generated-input"
-                required
-              />
-              <div class="ai-generated-time-picker">
-                <select
-                  bind:value={newStepHour}
-                  class="ai-generated-select-time"
-                  required
-                >
-                  {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
-                    <option value={hour}>{hour}</option>
-                  {/each}
-                </select>
-                <span class="ai-generated-time-separator">:</span>
-                <select
-                  bind:value={newStepMinute}
-                  class="ai-generated-select-time"
-                  required
-                >
-                  <option value="00">00</option>
-                  <option value="15">15</option>
-                  <option value="30">30</option>
-                  <option value="45">45</option>
-                </select>
-              </div>
-            </div>
-            <input
-              type="text"
-              bind:value={newStep.location}
-              placeholder="📍 場所 (任意)"
-              class="ai-generated-input"
-            />
-            <textarea
-              bind:value={newStep.notes}
-              placeholder="📝 メモ (任意)"
-              class="ai-generated-textarea"
-              rows="3"
-            ></textarea>
-          </div>
-          <div class="ai-generated-form-actions">
-            <button
-              type="submit"
-              class="ai-generated-btn ai-generated-btn-primary"
-            >
-              追加する
-            </button>
-            <button
-              type="button"
-              onclick={cancelAddStep}
-              class="ai-generated-btn ai-generated-btn-secondary"
-            >
-              キャンセル
-            </button>
-          </div>
-        </form>
-      {:else}
-        <button
-          onclick={() => {
-            if (hasEditPermission) {
-              isAddingStep = true;
-            } else {
-              attemptEditModeActivation();
-            }
-          }}
-          class="ai-generated-btn-add"
-        >
-          <span class="ai-generated-btn-add-icon">＋</span>
-          <span>予定を追加</span>
-        </button>
-      {/if}
-    </div>
-
-    <StepList {steps} {onUpdateStep} {onDeleteStep} />
-  </div>
-
-  {#if showPasswordDialog}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="ai-generated-dialog-overlay"
-      onclick={() => {
-        showPasswordDialog = false;
-        password = "";
-      }}
-    >
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="ai-generated-dialog" onclick={(e) => e.stopPropagation()}>
-        <h3 class="ai-generated-dialog-title">編集パスワード</h3>
-        <form
-          onsubmit={(e) => {
-            e.preventDefault();
-            handlePasswordAuth();
-          }}
-        >
-          <input
-            type="password"
-            bind:value={password}
-            placeholder="パスワードを入力"
-            class="ai-generated-input"
-            disabled={isAuthenticating}
-            style="margin-bottom: 1rem;"
-          />
-          <div class="ai-generated-dialog-actions">
-            <button
-              type="submit"
-              class="ai-generated-btn ai-generated-btn-primary"
-              disabled={isAuthenticating}
-            >
-              {isAuthenticating ? "認証中..." : "認証"}
-            </button>
+          {:else}
             <button
               type="button"
               onclick={() => {
-                showPasswordDialog = false;
-                password = "";
+                if (hasEditPermission) isEditingTitle = true;
               }}
-              class="ai-generated-btn ai-generated-btn-secondary"
-              disabled={isAuthenticating}
+              class="ai-title"
+              disabled={!hasEditPermission}
             >
-              キャンセル
+              {itinerary.title}
             </button>
+          {/if}
+        </div>
+
+        {#if itinerary.memo}
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="ai-memo-section" onclick={() => (showMemoDialog = true)}>
+            <div class="ai-memo-card ai-card">
+              <div class="ai-memo-header">📝 メモ</div>
+              <div class="ai-memo-content">
+                {@html renderMarkdown(itinerary.memo)}
+              </div>
+            </div>
           </div>
-        </form>
+        {:else if hasEditPermission}
+          <button
+            type="button"
+            class="ai-btn ai-btn-secondary"
+            onclick={() => (showMemoDialog = true)}
+            style="margin-top: 0.5rem;"
+          >
+            📝 メモを追加
+          </button>
+        {/if}
       </div>
-    </div>
-  {/if}
+    </header>
+
+    {#if hasEditPermission}
+      <div class="ai-add-step" style="margin-bottom: 1.5rem;">
+        {#if isAddingStep}
+          <AddStepForm
+            bind:newStep
+            bind:newStepHour
+            bind:newStepMinute
+            onSubmit={handleAddStep}
+            onCancel={cancelAddStep}
+          />
+        {:else}
+          <button type="button" onclick={openAddStepForm} class="ai-btn-add">
+            <span class="ai-btn-add-icon">＋</span>
+            <span>予定を追加</span>
+          </button>
+        {/if}
+      </div>
+    {/if}
+
+    <StepList
+      {steps}
+      {hasEditPermission}
+      {secretModeEnabled}
+      {secretModeOffset}
+      bind:focusedDate
+      {onUpdateStep}
+      {onDeleteStep}
+    />
+  </div>
+
+  <BottomNav
+    {hasEditPermission}
+    walicaId={itinerary.walica_id}
+    {selectedThemeId}
+    {secretModeEnabled}
+    {secretModeOffset}
+    {walicaUrl}
+    onEditModeToggle={handleEditModeToggle}
+    onThemeChange={handleThemeChange}
+    onSecretModeChange={handleSecretModeUpdate}
+    onWalicaUpdate={handleWalicaUpdate}
+    onWalicaOpen={() => (showWalica = true)}
+    onMemoOpen={() => (showMemoDialog = true)}
+  />
+
+  <MemoDialog
+    show={showMemoDialog}
+    memo={itinerary.memo || ""}
+    {hasEditPermission}
+    onSave={handleMemoUpdate}
+    onClose={() => (showMemoDialog = false)}
+  />
+
+  <PasswordDialog
+    show={showPasswordDialog}
+    {isAuthenticating}
+    onAuth={handlePasswordAuth}
+    onClose={() => (showPasswordDialog = false)}
+  />
+
+  <WalicaOverlay
+    show={showWalica}
+    walicaId={itinerary.walica_id || ""}
+    onClose={() => (showWalica = false)}
+  />
+
+  <ShareDialog
+    show={showShareDialog}
+    {hasEditPermission}
+    onCopyLink={copyShareLink}
+    onClose={() => (showShareDialog = false)}
+  />
 </div>

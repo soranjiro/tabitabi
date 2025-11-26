@@ -1,0 +1,121 @@
+.ai-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: overlay-in 0.2s ease;
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.ai-dialog {
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  animation: dialog-in 0.25s ease;
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.ai-dialog-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ai-text-primary);
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+}
+
+.ai-dialog-section {
+  margin-bottom: 1.5rem;
+}
+
+.ai-dialog-section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ai-text-secondary);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ai-dialog-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.ai-dialog-actions .ai-btn {
+  flex: 1;
+}
+
+.ai-share-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ai-share-option {
+  padding: 1rem;
+  background: var(--ai-surface-hover);
+  border: 1.5px solid var(--ai-border);
+  border-radius: var(--ai-radius-md);
+  cursor: pointer;
+  transition: all var(--ai-transition-fast);
+  text-align: left;
+}
+
+.ai-share-option:hover {
+  background: var(--ai-surface);
+  border-color: var(--ai-primary-light);
+  box-shadow: var(--ai-shadow-md);
+}
+
+.ai-share-option-title {
+  font-weight: 600;
+  color: var(--ai-text-primary);
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ai-share-option-desc {
+  font-size: 0.8125rem;
+  color: var(--ai-text-muted);
+}
+
+.ai-qr-container {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem;
+  background: white;
+  border-radius: var(--ai-radius-md);
+  margin-bottom: 1rem;
+}

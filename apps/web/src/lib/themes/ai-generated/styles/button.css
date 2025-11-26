@@ -1,0 +1,110 @@
+.ai-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: var(--ai-radius-md);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--ai-transition-fast);
+}
+
+.ai-btn-primary {
+  background: linear-gradient(135deg, var(--ai-primary) 0%, var(--ai-primary-dark) 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.ai-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+}
+
+.ai-btn-primary:active {
+  transform: translateY(0);
+}
+
+.ai-btn-secondary {
+  background: var(--ai-surface);
+  color: var(--ai-text-secondary);
+  border: 1.5px solid var(--ai-border);
+}
+
+.ai-btn-secondary:hover {
+  background: var(--ai-surface-hover);
+  border-color: var(--ai-primary-light);
+  color: var(--ai-primary);
+}
+
+.ai-btn-ghost {
+  background: transparent;
+  color: var(--ai-text-secondary);
+  padding: 0.5rem;
+}
+
+.ai-btn-ghost:hover {
+  background: var(--ai-surface-active);
+  color: var(--ai-primary);
+}
+
+.ai-btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--ai-radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--ai-text-muted);
+  cursor: pointer;
+  transition: all var(--ai-transition-fast);
+  font-size: 1rem;
+}
+
+.ai-btn-icon:hover {
+  background: var(--ai-surface-active);
+  color: var(--ai-text-primary);
+}
+
+.ai-btn-icon-danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.ai-btn-add {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, var(--ai-surface) 0%, var(--ai-surface-hover) 100%);
+  border: 2px dashed var(--ai-border);
+  border-radius: var(--ai-radius-lg);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ai-primary);
+  cursor: pointer;
+  transition: all var(--ai-transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.ai-btn-add:hover {
+  background: var(--ai-surface);
+  border-color: var(--ai-primary-light);
+  box-shadow: var(--ai-shadow-md);
+  transform: translateY(-2px);
+}
+
+.ai-btn-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ai-btn-add-icon {
+  font-size: 1.25rem;
+  font-weight: 300;
+}

@@ -40,48 +40,13 @@
   let editStepHour = $state("09");
   let editStepMinute = $state("00");
 
-  let activeIndex = $state(0);
   let trackEl = $state<HTMLDivElement | null>(null);
   let touchStartX = $state<number | null>(null);
   let touchDeltaX = $state(0);
 
-  $effect(() => {
-    if (editingStepId && editStepHour && editStepMinute) {
-      editedStep.time = `${editStepHour}:${editStepMinute}`;
-    }
-  });
-
-  $effect(() => {
-    const groups = groupedSteps();
-    if (groups.length === 0) return;
-
-    const today = new Date().toISOString().split("T")[0];
-    let closestIndex = 0;
-    let minDiff = Infinity;
-
-    groups.forEach(([date], index) => {
-      const diff = Math.abs(
-        new Date(date).getTime() - new Date(today).getTime(),
-      );
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestIndex = index;
-      }
-    });
-
-    activeIndex = closestIndex;
-  });
-
-  $effect(() => {
-    const groups = groupedSteps();
-    if (groups.length > 0 && groups[activeIndex]) {
-      focusedDate = groups[activeIndex][0];
-    }
-  });
-
-  const groupedSteps = $derived(() => {
+  function computeGroupedSteps(stepList: Step[]): [string, Step[]][] {
     const groups = new Map<string, Step[]>();
-    for (const step of steps) {
+    for (const step of stepList) {
       const date = step.date;
       if (!groups.has(date)) groups.set(date, []);
       groups.get(date)!.push(step);
@@ -92,6 +57,40 @@
     return Array.from(groups.entries()).sort((a, b) =>
       a[0].localeCompare(b[0]),
     );
+  }
+
+  function getInitialIndex(groups: [string, Step[]][]): number {
+    if (groups.length === 0) return 0;
+    const today = new Date().toISOString().split("T")[0];
+    let closestIndex = 0;
+    let minDiff = Infinity;
+    groups.forEach(([date], index) => {
+      const diff = Math.abs(
+        new Date(date).getTime() - new Date(today).getTime(),
+      );
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIndex = index;
+      }
+    });
+    return closestIndex;
+  }
+
+  let activeIndex = $state(getInitialIndex(computeGroupedSteps(steps)));
+
+  const groupedSteps = $derived(() => computeGroupedSteps(steps));
+
+  $effect(() => {
+    if (editingStepId && editStepHour && editStepMinute) {
+      editedStep.time = `${editStepHour}:${editStepMinute}`;
+    }
+  });
+
+  $effect(() => {
+    const groups = groupedSteps();
+    if (groups.length > 0 && groups[activeIndex]) {
+      focusedDate = groups[activeIndex][0];
+    }
   });
 
   function clampIndex(i: number) {

@@ -268,6 +268,8 @@
     font-size: 1rem;
     transition: all 0.2s;
     box-sizing: border-box;
+    background: white;
+    color: #333333;
   }
 
   .form-input:focus,

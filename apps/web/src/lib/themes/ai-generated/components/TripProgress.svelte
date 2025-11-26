@@ -105,54 +105,33 @@
 
 <style>
   .trip-progress {
-    padding: 1.25rem;
-    background: linear-gradient(
-      135deg,
-      rgba(99, 102, 241, 0.08) 0%,
-      rgba(236, 72, 153, 0.08) 100%
-    );
+    padding: 1rem 1.25rem;
+    background: var(--ai-surface);
+    border: 1px solid var(--ai-border);
     border-radius: var(--ai-radius-lg);
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
   }
 
   .trip-countdown {
     text-align: center;
-    padding: 1rem 0;
+    padding: 0.75rem 0;
   }
 
   .countdown-icon {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
-    animation: bounce 1s ease infinite;
-  }
-
-  @keyframes bounce {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-8px);
-    }
+    font-size: 2rem;
+    margin-bottom: 0.25rem;
   }
 
   .countdown-text {
-    font-size: 1.75rem;
-    font-weight: 800;
-    background: linear-gradient(
-      135deg,
-      var(--ai-primary) 0%,
-      var(--ai-secondary) 100%
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ai-accent);
   }
 
   .countdown-subtext {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--ai-text-muted);
-    margin-top: 0.25rem;
+    margin-top: 0.125rem;
   }
 
   .trip-active {
@@ -165,22 +144,18 @@
   .active-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: linear-gradient(
-      135deg,
-      var(--ai-accent) 0%,
-      var(--ai-accent-light) 100%
-    );
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    background: var(--ai-accent);
     color: white;
-    border-radius: 2rem;
+    border-radius: var(--ai-radius-full);
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
   }
 
   .pulse-dot {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     background: white;
     border-radius: 50%;
     animation: pulse 1.5s ease infinite;
@@ -190,43 +165,41 @@
     0%,
     100% {
       opacity: 1;
-      transform: scale(1);
     }
     50% {
-      opacity: 0.5;
-      transform: scale(1.2);
+      opacity: 0.4;
     }
   }
 
   .active-day {
-    font-weight: 700;
-    font-size: 1.125rem;
+    font-weight: 600;
+    font-size: 1rem;
     color: var(--ai-text-primary);
   }
 
   .trip-completed {
     text-align: center;
-    padding: 1rem 0;
+    padding: 0.75rem 0;
   }
 
   .completed-icon {
-    font-size: 2rem;
-    margin-bottom: 0.25rem;
+    font-size: 1.75rem;
+    margin-bottom: 0.125rem;
   }
 
   .completed-text {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--ai-accent);
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--ai-success);
   }
 
   .progress-bar-container {
     position: relative;
-    height: 8px;
+    height: 6px;
     background: var(--ai-border);
-    border-radius: 4px;
+    border-radius: 3px;
     margin-top: 1rem;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .progress-bar {
@@ -234,43 +207,19 @@
     top: 0;
     left: 0;
     height: 100%;
-    background: linear-gradient(
-      90deg,
-      var(--ai-primary) 0%,
-      var(--ai-secondary) 100%
-    );
-    border-radius: 4px;
-    transition: width 0.5s ease;
+    background: var(--ai-accent);
+    border-radius: 3px;
+    transition: width 0.4s ease;
   }
 
   .progress-markers {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    transform: translateY(-50%);
-  }
-
-  .progress-marker {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    background: var(--ai-border);
-    border: 2px solid var(--ai-surface);
-    border-radius: 50%;
-    transform: translateX(-50%);
-    transition: all 0.3s ease;
-  }
-
-  .progress-marker.completed {
-    background: var(--ai-primary);
-    box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+    display: none;
   }
 
   .progress-label {
     text-align: center;
     font-size: 0.75rem;
     color: var(--ai-text-muted);
-    margin-top: 0.75rem;
+    margin-top: 0.5rem;
   }
 </style>

@@ -149,20 +149,19 @@
   .add-step-form {
     background: var(--ai-surface);
     border: 1px solid var(--ai-border);
-    border-radius: var(--ai-radius-xl);
+    border-radius: var(--ai-radius-lg);
     padding: 1.5rem;
-    box-shadow: var(--ai-shadow-lg);
-    animation: formSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: formSlideIn 0.3s ease;
   }
 
   @keyframes formSlideIn {
     from {
       opacity: 0;
-      transform: translateY(-20px) scale(0.98);
+      transform: translateY(-12px);
     }
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateY(0);
     }
   }
 
@@ -170,19 +169,19 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid var(--ai-border-light);
+    border-bottom: 1px solid var(--ai-border);
   }
 
   .form-icon {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
   }
 
   .form-title {
     margin: 0;
-    font-size: 1.125rem;
-    font-weight: 700;
+    font-size: 1rem;
+    font-weight: 600;
     color: var(--ai-text-primary);
   }
 
@@ -209,7 +208,7 @@
     align-items: center;
     gap: 0.25rem;
     font-size: 0.8125rem;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--ai-text-secondary);
   }
 
@@ -222,34 +221,32 @@
     font-weight: 400;
     color: var(--ai-text-muted);
     margin-left: auto;
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(14, 165, 233, 0.08);
     padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
   }
 
   .required {
-    color: var(--ai-secondary);
+    color: var(--ai-accent);
   }
 
   .form-input,
   .form-textarea {
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem;
     font-size: 0.9375rem;
     font-family: inherit;
-    background: var(--ai-bg);
-    border: 1.5px solid var(--ai-border);
+    background: var(--ai-surface);
+    border: 1px solid var(--ai-border);
     border-radius: var(--ai-radius-md);
     color: var(--ai-text-primary);
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease;
   }
 
   .form-input:focus,
   .form-textarea:focus {
     outline: none;
-    border-color: var(--ai-primary);
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
-    background: var(--ai-surface);
+    border-color: var(--ai-accent);
   }
 
   .form-input::placeholder,
@@ -273,32 +270,31 @@
     padding: 0.75rem 0.5rem;
     font-size: 0.9375rem;
     font-family: inherit;
-    background: var(--ai-bg);
-    border: 1.5px solid var(--ai-border);
+    background: var(--ai-surface);
+    border: 1px solid var(--ai-border);
     border-radius: var(--ai-radius-md);
     color: var(--ai-text-primary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease;
   }
 
   .time-select:focus {
     outline: none;
-    border-color: var(--ai-primary);
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+    border-color: var(--ai-accent);
   }
 
   .time-sep {
     color: var(--ai-text-muted);
     font-weight: 600;
-    font-size: 1.125rem;
+    font-size: 1rem;
   }
 
   .form-actions {
     display: flex;
     gap: 0.75rem;
-    margin-top: 1.5rem;
+    margin-top: 1.25rem;
     padding-top: 1rem;
-    border-top: 1px solid var(--ai-border-light);
+    border-top: 1px solid var(--ai-border);
   }
 
   .btn {
@@ -308,7 +304,7 @@
     gap: 0.5rem;
     padding: 0.75rem 1.25rem;
     font-size: 0.9375rem;
-    font-weight: 600;
+    font-weight: 500;
     font-family: inherit;
     border-radius: var(--ai-radius-md);
     border: none;
@@ -318,34 +314,22 @@
 
   .btn-primary {
     flex: 1;
-    background: linear-gradient(
-      135deg,
-      var(--ai-primary) 0%,
-      var(--ai-primary-dark, #4f46e5) 100%
-    );
+    background: var(--ai-accent);
     color: white;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
   }
 
   .btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-  }
-
-  .btn-primary:active {
-    transform: translateY(0);
+    background: var(--ai-accent-dark);
   }
 
   .btn-secondary {
-    background: var(--ai-surface);
+    background: var(--ai-surface-hover);
     color: var(--ai-text-secondary);
-    border: 1.5px solid var(--ai-border);
   }
 
   .btn-secondary:hover {
-    background: var(--ai-surface-hover);
+    background: var(--ai-border);
     color: var(--ai-text-primary);
-    border-color: var(--ai-text-muted);
   }
 
   @media (max-width: 480px) {

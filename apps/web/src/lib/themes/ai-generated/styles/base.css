@@ -4,24 +4,6 @@
   background: var(--ai-bg);
   color: var(--ai-text-primary);
   line-height: 1.6;
-  position: relative;
-  overflow-x: hidden;
-}
-
-.ai-theme::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 400px;
-  background: linear-gradient(135deg,
-      var(--ai-bg-gradient-start) 0%,
-      var(--ai-bg-gradient-mid) 50%,
-      var(--ai-bg-gradient-end) 100%);
-  opacity: 0.5;
-  pointer-events: none;
-  z-index: -1;
 }
 
 .ai-container {

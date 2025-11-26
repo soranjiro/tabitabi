@@ -49,13 +49,22 @@
   .ai-walica-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
     padding: 1rem;
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   .ai-walica-container {
@@ -67,7 +76,19 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: var(--ai-shadow-lg);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    animation: scaleIn 0.2s ease;
+  }
+
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
 
   .ai-walica-header {
@@ -80,8 +101,27 @@
 
   .ai-walica-title {
     font-size: 1.125rem;
-    font-weight: 700;
+    font-weight: 600;
     margin: 0;
+    color: var(--ai-text-primary);
+  }
+
+  .ai-btn-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ai-surface-hover);
+    border: none;
+    border-radius: var(--ai-radius-sm);
+    color: var(--ai-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .ai-btn-icon:hover {
+    background: var(--ai-border);
     color: var(--ai-text-primary);
   }
 
@@ -101,5 +141,26 @@
     border-top: 1px solid var(--ai-border);
     display: flex;
     justify-content: center;
+  }
+
+  .ai-btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    border-radius: var(--ai-radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .ai-btn-secondary {
+    background: var(--ai-surface-hover);
+    color: var(--ai-text-secondary);
+  }
+
+  .ai-btn-secondary:hover {
+    background: var(--ai-border);
+    color: var(--ai-text-primary);
   }
 </style>

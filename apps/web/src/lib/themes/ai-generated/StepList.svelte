@@ -408,9 +408,9 @@
   }
 
   .ai-empty-dots span {
-    width: 8px;
-    height: 8px;
-    background: var(--ai-primary);
+    width: 6px;
+    height: 6px;
+    background: var(--ai-accent);
     border-radius: 50%;
     animation: bounce 1.5s ease infinite;
   }
@@ -425,10 +425,10 @@
   @keyframes float {
     0%,
     100% {
-      transform: translateY(0) rotate(-5deg);
+      transform: translateY(0);
     }
     50% {
-      transform: translateY(-10px) rotate(5deg);
+      transform: translateY(-8px);
     }
   }
 
@@ -439,15 +439,15 @@
       opacity: 0.3;
     }
     50% {
-      transform: translateY(-8px);
+      transform: translateY(-6px);
       opacity: 1;
     }
   }
 
   .ai-empty-title {
     margin: 0 0 0.5rem;
-    font-size: 1.25rem;
-    font-weight: 700;
+    font-size: 1.125rem;
+    font-weight: 600;
     color: var(--ai-text-primary);
   }
 
@@ -465,14 +465,14 @@
   }
 
   .ai-date-section {
-    animation: fadeSlideIn 0.5s ease backwards;
+    animation: fadeSlideIn 0.4s ease backwards;
     animation-delay: var(--group-delay);
   }
 
   @keyframes fadeSlideIn {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(12px);
     }
     to {
       opacity: 1;
@@ -483,10 +483,10 @@
   .ai-date-header {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     margin-bottom: 1rem;
     padding-bottom: 0.75rem;
-    border-bottom: 2px solid var(--ai-border);
+    border-bottom: 1px solid var(--ai-border);
   }
 
   .ai-day-badge-container {
@@ -497,17 +497,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.5rem 1rem;
-    background: linear-gradient(
-      135deg,
-      var(--ai-primary) 0%,
-      var(--ai-secondary) 100%
-    );
+    padding: 0.375rem 0.875rem;
+    background: var(--ai-accent);
     color: white;
-    font-size: 0.875rem;
-    font-weight: 700;
-    border-radius: 2rem;
-    box-shadow: var(--ai-glow-primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 1rem;
   }
 
   .ai-date-info {
@@ -517,8 +512,8 @@
   }
 
   .ai-date-text {
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: 0.9375rem;
+    font-weight: 500;
     color: var(--ai-text-primary);
   }
 
@@ -534,14 +529,14 @@
   }
 
   .ai-step {
-    animation: stepSlideIn 0.4s ease backwards;
+    animation: stepSlideIn 0.3s ease backwards;
     animation-delay: calc(var(--group-delay) + var(--step-delay));
   }
 
   @keyframes stepSlideIn {
     from {
       opacity: 0;
-      transform: translateX(-20px);
+      transform: translateX(-12px);
     }
     to {
       opacity: 1;
@@ -551,7 +546,7 @@
 
   .ai-step-card {
     display: flex;
-    gap: 1rem;
+    gap: 0.875rem;
     position: relative;
   }
 
@@ -560,53 +555,47 @@
     flex-direction: column;
     align-items: center;
     flex-shrink: 0;
-    width: 44px;
+    width: 40px;
   }
 
   .ai-step-time-icon {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     background: var(--ai-surface);
-    border: 2px solid var(--ai-border);
+    border: 1px solid var(--ai-border);
     border-radius: 50%;
     z-index: 1;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
   }
 
   .ai-step-card:hover .ai-step-time-icon {
-    border-color: var(--ai-primary);
-    box-shadow: var(--ai-glow-primary);
-    transform: scale(1.1);
+    border-color: var(--ai-accent);
   }
 
   .ai-step-current .ai-step-time-icon {
     border-color: var(--ai-accent);
-    background: linear-gradient(
-      135deg,
-      var(--ai-accent) 0%,
-      var(--ai-accent-light) 100%
-    );
+    background: var(--ai-accent);
     animation: pulse 2s ease infinite;
   }
 
   @keyframes pulse {
     0%,
     100% {
-      box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.4);
+      box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.3);
     }
     50% {
-      box-shadow: 0 0 0 8px rgba(20, 184, 166, 0);
+      box-shadow: 0 0 0 6px rgba(14, 165, 233, 0);
     }
   }
 
   .ai-step-connector {
     flex: 1;
-    width: 2px;
-    background: linear-gradient(180deg, var(--ai-border) 0%, transparent 100%);
+    width: 1px;
+    background: var(--ai-border);
     margin-top: 4px;
     min-height: 20px;
   }
@@ -618,32 +607,20 @@
     border-radius: var(--ai-radius-lg);
     padding: 1rem;
     position: relative;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease;
   }
 
   .ai-step-card:hover .ai-step-card-content {
-    transform: translateY(-2px);
-    box-shadow: var(--ai-shadow-lg);
-    border-color: var(--ai-primary-light);
+    border-color: var(--ai-accent);
   }
 
   .ai-step-current .ai-step-card-content {
-    background: linear-gradient(
-      135deg,
-      rgba(20, 184, 166, 0.08) 0%,
-      rgba(45, 212, 191, 0.08) 100%
-    );
+    background: rgba(14, 165, 233, 0.04);
     border-color: var(--ai-accent);
   }
 
   .ai-step-secret .ai-step-card-content {
-    background: repeating-linear-gradient(
-      45deg,
-      var(--ai-surface),
-      var(--ai-surface) 10px,
-      rgba(99, 102, 241, 0.05) 10px,
-      rgba(99, 102, 241, 0.05) 20px
-    );
+    background: var(--ai-surface);
     border-style: dashed;
   }
 
@@ -654,19 +631,19 @@
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.25rem 0.625rem;
+    padding: 0.25rem 0.5rem;
     background: var(--ai-accent);
     color: white;
     font-size: 0.625rem;
-    font-weight: 700;
-    border-radius: 1rem;
+    font-weight: 600;
+    border-radius: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
   }
 
   .ai-pulse-dot {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     background: white;
     border-radius: 50%;
     animation: pulseDot 1s ease infinite;
@@ -691,9 +668,9 @@
 
   .ai-step-time-badge {
     font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--ai-primary);
-    background: rgba(99, 102, 241, 0.1);
+    font-weight: 500;
+    color: var(--ai-accent);
+    background: rgba(14, 165, 233, 0.08);
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;
   }
@@ -726,6 +703,7 @@
 
   .ai-location-icon {
     font-size: 0.875rem;
+    color: var(--ai-accent);
   }
 
   .ai-step-notes {
@@ -770,20 +748,19 @@
   }
 
   .ai-btn-action:hover {
-    background: var(--ai-primary);
-    border-color: var(--ai-primary);
+    background: var(--ai-accent);
+    border-color: var(--ai-accent);
     color: white;
-    transform: scale(1.1);
   }
 
   .ai-btn-action-danger:hover {
-    background: var(--ai-error, #ef4444);
-    border-color: var(--ai-error, #ef4444);
+    background: #ef4444;
+    border-color: #ef4444;
   }
 
   .ai-step-editing {
     background: var(--ai-surface);
-    border: 2px solid var(--ai-primary);
+    border: 2px solid var(--ai-accent);
     border-radius: var(--ai-radius-lg);
     padding: 1.25rem;
   }
@@ -818,8 +795,8 @@
   .ai-input:focus,
   .ai-textarea:focus {
     outline: none;
-    border-color: var(--ai-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    border-color: var(--ai-accent);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
   }
 
   .ai-datetime-row {
@@ -864,17 +841,12 @@
   }
 
   .ai-btn-primary {
-    background: linear-gradient(
-      135deg,
-      var(--ai-primary) 0%,
-      var(--ai-primary-dark, var(--ai-primary)) 100%
-    );
+    background: var(--ai-accent);
     color: white;
   }
 
   .ai-btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--ai-shadow-md);
+    background: var(--ai-accent-dark);
   }
 
   .ai-btn-secondary {

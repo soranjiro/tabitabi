@@ -149,7 +149,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.625rem;
     z-index: 1000;
   }
 
@@ -159,31 +159,24 @@
     justify-content: center;
     border: none;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: var(--ai-shadow-lg);
+    transition: all 0.2s ease;
   }
 
   .fab-main {
-    width: 56px;
-    height: 56px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
-    background: linear-gradient(
-      135deg,
-      var(--ai-primary) 0%,
-      var(--ai-secondary) 100%
-    );
-    color: white;
+    background: var(--ai-text-primary);
+    color: var(--ai-bg);
+    box-shadow: var(--ai-shadow-lg);
   }
 
   .fab-main:hover {
-    transform: scale(1.1);
-    box-shadow:
-      var(--ai-shadow-xl),
-      0 0 20px rgba(99, 102, 241, 0.4);
+    transform: scale(1.05);
   }
 
   .fab-main:active {
-    transform: scale(0.95);
+    transform: scale(0.98);
   }
 
   .fab-main.active .fab-icon {
@@ -192,69 +185,68 @@
 
   .fab-icon {
     display: flex;
-    transition: transform 0.3s ease;
+    transition: transform 0.2s ease;
   }
 
   .fab-menu {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    animation: slideUp 0.3s ease;
+    gap: 0.5rem;
+    animation: slideUp 0.2s ease;
   }
 
   @keyframes slideUp {
     from {
       opacity: 0;
-      transform: translateY(20px) scale(0.8);
+      transform: translateY(10px);
     }
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateY(0);
     }
   }
 
   .fab-option {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--ai-surface);
-    color: var(--ai-primary);
-    border: 2px solid var(--ai-primary);
-  }
-
-  .fab-option:hover {
-    background: var(--ai-primary);
-    color: white;
-    transform: scale(1.1);
-  }
-
-  .fab-secondary {
     width: 44px;
     height: 44px;
     border-radius: 50%;
     background: var(--ai-surface);
     color: var(--ai-text-primary);
     border: 1px solid var(--ai-border);
+    box-shadow: var(--ai-shadow-md);
+  }
+
+  .fab-option:hover {
+    background: var(--ai-text-primary);
+    color: var(--ai-bg);
+    border-color: var(--ai-text-primary);
+  }
+
+  .fab-secondary {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--ai-surface);
+    color: var(--ai-text-secondary);
+    border: 1px solid var(--ai-border);
+    box-shadow: var(--ai-shadow-sm);
   }
 
   .fab-secondary:hover {
-    background: var(--ai-primary);
-    color: white;
-    border-color: var(--ai-primary);
+    color: var(--ai-text-primary);
+    border-color: var(--ai-text-primary);
   }
 
   .scroll-top {
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn 0.2s ease;
   }
 
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: scale(0.8);
     }
     to {
       opacity: 1;
-      transform: scale(1);
     }
   }
 </style>

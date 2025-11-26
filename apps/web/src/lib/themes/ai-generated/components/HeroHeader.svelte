@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+
   interface Props {
     title: string;
     startDate?: string;
@@ -49,204 +51,131 @@
     if (titleLower.includes("台湾") || titleLower.includes("台北")) return "🇹🇼";
     if (titleLower.includes("ハワイ") || titleLower.includes("hawaii"))
       return "🌺";
-    if (titleLower.includes("パリ") || titleLower.includes("フランス"))
-      return "🗼";
-    if (titleLower.includes("イタリア") || titleLower.includes("ローマ"))
-      return "🇮🇹";
-    if (
-      titleLower.includes("アメリカ") ||
-      titleLower.includes("usa") ||
-      titleLower.includes("ニューヨーク")
-    )
-      return "🗽";
     if (titleLower.includes("キャンプ") || titleLower.includes("アウトドア"))
       return "⛺";
     if (titleLower.includes("グルメ") || titleLower.includes("食べ歩き"))
       return "🍴";
-
     return "✈️";
   });
 
   const dateDisplay = $derived(() => {
     if (!startDate) return null;
-
     const start = new Date(startDate);
     const end = endDate ? new Date(endDate) : start;
-
-    const formatDate = (d: Date) => {
-      const month = d.getMonth() + 1;
-      const day = d.getDate();
-      return `${month}/${day}`;
-    };
-
-    if (startDate === endDate || !endDate) {
-      return formatDate(start);
-    }
-
+    const formatDate = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
+    if (startDate === endDate || !endDate) return formatDate(start);
     return `${formatDate(start)} - ${formatDate(end)}`;
   });
 </script>
 
-<header class="hero-header">
-  <div class="hero-background">
-    <div class="hero-gradient"></div>
-    <div class="hero-pattern"></div>
-  </div>
+<header class="hero">
+  <button class="hero-back" onclick={() => goto("/")} aria-label="ホームへ戻る">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  </button>
 
   <div class="hero-content">
-    <div class="hero-emoji">{tripEmoji()}</div>
+    <span class="hero-emoji">{tripEmoji()}</span>
     <h1 class="hero-title">{title}</h1>
     {#if dateDisplay()}
-      <div class="hero-date">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-        {dateDisplay()}
-      </div>
+      <span class="hero-date">{dateDisplay()}</span>
     {/if}
-  </div>
-
-  <div class="hero-decoration">
-    <div class="deco-line"></div>
   </div>
 </header>
 
 <style>
-  .hero-header {
+  .hero {
     position: relative;
-    padding: 2.5rem 1.5rem 2rem;
-    margin: -1rem -1rem 1.5rem;
-    overflow: hidden;
+    padding: 1.5rem 1rem 1.25rem;
+    margin-bottom: 1.5rem;
   }
 
-  .hero-background {
+  .hero-back {
     position: absolute;
-    inset: 0;
-    z-index: 0;
+    top: 1rem;
+    left: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--ai-surface);
+    border: 1px solid var(--ai-border);
+    border-radius: 50%;
+    color: var(--ai-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
   }
 
-  .hero-gradient {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      135deg,
-      var(--ai-primary) 0%,
-      var(--ai-secondary) 50%,
-      var(--ai-accent) 100%
-    );
-    opacity: 0.9;
-  }
-
-  .hero-pattern {
-    position: absolute;
-    inset: 0;
-    background-image: radial-gradient(
-        circle at 20% 80%,
-        rgba(255, 255, 255, 0.1) 0%,
-        transparent 50%
-      ),
-      radial-gradient(
-        circle at 80% 20%,
-        rgba(255, 255, 255, 0.15) 0%,
-        transparent 40%
-      ),
-      radial-gradient(
-        circle at 40% 40%,
-        rgba(255, 255, 255, 0.05) 0%,
-        transparent 60%
-      );
+  .hero-back:hover {
+    background: var(--ai-text-primary);
+    color: var(--ai-surface);
+    border-color: var(--ai-text-primary);
+    transform: scale(1.05);
   }
 
   .hero-content {
-    position: relative;
-    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
-    color: white;
+    padding-top: 0.5rem;
   }
 
   .hero-emoji {
-    font-size: 3rem;
-    margin-bottom: 0.75rem;
-    animation: float 3s ease-in-out infinite;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-  }
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-8px);
-    }
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
   }
 
   .hero-title {
     margin: 0;
-    font-size: 1.75rem;
-    font-weight: 800;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ai-text-primary);
     letter-spacing: -0.02em;
     line-height: 1.3;
   }
 
   .hero-date {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-    padding: 0.5rem 1rem;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(4px);
-    border-radius: 2rem;
-    font-size: 0.875rem;
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
-  }
-
-  .hero-decoration {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 24px;
-    z-index: 1;
-  }
-
-  .deco-line {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 24px;
-    background: var(--ai-bg);
-    border-radius: 24px 24px 0 0;
+    color: var(--ai-text-secondary);
+    background: var(--ai-surface);
+    border: 1px solid var(--ai-border);
+    border-radius: 2rem;
   }
 
   @media (min-width: 768px) {
-    .hero-header {
-      padding: 3rem 2rem 2.5rem;
-      margin: -1.5rem -1.5rem 2rem;
+    .hero {
+      padding: 2rem 1.5rem 1.5rem;
+    }
+
+    .hero-back {
+      left: 1rem;
     }
 
     .hero-emoji {
-      font-size: 4rem;
+      font-size: 3rem;
     }
 
     .hero-title {
-      font-size: 2.25rem;
+      font-size: 1.75rem;
     }
   }
 </style>

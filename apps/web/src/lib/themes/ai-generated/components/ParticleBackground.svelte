@@ -13,14 +13,13 @@
       size: number;
       duration: number;
       delay: number;
-      type: "circle" | "star" | "dot";
     }>
   >([]);
 
   $effect(() => {
     if (!enabled) return;
 
-    const count = 15;
+    const count = 10;
     const newParticles = [];
 
     for (let i = 0; i < count; i++) {
@@ -28,13 +27,9 @@
         id: i,
         x: Math.random() * 100,
         y: Math.random() * 100,
-        size: Math.random() * 4 + 2,
-        duration: Math.random() * 15 + 10,
-        delay: Math.random() * 5,
-        type: ["circle", "star", "dot"][Math.floor(Math.random() * 3)] as
-          | "circle"
-          | "star"
-          | "dot",
+        size: Math.random() * 3 + 1,
+        duration: Math.random() * 20 + 15,
+        delay: Math.random() * 8,
       });
     }
 
@@ -46,7 +41,7 @@
   <div class="particle-container" aria-hidden="true">
     {#each particles as particle (particle.id)}
       <div
-        class="particle particle-{particle.type}"
+        class="particle"
         style="
           left: {particle.x}%;
           top: {particle.y}%;
@@ -75,48 +70,24 @@
   .particle {
     position: absolute;
     border-radius: 50%;
-    opacity: 0.3;
-    animation: float linear infinite;
-  }
-
-  .particle-circle {
-    background: linear-gradient(135deg, var(--ai-primary), var(--ai-secondary));
-  }
-
-  .particle-star {
     background: var(--ai-accent);
-    clip-path: polygon(
-      50% 0%,
-      61% 35%,
-      98% 35%,
-      68% 57%,
-      79% 91%,
-      50% 70%,
-      21% 91%,
-      32% 57%,
-      2% 35%,
-      39% 35%
-    );
-    border-radius: 0;
-  }
-
-  .particle-dot {
-    background: var(--ai-secondary);
+    opacity: 0.15;
+    animation: float linear infinite;
   }
 
   @keyframes float {
     0% {
-      transform: translateY(100vh) rotate(0deg);
+      transform: translateY(100vh);
       opacity: 0;
     }
     10% {
-      opacity: 0.3;
+      opacity: 0.15;
     }
     90% {
-      opacity: 0.3;
+      opacity: 0.15;
     }
     100% {
-      transform: translateY(-100px) rotate(720deg);
+      transform: translateY(-50px);
       opacity: 0;
     }
   }
@@ -124,7 +95,7 @@
   @media (prefers-reduced-motion: reduce) {
     .particle {
       animation: none;
-      opacity: 0.15;
+      opacity: 0.08;
     }
   }
 </style>

@@ -272,17 +272,19 @@
         style={`--active:${activeIndex};`}
       >
         {#each groupedSteps() as [date, dateSteps], idx}
-          <section
+          <div
             class="standard-autumn-carousel-card"
-            aria-hidden={idx !== activeIndex}
-            onclick={() => handleCardClick(idx)}
-            role="button"
-            tabindex="0"
+            inert={idx !== activeIndex ? true : undefined}
           >
             <div class="standard-autumn-card">
-              <header class="standard-autumn-card-header">
+              <button
+                type="button"
+                class="standard-autumn-card-header"
+                onclick={() => handleCardClick(idx)}
+                tabindex={idx === activeIndex ? 0 : -1}
+              >
                 {formatDate(date)}
-              </header>
+              </button>
               <div class="standard-autumn-card-body">
                 {#each dateSteps as step}
                   <div class="standard-autumn-timeline-item">
@@ -440,17 +442,7 @@
                           </div>
                         {/if}
                         {#if step.notes}
-                          <!-- svelte-ignore a11y_click_events_have_key_events -->
-                          <!-- svelte-ignore a11y_no_static_element_interactions -->
-                          <div
-                            class="standard-autumn-step-notes"
-                            onclick={(e) => {
-                              // Allow link clicks to propagate
-                              if ((e.target as HTMLElement).tagName === "A") {
-                                e.stopPropagation();
-                              }
-                            }}
-                          >
+                          <div class="standard-autumn-step-notes">
                             {@html renderMarkdown(step.notes)}
                           </div>
                         {/if}
@@ -460,7 +452,7 @@
                 {/each}
               </div>
             </div>
-          </section>
+          </div>
         {/each}
       </div>
     </div>

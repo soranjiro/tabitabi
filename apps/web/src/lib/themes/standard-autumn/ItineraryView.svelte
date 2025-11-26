@@ -7,6 +7,7 @@
   import StepList from "./StepList.svelte";
   import AddStepForm from "./components/AddStepForm.svelte";
   import BottomNav from "./components/BottomNav.svelte";
+  import FloatingActions from "./components/FloatingActions.svelte";
   import MemoDialog from "./components/MemoDialog.svelte";
   import PasswordDialog from "./components/PasswordDialog.svelte";
   import ShareDialog from "./components/ShareDialog.svelte";
@@ -425,5 +426,10 @@
     {hasEditPermission}
     onCopyLink={copyShareLink}
     onClose={() => (showShareDialog = false)}
+  />
+
+  <FloatingActions
+    {hasEditPermission}
+    onAddStep={openAddStepForm}
   />
 </div>

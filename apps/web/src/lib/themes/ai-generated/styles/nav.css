@@ -26,14 +26,14 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--ai-text-muted);
+  color: var(--ai-text-secondary);
   transition: color 0.2s ease;
   border-radius: var(--ai-radius-md);
 }
 
 .ai-nav-item:hover,
 .ai-nav-item.active {
-  color: var(--ai-accent);
+  color: #0369a1;
 }
 
 .ai-nav-icon {
@@ -41,8 +41,9 @@
 }
 
 .ai-nav-label {
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 500;
+  color: var(--ai-text-secondary);
 }
 
 .ai-settings-panel {

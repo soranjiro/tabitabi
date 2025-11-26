@@ -306,7 +306,7 @@
 <div class="ai-theme">
   <ParticleBackground />
 
-  <div class="ai-container">
+  <main class="ai-container">
     {#if showCopyMessage}
       <div class="ai-copy-toast">✓ コピーしました</div>
     {/if}
@@ -361,7 +361,7 @@
       {onUpdateStep}
       {onDeleteStep}
     />
-  </div>
+  </main>
 
   <FloatingActions
     onAdd={hasEditPermission ? openAddStepForm : undefined}

@@ -94,7 +94,7 @@
           onchange={handleSecretOffsetChange}
           class="standard-autumn-settings-select"
         >
-          <option value={0}>即時</option>
+          <option value={0}>予定時刻</option>
           <option value={15}>15分前</option>
           <option value={30}>30分前</option>
           <option value={60}>1時間前</option>

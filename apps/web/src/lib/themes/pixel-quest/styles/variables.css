@@ -1,0 +1,43 @@
+:root {
+  --pq-bg-dark: #2d1b0e;
+  --pq-bg-medium: #4a3728;
+  --pq-bg-light: #6b5344;
+
+  --pq-text-primary: #f4e8d3;
+  --pq-text-secondary: #c4b8a3;
+  --pq-text-muted: #9a8e7a;
+  --pq-text-dark: #2d1b0e;
+
+  --pq-terrain-grass: #7ec850;
+  --pq-terrain-forest: #5b8c3e;
+  --pq-terrain-sand: #d4a853;
+  --pq-terrain-water: #5b9bd5;
+  --pq-terrain-mountain: #8b7355;
+  --pq-terrain-snow: #e8e8e8;
+
+  --pq-ui-gold: #ffd700;
+  --pq-ui-gold-dark: #cc9900;
+  --pq-ui-red: #e85d3b;
+  --pq-ui-red-dark: #c84a2a;
+  --pq-ui-blue: #4a90d9;
+  --pq-ui-blue-dark: #3a7bc8;
+  --pq-ui-green: #5d8a4a;
+  --pq-ui-green-dark: #4a7a3a;
+  --pq-ui-purple: #9b59b6;
+
+  --pq-path-color: #3d2817;
+  --pq-path-dots: #5a4030;
+
+  --pq-border-outer: #1a0f08;
+  --pq-border-inner: #8b7355;
+
+  --pq-pixel-unit: 4px;
+
+  --pq-shadow-pixel:
+    2px 2px 0 #1a0f08,
+    4px 4px 0 #1a0f08;
+
+  --pq-shadow-glow: 0 0 10px rgba(255, 215, 0, 0.4);
+
+  --pq-font-pixel: "Courier New", monospace;
+}

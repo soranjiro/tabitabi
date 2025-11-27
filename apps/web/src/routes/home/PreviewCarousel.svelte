@@ -48,7 +48,7 @@
   <div class="preview-carousel">
     {#each previews as preview, i}
       <div
-        class="preview-card {preview.layout} {i === currentIndex
+        class="preview-card {preview.layout} theme-{preview.themeId} {i === currentIndex
           ? 'active'
           : i === (currentIndex + 1) % previews.length
             ? 'next'
@@ -67,7 +67,51 @@
         </div>
 
         <div class="preview-content">
-          {#if preview.layout === "list"}
+          {#if preview.themeId === "shopping"}
+            {@const grouped = Object.groupBy(preview.steps, (s) => s.location || "")}
+            <div class="shopping-preview">
+              <div class="shopping-title">{preview.title}</div>
+              {#each Object.entries(grouped) as [store, items]}
+                <div class="shopping-store">
+                  <div class="shopping-store-name">{store}</div>
+                  <div class="shopping-items">
+                    {#each items as item, j}
+                      <div class="shopping-item" class:done={j === 0}>
+                        <span class="shopping-checkbox">{j === 0 ? "✓" : ""}</span>
+                        <span class="shopping-label">{item.label}</span>
+                      </div>
+                    {/each}
+                  </div>
+                </div>
+              {/each}
+            </div>
+          {:else if preview.themeId === "pixel-quest"}
+            <div class="pixel-preview">
+              <div class="pixel-quest-box">
+                <div class="pixel-quest-header">QUEST</div>
+                <div class="pixel-quest-title">{preview.title}</div>
+                <div class="pixel-quest-list">
+                  {#each preview.steps as step, j}
+                    <div class="pixel-quest-item" class:done={j === 0}>
+                      <span class="pixel-quest-icon">{step.icon}</span>
+                      <span class="pixel-quest-label">{step.label}</span>
+                      {#if j === 0}
+                        <span class="pixel-quest-check">✓</span>
+                      {/if}
+                    </div>
+                  {/each}
+                </div>
+                <div class="pixel-quest-reward">
+                  <span>REWARD:</span>
+                  <span class="pixel-gold">+50 EXP</span>
+                </div>
+              </div>
+            </div>
+          {:else if preview.themeId === "coming-soon"}
+            <div class="coming-preview">
+              <span class="coming-question">？</span>
+            </div>
+          {:else if preview.layout === "list"}
             <div class="minimal-preview">
               <div class="minimal-title">{preview.title}</div>
               <div class="minimal-divider"></div>
@@ -528,6 +572,203 @@
     font-size: 0.55rem;
     color: var(--primary);
     opacity: 0.8;
+  }
+
+  /* Shopping Theme */
+  .shopping-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .shopping-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.2rem;
+  }
+
+  .shopping-store {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .shopping-store-name {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: rgba(16, 185, 129, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .shopping-items {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .shopping-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .shopping-item:last-child {
+    border-bottom: none;
+  }
+
+  .shopping-item.done {
+    opacity: 0.5;
+  }
+
+  .shopping-item.done .shopping-label {
+    text-decoration: line-through;
+  }
+
+  .shopping-checkbox {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--primary);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.5rem;
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+
+  .shopping-item.done .shopping-checkbox {
+    background: var(--primary);
+    color: white;
+  }
+
+  .shopping-label {
+    font-size: 0.65rem;
+    color: var(--text);
+  }
+
+  /* Pixel Quest Theme */
+  .preview-card.theme-pixel-quest {
+    background: #2d1b0e;
+  }
+
+  .pixel-preview {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pixel-quest-box {
+    background: #1a0f05;
+    border: 3px solid #d4a853;
+    padding: 0.5rem;
+    width: 100%;
+  }
+
+  .pixel-quest-header {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #d4a853;
+    text-align: center;
+    border-bottom: 2px solid #5a3d1f;
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.35rem;
+    letter-spacing: 0.1em;
+  }
+
+  .pixel-quest-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #f4e8d3;
+    text-align: center;
+    margin-bottom: 0.4rem;
+  }
+
+  .pixel-quest-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .pixel-quest-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.35rem;
+    background: #3d2815;
+    border: 1px solid #5a3d1f;
+  }
+
+  .pixel-quest-item.done {
+    opacity: 0.6;
+  }
+
+  .pixel-quest-item.done .pixel-quest-label {
+    text-decoration: line-through;
+  }
+
+  .pixel-quest-icon {
+    font-size: 0.7rem;
+  }
+
+  .pixel-quest-label {
+    font-size: 0.6rem;
+    color: #f4e8d3;
+    flex: 1;
+  }
+
+  .pixel-quest-check {
+    font-size: 0.55rem;
+    color: #5d8a4a;
+    font-weight: 700;
+  }
+
+  .pixel-quest-reward {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.55rem;
+    color: #888;
+    border-top: 1px dashed #5a3d1f;
+    padding-top: 0.3rem;
+  }
+
+  .pixel-gold {
+    color: #ffd700;
+    font-weight: 700;
+  }
+
+  /* Coming Soon Theme */
+  .preview-card.theme-coming-soon {
+    background: #000000;
+  }
+
+  .preview-card.theme-coming-soon .preview-header {
+    background: #000000 !important;
+    border-bottom: 1px solid #333;
+  }
+
+  .preview-card.theme-coming-soon .preview-features {
+    border-top: 1px solid #333;
+  }
+
+  .coming-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+
+  .coming-question {
+    font-size: 4rem;
+    color: #ffffff;
+    font-weight: 700;
   }
 
   /* Dots */

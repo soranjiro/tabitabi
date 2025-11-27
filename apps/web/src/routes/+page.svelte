@@ -256,6 +256,7 @@
   .hero-title {
     font-size: 3rem;
     font-weight: 900;
+    color: white;
     margin-bottom: 0.5rem;
     display: flex;
     align-items: center;

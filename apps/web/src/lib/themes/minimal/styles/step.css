@@ -1,0 +1,65 @@
+.minimal-step {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--minimal-bg-hover);
+}
+
+.minimal-step:last-child {
+  border-bottom: none;
+}
+
+.minimal-step-editing {
+  background: var(--minimal-bg-secondary);
+  padding: 1rem;
+  border-radius: var(--minimal-radius-md);
+  border: 1px solid var(--minimal-border);
+  margin-bottom: 1rem;
+}
+
+.minimal-date-group {
+  margin-bottom: 2rem;
+}
+
+.minimal-date-header {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--minimal-text);
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--minimal-text);
+}
+
+.minimal-date-steps {
+  padding-left: 0;
+}
+
+.minimal-step-time {
+  font-size: 0.875rem;
+  color: var(--minimal-text-muted);
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.minimal-step-title {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0 0 0.5rem 0;
+}
+
+.minimal-step-location {
+  font-size: 0.875rem;
+  color: var(--minimal-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.minimal-step-notes {
+  font-size: 0.875rem;
+  color: var(--minimal-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.minimal-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #999;
+}

@@ -42,6 +42,82 @@ tabitabi/
 
 ## 開発時の注意点
 
+### スタイリング
+
+用途に応じて手法を使い分け、混在を避ける。
+
+#### 1. Tailwind CSS（推奨: 汎用ページ）
+
+**使用場所**: `+error.svelte`, `+layout.svelte`, `itineraries/` など共通ページ
+
+```svelte
+<!-- ✅ OK -->
+<div class="min-h-screen bg-gray-50 p-4">
+  <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+    送信
+  </button>
+</div>
+```
+
+#### 2. 外部CSSファイル（テーマ専用）
+
+**使用場所**: `lib/themes/*/styles/`
+
+- テーマ固有のスタイルは`styles/`配下にCSSファイルとして分割
+- CSS変数を活用（`--ai-primary`, `--autumn-accent`など）
+- コンポーネントからは`import "./styles/index.css"`で一括読み込み
+
+```
+themes/ai-generated/
+├── styles/
+│   ├── index.css      # エントリーポイント（@import で他をまとめる）
+│   ├── variables.css  # CSS変数
+│   ├── base.css
+│   ├── header.css
+│   └── ...
+└── ItineraryView.svelte
+```
+
+#### 3. Scoped `<style>`（ホームページ専用）
+
+**使用場所**: `routes/home/` 配下のコンポーネント
+
+- 他で再利用しない単発コンポーネント向け
+- 外部CSSを増やさずFCP/LCPを改善
+
+```svelte
+<!-- ✅ OK: home/Footer.svelte -->
+<footer class="footer">...</footer>
+
+<style>
+  .footer {
+    background: #1f2937;
+    padding: 1.5rem 1rem;
+  }
+</style>
+```
+
+#### 4. インラインスタイル（動的値のみ）
+
+**使用場所**: JavaScriptで計算される値
+
+```svelte
+<!-- ✅ OK: 動的な値 -->
+<div style="--delay: {index * 0.1}s"></div>
+<div style="left: {x}%; top: {y}%"></div>
+<div style="width: {progress}%"></div>
+
+<!-- ❌ NG: 静的な値 -->
+<div style="margin-top: 1.5rem;"></div>
+<div style="padding: 1rem; background: var(--surface);"></div>
+```
+
+#### パフォーマンス考慮
+
+- クリティカルCSSは`app.html`にインライン化済み（FCP改善）
+- テーマCSSは動的import（`loadTheme()`）と同期してロードされるため、不要なテーマのCSSはバンドルされない
+- Scoped CSSはコンポーネント単位でcode-splitされるため、homeページ以外では読み込まれない
+
 ### テーマは独立させる
 
 - 各テーマは `apps/web/src/lib/themes/` 配下に作成

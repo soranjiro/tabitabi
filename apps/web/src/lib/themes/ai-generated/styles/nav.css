@@ -210,3 +210,25 @@
   outline: none;
   border-color: var(--ai-accent);
 }
+
+.ai-overlay-settings {
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 150;
+}
+
+.ai-secret-timing-section {
+  padding: 0 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.ai-settings-label-spaced {
+  margin-bottom: 0.5rem;
+}
+
+.ai-input-spaced {
+  margin-bottom: 0.5rem;
+}
+
+.ai-btn-close {
+  margin-top: 0.5rem;
+}

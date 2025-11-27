@@ -1,0 +1,16 @@
+:root {
+  --minimal-text: #333;
+  --minimal-text-muted: #888;
+  --minimal-text-secondary: #666;
+  --minimal-bg: #fff;
+  --minimal-bg-secondary: #f9f9f9;
+  --minimal-bg-hover: #f5f5f5;
+  --minimal-border: #eee;
+  --minimal-border-strong: #ddd;
+  --minimal-accent: #333;
+  --minimal-danger: #c33;
+  --minimal-danger-bg: #fee;
+  --minimal-danger-bg-hover: #fcc;
+  --minimal-radius-sm: 4px;
+  --minimal-radius-md: 8px;
+}

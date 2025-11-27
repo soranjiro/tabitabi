@@ -87,8 +87,7 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="ai-overlay"
-    style="background: rgba(0,0,0,0.3); z-index: 150;"
+    class="ai-overlay ai-overlay-settings"
     onclick={() => (showSettings = false)}
   ></div>
 
@@ -134,10 +133,9 @@
         </div>
 
         {#if secretModeEnabled}
-          <div style="padding: 0 0.75rem; margin-bottom: 0.75rem;">
+          <div class="ai-secret-timing-section">
             <label
-              class="ai-settings-label"
-              style="margin-bottom: 0.5rem;"
+              class="ai-settings-label ai-settings-label-spaced"
               for="secret-timing">公開タイミング</label
             >
             <select
@@ -169,13 +167,11 @@
           type="url"
           bind:value={localWalicaUrl}
           placeholder="https://walica.jp/group/..."
-          class="ai-input"
-          style="margin-bottom: 0.5rem;"
+          class="ai-input ai-input-spaced"
         />
         <button
           type="button"
-          class="ai-btn ai-btn-secondary"
-          style="width: 100%;"
+          class="ai-btn ai-btn-secondary ai-btn-full"
           onclick={handleWalicaSave}
         >
           保存
@@ -185,8 +181,7 @@
 
     <button
       type="button"
-      class="ai-btn ai-btn-secondary"
-      style="width: 100%; margin-top: 0.5rem;"
+      class="ai-btn ai-btn-secondary ai-btn-full ai-btn-close"
       onclick={() => (showSettings = false)}
     >
       閉じる

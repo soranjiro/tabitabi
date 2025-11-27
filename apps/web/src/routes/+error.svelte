@@ -26,10 +26,7 @@
       {/if}
     </div>
 
-    <h1
-      class="text-5xl text-indigo-600 mb-2"
-      style="font-family: 'Hiragino Maru Gothic ProN', 'ヒラギノ丸ゴ ProN', '游ゴシック体', YuGothic, 'Yu Gothic Medium', 'メイリオ', Meiryo, sans-serif; font-weight: 1000; letter-spacing: 0.05em;"
-    >
+    <h1 class="text-5xl text-indigo-600 mb-2 font-brand">
       {status}
     </h1>
 

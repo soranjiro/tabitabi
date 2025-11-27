@@ -34,12 +34,11 @@
     {/if}
   </div>
 
-  <div class="ai-dialog-actions" style="margin-top: 1.5rem;">
+  <div class="ai-dialog-actions ai-dialog-actions-spaced">
     <button
       type="button"
-      class="ai-btn ai-btn-secondary"
+      class="ai-btn ai-btn-secondary ai-btn-full"
       onclick={onClose}
-      style="flex: 1;"
     >
       閉じる
     </button>

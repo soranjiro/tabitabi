@@ -1,0 +1,21 @@
+.minimal-nav {
+  margin-bottom: 1rem;
+}
+
+.minimal-home-btn {
+  padding: 0.5rem 1rem;
+  background: none;
+  border: 1px solid var(--minimal-border-strong);
+  border-radius: var(--minimal-radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--minimal-text-secondary);
+}
+
+.minimal-home-btn:hover {
+  background: var(--minimal-bg-hover);
+  border-color: #999;
+  color: var(--minimal-text);
+}

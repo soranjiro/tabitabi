@@ -6,6 +6,18 @@ export default defineConfig({
   server: {
     port: 5173
   },
+  build: {
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('themes/ai-generated')) return 'theme-ai';
+          if (id.includes('themes/standard-autumn')) return 'theme-autumn';
+          if (id.includes('themes/minimal')) return 'theme-minimal';
+        }
+      }
+    }
+  },
   test: {
     include: ['src/**/*.{test,spec}.{js,ts}'],
     environment: 'jsdom',

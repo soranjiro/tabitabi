@@ -93,6 +93,19 @@
   let battleWon = $state(false);
   let walkingFrame = $state(0);
 
+  const GAME_LIMITS = {
+    maxCoins: 99999,
+    maxExp: 999999,
+  };
+
+  function addCoins(amount: number) {
+    collectedCoins = Math.min(collectedCoins + amount, GAME_LIMITS.maxCoins);
+  }
+
+  function addExp(amount: number) {
+    totalExp = Math.min(totalExp + amount, GAME_LIMITS.maxExp);
+  }
+
   const groups = $derived(groupStepsByDate(steps));
   const zones = $derived(calculateZones(groups));
   const positions = $derived(
@@ -388,8 +401,8 @@
     vibrate(15);
 
     const amount = Math.random() > 0.8 ? 3 : 1;
-    collectedCoins += amount;
-    totalExp += amount * 2;
+    addCoins(amount);
+    addExp(amount * 2);
 
     coinPopupX = floatingCoins[index].x;
     coinPopupY = floatingCoins[index].y;
@@ -427,8 +440,8 @@
       treasureReward = "JACKPOT! 50💰 100✨";
     }
 
-    collectedCoins += coins;
-    totalExp += exp + 10;
+    addCoins(coins);
+    addExp(exp + 10);
 
     showTreasureMessage = true;
     setTimeout(() => {
@@ -452,8 +465,8 @@
 
       const coins = Math.floor(Math.random() * 8) + 3;
       const exp = Math.floor(Math.random() * 20) + 10;
-      collectedCoins += coins;
-      totalExp += exp;
+      addCoins(coins);
+      addExp(exp);
 
       coinPopupX = monster.x;
       coinPopupY = monster.y;

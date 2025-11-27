@@ -104,6 +104,13 @@
     collectedCoins: number[];
   }
 
+  const GAME_LIMITS = {
+    maxCoins: 99999,
+    maxExp: 999999,
+    maxArrayLength: 1000,
+    maxIdValue: 10000,
+  };
+
   const defaultGameData: GameData = {
     coins: 0,
     exp: 0,
@@ -112,21 +119,57 @@
     collectedCoins: [],
   };
 
+  function isValidNumber(val: unknown): val is number {
+    return typeof val === "number" && Number.isFinite(val) && val >= 0;
+  }
+
+  function isValidIdArray(val: unknown): val is number[] {
+    if (!Array.isArray(val)) return false;
+    if (val.length > GAME_LIMITS.maxArrayLength) return false;
+    return val.every(
+      (id) =>
+        typeof id === "number" &&
+        Number.isInteger(id) &&
+        id >= 0 &&
+        id < GAME_LIMITS.maxIdValue,
+    );
+  }
+
+  function sanitizeGameData(data: unknown): GameData {
+    if (!data || typeof data !== "object") return { ...defaultGameData };
+
+    const obj = data as Record<string, unknown>;
+
+    return {
+      coins: isValidNumber(obj.coins)
+        ? Math.min(Math.floor(obj.coins), GAME_LIMITS.maxCoins)
+        : 0,
+      exp: isValidNumber(obj.exp)
+        ? Math.min(Math.floor(obj.exp), GAME_LIMITS.maxExp)
+        : 0,
+      defeatedMonsters: isValidIdArray(obj.defeatedMonsters)
+        ? [...new Set(obj.defeatedMonsters)]
+        : [],
+      openedChests: isValidIdArray(obj.openedChests)
+        ? [...new Set(obj.openedChests)]
+        : [],
+      collectedCoins: isValidIdArray(obj.collectedCoins)
+        ? [...new Set(obj.collectedCoins)]
+        : [],
+    };
+  }
+
   function parseGameData(memo: string | null | undefined): GameData {
     if (!memo) return { ...defaultGameData };
+    if (memo.length > 50000) return { ...defaultGameData };
+
     try {
       const parsed = JSON.parse(memo);
       if (parsed.gameData) {
-        return {
-          coins: parsed.gameData.coins ?? 0,
-          exp: parsed.gameData.exp ?? 0,
-          defeatedMonsters: parsed.gameData.defeatedMonsters ?? [],
-          openedChests: parsed.gameData.openedChests ?? [],
-          collectedCoins: parsed.gameData.collectedCoins ?? [],
-        };
+        return sanitizeGameData(parsed.gameData);
       }
     } catch {
-      // not JSON
+      // invalid JSON
     }
     return { ...defaultGameData };
   }
@@ -135,7 +178,8 @@
   let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
   async function handleGameDataChange(newData: GameData) {
-    gameData = newData;
+    const sanitized = sanitizeGameData(newData);
+    gameData = sanitized;
 
     if (saveTimeout) {
       clearTimeout(saveTimeout);
@@ -145,15 +189,15 @@
       if (onUpdateItinerary) {
         let existingMemo: Record<string, unknown> = {};
         try {
-          if (itinerary.memo) {
+          if (itinerary.memo && itinerary.memo.length < 50000) {
             existingMemo = JSON.parse(itinerary.memo);
           }
         } catch {
-          // not JSON
+          // invalid JSON
         }
         const updatedMemo = JSON.stringify({
           ...existingMemo,
-          gameData: newData,
+          gameData: sanitized,
         });
         await onUpdateItinerary({ memo: updatedMemo });
       }

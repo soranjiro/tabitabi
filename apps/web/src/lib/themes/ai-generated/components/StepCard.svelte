@@ -137,7 +137,7 @@
       <span class="step-category-icon">{categoryIcon()}</span>
     </div>
 
-    <h4 class="step-title">{step.title}</h4>
+    <h2 class="step-title">{step.title}</h2>
 
     {#if step.notes}
       <p class="step-note">{step.notes}</p>

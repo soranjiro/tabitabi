@@ -26,14 +26,14 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--ai-text-muted);
+  color: var(--ai-text-secondary);
   transition: color 0.2s ease;
   border-radius: var(--ai-radius-md);
 }
 
 .ai-nav-item:hover,
 .ai-nav-item.active {
-  color: var(--ai-accent);
+  color: #0369a1;
 }
 
 .ai-nav-icon {
@@ -41,8 +41,9 @@
 }
 
 .ai-nav-label {
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 500;
+  color: var(--ai-text-secondary);
 }
 
 .ai-settings-panel {
@@ -208,4 +209,26 @@
 .ai-select:focus {
   outline: none;
   border-color: var(--ai-accent);
+}
+
+.ai-overlay-settings {
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 150;
+}
+
+.ai-secret-timing-section {
+  padding: 0 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.ai-settings-label-spaced {
+  margin-bottom: 0.5rem;
+}
+
+.ai-input-spaced {
+  margin-bottom: 0.5rem;
+}
+
+.ai-btn-close {
+  margin-top: 0.5rem;
 }

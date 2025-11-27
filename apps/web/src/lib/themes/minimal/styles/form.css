@@ -1,0 +1,139 @@
+.minimal-add-step {
+  margin-bottom: 2rem;
+}
+
+.minimal-step-form {
+  background: var(--minimal-bg-secondary);
+  padding: 1rem;
+  border-radius: var(--minimal-radius-md);
+  border: 1px solid var(--minimal-border);
+}
+
+.minimal-input,
+.minimal-textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--minimal-border-strong);
+  border-radius: var(--minimal-radius-sm);
+  margin-bottom: 0.75rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.minimal-textarea {
+  resize: vertical;
+}
+
+.minimal-datetime {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.minimal-time-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.minimal-select {
+  padding: 0.5rem;
+  border: 1px solid var(--minimal-border-strong);
+  border-radius: var(--minimal-radius-sm);
+  font-family: inherit;
+  font-size: 0.875rem;
+  background: var(--minimal-bg);
+  cursor: pointer;
+  flex: 1;
+}
+
+.minimal-time-separator {
+  font-weight: 600;
+  color: var(--minimal-text-secondary);
+}
+
+.minimal-form-actions,
+.minimal-step-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.minimal-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--minimal-radius-sm);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.minimal-btn-primary {
+  background: var(--minimal-text);
+  color: var(--minimal-bg);
+}
+
+.minimal-btn-primary:hover {
+  background: #555;
+}
+
+.minimal-btn-secondary {
+  background: var(--minimal-border);
+  color: var(--minimal-text);
+}
+
+.minimal-btn-secondary:hover {
+  background: var(--minimal-border-strong);
+}
+
+.minimal-btn-add {
+  width: 100%;
+  background: var(--minimal-bg-hover);
+  color: var(--minimal-text);
+  border: 2px dashed var(--minimal-border-strong);
+}
+
+.minimal-btn-add:hover {
+  background: var(--minimal-border);
+  border-color: #ccc;
+}
+
+.minimal-btn-small {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.minimal-btn-danger {
+  background: var(--minimal-danger-bg);
+  color: var(--minimal-danger);
+}
+
+.minimal-btn-danger:hover {
+  background: var(--minimal-danger-bg-hover);
+}
+
+.minimal-btn-edit {
+  background: var(--minimal-bg);
+  color: var(--minimal-text);
+  border: 1px solid var(--minimal-border-strong);
+}
+
+.minimal-btn-edit:hover {
+  background: var(--minimal-bg-hover);
+}
+
+.minimal-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .minimal-datetime {
+    grid-template-columns: 1fr;
+  }
+
+  .minimal-btn {
+    padding: 0.375rem 0.75rem;
+  }
+}

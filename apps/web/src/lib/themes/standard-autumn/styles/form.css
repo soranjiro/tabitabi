@@ -51,12 +51,41 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.standard-autumn-datetime .standard-autumn-input[type="date"] {
+  flex: 1 1 auto;
+  min-width: 120px;
+  max-width: 150px;
 }
 
 .standard-autumn-time-picker {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.standard-autumn-select-time {
+  width: auto;
+  min-width: 45px;
+  padding: 0.8rem 0.4rem;
+}
+
+@media (max-width: 360px) {
+  .standard-autumn-datetime {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .standard-autumn-datetime .standard-autumn-input[type="date"] {
+    max-width: none;
+  }
+
+  .standard-autumn-time-picker {
+    justify-content: center;
+  }
 }
 
 .standard-autumn-time-separator {

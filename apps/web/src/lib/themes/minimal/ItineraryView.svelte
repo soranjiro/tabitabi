@@ -6,7 +6,7 @@
   import { authApi } from "$lib/api/auth";
   import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
-  import "./theme.css";
+  import "./styles/index.css";
 
   interface Props {
     itinerary: Itinerary;

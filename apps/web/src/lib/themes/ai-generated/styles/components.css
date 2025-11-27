@@ -123,7 +123,7 @@
   align-items: center;
   gap: 0.375rem;
   padding: 0.375rem 0.75rem;
-  background: var(--ai-accent);
+  background: #0284c7;
   color: white;
   border-radius: var(--ai-radius-full);
   font-weight: 600;
@@ -186,7 +186,7 @@
 .progress-label {
   text-align: center;
   font-size: 0.75rem;
-  color: var(--ai-text-muted);
+  color: var(--ai-text-secondary);
   margin-top: 0.5rem;
 }
 

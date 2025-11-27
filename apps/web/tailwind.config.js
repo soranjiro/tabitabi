@@ -16,6 +16,18 @@ export default {
           800: '#1e40af',
           900: '#1e3a8a',
         }
+      },
+      fontFamily: {
+        brand: [
+          "'Hiragino Maru Gothic ProN'",
+          "'ヒラギノ丸ゴ ProN'",
+          "'游ゴシック体'",
+          "YuGothic",
+          "'Yu Gothic Medium'",
+          "'メイリオ'",
+          "Meiryo",
+          "sans-serif"
+        ]
       }
     }
   },

@@ -97,23 +97,26 @@
 
   .recent-date {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: #6b7280;
   }
 
   .recent-remove {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     border: none;
     background: none;
-    color: #9ca3af;
+    color: #6b7280;
     cursor: pointer;
     border-radius: 8px;
     transition: all 0.2s;
-    font-size: 1rem;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .recent-remove:hover {
     background: #fef2f2;
-    color: #ef4444;
+    color: #dc2626;
   }
 </style>

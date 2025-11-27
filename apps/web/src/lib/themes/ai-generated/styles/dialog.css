@@ -185,6 +185,25 @@
   text-decoration: underline;
 }
 
+.ai-memo-readonly {
+  padding: 1rem;
+  background: var(--ai-surface-hover);
+  border-radius: var(--ai-radius-md);
+}
+
+.ai-memo-empty {
+  color: var(--ai-text-muted);
+  text-align: center;
+}
+
+.ai-dialog-actions-spaced {
+  margin-top: 1.5rem;
+}
+
+.ai-btn-full {
+  flex: 1;
+}
+
 .ai-walica-overlay {
   position: fixed;
   inset: 0;

@@ -60,9 +60,7 @@
           {#if editedMemo}
             {@html renderMarkdown(editedMemo)}
           {:else}
-            <p style="color: var(--ai-text-muted)">
-              プレビューする内容がありません
-            </p>
+            <p class="ai-memo-empty">プレビューする内容がありません</p>
           {/if}
         </div>
       {/if}
@@ -80,24 +78,18 @@
         </button>
       </div>
     {:else}
-      <div
-        class="ai-memo-content"
-        style="padding: 1rem; background: var(--ai-surface-hover); border-radius: var(--ai-radius-md);"
-      >
+      <div class="ai-memo-content ai-memo-readonly">
         {#if memo}
           {@html renderMarkdown(memo)}
         {:else}
-          <p style="color: var(--ai-text-muted); text-align: center;">
-            メモはありません
-          </p>
+          <p class="ai-memo-empty">メモはありません</p>
         {/if}
       </div>
-      <div class="ai-dialog-actions" style="margin-top: 1.5rem;">
+      <div class="ai-dialog-actions ai-dialog-actions-spaced">
         <button
           type="button"
-          class="ai-btn ai-btn-secondary"
+          class="ai-btn ai-btn-secondary ai-btn-full"
           onclick={onClose}
-          style="flex: 1;"
         >
           閉じる
         </button>

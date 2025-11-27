@@ -330,19 +330,22 @@
       {/if}
       <div class="standard-autumn-controls">
         {#if itinerary.memo}
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="standard-autumn-memo-display"
-            onclick={(e) => {
-              if ((e.target as HTMLElement).closest("a")) return;
-              if (hasEditPermission) {
+          {#if hasEditPermission}
+            <button
+              type="button"
+              class="standard-autumn-memo-display"
+              onclick={(e) => {
+                if ((e.target as HTMLElement).closest("a")) return;
                 showMemoDialog = true;
-              }
-            }}
-          >
-            {@html renderMarkdown(itinerary.memo)}
-          </div>
+              }}
+            >
+              {@html renderMarkdown(itinerary.memo)}
+            </button>
+          {:else}
+            <div class="standard-autumn-memo-display">
+              {@html renderMarkdown(itinerary.memo)}
+            </div>
+          {/if}
         {:else if hasEditPermission}
           <button
             onclick={() => {

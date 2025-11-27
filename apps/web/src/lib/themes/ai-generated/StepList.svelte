@@ -299,9 +299,9 @@
                     {/if}
                   </div>
 
-                  <h3 class="ai-step-title">
+                  <h2 class="ai-step-title">
                     {isStepSecret ? "🎁 シークレット" : step.title}
-                  </h3>
+                  </h2>
 
                   {#if step.location && !isStepSecret}
                     <div class="ai-step-location">

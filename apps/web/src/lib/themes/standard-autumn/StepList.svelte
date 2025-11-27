@@ -40,48 +40,13 @@
   let editStepHour = $state("09");
   let editStepMinute = $state("00");
 
-  let activeIndex = $state(0);
   let trackEl = $state<HTMLDivElement | null>(null);
   let touchStartX = $state<number | null>(null);
   let touchDeltaX = $state(0);
 
-  $effect(() => {
-    if (editingStepId && editStepHour && editStepMinute) {
-      editedStep.time = `${editStepHour}:${editStepMinute}`;
-    }
-  });
-
-  $effect(() => {
-    const groups = groupedSteps();
-    if (groups.length === 0) return;
-
-    const today = new Date().toISOString().split("T")[0];
-    let closestIndex = 0;
-    let minDiff = Infinity;
-
-    groups.forEach(([date], index) => {
-      const diff = Math.abs(
-        new Date(date).getTime() - new Date(today).getTime(),
-      );
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestIndex = index;
-      }
-    });
-
-    activeIndex = closestIndex;
-  });
-
-  $effect(() => {
-    const groups = groupedSteps();
-    if (groups.length > 0 && groups[activeIndex]) {
-      focusedDate = groups[activeIndex][0];
-    }
-  });
-
-  const groupedSteps = $derived(() => {
+  function computeGroupedSteps(stepList: Step[]): [string, Step[]][] {
     const groups = new Map<string, Step[]>();
-    for (const step of steps) {
+    for (const step of stepList) {
       const date = step.date;
       if (!groups.has(date)) groups.set(date, []);
       groups.get(date)!.push(step);
@@ -92,6 +57,40 @@
     return Array.from(groups.entries()).sort((a, b) =>
       a[0].localeCompare(b[0]),
     );
+  }
+
+  function getInitialIndex(groups: [string, Step[]][]): number {
+    if (groups.length === 0) return 0;
+    const today = new Date().toISOString().split("T")[0];
+    let closestIndex = 0;
+    let minDiff = Infinity;
+    groups.forEach(([date], index) => {
+      const diff = Math.abs(
+        new Date(date).getTime() - new Date(today).getTime(),
+      );
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIndex = index;
+      }
+    });
+    return closestIndex;
+  }
+
+  let activeIndex = $state(getInitialIndex(computeGroupedSteps(steps)));
+
+  const groupedSteps = $derived(() => computeGroupedSteps(steps));
+
+  $effect(() => {
+    if (editingStepId && editStepHour && editStepMinute) {
+      editedStep.time = `${editStepHour}:${editStepMinute}`;
+    }
+  });
+
+  $effect(() => {
+    const groups = groupedSteps();
+    if (groups.length > 0 && groups[activeIndex]) {
+      focusedDate = groups[activeIndex][0];
+    }
   });
 
   function clampIndex(i: number) {
@@ -272,17 +271,19 @@
         style={`--active:${activeIndex};`}
       >
         {#each groupedSteps() as [date, dateSteps], idx}
-          <section
+          <div
             class="standard-autumn-carousel-card"
-            aria-hidden={idx !== activeIndex}
-            onclick={() => handleCardClick(idx)}
-            role="button"
-            tabindex="0"
+            inert={idx !== activeIndex ? true : undefined}
           >
             <div class="standard-autumn-card">
-              <header class="standard-autumn-card-header">
+              <button
+                type="button"
+                class="standard-autumn-card-header"
+                onclick={() => handleCardClick(idx)}
+                tabindex={idx === activeIndex ? 0 : -1}
+              >
                 {formatDate(date)}
-              </header>
+              </button>
               <div class="standard-autumn-card-body">
                 {#each dateSteps as step}
                   <div class="standard-autumn-timeline-item">
@@ -440,17 +441,7 @@
                           </div>
                         {/if}
                         {#if step.notes}
-                          <!-- svelte-ignore a11y_click_events_have_key_events -->
-                          <!-- svelte-ignore a11y_no_static_element_interactions -->
-                          <div
-                            class="standard-autumn-step-notes"
-                            onclick={(e) => {
-                              // Allow link clicks to propagate
-                              if ((e.target as HTMLElement).tagName === "A") {
-                                e.stopPropagation();
-                              }
-                            }}
-                          >
+                          <div class="standard-autumn-step-notes">
                             {@html renderMarkdown(step.notes)}
                           </div>
                         {/if}
@@ -460,7 +451,7 @@
                 {/each}
               </div>
             </div>
-          </section>
+          </div>
         {/each}
       </div>
     </div>

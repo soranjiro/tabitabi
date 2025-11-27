@@ -1,0 +1,40 @@
+.shopping-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 100;
+}
+
+.shopping-dialog {
+  background: var(--shop-bg-card);
+  border-radius: var(--shop-radius-md);
+  padding: 1.25rem;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--shop-border);
+}
+
+.shopping-dialog-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.875rem 0;
+  color: var(--shop-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shopping-dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.shopping-dialog-actions .shopping-btn {
+  flex: 1;
+}

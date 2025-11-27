@@ -1,0 +1,131 @@
+.shopping-add-section {
+  padding: 0 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.shopping-add-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(to bottom, #f7dfa5, #f0c14b);
+  border: 1px solid #a88734;
+  border-radius: 3px;
+  color: #111;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+}
+
+.shopping-add-button:hover:not(:disabled) {
+  background: linear-gradient(to bottom, #f5d78e, #eeb933);
+}
+
+.shopping-add-button:active:not(:disabled) {
+  background: linear-gradient(to bottom, #f0c14b, #f7dfa5);
+}
+
+.shopping-add-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shopping-add-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.shopping-item-form {
+  background: var(--shop-bg-card);
+  padding: 1.25rem;
+  border-radius: var(--shop-radius-md);
+  box-shadow: var(--shop-shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  border: 1px solid var(--shop-border);
+}
+
+.shopping-form-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--shop-secondary);
+  margin: 0 0 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shopping-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .shopping-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.shopping-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.shopping-form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.shopping-form-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--shop-text-secondary);
+}
+
+.shopping-datetime {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.shopping-datetime .shopping-input {
+  flex: 1;
+}
+
+.shopping-time-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.shopping-time-separator {
+  font-weight: 600;
+  color: var(--shop-text-muted);
+}
+
+.shopping-form-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  margin-top: 0.375rem;
+  border-top: 1px solid var(--shop-border);
+}
+
+.shopping-form-actions .shopping-btn {
+  flex: 1;
+}
+
+.shopping-quick-add {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.shopping-quick-add .shopping-input {
+  flex: 1;
+}

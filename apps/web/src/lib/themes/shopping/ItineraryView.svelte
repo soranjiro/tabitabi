@@ -283,23 +283,6 @@
       </div>
     </div>
 
-    <div class="shopping-stats">
-      <div class="shopping-stat">
-        <div class="shopping-stat-value">{totalItems}</div>
-        <div class="shopping-stat-label">アイテム</div>
-      </div>
-      <div class="shopping-stat-divider"></div>
-      <div class="shopping-stat">
-        <div class="shopping-stat-value">{storeCount}</div>
-        <div class="shopping-stat-label">店舗</div>
-      </div>
-      <div class="shopping-stat-divider"></div>
-      <div class="shopping-stat">
-        <div class="shopping-stat-value">{progressPercent}%</div>
-        <div class="shopping-stat-label">達成率</div>
-      </div>
-    </div>
-
     <div class="shopping-header-controls">
       {#if !hasEditPermission}
         <button onclick={attemptEditModeActivation} class="shopping-header-btn">

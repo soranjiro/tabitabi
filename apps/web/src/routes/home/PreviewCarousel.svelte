@@ -769,6 +769,7 @@
     font-size: 4rem;
     color: #ffffff;
     font-weight: 700;
+    padding: 2rem;
   }
 
   /* Dots */

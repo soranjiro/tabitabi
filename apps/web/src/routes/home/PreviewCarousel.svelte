@@ -48,7 +48,8 @@
   <div class="preview-carousel">
     {#each previews as preview, i}
       <div
-        class="preview-card {preview.layout} {i === currentIndex
+        class="preview-card {preview.layout} theme-{preview.themeId} {i ===
+        currentIndex
           ? 'active'
           : i === (currentIndex + 1) % previews.length
             ? 'next'
@@ -67,7 +68,114 @@
         </div>
 
         <div class="preview-content">
-          {#if preview.layout === "list"}
+          {#if preview.themeId === "shopping"}
+            {@const grouped = Object.groupBy(
+              preview.steps,
+              (s) => s.location || "",
+            )}
+            <div class="shopping-preview">
+              <div class="shopping-title">{preview.title}</div>
+              {#each Object.entries(grouped) as [store, items]}
+                <div class="shopping-store">
+                  <div class="shopping-store-name">{store}</div>
+                  <div class="shopping-items">
+                    {#each items as item, j}
+                      <div class="shopping-item" class:done={j === 0}>
+                        <span class="shopping-checkbox"
+                          >{j === 0 ? "✓" : ""}</span
+                        >
+                        <span class="shopping-label">{item.label}</span>
+                      </div>
+                    {/each}
+                  </div>
+                </div>
+              {/each}
+            </div>
+          {:else if preview.themeId === "pixel-quest"}
+            <div class="pq-preview">
+              <div class="pq-map">
+                <svg viewBox="0 0 200 100" class="pq-svg">
+                  <defs>
+                    <pattern
+                      id="pq-grass"
+                      width="8"
+                      height="8"
+                      patternUnits="userSpaceOnUse"
+                    >
+                      <rect width="8" height="8" fill="#7ec850" />
+                      <rect x="2" y="5" width="2" height="3" fill="#5b8c3e" />
+                      <rect x="6" y="6" width="1" height="2" fill="#5b8c3e" />
+                    </pattern>
+                  </defs>
+                  <rect width="200" height="100" fill="url(#pq-grass)" />
+                  <rect
+                    x="0"
+                    y="0"
+                    width="100"
+                    height="100"
+                    fill="#7ec850"
+                    opacity="0.3"
+                  />
+                  <rect
+                    x="100"
+                    y="0"
+                    width="100"
+                    height="100"
+                    fill="#d4a853"
+                    opacity="0.3"
+                  />
+                  <text
+                    x="50"
+                    y="12"
+                    text-anchor="middle"
+                    fill="#f4e8d3"
+                    font-size="8"
+                    font-weight="bold">DAY 1</text
+                  >
+                  <text
+                    x="150"
+                    y="12"
+                    text-anchor="middle"
+                    fill="#f4e8d3"
+                    font-size="8"
+                    font-weight="bold">DAY 2</text
+                  >
+                  <path
+                    d="M30 50 Q65 30 100 50 Q135 70 170 50"
+                    stroke="#8b7355"
+                    stroke-width="6"
+                    fill="none"
+                  />
+                  <path
+                    d="M30 50 Q65 30 100 50 Q135 70 170 50"
+                    stroke="#c4a86c"
+                    stroke-width="2"
+                    stroke-dasharray="4 4"
+                    fill="none"
+                  />
+                  <circle cx="30" cy="50" r="6" fill="#e85d3b" />
+                  <circle cx="100" cy="50" r="6" fill="#5d8a4a" />
+                  <circle cx="170" cy="50" r="6" fill="#5d8a4a" />
+                  <rect x="55" y="25" width="8" height="12" fill="#6b4423" />
+                  <rect x="51" y="18" width="16" height="10" fill="#3d8b3d" />
+                  <rect x="130" y="60" width="6" height="4" fill="#ffd700" />
+                  <rect x="75" y="70" width="10" height="8" fill="#8b7355" />
+                </svg>
+                <div class="pq-player">
+                  <div class="pq-player-body"></div>
+                </div>
+              </div>
+              <div class="pq-quest-bar">
+                <span class="pq-quest-icon">⚔️</span>
+                <span class="pq-quest-text">{preview.steps[0]?.label}</span>
+                <span class="pq-exp">+25 EXP</span>
+              </div>
+            </div>
+          {:else if preview.themeId === "coming-soon"}
+            <div class="coming-preview">
+              <span class="coming-question">？</span>
+            </div>
+          {:else if preview.layout === "list"}
             <div class="minimal-preview">
               <div class="minimal-title">{preview.title}</div>
               <div class="minimal-divider"></div>
@@ -76,6 +184,21 @@
                   <div class="minimal-step">
                     <span class="minimal-time">{step.time}</span>
                     <span class="minimal-label">{step.label}</span>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {:else if preview.themeId === "ai-generated"}
+            <div class="ai-preview">
+              <div class="ai-header">
+                <span class="ai-emoji">🏝️</span>
+                <span class="ai-title">{preview.title}</span>
+              </div>
+              <div class="ai-timeline">
+                {#each preview.steps.slice(0, 3) as step}
+                  <div class="ai-step">
+                    <span class="ai-time">{step.time}</span>
+                    <span class="ai-label">{step.label}</span>
                   </div>
                 {/each}
               </div>
@@ -528,6 +651,259 @@
     font-size: 0.55rem;
     color: var(--primary);
     opacity: 0.8;
+  }
+
+  /* AI Generated Theme */
+  .preview-card.theme-ai-generated {
+    background: #fafafa;
+  }
+
+  .preview-card.theme-ai-generated .preview-content {
+    padding: 0;
+  }
+
+  .ai-preview {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ai-header {
+    background: linear-gradient(135deg, #0284c7, #38bdf8);
+    padding: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+
+  .ai-emoji {
+    font-size: 1.2rem;
+  }
+
+  .ai-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: white;
+  }
+
+  .ai-timeline {
+    flex: 1;
+    padding: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .ai-step {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.7rem;
+    background: white;
+    padding: 0.4rem 0.5rem;
+    border-radius: 6px;
+    border-left: 3px solid #0284c7;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .ai-time {
+    color: #0284c7;
+    font-weight: 600;
+    min-width: 36px;
+  }
+
+  .ai-label {
+    color: #18181b;
+  }
+
+  /* Shopping Theme */
+  .shopping-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .shopping-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.2rem;
+  }
+
+  .shopping-store {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .shopping-store-name {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: rgba(16, 185, 129, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .shopping-items {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .shopping-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .shopping-item:last-child {
+    border-bottom: none;
+  }
+
+  .shopping-item.done {
+    opacity: 0.5;
+  }
+
+  .shopping-item.done .shopping-label {
+    text-decoration: line-through;
+  }
+
+  .shopping-checkbox {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--primary);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.5rem;
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+
+  .shopping-item.done .shopping-checkbox {
+    background: var(--primary);
+    color: white;
+  }
+
+  .shopping-label {
+    font-size: 0.65rem;
+    color: var(--text);
+  }
+
+  /* Pixel Quest Theme */
+  .preview-card.theme-pixel-quest {
+    background: #2d1b0e;
+  }
+
+  .preview-card.theme-pixel-quest .preview-content {
+    padding: 0;
+  }
+
+  .pq-preview {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pq-map {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pq-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .pq-player {
+    position: absolute;
+    left: 12%;
+    top: 42%;
+    transform: translate(-50%, -50%);
+    animation: pq-bounce 0.6s ease-in-out infinite;
+  }
+
+  @keyframes pq-bounce {
+    0%,
+    100% {
+      transform: translate(-50%, -50%);
+    }
+    50% {
+      transform: translate(-50%, calc(-50% - 3px));
+    }
+  }
+
+  .pq-player-body {
+    width: 12px;
+    height: 16px;
+    background: linear-gradient(
+      180deg,
+      #8b4513 0% 20%,
+      #f4c898 20% 45%,
+      #4a90d9 45% 75%,
+      #5b3c11 75% 100%
+    );
+    border-radius: 2px 2px 0 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .pq-quest-bar {
+    background: linear-gradient(180deg, #3d2815 0%, #2d1b0e 100%);
+    border-top: 2px solid #d4a853;
+    padding: 0.4rem 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .pq-quest-icon {
+    font-size: 0.8rem;
+  }
+
+  .pq-quest-text {
+    flex: 1;
+    font-size: 0.7rem;
+    color: #f4e8d3;
+    font-weight: 600;
+  }
+
+  .pq-exp {
+    font-size: 0.6rem;
+    color: #ffd700;
+    font-weight: 700;
+  }
+
+  /* Coming Soon Theme */
+  .preview-card.theme-coming-soon {
+    background: #333333;
+  }
+
+  .preview-card.theme-coming-soon .preview-header {
+    background: #333333 !important;
+    border-bottom: 1px solid #333;
+  }
+
+  .preview-card.theme-coming-soon .preview-features {
+    border-top: 1px solid #333;
+  }
+
+  .coming-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+
+  .coming-question {
+    font-size: 4rem;
+    color: #ffffff;
+    font-weight: 700;
+    padding: 2rem;
   }
 
   /* Dots */

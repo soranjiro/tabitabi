@@ -746,11 +746,11 @@
 
   /* Coming Soon Theme */
   .preview-card.theme-coming-soon {
-    background: #000000;
+    background: #333333;
   }
 
   .preview-card.theme-coming-soon .preview-header {
-    background: #000000 !important;
+    background: #333333 !important;
     border-bottom: 1px solid #333;
   }
 

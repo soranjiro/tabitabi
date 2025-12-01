@@ -1,4 +1,5 @@
 export { default as PreviewCarousel } from "./PreviewCarousel.svelte";
+export { default as ThemeShowcase } from "./ThemeShowcase.svelte";
 export { default as FeatureCard } from "./FeatureCard.svelte";
 export { default as CreateForm } from "./CreateForm.svelte";
 export { default as RecentItineraries } from "./RecentItineraries.svelte";

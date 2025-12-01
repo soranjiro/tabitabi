@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { auth } from "$lib/auth";
   import {
-    ThemeShowcase,
+    PreviewCarousel,
     FeatureCard,
     CreateForm,
     RecentItineraries,
@@ -23,6 +23,7 @@
     Array<{ id: string; title: string; visitedAt: number }>
   >([]);
   let showRecent = $state(false);
+  let currentPreview = $state(0);
   let showScrollButton = $state(false);
 
   let flyingAirplanes = $state<number[]>([]);
@@ -56,12 +57,17 @@
       showRecent = true;
     }, 300);
 
+    const interval = setInterval(() => {
+      currentPreview = (currentPreview + 1) % previewItineraries.length;
+    }, 4000);
+
     const handleScroll = () => {
       showScrollButton = window.scrollY > 300;
     };
     window.addEventListener("scroll", handleScroll);
 
     return () => {
+      clearInterval(interval);
       window.removeEventListener("scroll", handleScroll);
     };
   });
@@ -146,7 +152,11 @@
         </div>
       </div>
 
-      <ThemeShowcase previews={previewItineraries} />
+      <PreviewCarousel
+        previews={previewItineraries}
+        currentIndex={currentPreview}
+        onSelect={(i) => (currentPreview = i)}
+      />
     </div>
   </section>
 

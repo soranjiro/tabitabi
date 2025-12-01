@@ -48,7 +48,8 @@
   <div class="preview-carousel">
     {#each previews as preview, i}
       <div
-        class="preview-card {preview.layout} theme-{preview.themeId} {i === currentIndex
+        class="preview-card {preview.layout} theme-{preview.themeId} {i ===
+        currentIndex
           ? 'active'
           : i === (currentIndex + 1) % previews.length
             ? 'next'
@@ -68,7 +69,10 @@
 
         <div class="preview-content">
           {#if preview.themeId === "shopping"}
-            {@const grouped = Object.groupBy(preview.steps, (s) => s.location || "")}
+            {@const grouped = Object.groupBy(
+              preview.steps,
+              (s) => s.location || "",
+            )}
             <div class="shopping-preview">
               <div class="shopping-title">{preview.title}</div>
               {#each Object.entries(grouped) as [store, items]}
@@ -77,7 +81,9 @@
                   <div class="shopping-items">
                     {#each items as item, j}
                       <div class="shopping-item" class:done={j === 0}>
-                        <span class="shopping-checkbox">{j === 0 ? "✓" : ""}</span>
+                        <span class="shopping-checkbox"
+                          >{j === 0 ? "✓" : ""}</span
+                        >
                         <span class="shopping-label">{item.label}</span>
                       </div>
                     {/each}
@@ -86,25 +92,83 @@
               {/each}
             </div>
           {:else if preview.themeId === "pixel-quest"}
-            <div class="pixel-preview">
-              <div class="pixel-quest-box">
-                <div class="pixel-quest-header">QUEST</div>
-                <div class="pixel-quest-title">{preview.title}</div>
-                <div class="pixel-quest-list">
-                  {#each preview.steps as step, j}
-                    <div class="pixel-quest-item" class:done={j === 0}>
-                      <span class="pixel-quest-icon">{step.icon}</span>
-                      <span class="pixel-quest-label">{step.label}</span>
-                      {#if j === 0}
-                        <span class="pixel-quest-check">✓</span>
-                      {/if}
-                    </div>
-                  {/each}
+            <div class="pq-preview">
+              <div class="pq-map">
+                <svg viewBox="0 0 200 100" class="pq-svg">
+                  <defs>
+                    <pattern
+                      id="pq-grass"
+                      width="8"
+                      height="8"
+                      patternUnits="userSpaceOnUse"
+                    >
+                      <rect width="8" height="8" fill="#7ec850" />
+                      <rect x="2" y="5" width="2" height="3" fill="#5b8c3e" />
+                      <rect x="6" y="6" width="1" height="2" fill="#5b8c3e" />
+                    </pattern>
+                  </defs>
+                  <rect width="200" height="100" fill="url(#pq-grass)" />
+                  <rect
+                    x="0"
+                    y="0"
+                    width="100"
+                    height="100"
+                    fill="#7ec850"
+                    opacity="0.3"
+                  />
+                  <rect
+                    x="100"
+                    y="0"
+                    width="100"
+                    height="100"
+                    fill="#d4a853"
+                    opacity="0.3"
+                  />
+                  <text
+                    x="50"
+                    y="12"
+                    text-anchor="middle"
+                    fill="#f4e8d3"
+                    font-size="8"
+                    font-weight="bold">DAY 1</text
+                  >
+                  <text
+                    x="150"
+                    y="12"
+                    text-anchor="middle"
+                    fill="#f4e8d3"
+                    font-size="8"
+                    font-weight="bold">DAY 2</text
+                  >
+                  <path
+                    d="M30 50 Q65 30 100 50 Q135 70 170 50"
+                    stroke="#8b7355"
+                    stroke-width="6"
+                    fill="none"
+                  />
+                  <path
+                    d="M30 50 Q65 30 100 50 Q135 70 170 50"
+                    stroke="#c4a86c"
+                    stroke-width="2"
+                    stroke-dasharray="4 4"
+                    fill="none"
+                  />
+                  <circle cx="30" cy="50" r="6" fill="#e85d3b" />
+                  <circle cx="100" cy="50" r="6" fill="#5d8a4a" />
+                  <circle cx="170" cy="50" r="6" fill="#5d8a4a" />
+                  <rect x="55" y="25" width="8" height="12" fill="#6b4423" />
+                  <rect x="51" y="18" width="16" height="10" fill="#3d8b3d" />
+                  <rect x="130" y="60" width="6" height="4" fill="#ffd700" />
+                  <rect x="75" y="70" width="10" height="8" fill="#8b7355" />
+                </svg>
+                <div class="pq-player">
+                  <div class="pq-player-body"></div>
                 </div>
-                <div class="pixel-quest-reward">
-                  <span>REWARD:</span>
-                  <span class="pixel-gold">+50 EXP</span>
-                </div>
+              </div>
+              <div class="pq-quest-bar">
+                <span class="pq-quest-icon">⚔️</span>
+                <span class="pq-quest-text">{preview.steps[0]?.label}</span>
+                <span class="pq-exp">+25 EXP</span>
               </div>
             </div>
           {:else if preview.themeId === "coming-soon"}
@@ -120,6 +184,21 @@
                   <div class="minimal-step">
                     <span class="minimal-time">{step.time}</span>
                     <span class="minimal-label">{step.label}</span>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {:else if preview.themeId === "ai-generated"}
+            <div class="ai-preview">
+              <div class="ai-header">
+                <span class="ai-emoji">🏝️</span>
+                <span class="ai-title">{preview.title}</span>
+              </div>
+              <div class="ai-timeline">
+                {#each preview.steps.slice(0, 3) as step}
+                  <div class="ai-step">
+                    <span class="ai-time">{step.time}</span>
+                    <span class="ai-label">{step.label}</span>
                   </div>
                 {/each}
               </div>
@@ -574,6 +653,69 @@
     opacity: 0.8;
   }
 
+  /* AI Generated Theme */
+  .preview-card.theme-ai-generated {
+    background: #fafafa;
+  }
+
+  .preview-card.theme-ai-generated .preview-content {
+    padding: 0;
+  }
+
+  .ai-preview {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ai-header {
+    background: linear-gradient(135deg, #0284c7, #38bdf8);
+    padding: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+
+  .ai-emoji {
+    font-size: 1.2rem;
+  }
+
+  .ai-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: white;
+  }
+
+  .ai-timeline {
+    flex: 1;
+    padding: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .ai-step {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.7rem;
+    background: white;
+    padding: 0.4rem 0.5rem;
+    border-radius: 6px;
+    border-left: 3px solid #0284c7;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .ai-time {
+    color: #0284c7;
+    font-weight: 600;
+    min-width: 36px;
+  }
+
+  .ai-label {
+    color: #18181b;
+  }
+
   /* Shopping Theme */
   .shopping-preview {
     display: flex;
@@ -657,89 +799,81 @@
     background: #2d1b0e;
   }
 
-  .pixel-preview {
+  .preview-card.theme-pixel-quest .preview-content {
+    padding: 0;
+  }
+
+  .pq-preview {
     height: 100%;
     display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .pixel-quest-box {
-    background: #1a0f05;
-    border: 3px solid #d4a853;
-    padding: 0.5rem;
-    width: 100%;
-  }
-
-  .pixel-quest-header {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #d4a853;
-    text-align: center;
-    border-bottom: 2px solid #5a3d1f;
-    padding-bottom: 0.25rem;
-    margin-bottom: 0.35rem;
-    letter-spacing: 0.1em;
-  }
-
-  .pixel-quest-title {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #f4e8d3;
-    text-align: center;
-    margin-bottom: 0.4rem;
-  }
-
-  .pixel-quest-list {
-    display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    margin-bottom: 0.4rem;
   }
 
-  .pixel-quest-item {
+  .pq-map {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pq-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .pq-player {
+    position: absolute;
+    left: 12%;
+    top: 42%;
+    transform: translate(-50%, -50%);
+    animation: pq-bounce 0.6s ease-in-out infinite;
+  }
+
+  @keyframes pq-bounce {
+    0%,
+    100% {
+      transform: translate(-50%, -50%);
+    }
+    50% {
+      transform: translate(-50%, calc(-50% - 3px));
+    }
+  }
+
+  .pq-player-body {
+    width: 12px;
+    height: 16px;
+    background: linear-gradient(
+      180deg,
+      #8b4513 0% 20%,
+      #f4c898 20% 45%,
+      #4a90d9 45% 75%,
+      #5b3c11 75% 100%
+    );
+    border-radius: 2px 2px 0 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .pq-quest-bar {
+    background: linear-gradient(180deg, #3d2815 0%, #2d1b0e 100%);
+    border-top: 2px solid #d4a853;
+    padding: 0.4rem 0.6rem;
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.25rem 0.35rem;
-    background: #3d2815;
-    border: 1px solid #5a3d1f;
   }
 
-  .pixel-quest-item.done {
-    opacity: 0.6;
+  .pq-quest-icon {
+    font-size: 0.8rem;
   }
 
-  .pixel-quest-item.done .pixel-quest-label {
-    text-decoration: line-through;
-  }
-
-  .pixel-quest-icon {
-    font-size: 0.7rem;
-  }
-
-  .pixel-quest-label {
-    font-size: 0.6rem;
-    color: #f4e8d3;
+  .pq-quest-text {
     flex: 1;
+    font-size: 0.7rem;
+    color: #f4e8d3;
+    font-weight: 600;
   }
 
-  .pixel-quest-check {
-    font-size: 0.55rem;
-    color: #5d8a4a;
-    font-weight: 700;
-  }
-
-  .pixel-quest-reward {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.55rem;
-    color: #888;
-    border-top: 1px dashed #5a3d1f;
-    padding-top: 0.3rem;
-  }
-
-  .pixel-gold {
+  .pq-exp {
+    font-size: 0.6rem;
     color: #ffd700;
     font-weight: 700;
   }

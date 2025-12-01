@@ -7,12 +7,12 @@ export const aiGeneratedPreview: PreviewItinerary = {
   description: "開発中",
   layout: "card",
   colors: {
-    primary: "#c580d8ff",
-    secondary: "#a855f7",
-    background: "linear-gradient(135deg, #fdf2f8 0%, #faf5ff 50%, #f5f3ff 100%)",
-    text: "#6c27a5ff",
-    accent: "#f472b6",
-    border: "#e9d5ff",
+    primary: "#0284c7",
+    secondary: "#38bdf8",
+    background: "#fafafa",
+    text: "#18181b",
+    accent: "#0ea5e9",
+    border: "#e5e7eb",
   },
   steps: [
     { time: "10:00", label: "那覇空港", icon: "✈️" },

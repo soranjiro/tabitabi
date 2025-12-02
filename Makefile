@@ -1,7 +1,10 @@
-.PHONY: build deploy deploy-api deploy-web dev migrate-local migrate-remote test test-api test-web
+.PHONY: build build-docs deploy deploy-api deploy-web dev migrate-local migrate-remote test test-api test-web
 
-build:
+build: build-docs
 	pnpm run build
+
+build-docs:
+	cd apps/web && pnpm build:docs
 
 deploy: deploy-api deploy-web
 

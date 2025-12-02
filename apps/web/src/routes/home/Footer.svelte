@@ -7,7 +7,7 @@
   <div class="footer-content">
     <div class="footer-links">
       <a
-        href="https://github.com/soranjiro/tabitabi/tree/main/docs/features/README.md"
+        href="/docs/index.html"
         target="_blank"
         rel="noopener noreferrer"
         class="footer-link"

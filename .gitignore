@@ -153,5 +153,8 @@ dist/
 # SvelteKit build cache
 **/.svelte-kit/
 
+# Generated docs (built from /docs/*.md)
+apps/web/static/docs/
+
 # Playwright MCP
 .playwright-mcp

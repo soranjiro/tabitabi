@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "pnpm build:docs && vite build",
+    "build": "pnpm build:docs && vite build && pnpm post-build",
     "build:docs": "tsx scripts/build-docs.ts",
+    "post-build": "tsx scripts/post-build.ts",
     "preview": "vite preview",
     "deploy": "pnpm build && wrangler pages deploy .svelte-kit/cloudflare",
     "test": "vitest",

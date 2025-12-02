@@ -214,7 +214,7 @@ function buildNavTree(): NavItem[] {
 }
 
 function toUrlPath(pathWithHtml: string): string {
-  return '/docs/' + pathWithHtml.replace(/\.html$/, '');
+  return '/docs/' + pathWithHtml;
 }
 
 function generateNavHtml(items: NavItem[], rootPath: string, currentPath: string, level: number = 0): string {
@@ -388,7 +388,7 @@ const template = (title: string, content: string, nav: string, rootPath: string,
 <body>
   <nav class="sidebar">
     <div class="nav-header">
-      <a href="/docs/index" class="nav-title">📘 たびたび Docs</a>
+      <a href="/docs/index.html" class="nav-title">📘 たびたび Docs</a>
       <div style="position: relative;">
         <input type="text" id="search-input" class="search-box" placeholder="検索...">
         <div id="search-results"></div>
@@ -437,7 +437,7 @@ const template = (title: string, content: string, nav: string, rootPath: string,
 
       if (results.length > 0) {
         resultsContainer.innerHTML = results.map(item => \`
-          <a href="/docs/\${item.id}" class="search-result-item">
+          <a href="/docs/\${item.id}.html" class="search-result-item">
             <div class="search-result-title">\${item.title}</div>
             <div class="search-result-preview">\${item.content.substring(0, 50)}...</div>
           </a>
@@ -471,34 +471,6 @@ const template = (title: string, content: string, nav: string, rootPath: string,
 const navTree = buildNavTree();
 const flatNav = flattenNavItems(navTree);
 
-function generateRedirects(): string {
-  const redirects: string[] = [];
-  const directories = new Set<string>();
-
-  for (const file of allFiles) {
-    const relativePath = path.relative(DOCS_SRC, file);
-    const htmlPath = relativePath.replace('.md', '.html');
-    const urlPath = relativePath.replace('.md', '');
-    redirects.push(`/docs/${urlPath} /docs/${htmlPath} 200`);
-
-    const dir = path.dirname(relativePath);
-    if (dir !== '.') {
-      directories.add(dir);
-      const parentDir = path.dirname(dir);
-      if (parentDir !== '.') {
-        directories.add(parentDir);
-      }
-    }
-  }
-
-  redirects.push(`/docs /docs/index.html 200`);
-  for (const dir of directories) {
-    redirects.push(`/docs/${dir} /docs/${dir}/index.html 200`);
-  }
-
-  return redirects.join('\n');
-}
-
 (async () => {
   for (const file of allFiles) {
     let content = fs.readFileSync(file, 'utf-8');
@@ -514,7 +486,7 @@ function generateRedirects(): string {
     const { prev, next } = getPrevNext(navTree, currentPath);
     const pageNavHtml = generatePrevNextHtml(prev, next, rootPath);
     const htmlContent = await marked(content);
-    const processedContent = htmlContent.replace(/href="([^"]+)\.md"/g, 'href="$1"');
+    const processedContent = htmlContent.replace(/href="([^"]+)\.md"/g, 'href="$1.html"');
 
     const finalHtml = template(title, processedContent, navHtml, rootPath, pageNavHtml);
 
@@ -527,11 +499,6 @@ function generateRedirects(): string {
     fs.writeFileSync(destPath, finalHtml);
     console.log(`Generated ${relativePath.replace('.md', '.html')}`);
   }
-
-  const redirectsContent = generateRedirects();
-  const staticDir = path.join(PROJECT_ROOT, 'apps/web/static');
-  fs.writeFileSync(path.join(staticDir, '_redirects'), redirectsContent);
-  console.log('Generated _redirects');
 
   console.log('Documentation build complete!');
 })();

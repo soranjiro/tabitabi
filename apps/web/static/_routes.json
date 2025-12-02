@@ -1,5 +1,0 @@
-{
-  "version": 1,
-  "include": ["/*"],
-  "exclude": ["/docs/*", "/docs/**/*", "/icons/*", "/favicon.ico", "/manifest.webmanifest", "/robots.txt"]
-}

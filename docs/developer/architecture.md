@@ -116,7 +116,8 @@ tabitabi/
 | id | TEXT PRIMARY KEY | UUID |
 | title | TEXT | タイトル |
 | theme_id | TEXT | テーマID |
-| password_hash | TEXT | 編集パスワード（ハッシュ化） |
+| memo | TEXT | メモ |
+| password | TEXT | 編集パスワード |
 | created_at | TEXT | 作成日時 |
 | updated_at | TEXT | 更新日時 |
 
@@ -196,8 +197,9 @@ RESTful API:
 ## セキュリティ
 
 ### パスワード保護
-- bcryptでハッシュ化
-- ソルト付き
+- パスワードは平文で保存（将来ハッシュ化予定）
+- JWTトークンで認証状態を管理
+- トークンには有効期限あり（30日）
 
 ### XSS対策
 - Svelteの自動エスケープ

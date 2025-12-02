@@ -17,7 +17,7 @@ URLを使ってしおりにアクセスする機能です。
 ### URLの形式
 
 ```
-https://tabitabi.example.com/itineraries/[しおりID]
+https://tabitabi.pages.dev/itineraries/[しおりID]
 ```
 
 ## 活用シーン

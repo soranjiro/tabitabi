@@ -8,7 +8,6 @@
     <div class="footer-links">
       <a
         href="/docs/index.html"
-        target="_blank"
         rel="noopener noreferrer"
         class="footer-link"
       >

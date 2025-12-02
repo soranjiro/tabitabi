@@ -60,6 +60,7 @@ interface NavItem {
   name: string;
   path: string;
   title: string;
+  hasIndex?: boolean;
   children?: NavItem[];
 }
 
@@ -159,12 +160,8 @@ function buildNavTree(): NavItem[] {
         .map((d: Dirent) => d.name);
 
       subSubDirs.forEach((subSubDir: string) => {
-        const subSubItem: NavItem = {
-          name: subSubDir,
-          path: `${dir}/${subDir}/${subSubDir}/index.html`,
-          title: SECTION_LABELS[subSubDir] || subSubDir,
-          children: [],
-        };
+        const subSubDirPath = path.join(subDirPath, subSubDir);
+        const hasIndex = fs.existsSync(path.join(subSubDirPath, 'index.md'));
 
         const filesInSubSubDir = allFiles.filter(f => {
           const rel = path.relative(DOCS_SRC, f);
@@ -172,15 +169,28 @@ function buildNavTree(): NavItem[] {
           return parts[0] === dir && parts[1] === subDir && parts[2] === subSubDir;
         });
 
+        const childFiles: NavItem[] = [];
         filesInSubSubDir.forEach(file => {
           const name = path.basename(file, '.md');
           if (name === 'index') return;
-          subSubItem.children!.push({
+          childFiles.push({
             name,
             path: `${dir}/${subDir}/${subSubDir}/${name}.html`,
             title: extractTitleFromMarkdown(file),
           });
         });
+
+        const subSubItem: NavItem = {
+          name: subSubDir,
+          path: hasIndex
+            ? `${dir}/${subDir}/${subSubDir}/index.html`
+            : childFiles.length > 0
+              ? childFiles[0].path
+              : `${dir}/${subDir}/${subSubDir}/index.html`,
+          title: SECTION_LABELS[subSubDir] || subSubDir,
+          hasIndex,
+          children: childFiles,
+        };
 
         if (subSubItem.children!.length > 0) {
           subItem.children!.push(subSubItem);
@@ -216,6 +226,7 @@ function generateNavHtml(items: NavItem[], rootPath: string, currentPath: string
 
     if (hasChildren) {
       const childrenHtml = generateNavHtml(item.children!, rootPath, currentPath, level + 1);
+      const showOverview = item.hasIndex !== false;
       return `
         <li class="nav-section${isOpen ? ' open' : ''}">
           <button class="nav-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -223,7 +234,7 @@ function generateNavHtml(items: NavItem[], rootPath: string, currentPath: string
             <span>${item.title}</span>
           </button>
           <ul class="nav-children">
-            <li><a href="${itemPath}" class="${isActive ? 'active' : ''}">概要</a></li>
+            ${showOverview ? `<li><a href="${itemPath}" class="${isActive ? 'active' : ''}">概要</a></li>` : ''}
             ${childrenHtml}
           </ul>
         </li>

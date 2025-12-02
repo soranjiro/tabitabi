@@ -388,7 +388,7 @@ const template = (title: string, content: string, nav: string, rootPath: string,
 <body>
   <nav class="sidebar">
     <div class="nav-header">
-      <a href="/docs/" class="nav-title">📘 たびたび Docs</a>
+      <a href="/docs/index" class="nav-title">📘 たびたび Docs</a>
       <div style="position: relative;">
         <input type="text" id="search-input" class="search-box" placeholder="検索...">
         <div id="search-results"></div>

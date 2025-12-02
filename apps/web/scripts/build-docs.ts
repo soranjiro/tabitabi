@@ -214,10 +214,7 @@ function buildNavTree(): NavItem[] {
 }
 
 function toUrlPath(pathWithHtml: string): string {
-  if (pathWithHtml.endsWith('/index.html')) {
-    return '/docs/' + pathWithHtml.replace(/\/index\.html$/, '/');
-  }
-  return '/docs/' + pathWithHtml.replace(/\.html$/, '');
+  return '/docs/' + pathWithHtml;
 }
 
 function generateNavHtml(items: NavItem[], rootPath: string, currentPath: string, level: number = 0): string {
@@ -391,7 +388,7 @@ const template = (title: string, content: string, nav: string, rootPath: string,
 <body>
   <nav class="sidebar">
     <div class="nav-header">
-      <a href="/docs/" class="nav-title">📘 たびたび Docs</a>
+      <a href="/docs/index.html" class="nav-title">📘 たびたび Docs</a>
       <div style="position: relative;">
         <input type="text" id="search-input" class="search-box" placeholder="検索...">
         <div id="search-results"></div>
@@ -440,7 +437,7 @@ const template = (title: string, content: string, nav: string, rootPath: string,
 
       if (results.length > 0) {
         resultsContainer.innerHTML = results.map(item => \`
-          <a href="/docs/\${item.id}" class="search-result-item">
+          <a href="/docs/\${item.id}.html" class="search-result-item">
             <div class="search-result-title">\${item.title}</div>
             <div class="search-result-preview">\${item.content.substring(0, 50)}...</div>
           </a>
@@ -489,7 +486,7 @@ const flatNav = flattenNavItems(navTree);
     const { prev, next } = getPrevNext(navTree, currentPath);
     const pageNavHtml = generatePrevNextHtml(prev, next, rootPath);
     const htmlContent = await marked(content);
-    const processedContent = htmlContent.replace(/href="([^"]+)\.md"/g, 'href="$1"');
+    const processedContent = htmlContent.replace(/href="([^"]+)\.md"/g, 'href="$1.html"');
 
     const finalHtml = template(title, processedContent, navHtml, rootPath, pageNavHtml);
 

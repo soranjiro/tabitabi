@@ -156,8 +156,5 @@ dist/
 # Generated docs (built from /docs/*.md)
 apps/web/static/docs/
 
-# Generated _redirects (built by build-docs.ts)
-apps/web/static/_redirects
-
 # Playwright MCP
 .playwright-mcp

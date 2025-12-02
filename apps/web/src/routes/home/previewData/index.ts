@@ -10,8 +10,8 @@ import type { PreviewItinerary } from "./types";
 export const previewItineraries: PreviewItinerary[] = [
   minimalPreview,
   standardAutumnPreview,
-  aiGeneratedPreview,
   shoppingPreview,
   pixelQuestPreview,
+  aiGeneratedPreview,
   comingSoonPreview,
 ];

@@ -213,10 +213,14 @@ function buildNavTree(): NavItem[] {
   return tree;
 }
 
+function toHtmllessPath(pathWithHtml: string): string {
+  return pathWithHtml.replace(/\.html$/, '');
+}
+
 function generateNavHtml(items: NavItem[], rootPath: string, currentPath: string, level: number = 0): string {
   return items.map(item => {
     const hasChildren = item.children && item.children.length > 0;
-    const itemPath = rootPath + item.path;
+    const itemPath = rootPath + toHtmllessPath(item.path);
     const isActive = currentPath === item.path;
     const isParentOfActive = hasChildren && item.children!.some(child =>
       currentPath === child.path ||
@@ -270,12 +274,12 @@ function generatePrevNextHtml(prev: NavItem | null, next: NavItem | null, rootPa
 
   let html = '<nav class="page-nav">';
   if (prev) {
-    html += `<a href="${rootPath}${prev.path}" class="page-nav-link prev"><span class="page-nav-label">← 前へ</span><span class="page-nav-title">${prev.title}</span></a>`;
+    html += `<a href="${rootPath}${toHtmllessPath(prev.path)}" class="page-nav-link prev"><span class="page-nav-label">← 前へ</span><span class="page-nav-title">${prev.title}</span></a>`;
   } else {
     html += '<div></div>';
   }
   if (next) {
-    html += `<a href="${rootPath}${next.path}" class="page-nav-link next"><span class="page-nav-label">次へ →</span><span class="page-nav-title">${next.title}</span></a>`;
+    html += `<a href="${rootPath}${toHtmllessPath(next.path)}" class="page-nav-link next"><span class="page-nav-label">次へ →</span><span class="page-nav-title">${next.title}</span></a>`;
   }
   html += '</nav>';
   return html;
@@ -384,7 +388,7 @@ const template = (title: string, content: string, nav: string, rootPath: string,
 <body>
   <nav class="sidebar">
     <div class="nav-header">
-      <a href="${rootPath}index.html" class="nav-title">📘 たびたび Docs</a>
+      <a href="${rootPath}index" class="nav-title">📘 たびたび Docs</a>
       <div style="position: relative;">
         <input type="text" id="search-input" class="search-box" placeholder="検索...">
         <div id="search-results"></div>
@@ -433,7 +437,7 @@ const template = (title: string, content: string, nav: string, rootPath: string,
 
       if (results.length > 0) {
         resultsContainer.innerHTML = results.map(item => \`
-          <a href="${rootPath}\${item.id}.html" class="search-result-item">
+          <a href="${rootPath}\${item.id}" class="search-result-item">
             <div class="search-result-title">\${item.title}</div>
             <div class="search-result-preview">\${item.content.substring(0, 50)}...</div>
           </a>
@@ -482,7 +486,7 @@ const flatNav = flattenNavItems(navTree);
     const { prev, next } = getPrevNext(navTree, currentPath);
     const pageNavHtml = generatePrevNextHtml(prev, next, rootPath);
     const htmlContent = await marked(content);
-    const processedContent = htmlContent.replace(/href="([^"]+)\.md"/g, 'href="$1.html"');
+    const processedContent = htmlContent.replace(/href="([^"]+)\.md"/g, 'href="$1"');
 
     const finalHtml = template(title, processedContent, navHtml, rootPath, pageNavHtml);
 

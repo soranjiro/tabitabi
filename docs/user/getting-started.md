@@ -18,7 +18,7 @@
 
 ### 1. アクセス
 
-ウェブブラウザで https://tabitabi.example.com にアクセス
+ウェブブラウザで https://tabitabi.pages.dev にアクセス
 
 ### 2. インストール（オプション）
 

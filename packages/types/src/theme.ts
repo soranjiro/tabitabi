@@ -28,7 +28,8 @@ export interface Theme {
   description: string;
   author: string;
   features: {
-    steps: ThemeFeatureConfig;          // 必須機能
+    steps?: ThemeFeatureConfig;
+    timeline?: ThemeFeatureConfig;
     checklist?: ThemeFeatureConfig;
     budget?: ThemeFeatureConfig;
     memo?: ThemeFeatureConfig;
@@ -37,5 +38,25 @@ export interface Theme {
   };
   ui: ThemeUI;
   components: ThemeComponents;
+  styles?: string;
+}
+
+export interface ThemeConfig {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  author: string;
+  features: {
+    steps?: ThemeFeatureConfig;
+    timeline?: ThemeFeatureConfig;
+    checklist?: ThemeFeatureConfig;
+    budget?: ThemeFeatureConfig;
+    memo?: ThemeFeatureConfig;
+    map?: ThemeFeatureConfig;
+    [key: string]: ThemeFeatureConfig | undefined;
+  };
+  ui: ThemeUI;
+  components?: ThemeComponents;
   styles?: string;
 }

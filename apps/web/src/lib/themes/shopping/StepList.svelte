@@ -10,8 +10,8 @@
         title?: string;
         date?: string;
         time?: string;
-        location?: string | null;
-        notes?: string | null;
+        location?: string;
+        notes?: string;
       },
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
@@ -148,7 +148,7 @@
     }
 
     await onUpdateStep(step.id, {
-      notes: newNotes,
+      notes: newNotes ?? undefined,
     });
   }
 </script>
@@ -305,6 +305,7 @@
                     class="shopping-btn-icon"
                     disabled={!hasEditPermission}
                     title="編集"
+                    aria-label="編集"
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -325,6 +326,7 @@
                     class="shopping-btn-icon shopping-btn-icon-danger"
                     disabled={!hasEditPermission}
                     title="削除"
+                    aria-label="削除"
                   >
                     <svg
                       viewBox="0 0 24 24"

@@ -79,7 +79,7 @@
                 <div class="shopping-store">
                   <div class="shopping-store-name">{store}</div>
                   <div class="shopping-items">
-                    {#each items as item, j}
+                    {#each items ?? [] as item, j}
                       <div class="shopping-item" class:done={j === 0}>
                         <span class="shopping-checkbox"
                           >{j === 0 ? "✓" : ""}</span

@@ -23,3 +23,8 @@ export interface UpdateStepInput {
   location?: string | null;
   note?: string | null;
 }
+
+// Timeline types - Step aliases for backward compatibility
+export type TimelineStep = Step;
+export type CreateTimelineStepInput = CreateStepInput;
+export type UpdateTimelineStepInput = UpdateStepInput;

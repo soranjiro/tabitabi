@@ -17,6 +17,8 @@
     IconLink,
     IconPalette,
     IconBolt,
+    IconBook,
+    IconExternalLink,
   } from "./home/icons";
 
   let recentItineraries = $state<
@@ -161,7 +163,17 @@
   </section>
 
   <section id="features" class="features">
-    <h2 class="section-title">シンプルに、便利に</h2>
+    <div class="section-header">
+      <h2 class="section-title">シンプルに、便利に</h2>
+      <a href="/docs/index.html" class="docs-link" title="ドキュメントを見る">
+        <span class="docs-icon-wrapper">
+          <IconBook size={30} />
+          <span class="external-badge">
+            <IconExternalLink size={18} />
+          </span>
+        </span>
+      </a>
+    </div>
     <div class="features-grid">
       <FeatureCard
         title="スマホ最適化"
@@ -364,25 +376,74 @@
     padding: 4rem 1rem;
   }
 
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 2.5rem;
+  }
+
   .section-title {
     text-align: center;
     font-size: 1.75rem;
     font-weight: 800;
     color: #374151;
-    margin-bottom: 2.5rem;
+    margin: 0;
+  }
+
+  .docs-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b8cce;
+    padding: 0.375rem;
+    border-radius: 6px;
+    /* background: rgba(194, 203, 222, 0.1); */
+    background: white;
+    border: 1px solid rgba(107, 140, 206, 0.3);
+    transition: all 0.2s;
+  }
+
+  .docs-icon-wrapper {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .external-badge {
+    position: absolute;
+    bottom: -3px;
+    right: -8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 3px;
+    padding: 1px;
+  }
+
+  .docs-link:hover {
+    color: #5a7ab8;
+    background: rgba(107, 140, 206, 0.18);
+    border-color: rgba(107, 140, 206, 0.35);
+  }
+
+  .docs-link:active {
+    transform: scale(0.95);
   }
 
   .features-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
-    max-width: 700px;
+    max-width: 500px;
     margin: 0 auto;
   }
 
   @media (min-width: 768px) {
     .features-grid {
       grid-template-columns: repeat(4, 1fr);
+      max-width: 700px;
     }
   }
 

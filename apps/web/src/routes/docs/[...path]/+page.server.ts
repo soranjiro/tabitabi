@@ -1,7 +1,35 @@
 import { error, redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
+import type { PageServerLoad, EntryGenerator } from './$types';
 import fs from 'node:fs';
 import path from 'node:path';
+
+// Generate all documentation page entries for prerendering
+export const entries: EntryGenerator = () => {
+	const docsDir = path.join(process.cwd(), 'static', 'docs');
+	const entries: { path: string }[] = [];
+
+	function findHtmlFiles(dir: string, basePath: string = '') {
+		const files = fs.readdirSync(dir);
+
+		for (const file of files) {
+			const fullPath = path.join(dir, file);
+			const stat = fs.statSync(fullPath);
+
+			if (stat.isDirectory()) {
+				findHtmlFiles(fullPath, path.join(basePath, file));
+			} else if (file.endsWith('.html')) {
+				const relativePath = path.join(basePath, file.slice(0, -5)); // Remove .html
+				entries.push({ path: relativePath });
+			}
+		}
+	}
+
+	if (fs.existsSync(docsDir)) {
+		findHtmlFiles(docsDir);
+	}
+
+	return entries;
+};
 
 export const load: PageServerLoad = async ({ params }) => {
 	const docPath = params.path || 'index';

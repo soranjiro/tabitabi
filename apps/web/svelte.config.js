@@ -20,6 +20,9 @@ const config = {
         if (status === 404 && path.startsWith('/favicon')) {
           return;
         }
+        if (status === 404 && path.startsWith('/docs/')) {
+          return;
+        }
         throw new Error(`${status} ${path}${referrer ? ` (${referenceType} from ${referrer})` : ''}`);
       }
     }

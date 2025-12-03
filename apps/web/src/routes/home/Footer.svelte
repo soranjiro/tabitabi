@@ -6,11 +6,7 @@
 <footer class="footer">
   <div class="footer-content">
     <div class="footer-links">
-      <a
-        href="/docs/index"
-        rel="noopener noreferrer"
-        class="footer-link"
-      >
+      <a href="/docs/index" rel="noopener noreferrer" class="footer-link">
         <IconBook size={18} />
         ドキュメント
       </a>

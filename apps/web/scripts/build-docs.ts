@@ -480,24 +480,24 @@ const flatNav = flattenNavItems(navTree);
 
     const depth = relativePath.split(path.sep).length - 1;
     const rootPath = depth > 0 ? '../'.repeat(depth) : './';
-    const currentPath = relativePath.replace('.md', '.html');
+    const currentPath = relativePath.replace('.md', '');
 
     const navHtml = generateNavHtml(navTree, rootPath, currentPath);
     const { prev, next } = getPrevNext(navTree, currentPath);
     const pageNavHtml = generatePrevNextHtml(prev, next, rootPath);
     const htmlContent = await marked(content);
-    const processedContent = htmlContent.replace(/href="([^"]+)\.md"/g, 'href="$1.html"');
+    const processedContent = htmlContent.replace(/href="([^"]+)\.md"/g, 'href="$1"');
 
     const finalHtml = template(title, processedContent, navHtml, rootPath, pageNavHtml);
 
-    const destPath = path.join(DOCS_DEST, relativePath.replace('.md', '.html'));
+    const destPath = path.join(DOCS_DEST, relativePath.replace('.md', ''));
     const destDir = path.dirname(destPath);
     if (!fs.existsSync(destDir)) {
       fs.mkdirSync(destDir, { recursive: true });
     }
 
     fs.writeFileSync(destPath, finalHtml);
-    console.log(`Generated ${relativePath.replace('.md', '.html')}`);
+    console.log(`Generated ${relativePath.replace('.md', '')}`);
   }
 
   console.log('Documentation build complete!');

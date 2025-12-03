@@ -214,7 +214,9 @@ function buildNavTree(): NavItem[] {
 }
 
 function toUrlPath(pathWithHtml: string): string {
-  return '/docs/' + pathWithHtml;
+  // Remove .html extension for SvelteKit routing
+  const pathWithoutHtml = pathWithHtml.replace(/\.html$/, '');
+  return '/docs/' + pathWithoutHtml;
 }
 
 function generateNavHtml(items: NavItem[], rootPath: string, currentPath: string, level: number = 0): string {
@@ -388,7 +390,7 @@ const template = (title: string, content: string, nav: string, rootPath: string,
 <body>
   <nav class="sidebar">
     <div class="nav-header">
-      <a href="/docs/index.html" class="nav-title">📘 たびたび Docs</a>
+      <a href="/docs/index" class="nav-title">📘 たびたび Docs</a>
       <div style="position: relative;">
         <input type="text" id="search-input" class="search-box" placeholder="検索...">
         <div id="search-results"></div>
@@ -437,7 +439,7 @@ const template = (title: string, content: string, nav: string, rootPath: string,
 
       if (results.length > 0) {
         resultsContainer.innerHTML = results.map(item => \`
-          <a href="/docs/\${item.id}.html" class="search-result-item">
+          <a href="/docs/\${item.id}" class="search-result-item">
             <div class="search-result-title">\${item.title}</div>
             <div class="search-result-preview">\${item.content.substring(0, 50)}...</div>
           </a>

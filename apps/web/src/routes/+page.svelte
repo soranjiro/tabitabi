@@ -165,7 +165,7 @@
   <section id="features" class="features">
     <div class="section-header">
       <h2 class="section-title">シンプルに、便利に</h2>
-      <a href="/docs/index.html" class="docs-link" title="ドキュメントを見る">
+      <a href="/docs/index" class="docs-link" title="ドキュメントを見る">
         <span class="docs-icon-wrapper">
           <IconBook size={30} />
           <span class="external-badge">

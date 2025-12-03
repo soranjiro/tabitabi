@@ -93,7 +93,7 @@ function buildNavTree(): NavItem[] {
     if (name === 'index') return;
     tree.push({
       name,
-      path: `${name}.html`,
+      path: `${name}`,
       title: extractTitleFromMarkdown(file),
     });
   });
@@ -105,7 +105,7 @@ function buildNavTree(): NavItem[] {
 
     const item: NavItem = {
       name: dir,
-      path: `${dir}/index.html`,
+      path: `${dir}/index`,
       title: SECTION_LABELS[dir] || dir,
       children: [],
     };
@@ -121,7 +121,7 @@ function buildNavTree(): NavItem[] {
       if (name === 'index') return;
       item.children!.push({
         name,
-        path: `${dir}/${name}.html`,
+        path: `${dir}/${name}`,
         title: extractTitleFromMarkdown(file),
       });
     });
@@ -134,7 +134,7 @@ function buildNavTree(): NavItem[] {
       const subDirPath = path.join(dirPath, subDir);
       const subItem: NavItem = {
         name: subDir,
-        path: `${dir}/${subDir}/index.html`,
+        path: `${dir}/${subDir}/index`,
         title: SECTION_LABELS[subDir] || subDir,
         children: [],
       };
@@ -150,7 +150,7 @@ function buildNavTree(): NavItem[] {
         if (name === 'index') return;
         subItem.children!.push({
           name,
-          path: `${dir}/${subDir}/${name}.html`,
+          path: `${dir}/${subDir}/${name}`,
           title: extractTitleFromMarkdown(file),
         });
       });
@@ -175,7 +175,7 @@ function buildNavTree(): NavItem[] {
           if (name === 'index') return;
           childFiles.push({
             name,
-            path: `${dir}/${subDir}/${subSubDir}/${name}.html`,
+            path: `${dir}/${subDir}/${subSubDir}/${name}`,
             title: extractTitleFromMarkdown(file),
           });
         });
@@ -183,10 +183,10 @@ function buildNavTree(): NavItem[] {
         const subSubItem: NavItem = {
           name: subSubDir,
           path: hasIndex
-            ? `${dir}/${subDir}/${subSubDir}/index.html`
+            ? `${dir}/${subDir}/${subSubDir}/index`
             : childFiles.length > 0
               ? childFiles[0].path
-              : `${dir}/${subDir}/${subSubDir}/index.html`,
+              : `${dir}/${subDir}/${subSubDir}/index`,
           title: SECTION_LABELS[subSubDir] || subSubDir,
           hasIndex,
           children: childFiles,
@@ -388,7 +388,7 @@ const template = (title: string, content: string, nav: string, rootPath: string,
 <body>
   <nav class="sidebar">
     <div class="nav-header">
-      <a href="/docs/index.html" class="nav-title">📘 たびたび Docs</a>
+      <a href="/docs/index" class="nav-title">📘 たびたび Docs</a>
       <div style="position: relative;">
         <input type="text" id="search-input" class="search-box" placeholder="検索...">
         <div id="search-results"></div>
@@ -437,7 +437,7 @@ const template = (title: string, content: string, nav: string, rootPath: string,
 
       if (results.length > 0) {
         resultsContainer.innerHTML = results.map(item => \`
-          <a href="/docs/\${item.id}.html" class="search-result-item">
+          <a href="/docs/\${item.id}" class="search-result-item">
             <div class="search-result-title">\${item.title}</div>
             <div class="search-result-preview">\${item.content.substring(0, 50)}...</div>
           </a>
@@ -480,24 +480,24 @@ const flatNav = flattenNavItems(navTree);
 
     const depth = relativePath.split(path.sep).length - 1;
     const rootPath = depth > 0 ? '../'.repeat(depth) : './';
-    const currentPath = relativePath.replace('.md', '.html');
+    const currentPath = relativePath.replace('.md', '');
 
     const navHtml = generateNavHtml(navTree, rootPath, currentPath);
     const { prev, next } = getPrevNext(navTree, currentPath);
     const pageNavHtml = generatePrevNextHtml(prev, next, rootPath);
     const htmlContent = await marked(content);
-    const processedContent = htmlContent.replace(/href="([^"]+)\.md"/g, 'href="$1.html"');
+    const processedContent = htmlContent.replace(/href="([^"]+)\.md"/g, 'href="$1"');
 
     const finalHtml = template(title, processedContent, navHtml, rootPath, pageNavHtml);
 
-    const destPath = path.join(DOCS_DEST, relativePath.replace('.md', '.html'));
+    const destPath = path.join(DOCS_DEST, relativePath.replace('.md', ''));
     const destDir = path.dirname(destPath);
     if (!fs.existsSync(destDir)) {
       fs.mkdirSync(destDir, { recursive: true });
     }
 
     fs.writeFileSync(destPath, finalHtml);
-    console.log(`Generated ${relativePath.replace('.md', '.html')}`);
+    console.log(`Generated ${relativePath.replace('.md', '')}`);
   }
 
   console.log('Documentation build complete!');

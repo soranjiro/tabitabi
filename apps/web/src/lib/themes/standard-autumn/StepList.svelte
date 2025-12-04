@@ -48,6 +48,11 @@
   let draggedStepId = $state<string | null>(null);
   let dragOverStepId = $state<string | null>(null);
 
+  // Touch drag state for mobile
+  let touchDragStepId = $state<string | null>(null);
+  let touchStartY = $state<number | null>(null);
+  let touchCurrentY = $state<number | null>(null);
+
   function computeGroupedSteps(stepList: Step[]): [string, Step[]][] {
     const groups = new Map<string, Step[]>();
     for (const step of stepList) {
@@ -282,6 +287,89 @@
     const m = minutes % 60;
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   }
+
+  // Touch event handlers for mobile drag and drop
+  function handleTouchDragStart(e: TouchEvent, stepId: string) {
+    if (!hasEditPermission || editingStepId) return;
+    touchDragStepId = stepId;
+    touchStartY = e.touches[0].clientY;
+    touchCurrentY = touchStartY;
+  }
+
+  function handleTouchDragMove(e: TouchEvent) {
+    if (!touchDragStepId || !touchStartY) return;
+    touchCurrentY = e.touches[0].clientY;
+    const deltaY = touchCurrentY - touchStartY;
+
+    // Find the element being dragged
+    const target = e.target as HTMLElement;
+    const timelineItem = target.closest(".standard-autumn-timeline-item");
+    if (timelineItem && Math.abs(deltaY) > 5) {
+      e.preventDefault(); // Prevent scrolling when dragging
+    }
+  }
+
+  async function handleTouchDragEnd(e: TouchEvent, dateSteps: Step[]) {
+    if (!touchDragStepId || touchStartY === null || touchCurrentY === null) {
+      touchDragStepId = null;
+      touchStartY = null;
+      touchCurrentY = null;
+      return;
+    }
+
+    const deltaY = touchCurrentY - touchStartY;
+
+    // Only proceed if moved more than 30px
+    if (Math.abs(deltaY) < 30) {
+      touchDragStepId = null;
+      touchStartY = null;
+      touchCurrentY = null;
+      return;
+    }
+
+    // Find the dragged step index
+    const draggedIndex = dateSteps.findIndex((s) => s.id === touchDragStepId);
+    if (draggedIndex === -1 || !onUpdateStep) {
+      touchDragStepId = null;
+      touchStartY = null;
+      touchCurrentY = null;
+      return;
+    }
+
+    // Determine target index based on direction
+    let targetIndex = draggedIndex;
+    if (deltaY < 0) {
+      // Moved up
+      targetIndex = Math.max(0, draggedIndex - 1);
+    } else {
+      // Moved down
+      targetIndex = Math.min(dateSteps.length - 1, draggedIndex + 1);
+    }
+
+    // If no actual move, bail out
+    if (targetIndex === draggedIndex) {
+      touchDragStepId = null;
+      touchStartY = null;
+      touchCurrentY = null;
+      return;
+    }
+
+    // Get target time
+    const targetTime = dateSteps[targetIndex].time;
+
+    try {
+      await onUpdateStep(touchDragStepId, {
+        time: targetTime,
+      });
+    } catch (error) {
+      console.error("Failed to update step time:", error);
+      alert("予定の時間の更新に失敗しました");
+    }
+
+    touchDragStepId = null;
+    touchStartY = null;
+    touchCurrentY = null;
+  }
 </script>
 
 {#if steps.length === 0}
@@ -380,12 +468,16 @@
                     class="standard-autumn-timeline-item"
                     class:dragging={draggedStepId === step.id}
                     class:drag-over={dragOverStepId === step.id}
+                    class:touch-dragging={touchDragStepId === step.id}
                     draggable={hasEditPermission && !editingStepId}
                     ondragstart={(e) => handleDragStart(e, step.id)}
                     ondragover={(e) => handleDragOver(e, step.id)}
                     ondragleave={handleDragLeave}
                     ondragend={handleDragEnd}
                     ondrop={(e) => handleDrop(e, step.id, dateSteps)}
+                    ontouchstart={(e) => handleTouchDragStart(e, step.id)}
+                    ontouchmove={handleTouchDragMove}
+                    ontouchend={(e) => handleTouchDragEnd(e, dateSteps)}
                   >
                     <div class="standard-autumn-step-time">{step.time}</div>
                     <div class="standard-autumn-timeline-line"></div>

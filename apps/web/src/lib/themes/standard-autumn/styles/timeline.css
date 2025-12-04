@@ -6,19 +6,26 @@
   transition: opacity 0.2s, transform 0.2s;
 }
 
+/* Drag and drop visual feedback */
 .standard-autumn-timeline-item[draggable="true"] {
-  cursor: grab;
+  cursor: move;
+  touch-action: pan-y;
 }
 
 .standard-autumn-timeline-item.dragging {
   opacity: 0.5;
-  cursor: grabbing;
 }
 
 .standard-autumn-timeline-item.drag-over {
-  transform: translateY(4px);
   background: rgba(169, 53, 41, 0.05);
   border-radius: 8px;
+}
+
+.standard-autumn-timeline-item.touch-dragging {
+  opacity: 0.7;
+  transform: scale(1.02);
+  transition: transform 0.1s ease, opacity 0.1s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 

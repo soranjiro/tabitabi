@@ -1,21 +1,23 @@
-/* Print styles for standard-autumn theme */
+/* Print styles for standard-autumn theme - Optimized for multiple days */
 @media print {
   /* Hide non-essential UI elements */
   .standard-autumn-bottom-nav,
   .standard-autumn-carousel-controls,
-  .standard-autumn-share-icon,
+  .standard-autumn-share-wrapper,
   .standard-autumn-copy-msg,
   .standard-autumn-btn-add,
   .standard-autumn-add-step,
   .standard-autumn-step-actions,
-  .standard-autumn-floating-actions {
+  .standard-autumn-floating-actions,
+  .standard-autumn-header::before,
+  .standard-autumn-header::after {
     display: none !important;
   }
 
-  /* Page setup */
+  /* Page setup - Tight margins */
   @page {
     size: A4 portrait;
-    margin: 10mm 12mm;
+    margin: 8mm 10mm;
   }
 
   * {
@@ -25,8 +27,8 @@
 
   body {
     background: white !important;
-    font-size: 10pt;
-    line-height: 1.4;
+    font-size: 9pt;
+    line-height: 1.3;
   }
 
   /* Container adjustments */
@@ -41,54 +43,60 @@
     background: white !important;
   }
 
-  /* Header - Compact */
+  /* Header - Minimal */
   .standard-autumn-header {
     background: white !important;
     box-shadow: none !important;
-    border-bottom: 3px solid var(--standard-autumn-primary) !important;
-    padding: 8pt 0 6pt 0 !important;
-    margin-bottom: 10pt !important;
+    border-bottom: 2pt solid var(--standard-autumn-primary) !important;
+    padding: 4pt 0 3pt 0 !important;
+    margin-bottom: 6pt !important;
     page-break-after: avoid;
+    text-align: center;
   }
 
   .standard-autumn-title-button,
   .standard-autumn-title-input {
-    font-size: 18pt !important;
+    font-size: 16pt !important;
     color: var(--standard-autumn-text) !important;
     font-weight: 700 !important;
     padding: 0 !important;
     margin: 0 !important;
     background: none !important;
     border: none !important;
-    text-align: left !important;
+    text-align: center !important;
     width: 100%;
     display: block;
+    line-height: 1.2 !important;
   }
 
   .standard-autumn-controls {
-    margin-top: 6pt !important;
+    margin-top: 4pt !important;
   }
 
   .standard-autumn-memo-display {
-    background: rgba(230, 180, 34, 0.08) !important;
-    padding: 6pt 8pt !important;
-    border: 1px solid rgba(169, 53, 41, 0.3) !important;
-    border-radius: 4pt !important;
-    font-size: 9pt !important;
-    line-height: 1.4 !important;
+    background: rgba(230, 180, 34, 0.05) !important;
+    padding: 4pt 6pt !important;
+    border: 0.5pt solid rgba(169, 53, 41, 0.2) !important;
+    border-radius: 3pt !important;
+    font-size: 8pt !important;
+    line-height: 1.3 !important;
     page-break-inside: avoid;
     margin: 0 !important;
   }
 
+  .standard-autumn-memo-display::before {
+    display: none !important;
+  }
+
   .standard-autumn-memo-display p {
-    margin: 0 0 4pt 0 !important;
+    margin: 0 0 2pt 0 !important;
   }
 
   .standard-autumn-memo-display p:last-child {
     margin-bottom: 0 !important;
   }
 
-  /* Carousel - Convert to simple list */
+  /* Carousel - Convert to compact list */
   .standard-autumn-carousel-wrapper {
     display: block !important;
     page-break-inside: auto;
@@ -109,44 +117,45 @@
     display: block !important;
     width: 100% !important;
     page-break-inside: avoid;
-    margin-bottom: 8pt !important;
+    margin-bottom: 5pt !important;
     break-inside: avoid;
   }
 
-  /* Card styles - Compact */
+  /* Card styles - Very compact */
   .standard-autumn-card {
     background: white !important;
     box-shadow: none !important;
-    border: 1.5pt solid var(--standard-autumn-border) !important;
-    border-radius: 4pt !important;
+    border: 1pt solid var(--standard-autumn-border) !important;
+    border-radius: 2pt !important;
     overflow: visible !important;
     page-break-inside: avoid;
     break-inside: avoid;
-    margin-bottom: 8pt !important;
+    margin-bottom: 5pt !important;
   }
 
   .standard-autumn-card-header {
     background: var(--standard-autumn-primary) !important;
     color: white !important;
-    font-size: 13pt !important;
+    font-size: 11pt !important;
     font-weight: 700 !important;
-    padding: 6pt 10pt !important;
+    padding: 3pt 6pt !important;
     cursor: default !important;
     page-break-after: avoid;
     border: none !important;
     width: 100%;
     text-align: left !important;
+    line-height: 1.2 !important;
   }
 
   .standard-autumn-card-body {
-    padding: 8pt 10pt !important;
+    padding: 4pt 6pt !important;
   }
 
-  /* Timeline items - Compact for print */
+  /* Timeline items - Ultra compact */
   .standard-autumn-timeline-item {
     page-break-inside: avoid;
     break-inside: avoid;
-    margin-bottom: 8pt !important;
+    margin-bottom: 4pt !important;
     display: flex;
     position: relative;
   }
@@ -157,16 +166,16 @@
 
   .standard-autumn-timeline-line {
     background: var(--standard-autumn-line-color) !important;
-    width: 1pt !important;
-    left: 38pt !important;
+    width: 0.5pt !important;
+    left: 28pt !important;
   }
 
   .standard-autumn-step-time {
-    font-size: 9pt !important;
+    font-size: 8pt !important;
     color: var(--standard-autumn-text) !important;
     font-weight: 700 !important;
-    width: 35pt !important;
-    padding-right: 8pt !important;
+    width: 26pt !important;
+    padding-right: 4pt !important;
     text-align: right;
     flex-shrink: 0;
   }
@@ -175,58 +184,58 @@
     background: var(--standard-autumn-primary) !important;
     transform: rotate(-45deg);
     box-shadow: none !important;
-    width: 10pt !important;
-    height: 10pt !important;
-    margin-top: 2pt !important;
+    width: 6pt !important;
+    height: 6pt !important;
+    margin-top: 1.5pt !important;
     flex-shrink: 0;
   }
 
   .standard-autumn-step-content {
     background: white !important;
-    border: 1pt solid var(--standard-autumn-border) !important;
-    border-left: 2.5pt solid var(--standard-autumn-primary) !important;
+    border: 0.5pt solid var(--standard-autumn-border) !important;
+    border-left: 1.5pt solid var(--standard-autumn-primary) !important;
     page-break-inside: avoid;
     break-inside: avoid;
-    padding: 6pt 8pt !important;
-    margin-left: 10pt !important;
+    padding: 3pt 5pt !important;
+    margin-left: 6pt !important;
     flex: 1;
     box-shadow: none !important;
   }
 
   .standard-autumn-step-title {
-    font-size: 11pt !important;
+    font-size: 9.5pt !important;
     color: var(--standard-autumn-text) !important;
     font-weight: 600 !important;
-    margin-bottom: 4pt !important;
-    line-height: 1.3 !important;
+    margin-bottom: 2pt !important;
+    line-height: 1.2 !important;
   }
 
   .standard-autumn-step-location {
-    font-size: 9pt !important;
+    font-size: 8pt !important;
     color: var(--standard-autumn-text-light) !important;
-    margin-bottom: 4pt !important;
+    margin-bottom: 2pt !important;
     display: flex;
     align-items: center;
-    gap: 3pt;
+    gap: 2pt;
   }
 
   .standard-autumn-icon-location {
-    width: 10pt !important;
-    height: 10pt !important;
+    width: 8pt !important;
+    height: 8pt !important;
   }
 
   .standard-autumn-step-notes {
-    font-size: 9pt !important;
-    background: rgba(230, 180, 34, 0.05) !important;
-    padding: 5pt 6pt !important;
+    font-size: 8pt !important;
+    background: rgba(230, 180, 34, 0.03) !important;
+    padding: 3pt 4pt !important;
     border: 0.5pt dashed var(--standard-autumn-line-color) !important;
-    line-height: 1.4 !important;
-    margin-top: 4pt !important;
-    border-radius: 2pt !important;
+    line-height: 1.3 !important;
+    margin-top: 2pt !important;
+    border-radius: 1pt !important;
   }
 
   .standard-autumn-step-notes p {
-    margin: 0 0 3pt 0 !important;
+    margin: 0 0 2pt 0 !important;
   }
 
   .standard-autumn-step-notes p:last-child {
@@ -235,32 +244,33 @@
 
   .standard-autumn-step-notes ul,
   .standard-autumn-step-notes ol {
-    margin: 3pt 0 !important;
-    padding-left: 12pt !important;
+    margin: 2pt 0 !important;
+    padding-left: 10pt !important;
   }
 
   .standard-autumn-step-notes li {
-    margin: 2pt 0 !important;
+    margin: 1pt 0 !important;
   }
 
-  /* Secret/hidden steps - Show in print with indicator */
+  /* Secret/hidden steps - Minimal indication */
   .standard-autumn-step-hidden {
-    opacity: 0.7 !important;
+    opacity: 0.6 !important;
   }
 
   .standard-autumn-step-hidden .standard-autumn-secret-text {
     font-style: italic !important;
     color: var(--standard-autumn-text-light) !important;
+    font-size: 8pt !important;
   }
 
   .standard-autumn-secret-blur {
-    font-size: 8pt !important;
+    font-size: 7pt !important;
     color: var(--standard-autumn-text-light) !important;
     font-style: italic !important;
   }
 
   .standard-autumn-secret-blur::before {
-    content: "(シークレット)" !important;
+    content: "(非公開)" !important;
     font-weight: 600;
   }
 
@@ -269,14 +279,14 @@
   }
 
   .standard-autumn-lock-icon {
-    width: 12pt !important;
-    height: 12pt !important;
+    width: 8pt !important;
+    height: 8pt !important;
   }
 
-  /* Links - Show URL */
+  /* Links - Compact URL display */
   .standard-autumn-step-notes a[href]::after {
     content: " (" attr(href) ")";
-    font-size: 8pt;
+    font-size: 7pt;
     color: var(--standard-autumn-text-light);
     word-break: break-all;
   }
@@ -300,12 +310,17 @@
     page-break-inside: avoid;
   }
 
-  /* Footer with page number */
+  /* Allow breaking between days if necessary */
+  .standard-autumn-carousel-card:not(:first-child) {
+    page-break-before: auto;
+  }
+
+  /* Footer with page number - Compact */
   @page {
     @bottom-right {
-      content: "Page " counter(page);
-      font-size: 8pt;
-      color: #666;
+      content: counter(page);
+      font-size: 7pt;
+      color: #999;
     }
   }
 }

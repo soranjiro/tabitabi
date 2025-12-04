@@ -1,4 +1,4 @@
-/* Print styles for standard-autumn theme - Magazine Style */
+/* Print styles for standard-autumn theme - Brochure/Flyer Style */
 @media print {
   /* Hide non-essential UI elements */
   .standard-autumn-bottom-nav,
@@ -15,10 +15,10 @@
     display: none !important;
   }
 
-  /* Page setup */
+  /* Page setup - A4 Landscape */
   @page {
-    size: A4 portrait;
-    margin: 15mm;
+    size: A4 landscape;
+    margin: 0; /* Full bleed simulation */
   }
 
   * {
@@ -28,69 +28,112 @@
   }
 
   body {
-    background: white !important;
-    font-size: 10.5pt;
-    line-height: 1.5;
+    background-color: #fdfcf8 !important; /* Warm off-white */
+    background-image:
+      linear-gradient(to right, rgba(169, 53, 41, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(169, 53, 41, 0.03) 1px, transparent 1px) !important;
+    background-size: 20mm 20mm !important;
+    font-size: 9pt;
+    line-height: 1.4;
     font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
-    color: #333;
-  }
-
-  /* Reset layout */
-  .standard-autumn-theme,
-  .standard-autumn-container {
-    background: white !important;
-    min-height: auto;
-    max-width: 100%;
-    padding: 0;
+    color: #4a3b32;
     margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
   }
 
-  /* Header Design */
+  /* Main Container - 3 Column Layout */
+  .standard-autumn-theme {
+    background: transparent !important;
+    min-height: 100vh;
+    padding: 15mm;
+    position: relative;
+  }
+
+  /* Decorative Frame */
+  .standard-autumn-theme::before {
+    content: "";
+    position: absolute;
+    top: 5mm;
+    left: 5mm;
+    right: 5mm;
+    bottom: 5mm;
+    border: 2px double var(--standard-autumn-primary);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .standard-autumn-container {
+    column-count: 3;
+    column-gap: 15mm;
+    column-fill: balance;
+    width: 100%;
+    height: 100%;
+    background: transparent !important;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header - Spans all columns */
   .standard-autumn-header {
-    background: white !important;
+    column-span: all;
+    background: transparent !important;
     box-shadow: none !important;
-    border-bottom: double 4px var(--standard-autumn-primary) !important;
-    padding: 0 0 15mm 0 !important;
-    margin-bottom: 10mm !important;
+    border-bottom: none !important;
+    padding: 0 0 10mm 0 !important;
+    margin-bottom: 5mm !important;
     text-align: center;
+    position: relative;
+  }
+
+  /* Header Decoration */
+  .standard-autumn-header::after {
+    content: "";
+    display: block;
+    width: 100px;
+    height: 3px;
+    background: var(--standard-autumn-primary);
+    margin: 5mm auto 0;
   }
 
   .standard-autumn-title-button,
   .standard-autumn-title-input {
-    font-size: 24pt !important;
+    font-size: 28pt !important;
     color: var(--standard-autumn-primary) !important;
-    font-weight: 700 !important;
+    font-weight: 800 !important;
     padding: 0 !important;
-    margin: 0 0 5mm 0 !important;
+    margin: 0 !important;
     background: none !important;
     border: none !important;
     text-align: center !important;
     width: 100%;
     display: block;
     font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+    text-shadow: 2px 2px 0 rgba(255,255,255,0.8);
   }
 
-  /* Memo Section */
+  /* Memo Section - Spans all columns or sits at top */
   .standard-autumn-memo-display {
-    background: #fff !important;
+    column-span: all;
+    background: rgba(255, 255, 255, 0.8) !important;
     padding: 5mm !important;
-    border: 1px solid var(--standard-autumn-border) !important;
-    border-left: 5px solid var(--standard-autumn-accent) !important;
-    border-radius: 0 !important;
+    border: 1px solid var(--standard-autumn-accent) !important;
+    border-radius: 8px !important;
     font-size: 10pt !important;
     line-height: 1.6 !important;
-    page-break-inside: avoid;
-    margin: 0 auto !important;
-    width: 90% !important;
+    margin: 0 auto 10mm !important;
+    width: 80% !important;
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
-    box-shadow: 3px 3px 0 rgba(230, 180, 34, 0.2) !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
+    text-align: center;
   }
 
   .standard-autumn-memo-display::before {
     display: none !important;
   }
 
-  /* Layout Structure */
+  /* Reset Carousel Layout */
   .standard-autumn-carousel-wrapper,
   .standard-autumn-carousel,
   .standard-autumn-carousel-track {
@@ -99,156 +142,156 @@
     transform: none !important;
   }
 
-  /* Day Section (Card) */
+  /* Day Card - The main content block */
   .standard-autumn-carousel-card {
-    display: block !important;
+    display: inline-block !important; /* Prevents breaking inside */
     width: 100% !important;
-    margin-bottom: 10mm !important;
+    margin-bottom: 8mm !important;
     page-break-inside: avoid;
+    break-inside: avoid;
+    opacity: 1 !important; /* Fix focus opacity issue */
+    transform: none !important; /* Fix scale issue */
+    filter: none !important; /* Fix blur issue */
   }
 
   .standard-autumn-card {
-    background: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
-    border-radius: 0 !important;
-    overflow: visible !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+    border: 1px solid rgba(169, 53, 41, 0.1) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    position: relative;
   }
 
   /* Day Header */
   .standard-autumn-card-header {
-    background: transparent !important;
-    color: var(--standard-autumn-text) !important;
-    font-size: 14pt !important;
+    background: var(--standard-autumn-primary) !important;
+    color: white !important;
+    font-size: 12pt !important;
     font-weight: 700 !important;
-    padding: 2mm 0 !important;
-    border-bottom: 2px solid var(--standard-autumn-line-color) !important;
-    margin-bottom: 5mm !important;
-    text-align: left !important;
-    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-  }
-
-  .standard-autumn-card-header::before {
-    content: "●";
-    color: var(--standard-autumn-primary);
-    font-size: 10pt;
+    padding: 3mm 5mm !important;
+    text-align: center !important;
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+    border-bottom: 2px solid rgba(0,0,0,0.1) !important;
   }
 
   .standard-autumn-card-body {
-    padding: 0 !important;
+    padding: 4mm !important;
   }
 
-  /* Timeline Grid Layout */
+  /* Timeline Layout */
   .standard-autumn-timeline-item {
-    display: grid !important;
-    grid-template-columns: 20mm 1fr !important;
-    gap: 5mm !important;
-    margin-bottom: 6mm !important;
+    display: flex !important;
+    gap: 3mm !important;
+    margin-bottom: 4mm !important;
     page-break-inside: avoid;
     position: relative;
-    align-items: start;
+    align-items: flex-start;
   }
 
-  /* Time Column */
+  .standard-autumn-timeline-item:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  /* Time */
   .standard-autumn-step-time {
-    font-size: 11pt !important;
-    color: var(--standard-autumn-text) !important;
+    font-size: 10pt !important;
+    color: var(--standard-autumn-primary) !important;
     font-weight: 700 !important;
+    width: 12mm !important;
     text-align: right;
-    padding-top: 2pt;
+    flex-shrink: 0;
     font-family: "Helvetica Neue", Arial, sans-serif;
+    padding-top: 1pt;
   }
 
-  /* Content Column */
-  .standard-autumn-step-content {
-    background: white !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-shadow: none !important;
+  /* Dot & Line */
+  .standard-autumn-step-dot {
+    width: 8px !important;
+    height: 8px !important;
+    background: var(--standard-autumn-accent) !important;
+    border-radius: 50% !important;
+    margin-top: 5px !important;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 0 0 2px white !important;
   }
 
-  /* Decorative Line & Dot */
   .standard-autumn-timeline-line {
     position: absolute !important;
-    left: 20mm !important;
-    top: 15pt !important;
-    bottom: -6mm !important;
+    left: 16mm !important; /* Adjust based on time width + gap */
+    top: 10px !important;
+    bottom: -10px !important;
     width: 1px !important;
     background: var(--standard-autumn-line-color) !important;
     opacity: 0.5;
-    transform: translateX(2.5mm); /* Center in gap */
+    z-index: 1;
   }
 
   .standard-autumn-timeline-item:last-child .standard-autumn-timeline-line {
     display: none !important;
   }
 
-  .standard-autumn-step-dot {
-    position: absolute !important;
-    left: 20mm !important;
-    top: 5pt !important;
-    width: 8px !important;
-    height: 8px !important;
-    background: white !important;
-    border: 2px solid var(--standard-autumn-primary) !important;
-    border-radius: 50% !important;
-    transform: translateX(2.5mm) translateX(-3px) !important; /* Center in gap */
-    z-index: 1;
+  /* Content */
+  .standard-autumn-step-content {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
     box-shadow: none !important;
+    flex: 1;
   }
 
-  /* Step Details */
   .standard-autumn-step-title {
-    font-size: 12pt !important;
-    color: #000 !important;
+    font-size: 10.5pt !important;
+    color: #333 !important;
     font-weight: 700 !important;
-    margin-bottom: 2pt !important;
+    margin-bottom: 1mm !important;
     line-height: 1.3 !important;
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
   }
 
   .standard-autumn-step-location {
-    font-size: 9pt !important;
-    color: #666 !important;
-    margin-bottom: 3pt !important;
+    font-size: 8pt !important;
+    color: #777 !important;
+    margin-bottom: 1mm !important;
     display: flex;
     align-items: center;
-    gap: 4px;
-    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    gap: 3px;
   }
 
   .standard-autumn-icon-location {
-    width: 12px !important;
-    height: 12px !important;
+    width: 10px !important;
+    height: 10px !important;
     color: var(--standard-autumn-accent) !important;
   }
 
-  /* Notes Styling */
+  /* Notes */
   .standard-autumn-step-notes {
-    font-size: 9.5pt !important;
-    color: #444 !important;
-    background: transparent !important;
-    padding: 0 !important;
-    border: none !important;
-    line-height: 1.6 !important;
-    margin-top: 3pt !important;
+    font-size: 8.5pt !important;
+    color: #555 !important;
+    background: rgba(255,255,255,0.5) !important;
+    padding: 2mm !important;
+    border-left: 2px solid var(--standard-autumn-line-color) !important;
+    line-height: 1.4 !important;
+    margin-top: 2mm !important;
   }
 
   .standard-autumn-step-notes p {
-    margin: 0 0 4pt 0 !important;
+    margin: 0 0 2pt 0 !important;
   }
 
   /* Secret Steps */
   .standard-autumn-step-hidden {
     opacity: 1 !important;
+    background: rgba(0,0,0,0.02) !important;
+    border-radius: 4px;
+    padding: 2mm;
   }
 
   .standard-autumn-step-hidden .standard-autumn-step-title {
-    color: #999 !important;
+    color: #888 !important;
   }
 
   .standard-autumn-secret-blur {
@@ -258,10 +301,11 @@
   .standard-autumn-step-hidden::after {
     content: "※ シークレット";
     display: block;
-    font-size: 8pt;
-    color: var(--standard-autumn-text-light);
+    font-size: 7pt;
+    color: #999;
     font-style: italic;
-    margin-top: 2pt;
+    margin-top: 1mm;
+    text-align: right;
   }
 
   .standard-autumn-lock-icon {
@@ -271,23 +315,17 @@
   /* Links */
   .standard-autumn-step-notes a {
     text-decoration: none !important;
-    color: #333 !important;
-    border-bottom: 1px dotted #999;
+    color: var(--standard-autumn-primary) !important;
   }
 
   .standard-autumn-step-notes a[href]::after {
-    content: " <" attr(href) ">";
-    font-size: 8pt;
-    color: #888;
+    display: none !important; /* Hide URLs in flyer mode for cleaner look */
   }
 
   /* Footer */
   @page {
     @bottom-center {
-      content: "- " counter(page) " -";
-      font-size: 9pt;
-      color: #999;
-      font-family: serif;
+      content: ""; /* No page numbers for flyer style */
     }
   }
 }

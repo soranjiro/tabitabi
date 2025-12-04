@@ -254,7 +254,11 @@ function generateNavHtml(items: NavItem[], rootPath: string, currentPath: string
 function flattenNavItems(items: NavItem[]): NavItem[] {
   const result: NavItem[] = [];
   for (const item of items) {
-    result.push(item);
+    // Only include items that have their own page (not folder-only items without index.html)
+    // If hasIndex is explicitly false, skip this item as it's just a container
+    if (item.hasIndex !== false) {
+      result.push(item);
+    }
     if (item.children) {
       result.push(...flattenNavItems(item.children));
     }

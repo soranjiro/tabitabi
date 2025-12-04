@@ -3,7 +3,24 @@
   position: relative;
   margin-bottom: 2.5rem;
   min-height: 60px;
+  transition: opacity 0.2s, transform 0.2s;
 }
+
+.standard-autumn-timeline-item[draggable="true"] {
+  cursor: grab;
+}
+
+.standard-autumn-timeline-item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.standard-autumn-timeline-item.drag-over {
+  transform: translateY(4px);
+  background: rgba(169, 53, 41, 0.05);
+  border-radius: 8px;
+}
+
 
 .standard-autumn-timeline-line {
   position: absolute;

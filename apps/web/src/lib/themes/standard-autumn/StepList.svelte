@@ -44,6 +44,10 @@
   let touchStartX = $state<number | null>(null);
   let touchDeltaX = $state(0);
 
+  // Drag and drop state
+  let draggedStepId = $state<string | null>(null);
+  let dragOverStepId = $state<string | null>(null);
+
   function computeGroupedSteps(stepList: Step[]): [string, Step[]][] {
     const groups = new Map<string, Step[]>();
     for (const step of stepList) {
@@ -192,6 +196,92 @@
       await onDeleteStep(stepId);
     }
   }
+
+  // Drag and drop handlers
+  function handleDragStart(e: DragEvent, stepId: string) {
+    if (!hasEditPermission || editingStepId) return;
+    draggedStepId = stepId;
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move";
+    }
+  }
+
+  function handleDragOver(e: DragEvent, stepId: string) {
+    if (!hasEditPermission || !draggedStepId || editingStepId) return;
+    e.preventDefault();
+    dragOverStepId = stepId;
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = "move";
+    }
+  }
+
+  function handleDragLeave() {
+    dragOverStepId = null;
+  }
+
+  function handleDragEnd() {
+    draggedStepId = null;
+    dragOverStepId = null;
+  }
+
+  async function handleDrop(
+    e: DragEvent,
+    targetStepId: string,
+    dateSteps: Step[],
+  ) {
+    e.preventDefault();
+    if (
+      !hasEditPermission ||
+      !draggedStepId ||
+      draggedStepId === targetStepId ||
+      !onUpdateStep
+    ) {
+      draggedStepId = null;
+      dragOverStepId = null;
+      return;
+    }
+
+    const draggedIndex = dateSteps.findIndex((s) => s.id === draggedStepId);
+    const targetIndex = dateSteps.findIndex((s) => s.id === targetStepId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      draggedStepId = null;
+      dragOverStepId = null;
+      return;
+    }
+
+    // Calculate new time for the dragged step
+    const targetTime = dateSteps[targetIndex].time;
+
+    try {
+      // Only update the dragged step's time to match the target position
+      await onUpdateStep(draggedStepId, {
+        time: targetTime,
+      });
+    } catch (error) {
+      console.error("Failed to update step time:", error);
+      alert("予定の時間の更新に失敗しました");
+    }
+
+    draggedStepId = null;
+    dragOverStepId = null;
+  }
+
+  function recalculateTimes(steps: Step[]): Step[] {
+    // This function is no longer used
+    return steps;
+  }
+
+  function timeToMinutes(time: string): number {
+    const [h, m] = time.split(":").map(Number);
+    return h * 60 + m;
+  }
+
+  function minutesToTime(minutes: number): string {
+    const h = Math.floor(minutes / 60) % 24;
+    const m = minutes % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
 </script>
 
 {#if steps.length === 0}
@@ -286,7 +376,17 @@
               </button>
               <div class="standard-autumn-card-body">
                 {#each dateSteps as step}
-                  <div class="standard-autumn-timeline-item">
+                  <div
+                    class="standard-autumn-timeline-item"
+                    class:dragging={draggedStepId === step.id}
+                    class:drag-over={dragOverStepId === step.id}
+                    draggable={hasEditPermission && !editingStepId}
+                    ondragstart={(e) => handleDragStart(e, step.id)}
+                    ondragover={(e) => handleDragOver(e, step.id)}
+                    ondragleave={handleDragLeave}
+                    ondragend={handleDragEnd}
+                    ondrop={(e) => handleDrop(e, step.id, dateSteps)}
+                  >
                     <div class="standard-autumn-step-time">{step.time}</div>
                     <div class="standard-autumn-timeline-line"></div>
                     <div class="standard-autumn-step-dot"></div>

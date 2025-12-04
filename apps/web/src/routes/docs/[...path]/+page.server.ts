@@ -31,12 +31,13 @@ export const entries: EntryGenerator = () => {
 	return entries;
 };
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, url }) => {
 	const docPath = params.path || 'index';
 
 	// Redirect .html URLs to clean URLs
-	if (docPath.endsWith('.html')) {
-		const cleanPath = docPath.slice(0, -5);
+	// Check both the path parameter and the actual URL
+	if (docPath.endsWith('.html') || url.pathname.endsWith('.html')) {
+		const cleanPath = docPath.endsWith('.html') ? docPath.slice(0, -5) : docPath;
 		throw redirect(301, `/docs/${cleanPath}`);
 	}
 
@@ -51,6 +52,7 @@ export const load: PageServerLoad = async ({ params }) => {
 	// Read the HTML content
 	const htmlContent = fs.readFileSync(staticDocsPath, 'utf-8');
 
+	// Extract the full HTML as-is for now (we'll handle it in the component)
 	return {
 		htmlContent,
 		path: docPath

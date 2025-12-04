@@ -370,6 +370,46 @@
     touchStartY = null;
     touchCurrentY = null;
   }
+
+  // Action to handle touch events with passive: false
+  function setupTouchDrag(node: HTMLElement, stepId: string) {
+    const handleStart = (e: TouchEvent) => handleTouchDragStart(e, stepId);
+    const handleMove = (e: TouchEvent) => handleTouchDragMove(e);
+    const handleEnd = (e: TouchEvent) => {
+      // We need to pass the current dateSteps. Since this is inside an action,
+      // we need to access the current state.
+      // However, for simplicity in this context, we can rely on the component state
+      // or pass a function that gets the current steps.
+      // Here we'll use a slightly different approach for the end handler
+      // or just pass the steps from the component scope if available.
+      // A better way is to update the action parameters when steps change,
+      // but for now let's try to use the component's dateSteps if accessible
+      // or just pass the steps to the action.
+
+      // Actually, handleTouchDragEnd needs dateSteps.
+      // Let's find the dateSteps for this stepId.
+      const date = steps.find((s) => s.id === stepId)?.date;
+      if (date) {
+        const dateSteps = groupedSteps().find(([d]) => d === date)?.[1] || [];
+        handleTouchDragEnd(e, dateSteps);
+      }
+    };
+
+    node.addEventListener("touchstart", handleStart, { passive: true });
+    node.addEventListener("touchmove", handleMove, { passive: false });
+    node.addEventListener("touchend", handleEnd);
+
+    return {
+      update(newStepId: string) {
+        stepId = newStepId;
+      },
+      destroy() {
+        node.removeEventListener("touchstart", handleStart);
+        node.removeEventListener("touchmove", handleMove);
+        node.removeEventListener("touchend", handleEnd);
+      },
+    };
+  }
 </script>
 
 {#if steps.length === 0}
@@ -475,9 +515,7 @@
                     ondragleave={handleDragLeave}
                     ondragend={handleDragEnd}
                     ondrop={(e) => handleDrop(e, step.id, dateSteps)}
-                    ontouchstart={(e) => handleTouchDragStart(e, step.id)}
-                    ontouchmove={handleTouchDragMove}
-                    ontouchend={(e) => handleTouchDragEnd(e, dateSteps)}
+                    use:setupTouchDrag={step.id}
                   >
                     <div class="standard-autumn-step-time">{step.time}</div>
                     <div class="standard-autumn-timeline-line"></div>

@@ -19,11 +19,8 @@
       if (anchor && anchor.href) {
         const url = new URL(anchor.href);
 
-        // Only intercept internal links (same origin and starts with /docs)
-        if (
-          url.origin === window.location.origin &&
-          url.pathname.startsWith("/docs")
-        ) {
+        // Intercept all internal links (same origin)
+        if (url.origin === window.location.origin) {
           e.preventDefault();
           // Remove .html extension if present
           let pathname = url.pathname;

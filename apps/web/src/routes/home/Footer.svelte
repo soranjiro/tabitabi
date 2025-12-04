@@ -7,7 +7,7 @@
   <div class="footer-content">
     <div class="footer-links">
       <a
-        href="/docs/index.html"
+        href="/docs/index"
         rel="noopener noreferrer"
         class="footer-link"
       >

@@ -28,7 +28,7 @@
   }
 
   body {
-    background-color: #fff !important;
+    background-color: #fffaf5 !important; /* Very light cream */
     font-size: 9.5pt;
     line-height: 1.5;
     font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
@@ -36,6 +36,9 @@
     margin: 0;
     padding: 0;
     width: 100%;
+
+    /* Autumn Leaf Pattern Background */
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 30c-2-5-8-8-12-6 2 4 1 8-2 10 4 1 8-2 10-6 2 4 6 7 10 5-2-4-1-8 2-10-4-1-8 2-8 7z' fill='%23a93529' fill-opacity='0.03'/%3E%3C/svg%3E") !important;
   }
 
   /* Main Container - 3 Column Layout */
@@ -69,7 +72,7 @@
 
   .standard-autumn-title-button,
   .standard-autumn-title-input {
-    font-size: 24pt !important;
+    font-size: 26pt !important;
     color: var(--standard-autumn-primary) !important;
     font-weight: 800 !important;
     padding: 0 !important;
@@ -81,6 +84,7 @@
     display: block;
     font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
     letter-spacing: 0.1em;
+    text-shadow: 1px 1px 0 rgba(255,255,255,1);
   }
 
   /* Memo Section - Notebook Style */
@@ -110,29 +114,36 @@
     display: none !important;
   }
 
-  /* Reset Carousel Layout */
+  /* Reset Carousel Layout - Fix Focus Issue */
   .standard-autumn-carousel-wrapper,
   .standard-autumn-carousel,
   .standard-autumn-carousel-track {
     display: block !important;
     width: 100% !important;
     transform: none !important;
+    position: static !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
-  /* Day Card - Refined Style */
+  /* Day Card - Refined Style & Fix Focus Issue */
   .standard-autumn-carousel-card {
     display: inline-block !important;
     width: 100% !important;
     margin-bottom: 8mm !important;
     page-break-inside: avoid;
     break-inside: avoid;
-    opacity: 1 !important;
-    transform: none !important;
-    filter: none !important;
+    opacity: 1 !important; /* Force full opacity */
+    transform: none !important; /* Remove scaling */
+    filter: none !important; /* Remove blur */
+    pointer-events: auto !important;
+    visibility: visible !important;
+    position: static !important;
+    height: auto !important;
   }
 
   .standard-autumn-card {
-    background: transparent !important;
+    background: rgba(255, 255, 255, 0.8) !important;
     box-shadow: none !important;
     border: none !important;
     border-radius: 0 !important;
@@ -145,7 +156,7 @@
   .standard-autumn-card-header {
     background: var(--standard-autumn-primary) !important;
     color: white !important;
-    font-size: 11pt !important;
+    font-size: 12pt !important;
     font-weight: 700 !important;
     padding: 2mm 10mm !important; /* Wide padding for ribbon look */
     text-align: center !important;
@@ -154,7 +165,7 @@
     position: relative;
     display: inline-block;
     width: auto !important;
-    min-width: 50%;
+    min-width: 60%;
     margin: 0 auto 4mm !important;
     left: 50%;
     transform: translateX(-50%);
@@ -170,12 +181,12 @@
 
   .standard-autumn-card-body {
     padding: 0 2mm !important;
-    border-left: 1px solid rgba(169, 53, 41, 0.2);
-    margin-left: 50%; /* Center the line relative to card */
-    transform: translateX(-0.5px); /* Fine tune */
+    /* border-left: 1px solid rgba(169, 53, 41, 0.2); */ /* Removed */
+    /* margin-left: 50%; */ /* Removed */
+    /* transform: translateX(-0.5px); */ /* Removed */
     width: 100%;
-    margin-left: 0;
-    border-left: none; /* Reset and use timeline item lines */
+    /* margin-left: 0; */ /* Removed */
+    /* border-left: none; */ /* Removed */
   }
 
   /* Timeline Layout */
@@ -194,7 +205,7 @@
 
   /* Time */
   .standard-autumn-step-time {
-    font-size: 9pt !important;
+    font-size: 9.5pt !important;
     color: var(--standard-autumn-text) !important;
     font-weight: 700 !important;
     width: 12mm !important;
@@ -241,7 +252,7 @@
     box-shadow: none !important;
     flex: 1;
     padding-bottom: 2mm !important;
-    border-bottom: 1px dashed rgba(0,0,0,0.05) !important;
+    border-bottom: 1px dashed rgba(169, 53, 41, 0.15) !important;
   }
 
   .standard-autumn-timeline-item:last-child .standard-autumn-step-content {
@@ -249,7 +260,7 @@
   }
 
   .standard-autumn-step-title {
-    font-size: 10pt !important;
+    font-size: 10.5pt !important;
     color: #333 !important;
     font-weight: 700 !important;
     margin-bottom: 1mm !important;
@@ -258,7 +269,7 @@
   }
 
   .standard-autumn-step-location {
-    font-size: 8pt !important;
+    font-size: 8.5pt !important;
     color: #777 !important;
     margin-bottom: 1mm !important;
     display: flex;
@@ -267,21 +278,21 @@
   }
 
   .standard-autumn-icon-location {
-    width: 10px !important;
-    height: 10px !important;
+    width: 11px !important;
+    height: 11px !important;
     color: var(--standard-autumn-accent) !important;
   }
 
   /* Notes */
   .standard-autumn-step-notes {
-    font-size: 8.5pt !important;
+    font-size: 9pt !important;
     color: #555 !important;
     background: transparent !important;
     padding: 0 !important;
     border: none !important;
     line-height: 1.4 !important;
     margin-top: 1mm !important;
-    font-style: italic;
+    /* font-style: italic; */ /* Removed */
   }
 
   .standard-autumn-step-notes p {

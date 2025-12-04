@@ -1,0 +1,243 @@
+/* Settings Page/Dialog Styles */
+.standard-autumn-settings-page {
+  padding: 0;
+  max-width: 100%;
+}
+
+.standard-autumn-settings-page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--standard-autumn-text);
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+}
+
+.standard-autumn-settings-page-section {
+  margin-bottom: 1.5rem;
+}
+
+.standard-autumn-settings-page-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.standard-autumn-settings-page-section-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--standard-autumn-text);
+  margin: 0;
+}
+
+.standard-autumn-settings-page-section-header svg {
+  width: 20px;
+  height: 20px;
+  color: var(--standard-autumn-primary);
+  flex-shrink: 0;
+}
+
+.standard-autumn-settings-page-description {
+  font-size: 0.9rem;
+  color: var(--standard-autumn-text-light);
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+}
+
+.standard-autumn-settings-page-divider {
+  height: 1px;
+  background: var(--standard-autumn-line-color);
+  margin: 2rem 0;
+  opacity: 0.5;
+}
+
+.standard-autumn-settings-page-field {
+  margin-top: 1rem;
+}
+
+.standard-autumn-settings-page-label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--standard-autumn-text);
+  margin-bottom: 0.5rem;
+}
+
+.standard-autumn-settings-page-input,
+.standard-autumn-settings-page-select {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border-radius: 12px;
+  border: 2px solid var(--standard-autumn-border);
+  font-size: 1rem;
+  color: var(--standard-autumn-text);
+  background: #fff;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.standard-autumn-settings-page-input:focus,
+.standard-autumn-settings-page-select:focus {
+  outline: none;
+  border-color: var(--standard-autumn-primary);
+  box-shadow: 0 0 0 3px rgba(169, 53, 41, 0.1);
+}
+
+.standard-autumn-settings-page-hint {
+  font-size: 0.85rem;
+  color: var(--standard-autumn-text-light);
+  margin: 0.5rem 0 0 0;
+  line-height: 1.4;
+}
+
+/* Radio button styling */
+.standard-autumn-settings-page-radio {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border: 2px solid var(--standard-autumn-border);
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+  position: relative;
+}
+
+.standard-autumn-settings-page-radio:hover {
+  border-color: var(--standard-autumn-primary);
+  background: rgba(169, 53, 41, 0.02);
+}
+
+.standard-autumn-settings-page-radio input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.standard-autumn-settings-page-radio:has(input[type="radio"]:checked) {
+  border-color: var(--standard-autumn-primary);
+  background: rgba(169, 53, 41, 0.05);
+}
+
+.standard-autumn-settings-page-radio:has(input[type="radio"]:checked) .standard-autumn-settings-page-radio-check {
+  background: var(--standard-autumn-primary);
+  border-color: var(--standard-autumn-primary);
+}
+
+.standard-autumn-settings-page-radio:has(input[type="radio"]:checked) .standard-autumn-settings-page-radio-check::after {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.standard-autumn-settings-page-radio-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.standard-autumn-settings-page-radio-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--standard-autumn-text);
+}
+
+.standard-autumn-settings-page-radio-desc {
+  font-size: 0.85rem;
+  color: var(--standard-autumn-text-light);
+}
+
+.standard-autumn-settings-page-radio-check {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--standard-autumn-border);
+  border-radius: 50%;
+  margin-left: 1rem;
+  position: relative;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.standard-autumn-settings-page-radio-check::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-radius: 50%;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+
+/* Toggle styling */
+.standard-autumn-settings-page-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: rgba(169, 53, 41, 0.03);
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.standard-autumn-settings-page-toggle:hover {
+  background: rgba(169, 53, 41, 0.05);
+}
+
+.standard-autumn-settings-page-toggle-label {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--standard-autumn-text);
+}
+
+/* Actions */
+.standard-autumn-settings-page-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--standard-autumn-line-color);
+}
+
+.standard-autumn-settings-page-actions button {
+  flex: 1;
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Mobile optimizations */
+@media (max-width: 480px) {
+  .standard-autumn-settings-page-title {
+    font-size: 1.5rem;
+  }
+
+  .standard-autumn-settings-page-section-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .standard-autumn-settings-page-radio {
+    padding: 0.875rem;
+  }
+
+  .standard-autumn-settings-page-input,
+  .standard-autumn-settings-page-select {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  .standard-autumn-settings-page-actions {
+    flex-direction: column-reverse;
+  }
+
+  .standard-autumn-settings-page-actions button {
+    width: 100%;
+  }
+}

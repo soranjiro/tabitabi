@@ -289,6 +289,11 @@
   color: #fff;
 }
 
+.standard-autumn-fab-print {
+  background: var(--standard-autumn-accent);
+  color: #fff;
+}
+
 .standard-autumn-fab-top {
   background: rgba(255, 255, 255, 0.95);
   color: var(--standard-autumn-text);
@@ -296,6 +301,7 @@
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
+
 
 @keyframes fadeInUp {
   from {

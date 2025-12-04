@@ -44,6 +44,15 @@
   let touchStartX = $state<number | null>(null);
   let touchDeltaX = $state(0);
 
+  // Drag and drop state
+  let draggedStepId = $state<string | null>(null);
+  let dragOverStepId = $state<string | null>(null);
+
+  // Touch drag state for mobile
+  let touchDragStepId = $state<string | null>(null);
+  let touchStartY = $state<number | null>(null);
+  let touchCurrentY = $state<number | null>(null);
+
   function computeGroupedSteps(stepList: Step[]): [string, Step[]][] {
     const groups = new Map<string, Step[]>();
     for (const step of stepList) {
@@ -192,6 +201,215 @@
       await onDeleteStep(stepId);
     }
   }
+
+  // Drag and drop handlers
+  function handleDragStart(e: DragEvent, stepId: string) {
+    if (!hasEditPermission || editingStepId) return;
+    draggedStepId = stepId;
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move";
+    }
+  }
+
+  function handleDragOver(e: DragEvent, stepId: string) {
+    if (!hasEditPermission || !draggedStepId || editingStepId) return;
+    e.preventDefault();
+    dragOverStepId = stepId;
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = "move";
+    }
+  }
+
+  function handleDragLeave() {
+    dragOverStepId = null;
+  }
+
+  function handleDragEnd() {
+    draggedStepId = null;
+    dragOverStepId = null;
+  }
+
+  async function handleDrop(
+    e: DragEvent,
+    targetStepId: string,
+    dateSteps: Step[],
+  ) {
+    e.preventDefault();
+    if (
+      !hasEditPermission ||
+      !draggedStepId ||
+      draggedStepId === targetStepId ||
+      !onUpdateStep
+    ) {
+      draggedStepId = null;
+      dragOverStepId = null;
+      return;
+    }
+
+    const draggedIndex = dateSteps.findIndex((s) => s.id === draggedStepId);
+    const targetIndex = dateSteps.findIndex((s) => s.id === targetStepId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      draggedStepId = null;
+      dragOverStepId = null;
+      return;
+    }
+
+    // Calculate new time for the dragged step
+    const targetTime = dateSteps[targetIndex].time;
+
+    try {
+      // Only update the dragged step's time to match the target position
+      await onUpdateStep(draggedStepId, {
+        time: targetTime,
+      });
+    } catch (error) {
+      console.error("Failed to update step time:", error);
+      alert("予定の時間の更新に失敗しました");
+    }
+
+    draggedStepId = null;
+    dragOverStepId = null;
+  }
+
+  function recalculateTimes(steps: Step[]): Step[] {
+    // This function is no longer used
+    return steps;
+  }
+
+  function timeToMinutes(time: string): number {
+    const [h, m] = time.split(":").map(Number);
+    return h * 60 + m;
+  }
+
+  function minutesToTime(minutes: number): string {
+    const h = Math.floor(minutes / 60) % 24;
+    const m = minutes % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+
+  // Touch event handlers for mobile drag and drop
+  function handleTouchDragStart(e: TouchEvent, stepId: string) {
+    if (!hasEditPermission || editingStepId) return;
+    touchDragStepId = stepId;
+    touchStartY = e.touches[0].clientY;
+    touchCurrentY = touchStartY;
+  }
+
+  function handleTouchDragMove(e: TouchEvent) {
+    if (!touchDragStepId || !touchStartY) return;
+    touchCurrentY = e.touches[0].clientY;
+    const deltaY = touchCurrentY - touchStartY;
+
+    // Find the element being dragged
+    const target = e.target as HTMLElement;
+    const timelineItem = target.closest(".standard-autumn-timeline-item");
+    if (timelineItem && Math.abs(deltaY) > 5) {
+      e.preventDefault(); // Prevent scrolling when dragging
+    }
+  }
+
+  async function handleTouchDragEnd(e: TouchEvent, dateSteps: Step[]) {
+    if (!touchDragStepId || touchStartY === null || touchCurrentY === null) {
+      touchDragStepId = null;
+      touchStartY = null;
+      touchCurrentY = null;
+      return;
+    }
+
+    const deltaY = touchCurrentY - touchStartY;
+
+    // Only proceed if moved more than 30px
+    if (Math.abs(deltaY) < 30) {
+      touchDragStepId = null;
+      touchStartY = null;
+      touchCurrentY = null;
+      return;
+    }
+
+    // Find the dragged step index
+    const draggedIndex = dateSteps.findIndex((s) => s.id === touchDragStepId);
+    if (draggedIndex === -1 || !onUpdateStep) {
+      touchDragStepId = null;
+      touchStartY = null;
+      touchCurrentY = null;
+      return;
+    }
+
+    // Determine target index based on direction
+    let targetIndex = draggedIndex;
+    if (deltaY < 0) {
+      // Moved up
+      targetIndex = Math.max(0, draggedIndex - 1);
+    } else {
+      // Moved down
+      targetIndex = Math.min(dateSteps.length - 1, draggedIndex + 1);
+    }
+
+    // If no actual move, bail out
+    if (targetIndex === draggedIndex) {
+      touchDragStepId = null;
+      touchStartY = null;
+      touchCurrentY = null;
+      return;
+    }
+
+    // Get target time
+    const targetTime = dateSteps[targetIndex].time;
+
+    try {
+      await onUpdateStep(touchDragStepId, {
+        time: targetTime,
+      });
+    } catch (error) {
+      console.error("Failed to update step time:", error);
+      alert("予定の時間の更新に失敗しました");
+    }
+
+    touchDragStepId = null;
+    touchStartY = null;
+    touchCurrentY = null;
+  }
+
+  // Action to handle touch events with passive: false
+  function setupTouchDrag(node: HTMLElement, stepId: string) {
+    const handleStart = (e: TouchEvent) => handleTouchDragStart(e, stepId);
+    const handleMove = (e: TouchEvent) => handleTouchDragMove(e);
+    const handleEnd = (e: TouchEvent) => {
+      // We need to pass the current dateSteps. Since this is inside an action,
+      // we need to access the current state.
+      // However, for simplicity in this context, we can rely on the component state
+      // or pass a function that gets the current steps.
+      // Here we'll use a slightly different approach for the end handler
+      // or just pass the steps from the component scope if available.
+      // A better way is to update the action parameters when steps change,
+      // but for now let's try to use the component's dateSteps if accessible
+      // or just pass the steps to the action.
+
+      // Actually, handleTouchDragEnd needs dateSteps.
+      // Let's find the dateSteps for this stepId.
+      const date = steps.find((s) => s.id === stepId)?.date;
+      if (date) {
+        const dateSteps = groupedSteps().find(([d]) => d === date)?.[1] || [];
+        handleTouchDragEnd(e, dateSteps);
+      }
+    };
+
+    node.addEventListener("touchstart", handleStart, { passive: true });
+    node.addEventListener("touchmove", handleMove, { passive: false });
+    node.addEventListener("touchend", handleEnd);
+
+    return {
+      update(newStepId: string) {
+        stepId = newStepId;
+      },
+      destroy() {
+        node.removeEventListener("touchstart", handleStart);
+        node.removeEventListener("touchmove", handleMove);
+        node.removeEventListener("touchend", handleEnd);
+      },
+    };
+  }
 </script>
 
 {#if steps.length === 0}
@@ -286,7 +504,19 @@
               </button>
               <div class="standard-autumn-card-body">
                 {#each dateSteps as step}
-                  <div class="standard-autumn-timeline-item">
+                  <div
+                    class="standard-autumn-timeline-item"
+                    class:dragging={draggedStepId === step.id}
+                    class:drag-over={dragOverStepId === step.id}
+                    class:touch-dragging={touchDragStepId === step.id}
+                    draggable={hasEditPermission && !editingStepId}
+                    ondragstart={(e) => handleDragStart(e, step.id)}
+                    ondragover={(e) => handleDragOver(e, step.id)}
+                    ondragleave={handleDragLeave}
+                    ondragend={handleDragEnd}
+                    ondrop={(e) => handleDrop(e, step.id, dateSteps)}
+                    use:setupTouchDrag={step.id}
+                  >
                     <div class="standard-autumn-step-time">{step.time}</div>
                     <div class="standard-autumn-timeline-line"></div>
                     <div class="standard-autumn-step-dot"></div>

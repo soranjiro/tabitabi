@@ -142,7 +142,7 @@
           </button>
           たびたび
         </h1>
-        <p class="hero-subtitle">旅のしおりを、サクッと作成・共有</p>
+        <p class="hero-subtitle">旅のしおりを、サクッと作成</p>
 
         <div class="hero-cta">
           <button onclick={scrollToCreate} class="btn-primary">
@@ -183,7 +183,10 @@
           <IconPhone size={32} />
         {/snippet}
       </FeatureCard>
-      <FeatureCard title="URL共有" description="リンク1つで仲間と共有">
+      <FeatureCard
+        title="URL共有"
+        description="リンク1つで仲間と共有{'\n'}ユーザ登録不要"
+      >
         {#snippet icon()}
           <IconLink size={32} />
         {/snippet}

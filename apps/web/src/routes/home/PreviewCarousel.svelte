@@ -30,9 +30,10 @@
     previews: PreviewItinerary[];
     currentIndex: number;
     onSelect: (index: number) => void;
+    onTryDemo?: () => void;
   }
 
-  let { previews, currentIndex, onSelect }: Props = $props();
+  let { previews, currentIndex, onSelect, onTryDemo }: Props = $props();
 
   function getDateDisplay(): string {
     const today = new Date();
@@ -269,6 +270,9 @@
       </div>
     {/each}
   </div>
+  {#if onTryDemo}
+    <button onclick={onTryDemo} class="try-demo-btn"> テーマを試す </button>
+  {/if}
   <div class="preview-dots">
     {#each previews as _, i}
       <button
@@ -282,15 +286,16 @@
 
 <style>
   .hero-visual {
-    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     width: 280px;
-    height: 340px;
   }
 
   .preview-carousel {
     position: relative;
     width: 100%;
-    height: 100%;
+    height: 300px;
   }
 
   @media (min-width: 900px) {
@@ -908,12 +913,9 @@
 
   /* Dots */
   .preview-dots {
-    position: absolute;
-    bottom: -1.5rem;
-    left: 50%;
-    transform: translateX(-50%);
     display: flex;
     gap: 0.5rem;
+    margin-top: 1rem;
   }
 
   .dot {
@@ -931,5 +933,26 @@
   .dot.active {
     background: white;
     transform: scale(1.2);
+  }
+
+  .try-demo-btn {
+    display: block;
+    margin: 0.5rem auto 0;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .try-demo-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.7);
+    color: white;
   }
 </style>

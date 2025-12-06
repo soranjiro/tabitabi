@@ -6,10 +6,13 @@
     FeatureCard,
     CreateForm,
     RecentItineraries,
+    RecentItinerariesCompact,
+    DemoThemeSelector,
     Footer,
     ScrollTopButton,
-    previewItineraries,
     FlyingAirplane,
+    RotatingText,
+    previewItineraries,
   } from "./home";
   import {
     IconAirplane,
@@ -25,8 +28,9 @@
     Array<{ id: string; title: string; visitedAt: number }>
   >([]);
   let showRecent = $state(false);
-  let currentPreview = $state(0);
   let showScrollButton = $state(false);
+  let showDemoSelector = $state(false);
+  let currentPreview = $state(0);
 
   let flyingAirplanes = $state<number[]>([]);
   let airplaneIdCounter = 0;
@@ -62,7 +66,6 @@
     const interval = setInterval(() => {
       currentPreview = (currentPreview + 1) % previewItineraries.length;
     }, 4000);
-
     const handleScroll = () => {
       showScrollButton = window.scrollY > 300;
     };
@@ -80,10 +83,6 @@
 
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function scrollToFeatures() {
-    document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
   }
 
   function removeRecent(id: string) {
@@ -142,23 +141,30 @@
           </button>
           たびたび
         </h1>
-        <p class="hero-subtitle">旅のしおりを、サクッと作成</p>
+        <p class="hero-subtitle"><RotatingText />を、サクッと作成</p>
 
         <div class="hero-cta">
           <button onclick={scrollToCreate} class="btn-primary">
             無料でしおりを作成
           </button>
-          <button onclick={scrollToFeatures} class="btn-secondary">
-            機能を見る ↓
-          </button>
         </div>
+
+        {#if showRecent && recentItineraries.length > 0}
+          <RecentItinerariesCompact
+            items={recentItineraries}
+            onShowMore={scrollToCreate}
+          />
+        {/if}
       </div>
 
-      <PreviewCarousel
-        previews={previewItineraries}
-        currentIndex={currentPreview}
-        onSelect={(i) => (currentPreview = i)}
-      />
+      <div class="hero-preview">
+        <PreviewCarousel
+          previews={previewItineraries}
+          currentIndex={currentPreview}
+          onSelect={(i) => (currentPreview = i)}
+          onTryDemo={() => (showDemoSelector = true)}
+        />
+      </div>
     </div>
   </section>
 
@@ -223,6 +229,11 @@
   <Footer />
 
   <ScrollTopButton visible={showScrollButton} onclick={scrollToTop} />
+
+  <DemoThemeSelector
+    open={showDemoSelector}
+    onClose={() => (showDemoSelector = false)}
+  />
 </div>
 
 <style>
@@ -357,23 +368,6 @@
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   }
 
-  .btn-secondary {
-    color: white;
-    font-size: 0.9rem;
-    font-weight: 600;
-    padding: 0.75rem 1.25rem;
-    background: rgba(0, 0, 0, 0.15);
-    border: 2px solid rgba(255, 255, 255, 0.6);
-    border-radius: 9999px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.8);
-  }
-
   .features {
     background: white;
     padding: 4rem 1rem;
@@ -447,6 +441,31 @@
     .features-grid {
       grid-template-columns: repeat(4, 1fr);
       max-width: 700px;
+    }
+  }
+
+  .hero-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  /* iPhone SE responsive adjustments */
+  @media (max-width: 375px) {
+    .hero-title {
+      font-size: 2.5rem;
+    }
+
+    .hero-subtitle {
+      font-size: 0.95rem;
+    }
+
+    .btn-primary {
+      font-size: 0.9rem;
+      padding: 0.75rem 1.5rem;
     }
   }
 

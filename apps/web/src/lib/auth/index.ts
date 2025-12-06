@@ -106,6 +106,7 @@ export const auth = {
   getRecentItineraries(limit: number = 5) {
     const history = this.getHistory();
     return history
+      .filter(h => h.shioriId !== 'demo') // Exclude demo entries
       .sort((a, b) => b.accessedAt - a.accessedAt)
       .slice(0, limit)
       .map(h => ({

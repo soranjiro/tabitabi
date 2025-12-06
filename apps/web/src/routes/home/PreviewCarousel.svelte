@@ -46,6 +46,9 @@
 </script>
 
 <div class="hero-visual">
+  {#if onTryDemo}
+    <button onclick={onTryDemo} class="try-demo-btn"> テーマを試す </button>
+  {/if}
   <div class="preview-carousel">
     {#each previews as preview, i}
       <div
@@ -270,9 +273,6 @@
       </div>
     {/each}
   </div>
-  {#if onTryDemo}
-    <button onclick={onTryDemo} class="try-demo-btn"> テーマを試す </button>
-  {/if}
   <div class="preview-dots">
     {#each previews as _, i}
       <button
@@ -285,11 +285,69 @@
 </div>
 
 <style>
+  .hero {
+    height: 100vh;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem;
+  }
+
+  .hero-title {
+    font-size: 3rem;
+    font-weight: 900;
+    color: #333;
+  }
+
+  .hero-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.95;
+    margin-bottom: 1rem;
+    font-weight: 500;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  }
+
+  .btn-primary {
+    background: white;
+    color: #333;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0.875rem 2rem;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  }
+
+  .recent-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+  }
+
+  .recent-link {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+  }
+
+  .recent-remove {
+    background: #ffa9a9;
+  }
+
+  .recent-link:hover {
+    border-color: #6b8cce;
+    background: rgba(107, 140, 206, 0.05);
+  }
+
   .hero-visual {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 280px;
+    position: relative;
   }
 
   @media (max-width: 480px) {
@@ -315,6 +373,35 @@
     .hero-visual {
       margin-right: 2rem;
     }
+  }
+
+  .try-demo-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100;
+    background: white;
+    border: none;
+    color: #333;
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 0.7rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease-out;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+
+  .try-demo-btn:hover {
+    background: #f0f0f0;
+    transform: translate(-50%, -50%) translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .try-demo-btn:active {
+    transform: translate(-50%, -50%) translateY(0);
   }
 
   .preview-card {
@@ -953,31 +1040,5 @@
   .dot.active {
     background: white;
     transform: scale(1.2);
-  }
-
-  .try-demo-btn {
-    display: block;
-    margin: 0.5rem auto 0;
-    background: rgba(255, 255, 255, 0.98);
-    border: 2px solid white;
-    color: #2c3e50;
-    font-size: 0.9rem;
-    font-weight: 700;
-    padding: 0.5rem 1rem;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  .try-demo-btn:hover {
-    background: white;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-  }
-
-  .try-demo-btn:active {
-    transform: translateY(0);
   }
 </style>

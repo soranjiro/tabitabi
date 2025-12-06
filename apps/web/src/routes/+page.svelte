@@ -65,7 +65,7 @@
 
     const interval = setInterval(() => {
       currentPreview = (currentPreview + 1) % previewItineraries.length;
-    }, 4000);
+    }, 3000);
     const handleScroll = () => {
       showScrollButton = window.scrollY > 300;
     };

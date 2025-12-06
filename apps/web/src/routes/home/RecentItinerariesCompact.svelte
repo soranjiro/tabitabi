@@ -41,40 +41,41 @@
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
-    background: rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(10px);
-    padding: 1rem 1.25rem;
-    border-radius: 12px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(6px);
+    padding: 0.875rem 1rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .recent-label {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 700;
     color: white;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
+    opacity: 0.85;
   }
 
   .recent-row {
     display: flex;
     flex-wrap: nowrap;
-    gap: 0.5rem;
+    gap: 0.4rem;
     align-items: center;
   }
 
   .recent-chip {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     color: white;
-    background: rgba(255, 255, 255, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    padding: 0.4rem 0.75rem;
-    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 0.35rem 0.6rem;
+    border-radius: 20px;
     cursor: pointer;
-    transition: all 0.2s;
-    max-width: 100px;
+    transition: all 0.15s;
+    max-width: 95px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -82,45 +83,45 @@
   }
 
   .recent-chip:hover {
-    background: rgba(255, 255, 255, 0.35);
-    border-color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.6);
   }
 
   .show-more-btn {
-    font-size: 0.7rem;
-    color: rgb(255, 255, 255);
-    background: rgba(255, 255, 255, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    font-size: 0.75rem;
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     cursor: pointer;
-    padding: 0.4rem 0.6rem;
-    border-radius: 999px;
-    transition: all 0.2s;
+    padding: 0.35rem 0.5rem;
+    border-radius: 20px;
+    transition: all 0.15s;
     white-space: nowrap;
-    font-weight: 600;
+    font-weight: 700;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    min-width: 24px;
+    text-align: center;
   }
 
   .show-more-btn:hover {
-    background: rgba(255, 255, 255, 0.35);
-    color: white;
-    border-color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.6);
   }
 
-  /* iPhone SE */
   @media (max-width: 375px) {
     .recent-chip {
-      max-width: 75px;
-      font-size: 0.7rem;
-      padding: 0.35rem 0.6rem;
+      max-width: 70px;
+      font-size: 0.65rem;
+      padding: 0.3rem 0.5rem;
     }
 
     .show-more-btn {
       font-size: 0.65rem;
-      padding: 0.35rem 0.5rem;
+      padding: 0.3rem 0.4rem;
     }
 
     .recent-compact {
-      padding: 0.75rem 1rem;
+      padding: 0.75rem 0.875rem;
     }
   }
 </style>

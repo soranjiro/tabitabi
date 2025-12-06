@@ -124,7 +124,7 @@
     width: 40px;
     height: 40px;
     border: none;
-    background: #ffa9a9;
+    background: #fbd4d4;
     color: #404040;
     cursor: pointer;
     border-radius: 8px;
@@ -137,7 +137,7 @@
   }
 
   .recent-remove:hover {
-    background: #fee2e2;
+    background: #ffa9a9;
     color: #dc2626;
   }
 </style>

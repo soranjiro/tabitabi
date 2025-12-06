@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  const phrases = ["旅のしおり", "一日の予定", "買い物の予定", "週末プラン"];
+  const phrases = ["旅のしおり", "一日の予定", "買物の予定", "週末プラン"];
 
   let currentIndex = $state(0);
   let isAnimating = $state(false);

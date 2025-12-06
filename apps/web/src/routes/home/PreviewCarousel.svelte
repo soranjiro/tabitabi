@@ -292,10 +292,23 @@
     width: 280px;
   }
 
+  @media (max-width: 480px) {
+    .hero-visual {
+      width: 100%;
+      max-width: 280px;
+    }
+  }
+
   .preview-carousel {
     position: relative;
     width: 100%;
     height: 300px;
+  }
+
+  @media (max-width: 480px) {
+    .preview-carousel {
+      height: 280px;
+    }
   }
 
   @media (min-width: 900px) {
@@ -319,6 +332,13 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+  }
+
+  @media (max-width: 480px) {
+    .preview-card {
+      width: 100%;
+      max-width: 240px;
+    }
   }
 
   .preview-card.card {
@@ -938,21 +958,26 @@
   .try-demo-btn {
     display: block;
     margin: 0.5rem auto 0;
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    color: rgba(255, 255, 255, 0.95);
-    font-size: 0.8rem;
-    font-weight: 500;
-    padding: 0.4rem 0.85rem;
+    background: rgba(255, 255, 255, 0.98);
+    border: 2px solid white;
+    color: #2c3e50;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
     border-radius: 999px;
     cursor: pointer;
     transition: all 0.2s;
     white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   .try-demo-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.7);
-    color: white;
+    background: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  .try-demo-btn:active {
+    transform: translateY(0);
   }
 </style>

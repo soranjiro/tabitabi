@@ -243,20 +243,36 @@
   }
 
   .hero {
+    height: 100vh;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
+  }
+
+  @media (max-width: 480px) {
+    .hero {
+      padding: 1rem 1rem;
+      height: 100vh;
+    }
   }
 
   .hero-main {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2rem;
+    gap: 1.5rem;
     max-width: 1100px;
     width: 100%;
+    height: 100%;
+    justify-content: center;
+  }
+
+  @media (max-width: 480px) {
+    .hero-main {
+      gap: 1rem;
+    }
   }
 
   @media (min-width: 900px) {
@@ -264,6 +280,7 @@
       flex-direction: row;
       justify-content: space-between;
       gap: 1rem;
+      height: 100%;
     }
   }
 
@@ -271,6 +288,13 @@
     color: white;
     max-width: 420px;
     text-align: center;
+    width: 100%;
+  }
+
+  @media (max-width: 480px) {
+    .hero-content {
+      max-width: 100%;
+    }
   }
 
   @media (min-width: 900px) {
@@ -288,6 +312,13 @@
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
+  }
+
+  @media (max-width: 480px) {
+    .hero-title {
+      font-size: 2.2rem;
+      gap: 0.3rem;
+    }
   }
 
   @media (min-width: 900px) {
@@ -330,10 +361,17 @@
 
   .hero-subtitle {
     font-size: 1.1rem;
-    opacity: 1;
+    opacity: 0.95;
     margin-bottom: 1rem;
     font-weight: 500;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  }
+
+  @media (max-width: 480px) {
+    .hero-subtitle {
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+    }
   }
 
   .hero-cta {
@@ -352,7 +390,7 @@
 
   .btn-primary {
     background: white;
-    color: #6b8cce;
+    color: #3d5a99;
     font-size: 1rem;
     font-weight: 700;
     padding: 0.875rem 2rem;
@@ -361,6 +399,13 @@
     cursor: pointer;
     transition: all 0.2s;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  }
+
+  @media (max-width: 480px) {
+    .btn-primary {
+      font-size: 0.95rem;
+      padding: 0.75rem 1.5rem;
+    }
   }
 
   .btn-primary:hover {
@@ -373,12 +418,24 @@
     padding: 4rem 1rem;
   }
 
+  @media (max-width: 480px) {
+    .features {
+      padding: 2.5rem 1rem;
+    }
+  }
+
   .section-header {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     margin-bottom: 2.5rem;
+  }
+
+  @media (max-width: 480px) {
+    .section-header {
+      margin-bottom: 1.5rem;
+    }
   }
 
   .section-title {
@@ -389,17 +446,32 @@
     margin: 0;
   }
 
+  @media (max-width: 480px) {
+    .section-title {
+      font-size: 1.4rem;
+    }
+  }
+
   .docs-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #6b8cce;
+    color: #3d5a99;
     padding: 0.375rem;
     border-radius: 6px;
-    /* background: rgba(194, 203, 222, 0.1); */
     background: white;
-    border: 1px solid rgba(107, 140, 206, 0.3);
+    border: 2px solid rgba(61, 90, 153, 0.3);
     transition: all 0.2s;
+  }
+
+  .docs-link:hover {
+    color: #2c3e50;
+    background: rgba(107, 140, 206, 0.12);
+    border-color: rgba(61, 90, 153, 0.5);
+  }
+
+  .docs-link:active {
+    transform: scale(0.95);
   }
 
   .docs-icon-wrapper {
@@ -417,16 +489,7 @@
     background: white;
     border-radius: 3px;
     padding: 1px;
-  }
-
-  .docs-link:hover {
-    color: #5a7ab8;
-    background: rgba(107, 140, 206, 0.18);
-    border-color: rgba(107, 140, 206, 0.35);
-  }
-
-  .docs-link:active {
-    transform: scale(0.95);
+    color: #3d5a99;
   }
 
   .features-grid {
@@ -451,6 +514,16 @@
     gap: 0.5rem;
     margin-top: 1rem;
     margin-bottom: 2rem;
+    width: 100%;
+    max-width: 350px;
+  }
+
+  @media (max-width: 480px) {
+    .hero-preview {
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+      max-width: 100%;
+    }
   }
 
   /* iPhone SE responsive adjustments */
@@ -478,6 +551,12 @@
       #e4f3ff 100%
     );
     padding: 4rem 1rem;
+  }
+
+  @media (max-width: 480px) {
+    .create-section {
+      padding: 2.5rem 1rem;
+    }
   }
 
   .create-container {

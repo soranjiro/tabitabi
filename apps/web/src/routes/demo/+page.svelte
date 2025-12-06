@@ -2,7 +2,12 @@
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
-  import { demoStorage, getDemoData } from "$lib/demo";
+  import {
+    demoStorage,
+    getDemoData,
+    setDemoMode,
+    resetDemoMode,
+  } from "$lib/demo";
   import { loadTheme, type AvailableTheme } from "$lib/themes";
   import { auth } from "$lib/auth";
   import type { Theme } from "@tabitabi/types";
@@ -21,6 +26,9 @@
 
   onMount(async () => {
     try {
+      // Enable demo mode for this page
+      setDemoMode(true);
+
       // Get theme from URL parameter
       const themeId = $page.url.searchParams.get("theme") || "minimal";
 
@@ -42,9 +50,6 @@
         return;
       }
 
-      // Set edit permission for demo mode (use a fake token)
-      auth.setToken(itinerary.id, itinerary.title, "demo-token");
-
       document.body.style.backgroundColor = backgroundColor;
       document.documentElement.style.backgroundColor = backgroundColor;
       loading = false;
@@ -52,6 +57,10 @@
       console.error("Failed to load demo:", e);
       error = "デモの読み込みに失敗しました";
     }
+
+    return () => {
+      resetDemoMode();
+    };
   });
 
   async function handleUpdateItinerary(updateData: {

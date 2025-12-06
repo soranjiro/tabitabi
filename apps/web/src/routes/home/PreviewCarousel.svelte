@@ -279,7 +279,7 @@
   {#if onTryDemo}
     <button onclick={onTryDemo} class="try-demo-link">
       <span class="try-demo-icon">▶</span>
-      <span>テーマを試す</span>
+      <span class="try-demo-label">テーマを試す</span>
     </button>
   {/if}
 </div>
@@ -957,7 +957,6 @@
   .try-demo-link {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
     margin-top: 0.75rem;
     background: none;
     border: none;
@@ -974,18 +973,44 @@
     transform: scale(1.05);
   }
 
+  .try-demo-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    border: #80d5ff 2px solid;
+    border-radius: 999px;
+    background: linear-gradient(
+      135deg,
+      #a2d8f3 0%,
+      #96d4f2 80%,
+      #88bfe6 100%
+    );
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
   .try-demo-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.4rem;
-    height: 1.4rem;
-    background: white;
-    color: #3d5a99;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: #80d5ff 2px solid;
+    background: #a2d8f3;
+    color: white;
     border-radius: 50%;
-    font-size: 0.6rem;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    transition: all 0.2s;
+    font-size: 0.8rem;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
   .try-demo-link:hover .try-demo-icon {

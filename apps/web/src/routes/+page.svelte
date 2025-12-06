@@ -405,7 +405,7 @@
     display: none;
   }
 
-  @media (min-height: 700px) and (min-width: 375px) {
+  @media (min-height: 700px) {
     .hero-recent {
       display: block;
     }
@@ -518,8 +518,7 @@
 
   @media (max-width: 480px) {
     .hero-preview {
-      margin-top: auto;
-      margin-bottom: auto;
+      margin-bottom: 1rem;
       max-width: 100%;
     }
   }

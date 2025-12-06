@@ -262,7 +262,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.5rem;
+    gap: 2rem;
     max-width: 1100px;
     width: 100%;
     height: 100%;
@@ -270,6 +270,12 @@
   }
 
   @media (max-width: 480px) {
+    .hero-main {
+      gap: 1.5rem;
+    }
+  }
+
+  @media (max-height: 700px) {
     .hero-main {
       gap: 1rem;
     }
@@ -307,7 +313,7 @@
     font-size: 3rem;
     font-weight: 900;
     color: white;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -316,8 +322,16 @@
 
   @media (max-width: 480px) {
     .hero-title {
-      font-size: 2.2rem;
+      font-size: 2.5rem;
       gap: 0.3rem;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .hero-title {
+      font-size: 2.2rem;
+      margin-bottom: 0.3rem;
     }
   }
 
@@ -360,17 +374,24 @@
   }
 
   .hero-subtitle {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     opacity: 0.95;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
     font-weight: 500;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
   }
 
   @media (max-width: 480px) {
     .hero-subtitle {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .hero-subtitle {
       font-size: 0.95rem;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.6rem;
     }
   }
 
@@ -391,9 +412,9 @@
   .btn-primary {
     background: white;
     color: #3d5a99;
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 700;
-    padding: 0.875rem 2rem;
+    padding: 1rem 2.25rem;
     border-radius: 9999px;
     border: none;
     cursor: pointer;
@@ -403,8 +424,15 @@
 
   @media (max-width: 480px) {
     .btn-primary {
-      font-size: 0.95rem;
-      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      padding: 0.875rem 1.75rem;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .btn-primary {
+      font-size: 0.9rem;
+      padding: 0.7rem 1.4rem;
     }
   }
 
@@ -512,7 +540,7 @@
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
-    margin-top: 1rem;
+    margin-top: 0.5rem;
     margin-bottom: 2rem;
     width: 100%;
     max-width: 350px;
@@ -520,25 +548,16 @@
 
   @media (max-width: 480px) {
     .hero-preview {
-      margin-top: 0.5rem;
+      margin-top: 0.25rem;
       margin-bottom: 1rem;
       max-width: 100%;
     }
   }
 
-  /* iPhone SE responsive adjustments */
-  @media (max-width: 375px) {
-    .hero-title {
-      font-size: 2.5rem;
-    }
-
-    .hero-subtitle {
-      font-size: 0.95rem;
-    }
-
-    .btn-primary {
-      font-size: 0.9rem;
-      padding: 0.75rem 1.5rem;
+  @media (max-height: 700px) {
+    .hero-preview {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
     }
   }
 

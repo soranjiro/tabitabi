@@ -46,9 +46,6 @@
 </script>
 
 <div class="hero-visual">
-  {#if onTryDemo}
-    <button onclick={onTryDemo} class="try-demo-btn"> テーマを試す </button>
-  {/if}
   <div class="preview-carousel">
     {#each previews as preview, i}
       <div
@@ -219,9 +216,6 @@
                       <div class="timeline-time-col">
                         <span class="timeline-time">{step.time}</span>
                         <div class="timeline-dot"></div>
-                        {#if j < preview.steps.length - 1}
-                          <div class="timeline-line"></div>
-                        {/if}
                       </div>
                       <div class="timeline-content-card">
                         <div class="timeline-content-main">
@@ -282,6 +276,12 @@
       ></button>
     {/each}
   </div>
+  {#if onTryDemo}
+    <button onclick={onTryDemo} class="try-demo-link">
+      <span class="try-demo-icon">▶</span>
+      <span>テーマを試す</span>
+    </button>
+  {/if}
 </div>
 
 <style>
@@ -373,35 +373,6 @@
     .hero-visual {
       margin-right: 2rem;
     }
-  }
-
-  .try-demo-btn {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 100;
-    background: white;
-    border: none;
-    color: #333;
-    font-size: 0.95rem;
-    font-weight: 700;
-    padding: 0.7rem 1.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease-out;
-    white-space: nowrap;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  }
-
-  .try-demo-btn:hover {
-    background: #f0f0f0;
-    transform: translate(-50%, -50%) translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  }
-
-  .try-demo-btn:active {
-    transform: translate(-50%, -50%) translateY(0);
   }
 
   .preview-card {
@@ -627,13 +598,6 @@
     background: var(--primary);
     border-radius: 50%;
     margin: 0.15rem 0;
-  }
-
-  .timeline-line {
-    flex: 1;
-    width: 2px;
-    background: var(--primary);
-    min-height: 0.5rem;
   }
 
   .timeline-content-card {
@@ -1040,5 +1004,44 @@
   .dot.active {
     background: white;
     transform: scale(1.2);
+  }
+
+  .try-demo-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0.3rem 0;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .try-demo-link:hover {
+    transform: scale(1.05);
+  }
+
+  .try-demo-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    background: white;
+    color: #3d5a99;
+    border-radius: 50%;
+    font-size: 0.6rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s;
+  }
+
+  .try-demo-link:hover .try-demo-icon {
+    transform: scale(1.1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
   }
 </style>

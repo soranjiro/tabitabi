@@ -2,12 +2,12 @@
   import { onMount } from "svelte";
 
   const phrases = [
-    "　　一日の予定",
-    "　旅行のしおり",
-    "買い物のプラン",
-    "面白いデザイン",
-    "ユニークな体験",
-    "自分だけの計画",
+    "一日の予定表",
+    "旅行のしおり",
+    "買い物プラン",
+    "RPGデザイン",
+    "ユニーク計画",
+    "自分だけの旅",
   ];
   let maxWidth = $state<number | null>(null);
 
@@ -63,17 +63,27 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    padding: 0.1em 0.25em;
     width: var(--rotating-text-width, auto);
     min-width: var(--rotating-text-width, auto);
+    /* font-weight: 700; */
+    letter-spacing: 0.01em;
     white-space: nowrap;
     text-align: center;
     transition:
-      opacity 0.3s,
+      opacity 0.2s,
       transform 0.3s;
   }
 
   .fade-out {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(8px);
+  }
+
+  @media (min-width: 1024px) {
+    .rotating-text {
+      min-width: 12ch;
+      font-size: 1.35rem;
+    }
   }
 </style>

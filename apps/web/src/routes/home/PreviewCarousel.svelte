@@ -363,9 +363,9 @@
     height: 300px;
   }
 
-  @media (max-width: 480px) {
+  @media (max-width: 480px) or (max-height: 640px) {
     .preview-carousel {
-      height: 280px;
+      height: 250px;
     }
   }
 
@@ -539,7 +539,7 @@
   .timeline-day-card {
     background: linear-gradient(135deg, #fffdf8 0%, #fcf9f2 100%);
     border-radius: 12px;
-    padding: 0.5rem;
+    /* padding: 0.5rem; */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     position: relative;
     overflow: hidden;
@@ -746,7 +746,8 @@
 
   .ai-header {
     background: linear-gradient(135deg, #0284c7, #38bdf8);
-    padding: 0.6rem;
+    padding: 0.3rem;
+    margin-bottom: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -799,11 +800,14 @@
     gap: 0.5rem;
   }
 
+  .preview-card.theme-shopping .preview-content {
+    padding: 0.5rem;
+  }
+
   .shopping-title {
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--text);
-    margin-bottom: 0.2rem;
   }
 
   .shopping-store {
@@ -818,7 +822,7 @@
     font-weight: 700;
     color: var(--primary);
     background: rgba(16, 185, 129, 0.1);
-    padding: 0.25rem 0.5rem;
+    padding: 0.1rem 0.5rem;
     border-bottom: 1px solid var(--border);
   }
 

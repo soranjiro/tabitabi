@@ -149,12 +149,14 @@
           </button>
         </div>
 
-        {#if showRecent && recentItineraries.length > 0}
+        <div class="hero-recent">
+          {#if showRecent && recentItineraries.length > 0}
           <RecentItinerariesCompact
-            items={recentItineraries}
-            onShowMore={scrollToCreate}
+          items={recentItineraries}
+          onShowMore={scrollToCreate}
           />
-        {/if}
+          {/if}
+        </div>
       </div>
 
       <div class="hero-preview">
@@ -262,30 +264,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2rem;
+    gap: auto;
     max-width: 1100px;
     width: 100%;
     height: 100%;
     justify-content: center;
   }
 
-  @media (max-width: 480px) {
-    .hero-main {
-      gap: 1.5rem;
-    }
-  }
-
-  @media (max-height: 700px) {
-    .hero-main {
-      gap: 1rem;
-    }
-  }
 
   @media (min-width: 900px) {
     .hero-main {
       flex-direction: row;
       justify-content: space-between;
-      gap: 1rem;
       height: 100%;
     }
   }
@@ -295,6 +285,7 @@
     max-width: 420px;
     text-align: center;
     width: 100%;
+    margin: auto 0rem;
   }
 
   @media (max-width: 480px) {
@@ -303,17 +294,11 @@
     }
   }
 
-  @media (min-width: 900px) {
-    .hero-content {
-      text-align: left;
-    }
-  }
-
   .hero-title {
     font-size: 3rem;
     font-weight: 900;
     color: white;
-    margin-bottom: 0.75rem;
+    margin-bottom: auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -330,14 +315,13 @@
 
   @media (max-height: 700px) {
     .hero-title {
-      font-size: 2.2rem;
+      margin-top: 0.5rem;
       margin-bottom: 0.3rem;
     }
   }
 
   @media (min-width: 900px) {
     .hero-title {
-      justify-content: flex-start;
       font-size: 3.5rem;
     }
   }
@@ -377,16 +361,10 @@
     font-size: 1.2rem;
     opacity: 0.95;
     margin-right: 0.5rem;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.5rem;
     font-weight: 500;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
   }
-
-  /* @media (min-width: 900px) {
-    .hero-subtitle :global(.rotating-text) {
-      margin-right: 0.5rem;
-    }
-  } */
 
   @media (max-width: 480px) {
     .hero-subtitle {
@@ -397,7 +375,6 @@
 
   @media (max-height: 700px) {
     .hero-subtitle {
-      font-size: 0.95rem;
       margin-bottom: 0.6rem;
     }
   }
@@ -407,13 +384,7 @@
     flex-direction: column;
     gap: 0.75rem;
     align-items: center;
-  }
-
-  @media (min-width: 900px) {
-    .hero-cta {
-      flex-direction: row;
-      align-items: flex-start;
-    }
+    margin: auto;
   }
 
   .btn-primary {
@@ -429,23 +400,19 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   }
 
-  @media (max-width: 480px) {
-    .btn-primary {
-      font-size: 1rem;
-      padding: 0.875rem 1.75rem;
-    }
-  }
-
-  @media (max-height: 700px) {
-    .btn-primary {
-      font-size: 0.9rem;
-      padding: 0.7rem 1.4rem;
-    }
-  }
-
   .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .hero-recent {
+    display: none;
+  }
+
+  @media (min-height: 700px) and (min-width: 375px) {
+    .hero-recent {
+      display: block;
+    }
   }
 
   .features {
@@ -555,18 +522,17 @@
 
   @media (max-width: 480px) {
     .hero-preview {
-      margin-top: 0.25rem;
-      margin-bottom: 1rem;
+      margin-top: auto;
+      margin-bottom: auto;
       max-width: 100%;
     }
   }
 
-  @media (max-height: 700px) {
+  /* @media (max-height: 568px) {
     .hero-preview {
-      margin-top: 0;
-      margin-bottom: 0.5rem;
+      display: none;
     }
-  }
+  } */
 
   .create-section {
     background: linear-gradient(

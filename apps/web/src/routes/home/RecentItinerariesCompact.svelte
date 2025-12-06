@@ -36,7 +36,7 @@
 
 <style>
   .recent-compact {
-    margin-top: 1rem;
+    margin: 1rem 1rem auto 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -49,7 +49,6 @@
   }
 
   .recent-label {
-    font-size: 0.65rem;
     font-weight: 700;
     color: white;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -108,20 +107,4 @@
     border-color: rgba(255, 255, 255, 0.6);
   }
 
-  @media (max-width: 375px) {
-    .recent-chip {
-      max-width: 70px;
-      font-size: 0.65rem;
-      padding: 0.3rem 0.5rem;
-    }
-
-    .show-more-btn {
-      font-size: 0.65rem;
-      padding: 0.3rem 0.4rem;
-    }
-
-    .recent-compact {
-      padding: 0.75rem 0.875rem;
-    }
-  }
 </style>

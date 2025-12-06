@@ -64,7 +64,7 @@
     align-items: center;
     justify-content: center;
     padding: 0.1em 0.25em;
-    margin-right: 0.5rem;
+    margin-right: 0.75rem;
     width: var(--rotating-text-width, auto);
     min-width: var(--rotating-text-width, auto);
     letter-spacing: 0.01em;
@@ -78,12 +78,5 @@
   .fade-out {
     opacity: 0;
     transform: translateY(8px);
-  }
-
-  @media (min-width: 1024px) {
-    .rotating-text {
-      min-width: 12ch;
-      /* font-size: 1.35rem; */
-    }
   }
 </style>

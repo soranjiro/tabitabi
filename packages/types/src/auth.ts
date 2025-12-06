@@ -1,8 +1,3 @@
-export interface AuthToken {
-  token: string;
-  expiresAt: number;
-}
-
 export interface ShioriHistory {
   shioriId: string;
   title: string;

@@ -1,30 +1,36 @@
-// Step types - シンプル版
-export interface Step {
+export interface TimelineStep {
   id: string;
   itineraryId: string;
-  orderNum: number;
+  stepOrder: number;
   title: string;
-  time?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  durationMinutes?: number | null;
   location?: string | null;
-  note?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  notes?: string | null;
   createdAt: string;
 }
 
-export interface CreateStepInput {
+export interface CreateTimelineStepInput {
   title: string;
-  time?: string;
-  location?: string;
-  note?: string;
-}
-
-export interface UpdateStepInput {
-  title?: string;
-  time?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  durationMinutes?: number | null;
   location?: string | null;
-  note?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  notes?: string | null;
 }
 
-// Timeline types - Step aliases for backward compatibility
-export type TimelineStep = Step;
-export type CreateTimelineStepInput = CreateStepInput;
-export type UpdateTimelineStepInput = UpdateStepInput;
+export interface UpdateTimelineStepInput {
+  title?: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  durationMinutes?: number | null;
+  location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  notes?: string | null;
+}

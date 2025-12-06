@@ -6,10 +6,13 @@
     FeatureCard,
     CreateForm,
     RecentItineraries,
+    RecentItinerariesCompact,
+    DemoThemeSelector,
     Footer,
     ScrollTopButton,
-    previewItineraries,
     FlyingAirplane,
+    RotatingText,
+    previewItineraries,
   } from "./home";
   import {
     IconAirplane,
@@ -25,8 +28,9 @@
     Array<{ id: string; title: string; visitedAt: number }>
   >([]);
   let showRecent = $state(false);
-  let currentPreview = $state(0);
   let showScrollButton = $state(false);
+  let showDemoSelector = $state(false);
+  let currentPreview = $state(0);
 
   let flyingAirplanes = $state<number[]>([]);
   let airplaneIdCounter = 0;
@@ -62,7 +66,6 @@
     const interval = setInterval(() => {
       currentPreview = (currentPreview + 1) % previewItineraries.length;
     }, 4000);
-
     const handleScroll = () => {
       showScrollButton = window.scrollY > 300;
     };
@@ -142,7 +145,7 @@
           </button>
           たびたび
         </h1>
-        <p class="hero-subtitle">旅のしおりを、サクッと作成・共有</p>
+        <p class="hero-subtitle"><RotatingText />を、サクッと作成</p>
 
         <div class="hero-cta">
           <button onclick={scrollToCreate} class="btn-primary">
@@ -152,13 +155,14 @@
             機能を見る ↓
           </button>
         </div>
-      </div>
 
-      <PreviewCarousel
-        previews={previewItineraries}
-        currentIndex={currentPreview}
-        onSelect={(i) => (currentPreview = i)}
-      />
+        {#if showRecent && recentItineraries.length > 0}
+          <RecentItinerariesCompact
+            items={recentItineraries}
+            onShowMore={scrollToCreate}
+          />
+        {/if}
+      </div>
     </div>
   </section>
 
@@ -207,6 +211,21 @@
     </div>
   </section>
 
+  <section class="themes-section">
+    <div class="themes-container">
+      <h2 class="themes-title">テーマを試す</h2>
+      <p class="themes-subtitle">デモで各テーマの雰囲気を確認できます</p>
+      <PreviewCarousel
+        previews={previewItineraries}
+        currentIndex={currentPreview}
+        onSelect={(i) => (currentPreview = i)}
+      />
+      <button onclick={() => (showDemoSelector = true)} class="try-demo-btn">
+        デモで試す
+      </button>
+    </div>
+  </section>
+
   <section id="create" class="create-section">
     <div class="create-container">
       <CreateForm />
@@ -220,6 +239,11 @@
   <Footer />
 
   <ScrollTopButton visible={showScrollButton} onclick={scrollToTop} />
+
+  <DemoThemeSelector
+    open={showDemoSelector}
+    onClose={() => (showDemoSelector = false)}
+  />
 </div>
 
 <style>
@@ -445,6 +469,52 @@
       grid-template-columns: repeat(4, 1fr);
       max-width: 700px;
     }
+  }
+
+  .themes-section {
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f4ff 50%, #f5f0ff 100%);
+    padding: 3rem 1rem;
+    text-align: center;
+  }
+
+  .themes-container {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .themes-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #374151;
+    margin: 0;
+  }
+
+  .themes-subtitle {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  .try-demo-btn {
+    background: linear-gradient(135deg, #6b8cce 0%, #7c9ee0 100%);
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(107, 140, 206, 0.3);
+  }
+
+  .try-demo-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(107, 140, 206, 0.4);
   }
 
   .create-section {

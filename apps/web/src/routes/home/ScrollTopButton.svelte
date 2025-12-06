@@ -47,7 +47,6 @@
     animation: fadeIn 0.3s ease;
     min-width: 48px;
     min-height: 48px;
-    /* background: rgba(255, 255, 255, 0.5); */
   }
 
   .scroll-top-btn:hover {

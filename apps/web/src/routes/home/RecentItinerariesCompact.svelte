@@ -28,7 +28,7 @@
         </button>
       {/each}
       <button type="button" onclick={onShowMore} class="show-more-btn">
-        ↓
+        その他↓
       </button>
     </div>
   </div>
@@ -36,7 +36,7 @@
 
 <style>
   .recent-compact {
-    margin: 1rem 1rem auto 1rem;
+    margin: 1rem auto;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -89,7 +89,7 @@
   .show-more-btn {
     font-size: 0.75rem;
     color: white;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(125, 125, 125, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.4);
     cursor: pointer;
     padding: 0.35rem 0.5rem;
@@ -103,8 +103,7 @@
   }
 
   .show-more-btn:hover {
-    background: rgba(255, 255, 255, 0.28);
+    background: rgba(125, 125, 125, 0.28);
     border-color: rgba(255, 255, 255, 0.6);
   }
-
 </style>

@@ -151,10 +151,10 @@
 
         <div class="hero-recent">
           {#if showRecent && recentItineraries.length > 0}
-          <RecentItinerariesCompact
-          items={recentItineraries}
-          onShowMore={scrollToCreate}
-          />
+            <RecentItinerariesCompact
+              items={recentItineraries}
+              onShowMore={scrollToCreate}
+            />
           {/if}
         </div>
       </div>
@@ -245,7 +245,6 @@
   }
 
   .hero {
-    height: 100vh;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -264,13 +263,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: auto;
     max-width: 1100px;
     width: 100%;
     height: 100%;
     justify-content: center;
   }
-
 
   @media (min-width: 900px) {
     .hero-main {
@@ -285,7 +282,6 @@
     max-width: 420px;
     text-align: center;
     width: 100%;
-    margin: auto 0rem;
   }
 
   @media (max-width: 480px) {
@@ -527,12 +523,6 @@
       max-width: 100%;
     }
   }
-
-  /* @media (max-height: 568px) {
-    .hero-preview {
-      display: none;
-    }
-  } */
 
   .create-section {
     background: linear-gradient(

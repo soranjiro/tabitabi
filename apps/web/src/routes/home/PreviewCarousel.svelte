@@ -285,63 +285,6 @@
 </div>
 
 <style>
-  .hero {
-    height: 100vh;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem 1rem;
-  }
-
-  .hero-title {
-    font-size: 3rem;
-    font-weight: 900;
-    color: #333;
-  }
-
-  .hero-subtitle {
-    font-size: 1.1rem;
-    opacity: 0.95;
-    margin-bottom: 1rem;
-    font-weight: 500;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
-  }
-
-  .btn-primary {
-    background: white;
-    color: #333;
-    font-size: 1rem;
-    font-weight: 700;
-    padding: 0.875rem 2rem;
-    border-radius: 9999px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  }
-
-  .recent-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #333;
-  }
-
-  .recent-link {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-  }
-
-  .recent-remove {
-    background: #ffa9a9;
-  }
-
-  .recent-link:hover {
-    border-color: #6b8cce;
-    background: rgba(107, 140, 206, 0.05);
-  }
-
   .hero-visual {
     display: flex;
     flex-direction: column;
@@ -363,9 +306,10 @@
     height: 300px;
   }
 
-  @media (max-width: 480px) or (max-height: 640px) {
+  @media (max-width: 480px) or (max-height: 700px) {
     .preview-carousel {
       height: 250px;
+      margin-top: 0.5rem;
     }
   }
 

@@ -163,6 +163,17 @@
           />
         {/if}
       </div>
+
+      <div class="hero-preview">
+        <PreviewCarousel
+          previews={previewItineraries}
+          currentIndex={currentPreview}
+          onSelect={(i) => (currentPreview = i)}
+        />
+        <button onclick={() => (showDemoSelector = true)} class="try-demo-link">
+          テーマを試す →
+        </button>
+      </div>
     </div>
   </section>
 
@@ -208,21 +219,6 @@
           <IconBolt size={32} />
         {/snippet}
       </FeatureCard>
-    </div>
-  </section>
-
-  <section class="themes-section">
-    <div class="themes-container">
-      <h2 class="themes-title">テーマを試す</h2>
-      <p class="themes-subtitle">デモで各テーマの雰囲気を確認できます</p>
-      <PreviewCarousel
-        previews={previewItineraries}
-        currentIndex={currentPreview}
-        onSelect={(i) => (currentPreview = i)}
-      />
-      <button onclick={() => (showDemoSelector = true)} class="try-demo-btn">
-        デモで試す
-      </button>
     </div>
   </section>
 
@@ -471,50 +467,49 @@
     }
   }
 
-  .themes-section {
-    background: linear-gradient(135deg, #f0f4ff 0%, #e8f4ff 50%, #f5f0ff 100%);
-    padding: 3rem 1rem;
-    text-align: center;
-  }
-
-  .themes-container {
-    max-width: 600px;
-    margin: 0 auto;
+  .hero-preview {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.5rem;
+    gap: 0.5rem;
+    margin-top: 1rem;
   }
 
-  .themes-title {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #374151;
-    margin: 0;
-  }
-
-  .themes-subtitle {
-    font-size: 0.9rem;
-    color: #6b7280;
-    margin: 0;
-  }
-
-  .try-demo-btn {
-    background: linear-gradient(135deg, #6b8cce 0%, #7c9ee0 100%);
-    color: white;
-    font-size: 0.95rem;
-    font-weight: 600;
-    padding: 0.75rem 1.5rem;
+  .try-demo-link {
+    background: transparent;
     border: none;
-    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
     cursor: pointer;
     transition: all 0.2s;
-    box-shadow: 0 4px 15px rgba(107, 140, 206, 0.3);
   }
 
-  .try-demo-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(107, 140, 206, 0.4);
+  .try-demo-link:hover {
+    color: white;
+    text-decoration: underline;
+  }
+
+  /* iPhone SE responsive adjustments */
+  @media (max-width: 375px) {
+    .hero-title {
+      font-size: 2.5rem;
+    }
+
+    .hero-subtitle {
+      font-size: 0.95rem;
+    }
+
+    .btn-primary {
+      font-size: 0.9rem;
+      padding: 0.75rem 1.5rem;
+    }
+
+    .btn-secondary {
+      font-size: 0.8rem;
+      padding: 0.6rem 1rem;
+    }
   }
 
   .create-section {

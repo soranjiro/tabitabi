@@ -965,8 +965,20 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    padding: 0.3rem 0;
+    gap: 0.4rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 16px;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(
+      135deg,
+      #5dc4f7 0%,
+      #40b5ef 80%,
+      #50b0f5 100%
+    );
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
   .try-demo-link:hover {
@@ -982,31 +994,19 @@
     font-size: 1.25rem;
     font-weight: 800;
     letter-spacing: 0.01em;
-    border: #80d5ff 2px solid;
-    border-radius: 999px;
-    background: linear-gradient(
-      135deg,
-      #a2d8f3 0%,
-      #96d4f2 80%,
-      #88bfe6 100%
-    );
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
-    transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
   }
 
   .try-demo-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.25rem;
+    height: 2.25rem;
     border: #80d5ff 2px solid;
-    background: #a2d8f3;
+    background: #5dbff0;
     color: white;
     border-radius: 50%;
-    font-size: 0.8rem;
+    font-size: 1rem;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
     transition:
       transform 0.2s ease,

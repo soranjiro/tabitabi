@@ -85,10 +85,6 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function scrollToFeatures() {
-    document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
-  }
-
   function removeRecent(id: string) {
     auth.removeFromHistory(id);
     recentItineraries = auth.getRecentItineraries();
@@ -151,9 +147,6 @@
           <button onclick={scrollToCreate} class="btn-primary">
             無料でしおりを作成
           </button>
-          <button onclick={scrollToFeatures} class="btn-secondary">
-            機能を見る ↓
-          </button>
         </div>
 
         {#if showRecent && recentItineraries.length > 0}
@@ -169,10 +162,8 @@
           previews={previewItineraries}
           currentIndex={currentPreview}
           onSelect={(i) => (currentPreview = i)}
+          onTryDemo={() => (showDemoSelector = true)}
         />
-        <button onclick={() => (showDemoSelector = true)} class="try-demo-link">
-          テーマを試す →
-        </button>
       </div>
     </div>
   </section>
@@ -374,23 +365,6 @@
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   }
 
-  .btn-secondary {
-    color: white;
-    font-size: 0.9rem;
-    font-weight: 600;
-    padding: 0.75rem 1.25rem;
-    background: rgba(0, 0, 0, 0.15);
-    border: 2px solid rgba(255, 255, 255, 0.6);
-    border-radius: 9999px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.8);
-  }
-
   .features {
     background: white;
     padding: 4rem 1rem;
@@ -473,22 +447,7 @@
     align-items: center;
     gap: 0.5rem;
     margin-top: 1rem;
-  }
-
-  .try-demo-link {
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.85rem;
-    font-weight: 500;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .try-demo-link:hover {
-    color: white;
-    text-decoration: underline;
+    margin-bottom: 2rem;
   }
 
   /* iPhone SE responsive adjustments */
@@ -504,11 +463,6 @@
     .btn-primary {
       font-size: 0.9rem;
       padding: 0.75rem 1.5rem;
-    }
-
-    .btn-secondary {
-      font-size: 0.8rem;
-      padding: 0.6rem 1rem;
     }
   }
 

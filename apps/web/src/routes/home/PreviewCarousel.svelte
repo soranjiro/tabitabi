@@ -216,9 +216,6 @@
                       <div class="timeline-time-col">
                         <span class="timeline-time">{step.time}</span>
                         <div class="timeline-dot"></div>
-                        {#if j < preview.steps.length - 1}
-                          <div class="timeline-line"></div>
-                        {/if}
                       </div>
                       <div class="timeline-content-card">
                         <div class="timeline-content-main">
@@ -270,9 +267,6 @@
       </div>
     {/each}
   </div>
-  {#if onTryDemo}
-    <button onclick={onTryDemo} class="try-demo-btn"> テーマを試す </button>
-  {/if}
   <div class="preview-dots">
     {#each previews as _, i}
       <button
@@ -282,6 +276,12 @@
       ></button>
     {/each}
   </div>
+  {#if onTryDemo}
+    <button onclick={onTryDemo} class="try-demo-link">
+      <span class="try-demo-icon">▶</span>
+      <span class="try-demo-label">テーマを試す</span>
+    </button>
+  {/if}
 </div>
 
 <style>
@@ -290,12 +290,27 @@
     flex-direction: column;
     align-items: center;
     width: 280px;
+    position: relative;
+  }
+
+  @media (max-width: 480px) {
+    .hero-visual {
+      width: 100%;
+      max-width: 280px;
+    }
   }
 
   .preview-carousel {
     position: relative;
     width: 100%;
-    height: 300px;
+    height: 280px;
+  }
+
+  @media (max-width: 480px) or (max-height: 700px) {
+    .preview-carousel {
+      height: 250px;
+      margin-top: 0.5rem;
+    }
   }
 
   @media (min-width: 900px) {
@@ -306,7 +321,7 @@
 
   .preview-card {
     position: absolute;
-    top: 0;
+    top: 0.5rem;
     left: 0;
     background: var(--bg, white);
     border-radius: 12px;
@@ -319,6 +334,13 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+  }
+
+  @media (max-width: 480px) {
+    .preview-card {
+      width: 100%;
+      max-width: 240px;
+    }
   }
 
   .preview-card.card {
@@ -461,7 +483,7 @@
   .timeline-day-card {
     background: linear-gradient(135deg, #fffdf8 0%, #fcf9f2 100%);
     border-radius: 12px;
-    padding: 0.5rem;
+    /* padding: 0.5rem; */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     position: relative;
     overflow: hidden;
@@ -520,13 +542,6 @@
     background: var(--primary);
     border-radius: 50%;
     margin: 0.15rem 0;
-  }
-
-  .timeline-line {
-    flex: 1;
-    width: 2px;
-    background: var(--primary);
-    min-height: 0.5rem;
   }
 
   .timeline-content-card {
@@ -675,7 +690,8 @@
 
   .ai-header {
     background: linear-gradient(135deg, #0284c7, #38bdf8);
-    padding: 0.6rem;
+    padding: 0.3rem;
+    margin-bottom: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -728,11 +744,14 @@
     gap: 0.5rem;
   }
 
+  .preview-card.theme-shopping .preview-content {
+    padding: 0.5rem;
+  }
+
   .shopping-title {
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--text);
-    margin-bottom: 0.2rem;
   }
 
   .shopping-store {
@@ -747,7 +766,7 @@
     font-weight: 700;
     color: var(--primary);
     background: rgba(16, 185, 129, 0.1);
-    padding: 0.25rem 0.5rem;
+    padding: 0.1rem 0.5rem;
     border-bottom: 1px solid var(--border);
   }
 
@@ -935,24 +954,67 @@
     transform: scale(1.2);
   }
 
-  .try-demo-btn {
-    display: block;
-    margin: 0.5rem auto 0;
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    color: rgba(255, 255, 255, 0.95);
-    font-size: 0.8rem;
-    font-weight: 500;
-    padding: 0.4rem 0.85rem;
-    border-radius: 999px;
+  .try-demo-link {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.75rem;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    white-space: nowrap;
+    gap: 0.4rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 16px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(
+      135deg,
+      #5dc4f7 0%,
+      #40b5ef 80%,
+      #50b0f5 100%
+    );
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
-  .try-demo-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.7);
+  .try-demo-link:hover {
+    transform: scale(1.05);
+  }
+
+  .try-demo-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
     color: white;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+  }
+
+  .try-demo-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: #80d5ff 2px solid;
+    background: #5dbff0;
+    color: white;
+    border-radius: 50%;
+    font-size: 1rem;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .try-demo-link:hover .try-demo-icon {
+    transform: scale(1.1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
   }
 </style>

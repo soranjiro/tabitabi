@@ -545,11 +545,11 @@
   }
 
   .ai-label {
-    color: #18181b;
+    color: #333;
   }
 
   .theme-coming-soon {
-    background: #000 !important;
+    background: #333 !important;
   }
 
   .coming-preview {

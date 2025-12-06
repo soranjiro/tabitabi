@@ -65,7 +65,7 @@
 
     const interval = setInterval(() => {
       currentPreview = (currentPreview + 1) % previewItineraries.length;
-    }, 4000);
+    }, 3000);
     const handleScroll = () => {
       showScrollButton = window.scrollY > 300;
     };
@@ -149,12 +149,14 @@
           </button>
         </div>
 
-        {#if showRecent && recentItineraries.length > 0}
-          <RecentItinerariesCompact
-            items={recentItineraries}
-            onShowMore={scrollToCreate}
-          />
-        {/if}
+        <div class="hero-recent">
+          {#if showRecent && recentItineraries.length > 0}
+            <RecentItinerariesCompact
+              items={recentItineraries}
+              onShowMore={scrollToCreate}
+            />
+          {/if}
+        </div>
       </div>
 
       <div class="hero-preview">
@@ -247,23 +249,31 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
+  }
+
+  @media (max-width: 480px) {
+    .hero {
+      padding: 1rem 1rem;
+      height: 100vh;
+    }
   }
 
   .hero-main {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2rem;
     max-width: 1100px;
     width: 100%;
+    height: 100%;
+    justify-content: center;
   }
 
   @media (min-width: 900px) {
     .hero-main {
       flex-direction: row;
       justify-content: space-between;
-      gap: 1rem;
+      height: 100%;
     }
   }
 
@@ -271,11 +281,12 @@
     color: white;
     max-width: 420px;
     text-align: center;
+    width: 100%;
   }
 
-  @media (min-width: 900px) {
+  @media (max-width: 480px) {
     .hero-content {
-      text-align: left;
+      max-width: 100%;
     }
   }
 
@@ -283,16 +294,30 @@
     font-size: 3rem;
     font-weight: 900;
     color: white;
-    margin-bottom: 0.5rem;
+    margin-bottom: auto;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
   }
 
+  @media (max-width: 480px) {
+    .hero-title {
+      font-size: 2.5rem;
+      gap: 0.3rem;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .hero-title {
+      margin-top: 0.5rem;
+      margin-bottom: 0.3rem;
+    }
+  }
+
   @media (min-width: 900px) {
     .hero-title {
-      justify-content: flex-start;
       font-size: 3.5rem;
     }
   }
@@ -329,11 +354,25 @@
   }
 
   .hero-subtitle {
-    font-size: 1.1rem;
-    opacity: 1;
-    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    opacity: 0.95;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
     font-weight: 500;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  }
+
+  @media (max-width: 480px) {
+    .hero-subtitle {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .hero-subtitle {
+      margin-bottom: 0.6rem;
+    }
   }
 
   .hero-cta {
@@ -341,21 +380,15 @@
     flex-direction: column;
     gap: 0.75rem;
     align-items: center;
-  }
-
-  @media (min-width: 900px) {
-    .hero-cta {
-      flex-direction: row;
-      align-items: flex-start;
-    }
+    margin: auto;
   }
 
   .btn-primary {
     background: white;
-    color: #6b8cce;
-    font-size: 1rem;
+    color: #3d5a99;
+    font-size: 1.05rem;
     font-weight: 700;
-    padding: 0.875rem 2rem;
+    padding: 1rem 2.25rem;
     border-radius: 9999px;
     border: none;
     cursor: pointer;
@@ -368,9 +401,25 @@
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   }
 
+  .hero-recent {
+    display: none;
+  }
+
+  @media (min-height: 700px) {
+    .hero-recent {
+      display: block;
+    }
+  }
+
   .features {
     background: white;
     padding: 4rem 1rem;
+  }
+
+  @media (max-width: 480px) {
+    .features {
+      padding: 2.5rem 1rem;
+    }
   }
 
   .section-header {
@@ -381,6 +430,12 @@
     margin-bottom: 2.5rem;
   }
 
+  @media (max-width: 480px) {
+    .section-header {
+      margin-bottom: 1.5rem;
+    }
+  }
+
   .section-title {
     text-align: center;
     font-size: 1.75rem;
@@ -389,17 +444,32 @@
     margin: 0;
   }
 
+  @media (max-width: 480px) {
+    .section-title {
+      font-size: 1.4rem;
+    }
+  }
+
   .docs-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #6b8cce;
+    color: #3d5a99;
     padding: 0.375rem;
     border-radius: 6px;
-    /* background: rgba(194, 203, 222, 0.1); */
     background: white;
-    border: 1px solid rgba(107, 140, 206, 0.3);
+    border: 2px solid rgba(61, 90, 153, 0.3);
     transition: all 0.2s;
+  }
+
+  .docs-link:hover {
+    color: #2c3e50;
+    background: rgba(107, 140, 206, 0.12);
+    border-color: rgba(61, 90, 153, 0.5);
+  }
+
+  .docs-link:active {
+    transform: scale(0.95);
   }
 
   .docs-icon-wrapper {
@@ -417,16 +487,7 @@
     background: white;
     border-radius: 3px;
     padding: 1px;
-  }
-
-  .docs-link:hover {
-    color: #5a7ab8;
-    background: rgba(107, 140, 206, 0.18);
-    border-color: rgba(107, 140, 206, 0.35);
-  }
-
-  .docs-link:active {
-    transform: scale(0.95);
+    color: #3d5a99;
   }
 
   .features-grid {
@@ -449,23 +510,16 @@
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
-    margin-top: 1rem;
+    margin-top: 0.5rem;
     margin-bottom: 2rem;
+    width: 100%;
+    max-width: 350px;
   }
 
-  /* iPhone SE responsive adjustments */
-  @media (max-width: 375px) {
-    .hero-title {
-      font-size: 2.5rem;
-    }
-
-    .hero-subtitle {
-      font-size: 0.95rem;
-    }
-
-    .btn-primary {
-      font-size: 0.9rem;
-      padding: 0.75rem 1.5rem;
+  @media (max-width: 480px) {
+    .hero-preview {
+      margin-bottom: 1rem;
+      max-width: 100%;
     }
   }
 
@@ -478,6 +532,12 @@
       #e4f3ff 100%
     );
     padding: 4rem 1rem;
+  }
+
+  @media (max-width: 480px) {
+    .create-section {
+      padding: 2.5rem 1rem;
+    }
   }
 
   .create-container {

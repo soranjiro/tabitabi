@@ -28,7 +28,7 @@
         </button>
       {/each}
       <button type="button" onclick={onShowMore} class="show-more-btn">
-        他を見る↓
+        その他↓
       </button>
     </div>
   </div>
@@ -36,77 +36,74 @@
 
 <style>
   .recent-compact {
-    margin-top: 1rem;
+    margin: 1rem auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(6px);
+    padding: 0.875rem 1rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .recent-label {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.8);
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
+    opacity: 0.85;
   }
 
   .recent-row {
     display: flex;
     flex-wrap: nowrap;
-    gap: 0.5rem;
+    gap: 0.4rem;
     align-items: center;
   }
 
   .recent-chip {
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: 0.7rem;
+    font-weight: 600;
     color: white;
     background: rgba(255, 255, 255, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.4);
-    padding: 0.4rem 0.75rem;
-    border-radius: 999px;
+    padding: 0.35rem 0.6rem;
+    border-radius: 20px;
     cursor: pointer;
-    transition: all 0.2s;
-    max-width: 100px;
+    transition: all 0.15s;
+    max-width: 95px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   }
 
   .recent-chip:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.28);
     border-color: rgba(255, 255, 255, 0.6);
   }
 
   .show-more-btn {
-    font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.9);
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    font-size: 0.75rem;
+    color: white;
+    background: rgba(125, 125, 125, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     cursor: pointer;
-    padding: 0.4rem 0.6rem;
-    border-radius: 999px;
-    transition: all 0.2s;
+    padding: 0.35rem 0.5rem;
+    border-radius: 20px;
+    transition: all 0.15s;
     white-space: nowrap;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    min-width: 24px;
+    text-align: center;
   }
 
   .show-more-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-    color: white;
-  }
-
-  /* iPhone SE */
-  @media (max-width: 375px) {
-    .recent-chip {
-      max-width: 80px;
-      font-size: 0.7rem;
-      padding: 0.35rem 0.6rem;
-    }
-
-    .show-more-btn {
-      font-size: 0.65rem;
-      padding: 0.35rem 0.5rem;
-    }
+    background: rgba(125, 125, 125, 0.28);
+    border-color: rgba(255, 255, 255, 0.6);
   }
 </style>

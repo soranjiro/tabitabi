@@ -1543,7 +1543,7 @@
     top: 6px;
     width: 5px;
     height: 5px;
-    background: #000;
+    background: #333;
     border-radius: 50%;
   }
 
@@ -1640,7 +1640,7 @@
     top: 10px;
     width: 4px;
     height: 6px;
-    background: #000;
+    background: #333;
     border-radius: 50%;
   }
 
@@ -1832,7 +1832,7 @@
     font-size: 0.85rem;
     font-weight: bold;
     color: #dda0dd;
-    text-shadow: 1px 1px 0 #000;
+    text-shadow: 1px 1px 0 #333;
   }
 
   .floating-coin {
@@ -1876,7 +1876,7 @@
     font-size: 1rem;
     font-weight: bold;
     color: #ffd700;
-    text-shadow: 1px 1px 0 #000;
+    text-shadow: 1px 1px 0 #333;
   }
 
   .coin-popup {
@@ -1886,8 +1886,8 @@
     font-weight: bold;
     color: #ffd700;
     text-shadow:
-      1px 1px 0 #000,
-      -1px -1px 0 #000;
+      1px 1px 0 #333,
+      -1px -1px 0 #333;
     animation: coin-popup 1s ease-out forwards;
     z-index: 60;
     pointer-events: none;
@@ -1968,7 +1968,7 @@
     font-weight: bold;
     color: #ff4444;
     text-shadow:
-      3px 3px 0 #000,
+      3px 3px 0 #333,
       -1px -1px 0 #ff8800,
       2px -1px 0 #ffff00;
     animation: pow-pop 0.5s ease-out forwards;
@@ -2036,7 +2036,7 @@
     font-family: var(--pq-font-pixel);
     font-size: 1rem;
     color: #ffd700;
-    text-shadow: 1px 1px 0 #000;
+    text-shadow: 1px 1px 0 #333;
     margin-bottom: 8px;
   }
 

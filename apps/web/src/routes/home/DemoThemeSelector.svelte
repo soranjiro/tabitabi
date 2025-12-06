@@ -33,6 +33,12 @@
       onClose();
     }
   }
+
+  function handleBackdropKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape") {
+      onClose();
+    }
+  }
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -40,10 +46,12 @@
 {#if open}
   <div
     class="modal-backdrop"
-    onclick={handleBackdropClick}
     role="dialog"
     aria-modal="true"
     aria-labelledby="demo-selector-title"
+    tabindex="0"
+    onclick={handleBackdropClick}
+    onkeydown={handleBackdropKeydown}
   >
     <div class="modal-content">
       <h2 id="demo-selector-title" class="modal-title">テーマを選択</h2>

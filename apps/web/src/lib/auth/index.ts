@@ -90,7 +90,8 @@ export const auth = {
   },
 
   hasEditPermission(shioriId: string): boolean {
-    return this.getToken(shioriId) !== null;
+    const token = this.getToken(shioriId);
+    return token !== null && token !== '';
   },
 
   clearHistory(): void {

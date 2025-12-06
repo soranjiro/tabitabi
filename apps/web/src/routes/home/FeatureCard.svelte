@@ -79,11 +79,6 @@
     transform: scale(1.1);
   }
 
-  .feature-icon :global(svg) {
-    display: block;
-    margin: 0 auto;
-  }
-
   .anim-bounce {
     animation: iconBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }

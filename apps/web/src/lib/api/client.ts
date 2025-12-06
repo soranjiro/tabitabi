@@ -1,5 +1,6 @@
 import type { ApiResult } from '@tabitabi/types';
 import { auth } from '../auth';
+import { getIsDemoMode } from '../demo';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787/api/v1';
 
@@ -30,6 +31,11 @@ export class ApiClient {
     options: RequestInit = {},
     shioriId?: string
   ): Promise<T> {
+    // In demo mode, throw error to prevent any backend calls
+    if (getIsDemoMode()) {
+      throw new Error('Backend API calls are not allowed in demo mode');
+    }
+
     const url = `${this.baseUrl}${endpoint}`;
 
     const response = await fetch(url, {

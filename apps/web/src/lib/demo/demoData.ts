@@ -3,12 +3,19 @@
  * These are sample itineraries that can be used to demonstrate the app
  */
 
-import type { Itinerary, Step } from '@tabitabi/types';
+import type {
+  Itinerary,
+  Step,
+  ItinerarySecretRecord,
+  ItineraryWalicaSettingsRecord
+} from '@tabitabi/types';
 import type { AvailableTheme } from '$lib/themes';
 
 interface DemoDataSet {
   itinerary: Itinerary;
   steps: Step[];
+  itinerary_secrets?: ItinerarySecretRecord | null;
+  itinerary_walica_settings?: ItineraryWalicaSettingsRecord | null;
 }
 
 const now = new Date().toISOString();
@@ -25,6 +32,8 @@ const minimalDemo: DemoDataSet = {
     id: 'demo',
     title: '週末の予定',
     theme_id: 'minimal',
+    memo: null,
+    password: null,
     created_at: now,
     updated_at: now,
   },
@@ -70,6 +79,8 @@ const standardAutumnDemo: DemoDataSet = {
     id: 'demo',
     title: '京都紅葉旅行',
     theme_id: 'standard-autumn',
+    memo: '紅葉シーズンは混雑するので早めの行動を',
+    password: null,
     created_at: now,
     updated_at: now,
   },
@@ -130,6 +141,19 @@ const standardAutumnDemo: DemoDataSet = {
       updated_at: now,
     },
   ],
+  itinerary_secrets: {
+    itinerary_id: 'demo',
+    enabled: true,
+    offset_minutes: 30,
+    created_at: now,
+    updated_at: now,
+  },
+  itinerary_walica_settings: {
+    itinerary_id: 'demo',
+    walica_id: 'https://walica.jp/group/01KBTSYADVKY8HPQ1CHRHTNG19',
+    created_at: now,
+    updated_at: now,
+  },
 };
 
 const shoppingDemo: DemoDataSet = {
@@ -137,6 +161,8 @@ const shoppingDemo: DemoDataSet = {
     id: 'demo',
     title: '週末の買い物リスト',
     theme_id: 'shopping',
+    memo: '予算: 10,000円',
+    password: null,
     created_at: now,
     updated_at: now,
   },
@@ -193,6 +219,8 @@ const pixelQuestDemo: DemoDataSet = {
     id: 'demo',
     title: '冒険の旅',
     theme_id: 'pixel-quest',
+    memo: 'クエスト: 世界を救え',
+    password: null,
     created_at: now,
     updated_at: now,
   },
@@ -249,6 +277,8 @@ const aiGeneratedDemo: DemoDataSet = {
     id: 'demo',
     title: '沖縄リゾート',
     theme_id: 'ai-generated',
+    memo: 'サプライズ旅行の計画',
+    password: null,
     created_at: now,
     updated_at: now,
   },
@@ -289,6 +319,17 @@ const aiGeneratedDemo: DemoDataSet = {
     {
       id: 'demo-step-4',
       itinerary_id: 'demo',
+      title: '🎁 サプライズディナー',
+      date: getDate(0),
+      time: '19:30',
+      location: 'オーシャンビューレストラン',
+      notes: 'Secret: 特別なプロポーズディナー',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-step-5',
+      itinerary_id: 'demo',
       title: '国際通り散策',
       date: getDate(1),
       time: '11:00',
@@ -298,6 +339,19 @@ const aiGeneratedDemo: DemoDataSet = {
       updated_at: now,
     },
   ],
+  itinerary_secrets: {
+    itinerary_id: 'demo',
+    enabled: true,
+    offset_minutes: 60,
+    created_at: now,
+    updated_at: now,
+  },
+  itinerary_walica_settings: {
+    itinerary_id: 'demo',
+    walica_id: 'https://walica.jp/group/01KBTSYADVKY8HPQ1CHRHTNG19',
+    created_at: now,
+    updated_at: now,
+  },
 };
 
 export const demoDataSets: Record<AvailableTheme, DemoDataSet> = {

@@ -189,7 +189,10 @@
           <IconPhone size={32} />
         {/snippet}
       </FeatureCard>
-      <FeatureCard title="URL共有" description="リンク1つで仲間と共有">
+      <FeatureCard
+        title="URL共有"
+        description="リンク1つで仲間と共有{'\n'}ユーザ登録不要"
+      >
         {#snippet icon()}
           <IconLink size={32} />
         {/snippet}

@@ -303,7 +303,7 @@
   .preview-carousel {
     position: relative;
     width: 100%;
-    height: 300px;
+    height: 280px;
   }
 
   @media (max-width: 480px) or (max-height: 700px) {
@@ -321,7 +321,7 @@
 
   .preview-card {
     position: absolute;
-    top: 0;
+    top: 0.5rem;
     left: 0;
     background: var(--bg, white);
     border-radius: 12px;

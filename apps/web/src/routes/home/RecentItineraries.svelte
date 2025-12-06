@@ -48,20 +48,37 @@
 
 <style>
   .recent-section {
-    margin-top: 2rem;
+    padding: 2rem 1rem;
+  }
+
+  @media (max-width: 480px) {
+    .recent-section {
+      padding: 2.5rem 0.5rem;
+    }
   }
 
   .recent-title {
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: #374151;
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  @media (max-width: 480px) {
+    .recent-title {
+      font-size: 0.95rem;
+    }
   }
 
   .recent-list {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    max-width: 480px;
+    margin: 0 auto;
   }
 
   .recent-item {
@@ -76,9 +93,9 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.75rem 1rem;
-    background: white;
+    background: #f9fafb;
     border: 1px solid #e5e7eb;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
     text-align: left;
@@ -87,6 +104,7 @@
   .recent-link:hover {
     border-color: #6b8cce;
     background: rgba(107, 140, 206, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 
   .recent-name {
@@ -97,26 +115,29 @@
 
   .recent-date {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: #9ca3af;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
   }
 
   .recent-remove {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border: none;
-    background: none;
-    color: #6b7280;
+    background: #ffa9a9;
+    color: #404040;
     cursor: pointer;
     border-radius: 8px;
     transition: all 0.2s;
-    font-size: 1.25rem;
+    font-size: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
 
   .recent-remove:hover {
-    background: #fef2f2;
+    background: #fee2e2;
     color: #dc2626;
   }
 </style>

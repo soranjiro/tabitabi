@@ -376,10 +376,17 @@
   .hero-subtitle {
     font-size: 1.2rem;
     opacity: 0.95;
+    margin-right: 0.5rem;
     margin-bottom: 1.25rem;
     font-weight: 500;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
   }
+
+  /* @media (min-width: 900px) {
+    .hero-subtitle :global(.rotating-text) {
+      margin-right: 0.5rem;
+    }
+  } */
 
   @media (max-width: 480px) {
     .hero-subtitle {

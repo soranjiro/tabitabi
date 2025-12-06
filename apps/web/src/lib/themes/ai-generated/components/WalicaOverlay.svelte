@@ -7,7 +7,11 @@
 
   let { show, walicaId, onClose }: Props = $props();
 
-  const walicaUrl = $derived(`https://walica.jp/group/${walicaId}`);
+  const walicaUrl = $derived(
+    walicaId.startsWith("https://")
+      ? walicaId
+      : `https://walica.jp/group/${walicaId}`,
+  );
 </script>
 
 {#if show && walicaId}

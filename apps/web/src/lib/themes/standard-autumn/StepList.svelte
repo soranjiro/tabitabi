@@ -14,6 +14,8 @@
     steps: Step[];
     hasEditPermission?: boolean;
     focusedDate?: string | null;
+    secretModeEnabled?: boolean;
+    secretModeOffset?: number;
     onUpdateStep?: (
       stepId: string,
       data: {
@@ -31,9 +33,21 @@
     steps,
     hasEditPermission = false,
     focusedDate = $bindable(null),
+    secretModeEnabled = false,
+    secretModeOffset = 60,
     onUpdateStep,
     onDeleteStep,
   }: Props = $props();
+
+  function isSecretStep(stepDate: string, stepTime: string): boolean {
+    if (!secretModeEnabled) return false;
+    const now = new Date();
+    const stepDateTime = new Date(`${stepDate}T${stepTime}`);
+    const revealTime = new Date(
+      stepDateTime.getTime() - secretModeOffset * 60 * 1000,
+    );
+    return now < revealTime;
+  }
 
   let editingStepId = $state<string | null>(null);
   let editedStep = $state<Partial<Step>>({});
@@ -588,7 +602,7 @@
                           >
                         </div>
                       </div>
-                    {:else if step.is_hidden && !hasEditPermission}
+                    {:else if isSecretStep(step.date, step.time) && !hasEditPermission}
                       <div
                         class="standard-autumn-step-content standard-autumn-step-hidden"
                       >

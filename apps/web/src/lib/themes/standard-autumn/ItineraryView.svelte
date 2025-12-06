@@ -3,6 +3,7 @@
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
+  import { getIsDemoMode } from "$lib/demo";
   import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
   import AddStepForm from "./components/AddStepForm.svelte";
@@ -102,6 +103,11 @@
   }
 
   onMount(() => {
+    if (getIsDemoMode()) {
+      hasEditPermission = false;
+      return;
+    }
+
     const token = auth.extractTokenFromUrl();
     if (token) {
       auth.setToken(itinerary.id, itinerary.title, token);
@@ -141,11 +147,20 @@
     if (hasEditPermission) {
       hasEditPermission = false;
     } else {
+      if (getIsDemoMode()) {
+        hasEditPermission = true;
+        return;
+      }
       attemptEditModeActivation();
     }
   }
 
   async function attemptEditModeActivation() {
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
+    }
+
     const token = auth.getToken(itinerary.id);
 
     if (token) {
@@ -438,6 +453,8 @@
       {onUpdateStep}
       {onDeleteStep}
       {hasEditPermission}
+      {secretModeEnabled}
+      {secretModeOffset}
       bind:focusedDate
     />
 

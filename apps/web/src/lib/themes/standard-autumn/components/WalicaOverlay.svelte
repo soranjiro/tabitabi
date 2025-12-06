@@ -8,6 +8,12 @@
   }
 
   let { show, walicaId, onClose }: Props = $props();
+
+  const walicaUrl = $derived(
+    walicaId.startsWith("https://")
+      ? walicaId
+      : `https://walica.jp/group/${walicaId}`,
+  );
 </script>
 
 {#if show && walicaId}
@@ -30,10 +36,7 @@
         </a>
       </span>
     </div>
-    <iframe
-      src={`https://walica.jp/group/${walicaId}`}
-      title="Walica"
-      class="standard-autumn-walica-frame"
+    <iframe src={walicaUrl} title="Walica" class="standard-autumn-walica-frame"
     ></iframe>
   </div>
 {/if}

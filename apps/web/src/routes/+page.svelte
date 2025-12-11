@@ -141,7 +141,9 @@
           </button>
           たびたび
         </h1>
-        <p class="hero-subtitle"><RotatingText />を、サクッと作成</p>
+        <p class="hero-subtitle">
+          <RotatingText currentIndex={currentPreview} />を、サクッと作成
+        </p>
 
         <div class="hero-cta">
           <button onclick={scrollToCreate} class="btn-primary">

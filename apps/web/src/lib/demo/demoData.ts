@@ -502,10 +502,6 @@ export const demoDataSets: Record<AvailableTheme, DemoDataSet> = {
 };
 
 export function getDemoData(themeId: string): DemoDataSet {
-  if (themeId === 'minimal') {
-    return demoDataSets[defaultThemeId];
-  }
-
   if (isAvailableTheme(themeId)) {
     return demoDataSets[themeId];
   }

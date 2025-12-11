@@ -228,7 +228,7 @@
           {:else if preview.themeId === "mapbox-journey"}
             <div class="journey-preview">
               <div class="journey-globe">
-                <svg viewBox="0 0 200 120" class="journey-svg">
+                <svg viewBox="0 0 200 100" class="journey-svg">
                   <!-- Globe Background -->
                   <defs>
                     <radialGradient id="globe-grad" cx="50%" cy="50%" r="50%">
@@ -1043,6 +1043,11 @@
   }
 
   /* Map Only Theme */
+
+  .preview-card.theme-map-only .preview-content {
+    padding: 0;
+  }
+
   .map-preview {
     height: 100%;
     display: flex;
@@ -1088,6 +1093,11 @@
   }
 
   /* Mapbox Journey Theme */
+
+  .preview-card.theme-mapbox-journey .preview-content {
+    padding: 0;
+  }
+
   .journey-preview {
     height: 100%;
     display: flex;

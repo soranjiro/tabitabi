@@ -11,7 +11,8 @@
     "strict": true,
     "moduleResolution": "bundler",
     "types": [
-      "node"
+      "node",
+      "google.maps"
     ]
   }
 }

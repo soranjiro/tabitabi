@@ -2,6 +2,8 @@
 
 You must follow and read all of the development rules in `docs/developer/*.md` and `docs/*`.
 
+When testing or checking ui, use playwright and demo data.
+
 ## Mind these key points
 - light web site
 - update readability

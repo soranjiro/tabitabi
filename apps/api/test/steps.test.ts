@@ -7,7 +7,7 @@ async function applyMigrations(db: D1Database) {
     `CREATE TABLE IF NOT EXISTS itineraries (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
-      theme_id TEXT NOT NULL DEFAULT 'minimal',
+      theme_id TEXT NOT NULL DEFAULT 'map-only',
       memo TEXT,
       password TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,

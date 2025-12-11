@@ -93,7 +93,7 @@ describe('Itinerary Creation', () => {
   it('should create and retrieve itinerary', async () => {
     const created = await createItinerary({
       title: 'Test Trip',
-      theme_id: 'minimal'
+      theme_id: 'standard-autumn',
     });
 
     expect(created.id).toBeDefined();

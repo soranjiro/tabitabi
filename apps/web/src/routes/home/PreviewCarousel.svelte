@@ -177,14 +177,14 @@
               <span class="coming-question">？</span>
             </div>
           {:else if preview.layout === "list"}
-            <div class="minimal-preview">
-              <div class="minimal-title">{preview.title}</div>
-              <div class="minimal-divider"></div>
-              <div class="minimal-steps">
+            <div class="list-preview">
+              <div class="list-title">{preview.title}</div>
+              <div class="list-divider"></div>
+              <div class="list-steps">
                 {#each preview.steps as step, j}
-                  <div class="minimal-step">
-                    <span class="minimal-time">{step.time}</span>
-                    <span class="minimal-label">{step.label}</span>
+                  <div class="list-step">
+                    <span class="list-time">{step.time}</span>
+                    <span class="list-label">{step.label}</span>
                   </div>
                 {/each}
               </div>
@@ -415,31 +415,31 @@
     border-radius: 4px;
   }
 
-  /* Minimal - List Style */
-  .minimal-preview {
+  /* List Style */
+  .list-preview {
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
-  .minimal-title {
+  .list-title {
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--text);
     margin-bottom: 0.5rem;
   }
 
-  .minimal-divider {
+  .list-divider {
     height: 1px;
     background: var(--border);
     margin-bottom: 0.6rem;
   }
 
-  .minimal-steps {
+  .list-steps {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
 
-  .minimal-step {
+  .list-step {
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -447,18 +447,18 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .minimal-step:last-child {
+  .list-step:last-child {
     border-bottom: none;
   }
 
-  .minimal-time {
+  .list-time {
     font-size: 0.65rem;
     font-weight: 500;
     color: var(--secondary);
     min-width: 38px;
   }
 
-  .minimal-label {
+  .list-label {
     font-size: 0.75rem;
     color: var(--text);
     font-weight: 500;
@@ -969,12 +969,7 @@
     padding: 0.25rem 0.5rem;
     border-radius: 16px;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    background: linear-gradient(
-      135deg,
-      #5dc4f7 0%,
-      #40b5ef 80%,
-      #50b0f5 100%
-    );
+    background: linear-gradient(135deg, #5dc4f7 0%, #40b5ef 80%, #50b0f5 100%);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
     transition:
       transform 0.2s ease,

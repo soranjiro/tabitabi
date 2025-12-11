@@ -1,16 +1,16 @@
-import type { Itinerary, CreateItineraryInput, UpdateItineraryInput } from '@tabitabi/types';
+import type { Itinerary, CreateItineraryInput, UpdateItineraryInput, ItineraryResponse } from '@tabitabi/types';
 import { apiClient } from './client';
 
 export const itineraryApi = {
-  list: () => apiClient.get<Itinerary[]>('/itineraries'),
+  list: () => apiClient.get<ItineraryResponse[]>('/itineraries'),
 
-  get: (id: string) => apiClient.get<Itinerary>(`/itineraries/${id}`),
+  get: (id: string) => apiClient.get<ItineraryResponse>(`/itineraries/${id}`),
 
   create: (data: CreateItineraryInput) =>
-    apiClient.post<Itinerary & { token: string }>('/itineraries', data),
+    apiClient.post<ItineraryResponse & { token: string }>('/itineraries', data),
 
   update: (id: string, data: UpdateItineraryInput) =>
-    apiClient.put<Itinerary>(`/itineraries/${id}`, data, id),
+    apiClient.put<ItineraryResponse>(`/itineraries/${id}`, data, id),
 
   delete: (id: string) => apiClient.delete(`/itineraries/${id}`, id),
 };

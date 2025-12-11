@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Itinerary, Step } from "@tabitabi/types";
+  import type { ItineraryResponse, Step } from "@tabitabi/types";
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
   import StepList from "./StepList.svelte";
@@ -12,7 +12,7 @@
   let MapComponent: any = $state(null);
 
   interface Props {
-    itinerary: Itinerary;
+    itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: any) => Promise<void>;
     onCreateStep?: (data: any) => Promise<void>;
@@ -225,7 +225,7 @@
       }
     }
 
-    if (!itinerary.password) {
+    if (!itinerary.is_password_protected) {
       try {
         const token = await authApi.authenticateWithPassword(itinerary.id, "");
         auth.setToken(itinerary.id, itinerary.title, token);
@@ -989,7 +989,7 @@
         </h3>
         <p class="text-sm text-gray-600 mb-4">
           このURLを共有すると、誰でも閲覧できます。
-          {#if itinerary.password}
+          {#if itinerary.is_password_protected}
             編集にはパスワードが必要です。
           {:else}
             パスワードが未設定のため、誰でも編集できます。

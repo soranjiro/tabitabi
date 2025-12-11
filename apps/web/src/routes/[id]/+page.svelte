@@ -15,6 +15,11 @@
   // Use local state for steps to allow client-side updates (e.g. unmasking secrets)
   let steps = $state(data.steps);
 
+  // Freeze itinerary object to prevent accidental modification
+  let itinerary = $derived.by(() => {
+    return Object.freeze({ ...data.itinerary });
+  });
+
   // Update steps when data changes (e.g. after invalidateAll)
   $effect(() => {
     steps = data.steps;
@@ -139,7 +144,7 @@
 
 {#key data.itinerary.theme_id}
   <ItineraryView
-    itinerary={data.itinerary}
+    itinerary
     {steps}
     onUpdateItinerary={handleUpdateItinerary}
     onCreateStep={handleCreateStep}

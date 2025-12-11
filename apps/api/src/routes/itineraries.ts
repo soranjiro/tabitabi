@@ -9,7 +9,8 @@ const itineraries = new Hono<{ Bindings: Env }>();
 itineraries.get('/', async (c) => {
   const service = new ItineraryService(c.env.DB);
   const data = await service.list();
-  return c.json({ success: true, data });
+  const response = data.map(itinerary => service.toResponseItinerary(itinerary));
+  return c.json({ success: true, data: response });
 });
 
 itineraries.get('/:id', async (c) => {
@@ -21,7 +22,7 @@ itineraries.get('/:id', async (c) => {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   }
 
-  return c.json({ success: true, data });
+  return c.json({ success: true, data: service.toResponseItinerary(data) });
 });
 
 itineraries.post('/', async (c) => {
@@ -30,8 +31,9 @@ itineraries.post('/', async (c) => {
   const data = await service.create(input);
 
   const token = await generateToken(data.id, c.env.JWT_SECRET);
+  const response = service.toResponseItinerary(data);
 
-  return c.json({ success: true, data: { ...data, token } }, 201);
+  return c.json({ success: true, data: { ...response, token } }, 201);
 });
 
 itineraries.put('/:id', optionalAuthMiddleware, async (c) => {
@@ -61,7 +63,7 @@ itineraries.put('/:id', optionalAuthMiddleware, async (c) => {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   }
 
-  return c.json({ success: true, data });
+  return c.json({ success: true, data: service.toResponseItinerary(data) });
 });
 
 itineraries.delete('/:id', optionalAuthMiddleware, async (c) => {

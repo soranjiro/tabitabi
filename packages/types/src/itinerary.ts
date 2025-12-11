@@ -15,6 +15,11 @@ export interface Itinerary {
   updated_at: string;
 }
 
+// フロントエンドに返すItinerary（パスワード情報は除外、保護フラグを追加）
+export type ItineraryResponse = Omit<Itinerary, 'password'> & {
+  is_password_protected: boolean;
+};
+
 export interface CreateItineraryInput {
   title: string;
   theme_id?: string;             // オプション、デフォルト: 'map-only'

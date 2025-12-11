@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import type { Itinerary, Step } from "@tabitabi/types";
+  import type { ItineraryResponse, Step } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
@@ -9,7 +9,7 @@
   import "./styles/index.css";
 
   interface Props {
-    itinerary: Itinerary;
+    itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: {
       title?: string;
@@ -111,7 +111,7 @@
       }
     }
 
-    if (!itinerary.password) {
+    if (!itinerary.is_password_protected) {
       try {
         const token = await authApi.authenticateWithPassword(itinerary.id, "");
         auth.setToken(itinerary.id, itinerary.title, token);

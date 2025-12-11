@@ -210,4 +210,13 @@ export class ItineraryService {
 
     return itinerary;
   }
+
+  // フロントエンド用：パスワード除外したレスポンスを返す
+  toResponseItinerary(itinerary: Itinerary) {
+    const { password: _, ...rest } = itinerary;
+    return {
+      ...rest,
+      is_password_protected: !!itinerary.password,
+    };
+  }
 }

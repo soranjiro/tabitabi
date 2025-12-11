@@ -1,18 +1,17 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { getThemePhrases } from "$lib/themes";
 
-  const phrases = [
-    "一日の予定表",
-    "旅行のしおり",
-    "買い物プラン",
-    "RPGデザイン",
-    "ユニーク計画",
-    "自分だけの旅",
-  ];
+  interface Props {
+    currentIndex: number;
+  }
+
+  let { currentIndex }: Props = $props();
+
+  const phrases = getThemePhrases();
   let maxWidth = $state<number | null>(null);
-
-  let currentIndex = $state(0);
   let isAnimating = $state(false);
+  let previousIndex = $state(currentIndex);
 
   function measureMaxWidth() {
     const probe = document.createElement("span");
@@ -33,18 +32,19 @@
     return widest;
   }
 
+  $effect(() => {
+    if (currentIndex !== previousIndex) {
+      isAnimating = true;
+      const timeout = setTimeout(() => {
+        isAnimating = false;
+        previousIndex = currentIndex;
+      }, 300);
+      return () => clearTimeout(timeout);
+    }
+  });
+
   onMount(() => {
     maxWidth = measureMaxWidth();
-
-    const interval = setInterval(() => {
-      isAnimating = true;
-      setTimeout(() => {
-        currentIndex = (currentIndex + 1) % phrases.length;
-        isAnimating = false;
-      }, 300);
-    }, 3000);
-
-    return () => clearInterval(interval);
   });
 </script>
 

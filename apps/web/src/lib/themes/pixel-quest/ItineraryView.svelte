@@ -400,7 +400,26 @@
 
   async function handleThemeChange() {
     if (onUpdateItinerary && selectedThemeId !== itinerary.theme_id) {
-      await onUpdateItinerary({ theme_id: selectedThemeId });
+      let nextMemo = itinerary.memo ?? "";
+      try {
+        const parsed = JSON.parse(nextMemo);
+        if (parsed && typeof parsed === "object") {
+          delete parsed.gameData;
+          if (typeof parsed.text === "string") {
+            nextMemo = parsed.text;
+          } else {
+            const cleaned = { ...parsed };
+            if (Object.keys(cleaned).length === 0) {
+              nextMemo = "";
+            } else {
+              nextMemo = JSON.stringify(cleaned);
+            }
+          }
+        }
+      } catch {
+        // invalid JSON
+      }
+      await onUpdateItinerary({ theme_id: selectedThemeId, memo: nextMemo });
       goto(`/${itinerary.id}`);
     }
     showThemeDialog = false;
@@ -757,7 +776,7 @@
       tabindex="-1"
     >
       <h2 class="pq-form-title">SHARE ADVENTURE</h2>
-      <p>Share this URL with your party:</p>
+      <p class="pq-share-description">Share this URL with your party:</p>
       <div class="pq-share-url">
         {typeof window !== "undefined" ? window.location.href : ""}
       </div>
@@ -1380,6 +1399,26 @@
     font-size: 2rem;
     font-weight: bold;
     color: var(--pq-text-dark);
+  }
+
+  .pq-share-url {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px;
+    border: 2px solid var(--pq-border-inner);
+    word-break: break-all;
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #ffd700;
+    text-shadow: 1px 1px 0 #000;
+    margin: 12px 0;
+  }
+
+  .pq-share-description {
+    color: #f4e8d3;
+    font-family: var(--pq-font-pixel);
+    font-size: 0.75rem;
+    margin: 12px 0 8px 0;
+    text-shadow: 1px 1px 0 #000;
   }
 
   @media (min-width: 768px) {

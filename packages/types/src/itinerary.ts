@@ -17,7 +17,7 @@ export interface Itinerary {
 
 export interface CreateItineraryInput {
   title: string;
-  theme_id?: string;             // オプション、デフォルト: 'minimal'
+  theme_id?: string;             // オプション、デフォルト: 'map-only'
   memo?: string;
   walica_id?: string;
   password?: string;

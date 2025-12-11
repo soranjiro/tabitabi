@@ -11,18 +11,25 @@
     "preview": "vite preview",
     "deploy": "pnpm build && wrangler pages deploy .svelte-kit/cloudflare",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@tabitabi/types": "workspace:*"
+    "@googlemaps/js-api-loader": "^2.0.2",
+    "@tabitabi/types": "workspace:*",
+    "mapbox-gl": "^3.17.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250110.0",
+    "@playwright/test": "^1.57.0",
     "@sveltejs/adapter-cloudflare": "^4.7.4",
     "@sveltejs/kit": "^2.15.2",
     "@sveltejs/vite-plugin-svelte": "^5.0.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/svelte": "^5.2.9",
+    "@types/google.maps": "^3.58.1",
+    "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^24.10.1",
     "autoprefixer": "^10.4.20",
     "jsdom": "^27.2.0",

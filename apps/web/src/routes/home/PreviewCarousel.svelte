@@ -172,19 +172,159 @@
                 <span class="pq-exp">+25 EXP</span>
               </div>
             </div>
+          {:else if preview.themeId === "map-only"}
+            <div class="map-preview">
+              <div class="map-container">
+                <svg viewBox="0 0 200 120" class="map-svg">
+                  <!-- Background Map -->
+                  <rect width="200" height="120" fill="#e5e7eb" />
+                  <path
+                    d="M0 40 Q50 30 80 60 T150 50 T200 80"
+                    stroke="white"
+                    stroke-width="8"
+                    fill="none"
+                  />
+                  <path
+                    d="M40 0 Q50 50 30 120"
+                    stroke="white"
+                    stroke-width="6"
+                    fill="none"
+                  />
+
+                  <!-- Pins -->
+                  <g transform="translate(60, 40)">
+                    <circle cx="0" cy="0" r="4" fill="#ef4444" />
+                    <path d="M0 0 L0 -8" stroke="#ef4444" stroke-width="2" />
+                    <circle cx="0" cy="-8" r="5" fill="#ef4444" />
+                    <circle cx="0" cy="-8" r="2" fill="white" />
+                  </g>
+
+                  <g transform="translate(120, 70)">
+                    <circle cx="0" cy="0" r="4" fill="#3b82f6" />
+                    <path d="M0 0 L0 -8" stroke="#3b82f6" stroke-width="2" />
+                    <circle cx="0" cy="-8" r="5" fill="#3b82f6" />
+                    <circle cx="0" cy="-8" r="2" fill="white" />
+                  </g>
+
+                  <g transform="translate(160, 30)">
+                    <circle cx="0" cy="0" r="4" fill="#10b981" />
+                    <path d="M0 0 L0 -8" stroke="#10b981" stroke-width="2" />
+                    <circle cx="0" cy="-8" r="5" fill="#10b981" />
+                    <circle cx="0" cy="-8" r="2" fill="white" />
+                  </g>
+                </svg>
+
+                <!-- Floating Cards -->
+                <div class="map-card-float top-left">
+                  <span class="map-card-icon">📍</span>
+                  <span class="map-card-text">浅草寺</span>
+                </div>
+                <div class="map-card-float bottom-right">
+                  <span class="map-card-icon">🗼</span>
+                  <span class="map-card-text">スカイツリー</span>
+                </div>
+              </div>
+            </div>
+          {:else if preview.themeId === "mapbox-journey"}
+            <div class="journey-preview">
+              <div class="journey-globe">
+                <svg viewBox="0 0 200 120" class="journey-svg">
+                  <!-- Globe Background -->
+                  <defs>
+                    <radialGradient id="globe-grad" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="#1e293b" />
+                      <stop offset="100%" stop-color="#0f172a" />
+                    </radialGradient>
+                  </defs>
+                  <rect width="200" height="120" fill="#020617" />
+                  <circle
+                    cx="100"
+                    cy="160"
+                    r="120"
+                    fill="url(#globe-grad)"
+                    stroke="#334155"
+                    stroke-width="1"
+                  />
+
+                  <!-- Continents (Abstract) -->
+                  <path
+                    d="M60 100 Q80 80 100 90 T140 80"
+                    stroke="#334155"
+                    stroke-width="2"
+                    fill="none"
+                    opacity="0.5"
+                  />
+
+                  <!-- Flight Path -->
+                  <path
+                    d="M50 90 Q100 40 150 80"
+                    stroke="#38bdf8"
+                    stroke-width="2"
+                    fill="none"
+                    stroke-dasharray="4 4"
+                  >
+                    <animate
+                      attributeName="stroke-dashoffset"
+                      from="100"
+                      to="0"
+                      dur="3s"
+                      repeatCount="indefinite"
+                    />
+                  </path>
+
+                  <!-- Points -->
+                  <circle cx="50" cy="90" r="3" fill="#f472b6">
+                    <animate
+                      attributeName="r"
+                      values="3;5;3"
+                      dur="2s"
+                      repeatCount="indefinite"
+                    />
+                  </circle>
+                  <circle cx="150" cy="80" r="3" fill="#f472b6">
+                    <animate
+                      attributeName="r"
+                      values="3;5;3"
+                      dur="2s"
+                      repeatCount="indefinite"
+                      begin="1s"
+                    />
+                  </circle>
+
+                  <!-- Plane -->
+                  <g>
+                    <text x="0" y="0" font-size="12">✈️</text>
+                    <animateMotion
+                      path="M50 90 Q100 40 150 80"
+                      dur="3s"
+                      repeatCount="indefinite"
+                      rotate="auto"
+                    />
+                  </g>
+                </svg>
+              </div>
+              <div class="journey-info">
+                <div class="journey-route">
+                  <span class="journey-city">HND</span>
+                  <span class="journey-arrow">✈</span>
+                  <span class="journey-city">TPE</span>
+                </div>
+                <div class="journey-status">In Flight</div>
+              </div>
+            </div>
           {:else if preview.themeId === "coming-soon"}
             <div class="coming-preview">
               <span class="coming-question">？</span>
             </div>
           {:else if preview.layout === "list"}
-            <div class="minimal-preview">
-              <div class="minimal-title">{preview.title}</div>
-              <div class="minimal-divider"></div>
-              <div class="minimal-steps">
+            <div class="list-preview">
+              <div class="list-title">{preview.title}</div>
+              <div class="list-divider"></div>
+              <div class="list-steps">
                 {#each preview.steps as step, j}
-                  <div class="minimal-step">
-                    <span class="minimal-time">{step.time}</span>
-                    <span class="minimal-label">{step.label}</span>
+                  <div class="list-step">
+                    <span class="list-time">{step.time}</span>
+                    <span class="list-label">{step.label}</span>
                   </div>
                 {/each}
               </div>
@@ -415,31 +555,31 @@
     border-radius: 4px;
   }
 
-  /* Minimal - List Style */
-  .minimal-preview {
+  /* List Style */
+  .list-preview {
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
-  .minimal-title {
+  .list-title {
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--text);
     margin-bottom: 0.5rem;
   }
 
-  .minimal-divider {
+  .list-divider {
     height: 1px;
     background: var(--border);
     margin-bottom: 0.6rem;
   }
 
-  .minimal-steps {
+  .list-steps {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
 
-  .minimal-step {
+  .list-step {
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -447,18 +587,18 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .minimal-step:last-child {
+  .list-step:last-child {
     border-bottom: none;
   }
 
-  .minimal-time {
+  .list-time {
     font-size: 0.65rem;
     font-weight: 500;
     color: var(--secondary);
     min-width: 38px;
   }
 
-  .minimal-label {
+  .list-label {
     font-size: 0.75rem;
     color: var(--text);
     font-weight: 500;
@@ -902,6 +1042,103 @@
     font-weight: 700;
   }
 
+  /* Map Only Theme */
+  .map-preview {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .map-container {
+    flex: 1;
+    position: relative;
+    background: #f3f4f6;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .map-svg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .map-card-float {
+    position: absolute;
+    background: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .map-card-float.top-left {
+    top: 15%;
+    left: 10%;
+  }
+
+  .map-card-float.bottom-right {
+    bottom: 20%;
+    right: 10%;
+  }
+
+  /* Mapbox Journey Theme */
+  .journey-preview {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #0f172a;
+  }
+
+  .journey-globe {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+
+  .journey-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .journey-info {
+    padding: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(30, 41, 59, 0.5);
+    border-top: 1px solid #334155;
+  }
+
+  .journey-route {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #e2e8f0;
+    font-weight: 700;
+    font-size: 0.7rem;
+  }
+
+  .journey-arrow {
+    color: #38bdf8;
+    font-size: 0.6rem;
+  }
+
+  .journey-status {
+    color: #34d399;
+    font-size: 0.55rem;
+    font-weight: 600;
+    background: rgba(52, 211, 153, 0.1);
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+  }
+
   /* Coming Soon Theme */
   .preview-card.theme-coming-soon {
     background: #333333;
@@ -969,12 +1206,7 @@
     padding: 0.25rem 0.5rem;
     border-radius: 16px;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    background: linear-gradient(
-      135deg,
-      #5dc4f7 0%,
-      #40b5ef 80%,
-      #50b0f5 100%
-    );
+    background: linear-gradient(135deg, #5dc4f7 0%, #40b5ef 80%, #50b0f5 100%);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
     transition:
       transform 0.2s ease,

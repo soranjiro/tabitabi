@@ -10,8 +10,9 @@ Tabitabiのテーマシステムは、拡張性と保守性を重視して設計
 ```
 apps/web/src/lib/themes/
 ├── index.ts          # テーマの登録と動的インポートの管理
-├── minimal/          # ミニマルテーマ（デフォルト）
-├── standard-autumn/  # 標準（秋）テーマ
+├── map-only/         # 地図に特化したテーマ
+├── standard-autumn/  # 標準（秋）テーマ（デフォルト）
+├── mapbox-journey/   # 3Dマップテーマ
 └── ...               # その他のテーマ
 ```
 
@@ -22,7 +23,7 @@ apps/web/src/lib/themes/
 ### 1. テーマフォルダの作成
 
 `apps/web/src/lib/themes` 内に新しいフォルダを作成し（例: `new-theme`）、必要なコンポーネントを実装します。
-既存のテーマ（`minimal` や `standard-autumn` など）をコピーして参考にすることをお勧めします。
+既存のテーマ（`map-only` や `standard-autumn` など）をコピーして参考にすることをお勧めします。
 
 必須ファイル:
 - `index.ts`: テーマ定義（`Theme` 型）を default export します。
@@ -67,14 +68,19 @@ export const availableThemes = [..., 'new-theme'] as const;
 
 現在、以下のテーマが利用可能です。
 
-### ミニマル
-- **ID**: `minimal`
-- **特徴**: 軽量で必要最低限の機能のみを提供します。
-- **用途**: シンプルな旅程管理に最適です。
+### Map Only
+- **ID**: `map-only`
+- **特徴**: 地図とスポット表示に特化した軽量UI。
+- **用途**: ルートを素早く確認したいときに。
+
+### Mapbox Journey
+- **ID**: `mapbox-journey`
+- **特徴**: 3Dグローブとアニメーションルートで没入感のある体験。
+- **用途**: 景色や航路を魅せたい旅程に。
 
 ### 標準
 - **ID**: `standard-autumn`
-- **特徴**: 秋をモチーフにしたデザイン。Google Maps連携機能を含みます。
+- **特徴**: 秋をモチーフにしたデザイン。Google Maps連携機能を含みます。（デフォルト）
 - **用途**: 観光地巡りなど、地図を活用したい旅行に。
 
 ### 買い物リスト

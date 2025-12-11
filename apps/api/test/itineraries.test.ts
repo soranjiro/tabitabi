@@ -7,7 +7,7 @@ async function applyMigrations(db: D1Database) {
     `CREATE TABLE IF NOT EXISTS itineraries (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
-      theme_id TEXT NOT NULL DEFAULT 'minimal',
+      theme_id TEXT NOT NULL DEFAULT 'standard-autumn',
       memo TEXT,
       password TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -71,7 +71,7 @@ describe('Itineraries API', () => {
       const { success, data } = await response.json() as any;
       expect(success).toBe(true);
       expect(data.title).toBe('Test Trip');
-      expect(data.theme_id).toBe('minimal');
+      expect(data.theme_id).toBe('standard-autumn');
       expect(data.id).toBeDefined();
       expect(data.token).toBeDefined();
     });

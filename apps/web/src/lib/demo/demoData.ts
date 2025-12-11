@@ -20,11 +20,20 @@ interface DemoDataSet {
 
 const now = new Date().toISOString();
 
-// Helper to create a date string for today + offset days
-function getDate(offsetDays: number = 0): string {
+// Helper to create a date string for today + offset days, considering timezone
+function getDate(offsetDays: number = 0, timeZone: string = 'Asia/Tokyo'): string {
   const date = new Date();
   date.setDate(date.getDate() + offsetDays);
-  return date.toISOString().split('T')[0];
+
+  // Format the date considering the timezone
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+    .format(date)
+    .replace(/\//g, '-');
 }
 
 const standardAutumnDemo: DemoDataSet = {
@@ -170,9 +179,9 @@ const shoppingDemo: DemoDataSet = {
 const pixelQuestDemo: DemoDataSet = {
   itinerary: {
     id: 'demo',
-    title: '冒険の旅',
+    title: '日本征服',
     theme_id: 'pixel-quest',
-    memo: 'クエスト: 世界を救え',
+    memo: 'トップに立て',
     password: null,
     created_at: now,
     updated_at: now,
@@ -181,10 +190,10 @@ const pixelQuestDemo: DemoDataSet = {
     {
       id: 'demo-step-1',
       itinerary_id: 'demo',
-      title: '王国を出発',
+      title: '出発の儀',
       date: getDate(0),
       time: '06:00',
-      location: '王都',
+      location: '東京駅',
       notes: '装備を整えてから出発！',
       created_at: now,
       updated_at: now,
@@ -195,7 +204,7 @@ const pixelQuestDemo: DemoDataSet = {
       title: '森の迷宮',
       date: getDate(0),
       time: '10:00',
-      location: '魔法の森',
+      location: '五合目付近',
       notes: 'モンスターに注意',
       created_at: now,
       updated_at: now,
@@ -206,19 +215,19 @@ const pixelQuestDemo: DemoDataSet = {
       title: '宿屋で休憩',
       date: getDate(0),
       time: '18:00',
-      location: '村の宿屋',
-      notes: 'HP回復',
+      location: '六合目',
+      notes: '明日のために体力回復',
       created_at: now,
       updated_at: now,
     },
     {
       id: 'demo-step-4',
       itinerary_id: 'demo',
-      title: 'ラスボス討伐',
+      title: '日本の頂点へ',
       date: getDate(1),
       time: '12:00',
-      location: '魔王城',
-      notes: '勇者よ、世界を救え！',
+      location: '富士山頂',
+      notes: '頂上で達成感を味わう',
       created_at: now,
       updated_at: now,
     },
@@ -343,17 +352,6 @@ const mapOnlyDemo: DemoDataSet = {
     {
       id: 'demo-step-3',
       itinerary_id: 'demo',
-      title: 'ランチ',
-      date: getDate(0),
-      time: '12:30',
-      location: null,
-      notes: 'スカイツリーのレストランで食事',
-      created_at: now,
-      updated_at: now,
-    },
-    {
-      id: 'demo-step-4',
-      itinerary_id: 'demo',
       title: '秋葉原',
       date: getDate(0),
       time: '15:00',
@@ -363,7 +361,7 @@ const mapOnlyDemo: DemoDataSet = {
       updated_at: now,
     },
     {
-      id: 'demo-step-5',
+      id: 'demo-step-4',
       itinerary_id: 'demo',
       title: '渋谷スクランブル交差点',
       date: getDate(0),
@@ -374,18 +372,7 @@ const mapOnlyDemo: DemoDataSet = {
       updated_at: now,
     },
     {
-      id: 'demo-step-6',
-      itinerary_id: 'demo',
-      title: 'ディナー',
-      date: getDate(0),
-      time: '19:00',
-      location: null,
-      notes: 'おしゃれなレストランで夜食',
-      created_at: now,
-      updated_at: now,
-    },
-    {
-      id: 'demo-step-7',
+      id: 'demo-step-5',
       itinerary_id: 'demo',
       title: '六本木ヒルズ',
       date: getDate(1),
@@ -396,7 +383,7 @@ const mapOnlyDemo: DemoDataSet = {
       updated_at: now,
     },
     {
-      id: 'demo-step-8',
+      id: 'demo-step-6',
       itinerary_id: 'demo',
       title: 'お台場',
       date: getDate(1),

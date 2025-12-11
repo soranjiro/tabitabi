@@ -1345,39 +1345,6 @@
     cursor: pointer;
   }
 
-  .direction-info {
-    position: absolute;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1500;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .direction-info-text {
-    text-align: center;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px;
-    padding: 8px 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  }
-
-  .next-destination {
-    margin: 0;
-    font-weight: 600;
-    font-size: 14px;
-    color: #333;
-  }
-
-  .next-time {
-    margin: 4px 0 0 0;
-    font-size: 12px;
-    color: #666;
-  }
-
   .direction-arrow {
     width: 0;
     height: 0;
@@ -1385,31 +1352,6 @@
     border-right: 12px solid transparent;
     border-bottom: 24px solid rgba(255, 0, 0, 0.9);
     transform-origin: 50% 50%;
-  }
-
-  .move-button {
-    background: #ff5722;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    transition:
-      background 0.2s,
-      transform 0.1s;
-  }
-
-  .move-button:hover {
-    background: #f4511e;
-  }
-
-  .move-button:active {
-    transform: scale(0.95);
   }
 
   .streetview-back-button {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Itinerary, Step } from "@tabitabi/types";
+  import type { ItineraryResponse, Step } from "@tabitabi/types";
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
   import { env } from "$env/dynamic/public";
@@ -15,7 +15,7 @@
   type MapStyle = "day" | "night" | "satellite" | "pixel";
 
   interface Props {
-    itinerary: Itinerary;
+    itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: any) => Promise<void>;
     onCreateStep?: (data: any) => Promise<void>;
@@ -193,7 +193,7 @@
       }
     }
 
-    if (!itinerary.password) {
+    if (!itinerary.is_password_protected) {
       try {
         const token = await authApi.authenticateWithPassword(itinerary.id, "");
         auth.setToken(itinerary.id, itinerary.title, token);
@@ -756,7 +756,7 @@
           旅程を共有
         </h3>
         <p class="modal-desc">
-          {#if itinerary.password}
+          {#if itinerary.is_password_protected}
             このURLを共有してください。編集にはパスワードが必要です。
           {:else}
             このURLを共有してください。誰でも編集できます（パスワード未設定）。

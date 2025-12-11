@@ -1,6 +1,7 @@
 import type { ShioriHistory } from '@tabitabi/types';
 
 const STORAGE_KEY = 'shiori_history';
+const PASSWORD_PROTECTED_KEY = 'shiori_password_protected';
 
 export const auth = {
   getHistory(): ShioriHistory[] {
@@ -115,5 +116,27 @@ export const auth = {
         title: h.title,
         visitedAt: h.accessedAt,
       }));
+  },
+
+  // パスワード保護状態の管理
+  isPasswordProtected(shioriId: string): boolean {
+    try {
+      const data = localStorage.getItem(PASSWORD_PROTECTED_KEY);
+      const map = data ? JSON.parse(data) : {};
+      return map[shioriId] ?? false;
+    } catch {
+      return false;
+    }
+  },
+
+  setPasswordProtected(shioriId: string, isProtected: boolean): void {
+    try {
+      const data = localStorage.getItem(PASSWORD_PROTECTED_KEY);
+      const map = data ? JSON.parse(data) : {};
+      map[shioriId] = isProtected;
+      localStorage.setItem(PASSWORD_PROTECTED_KEY, JSON.stringify(map));
+    } catch {
+      // silently fail
+    }
   },
 };

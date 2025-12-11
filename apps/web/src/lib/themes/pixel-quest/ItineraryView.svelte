@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import type { Itinerary, Step } from "@tabitabi/types";
+  import type { ItineraryResponse, Step } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
@@ -15,7 +15,7 @@
   import "./styles/index.css";
 
   interface Props {
-    itinerary: Itinerary;
+    itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: {
       title?: string;

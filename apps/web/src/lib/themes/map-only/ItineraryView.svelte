@@ -48,6 +48,7 @@
 
   let selectedStep = $state<Step | null>(null);
   let selectedStepIndex = $state<number>(0);
+  let selectedStepIdForMap = $state<string | null>(null);
   let isEditing = $state(false);
   let editStepHour = $state("09");
   let editStepMinute = $state("00");
@@ -301,6 +302,7 @@
   function handleStepClick(step: Step, index: number) {
     selectedStep = step;
     selectedStepIndex = index;
+    selectedStepIdForMap = step.id;
     showSpotDetail = true;
   }
 
@@ -356,6 +358,7 @@
     isEditing = false;
     editStepId = "";
     selectedStep = null;
+    selectedStepIdForMap = null;
   }
 
   function resetForm() {
@@ -585,6 +588,7 @@
       onStepClick={handleStepClick}
       onMapClick={handleMapClick}
       {showRoute}
+      selectedStepId={selectedStepIdForMap}
     />
   {:else}
     <div class="loading">Loading Map...</div>
@@ -1225,6 +1229,8 @@
     onStepClick={handleStepClick}
     {secretModeEnabled}
     {secretModeOffset}
+    {isViewMode}
+    {hasEditPermission}
   />
 </div>
 
@@ -1402,6 +1408,27 @@
     pointer-events: auto;
   }
 
+  @media (max-width: 768px) {
+    .legend-container {
+      max-width: 160px;
+      max-height: 200px;
+      padding: 10px;
+      bottom: 15px;
+      left: 15px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .legend-container {
+      max-width: 140px;
+      max-height: 150px;
+      padding: 8px;
+      gap: 6px;
+      bottom: 10px;
+      left: 10px;
+    }
+  }
+
   .legend-container::-webkit-scrollbar {
     width: 6px;
   }
@@ -1437,6 +1464,12 @@
     color: #333;
   }
 
+  @media (max-width: 480px) {
+    .legend-text {
+      font-size: 10px;
+    }
+  }
+
   .route-toggle {
     display: flex;
     align-items: center;
@@ -1447,6 +1480,14 @@
     padding-top: 8px;
     border-top: 1px solid #eee;
     margin-top: 4px;
+  }
+
+  @media (max-width: 480px) {
+    .route-toggle {
+      font-size: 10px;
+      gap: 6px;
+      padding-top: 6px;
+    }
   }
 
   .route-toggle input {

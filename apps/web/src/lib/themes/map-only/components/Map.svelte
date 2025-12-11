@@ -10,6 +10,7 @@
     onMapClick?: (lat: number, lng: number) => void;
     showRoute?: boolean;
     onOpenStreetView?: (lat: number, lng: number, title: string) => void;
+    selectedStepId?: string | null;
   }
 
   let {
@@ -18,6 +19,7 @@
     onMapClick,
     showRoute = false,
     onOpenStreetView,
+    selectedStepId = null,
   }: Props = $props();
   let mapElement: HTMLDivElement;
   let map: google.maps.Map | null = null;
@@ -59,6 +61,26 @@
       return JSON.parse(cached);
     }
     return null;
+  }
+
+  export function focusOnStep(stepId: string) {
+    if (!map) return;
+    const step = steps.find((s) => s.id === stepId);
+    if (!step || !step.location) return;
+
+    const location = getLocationForStep(step);
+    if (location) {
+      map.setCenter(location);
+      map.setZoom(15);
+
+      const marker = markers.find((m) => m.getTitle() === step.title);
+      if (marker) {
+        marker.setAnimation(google.maps.Animation.BOUNCE);
+        setTimeout(() => {
+          marker.setAnimation(null);
+        }, 2000);
+      }
+    }
   }
 
   const DATE_COLORS = [
@@ -156,6 +178,12 @@
   $effect(() => {
     if (map && steps) {
       updateMapWithCurrentState();
+    }
+  });
+
+  $effect(() => {
+    if (map && selectedStepId) {
+      focusOnStep(selectedStepId);
     }
   });
 

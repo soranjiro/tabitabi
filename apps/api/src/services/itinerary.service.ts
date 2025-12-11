@@ -3,13 +3,6 @@ import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
 
 const DEFAULT_THEME_ID = 'standard-autumn';
-const LEGACY_THEME_ID = 'minimal';
-
-const normalizeThemeId = (themeId?: string | null) => {
-  if (!themeId) return DEFAULT_THEME_ID;
-  if (themeId === LEGACY_THEME_ID) return DEFAULT_THEME_ID;
-  return themeId;
-};
 
 export class ItineraryService {
   constructor(private db: D1Database) {}
@@ -54,7 +47,7 @@ export class ItineraryService {
     const itinerary: Itinerary = {
       id,
       title: input.title,
-      theme_id: normalizeThemeId(input.theme_id),
+      theme_id: input.theme_id || DEFAULT_THEME_ID,
       memo: input.memo ?? null,
       walica_id: input.walica_id ?? null,
       password: input.password ?? null,
@@ -111,7 +104,7 @@ export class ItineraryService {
     }
     if (input.theme_id !== undefined) {
       fields.push('theme_id = ?');
-      values.push(normalizeThemeId(input.theme_id));
+      values.push(input.theme_id || DEFAULT_THEME_ID);
     }
     if (input.memo !== undefined) {
       fields.push('memo = ?');

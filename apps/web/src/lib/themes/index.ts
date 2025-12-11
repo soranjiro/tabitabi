@@ -18,7 +18,7 @@ export async function loadTheme(themeId: string): Promise<Theme> {
     case 'pixel-quest':
       return (await import('./pixel-quest')).default;
     default:
-      return (await import('./map-only')).default;
+      return (await import('./standard-autumn')).default;
   }
 }
 

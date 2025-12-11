@@ -9,11 +9,10 @@ import { comingSoonPreview } from "./coming-soon";
 import type { PreviewItinerary } from "./types";
 
 export const previewItineraries: PreviewItinerary[] = [
-  mapOnlyPreview,
-  mapboxJourneyPreview,
   standardAutumnPreview,
   shoppingPreview,
   pixelQuestPreview,
+  mapOnlyPreview,
+  mapboxJourneyPreview,
   aiGeneratedPreview,
-  comingSoonPreview,
 ];

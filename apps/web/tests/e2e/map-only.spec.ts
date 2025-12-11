@@ -11,7 +11,7 @@ test.describe('Map-Only Theme', () => {
   test('should display map view in view mode', async ({ page }) => {
     // デモページからmap-onlyテーマを選択
     await page.click('text=Map Only');
-    
+
     // マップが表示されているか確認
     const mapContainer = page.locator('.gmap-canvas');
     await expect(mapContainer).toBeVisible();
@@ -99,11 +99,11 @@ test.describe('Map-Only Theme', () => {
 
   test('"地図に戻る" button should only appear in street view view mode', async ({ page }) => {
     await page.click('text=Map Only');
-    
+
     // ビューモードを確認 (編集モードではない)
     const editButton = page.locator('button:has-text("編集")').first();
     const isEditMode = await editButton.isVisible();
-    
+
     if (!isEditMode) {
       // ビューモードの場合、地図に戻るボタンは非表示
       const backButton = page.locator('button:has-text("地図に戻る")');
@@ -113,18 +113,18 @@ test.describe('Map-Only Theme', () => {
 
   test('secret mode toggle should work', async ({ page }) => {
     await page.click('text=Map Only');
-    
+
     // メニューを開く
     const menuButton = page.locator('button:has-text("☰")').first();
     await menuButton.click();
-    
+
     // シークレットモーダルを開く
     await page.click('button:has-text("🔒")');
-    
+
     // チェックボックスをクリックして有効化
     const secretToggle = page.locator('.secret-mode-toggle input[type="checkbox"]');
     await secretToggle.click();
-    
+
     // オフセット入力欄が表示される
     const offsetControl = page.locator('.secret-offset-control');
     await expect(offsetControl).toBeVisible();
@@ -132,7 +132,7 @@ test.describe('Map-Only Theme', () => {
 
   test('should display current location button', async ({ page }) => {
     await page.click('text=Map Only');
-    
+
     // 現在地ボタンが表示されている
     const currentLocationButton = page.locator('button:has-text("📍")');
     await expect(currentLocationButton).toBeVisible();
@@ -160,17 +160,17 @@ test.describe('Map-Only Theme', () => {
 
   test('menu should toggle visibility', async ({ page }) => {
     await page.click('text=Map Only');
-    
+
     // メニューボタンをクリック
     const menuButton = page.locator('button:has-text("☰")').first();
-    
+
     // 最初はメニューが非表示
     const menuContent = page.locator('.map-menu');
     const initiallyVisible = await menuContent.isVisible().catch(() => false);
-    
+
     // メニューをクリック
     await menuButton.click();
-    
+
     // 状態が切り替わる
     const afterClick = await menuContent.isVisible().catch(() => false);
     expect(afterClick).not.toBe(initiallyVisible);

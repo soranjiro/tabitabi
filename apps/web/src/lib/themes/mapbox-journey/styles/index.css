@@ -504,6 +504,31 @@
   animation: slideUp 0.3s ease-out;
 }
 
+.form-modal {
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-modal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.form-modal::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+}
+
+.form-modal::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.5);
+  border-radius: 3px;
+}
+
+.form-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.8);
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;

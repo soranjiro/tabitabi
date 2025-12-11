@@ -36,6 +36,7 @@
   let showPasswordDialog = $state(false);
   let showSpotDetail = $state(false);
   let showRoute = $state(false);
+  let showStreetView = $state(false);
   let isViewMode = $state(false);
 
   let hasEditPermission = $state(false);
@@ -58,6 +59,17 @@
     location: "",
     notes: "",
   });
+
+  let streetViewLocation = $state<{ lat: number; lng: number } | null>(null);
+  let mapComponent: any = $state(null);
+  let nextDirectionDeg = $state<number | null>(null);
+  let showDirectionArrow = $state(false);
+  let nextStepForDisplay = $state<Step | null>(null);
+
+  let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
+  let secretModeOffset = $state(
+    itinerary.secret_settings?.offset_minutes ?? 60,
+  );
 
   let newStep = $state({
     title: "",
@@ -104,6 +116,36 @@
     return sortedSteps.findIndex((s) => s.id === step.id) + 1;
   }
 
+  function isSecretStep(stepDate: string, stepTime: string): boolean {
+    if (!secretModeEnabled) return false;
+    const now = new Date();
+    const stepDateTime = new Date(`${stepDate}T${stepTime}:00`);
+    return (
+      now.getTime() < stepDateTime.getTime() - secretModeOffset * 60 * 1000
+    );
+  }
+
+  function getNextStep(basedOnTime: boolean = true): Step | null {
+    const sorted = [...steps].sort((a, b) => {
+      const dc = a.date.localeCompare(b.date);
+      if (dc !== 0) return dc;
+      return a.time.localeCompare(b.time);
+    });
+
+    if (basedOnTime) {
+      const now = new Date();
+      for (const s of sorted) {
+        const dt = new Date(`${s.date}T${s.time}:00`);
+        if (dt.getTime() >= now.getTime()) return s;
+      }
+      return sorted.length ? sorted[sorted.length - 1] : null;
+    } else if (selectedStep) {
+      const idx = sorted.findIndex((s) => s.id === selectedStep!.id);
+      if (idx >= 0 && idx + 1 < sorted.length) return sorted[idx + 1];
+    }
+    return null;
+  }
+
   onMount(async () => {
     if (browser) {
       const module = await import("./components/Map.svelte");
@@ -138,6 +180,13 @@
     showMenu = false;
     showAddModal = false;
     showSpotDetail = false;
+    if (isViewMode) {
+      // 閲覧モードではストリートビュー固定
+      showStreetView = true;
+    } else {
+      // 編集モードではマップ表示
+      showStreetView = false;
+    }
   }
 
   async function handlePasswordAuth() {
@@ -368,6 +417,146 @@
   function handleRouteToggle(checked: boolean) {
     showRoute = checked;
   }
+
+  function openStreetView() {
+    if (!selectedStep?.location || !mapComponent) return;
+
+    const location = mapComponent.getLocationForStep(selectedStep);
+    if (location) {
+      streetViewLocation = location;
+      showStreetView = true;
+      showSpotDetail = false;
+      mapComponent.openStreetViewAt(location.lat, location.lng);
+      updateNextDirection();
+    }
+  }
+
+  function closeStreetView() {
+    showStreetView = false;
+    streetViewLocation = null;
+    nextDirectionDeg = null;
+    showDirectionArrow = false;
+  }
+
+  function computeBearing(
+    from: { lat: number; lng: number },
+    to: { lat: number; lng: number },
+  ): number {
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const toDeg = (r: number) => (r * 180) / Math.PI;
+    const φ1 = toRad(from.lat);
+    const φ2 = toRad(to.lat);
+    const Δλ = toRad(to.lng - from.lng);
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x =
+      Math.cos(φ1) * Math.cos(φ2) * Math.cos(Δλ) + Math.sin(φ1) * Math.sin(φ2);
+    const θ = Math.atan2(y, x);
+    const bearing = (toDeg(θ) + 360) % 360;
+    return bearing;
+  }
+
+  function updateNextDirection() {
+    if (!mapComponent) return;
+    const current = streetViewLocation;
+    const next = getNextStep(true);
+    if (!current || !next || !next.location) {
+      nextDirectionDeg = null;
+      showDirectionArrow = false;
+      nextStepForDisplay = null;
+      return;
+    }
+    const nextLoc = mapComponent.getLocationForStep(next);
+    if (!nextLoc) {
+      nextDirectionDeg = null;
+      showDirectionArrow = false;
+      nextStepForDisplay = null;
+      return;
+    }
+    nextDirectionDeg = computeBearing(current, nextLoc);
+    nextStepForDisplay = next;
+    showDirectionArrow = true;
+  }
+
+  async function moveToCurrentLocation() {
+    if (!navigator.geolocation || !mapComponent) return;
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        });
+      });
+      streetViewLocation = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      };
+      mapComponent.openStreetViewAt(
+        streetViewLocation.lat,
+        streetViewLocation.lng,
+      );
+      updateNextDirection();
+    } catch (e) {
+      alert("現在地の取得に失敗しました");
+    }
+  }
+
+  function moveTowardNextStep() {
+    if (!mapComponent || !nextDirectionDeg || !streetViewLocation) return;
+    const next = getNextStep(true);
+    if (!next || !next.location) return;
+    const nextLoc = mapComponent.getLocationForStep(next);
+    if (!nextLoc) return;
+
+    const lat1 = (streetViewLocation.lat * Math.PI) / 180;
+    const lon1 = (streetViewLocation.lng * Math.PI) / 180;
+    const lat2 = (nextLoc.lat * Math.PI) / 180;
+    const lon2 = (nextLoc.lng * Math.PI) / 180;
+
+    const R = 6371000;
+    const distance =
+      Math.acos(
+        Math.sin(lat1) * Math.sin(lat2) +
+          Math.cos(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1),
+      ) * R;
+
+    const moveDistance = Math.min(distance * 0.1, 50);
+    const brng = (nextDirectionDeg * Math.PI) / 180;
+    const lat3 =
+      Math.asin(
+        Math.sin(lat1) * Math.cos(moveDistance / R) +
+          Math.cos(lat1) * Math.sin(moveDistance / R) * Math.cos(brng),
+      ) *
+      (180 / Math.PI);
+    const lon3 =
+      ((streetViewLocation.lng +
+        Math.atan2(
+          Math.sin(brng) * Math.sin(moveDistance / R) * Math.cos(lat1),
+          Math.cos(moveDistance / R) -
+            Math.sin(lat1) * Math.sin(lat3 * (Math.PI / 180)),
+        ) *
+          (180 / Math.PI) +
+        540) %
+        360) -
+      180;
+
+    streetViewLocation = { lat: lat3, lng: lon3 };
+    mapComponent.openStreetViewAt(lat3, lon3);
+    updateNextDirection();
+  }
+
+  async function handleSecretModeUpdate(enabled: boolean, offset: number) {
+    secretModeEnabled = enabled;
+    secretModeOffset = offset;
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({
+        secret_settings: {
+          enabled,
+          offset_minutes: offset,
+        },
+      });
+    }
+  }
 </script>
 
 <div class="map-theme-container">
@@ -389,6 +578,7 @@
 
   {#if MapComponent}
     <MapComponent
+      bind:this={mapComponent}
       {steps}
       onStepClick={handleStepClick}
       onMapClick={handleMapClick}
@@ -396,6 +586,64 @@
     />
   {:else}
     <div class="loading">Loading Map...</div>
+  {/if}
+
+  {#if showStreetView}
+    <button
+      class="streetview-back-button"
+      onclick={() => {
+        if (mapComponent) mapComponent.closeStreetView();
+        showStreetView = false;
+      }}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        width="20"
+        height="20"
+      >
+        <path
+          d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"
+        />
+      </svg>
+      地図に戻る
+    </button>
+
+    <button class="streetview-current-button" onclick={moveToCurrentLocation}>
+      現在地へ移動
+    </button>
+
+    {#if showDirectionArrow && nextDirectionDeg !== null && nextStepForDisplay}
+      <div class="direction-info">
+        <div class="direction-info-text">
+          <p class="next-destination">{nextStepForDisplay.title}</p>
+          {#if !isSecretStep(nextStepForDisplay.date, nextStepForDisplay.time)}
+            <p class="next-time">{nextStepForDisplay.time}</p>
+          {/if}
+        </div>
+        <div
+          class="direction-arrow"
+          style="transform: rotate({nextDirectionDeg}deg)"
+          aria-label="次の予定の方向"
+        ></div>
+        <button
+          class="move-button"
+          onclick={moveTowardNextStep}
+          aria-label="次の目的地へ移動"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            width="20"
+            height="20"
+          >
+            <path d="M12 2L4.5 20h15L12 2z" />
+          </svg>
+        </button>
+      </div>
+    {/if}
   {/if}
 
   <button class="menu-button" onclick={toggleMenu} aria-label="Menu">
@@ -533,6 +781,28 @@
             テーマ変更
           </button>
         {/if}
+        {#if hasEditPermission && !isViewMode}
+          <button
+            class="map-theme-menu-item"
+            onclick={() => {
+              showMenu = false;
+              showThemeModal = true;
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              width="20"
+              height="20"
+            >
+              <path
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"
+              />
+            </svg>
+            シークレット機能
+          </button>
+        {/if}
         <button class="map-theme-menu-item" onclick={() => window.print()}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -616,6 +886,21 @@
         {/if}
 
         <div class="spot-actions">
+          <button class="map-btn map-btn-streetview" onclick={openStreetView}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              width="16"
+              height="16"
+              style="display:inline-block;vertical-align:middle;margin-right:4px"
+            >
+              <path
+                d="M12.56 14.33c-.34.27-.56.7-.56 1.17V21h7c1.1 0 2-.9 2-2v-5.98c-.94-.33-1.95-.52-3-.52-2.03 0-3.93.7-5.44 1.83zM9 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-7 7c0 1.1.9 2 2 2h5v-5.5c0-.67.27-1.28.72-1.72l.38-.38c-1.47-1.46-3.34-2.4-5.1-2.4-2.76 0-5 2.24-5 5v3zm17-5c-1.93 0-3.5 1.57-3.5 3.5s1.57 3.5 3.5 3.5 3.5-1.57 3.5-3.5-1.57-3.5-3.5-3.5z"
+              />
+            </svg>
+            ストリートビュー
+          </button>
           {#if hasEditPermission && !isViewMode}
             <button class="map-btn map-btn-primary" onclick={openEditModal}>
               編集する
@@ -851,7 +1136,63 @@
     </div>
   {/if}
 
-  <StepList {steps} onStepClick={handleStepClick} />
+  {#if showThemeModal}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div class="map-theme-overlay" onclick={closeModals} role="presentation">
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_interactive_supports_focus -->
+      <div
+        class="map-theme-modal"
+        onclick={(e) => e.stopPropagation()}
+        role="dialog"
+      >
+        <h3 class="text-xl font-bold mb-4">シークレット機能</h3>
+        <div class="flex flex-col gap-4">
+          <label class="secret-mode-toggle">
+            <input
+              type="checkbox"
+              bind:checked={secretModeEnabled}
+              onchange={(e) => {
+                const enabled = (e.target as HTMLInputElement).checked;
+                handleSecretModeUpdate(enabled, secretModeOffset);
+              }}
+            />
+            <span>シークレット機能を有効にする</span>
+          </label>
+          {#if secretModeEnabled}
+            <div class="secret-offset-control">
+              <label for="offset-minutes">表示開始時刻 (分前):</label>
+              <input
+                type="number"
+                id="offset-minutes"
+                bind:value={secretModeOffset}
+                min="1"
+                max="1440"
+                onchange={() => {
+                  handleSecretModeUpdate(secretModeEnabled, secretModeOffset);
+                }}
+              />
+              <p class="text-sm text-gray-500 mt-2">
+                予定時刻の指定分前から表示されます。デフォルト: 60分
+              </p>
+            </div>
+          {/if}
+        </div>
+        <button onclick={closeModals} class="mt-4 w-full p-2 text-gray-500">
+          閉じる
+        </button>
+      </div>
+    </div>
+  {/if}
+
+  <StepList
+    {steps}
+    onStepClick={handleStepClick}
+    {secretModeEnabled}
+    {secretModeOffset}
+  />
 </div>
 
 <style>
@@ -938,6 +1279,134 @@
 
   .edit-mode-button:active {
     transform: scale(0.95);
+  }
+
+  .streetview-back-button {
+    position: absolute;
+    top: 20px;
+    left: 70px;
+    z-index: 1500;
+    background: white;
+    border: none;
+    border-radius: 24px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+
+  .streetview-current-button {
+    position: absolute;
+    top: 20px;
+    right: 80px;
+    z-index: 1500;
+    background: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 24px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+
+  .direction-info {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .direction-info-text {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 8px 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .next-destination {
+    margin: 0;
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+  }
+
+  .next-time {
+    margin: 4px 0 0 0;
+    font-size: 12px;
+    color: #666;
+  }
+
+  .direction-arrow {
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 24px solid rgba(255, 0, 0, 0.9);
+    transform-origin: 50% 50%;
+  }
+
+  .move-button {
+    background: #ff5722;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition:
+      background 0.2s,
+      transform 0.1s;
+  }
+
+  .move-button:hover {
+    background: #f4511e;
+  }
+
+  .move-button:active {
+    transform: scale(0.95);
+  }
+
+  .streetview-back-button {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    background: white;
+    border: none;
+    border-radius: 24px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition:
+      transform 0.1s,
+      box-shadow 0.2s;
+  }
+
+  .streetview-back-button:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  .streetview-back-button:active {
+    transform: translateX(-50%) scale(0.95);
   }
 
   .legend-container {
@@ -1220,5 +1689,49 @@
 
   .text-xl {
     font-size: 1.25rem;
+  }
+
+  .secret-mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+  }
+
+  .secret-mode-toggle input {
+    cursor: pointer;
+  }
+
+  .secret-offset-control {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: 8px;
+  }
+
+  .secret-offset-control label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .secret-offset-control input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  .secret-offset-control .text-sm {
+    font-size: 12px;
+    color: #666;
+  }
+
+  .mt-2 {
+    margin-top: 8px;
   }
 </style>

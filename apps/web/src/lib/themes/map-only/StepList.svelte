@@ -4,8 +4,15 @@
   interface Props {
     steps: Step[];
     onStepClick?: (step: Step, index: number) => void;
+    secretModeEnabled?: boolean;
+    secretModeOffset?: number;
   }
-  let { steps, onStepClick }: Props = $props();
+  let {
+    steps,
+    onStepClick,
+    secretModeEnabled = false,
+    secretModeOffset = 60,
+  }: Props = $props();
 
   const DATE_COLORS = [
     "#4285F4",
@@ -42,6 +49,15 @@
     return sorted.findIndex((s) => s.id === step.id) + 1;
   }
 
+  function isSecretStep(stepDate: string, stepTime: string): boolean {
+    if (!secretModeEnabled) return false;
+    const now = new Date();
+    const stepDateTime = new Date(`${stepDate}T${stepTime}:00`);
+    return (
+      now.getTime() < stepDateTime.getTime() - secretModeOffset * 60 * 1000
+    );
+  }
+
   function getStepsWithoutLocation(): Step[] {
     const sorted = getSortedSteps();
     return sorted.filter((s) => !s.location);
@@ -73,20 +89,22 @@
     </div>
     <div class="no-location-list">
       {#each getStepsWithoutLocation() as step}
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <div class="no-location-item" onclick={() => handleStepClick(step)}>
-          <div
-            class="step-number-badge"
-            style="background-color: {getDateColor(step.date)}"
-          >
-            {getStepNumber(step)}
+        {#if !isSecretStep(step.date, step.time)}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <div class="no-location-item" onclick={() => handleStepClick(step)}>
+            <div
+              class="step-number-badge"
+              style="background-color: {getDateColor(step.date)}"
+            >
+              {getStepNumber(step)}
+            </div>
+            <div class="step-info">
+              <div class="step-title">{step.title}</div>
+              <div class="step-time">{step.date} {step.time}</div>
+            </div>
           </div>
-          <div class="step-info">
-            <div class="step-title">{step.title}</div>
-            <div class="step-time">{step.date} {step.time}</div>
-          </div>
-        </div>
+        {/if}
       {/each}
     </div>
   </div>

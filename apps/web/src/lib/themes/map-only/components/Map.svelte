@@ -9,16 +9,49 @@
     onStepClick?: (step: Step, index: number) => void;
     onMapClick?: (lat: number, lng: number) => void;
     showRoute?: boolean;
+    onOpenStreetView?: (lat: number, lng: number, title: string) => void;
   }
 
-  let { steps, onStepClick, onMapClick, showRoute = false }: Props = $props();
+  let {
+    steps,
+    onStepClick,
+    onMapClick,
+    showRoute = false,
+    onOpenStreetView,
+  }: Props = $props();
   let mapElement: HTMLDivElement;
   let map: google.maps.Map | null = null;
   let markers: google.maps.Marker[] = [];
-  let polyline: google.maps.Polyline | null = null;
+  let routeRenderers: google.maps.DirectionsRenderer[] = [];
   let errorMsg = $state("");
   let MarkerClass: typeof google.maps.Marker | null = null;
+  let directionsService: google.maps.DirectionsService | null = null;
   let apiInitialized = false;
+
+  export function openStreetViewAt(lat: number, lng: number) {
+    if (!map) return;
+    const panorama = map.getStreetView();
+    panorama.setPosition({ lat, lng });
+    panorama.setPov({ heading: 0, pitch: 0 });
+    panorama.setVisible(true);
+  }
+
+  export function closeStreetView() {
+    if (!map) return;
+    const panorama = map.getStreetView();
+    panorama.setVisible(false);
+  }
+
+  export function getLocationForStep(
+    step: Step,
+  ): google.maps.LatLngLiteral | null {
+    const cacheKey = `geo:${step.location}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+    return null;
+  }
 
   const DATE_COLORS = [
     "#4285F4",
@@ -135,7 +168,8 @@
   ) {
     markers.forEach((m) => m.setMap(null));
     markers = [];
-    if (polyline) polyline.setMap(null);
+    routeRenderers.forEach((r) => r.setMap(null));
+    routeRenderers = [];
 
     const sortedSteps = [...steps].sort((a, b) => {
       const dateCompare = a.date.localeCompare(b.date);
@@ -211,18 +245,70 @@
     }
 
     if (hasPoints && showRoute && path.length > 1) {
-      polyline = new google.maps.Polyline({
-        path: path,
-        geodesic: true,
-        strokeColor: "#666666",
-        strokeOpacity: 0.8,
-        strokeWeight: 3,
-      });
-      polyline.setMap(mapInstance);
+      await drawRouteWithDirections(mapInstance, path);
     }
 
     if (hasPoints) {
       mapInstance.fitBounds(bounds, 50);
+    }
+  }
+
+  async function drawRouteWithDirections(
+    mapInstance: google.maps.Map,
+    path: google.maps.LatLngLiteral[],
+  ) {
+    if (!directionsService) {
+      const routesLib = await importLibrary("routes");
+      directionsService = new (routesLib as any).DirectionsService();
+    }
+
+    if (!directionsService) return;
+
+    const MAX_WAYPOINTS = 25;
+    for (let i = 0; i < path.length - 1; i += MAX_WAYPOINTS) {
+      const segmentEnd = Math.min(i + MAX_WAYPOINTS, path.length - 1);
+      const origin = path[i];
+      const destination = path[segmentEnd];
+      const waypoints: google.maps.DirectionsWaypoint[] = [];
+
+      for (let j = i + 1; j < segmentEnd; j++) {
+        waypoints.push({
+          location: new google.maps.LatLng(path[j].lat, path[j].lng),
+          stopover: true,
+        });
+      }
+
+      try {
+        const result = await directionsService.route({
+          origin: new google.maps.LatLng(origin.lat, origin.lng),
+          destination: new google.maps.LatLng(destination.lat, destination.lng),
+          waypoints: waypoints,
+          travelMode: google.maps.TravelMode.DRIVING,
+          optimizeWaypoints: false,
+        });
+
+        const renderer = new google.maps.DirectionsRenderer({
+          map: mapInstance,
+          directions: result,
+          suppressMarkers: true,
+          polylineOptions: {
+            strokeColor: "#4285F4",
+            strokeOpacity: 0.8,
+            strokeWeight: 4,
+          },
+        });
+        routeRenderers.push(renderer);
+      } catch (e) {
+        console.error("Directions request failed, falling back to polyline", e);
+        const polyline = new google.maps.Polyline({
+          path: path.slice(i, segmentEnd + 1),
+          geodesic: true,
+          strokeColor: "#666666",
+          strokeOpacity: 0.8,
+          strokeWeight: 3,
+        });
+        polyline.setMap(mapInstance);
+      }
     }
   }
 </script>

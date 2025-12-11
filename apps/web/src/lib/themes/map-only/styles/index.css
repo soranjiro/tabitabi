@@ -132,6 +132,15 @@
   margin-top: 8px;
 }
 
+.map-btn-streetview {
+  background: #ff9800;
+  color: white;
+}
+
+.map-btn-streetview:hover {
+  background: #f57c00;
+}
+
 .map-title-display {
   position: absolute;
   top: 24px;

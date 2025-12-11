@@ -31,8 +31,16 @@
   export function openStreetViewAt(lat: number, lng: number) {
     if (!map) return;
     const panorama = map.getStreetView();
-    panorama.setPosition({ lat, lng });
-    panorama.setPov({ heading: 0, pitch: 0 });
+    panorama.setOptions({
+      position: { lat, lng },
+      pov: { heading: 0, pitch: 0 },
+      linksControl: true,
+      clickToGo: true,
+      addressControl: true,
+      enableCloseButton: true,
+      panControl: true,
+      zoomControl: true,
+    });
     panorama.setVisible(true);
   }
 

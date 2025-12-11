@@ -400,7 +400,26 @@
 
   async function handleThemeChange() {
     if (onUpdateItinerary && selectedThemeId !== itinerary.theme_id) {
-      await onUpdateItinerary({ theme_id: selectedThemeId });
+      let nextMemo = itinerary.memo ?? "";
+      try {
+        const parsed = JSON.parse(nextMemo);
+        if (parsed && typeof parsed === "object") {
+          delete parsed.gameData;
+          if (typeof parsed.text === "string") {
+            nextMemo = parsed.text;
+          } else {
+            const cleaned = { ...parsed };
+            if (Object.keys(cleaned).length === 0) {
+              nextMemo = "";
+            } else {
+              nextMemo = JSON.stringify(cleaned);
+            }
+          }
+        }
+      } catch {
+        // invalid JSON
+      }
+      await onUpdateItinerary({ theme_id: selectedThemeId, memo: nextMemo });
       goto(`/${itinerary.id}`);
     }
     showThemeDialog = false;

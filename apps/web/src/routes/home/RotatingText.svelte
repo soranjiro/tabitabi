@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { getThemePhrases } from "$lib/themes";
 
   interface Props {
     currentIndex: number;
@@ -7,14 +8,7 @@
 
   let { currentIndex }: Props = $props();
 
-  const phrases = [
-    "旅行のしおり",
-    "買い物プラン",
-    "RPGデザイン",
-    "地図で計画",
-    "世界旅行",
-    "ユニーク計画",
-  ];
+  const phrases = getThemePhrases();
   let maxWidth = $state<number | null>(null);
   let isAnimating = $state(false);
   let previousIndex = $state(currentIndex);

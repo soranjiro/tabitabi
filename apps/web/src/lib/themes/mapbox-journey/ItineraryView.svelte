@@ -2,6 +2,7 @@
   import type { Itinerary, Step } from "@tabitabi/types";
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
+  import { env } from "$env/dynamic/public";
   import StepList from "./StepList.svelte";
   import AddStepForm from "./components/AddStepForm.svelte";
   import { getAvailableThemes } from "$lib/themes";
@@ -10,6 +11,8 @@
   import "./styles/index.css";
 
   let MapComponent: any = $state(null);
+
+  type MapStyle = "day" | "night" | "satellite" | "pixel";
 
   interface Props {
     itinerary: Itinerary;
@@ -46,7 +49,7 @@
   let shareUrl = $state("");
   let copySuccess = $state(false);
 
-  let mapStyle = $state<"day" | "night" | "satellite">("night");
+  let mapStyle = $state<MapStyle>("night");
   let show3D = $state(true);
 
   let selectedStep = $state<Step | null>(null);
@@ -73,6 +76,9 @@
   });
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
+
+  const accessToken =
+    env.PUBLIC_MAPBOX_ACCESS_TOKEN || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
   const DATE_COLORS = [
     "#8B5CF6",
@@ -129,7 +135,10 @@
           if (typeof memoData.showRoute === "boolean") {
             showRoute = memoData.showRoute;
           }
-          if (memoData.mapStyle) {
+          if (
+            memoData.mapStyle &&
+            ["day", "night", "satellite", "pixel"].includes(memoData.mapStyle)
+          ) {
             mapStyle = memoData.mapStyle;
           }
           if (typeof memoData.show3D === "boolean") {
@@ -232,16 +241,30 @@
     return () => clearTimeout(timer);
   });
 
+  $effect(() => {
+    if (mapStyle === "pixel" && show3D) {
+      show3D = false;
+    }
+  });
+
   function toggleMenu() {
     showMenu = !showMenu;
   }
 
-  function openAddModal() {
+  function openAddModal(prefill?: { location?: string }) {
     showMenu = false;
     showAddModal = true;
     isEditing = false;
     const today = new Date().toISOString().split("T")[0];
-    newStep.date = today;
+    newStepHour = "09";
+    newStepMinute = "00";
+    newStep = {
+      title: "",
+      date: today,
+      time: `${newStepHour}:${newStepMinute}`,
+      location: prefill?.location ?? "",
+      notes: "",
+    };
   }
 
   async function handleAddSubmit() {
@@ -351,10 +374,35 @@
     }
   }
 
-  function handleMapClick(lat: number, lng: number) {
-    if (hasEditPermission && !isViewMode) {
-      openAddModal();
+  async function reverseGeocode(lat: number, lng: number) {
+    if (!browser || !accessToken) return null;
+    const key = `mapbox-rev:${lat.toFixed(4)},${lng.toFixed(4)}`;
+    const cached = sessionStorage.getItem(key);
+    if (cached) return cached;
+
+    try {
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${accessToken}&limit=1&language=ja`,
+      );
+      if (!res.ok) return null;
+      const data = await res.json();
+      const place = data.features?.[0]?.place_name as string | undefined;
+      if (place) {
+        sessionStorage.setItem(key, place);
+        return place;
+      }
+    } catch (e) {
+      console.error("Failed to reverse geocode", e);
     }
+    return null;
+  }
+
+  async function handleMapClick(lat: number, lng: number) {
+    if (!(hasEditPermission && !isViewMode)) return;
+    const label =
+      (await reverseGeocode(lat, lng)) ||
+      `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    openAddModal({ location: label });
   }
 
   async function copyShareUrl() {
@@ -457,6 +505,12 @@
         >
           🛰️ 衛星
         </button>
+        <button
+          class="style-btn {mapStyle === 'pixel' ? 'active' : ''}"
+          onclick={() => (mapStyle = "pixel")}
+        >
+          🕹️ ピクセル
+        </button>
       </div>
     </div>
 
@@ -464,7 +518,11 @@
 
     <div class="panel-toggles">
       <label class="toggle-item">
-        <input type="checkbox" bind:checked={show3D} />
+        <input
+          type="checkbox"
+          bind:checked={show3D}
+          disabled={mapStyle === "pixel"}
+        />
         <span class="toggle-label">3Dビルディング</span>
       </label>
       <label class="toggle-item">
@@ -508,7 +566,11 @@
   {/if}
 
   {#if hasEditPermission && !isViewMode}
-    <button class="fab-btn" onclick={openAddModal} aria-label="スポット追加">
+    <button
+      class="fab-btn"
+      onclick={() => openAddModal()}
+      aria-label="スポット追加"
+    >
       <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
         <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
       </svg>
@@ -528,7 +590,7 @@
         tabindex="0"
       >
         {#if hasEditPermission && !isViewMode}
-          <button class="menu-item" onclick={openAddModal}>
+          <button class="menu-item" onclick={() => openAddModal()}>
             <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
             </svg>

@@ -1,4 +1,13 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
+  import { env } from "$env/dynamic/public";
+
+  interface SearchResult {
+    id: string;
+    title: string;
+    context: string;
+  }
+
   interface Props {
     newStep: {
       title: string;
@@ -23,13 +32,84 @@
     onCancel,
   }: Props = $props();
 
+  let searchQuery = $state("");
+  let suggestions = $state<SearchResult[]>([]);
+  let isSearching = $state(false);
+  let searchError = $state("");
+  let lastQuery = "";
+
+  const accessToken =
+    env.PUBLIC_MAPBOX_ACCESS_TOKEN || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+
   $effect(() => {
     newStep.time = `${newStepHour}:${newStepMinute}`;
+  });
+
+  $effect(() => {
+    searchQuery = newStep.location;
+  });
+
+  $effect(() => {
+    const query = searchQuery.trim();
+    if (!browser || !accessToken) return;
+    if (!query) {
+      suggestions = [];
+      searchError = "";
+      return;
+    }
+
+    if (query === lastQuery) return;
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      isSearching = true;
+      searchError = "";
+      lastQuery = query;
+      try {
+        const res = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${accessToken}&limit=5&language=ja`,
+          { signal: controller.signal },
+        );
+
+        if (!res.ok) {
+          throw new Error("検索に失敗しました");
+        }
+
+        const data = await res.json();
+        suggestions = (data.features || []).map((feature: any) => ({
+          id: feature.id,
+          title: feature.text ?? feature.place_name,
+          context: feature.place_name ?? "",
+        }));
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        console.error("Mapbox search failed", err);
+        searchError = "検索に失敗しました";
+      } finally {
+        isSearching = false;
+      }
+    }, 250);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   });
 
   function handleSubmit(e: Event) {
     e.preventDefault();
     onSubmit();
+  }
+
+  function handleSuggestionSelect(item: SearchResult) {
+    newStep.location = item.context;
+    searchQuery = item.context;
+    suggestions = [];
+  }
+
+  function clearSuggestions() {
+    suggestions = [];
+    searchError = "";
   }
 </script>
 
@@ -106,10 +186,42 @@
       id="location"
       type="text"
       bind:value={newStep.location}
+      oninput={() => (searchQuery = newStep.location)}
       placeholder="例: 東京タワー、港区"
       class="form-input"
     />
-    <span class="form-hint">Mapboxで自動的に位置情報が取得されます</span>
+    <span class="form-hint">Mapboxで検索して位置を合わせられます</span>
+
+    {#if accessToken}
+      {#if isSearching}
+        <div class="search-status">検索中...</div>
+      {:else if searchError}
+        <div class="search-status error">{searchError}</div>
+      {:else if suggestions.length > 0}
+        <div class="suggestions">
+          {#each suggestions as item}
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <div
+              class="suggestion"
+              onclick={() => handleSuggestionSelect(item)}
+            >
+              <div class="suggestion-title">{item.title}</div>
+              <div class="suggestion-context">{item.context}</div>
+            </div>
+          {/each}
+          <button
+            type="button"
+            class="clear-suggestions"
+            onclick={clearSuggestions}
+          >
+            候補を閉じる
+          </button>
+        </div>
+      {/if}
+    {:else}
+      <div class="search-status error">Mapboxトークンが未設定です</div>
+    {/if}
   </div>
 
   <div class="form-group">
@@ -248,6 +360,71 @@
     font-size: 12px;
     color: #64748b;
     margin-top: -4px;
+  }
+
+  .suggestions {
+    margin-top: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  .suggestion {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .suggestion:hover {
+    background: rgba(139, 92, 246, 0.12);
+  }
+
+  .suggestion:last-child {
+    border-bottom: none;
+  }
+
+  .suggestion-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 4px;
+  }
+
+  .suggestion-context {
+    font-size: 12px;
+    color: #cbd5e1;
+    line-height: 1.4;
+  }
+
+  .clear-suggestions {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    color: #94a3b8;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .clear-suggestions:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #e2e8f0;
+  }
+
+  .search-status {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #cbd5e1;
+  }
+
+  .search-status.error {
+    color: #fca5a5;
   }
 
   .time-picker {

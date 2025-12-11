@@ -4,12 +4,14 @@
   import { browser } from "$app/environment";
   import { env } from "$env/dynamic/public";
 
+  type MapStyle = "day" | "night" | "satellite" | "pixel";
+
   interface Props {
     steps: Step[];
     onStepClick?: (step: Step, index: number) => void;
     onMapClick?: (lat: number, lng: number) => void;
     showRoute?: boolean;
-    mapStyle?: "day" | "night" | "satellite";
+    mapStyle?: MapStyle;
     show3D?: boolean;
   }
 
@@ -29,14 +31,16 @@
   let errorMsg = $state("");
   let isLoaded = $state(false);
   let routeAnimationFrame: number | null = null;
+  let isPixelMode = $state(false);
 
   const accessToken =
     env.PUBLIC_MAPBOX_ACCESS_TOKEN || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
-  const MAP_STYLES = {
+  const MAP_STYLES: Record<MapStyle, string> = {
     day: "mapbox://styles/mapbox/light-v11",
     night: "mapbox://styles/mapbox/dark-v11",
     satellite: "mapbox://styles/mapbox/satellite-streets-v12",
+    pixel: "mapbox://styles/mapbox/streets-v12",
   };
 
   const DATE_COLORS = [
@@ -101,15 +105,27 @@
     isActive: boolean = false,
   ): HTMLElement {
     const el = document.createElement("div");
-    el.className = "mapbox-custom-marker";
-    el.innerHTML = `
-      <div class="marker-pulse" style="background: ${color}50"></div>
-      <div class="marker-ring" style="border-color: ${color}"></div>
-      <div class="marker-outer" style="background: linear-gradient(145deg, ${color}, ${color}dd)">
-        <span class="marker-number">${number}</span>
-      </div>
-      ${isActive ? '<div class="marker-glow" style="background: ' + color + '"></div>' : ""}
-    `;
+    el.className = isPixelMode
+      ? "mapbox-custom-marker pixel"
+      : "mapbox-custom-marker";
+    el.innerHTML = isPixelMode
+      ? `
+        <div class="pixel-marker">
+          <div class="pixel-top" style="background:${color}"></div>
+          <div class="pixel-body" style="background:${color}">
+            <span class="marker-number">${number}</span>
+          </div>
+          <div class="pixel-shadow" style="background:${color}99"></div>
+        </div>
+      `
+      : `
+        <div class="marker-pulse" style="background: ${color}50"></div>
+        <div class="marker-ring" style="border-color: ${color}"></div>
+        <div class="marker-outer" style="background: linear-gradient(145deg, ${color}, ${color}dd)">
+          <span class="marker-number">${number}</span>
+        </div>
+        ${isActive ? '<div class="marker-glow" style="background: ' + color + '"></div>' : ""}
+      `;
     return el;
   }
 
@@ -121,6 +137,7 @@
     }
 
     try {
+      // @ts-expect-error mapbox-gl is provided at runtime
       mapboxgl = (await import("mapbox-gl")).default;
       await import("mapbox-gl/dist/mapbox-gl.css");
 
@@ -138,59 +155,8 @@
       });
 
       map.on("style.load", () => {
-        map.setFog({
-          color:
-            mapStyle === "night" ? "rgb(20, 20, 40)" : "rgb(220, 230, 240)",
-          "high-color":
-            mapStyle === "night" ? "rgb(36, 36, 73)" : "rgb(180, 200, 220)",
-          "horizon-blend": 0.1,
-          "space-color":
-            mapStyle === "night" ? "rgb(10, 10, 30)" : "rgb(200, 210, 230)",
-          "star-intensity": mapStyle === "night" ? 0.8 : 0,
-        });
-
-        if (show3D && mapStyle !== "satellite") {
-          const layers = map.getStyle().layers;
-          const labelLayerId = layers?.find(
-            (layer: any) =>
-              layer.type === "symbol" && layer.layout?.["text-field"],
-          )?.id;
-
-          map.addLayer(
-            {
-              id: "3d-buildings",
-              source: "composite",
-              "source-layer": "building",
-              filter: ["==", "extrude", "true"],
-              type: "fill-extrusion",
-              minzoom: 14,
-              paint: {
-                "fill-extrusion-color":
-                  mapStyle === "night" ? "#1a1a2e" : "#aaa",
-                "fill-extrusion-height": [
-                  "interpolate",
-                  ["linear"],
-                  ["zoom"],
-                  14,
-                  0,
-                  14.5,
-                  ["get", "height"],
-                ],
-                "fill-extrusion-base": [
-                  "interpolate",
-                  ["linear"],
-                  ["zoom"],
-                  14,
-                  0,
-                  14.5,
-                  ["get", "min_height"],
-                ],
-                "fill-extrusion-opacity": 0.7,
-              },
-            },
-            labelLayerId,
-          );
-        }
+        applySceneStyling();
+        updateMarkers();
       });
 
       map.on("load", () => {
@@ -322,8 +288,8 @@
           "line-cap": "round",
         },
         paint: {
-          "line-color": "#A855F7",
-          "line-width": 5,
+          "line-color": isPixelMode ? "#ffd166" : "#A855F7",
+          "line-width": isPixelMode ? 6 : 5,
           "line-opacity": 0.95,
         },
       });
@@ -337,10 +303,10 @@
           "line-cap": "round",
         },
         paint: {
-          "line-color": "#ffffff",
-          "line-width": 2.5,
-          "line-dasharray": [0, 4, 3],
-          "line-opacity": 0.7,
+          "line-color": isPixelMode ? "#fff7ed" : "#ffffff",
+          "line-width": isPixelMode ? 3 : 2.5,
+          "line-dasharray": isPixelMode ? [1, 0, 0] : [0, 4, 3],
+          "line-opacity": 0.8,
         },
       });
 
@@ -394,7 +360,7 @@
     });
   }
 
-  export function changeMapStyle(style: "day" | "night" | "satellite") {
+  export function changeMapStyle(style: MapStyle) {
     if (!map) return;
     map.setStyle(MAP_STYLES[style]);
   }
@@ -432,13 +398,93 @@
   });
 
   $effect(() => {
-    if (map && isLoaded) {
-      map.setStyle(MAP_STYLES[mapStyle]);
-    }
+    if (!map || !isLoaded) return;
+    isPixelMode = mapStyle === "pixel";
+
+    map.once("style.load", () => {
+      applySceneStyling();
+      updateMarkers();
+    });
+    map.setStyle(MAP_STYLES[mapStyle]);
   });
+
+  $effect(() => {
+    if (!map || !isLoaded) return;
+    applySceneStyling();
+  });
+
+  $effect(() => {
+    const _ = showRoute;
+    if (!map || !isLoaded) return;
+    updateMarkers();
+  });
+
+  function applySceneStyling() {
+    if (!map) return;
+
+    if (map.getLayer("3d-buildings")) {
+      map.removeLayer("3d-buildings");
+    }
+
+    map.setPitch(show3D ? 45 : 0);
+
+    map.setFog({
+      color: mapStyle === "night" ? "rgb(20, 20, 40)" : "rgb(220, 230, 240)",
+      "high-color":
+        mapStyle === "night" ? "rgb(36, 36, 73)" : "rgb(180, 200, 220)",
+      "horizon-blend": 0.1,
+      "space-color":
+        mapStyle === "night" ? "rgb(10, 10, 30)" : "rgb(200, 210, 230)",
+      "star-intensity": mapStyle === "night" ? 0.8 : 0,
+    });
+
+    if (show3D && mapStyle !== "satellite" && mapStyle !== "pixel") {
+      const layers = map.getStyle().layers;
+      const labelLayerId = layers?.find(
+        (layer: any) => layer.type === "symbol" && layer.layout?.["text-field"],
+      )?.id;
+
+      map.addLayer(
+        {
+          id: "3d-buildings",
+          source: "composite",
+          "source-layer": "building",
+          filter: ["==", "extrude", "true"],
+          type: "fill-extrusion",
+          minzoom: 14,
+          paint: {
+            "fill-extrusion-color": mapStyle === "night" ? "#1a1a2e" : "#aaa",
+            "fill-extrusion-height": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              14,
+              0,
+              14.5,
+              ["get", "height"],
+            ],
+            "fill-extrusion-base": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              14,
+              0,
+              14.5,
+              ["get", "min_height"],
+            ],
+            "fill-extrusion-opacity": 0.7,
+          },
+        },
+        labelLayerId,
+      );
+    }
+  }
 </script>
 
-<div class="mapbox-container" bind:this={mapContainer}>
+<div
+  class="mapbox-container {mapStyle === 'pixel' ? 'pixel-map' : ''}"
+  bind:this={mapContainer}
+>
   {#if !isLoaded && !errorMsg}
     <div class="map-loading">
       <div class="loading-orbit">
@@ -463,6 +509,31 @@
     height: 100%;
     min-height: 100vh;
     position: relative;
+  }
+
+  .pixel-map {
+    background: linear-gradient(135deg, #0b1224, #111827);
+  }
+
+  .pixel-map :global(.mapboxgl-canvas) {
+    image-rendering: pixelated;
+    filter: saturate(1.2) contrast(1.35) brightness(1.05);
+  }
+
+  .pixel-map::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.04) 1px,
+        transparent 1px
+      ),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 16px 16px;
+    pointer-events: none;
+    mix-blend-mode: soft-light;
+    z-index: 2;
   }
 
   .map-loading {
@@ -633,6 +704,45 @@
     font-weight: 800;
     color: white;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  :global(.mapbox-custom-marker.pixel) {
+    width: 48px;
+    height: 56px;
+  }
+
+  :global(.pixel-marker) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.4));
+  }
+
+  :global(.pixel-top) {
+    width: 28px;
+    height: 8px;
+    border: 2px solid rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
+  }
+
+  :global(.pixel-body) {
+    width: 34px;
+    height: 28px;
+    border: 2px solid rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #0f172a;
+    text-shadow: none;
+  }
+
+  :global(.pixel-shadow) {
+    width: 32px;
+    height: 6px;
+    opacity: 0.6;
   }
 
   :global(.marker-glow) {

@@ -1558,6 +1558,8 @@
   .share-url-input {
     flex: 1;
     font-size: 12px;
+    color: #1a1a1a;
+    font-weight: 500;
   }
 
   .copy-btn {

@@ -369,6 +369,27 @@
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    max-height: 300px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .suggestions::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .suggestions::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .suggestions::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.5);
+    border-radius: 3px;
+  }
+
+  .suggestions::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.8);
   }
 
   .suggestion {
@@ -376,13 +397,14 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     cursor: pointer;
     transition: background 0.15s ease;
+    flex-shrink: 0;
   }
 
   .suggestion:hover {
     background: rgba(139, 92, 246, 0.12);
   }
 
-  .suggestion:last-child {
+  .suggestion:last-of-type {
     border-bottom: none;
   }
 

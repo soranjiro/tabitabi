@@ -763,7 +763,13 @@
           {/if}
         </p>
         <div class="share-input-wrapper">
-          <input type="text" readonly value={shareUrl} class="share-input" />
+          <input
+            type="text"
+            readonly
+            value={shareUrl}
+            class="share-input"
+            style="color: #1a1a1a; font-weight: 500;"
+          />
           <button class="copy-btn" onclick={copyShareUrl}>
             {#if copySuccess}
               <svg

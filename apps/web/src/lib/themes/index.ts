@@ -1,8 +1,14 @@
 import type { Theme } from '@tabitabi/types';
 
+export const defaultThemeId = 'standard-autumn' as const;
+
 // 動的 import に切り替え（未選択テーマをバンドルしない）
 export async function loadTheme(themeId: string): Promise<Theme> {
   switch (themeId) {
+    case 'map-only':
+      return (await import('./map-only')).default;
+    case 'mapbox-journey':
+      return (await import('./mapbox-journey')).default;
     case 'standard-autumn':
       return (await import('./standard-autumn')).default;
     case 'ai-generated':
@@ -11,13 +17,8 @@ export async function loadTheme(themeId: string): Promise<Theme> {
       return (await import('./shopping')).default;
     case 'pixel-quest':
       return (await import('./pixel-quest')).default;
-    case 'map-only':
-      return (await import('./map-only')).default;
-    case 'mapbox-journey':
-      return (await import('./mapbox-journey')).default;
-    case 'minimal':
     default:
-      return (await import('./minimal')).default;
+      return (await import('./map-only')).default;
   }
 }
 
@@ -29,18 +30,17 @@ export function getEnabledFeatures(theme: Theme): string[] {
 
 // メタ情報だけを静的に保持（テーマ本体は読み込まない）
 const THEME_CATALOG: Array<{ id: AvailableTheme; name: string; description: string }> = [
-  { id: 'minimal', name: 'ミニマル', description: '軽量で最低限' },
+  { id: 'map-only', name: 'Map Only', description: '地図のみを表示' },
+  { id: 'mapbox-journey', name: 'Mapbox Journey', description: '3D地図・グローブ表示' },
   { id: 'standard-autumn', name: '標準', description: 'モチーフ秋' },
   { id: 'ai-generated', name: 'AI Generated', description: 'purple' },
   { id: 'shopping', name: '買い物リスト', description: '買い物管理向け' },
   { id: 'pixel-quest', name: 'ピクセルクエスト', description: 'RPG風マップ表示' },
-  { id: 'map-only', name: 'Map Only', description: '地図のみを表示' },
-  { id: 'mapbox-journey', name: 'Mapbox Journey', description: '3D地図・グローブ表示' },
 ];
 
 export function getAvailableThemes(): Array<{ id: string; name: string; description: string }> {
   return THEME_CATALOG;
 }
 
-export const availableThemes = ['minimal', 'ai-generated', 'standard-autumn', 'shopping', 'pixel-quest', 'map-only', 'mapbox-journey'] as const;
+export const availableThemes = ['map-only', 'mapbox-journey', 'standard-autumn', 'ai-generated', 'shopping', 'pixel-quest'] as const;
 export type AvailableTheme = typeof availableThemes[number];

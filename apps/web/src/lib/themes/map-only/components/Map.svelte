@@ -39,9 +39,7 @@
     return DATE_COLORS[index % DATE_COLORS.length];
   }
 
-  function createMarkerIcon(
-    color: string,
-  ): google.maps.Symbol {
+  function createMarkerIcon(color: string): google.maps.Symbol {
     return {
       path: google.maps.SymbolPath.CIRCLE,
       fillColor: color,

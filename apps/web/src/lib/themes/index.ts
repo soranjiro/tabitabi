@@ -11,6 +11,8 @@ export async function loadTheme(themeId: string): Promise<Theme> {
       return (await import('./shopping')).default;
     case 'pixel-quest':
       return (await import('./pixel-quest')).default;
+    case 'map-only':
+      return (await import('./map-only')).default;
     case 'minimal':
     default:
       return (await import('./minimal')).default;
@@ -30,11 +32,12 @@ const THEME_CATALOG: Array<{ id: AvailableTheme; name: string; description: stri
   { id: 'ai-generated', name: 'AI Generated', description: 'purple' },
   { id: 'shopping', name: '買い物リスト', description: '買い物管理向け' },
   { id: 'pixel-quest', name: 'ピクセルクエスト', description: 'RPG風マップ表示' },
+  { id: 'map-only', name: 'Map Only', description: '地図のみを表示' },
 ];
 
 export function getAvailableThemes(): Array<{ id: string; name: string; description: string }> {
   return THEME_CATALOG;
 }
 
-export const availableThemes = ['minimal', 'ai-generated', 'standard-autumn', 'shopping', 'pixel-quest'] as const;
+export const availableThemes = ['minimal', 'ai-generated', 'standard-autumn', 'shopping', 'pixel-quest', 'map-only'] as const;
 export type AvailableTheme = typeof availableThemes[number];

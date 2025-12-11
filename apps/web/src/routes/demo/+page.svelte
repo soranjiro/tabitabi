@@ -8,7 +8,12 @@
     setDemoMode,
     resetDemoMode,
   } from "$lib/demo";
-  import { loadTheme, type AvailableTheme } from "$lib/themes";
+  import {
+    availableThemes,
+    defaultThemeId,
+    loadTheme,
+    type AvailableTheme,
+  } from "$lib/themes";
   import { auth } from "$lib/auth";
   import type { Theme } from "@tabitabi/types";
   import type { Itinerary, Step } from "@tabitabi/types";
@@ -24,17 +29,26 @@
     theme?.ui.customColors?.background || "#f9fafb",
   );
 
+  const isAvailableTheme = (themeId: string): themeId is AvailableTheme =>
+    (availableThemes as readonly string[]).includes(themeId);
+
+  function resolveThemeId(themeId: string | null): AvailableTheme {
+    if (themeId === "minimal") return defaultThemeId;
+    if (themeId && isAvailableTheme(themeId)) return themeId;
+    return defaultThemeId;
+  }
+
   onMount(async () => {
     try {
       // Enable demo mode for this page
       setDemoMode(true);
 
       // Get theme from URL parameter
-      const themeId = $page.url.searchParams.get("theme") || "minimal";
+      const themeId = resolveThemeId($page.url.searchParams.get("theme"));
 
       // Check if demo data exists, if not initialize
       if (!demoStorage.hasData()) {
-        const demoData = getDemoData(themeId as AvailableTheme);
+        const demoData = getDemoData(themeId);
         demoStorage.initializeDemo(demoData);
       }
 
@@ -80,7 +94,8 @@
       // If theme changed, reload the page with new theme
       if (updateData.theme_id && updateData.theme_id !== theme?.id) {
         demoStorage.clear();
-        goto(`/demo?theme=${updateData.theme_id}`);
+        const nextThemeId = resolveThemeId(updateData.theme_id);
+        goto(`/demo?theme=${nextThemeId}`);
       }
     }
   }

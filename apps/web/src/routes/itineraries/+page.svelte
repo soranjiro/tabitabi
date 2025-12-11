@@ -1,10 +1,22 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { itineraryApi } from "$lib/api/itinerary";
+  import { defaultThemeId, getAvailableThemes } from "$lib/themes";
   import type { Itinerary } from "@tabitabi/types";
 
   let itineraries: Itinerary[] = $state([]);
   let loading = $state(true);
+
+  const themeNameMap = new Map(
+    getAvailableThemes().map(({ id, name }) => [id, name]),
+  );
+  const fallbackThemeName = themeNameMap.get(defaultThemeId) || "テーマ";
+
+  function getThemeName(themeId: string) {
+    if (themeId === "minimal")
+      return themeNameMap.get(defaultThemeId) || fallbackThemeName;
+    return themeNameMap.get(themeId) || fallbackThemeName;
+  }
 
   onMount(async () => {
     await loadItineraries();
@@ -69,7 +81,7 @@
             </p>
             <div class="flex items-center justify-between">
               <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                {itinerary.theme_id === "minimal" ? "ミニマル" : "スタンダード"}
+                {getThemeName(itinerary.theme_id)}
               </span>
             </div>
           </a>

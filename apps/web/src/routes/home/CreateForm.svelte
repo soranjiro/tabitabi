@@ -2,12 +2,12 @@
   import { goto } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
   import { auth } from "$lib/auth";
-  import { getAvailableThemes } from "$lib/themes";
+  import { defaultThemeId, getAvailableThemes } from "$lib/themes";
 
   let title = $state("");
   let password = $state("");
   let usePassword = $state(false);
-  let theme_id = $state("standard-autumn");
+  let theme_id = $state(defaultThemeId);
   let creating = $state(false);
   let titleError = $state("");
 

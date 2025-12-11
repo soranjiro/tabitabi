@@ -9,7 +9,7 @@ import type {
   ItinerarySecretRecord,
   ItineraryWalicaSettingsRecord
 } from '@tabitabi/types';
-import type { AvailableTheme } from '$lib/themes';
+import { availableThemes, defaultThemeId, type AvailableTheme } from '$lib/themes';
 
 interface DemoDataSet {
   itinerary: Itinerary;
@@ -26,53 +26,6 @@ function getDate(offsetDays: number = 0): string {
   date.setDate(date.getDate() + offsetDays);
   return date.toISOString().split('T')[0];
 }
-
-const minimalDemo: DemoDataSet = {
-  itinerary: {
-    id: 'demo',
-    title: '週末の予定',
-    theme_id: 'minimal',
-    memo: null,
-    password: null,
-    created_at: now,
-    updated_at: now,
-  },
-  steps: [
-    {
-      id: 'demo-step-1',
-      itinerary_id: 'demo',
-      title: '朝食',
-      date: getDate(0),
-      time: '08:00',
-      location: '自宅',
-      notes: null,
-      created_at: now,
-      updated_at: now,
-    },
-    {
-      id: 'demo-step-2',
-      itinerary_id: 'demo',
-      title: '買い物',
-      date: getDate(0),
-      time: '10:00',
-      location: '駅前スーパー',
-      notes: '牛乳、卵、パン',
-      created_at: now,
-      updated_at: now,
-    },
-    {
-      id: 'demo-step-3',
-      itinerary_id: 'demo',
-      title: 'カフェで読書',
-      date: getDate(0),
-      time: '14:00',
-      location: 'スターバックス',
-      notes: null,
-      created_at: now,
-      updated_at: now,
-    },
-  ],
-};
 
 const standardAutumnDemo: DemoDataSet = {
   itinerary: {
@@ -456,15 +409,106 @@ const mapOnlyDemo: DemoDataSet = {
   ],
 };
 
+const mapboxJourneyDemo: DemoDataSet = {
+  itinerary: {
+    id: 'demo',
+    title: '世界の夜景フライト',
+    theme_id: 'mapbox-journey',
+    memo: 'グローブで航路をたどる旅',
+    password: null,
+    created_at: now,
+    updated_at: now,
+  },
+  steps: [
+    {
+      id: 'demo-step-1',
+      itinerary_id: 'demo',
+      title: '羽田を離陸',
+      date: getDate(0),
+      time: '07:30',
+      location: '東京 (HND)',
+      notes: '朝焼けのなかで出発',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-step-2',
+      itinerary_id: 'demo',
+      title: '台北の街歩き',
+      date: getDate(0),
+      time: '11:30',
+      location: '台北101',
+      notes: '鼎泰豊でランチ',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-step-3',
+      itinerary_id: 'demo',
+      title: '夜市でライトアップ',
+      date: getDate(0),
+      time: '19:30',
+      location: '士林夜市',
+      notes: '小籠包とマンゴーかき氷',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-step-4',
+      itinerary_id: 'demo',
+      title: 'グローブで航路確認',
+      date: getDate(1),
+      time: '08:00',
+      location: '太平洋上空',
+      notes: '次の都市までのルートを可視化',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-step-5',
+      itinerary_id: 'demo',
+      title: 'サンセットフライト',
+      date: getDate(1),
+      time: '18:00',
+      location: 'シンガポール上空',
+      notes: 'マリーナベイの光を一望',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-step-6',
+      itinerary_id: 'demo',
+      title: 'リバークルーズ',
+      date: getDate(1),
+      time: '20:30',
+      location: 'クラークキー',
+      notes: '夜景を眺めながら散歩',
+      created_at: now,
+      updated_at: now,
+    },
+  ],
+};
+
+const isAvailableTheme = (themeId: string): themeId is AvailableTheme =>
+  (availableThemes as readonly string[]).includes(themeId);
+
 export const demoDataSets: Record<AvailableTheme, DemoDataSet> = {
-  'minimal': minimalDemo,
+  'map-only': mapOnlyDemo,
+  'mapbox-journey': mapboxJourneyDemo,
   'standard-autumn': standardAutumnDemo,
   'shopping': shoppingDemo,
   'pixel-quest': pixelQuestDemo,
   'ai-generated': aiGeneratedDemo,
-  'map-only': mapOnlyDemo,
 };
 
-export function getDemoData(themeId: AvailableTheme): DemoDataSet {
-  return demoDataSets[themeId] || minimalDemo;
+export function getDemoData(themeId: string): DemoDataSet {
+  if (themeId === 'minimal') {
+    return demoDataSets[defaultThemeId];
+  }
+
+  if (isAvailableTheme(themeId)) {
+    return demoDataSets[themeId];
+  }
+
+  return demoDataSets[defaultThemeId];
 }

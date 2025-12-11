@@ -32,6 +32,7 @@
   let showMenu = $state(false);
   let showAddModal = $state(false);
   let showThemeModal = $state(false);
+  let showSecretModal = $state(false);
   let showShareModal = $state(false);
   let showPasswordDialog = $state(false);
   let showSpotDetail = $state(false);
@@ -347,6 +348,7 @@
   function closeModals() {
     showAddModal = false;
     showThemeModal = false;
+    showSecretModal = false;
     showMenu = false;
     showShareModal = false;
     showSpotDetail = false;
@@ -588,7 +590,7 @@
     <div class="loading">Loading Map...</div>
   {/if}
 
-  {#if showStreetView}
+  {#if showStreetView && isViewMode}
     <button
       class="streetview-back-button"
       onclick={() => {
@@ -780,13 +782,11 @@
             </svg>
             テーマ変更
           </button>
-        {/if}
-        {#if hasEditPermission && !isViewMode}
           <button
             class="map-theme-menu-item"
             onclick={() => {
               showMenu = false;
-              showThemeModal = true;
+              showSecretModal = true;
             }}
           >
             <svg
@@ -1064,6 +1064,90 @@
     </div>
   {/if}
 
+  {#if showThemeModal}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div class="map-theme-overlay" onclick={closeModals} role="presentation">
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_interactive_supports_focus -->
+      <div
+        class="map-theme-modal"
+        onclick={(e) => e.stopPropagation()}
+        role="dialog"
+      >
+        <h3 class="text-xl font-bold mb-4">テーマを選択</h3>
+        <div class="flex flex-col gap-2">
+          {#each getAvailableThemes() as theme}
+            <button
+              class="p-3 text-left rounded hover:bg-gray-100 {itinerary.theme_id ===
+              theme.id
+                ? 'bg-blue-50 text-blue-600 font-bold'
+                : ''}"
+              onclick={() => handleThemeChange(theme.id)}
+            >
+              {theme.name}
+            </button>
+          {/each}
+        </div>
+        <button onclick={closeModals} class="mt-4 w-full p-2 text-gray-500"
+          >キャンセル</button
+        >
+      </div>
+    </div>
+  {/if}
+
+  {#if showSecretModal}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div class="map-theme-overlay" onclick={closeModals} role="presentation">
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_interactive_supports_focus -->
+      <div
+        class="map-theme-modal secret-modal"
+        onclick={(e) => e.stopPropagation()}
+        role="dialog"
+      >
+        <h3 class="text-xl font-bold mb-4">🔒 シークレット機能</h3>
+        <div class="flex flex-col gap-4">
+          <label class="secret-mode-toggle">
+            <input
+              type="checkbox"
+              bind:checked={secretModeEnabled}
+              onchange={(e) => {
+                const enabled = (e.target as HTMLInputElement).checked;
+                handleSecretModeUpdate(enabled, secretModeOffset);
+              }}
+            />
+            <span>シークレット機能を有効にする</span>
+          </label>
+          {#if secretModeEnabled}
+            <div class="secret-offset-control">
+              <label for="offset-minutes">表示開始時刻 (分前):</label>
+              <input
+                type="number"
+                id="offset-minutes"
+                bind:value={secretModeOffset}
+                min="1"
+                max="1440"
+                onchange={() => {
+                  handleSecretModeUpdate(secretModeEnabled, secretModeOffset);
+                }}
+              />
+              <p class="text-sm text-gray-500 mt-2">
+                予定時刻の指定分前から表示されます。デフォルト: 60分
+              </p>
+            </div>
+          {/if}
+        </div>
+        <button onclick={closeModals} class="mt-4 w-full p-2 text-gray-500"
+          >閉じる</button
+        >
+      </div>
+    </div>
+  {/if}
+
   {#if showPasswordDialog}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -1132,57 +1216,6 @@
             </button>
           </div>
         </form>
-      </div>
-    </div>
-  {/if}
-
-  {#if showThemeModal}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div class="map-theme-overlay" onclick={closeModals} role="presentation">
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_interactive_supports_focus -->
-      <div
-        class="map-theme-modal"
-        onclick={(e) => e.stopPropagation()}
-        role="dialog"
-      >
-        <h3 class="text-xl font-bold mb-4">シークレット機能</h3>
-        <div class="flex flex-col gap-4">
-          <label class="secret-mode-toggle">
-            <input
-              type="checkbox"
-              bind:checked={secretModeEnabled}
-              onchange={(e) => {
-                const enabled = (e.target as HTMLInputElement).checked;
-                handleSecretModeUpdate(enabled, secretModeOffset);
-              }}
-            />
-            <span>シークレット機能を有効にする</span>
-          </label>
-          {#if secretModeEnabled}
-            <div class="secret-offset-control">
-              <label for="offset-minutes">表示開始時刻 (分前):</label>
-              <input
-                type="number"
-                id="offset-minutes"
-                bind:value={secretModeOffset}
-                min="1"
-                max="1440"
-                onchange={() => {
-                  handleSecretModeUpdate(secretModeEnabled, secretModeOffset);
-                }}
-              />
-              <p class="text-sm text-gray-500 mt-2">
-                予定時刻の指定分前から表示されます。デフォルト: 60分
-              </p>
-            </div>
-          {/if}
-        </div>
-        <button onclick={closeModals} class="mt-4 w-full p-2 text-gray-500">
-          閉じる
-        </button>
       </div>
     </div>
   {/if}
@@ -1691,47 +1724,148 @@
     font-size: 1.25rem;
   }
 
+  .secret-modal {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+  }
+
   .secret-mode-toggle {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 14px;
+    gap: 12px;
+    font-size: 15px;
     color: #333;
     cursor: pointer;
+    padding: 12px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+  }
+
+  .secret-mode-toggle:hover {
+    background: #fafafa;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   .secret-mode-toggle input {
     cursor: pointer;
+    width: 18px;
+    height: 18px;
+    accent-color: #4285f4;
   }
 
   .secret-offset-control {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 12px;
-    background: #f5f5f5;
-    border-radius: 8px;
+    gap: 12px;
+    padding: 16px;
+    background: white;
+    border-radius: 10px;
+    border-left: 4px solid #4285f4;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
 
   .secret-offset-control label {
     font-size: 14px;
     font-weight: 600;
-    color: #333;
+    color: #1a73e8;
   }
 
   .secret-offset-control input {
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 10px 12px;
+    border: 2px solid #e8f0fe;
+    border-radius: 6px;
     font-size: 14px;
+    transition: border-color 0.2s ease;
+  }
+
+  .secret-offset-control input:focus {
+    outline: none;
+    border-color: #4285f4;
+    background: #f8f9fa;
   }
 
   .secret-offset-control .text-sm {
     font-size: 12px;
-    color: #666;
+    color: #5f6368;
+    line-height: 1.5;
   }
 
   .mt-2 {
     margin-top: 8px;
+  }
+
+  .direction-info {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  .direction-info-text {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 12px;
+    padding: 12px 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+  }
+
+  .next-destination {
+    margin: 0;
+    font-weight: 700;
+    font-size: 15px;
+    color: #202124;
+    letter-spacing: 0.2px;
+  }
+
+  .next-time {
+    margin: 6px 0 0 0;
+    font-size: 13px;
+    color: #5f6368;
+  }
+
+  .move-button {
+    background: linear-gradient(135deg, #ff5722 0%, #ff8a50 100%);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3);
+    transition: all 0.2s ease;
+  }
+
+  .move-button:hover {
+    background: linear-gradient(135deg, #f4511e 0%, #ff7043 100%);
+    box-shadow: 0 6px 16px rgba(255, 87, 34, 0.4);
+    transform: translateY(-2px);
+  }
+
+  .move-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(255, 87, 34, 0.2);
   }
 </style>

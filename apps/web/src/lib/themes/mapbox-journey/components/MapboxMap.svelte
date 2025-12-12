@@ -32,9 +32,33 @@
   let routeAnimationFrame: number | null = null;
   let isPixelMode = $state(false);
 
-  const accessToken =
-    (import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN as string | undefined) ||
-    (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined);
+  function resolveAccessToken(): string | undefined {
+    const fromImport =
+      (import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN as string | undefined) ||
+      (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined);
+    if (fromImport) return fromImport;
+
+    const fromProcess =
+      typeof process !== "undefined"
+        ? (process as any).env?.PUBLIC_MAPBOX_ACCESS_TOKEN ||
+          (process as any).env?.VITE_MAPBOX_ACCESS_TOKEN
+        : undefined;
+    if (fromProcess) return fromProcess;
+
+    if (typeof window !== "undefined") {
+      const w = window as any;
+      return (
+        w.PUBLIC_MAPBOX_ACCESS_TOKEN ||
+        w.VITE_MAPBOX_ACCESS_TOKEN ||
+        w.env?.PUBLIC_MAPBOX_ACCESS_TOKEN ||
+        w.env?.VITE_MAPBOX_ACCESS_TOKEN
+      );
+    }
+
+    return undefined;
+  }
+
+  const accessToken = resolveAccessToken();
 
   const MAP_STYLES: Record<MapStyle, string> = {
     day: "mapbox://styles/mapbox/light-v11",
@@ -132,7 +156,7 @@
   async function initMap() {
     if (!browser || !accessToken) {
       errorMsg =
-        "Mapbox Access Token is missing. Please set PUBLIC_MAPBOX_ACCESS_TOKEN or VITE_MAPBOX_ACCESS_TOKEN.";
+        "Mapbox Access Token is missing. Provide PUBLIC_MAPBOX_ACCESS_TOKEN or VITE_MAPBOX_ACCESS_TOKEN via env.";
       return;
     }
 

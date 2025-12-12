@@ -164,23 +164,18 @@
       const isValid = await authApi.verifyToken(itinerary.id);
       if (isValid) {
         hasEditPermission = true;
+        auth.updateAccessTime(itinerary.id, itinerary.title);
         return;
       }
     }
 
+    // パスワード未設定なら即座に編集可能、設定ありなら入力ダイアログ
     if (!itinerary.is_password_protected) {
-      try {
-        const token = await authApi.authenticateWithPassword(itinerary.id, "");
-        auth.setToken(itinerary.id, itinerary.title, token);
-        hasEditPermission = true;
-      } catch (e) {
-        console.error("Failed to authenticate without password", e);
-        alert("認証に失敗しました");
-      }
-      return;
+      hasEditPermission = true;
+      auth.updateAccessTime(itinerary.id, itinerary.title);
+    } else {
+      showPasswordDialog = true;
     }
-
-    showPasswordDialog = true;
   }
 
   async function handleMemoUpdate(memo: string) {

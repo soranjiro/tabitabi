@@ -76,6 +76,11 @@ describe('auth', () => {
       expect(history[0].title).toBe('Updated');
       expect(history[0].token).toBe('token2');
     });
+
+    it('ignores demo itinerary', () => {
+      auth.setToken('demo', 'Demo Trip', 'token');
+      expect(auth.getHistory()).toEqual([]);
+    });
   });
 
   describe('removeToken', () => {
@@ -137,6 +142,11 @@ describe('auth', () => {
 
       const history = auth.getHistory();
       expect(history).toHaveLength(10);
+    });
+
+    it('does not record demo itinerary', () => {
+      auth.updateAccessTime('demo', 'Demo Trip');
+      expect(auth.getHistory()).toEqual([]);
     });
   });
 

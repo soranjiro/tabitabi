@@ -62,6 +62,9 @@
   let editedTitle = $state(itinerary.title);
   let selectedStep = $state<Step | null>(null);
   let hasEditPermission = $state(false);
+  let showPasswordDialog = $state(false);
+  let password = $state("");
+  let isAuthenticating = $state(false);
   let showAddForm = $state(false);
   let showEditForm = $state(false);
   let showShareDialog = $state(false);
@@ -258,10 +261,15 @@
       if (getIsDemoMode()) {
         hasEditPermission = true;
       } else {
+        const fromUrl = auth.extractTokenFromUrl();
+        if (fromUrl) {
+          auth.setToken(itinerary.id, itinerary.title, fromUrl);
+        }
         const token = auth.getToken(itinerary.id);
         if (token) {
           const valid = await authApi.verifyToken(itinerary.id);
           hasEditPermission = valid;
+          if (valid) auth.updateAccessTime(itinerary.id, itinerary.title);
         }
       }
     })();
@@ -405,6 +413,50 @@
     setTimeout(() => (showCopyMessage = false), 2000);
   }
 
+  async function attemptEditModeActivation() {
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
+    }
+
+    const token = auth.getToken(itinerary.id);
+    if (token) {
+      const valid = await authApi.verifyToken(itinerary.id);
+      if (valid) {
+        hasEditPermission = true;
+        auth.updateAccessTime(itinerary.id, itinerary.title);
+        return;
+      }
+    }
+
+    if (!itinerary.is_password_protected) {
+      hasEditPermission = true;
+      auth.updateAccessTime(itinerary.id, itinerary.title);
+    } else {
+      showPasswordDialog = true;
+    }
+  }
+
+  async function handlePasswordAuth() {
+    if (!password.trim()) {
+      alert("パスワードを入力してください");
+      return;
+    }
+    isAuthenticating = true;
+    try {
+      const token = await authApi.authenticateWithPassword(itinerary.id, password);
+      auth.setToken(itinerary.id, itinerary.title, token);
+      hasEditPermission = true;
+      showPasswordDialog = false;
+      password = "";
+      auth.updateAccessTime(itinerary.id, itinerary.title);
+    } catch (e) {
+      alert("パスワードが正しくありません");
+    } finally {
+      isAuthenticating = false;
+    }
+  }
+
   async function handleThemeChange() {
     if (onUpdateItinerary && selectedThemeId !== itinerary.theme_id) {
       let nextMemo = itinerary.memo ?? "";
@@ -498,7 +550,13 @@
           </button>
           <button
             class="pq-btn pq-btn-icon"
-            onclick={() => (isEditMode = !isEditMode)}
+            onclick={() => {
+              if (!hasEditPermission) {
+                attemptEditModeActivation();
+                return;
+              }
+              isEditMode = !isEditMode;
+            }}
             title={isEditMode ? "Switch to View" : "Switch to Edit"}
             aria-label={isEditMode ? "View Mode" : "Edit Mode"}
           >
@@ -842,6 +900,23 @@
         <button class="pq-btn pq-btn-primary" onclick={handleThemeChange}
           >APPLY</button
         >
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if showPasswordDialog}
+  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+  <div class="pq-form-overlay" onclick={() => { showPasswordDialog = false; password = ""; }} role="presentation">
+    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+    <div class="pq-form-dialog" onclick={(e) => e.stopPropagation()} role="dialog" tabindex="-1">
+      <h2 class="pq-form-title">EDIT PASSWORD</h2>
+      <div class="pq-form-group">
+        <input type="password" class="pq-form-input" bind:value={password} placeholder="Enter password" disabled={isAuthenticating} />
+      </div>
+      <div class="pq-form-actions">
+        <button class="pq-btn" onclick={() => { showPasswordDialog = false; password = ""; }} disabled={isAuthenticating}>CANCEL</button>
+        <button class="pq-btn pq-btn-primary" onclick={handlePasswordAuth} disabled={isAuthenticating}>{isAuthenticating ? "AUTHENTICATING..." : "AUTH"}</button>
       </div>
     </div>
   </div>

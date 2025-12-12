@@ -230,22 +230,18 @@
       const isValid = await authApi.verifyToken(itinerary.id);
       if (isValid) {
         hasEditPermission = true;
+        auth.updateAccessTime(itinerary.id, itinerary.title);
         return;
       }
     }
 
+    // パスワード未設定ならそのまま編集可能、設定ありならダイアログを表示
     if (!itinerary.is_password_protected) {
-      try {
-        const token = await authApi.authenticateWithPassword(itinerary.id, "");
-        auth.setToken(itinerary.id, itinerary.title, token);
-        hasEditPermission = true;
-      } catch (e) {
-        console.error("Failed to authenticate without password", e);
-      }
-      return;
+      hasEditPermission = true;
+      auth.updateAccessTime(itinerary.id, itinerary.title);
+    } else {
+      showPasswordDialog = true;
     }
-
-    showPasswordDialog = true;
   }
 
   // Auto-save route display preference to memo

@@ -444,7 +444,10 @@
     }
     isAuthenticating = true;
     try {
-      const token = await authApi.authenticateWithPassword(itinerary.id, password);
+      const token = await authApi.authenticateWithPassword(
+        itinerary.id,
+        password,
+      );
       auth.setToken(itinerary.id, itinerary.title, token);
       hasEditPermission = true;
       showPasswordDialog = false;
@@ -907,16 +910,46 @@
 
 {#if showPasswordDialog}
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="pq-form-overlay" onclick={() => { showPasswordDialog = false; password = ""; }} role="presentation">
+  <div
+    class="pq-form-overlay"
+    onclick={() => {
+      showPasswordDialog = false;
+      password = "";
+    }}
+    role="presentation"
+  >
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <div class="pq-form-dialog" onclick={(e) => e.stopPropagation()} role="dialog" tabindex="-1">
+    <div
+      class="pq-form-dialog"
+      onclick={(e) => e.stopPropagation()}
+      role="dialog"
+      tabindex="-1"
+    >
       <h2 class="pq-form-title">EDIT PASSWORD</h2>
       <div class="pq-form-group">
-        <input type="password" class="pq-form-input" bind:value={password} placeholder="Enter password" disabled={isAuthenticating} />
+        <input
+          type="password"
+          class="pq-form-input"
+          bind:value={password}
+          placeholder="Enter password"
+          disabled={isAuthenticating}
+        />
       </div>
       <div class="pq-form-actions">
-        <button class="pq-btn" onclick={() => { showPasswordDialog = false; password = ""; }} disabled={isAuthenticating}>CANCEL</button>
-        <button class="pq-btn pq-btn-primary" onclick={handlePasswordAuth} disabled={isAuthenticating}>{isAuthenticating ? "AUTHENTICATING..." : "AUTH"}</button>
+        <button
+          class="pq-btn"
+          onclick={() => {
+            showPasswordDialog = false;
+            password = "";
+          }}
+          disabled={isAuthenticating}>CANCEL</button
+        >
+        <button
+          class="pq-btn pq-btn-primary"
+          onclick={handlePasswordAuth}
+          disabled={isAuthenticating}
+          >{isAuthenticating ? "AUTHENTICATING..." : "AUTH"}</button
+        >
       </div>
     </div>
   </div>

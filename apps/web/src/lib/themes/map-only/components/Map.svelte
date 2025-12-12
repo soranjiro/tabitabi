@@ -2,7 +2,6 @@
   import { onMount } from "svelte";
   import type { Step } from "@tabitabi/types";
   import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
-  import { env } from "$env/dynamic/public";
 
   interface Props {
     steps: Step[];
@@ -94,8 +93,7 @@
     "#607D8B",
   ];
 
-  const apiKey =
-    env.PUBLIC_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
 
   function getDateColor(date: string, uniqueDates: string[]): string {
     const index = uniqueDates.indexOf(date);

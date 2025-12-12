@@ -4,6 +4,7 @@
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
+  import { getIsDemoMode } from "$lib/demo";
   import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
   import "./styles/index.css";
@@ -69,6 +70,11 @@
   );
 
   onMount(() => {
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
+    }
+
     const token = auth.extractTokenFromUrl();
     if (token) {
       auth.setToken(itinerary.id, itinerary.title, token);
@@ -101,6 +107,11 @@
   }
 
   async function attemptEditModeActivation() {
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
+    }
+
     const token = auth.getToken(itinerary.id);
 
     if (token) {

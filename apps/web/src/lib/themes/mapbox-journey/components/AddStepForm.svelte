@@ -37,7 +37,9 @@
   let searchError = $state("");
   let lastQuery = "";
 
-  const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+  const accessToken =
+    (import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN as string | undefined) ||
+    (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined);
 
   $effect(() => {
     newStep.time = `${newStepHour}:${newStepMinute}`;

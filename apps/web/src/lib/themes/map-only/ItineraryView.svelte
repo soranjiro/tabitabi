@@ -7,6 +7,7 @@
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
+  import { getIsDemoMode } from "$lib/demo";
   import "./styles/index.css";
 
   let MapComponent: any = $state(null);
@@ -152,13 +153,16 @@
     if (browser) {
       const module = await import("./components/Map.svelte");
       MapComponent = module.default;
-
-      const token = auth.extractTokenFromUrl();
-      if (token) {
-        auth.setToken(itinerary.id, itinerary.title, token);
+      if (getIsDemoMode()) {
+        hasEditPermission = true;
+      } else {
+        const token = auth.extractTokenFromUrl();
+        if (token) {
+          auth.setToken(itinerary.id, itinerary.title, token);
+        }
+        hasEditPermission = auth.hasEditPermission(itinerary.id);
+        auth.updateAccessTime(itinerary.id, itinerary.title);
       }
-      hasEditPermission = auth.hasEditPermission(itinerary.id);
-      auth.updateAccessTime(itinerary.id, itinerary.title);
 
       shareUrl = window.location.href.split("?")[0];
 
@@ -215,6 +219,11 @@
   }
 
   async function attemptEditModeActivation() {
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
+    }
+
     const token = auth.getToken(itinerary.id);
 
     if (token) {

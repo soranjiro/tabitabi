@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Map-Only Step List Toggle', () => {
-  const BASE_URL = 'http://localhost:5174';
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/demo?theme=map-only');
+  });
 
   test('should toggle step list and be responsive', async ({ page }) => {
-    await page.goto(`${BASE_URL}/demo`);
-
-    await page.click('text=Map Only');
+    await page.waitForTimeout(2000);
     await page.waitForTimeout(3000);
 
     const stepListHeader = page.locator('.step-list-header');
@@ -35,9 +35,7 @@ test.describe('Map-Only Step List Toggle', () => {
 
   test('mobile viewport should be responsive', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto(`${BASE_URL}/demo`);
-
-    await page.click('text=Map Only');
+    await page.goto('/demo?theme=map-only');
     await page.waitForTimeout(3000);
 
     const stepListContainer = page.locator('.step-list-container');

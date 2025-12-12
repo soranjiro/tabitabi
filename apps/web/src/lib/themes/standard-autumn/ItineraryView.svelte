@@ -104,7 +104,7 @@
 
   onMount(() => {
     if (getIsDemoMode()) {
-      hasEditPermission = false;
+      hasEditPermission = true;
       return;
     }
 

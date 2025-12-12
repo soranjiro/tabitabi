@@ -3,6 +3,7 @@
   import type { ItineraryResponse, Step } from "@tabitabi/types";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
+  import { getIsDemoMode } from "$lib/demo";
   import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
   import {
@@ -103,6 +104,11 @@
   }
 
   onMount(() => {
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
+    }
+
     const token = auth.extractTokenFromUrl();
     if (token) {
       auth.setToken(itinerary.id, itinerary.title, token);
@@ -147,6 +153,11 @@
   }
 
   async function attemptEditModeActivation() {
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
+    }
+
     const token = auth.getToken(itinerary.id);
 
     if (token) {

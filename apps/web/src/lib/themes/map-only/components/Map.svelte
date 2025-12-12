@@ -93,9 +93,33 @@
     "#607D8B",
   ];
 
-  const apiKey =
-    import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
-    import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
+  function resolveApiKey(): string | undefined {
+    const fromImport =
+      import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+      import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (fromImport) return fromImport;
+
+    const fromProcess =
+      typeof process !== "undefined"
+        ? (process as any).env?.PUBLIC_GOOGLE_MAPS_API_KEY ||
+          (process as any).env?.VITE_GOOGLE_MAPS_API_KEY
+        : undefined;
+    if (fromProcess) return fromProcess;
+
+    if (typeof window !== "undefined") {
+      const w = window as any;
+      return (
+        w.PUBLIC_GOOGLE_MAPS_API_KEY ||
+        w.VITE_GOOGLE_MAPS_API_KEY ||
+        w.env?.PUBLIC_GOOGLE_MAPS_API_KEY ||
+        w.env?.VITE_GOOGLE_MAPS_API_KEY
+      );
+    }
+
+    return undefined;
+  }
+
+  const apiKey = resolveApiKey();
 
   function getDateColor(date: string, uniqueDates: string[]): string {
     const index = uniqueDates.indexOf(date);

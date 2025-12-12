@@ -21,13 +21,9 @@ export class ApiClient {
     };
 
     if (shioriId) {
-      // Attach Authorization only when itinerary is password-protected
-      const isProtected = auth.isPasswordProtected(shioriId);
-      if (isProtected) {
-        const token = auth.getToken(shioriId);
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
+      const token = auth.getToken(shioriId);
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
     }
 

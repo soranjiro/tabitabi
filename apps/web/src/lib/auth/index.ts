@@ -30,16 +30,14 @@ export const auth = {
     const history = this.getHistory();
     const index = history.findIndex(h => h.shioriId === shioriId);
 
-    const existingProtected = index >= 0 ? history[index].is_password_protected : this.isPasswordProtected(shioriId);
-
-    if (!existingProtected) return;
+    const existing = index >= 0 ? history[index] : undefined;
 
     const record: ShioriHistory = {
       shioriId,
       title,
       token,
       accessedAt: Date.now(),
-      is_password_protected: existingProtected,
+      is_password_protected: existing?.is_password_protected,
     };
 
     if (index >= 0) {
@@ -103,10 +101,8 @@ export const auth = {
   },
 
   hasEditPermission(shioriId: string): boolean {
-    // If itinerary is not password-protected, editing is allowed without token
-    if (!this.isPasswordProtected(shioriId)) return true;
     const token = this.getToken(shioriId);
-    return token !== null && token !== '';
+    return !!token;
   },
 
   clearHistory(): void {

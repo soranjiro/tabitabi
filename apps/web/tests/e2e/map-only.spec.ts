@@ -1,27 +1,19 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Map-Only Theme', () => {
-  const DEMO_ITINERARY_ID = 'demo-map-only';
-  const BASE_URL = 'http://localhost:5174';
-
   test.beforeEach(async ({ page }) => {
-    await page.goto(`${BASE_URL}/demo`);
+    await page.goto('/demo?theme=map-only');
   });
 
   test('should display map view in view mode', async ({ page }) => {
-    // デモページからmap-onlyテーマを選択
-    await page.click('text=Map Only');
-
     // マップが表示されているか確認
     const mapContainer = page.locator('.gmap-canvas');
     await expect(mapContainer).toBeVisible();
   });
 
   test('theme modal should open and close correctly', async ({ page }) => {
-    await page.click('text=Map Only');
-
     // メニューアイコンをクリック
-    const menuButton = page.locator('button:has-text("☰")').first();
+    const menuButton = page.getByLabel('Menu');
     await menuButton.click();
 
     // テーマボタンをクリック
@@ -42,10 +34,8 @@ test.describe('Map-Only Theme', () => {
   });
 
   test('secret mode modal should open and close independently', async ({ page }) => {
-    await page.click('text=Map Only');
-
     // メニューを開く
-    const menuButton = page.locator('button:has-text("☰")').first();
+    const menuButton = page.getByLabel('Menu');
     await menuButton.click();
 
     // シークレットモード設定ボタンをクリック
@@ -70,10 +60,8 @@ test.describe('Map-Only Theme', () => {
   });
 
   test('should not show both theme and secret modals at the same time', async ({ page }) => {
-    await page.click('text=Map Only');
-
     // メニューを開く
-    const menuButton = page.locator('button:has-text("☰")').first();
+    const menuButton = page.getByLabel('Menu');
     await menuButton.click();
 
     // シークレットモーダルを開く
@@ -98,8 +86,6 @@ test.describe('Map-Only Theme', () => {
   });
 
   test('"地図に戻る" button should only appear in street view view mode', async ({ page }) => {
-    await page.click('text=Map Only');
-
     // ビューモードを確認 (編集モードではない)
     const editButton = page.locator('button:has-text("編集")').first();
     const isEditMode = await editButton.isVisible();
@@ -112,10 +98,8 @@ test.describe('Map-Only Theme', () => {
   });
 
   test('secret mode toggle should work', async ({ page }) => {
-    await page.click('text=Map Only');
-
     // メニューを開く
-    const menuButton = page.locator('button:has-text("☰")').first();
+    const menuButton = page.getByLabel('Menu');
     await menuButton.click();
 
     // シークレットモーダルを開く
@@ -131,18 +115,14 @@ test.describe('Map-Only Theme', () => {
   });
 
   test('should display current location button', async ({ page }) => {
-    await page.click('text=Map Only');
-
     // 現在地ボタンが表示されている
     const currentLocationButton = page.locator('button:has-text("📍")');
     await expect(currentLocationButton).toBeVisible();
   });
 
   test('modal overlay should close when clicked', async ({ page }) => {
-    await page.click('text=Map Only');
-
     // メニューを開く
-    const menuButton = page.locator('button:has-text("☰")').first();
+    const menuButton = page.getByLabel('Menu');
     await menuButton.click();
 
     // テーマモーダルを開く
@@ -159,10 +139,8 @@ test.describe('Map-Only Theme', () => {
   });
 
   test('menu should toggle visibility', async ({ page }) => {
-    await page.click('text=Map Only');
-
     // メニューボタンをクリック
-    const menuButton = page.locator('button:has-text("☰")').first();
+    const menuButton = page.getByLabel('Menu');
 
     // 最初はメニューが非表示
     const menuContent = page.locator('.map-menu');
@@ -177,8 +155,7 @@ test.describe('Map-Only Theme', () => {
   });
 
   test('should display step list in edit mode', async ({ page }) => {
-    await page.goto(`${BASE_URL}/demo`);
-    await page.click('text=Map Only');
+    await page.goto('/demo?theme=map-only');
 
     const stepListContainer = page.locator('.step-list-container');
     await expect(stepListContainer).toBeVisible({ timeout: 10000 });
@@ -188,8 +165,7 @@ test.describe('Map-Only Theme', () => {
   });
 
   test('should toggle between showing all steps and only steps without location', async ({ page }) => {
-    await page.goto(`${BASE_URL}/demo`);
-    await page.click('text=Map Only');
+    await page.goto('/demo?theme=map-only');
 
     await page.waitForTimeout(2000);
 
@@ -206,8 +182,7 @@ test.describe('Map-Only Theme', () => {
   });
 
   test('should show location warning for steps without location', async ({ page }) => {
-    await page.goto(`${BASE_URL}/demo`);
-    await page.click('text=Map Only');
+    await page.goto('/demo?theme=map-only');
 
     await page.waitForTimeout(2000);
 
@@ -220,8 +195,7 @@ test.describe('Map-Only Theme', () => {
   });
 
   test('clicking step in list should focus on map', async ({ page }) => {
-    await page.goto(`${BASE_URL}/demo`);
-    await page.click('text=Map Only');
+    await page.goto('/demo?theme=map-only');
 
     await page.waitForTimeout(2000);
 
@@ -247,8 +221,7 @@ test.describe('Map-Only Theme', () => {
   });
 
   test('should highlight steps without location in the list', async ({ page }) => {
-    await page.goto(`${BASE_URL}/demo`);
-    await page.click('text=Map Only');
+    await page.goto('/demo?theme=map-only');
 
     await page.waitForTimeout(2000);
 
@@ -264,8 +237,7 @@ test.describe('Map-Only Theme', () => {
   });
 
   test('should close spot detail when clicking outside', async ({ page }) => {
-    await page.goto(`${BASE_URL}/demo`);
-    await page.click('text=Map Only');
+    await page.goto('/demo?theme=map-only');
 
     await page.waitForTimeout(2000);
 
@@ -299,8 +271,7 @@ test.describe('Map-Only Theme', () => {
 
   test('should be responsive on mobile viewport', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto(`${BASE_URL}/demo`);
-    await page.click('text=Map Only');
+    await page.goto('/demo?theme=map-only');
 
     await page.waitForTimeout(2000);
 

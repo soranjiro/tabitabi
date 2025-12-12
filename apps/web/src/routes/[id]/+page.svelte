@@ -144,7 +144,7 @@
 
 {#key data.itinerary.theme_id}
   <ItineraryView
-    itinerary
+    {itinerary}
     {steps}
     onUpdateItinerary={handleUpdateItinerary}
     onCreateStep={handleCreateStep}

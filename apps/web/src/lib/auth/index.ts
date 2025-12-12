@@ -3,6 +3,8 @@ import type { ShioriHistory } from '@tabitabi/types';
 const STORAGE_KEY = 'shiori_history';
 const PASSWORD_PROTECTED_KEY = 'shiori_password_protected';
 
+const isDemoShiori = (shioriId: string) => shioriId === 'demo';
+
 export const auth = {
   getHistory(): ShioriHistory[] {
     try {
@@ -24,6 +26,8 @@ export const auth = {
   },
 
   setToken(shioriId: string, title: string, token: string): void {
+    if (isDemoShiori(shioriId)) return;
+
     const history = this.getHistory();
     const index = history.findIndex(h => h.shioriId === shioriId);
     const record: ShioriHistory = {
@@ -53,6 +57,8 @@ export const auth = {
   },
 
   updateAccessTime(shioriId: string, title: string): void {
+    if (isDemoShiori(shioriId)) return;
+
     const history = this.getHistory();
     const index = history.findIndex(h => h.shioriId === shioriId);
     const now = Date.now();

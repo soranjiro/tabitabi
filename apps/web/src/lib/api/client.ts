@@ -2,7 +2,11 @@ import type { ApiResult } from '@tabitabi/types';
 import { auth } from '../auth';
 import { getIsDemoMode } from '../demo';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787/api/v1';
+// Prefer PUBLIC_ for Cloudflare Pages, fallback to VITE_
+const API_BASE_URL =
+  (import.meta.env.PUBLIC_API_URL as string | undefined) ||
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  'http://localhost:8787/api/v1';
 
 export class ApiClient {
   private baseUrl: string;

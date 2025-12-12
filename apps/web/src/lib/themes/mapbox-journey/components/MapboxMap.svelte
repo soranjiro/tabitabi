@@ -32,7 +32,9 @@
   let routeAnimationFrame: number | null = null;
   let isPixelMode = $state(false);
 
-  const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+  const accessToken =
+    (import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN as string | undefined) ||
+    (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined);
 
   const MAP_STYLES: Record<MapStyle, string> = {
     day: "mapbox://styles/mapbox/light-v11",
@@ -130,7 +132,7 @@
   async function initMap() {
     if (!browser || !accessToken) {
       errorMsg =
-        "Mapbox Access Token is missing. Please set VITE_MAPBOX_ACCESS_TOKEN.";
+        "Mapbox Access Token is missing. Please set PUBLIC_MAPBOX_ACCESS_TOKEN or VITE_MAPBOX_ACCESS_TOKEN.";
       return;
     }
 

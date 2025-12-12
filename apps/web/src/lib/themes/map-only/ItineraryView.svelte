@@ -7,6 +7,7 @@
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
+  import { getIsDemoMode } from "$lib/demo";
   import "./styles/index.css";
 
   let MapComponent: any = $state(null);
@@ -152,13 +153,16 @@
     if (browser) {
       const module = await import("./components/Map.svelte");
       MapComponent = module.default;
-
-      const token = auth.extractTokenFromUrl();
-      if (token) {
-        auth.setToken(itinerary.id, itinerary.title, token);
+      if (getIsDemoMode()) {
+        hasEditPermission = true;
+      } else {
+        const token = auth.extractTokenFromUrl();
+        if (token) {
+          auth.setToken(itinerary.id, itinerary.title, token);
+        }
+        hasEditPermission = auth.hasEditPermission(itinerary.id);
+        auth.updateAccessTime(itinerary.id, itinerary.title);
       }
-      hasEditPermission = auth.hasEditPermission(itinerary.id);
-      auth.updateAccessTime(itinerary.id, itinerary.title);
 
       shareUrl = window.location.href.split("?")[0];
 
@@ -215,28 +219,29 @@
   }
 
   async function attemptEditModeActivation() {
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
+    }
+
     const token = auth.getToken(itinerary.id);
 
     if (token) {
       const isValid = await authApi.verifyToken(itinerary.id);
       if (isValid) {
         hasEditPermission = true;
+        auth.updateAccessTime(itinerary.id, itinerary.title);
         return;
       }
     }
 
+    // パスワード未設定ならそのまま編集可能、設定ありならダイアログを表示
     if (!itinerary.is_password_protected) {
-      try {
-        const token = await authApi.authenticateWithPassword(itinerary.id, "");
-        auth.setToken(itinerary.id, itinerary.title, token);
-        hasEditPermission = true;
-      } catch (e) {
-        console.error("Failed to authenticate without password", e);
-      }
-      return;
+      hasEditPermission = true;
+      auth.updateAccessTime(itinerary.id, itinerary.title);
+    } else {
+      showPasswordDialog = true;
     }
-
-    showPasswordDialog = true;
   }
 
   // Auto-save route display preference to memo

@@ -7,6 +7,7 @@
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
+  import { getIsDemoMode } from "$lib/demo";
   import "./styles/index.css";
 
   let MapComponent: any = $state(null);
@@ -76,7 +77,9 @@
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
 
-  const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+  const accessToken =
+    (import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN as string | undefined) ||
+    (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined);
 
   const DATE_COLORS = [
     "#8B5CF6",
@@ -117,13 +120,16 @@
     if (browser) {
       const module = await import("./components/MapboxMap.svelte");
       MapComponent = module.default;
-
-      const token = auth.extractTokenFromUrl();
-      if (token) {
-        auth.setToken(itinerary.id, itinerary.title, token);
+      if (getIsDemoMode()) {
+        hasEditPermission = true;
+      } else {
+        const token = auth.extractTokenFromUrl();
+        if (token) {
+          auth.setToken(itinerary.id, itinerary.title, token);
+        }
+        hasEditPermission = auth.hasEditPermission(itinerary.id);
+        auth.updateAccessTime(itinerary.id, itinerary.title);
       }
-      hasEditPermission = auth.hasEditPermission(itinerary.id);
-      auth.updateAccessTime(itinerary.id, itinerary.title);
 
       shareUrl = window.location.href.split("?")[0];
 
@@ -181,28 +187,29 @@
   }
 
   async function attemptEditModeActivation() {
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
+    }
+
     const token = auth.getToken(itinerary.id);
 
     if (token) {
       const isValid = await authApi.verifyToken(itinerary.id);
       if (isValid) {
         hasEditPermission = true;
+        auth.updateAccessTime(itinerary.id, itinerary.title);
         return;
       }
     }
 
+    // パスワード未設定なら編集可、設定ありなら入力ダイアログ
     if (!itinerary.is_password_protected) {
-      try {
-        const token = await authApi.authenticateWithPassword(itinerary.id, "");
-        auth.setToken(itinerary.id, itinerary.title, token);
-        hasEditPermission = true;
-      } catch (e) {
-        console.error("Failed to authenticate without password", e);
-      }
-      return;
+      hasEditPermission = true;
+      auth.updateAccessTime(itinerary.id, itinerary.title);
+    } else {
+      showPasswordDialog = true;
     }
-
-    showPasswordDialog = true;
   }
 
   async function saveSettings() {

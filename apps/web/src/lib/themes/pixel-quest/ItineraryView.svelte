@@ -3,6 +3,7 @@
   import type { ItineraryResponse, Step } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
+  import { getIsDemoMode } from "$lib/demo";
   import { authApi } from "$lib/api/auth";
   import { onMount } from "svelte";
   import { ContinuousMap, DetailPanel } from "./components";
@@ -57,9 +58,13 @@
   }: Props = $props();
 
   let isEditingTitle = $state(false);
+  let isEditMode = $state(false);
   let editedTitle = $state(itinerary.title);
   let selectedStep = $state<Step | null>(null);
   let hasEditPermission = $state(false);
+  let showPasswordDialog = $state(false);
+  let password = $state("");
+  let isAuthenticating = $state(false);
   let showAddForm = $state(false);
   let showEditForm = $state(false);
   let showShareDialog = $state(false);
@@ -252,10 +257,20 @@
 
   onMount(() => {
     (async () => {
-      const token = auth.getToken(itinerary.id);
-      if (token) {
-        const valid = await authApi.verifyToken(itinerary.id);
-        hasEditPermission = valid;
+      // In demo mode, skip auth checks and allow editing locally
+      if (getIsDemoMode()) {
+        hasEditPermission = true;
+      } else {
+        const fromUrl = auth.extractTokenFromUrl();
+        if (fromUrl) {
+          auth.setToken(itinerary.id, itinerary.title, fromUrl);
+        }
+        const token = auth.getToken(itinerary.id);
+        if (token) {
+          const valid = await authApi.verifyToken(itinerary.id);
+          hasEditPermission = valid;
+          if (valid) auth.updateAccessTime(itinerary.id, itinerary.title);
+        }
       }
     })();
 
@@ -398,6 +413,53 @@
     setTimeout(() => (showCopyMessage = false), 2000);
   }
 
+  async function attemptEditModeActivation() {
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
+    }
+
+    const token = auth.getToken(itinerary.id);
+    if (token) {
+      const valid = await authApi.verifyToken(itinerary.id);
+      if (valid) {
+        hasEditPermission = true;
+        auth.updateAccessTime(itinerary.id, itinerary.title);
+        return;
+      }
+    }
+
+    if (!itinerary.is_password_protected) {
+      hasEditPermission = true;
+      auth.updateAccessTime(itinerary.id, itinerary.title);
+    } else {
+      showPasswordDialog = true;
+    }
+  }
+
+  async function handlePasswordAuth() {
+    if (!password.trim()) {
+      alert("パスワードを入力してください");
+      return;
+    }
+    isAuthenticating = true;
+    try {
+      const token = await authApi.authenticateWithPassword(
+        itinerary.id,
+        password,
+      );
+      auth.setToken(itinerary.id, itinerary.title, token);
+      hasEditPermission = true;
+      showPasswordDialog = false;
+      password = "";
+      auth.updateAccessTime(itinerary.id, itinerary.title);
+    } catch (e) {
+      alert("パスワードが正しくありません");
+    } finally {
+      isAuthenticating = false;
+    }
+  }
+
   async function handleThemeChange() {
     if (onUpdateItinerary && selectedThemeId !== itinerary.theme_id) {
       let nextMemo = itinerary.memo ?? "";
@@ -490,11 +552,31 @@
             </svg>
           </button>
           <button
-            class="pq-btn pq-btn-primary pq-btn-small"
-            onclick={openAddForm}
+            class="pq-btn pq-btn-icon"
+            onclick={() => {
+              if (!hasEditPermission) {
+                attemptEditModeActivation();
+                return;
+              }
+              isEditMode = !isEditMode;
+            }}
+            title={isEditMode ? "Switch to View" : "Switch to Edit"}
+            aria-label={isEditMode ? "View Mode" : "Edit Mode"}
           >
-            +QUEST
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path
+                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"
+              />
+            </svg>
           </button>
+          {#if isEditMode}
+            <button
+              class="pq-btn pq-btn-primary pq-btn-small"
+              onclick={openAddForm}
+            >
+              +QUEST
+            </button>
+          {/if}
         {/if}
       </div>
     </div>
@@ -607,7 +689,7 @@
         >
         <DetailPanel
           step={selectedStep}
-          {hasEditPermission}
+          hasEditPermission={hasEditPermission && isEditMode}
           onEdit={openEditForm}
           onDelete={handleDeleteStep}
         />
@@ -820,6 +902,53 @@
         >
         <button class="pq-btn pq-btn-primary" onclick={handleThemeChange}
           >APPLY</button
+        >
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if showPasswordDialog}
+  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+  <div
+    class="pq-form-overlay"
+    onclick={() => {
+      showPasswordDialog = false;
+      password = "";
+    }}
+    role="presentation"
+  >
+    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+    <div
+      class="pq-form-dialog"
+      onclick={(e) => e.stopPropagation()}
+      role="dialog"
+      tabindex="-1"
+    >
+      <h2 class="pq-form-title">EDIT PASSWORD</h2>
+      <div class="pq-form-group">
+        <input
+          type="password"
+          class="pq-form-input"
+          bind:value={password}
+          placeholder="Enter password"
+          disabled={isAuthenticating}
+        />
+      </div>
+      <div class="pq-form-actions">
+        <button
+          class="pq-btn"
+          onclick={() => {
+            showPasswordDialog = false;
+            password = "";
+          }}
+          disabled={isAuthenticating}>CANCEL</button
+        >
+        <button
+          class="pq-btn pq-btn-primary"
+          onclick={handlePasswordAuth}
+          disabled={isAuthenticating}
+          >{isAuthenticating ? "AUTHENTICATING..." : "AUTH"}</button
         >
       </div>
     </div>

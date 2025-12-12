@@ -27,6 +27,12 @@
 
   onMount(() => {
     const init = async () => {
+      // Record password protection state for client-side header resolution
+      auth.setPasswordProtected(
+        data.itinerary.id,
+        data.itinerary.is_password_protected,
+      );
+
       auth.updateAccessTime(data.itinerary.id, data.itinerary.title);
       document.body.style.backgroundColor = backgroundColor;
       document.documentElement.style.backgroundColor = backgroundColor;
@@ -34,7 +40,7 @@
       // Check if we have edit permission and need to re-fetch steps to reveal secrets
       const token =
         auth.extractTokenFromUrl() || auth.getToken(data.itinerary.id);
-      if (token) {
+      if (token && data.itinerary.is_password_protected) {
         // If we have a token, we might be in edit mode.
         // If the initial load was SSR, steps might be masked.
         // We should re-fetch to get the unmasked data.

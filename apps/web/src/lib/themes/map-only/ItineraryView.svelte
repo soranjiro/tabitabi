@@ -157,7 +157,7 @@
         hasEditPermission = true;
       } else {
         const token = auth.extractTokenFromUrl();
-        if (token) {
+        if (token && itinerary.is_password_protected) {
           auth.setToken(itinerary.id, itinerary.title, token);
         }
         hasEditPermission = auth.hasEditPermission(itinerary.id);

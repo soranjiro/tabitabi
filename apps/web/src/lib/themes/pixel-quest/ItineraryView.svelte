@@ -419,7 +419,9 @@
       return true;
     }
 
-    const token = auth.getToken(itinerary.id);
+    const token = itinerary.is_password_protected
+      ? auth.getToken(itinerary.id)
+      : null;
     if (token) {
       const valid = await authApi.verifyToken(itinerary.id);
       if (valid) {

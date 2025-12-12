@@ -1,7 +1,6 @@
 import type { ShioriHistory } from '@tabitabi/types';
 
 const STORAGE_KEY = 'shiori_history';
-const PASSWORD_PROTECTED_KEY = 'shiori_password_protected';
 
 const isDemoShiori = (shioriId: string) => shioriId === 'demo';
 
@@ -27,6 +26,9 @@ export const auth = {
 
   setToken(shioriId: string, title: string, token: string): void {
     if (isDemoShiori(shioriId)) return;
+
+    // Only persist token for password-protected itineraries
+    if (!this.isPasswordProtected(shioriId)) return;
 
     const history = this.getHistory();
     const index = history.findIndex(h => h.shioriId === shioriId);
@@ -97,6 +99,8 @@ export const auth = {
   },
 
   hasEditPermission(shioriId: string): boolean {
+    // If itinerary is not password-protected, editing is allowed without token
+    if (!this.isPasswordProtected(shioriId)) return true;
     const token = this.getToken(shioriId);
     return token !== null && token !== '';
   },
@@ -126,23 +130,25 @@ export const auth = {
 
   // パスワード保護状態の管理
   isPasswordProtected(shioriId: string): boolean {
-    try {
-      const data = localStorage.getItem(PASSWORD_PROTECTED_KEY);
-      const map = data ? JSON.parse(data) : {};
-      return map[shioriId] ?? false;
-    } catch {
-      return false;
-    }
+    const history = this.getHistory();
+    const record = history.find(h => h.shioriId === shioriId);
+    return !!record?.is_password_protected;
   },
 
   setPasswordProtected(shioriId: string, isProtected: boolean): void {
-    try {
-      const data = localStorage.getItem(PASSWORD_PROTECTED_KEY);
-      const map = data ? JSON.parse(data) : {};
-      map[shioriId] = isProtected;
-      localStorage.setItem(PASSWORD_PROTECTED_KEY, JSON.stringify(map));
-    } catch {
-      // silently fail
+    const history = this.getHistory();
+    const index = history.findIndex(h => h.shioriId === shioriId);
+    if (index >= 0) {
+      history[index].is_password_protected = isProtected;
+    } else {
+      history.unshift({
+        shioriId,
+        title: '',
+        token: null,
+        accessedAt: Date.now(),
+        is_password_protected: isProtected,
+      });
     }
+    this.saveHistory(history);
   },
 };

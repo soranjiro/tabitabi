@@ -59,7 +59,7 @@
 
   onMount(() => {
     const token = auth.extractTokenFromUrl();
-    if (token) {
+    if (token && itinerary.is_password_protected) {
       auth.setToken(itinerary.id, itinerary.title, token);
     }
     hasEditPermission = auth.hasEditPermission(itinerary.id);
@@ -101,14 +101,8 @@
     }
 
     if (!itinerary.is_password_protected) {
-      try {
-        const token = await authApi.authenticateWithPassword(itinerary.id, "");
-        auth.setToken(itinerary.id, itinerary.title, token);
-        hasEditPermission = true;
-      } catch (e) {
-        console.error("Failed to authenticate without password", e);
-        alert("認証に失敗しました");
-      }
+      hasEditPermission = true;
+      auth.updateAccessTime(itinerary.id, itinerary.title);
       return;
     }
 

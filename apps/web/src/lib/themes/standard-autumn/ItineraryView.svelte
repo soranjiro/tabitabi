@@ -2,7 +2,7 @@
   import type { ItineraryResponse, Step } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
-  import { authApi } from "$lib/api/auth";
+  import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { getIsDemoMode } from "$lib/demo";
   import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
@@ -124,26 +124,18 @@
     }
   });
 
-  async function handlePasswordAuth(password: string) {
-    if (!password.trim()) {
-      alert("パスワードを入力してください");
-      return;
-    }
-
-    isAuthenticating = true;
-    try {
-      const token = await authApi.authenticateWithPassword(
-        itinerary.id,
-        password,
-      );
-      auth.setToken(itinerary.id, itinerary.title, token);
-      hasEditPermission = true;
-      showPasswordDialog = false;
-    } catch (error) {
-      alert("パスワードが正しくありません");
-    } finally {
-      isAuthenticating = false;
-    }
+  async function onPasswordAuth(password: string) {
+    await handlePasswordAuth({
+      shioriId: itinerary.id,
+      title: itinerary.title,
+      password,
+      onSuccess: () => {
+        hasEditPermission = true;
+        showPasswordDialog = false;
+      },
+      onError: (message) => alert(message),
+      setAuthenticating: (value) => (isAuthenticating = value),
+    });
   }
 
   function handleEditModeToggle() {
@@ -483,7 +475,7 @@
   <PasswordDialog
     show={showPasswordDialog}
     {isAuthenticating}
-    onAuth={handlePasswordAuth}
+    onAuth={onPasswordAuth}
     onClose={() => (showPasswordDialog = false)}
   />
 

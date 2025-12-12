@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { Env } from '../utils';
 import { StepService } from '../services/step.service';
 import { ItineraryService } from '../services/itinerary.service';
-import { authMiddleware } from '../middleware/auth';
+import { extractBearerToken, verifyToken } from '../utils/jwt';
 
 const steps = new Hono<{ Bindings: Env }>();
 
@@ -72,7 +72,7 @@ steps.get('/:stepId', async (c) => {
   return c.json({ success: true, data });
 });
 
-steps.post('/', authMiddleware, async (c) => {
+steps.post('/', async (c) => {
   const input = await c.req.json();
 
   if (!input.itinerary_id || !input.title || !input.date || !input.time) {
@@ -85,12 +85,22 @@ steps.post('/', authMiddleware, async (c) => {
     }, 400);
   }
 
-  const shioriId = c.get('shioriId');
-  if (input.itinerary_id !== shioriId) {
-    return c.json({
-      success: false,
-      error: { code: 'FORBIDDEN', message: 'You can only add steps to your own itinerary' }
-    }, 403);
+  // Authorization: required only when itinerary has a password
+  const itineraryService = new ItineraryService(c.env.DB);
+  const itinerary = await itineraryService.get(input.itinerary_id);
+  if (!itinerary) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+  }
+
+  if (itinerary.password) {
+    const token = extractBearerToken(c.req.header('Authorization'));
+    const payload = token ? await verifyToken(token, c.env.JWT_SECRET) : null;
+    if (!payload || payload.shioriId !== input.itinerary_id) {
+      return c.json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You can only add steps to your own password-protected itinerary' }
+      }, 403);
+    }
   }
 
   const service = new StepService(c.env.DB);
@@ -98,7 +108,7 @@ steps.post('/', authMiddleware, async (c) => {
   return c.json({ success: true, data }, 201);
 });
 
-steps.put('/:stepId', authMiddleware, async (c) => {
+steps.put('/:stepId', async (c) => {
   const stepId = c.req.param('stepId');
   const input = await c.req.json();
   const service = new StepService(c.env.DB);
@@ -111,19 +121,28 @@ steps.put('/:stepId', authMiddleware, async (c) => {
     }, 404);
   }
 
-  const shioriId = c.get('shioriId');
-  if (existingStep.itinerary_id !== shioriId) {
-    return c.json({
-      success: false,
-      error: { code: 'FORBIDDEN', message: 'You can only edit steps in your own itinerary' }
-    }, 403);
+  // Require auth only when itinerary has a password
+  const itineraryService = new ItineraryService(c.env.DB);
+  const itinerary = await itineraryService.get(existingStep.itinerary_id);
+  if (!itinerary) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+  }
+  if (itinerary.password) {
+    const token = extractBearerToken(c.req.header('Authorization'));
+    const payload = token ? await verifyToken(token, c.env.JWT_SECRET) : null;
+    if (!payload || payload.shioriId !== existingStep.itinerary_id) {
+      return c.json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You can only edit steps in your own password-protected itinerary' }
+      }, 403);
+    }
   }
 
   const data = await service.update(stepId, input);
   return c.json({ success: true, data });
 });
 
-steps.delete('/:stepId', authMiddleware, async (c) => {
+steps.delete('/:stepId', async (c) => {
   const stepId = c.req.param('stepId');
   const service = new StepService(c.env.DB);
 
@@ -135,12 +154,20 @@ steps.delete('/:stepId', authMiddleware, async (c) => {
     }, 404);
   }
 
-  const shioriId = c.get('shioriId');
-  if (existingStep.itinerary_id !== shioriId) {
-    return c.json({
-      success: false,
-      error: { code: 'FORBIDDEN', message: 'You can only delete steps in your own itinerary' }
-    }, 403);
+  const itineraryService = new ItineraryService(c.env.DB);
+  const itinerary = await itineraryService.get(existingStep.itinerary_id);
+  if (!itinerary) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+  }
+  if (itinerary.password) {
+    const token = extractBearerToken(c.req.header('Authorization'));
+    const payload = token ? await verifyToken(token, c.env.JWT_SECRET) : null;
+    if (!payload || payload.shioriId !== existingStep.itinerary_id) {
+      return c.json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You can only delete steps in your own password-protected itinerary' }
+      }, 403);
+    }
   }
 
   const success = await service.delete(stepId);

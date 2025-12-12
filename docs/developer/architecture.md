@@ -196,10 +196,30 @@ RESTful API:
 
 ## セキュリティ
 
-### パスワード保護
+### パスワード保護とトークン運用
 - パスワードは平文で保存（将来ハッシュ化予定）
-- JWTトークンで認証状態を管理
+- JWTトークンは「編集権限が必要な（パスワード設定あり）しおり」のみで使用
+- パスワード未設定のしおりはトークンを保存せず、`Authorization` ヘッダーも送信しない
 - トークンには有効期限あり（30日）
+
+編集権限判定のフロー:
+
+```mermaid
+flowchart TD
+   A[ページ読み込み] --> B{is_password_protected?}
+   B -- No --> C[編集可能: トークン不要]
+   B -- Yes --> D{URLにtokenあり?}
+   D -- Yes --> E[localStorageにtoken保存]
+   D -- No --> F[未保存のまま]
+   E --> G[API呼出時にAuthorization付与]
+   F --> H[編集操作時にパスワード認証]
+   H --> E
+```
+
+クライアント実装の要点:
+- `+page.svelte` で `auth.setPasswordProtected(id, is_password_protected)` を記録
+- `client.getAuthHeaders()` は `is_password_protected=true` のときのみ `Authorization` を付与
+- 各テーマは `token` の保存を `is_password_protected` でガード
 
 ### XSS対策
 - Svelteの自動エスケープ

@@ -6,6 +6,7 @@
   import AddStepForm from "./components/AddStepForm.svelte";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
+  import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { authApi } from "$lib/api/auth";
   import { getIsDemoMode } from "$lib/demo";
   import "./styles/index.css";
@@ -157,7 +158,7 @@
         hasEditPermission = true;
       } else {
         const token = auth.extractTokenFromUrl();
-        if (token) {
+        if (token && itinerary.is_password_protected) {
           auth.setToken(itinerary.id, itinerary.title, token);
         }
         hasEditPermission = auth.hasEditPermission(itinerary.id);
@@ -195,27 +196,19 @@
     }
   }
 
-  async function handlePasswordAuth() {
-    if (!password.trim()) {
-      alert("パスワードを入力してください");
-      return;
-    }
-
-    isAuthenticating = true;
-    try {
-      const token = await authApi.authenticateWithPassword(
-        itinerary.id,
-        password,
-      );
-      auth.setToken(itinerary.id, itinerary.title, token);
-      hasEditPermission = true;
-      showPasswordDialog = false;
-      password = "";
-    } catch (error) {
-      alert("パスワードが正しくありません");
-    } finally {
-      isAuthenticating = false;
-    }
+  async function onPasswordAuth() {
+    await handlePasswordAuth({
+      shioriId: itinerary.id,
+      title: itinerary.title,
+      password,
+      onSuccess: () => {
+        hasEditPermission = true;
+        showPasswordDialog = false;
+        password = "";
+      },
+      onError: (message) => alert(message),
+      setAuthenticating: (value) => (isAuthenticating = value),
+    });
   }
 
   async function attemptEditModeActivation() {
@@ -1194,7 +1187,7 @@
         <form
           onsubmit={(e) => {
             e.preventDefault();
-            handlePasswordAuth();
+            onPasswordAuth();
           }}
         >
           <input

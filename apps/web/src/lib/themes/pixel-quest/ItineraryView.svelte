@@ -413,10 +413,10 @@
     setTimeout(() => (showCopyMessage = false), 2000);
   }
 
-  async function attemptEditModeActivation() {
+  async function attemptEditModeActivation(): Promise<boolean> {
     if (getIsDemoMode()) {
       hasEditPermission = true;
-      return;
+      return true;
     }
 
     const token = auth.getToken(itinerary.id);
@@ -425,15 +425,29 @@
       if (valid) {
         hasEditPermission = true;
         auth.updateAccessTime(itinerary.id, itinerary.title);
-        return;
+        return true;
       }
     }
 
     if (!itinerary.is_password_protected) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
-    } else {
-      showPasswordDialog = true;
+      return true;
+    }
+
+    showPasswordDialog = true;
+    return false;
+  }
+
+  async function handleEditButtonClick() {
+    if (hasEditPermission) {
+      isEditMode = !isEditMode;
+      return;
+    }
+
+    const activated = await attemptEditModeActivation();
+    if (activated) {
+      isEditMode = true;
     }
   }
 
@@ -450,6 +464,7 @@
       );
       auth.setToken(itinerary.id, itinerary.title, token);
       hasEditPermission = true;
+      isEditMode = true;
       showPasswordDialog = false;
       password = "";
       auth.updateAccessTime(itinerary.id, itinerary.title);
@@ -551,32 +566,34 @@
               />
             </svg>
           </button>
+        {/if}
+        <button
+          class="pq-btn pq-btn-icon"
+          onclick={handleEditButtonClick}
+          title={hasEditPermission
+            ? isEditMode
+              ? "Switch to View"
+              : "Switch to Edit"
+            : "Enter password to edit"}
+          aria-label={hasEditPermission
+            ? isEditMode
+              ? "View Mode"
+              : "Edit Mode"
+            : "Request Edit"}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path
+              d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"
+            />
+          </svg>
+        </button>
+        {#if hasEditPermission && isEditMode}
           <button
-            class="pq-btn pq-btn-icon"
-            onclick={() => {
-              if (!hasEditPermission) {
-                attemptEditModeActivation();
-                return;
-              }
-              isEditMode = !isEditMode;
-            }}
-            title={isEditMode ? "Switch to View" : "Switch to Edit"}
-            aria-label={isEditMode ? "View Mode" : "Edit Mode"}
+            class="pq-btn pq-btn-primary pq-btn-small"
+            onclick={openAddForm}
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path
-                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"
-              />
-            </svg>
+            +QUEST
           </button>
-          {#if isEditMode}
-            <button
-              class="pq-btn pq-btn-primary pq-btn-small"
-              onclick={openAddForm}
-            >
-              +QUEST
-            </button>
-          {/if}
         {/if}
       </div>
     </div>

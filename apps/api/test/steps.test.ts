@@ -48,11 +48,11 @@ async function applyMigrations(db: D1Database) {
   }
 }
 
-async function createItinerary(title: string = 'Test Trip'): Promise<{ id: string; token: string }> {
+async function createItinerary(title: string = 'Test Trip', password?: string): Promise<{ id: string; token: string }> {
   const request = new Request('http://localhost/api/v1/itineraries', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title, password }),
   });
   const response = await app.fetch(request, env);
   const { data } = await response.json() as any;
@@ -213,7 +213,7 @@ describe('Steps API', () => {
     });
 
     it('returns 401 if not authenticated', async () => {
-      const { id } = await createItinerary();
+      const { id } = await createItinerary('Test Trip', 'password123');
 
       const request = new Request('http://localhost/api/v1/steps', {
         method: 'POST',
@@ -227,12 +227,12 @@ describe('Steps API', () => {
       });
 
       const response = await app.fetch(request, env);
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(403);
     });
 
     it('returns 403 if trying to add step to another itinerary', async () => {
-      const { id: id1 } = await createItinerary('Trip 1');
-      const { token: token2 } = await createItinerary('Trip 2');
+      const { id: id1 } = await createItinerary('Trip 1', 'password1');
+      const { token: token2 } = await createItinerary('Trip 2', 'password2');
 
       const request = new Request('http://localhost/api/v1/steps', {
         method: 'POST',
@@ -255,7 +255,7 @@ describe('Steps API', () => {
 
   describe('GET /api/v1/steps/:stepId', () => {
     it('returns step by id', async () => {
-      const { id, token } = await createItinerary();
+      const { id, token } = await createItinerary('Test Trip', 'password123');
 
       const createRequest = new Request('http://localhost/api/v1/steps', {
         method: 'POST',
@@ -292,7 +292,7 @@ describe('Steps API', () => {
 
   describe('PUT /api/v1/steps/:stepId', () => {
     it('updates step fields', async () => {
-      const { id, token } = await createItinerary();
+      const { id, token } = await createItinerary('Test Trip', 'password123');
 
       const createRequest = new Request('http://localhost/api/v1/steps', {
         method: 'POST',
@@ -330,7 +330,7 @@ describe('Steps API', () => {
     });
 
     it('returns 401 if not authenticated', async () => {
-      const { id, token } = await createItinerary();
+      const { id, token } = await createItinerary('Test Trip', 'password123');
 
       const createRequest = new Request('http://localhost/api/v1/steps', {
         method: 'POST',
@@ -355,7 +355,7 @@ describe('Steps API', () => {
       });
       const response = await app.fetch(updateRequest, env);
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(403);
     });
   });
 
@@ -393,7 +393,7 @@ describe('Steps API', () => {
     });
 
     it('returns 401 if not authenticated', async () => {
-      const { id, token } = await createItinerary();
+      const { id, token } = await createItinerary('Test Trip', 'password123');
 
       const createRequest = new Request('http://localhost/api/v1/steps', {
         method: 'POST',
@@ -416,7 +416,7 @@ describe('Steps API', () => {
       });
       const response = await app.fetch(deleteRequest, env);
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(403);
     });
   });
 });

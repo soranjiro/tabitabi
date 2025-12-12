@@ -2,7 +2,6 @@
   import { onMount, onDestroy } from "svelte";
   import type { Step } from "@tabitabi/types";
   import { browser } from "$app/environment";
-  import { env } from "$env/dynamic/public";
 
   type MapStyle = "day" | "night" | "satellite" | "pixel";
 
@@ -33,8 +32,7 @@
   let routeAnimationFrame: number | null = null;
   let isPixelMode = $state(false);
 
-  const accessToken =
-    env.PUBLIC_MAPBOX_ACCESS_TOKEN || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+  const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
   const MAP_STYLES: Record<MapStyle, string> = {
     day: "mapbox://styles/mapbox/light-v11",

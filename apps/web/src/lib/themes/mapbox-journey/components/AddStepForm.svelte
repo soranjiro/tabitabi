@@ -1,6 +1,5 @@
 <script lang="ts">
   import { browser } from "$app/environment";
-  import { env } from "$env/dynamic/public";
 
   interface SearchResult {
     id: string;
@@ -38,8 +37,7 @@
   let searchError = $state("");
   let lastQuery = "";
 
-  const accessToken =
-    env.PUBLIC_MAPBOX_ACCESS_TOKEN || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+  const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
   $effect(() => {
     newStep.time = `${newStepHour}:${newStepMinute}`;

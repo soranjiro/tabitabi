@@ -2,7 +2,6 @@
   import type { ItineraryResponse, Step } from "@tabitabi/types";
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
-  import { env } from "$env/dynamic/public";
   import StepList from "./StepList.svelte";
   import AddStepForm from "./components/AddStepForm.svelte";
   import { getAvailableThemes } from "$lib/themes";
@@ -77,8 +76,7 @@
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
 
-  const accessToken =
-    env.PUBLIC_MAPBOX_ACCESS_TOKEN || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+  const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
   const DATE_COLORS = [
     "#8B5CF6",

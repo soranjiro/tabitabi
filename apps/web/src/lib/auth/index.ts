@@ -27,16 +27,19 @@ export const auth = {
   setToken(shioriId: string, title: string, token: string): void {
     if (isDemoShiori(shioriId)) return;
 
-    // Only persist token for password-protected itineraries
-    if (!this.isPasswordProtected(shioriId)) return;
-
     const history = this.getHistory();
     const index = history.findIndex(h => h.shioriId === shioriId);
+
+    const existingProtected = index >= 0 ? history[index].is_password_protected : this.isPasswordProtected(shioriId);
+
+    if (!existingProtected) return;
+
     const record: ShioriHistory = {
       shioriId,
       title,
       token,
       accessedAt: Date.now(),
+      is_password_protected: existingProtected,
     };
 
     if (index >= 0) {
@@ -76,6 +79,7 @@ export const auth = {
         title,
         token: null,
         accessedAt: now,
+        is_password_protected: this.isPasswordProtected(shioriId),
       });
     }
 

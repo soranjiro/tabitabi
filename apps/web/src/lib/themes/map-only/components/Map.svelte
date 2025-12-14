@@ -25,9 +25,23 @@
   let markers: google.maps.Marker[] = [];
   let routeRenderers: google.maps.DirectionsRenderer[] = [];
   let errorMsg = $state("");
+  let googleApiKey = $state<string | undefined>(resolveApiKey());
   let MarkerClass: typeof google.maps.Marker | null = null;
   let directionsService: google.maps.DirectionsService | null = null;
   let apiInitialized = false;
+
+  async function fetchApiKeyFromServer(): Promise<string | undefined> {
+    try {
+      const res = await fetch("/api/google-maps/token");
+      if (res.ok) {
+        const data = await res.json();
+        return data.apiKey;
+      }
+    } catch (e) {
+      console.error("Failed to fetch Google Maps API key from server", e);
+    }
+    return undefined;
+  }
 
   export function openStreetViewAt(lat: number, lng: number) {
     if (!map) return;
@@ -119,8 +133,6 @@
     return undefined;
   }
 
-  const apiKey = resolveApiKey();
-
   function getDateColor(date: string, uniqueDates: string[]): string {
     const index = uniqueDates.indexOf(date);
     return DATE_COLORS[index % DATE_COLORS.length];
@@ -138,22 +150,19 @@
   }
 
   onMount(async () => {
-    if (!apiKey) {
-      errorMsg =
-        "API Key is missing. Please set PUBLIC_GOOGLE_MAPS_API_KEY in .env file.";
+    if (!googleApiKey) {
+      googleApiKey = await fetchApiKeyFromServer();
+    }
+
+    if (!googleApiKey) {
+      errorMsg = "Google Maps API Key is missing.";
       console.error(errorMsg);
       return;
     }
 
-    const keyStatus =
-      apiKey.length > 10
-        ? `(Key starts with ${apiKey.substring(0, 4)}...)`
-        : "(Key is too short)";
-    console.log(`Attempting to load Google Maps with key: ${keyStatus}`);
-
     try {
       if (!apiInitialized) {
-        setOptions({ key: apiKey, v: "weekly" });
+        setOptions({ key: googleApiKey, v: "weekly" });
         apiInitialized = true;
       }
 
@@ -191,11 +200,8 @@
       await updateMap(map, MarkerClass);
     } catch (e: unknown) {
       console.error("Failed to load Google Maps", e);
-      const keyHint = apiKey
-        ? `Key present (${apiKey.substring(0, 4)}...)`
-        : "No Key";
       const message = e instanceof Error ? e.message : String(e);
-      errorMsg = `Failed to load Google Maps API. ${message} [${keyHint}]`;
+      errorMsg = `Failed to load Google Maps API. ${message}`;
     }
   });
 

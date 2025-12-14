@@ -37,10 +37,6 @@
   let searchError = $state("");
   let lastQuery = "";
 
-  const accessToken =
-    (import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN as string | undefined) ||
-    (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined);
-
   $effect(() => {
     newStep.time = `${newStepHour}:${newStepMinute}`;
   });
@@ -51,7 +47,7 @@
 
   $effect(() => {
     const query = searchQuery.trim();
-    if (!browser || !accessToken) return;
+    if (!browser) return;
     if (!query) {
       suggestions = [];
       searchError = "";
@@ -67,7 +63,7 @@
       lastQuery = query;
       try {
         const res = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${accessToken}&limit=5&language=ja`,
+          `/api/mapbox/geocode?query=${encodeURIComponent(query)}&limit=5`,
           { signal: controller.signal },
         );
 
@@ -192,35 +188,28 @@
     />
     <span class="form-hint">Mapboxで検索して位置を合わせられます</span>
 
-    {#if accessToken}
-      {#if isSearching}
-        <div class="search-status">検索中...</div>
-      {:else if searchError}
-        <div class="search-status error">{searchError}</div>
-      {:else if suggestions.length > 0}
-        <div class="suggestions">
-          {#each suggestions as item}
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <div
-              class="suggestion"
-              onclick={() => handleSuggestionSelect(item)}
-            >
-              <div class="suggestion-title">{item.title}</div>
-              <div class="suggestion-context">{item.context}</div>
-            </div>
-          {/each}
-          <button
-            type="button"
-            class="clear-suggestions"
-            onclick={clearSuggestions}
-          >
-            候補を閉じる
-          </button>
-        </div>
-      {/if}
-    {:else}
-      <div class="search-status error">Mapboxトークンが未設定です</div>
+    {#if isSearching}
+      <div class="search-status">検索中...</div>
+    {:else if searchError}
+      <div class="search-status error">{searchError}</div>
+    {:else if suggestions.length > 0}
+      <div class="suggestions">
+        {#each suggestions as item}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <div class="suggestion" onclick={() => handleSuggestionSelect(item)}>
+            <div class="suggestion-title">{item.title}</div>
+            <div class="suggestion-context">{item.context}</div>
+          </div>
+        {/each}
+        <button
+          type="button"
+          class="clear-suggestions"
+          onclick={clearSuggestions}
+        >
+          候補を閉じる
+        </button>
+      </div>
     {/if}
   </div>
 

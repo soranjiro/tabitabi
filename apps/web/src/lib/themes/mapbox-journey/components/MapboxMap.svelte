@@ -58,7 +58,20 @@
     return undefined;
   }
 
-  const accessToken = resolveAccessToken();
+  let mapboxAccessToken = $state<string | undefined>(resolveAccessToken());
+
+  async function fetchTokenFromServer(): Promise<string | undefined> {
+    try {
+      const res = await fetch("/api/mapbox/token");
+      if (res.ok) {
+        const data = await res.json();
+        return data.token;
+      }
+    } catch (e) {
+      console.error("Failed to fetch Mapbox token from server", e);
+    }
+    return undefined;
+  }
 
   const MAP_STYLES: Record<MapStyle, string> = {
     day: "mapbox://styles/mapbox/light-v11",
@@ -107,7 +120,7 @@
 
     try {
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=${accessToken}&limit=1`,
+        `/api/mapbox/geocode?query=${encodeURIComponent(location)}&limit=1`,
       );
       const data = await response.json();
 
@@ -154,18 +167,22 @@
   }
 
   async function initMap() {
-    if (!browser || !accessToken) {
-      errorMsg =
-        "Mapbox Access Token is missing. Provide PUBLIC_MAPBOX_ACCESS_TOKEN or VITE_MAPBOX_ACCESS_TOKEN via env.";
+    if (!browser) return;
+
+    if (!mapboxAccessToken) {
+      mapboxAccessToken = await fetchTokenFromServer();
+    }
+
+    if (!mapboxAccessToken) {
+      errorMsg = "Mapbox Access Token is missing.";
       return;
     }
 
     try {
-      // @ts-expect-error mapbox-gl is provided at runtime
       mapboxgl = (await import("mapbox-gl")).default;
       await import("mapbox-gl/dist/mapbox-gl.css");
 
-      mapboxgl.accessToken = accessToken;
+      mapboxgl.accessToken = mapboxAccessToken;
 
       map = new mapboxgl.Map({
         container: mapContainer,

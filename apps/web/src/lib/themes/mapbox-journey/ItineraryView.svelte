@@ -78,10 +78,6 @@
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
 
-  const accessToken =
-    (import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN as string | undefined) ||
-    (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined);
-
   const DATE_COLORS = [
     "#8B5CF6",
     "#EC4899",
@@ -373,14 +369,14 @@
   }
 
   async function reverseGeocode(lat: number, lng: number) {
-    if (!browser || !accessToken) return null;
+    if (!browser) return null;
     const key = `mapbox-rev:${lat.toFixed(4)},${lng.toFixed(4)}`;
     const cached = sessionStorage.getItem(key);
     if (cached) return cached;
 
     try {
       const res = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${accessToken}&limit=1&language=ja`,
+        `/api/mapbox/geocode?lng=${lng}&lat=${lat}&limit=1`,
       );
       if (!res.ok) return null;
       const data = await res.json();

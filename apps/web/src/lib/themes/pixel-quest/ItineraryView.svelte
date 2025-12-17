@@ -12,7 +12,7 @@
     groupStepsByDate,
     calculateZones,
     formatDate,
-    findCurrentSpotIndex,
+    splitStepsByPlan,
   } from "./utils/layout";
   import "./styles/index.css";
 
@@ -58,10 +58,17 @@
     onDeleteStep,
   }: Props = $props();
 
+  const planSplit = $derived(splitStepsByPlan(steps));
+  const planASteps = $derived(planSplit.planA);
+  const planBSteps = $derived(planSplit.planB);
+
   let isEditingTitle = $state(false);
   let isEditMode = $state(false);
   let editedTitle = $state(itinerary.title);
   let selectedStep = $state<Step | null>(null);
+  let editingPlanBJson = $state<string | null>(null);
+  let planBEntries = $state<PlanBEntry[]>([]);
+  let newPlanBEntries = $state<PlanBEntry[]>([]);
   let hasEditPermission = $state(false);
   let showPasswordDialog = $state(false);
   let password = $state("");
@@ -101,6 +108,14 @@
   let editingStepId = $state<string | null>(null);
 
   let selectedThemeId = $state(itinerary.theme_id || "pixel-quest");
+
+  interface PlanBEntry {
+    title: string;
+    date: string;
+    time: string;
+    location?: string;
+    notes?: string;
+  }
 
   interface GameData {
     coins: number;
@@ -183,6 +198,151 @@
   let gameData = $state<GameData>(parseGameData(itinerary.memo));
   let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
+  const PLAN_B_PREFIX = "PLANB::";
+  const PLAN_B_LIMIT = 20000;
+
+  function createPlanBEntry(baseDate: string, baseTime: string): PlanBEntry {
+    return {
+      title: "",
+      date: baseDate,
+      time: baseTime,
+      location: "",
+      notes: "",
+    };
+  }
+
+  function parsePlanBEntries(
+    raw: string | null,
+    fallbackDate: string,
+    fallbackTime: string,
+  ): PlanBEntry[] {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter((entry) => entry && typeof entry === "object")
+        .map((entry) => {
+          const obj = entry as Record<string, unknown>;
+          return {
+            title: typeof obj.title === "string" ? obj.title : "",
+            date: typeof obj.date === "string" ? obj.date : fallbackDate,
+            time: typeof obj.time === "string" ? obj.time : fallbackTime,
+            location:
+              typeof obj.location === "string" ? obj.location : undefined,
+            notes: typeof obj.notes === "string" ? obj.notes : undefined,
+          } satisfies PlanBEntry;
+        });
+    } catch {
+      return [];
+    }
+  }
+
+  function normalizePlanBEntries(entries: PlanBEntry[]): PlanBEntry[] {
+    return entries
+      .map((entry) => ({
+        title: entry.title?.trim() ?? "",
+        date: entry.date,
+        time: entry.time,
+        location: entry.location?.trim() || undefined,
+        notes: entry.notes?.trim() || undefined,
+      }))
+      .filter((entry) => entry.title && entry.date && entry.time);
+  }
+
+  function buildPlanBPayload(entries: PlanBEntry[]): {
+    payload: string | null;
+    error?: string;
+  } {
+    const normalized = normalizePlanBEntries(entries);
+    if (normalized.length === 0) return { payload: null };
+
+    const payload = JSON.stringify(normalized);
+    if (payload.length > PLAN_B_LIMIT) {
+      return {
+        payload: null,
+        error: `Plan B is too large (max ${PLAN_B_LIMIT} characters). Please shorten notes or entries.`,
+      };
+    }
+
+    return { payload };
+  }
+
+  function addPlanBEntry(
+    target: "edit" | "new",
+    baseDate: string,
+    baseTime: string,
+  ) {
+    const entry = createPlanBEntry(baseDate, baseTime);
+    if (target === "edit") {
+      planBEntries = [...planBEntries, entry];
+    } else {
+      newPlanBEntries = [...newPlanBEntries, entry];
+    }
+  }
+
+  function updatePlanBEntry(
+    target: "edit" | "new",
+    index: number,
+    patch: Partial<PlanBEntry>,
+  ) {
+    const list = target === "edit" ? planBEntries : newPlanBEntries;
+    const next = list.map((entry, i) =>
+      i === index ? { ...entry, ...patch } : entry,
+    );
+    if (target === "edit") {
+      planBEntries = next;
+    } else {
+      newPlanBEntries = next;
+    }
+  }
+
+  function removePlanBEntry(target: "edit" | "new", index: number) {
+    const list = target === "edit" ? planBEntries : newPlanBEntries;
+    const next = list.filter((_, i) => i !== index);
+    if (target === "edit") {
+      planBEntries = next;
+    } else {
+      newPlanBEntries = next;
+    }
+  }
+
+  function splitNotesAndPlanB(notes: string | null | undefined): {
+    visibleNotes: string;
+    planBJson: string | null;
+  } {
+    if (!notes) return { visibleNotes: "", planBJson: null };
+    const markerIndex = notes.indexOf(PLAN_B_PREFIX);
+    if (markerIndex === -1) return { visibleNotes: notes, planBJson: null };
+    const visibleNotes = notes.slice(0, markerIndex).trimEnd();
+    const planBJson = notes.slice(markerIndex + PLAN_B_PREFIX.length).trim();
+    return { visibleNotes, planBJson: planBJson.length ? planBJson : null };
+  }
+
+  function mergeNotesWithPlanB(
+    visibleNotes: string | null | undefined,
+    planBJson: string | null,
+  ): string | undefined {
+    const base = (visibleNotes ?? "").trim();
+    if (!planBJson) return base.length ? base : undefined;
+    return base.length
+      ? `${base}\n${PLAN_B_PREFIX}${planBJson}`
+      : `${PLAN_B_PREFIX}${planBJson}`;
+  }
+
+  function isPlanBStep(step: Step): boolean {
+    return (step as Step & { planType?: unknown }).planType === "B";
+  }
+
+  const selectedStepDisplay = $derived(() => {
+    if (!selectedStep) return null;
+    const { visibleNotes } = splitNotesAndPlanB(selectedStep.notes);
+    return {
+      ...selectedStep,
+      notes: visibleNotes.length ? visibleNotes : null,
+    };
+  });
+
   async function handleGameDataChange(newData: GameData) {
     const sanitized = sanitizeGameData(newData);
     gameData = sanitized;
@@ -210,19 +370,19 @@
     }, 500);
   }
 
-  const groups = $derived(groupStepsByDate(steps));
+  const groups = $derived(groupStepsByDate(planASteps));
   const zones = $derived(calculateZones(groups));
 
   const completedQuests = $derived(() => {
     const now = new Date();
     const today = now.toISOString().split("T")[0];
     const currentTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    return steps.filter(
+    return planASteps.filter(
       (s) => s.date < today || (s.date === today && s.time <= currentTimeStr),
     ).length;
   });
 
-  const totalQuests = $derived(steps.length);
+  const totalQuests = $derived(planASteps.length);
   const progressPercent = $derived(
     totalQuests > 0 ? Math.round((completedQuests() / totalQuests) * 100) : 0,
   );
@@ -293,7 +453,8 @@
   });
 
   function handleSelectStep(step: Step) {
-    selectedStep = step;
+    const raw = steps.find((s) => s.id === step.id);
+    selectedStep = raw ?? step;
   }
 
   function closeDetailPanel() {
@@ -319,12 +480,14 @@
     };
     newStepHour = "09";
     newStepMinute = "00";
+    newPlanBEntries = [];
     showAddForm = true;
   }
 
   function closeAddForm() {
     showAddForm = false;
     newStep = { title: "", date: "", time: "", location: "", notes: "" };
+    newPlanBEntries = [];
   }
 
   async function handleAddStep() {
@@ -333,13 +496,20 @@
       return;
     }
     const time = `${newStepHour}:${newStepMinute}`;
+    const { payload: planBPayload, error: planBError } =
+      buildPlanBPayload(newPlanBEntries);
+    if (planBError) {
+      alert(planBError);
+      return;
+    }
     if (onCreateStep) {
+      const mergedNotes = mergeNotesWithPlanB(newStep.notes, planBPayload);
       await onCreateStep({
         title: newStep.title.trim(),
         date: newStep.date,
         time,
         location: newStep.location?.trim() || undefined,
-        notes: newStep.notes?.trim() || undefined,
+        notes: mergedNotes,
       });
     }
     closeAddForm();
@@ -348,13 +518,21 @@
 
   function openEditForm() {
     if (!selectedStep) return;
+    if (isPlanBStep(selectedStep)) return;
     editingStepId = selectedStep.id;
+    const { visibleNotes, planBJson } = splitNotesAndPlanB(selectedStep.notes);
+    editingPlanBJson = planBJson;
+    planBEntries = parsePlanBEntries(
+      planBJson,
+      selectedStep.date,
+      selectedStep.time,
+    );
     editStep = {
       title: selectedStep.title,
       date: selectedStep.date,
       time: selectedStep.time,
       location: selectedStep.location || "",
-      notes: selectedStep.notes || "",
+      notes: visibleNotes,
     };
     const [hour, minute] = selectedStep.time.split(":");
     editStepHour = hour;
@@ -365,6 +543,8 @@
   function closeEditForm() {
     showEditForm = false;
     editingStepId = null;
+    editingPlanBJson = null;
+    planBEntries = [];
     editStep = { title: "", date: "", time: "", location: "", notes: "" };
   }
 
@@ -374,13 +554,21 @@
       return;
     }
     const time = `${editStepHour}:${editStepMinute}`;
+    const { payload: planBPayload, error: planBError } =
+      buildPlanBPayload(planBEntries);
+    if (planBError) {
+      alert(planBError);
+      return;
+    }
+    editingPlanBJson = planBPayload;
     if (onUpdateStep) {
+      const mergedNotes = mergeNotesWithPlanB(editStep.notes, planBPayload);
       await onUpdateStep(editingStepId, {
         title: editStep.title.trim(),
         date: editStep.date,
         time,
         location: editStep.location?.trim() || undefined,
-        notes: editStep.notes?.trim() || undefined,
+        notes: mergedNotes,
       });
     }
     closeEditForm();
@@ -389,6 +577,7 @@
 
   async function handleDeleteStep() {
     if (!selectedStep) return;
+    if (isPlanBStep(selectedStep)) return;
     if (!confirm("Delete this quest?")) return;
     if (onDeleteStep) {
       await onDeleteStep(selectedStep.id);
@@ -660,7 +849,7 @@
   </div>
 
   <main class="pq-main">
-    {#if steps.length === 0}
+    {#if planASteps.length === 0}
       <div class="pq-empty-state">
         <div class="pq-empty-icon">
           <div class="pq-icon pq-icon-flag" style="transform: scale(3);"></div>
@@ -675,7 +864,8 @@
       </div>
     {:else}
       <ContinuousMap
-        {steps}
+        steps={planASteps}
+        {planBSteps}
         selectedStepId={selectedStep?.id}
         onSelectStep={handleSelectStep}
         {mapHeight}
@@ -701,8 +891,10 @@
           aria-label="Close">×</button
         >
         <DetailPanel
-          step={selectedStep}
-          hasEditPermission={hasEditPermission && isEditMode}
+          step={selectedStepDisplay() ?? selectedStep}
+          hasEditPermission={hasEditPermission &&
+            isEditMode &&
+            !isPlanBStep(selectedStep)}
           onEdit={openEditForm}
           onDelete={handleDeleteStep}
         />
@@ -782,6 +974,115 @@
         ></textarea>
       </div>
 
+      <div class="pq-planb-section">
+        <div class="pq-planb-header">
+          <span class="pq-form-label">PLAN B (OPTIONAL)</span>
+          <span class="pq-planb-hint"
+            >Store backup quests inside this step.</span
+          >
+        </div>
+
+        {#if newPlanBEntries.length === 0}
+          <p class="pq-planb-empty">No Plan B quests yet.</p>
+        {/if}
+
+        {#each newPlanBEntries as entry, index}
+          <div class="pq-planb-card">
+            <div class="pq-form-group">
+              <span class="pq-form-label">BACKUP QUEST NAME *</span>
+              <input
+                type="text"
+                class="pq-form-input"
+                value={entry.title}
+                oninput={(e) =>
+                  updatePlanBEntry("new", index, {
+                    title: (e.target as HTMLInputElement).value,
+                  })}
+                placeholder="e.g. Rainy day plan"
+              />
+            </div>
+
+            <div class="pq-planb-grid">
+              <div class="pq-form-group">
+                <span class="pq-form-label">DATE *</span>
+                <input
+                  type="date"
+                  class="pq-form-input"
+                  value={entry.date}
+                  oninput={(e) =>
+                    updatePlanBEntry("new", index, {
+                      date: (e.target as HTMLInputElement).value,
+                    })}
+                />
+              </div>
+              <div class="pq-form-group">
+                <span class="pq-form-label">TIME *</span>
+                <input
+                  type="time"
+                  class="pq-form-input"
+                  value={entry.time}
+                  oninput={(e) =>
+                    updatePlanBEntry("new", index, {
+                      time: (e.target as HTMLInputElement).value,
+                    })}
+                />
+              </div>
+            </div>
+
+            <div class="pq-form-group">
+              <span class="pq-form-label">LOCATION</span>
+              <input
+                type="text"
+                class="pq-form-input"
+                value={entry.location ?? ""}
+                oninput={(e) =>
+                  updatePlanBEntry("new", index, {
+                    location: (e.target as HTMLInputElement).value,
+                  })}
+                placeholder="Optional spot"
+              />
+            </div>
+
+            <div class="pq-form-group">
+              <span class="pq-form-label">NOTES</span>
+              <textarea
+                class="pq-form-textarea"
+                rows="2"
+                value={entry.notes ?? ""}
+                oninput={(e) =>
+                  updatePlanBEntry("new", index, {
+                    notes: (e.target as HTMLTextAreaElement).value,
+                  })}
+                placeholder="Backup details"
+              ></textarea>
+            </div>
+
+            <div class="pq-planb-actions">
+              <button
+                class="pq-btn pq-btn-ghost"
+                type="button"
+                onclick={() => removePlanBEntry("new", index)}
+              >
+                REMOVE
+              </button>
+            </div>
+          </div>
+        {/each}
+
+        <button
+          class="pq-btn pq-btn-primary pq-btn-ghost"
+          type="button"
+          onclick={() =>
+            addPlanBEntry(
+              "new",
+              newStep.date || new Date().toISOString().split("T")[0],
+              `${newStepHour}:${newStepMinute}`,
+            )}
+        >
+          + ADD PLAN B QUEST
+        </button>
+      </div>
+
       <div class="pq-form-actions">
         <button class="pq-btn" onclick={closeAddForm}>CANCEL</button>
         <button class="pq-btn pq-btn-primary" onclick={handleAddStep}
@@ -844,6 +1145,112 @@
         <span class="pq-form-label">NOTES</span>
         <textarea class="pq-form-textarea" bind:value={editStep.notes} rows="3"
         ></textarea>
+      </div>
+
+      <div class="pq-planb-section">
+        <div class="pq-planb-header">
+          <span class="pq-form-label">PLAN B (OPTIONAL)</span>
+          <span class="pq-planb-hint"
+            >Add backup quests branching from this step.</span
+          >
+        </div>
+
+        {#if planBEntries.length === 0}
+          <p class="pq-planb-empty">No Plan B quests yet.</p>
+        {/if}
+
+        {#each planBEntries as entry, index}
+          <div class="pq-planb-card">
+            <div class="pq-form-group">
+              <span class="pq-form-label">BACKUP QUEST NAME *</span>
+              <input
+                type="text"
+                class="pq-form-input"
+                value={entry.title}
+                oninput={(e) =>
+                  updatePlanBEntry("edit", index, {
+                    title: (e.target as HTMLInputElement).value,
+                  })}
+              />
+            </div>
+
+            <div class="pq-planb-grid">
+              <div class="pq-form-group">
+                <span class="pq-form-label">DATE *</span>
+                <input
+                  type="date"
+                  class="pq-form-input"
+                  value={entry.date}
+                  oninput={(e) =>
+                    updatePlanBEntry("edit", index, {
+                      date: (e.target as HTMLInputElement).value,
+                    })}
+                />
+              </div>
+              <div class="pq-form-group">
+                <span class="pq-form-label">TIME *</span>
+                <input
+                  type="time"
+                  class="pq-form-input"
+                  value={entry.time}
+                  oninput={(e) =>
+                    updatePlanBEntry("edit", index, {
+                      time: (e.target as HTMLInputElement).value,
+                    })}
+                />
+              </div>
+            </div>
+
+            <div class="pq-form-group">
+              <span class="pq-form-label">LOCATION</span>
+              <input
+                type="text"
+                class="pq-form-input"
+                value={entry.location ?? ""}
+                oninput={(e) =>
+                  updatePlanBEntry("edit", index, {
+                    location: (e.target as HTMLInputElement).value,
+                  })}
+              />
+            </div>
+
+            <div class="pq-form-group">
+              <span class="pq-form-label">NOTES</span>
+              <textarea
+                class="pq-form-textarea"
+                rows="2"
+                value={entry.notes ?? ""}
+                oninput={(e) =>
+                  updatePlanBEntry("edit", index, {
+                    notes: (e.target as HTMLTextAreaElement).value,
+                  })}
+              ></textarea>
+            </div>
+
+            <div class="pq-planb-actions">
+              <button
+                class="pq-btn pq-btn-ghost"
+                type="button"
+                onclick={() => removePlanBEntry("edit", index)}
+              >
+                REMOVE
+              </button>
+            </div>
+          </div>
+        {/each}
+
+        <button
+          class="pq-btn pq-btn-primary pq-btn-ghost"
+          type="button"
+          onclick={() =>
+            addPlanBEntry(
+              "edit",
+              editStep.date || new Date().toISOString().split("T")[0],
+              `${editStepHour}:${editStepMinute}`,
+            )}
+        >
+          + ADD PLAN B QUEST
+        </button>
       </div>
 
       <div class="pq-form-actions">
@@ -1561,6 +1968,76 @@
     font-size: 0.75rem;
     margin: 12px 0 8px 0;
     text-shadow: 1px 1px 0 #000;
+  }
+
+  .pq-planb-section {
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.15);
+    border: 2px solid var(--pq-border-inner);
+    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.2);
+  }
+
+  .pq-planb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .pq-planb-hint {
+    font-family: var(--pq-font-pixel);
+    font-size: 0.625rem;
+    color: var(--pq-text-secondary);
+  }
+
+  .pq-planb-empty {
+    margin: 4px 0 8px;
+    font-family: var(--pq-font-pixel);
+    font-size: 0.75rem;
+    color: var(--pq-text-secondary);
+  }
+
+  .pq-planb-card {
+    border: 2px dashed var(--pq-border-inner);
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.1);
+    margin-bottom: 8px;
+  }
+
+  .pq-planb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+  }
+
+  .pq-planb-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 6px;
+    gap: 6px;
+  }
+
+  .pq-btn-ghost {
+    background: transparent;
+    color: var(--pq-text-primary);
+    border: 2px solid var(--pq-border-inner);
+    padding: 6px 10px;
+    font-family: var(--pq-font-pixel);
+    cursor: pointer;
+    box-shadow: 2px 2px 0 var(--pq-border-outer);
+    transition: transform 0.05s steps(1);
+  }
+
+  .pq-btn-ghost:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 var(--pq-border-outer);
+  }
+
+  .pq-btn-ghost:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 var(--pq-border-outer);
   }
 
   @media (min-width: 768px) {

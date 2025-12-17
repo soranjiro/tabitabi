@@ -77,7 +77,8 @@ export const demoStorage = {
    */
   getSteps(): Step[] {
     const data = this.getData();
-    return data?.steps ?? [];
+    if (!data?.steps) return [];
+    return data.steps.map((step) => ({ ...step }));
   },
 
   /**

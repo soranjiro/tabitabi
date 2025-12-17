@@ -11,6 +11,7 @@
     findCurrentSpotIndex,
     getPlayerPosition,
     generateDecorations,
+    buildPlanBLinks,
     type SpotPosition,
     type DayZone,
     type PixelDecoration,
@@ -27,6 +28,7 @@
 
   interface Props {
     steps: Step[];
+    planBSteps?: Step[];
     selectedStepId?: string | null;
     onSelectStep?: (step: Step) => void;
     mapHeight?: number;
@@ -36,6 +38,7 @@
 
   let {
     steps,
+    planBSteps = [],
     selectedStepId = null,
     onSelectStep,
     mapHeight = 280,
@@ -106,19 +109,56 @@
     totalExp = Math.min(totalExp + amount, GAME_LIMITS.maxExp);
   }
 
-  const groups = $derived(groupStepsByDate(steps));
+  const primarySteps = $derived(steps);
+  const alternateSteps = $derived(planBSteps ?? []);
+  const combinedSteps = $derived([...primarySteps, ...alternateSteps]);
+  const groups = $derived(groupStepsByDate(combinedSteps));
   const zones = $derived(calculateZones(groups));
-  const positions = $derived(
-    calculateSpotPositions(groups, zones, actualMapHeight),
+  const primaryGroups = $derived(groupStepsByDate(primarySteps));
+  const alternateGroups = $derived(groupStepsByDate(alternateSteps));
+  const primaryPositions = $derived(
+    calculateSpotPositions(primaryGroups, zones, actualMapHeight, 0),
+  );
+  const alternatePositions = $derived(
+    calculateSpotPositions(alternateGroups, zones, actualMapHeight, 1),
+  );
+  const planBLinks = $derived(
+    buildPlanBLinks(primaryPositions, alternatePositions),
   );
   const totalWidth = $derived(calculateTotalMapWidth(zones));
   const effectiveWidth = $derived(Math.max(totalWidth, viewportWidth));
-  const pathD = $derived(generatePath(positions));
-  const currentIndex = $derived(findCurrentSpotIndex(positions));
-  const basePlayerPos = $derived(getPlayerPosition(positions, currentIndex));
+  const pathPrimary = $derived(generatePath(primaryPositions));
+  const pathAlternate = $derived(generatePath(alternatePositions));
+  const branchPaths = $derived(
+    planBLinks.map(({ from, to }) => {
+      const elbowY = Math.max(
+        24,
+        Math.min(actualMapHeight - 24, (from.y + to.y) / 2),
+      );
+      const fx = Math.round(from.x);
+      const fy = Math.round(from.y);
+      const tx = Math.round(to.x);
+      const ty = Math.round(to.y);
+      const ey = Math.round(elbowY);
+      return `M ${fx} ${fy} L ${fx} ${ey} L ${tx} ${ey} L ${tx} ${ty}`;
+    }),
+  );
+  const currentIndex = $derived(findCurrentSpotIndex(primaryPositions));
+  const basePlayerPos = $derived(
+    getPlayerPosition(primaryPositions, currentIndex),
+  );
   const allDecorations = $derived(
     zones.flatMap((zone, i) => generateDecorations(zone, i, actualMapHeight)),
   );
+
+  function isStepDone(step: Step): boolean {
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+    const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    return (
+      step.date < today || (step.date === today && step.time <= currentTime)
+    );
+  }
 
   function saveGameData() {
     if (onGameDataChange) {
@@ -287,14 +327,14 @@
     scrollContainer.scrollTo({ left: scrollTo, behavior: "smooth" });
   }
 
-  function scrollToDate(zone: DayZone) {
+  export function scrollToDate(zone: DayZone) {
     if (!scrollContainer) return;
     scrollContainer.scrollTo({ left: zone.startX - 40, behavior: "smooth" });
   }
 
-  function scrollToNow() {
-    if (currentIndex >= 0 && positions[currentIndex]) {
-      scrollToSpot(positions[currentIndex]);
+  export function scrollToNow() {
+    if (currentIndex >= 0 && primaryPositions[currentIndex]) {
+      scrollToSpot(primaryPositions[currentIndex]);
     }
   }
 
@@ -532,8 +572,6 @@
       handleScroll();
     }
   });
-
-  export { scrollToDate, scrollToNow };
 </script>
 
 <div class="map-container">
@@ -551,9 +589,16 @@
           style="left: {zone.startX}px; width: {zone.width}px; background: {terrain.bg};"
         ></div>
       {/each}
-      {#each positions as pos}
+      {#each primaryPositions as pos}
         <div
           class="minimap-dot"
+          class:current={pos.step.id === selectedStepId}
+          style="left: {pos.x}px;"
+        ></div>
+      {/each}
+      {#each alternatePositions as pos}
+        <div
+          class="minimap-dot plan-b"
           class:current={pos.step.id === selectedStepId}
           style="left: {pos.x}px;"
         ></div>
@@ -878,27 +923,65 @@
           {/if}
         {/each}
 
-        {#if pathD}
-          <path d={pathD} fill="none" stroke="#5a4a3a" stroke-width="12" />
-          <path d={pathD} fill="none" stroke="#8b7355" stroke-width="8" />
+        {#if pathPrimary}
           <path
-            d={pathD}
+            d={pathPrimary}
+            fill="none"
+            stroke="#5a4a3a"
+            stroke-width="12"
+          />
+          <path d={pathPrimary} fill="none" stroke="#8b7355" stroke-width="8" />
+          <path
+            d={pathPrimary}
             fill="none"
             stroke="#c4a86c"
             stroke-width="4"
             stroke-dasharray="8 8"
           />
         {/if}
+
+        {#if branchPaths.length}
+          {#each branchPaths as path}
+            <path
+              d={path}
+              fill="none"
+              stroke="#2a1a8c"
+              stroke-width="12"
+            />
+            <path d={path} fill="none" stroke="#4a5fa8" stroke-width="8" />
+            <path
+              d={path}
+              fill="none"
+              stroke="#6da0ff"
+              stroke-width="4"
+              stroke-dasharray="8 8"
+              stroke-linecap="butt"
+            />
+          {/each}
+        {/if}
       </svg>
 
       <div class="map-spots">
-        {#each positions as pos, i}
+        {#each primaryPositions as pos, i}
           <SpotMarker
             step={pos.step}
             x={pos.x}
             y={pos.y}
+            planType="A"
             isSelected={pos.step.id === selectedStepId}
             isCompleted={i <= currentIndex}
+            onclick={() => onSelectStep?.(pos.step)}
+          />
+        {/each}
+
+        {#each alternatePositions as pos}
+          <SpotMarker
+            step={pos.step}
+            x={pos.x}
+            y={pos.y}
+            planType="B"
+            isSelected={pos.step.id === selectedStepId}
+            isCompleted={isStepDone(pos.step)}
             onclick={() => onSelectStep?.(pos.step)}
           />
         {/each}
@@ -1106,10 +1189,19 @@
     transform: translate(-50%, -50%);
   }
 
+  .minimap-dot.plan-b {
+    background: #6da0ff;
+    opacity: 0.8;
+  }
+
   .minimap-dot.current {
     background: var(--pq-ui-gold);
     width: 6px;
     height: 6px;
+  }
+
+  .minimap-dot.plan-b.current {
+    background: #ffd8a8;
   }
 
   .minimap-viewport {

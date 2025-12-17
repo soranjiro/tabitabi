@@ -7,6 +7,127 @@ export interface SpotPosition {
   zoneIndex: number;
 }
 
+export type PlanStep = Step & { planType: "A" | "B"; planSourceId?: string };
+
+const PLAN_B_PREFIX = "PLANB::";
+const PLAN_B_PAYLOAD_LIMIT = 20000;
+
+function stripPlanBPayload(notes?: string | null): string | null | undefined {
+  if (!notes) return notes;
+  const markerIndex = notes.indexOf(PLAN_B_PREFIX);
+  if (markerIndex === -1) return notes;
+  const cleaned = notes.slice(0, markerIndex).trimEnd();
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+function parsePlanBPayload(notes?: string | null): Array<Record<string, unknown>> | null {
+  if (!notes) return null;
+  const markerIndex = notes.indexOf(PLAN_B_PREFIX);
+  if (markerIndex === -1) return null;
+  const raw = notes.slice(markerIndex + PLAN_B_PREFIX.length).trim();
+  if (!raw || raw.length > PLAN_B_PAYLOAD_LIMIT) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function extractPlanBSteps(step: Step): PlanStep[] {
+  const parsed = parsePlanBPayload(step.notes);
+  if (!parsed) return [];
+
+  const baseTimestamps = {
+    created_at: step.created_at,
+    updated_at: step.updated_at,
+  };
+
+  const alternatives: PlanStep[] = [];
+
+  parsed.forEach((entry, index) => {
+    if (!entry || typeof entry !== "object") return;
+    const obj = entry as Record<string, unknown>;
+    const title = typeof obj.title === "string" ? obj.title : null;
+    const date = typeof obj.date === "string" ? obj.date : null;
+    const time = typeof obj.time === "string" ? obj.time : null;
+    if (!title || !date || !time) return;
+
+    const location =
+      typeof obj.location === "string" && obj.location.trim() !== ""
+        ? obj.location
+        : null;
+    const notes =
+      typeof obj.notes === "string" && obj.notes.trim() !== ""
+        ? obj.notes
+        : null;
+
+    alternatives.push({
+      id: `${step.id}-planb-${index}`,
+      itinerary_id: step.itinerary_id,
+      title,
+      date,
+      time,
+      location,
+      notes,
+      is_hidden: step.is_hidden,
+      created_at: baseTimestamps.created_at,
+      updated_at: baseTimestamps.updated_at,
+      planType: "B",
+      planSourceId: step.id,
+    });
+  });
+
+  return alternatives;
+}
+
+export function splitStepsByPlan(
+  steps: Step[],
+): { planA: PlanStep[]; planB: PlanStep[] } {
+  const planA: PlanStep[] = [];
+  const planB: PlanStep[] = [];
+
+  for (const step of steps) {
+    planB.push(...extractPlanBSteps(step));
+    planA.push({
+      ...step,
+      notes: stripPlanBPayload(step.notes),
+      planType: "A",
+    });
+  }
+
+  planB.sort((a, b) => {
+    if (a.date === b.date) return a.time.localeCompare(b.time);
+    return a.date.localeCompare(b.date);
+  });
+
+  return { planA, planB };
+}
+
+export function buildPlanBLinks(
+  primaryPositions: SpotPosition[],
+  planBPositions: SpotPosition[],
+): Array<{ from: SpotPosition; to: SpotPosition }> {
+  if (!primaryPositions.length || !planBPositions.length) return [];
+
+  const primaryMap = new Map<string, SpotPosition>();
+  primaryPositions.forEach((pos) => primaryMap.set(pos.step.id, pos));
+
+  const links: Array<{ from: SpotPosition; to: SpotPosition }> = [];
+
+  planBPositions.forEach((pos) => {
+    const parentId = (pos.step as PlanStep).planSourceId;
+    const from = parentId ? primaryMap.get(parentId) : null;
+    if (from) {
+      links.push({ from, to: pos });
+    } else {
+      links.push({ from: primaryPositions[0], to: pos });
+    }
+  });
+
+  return links;
+}
+
 export interface DayZone {
   date: string;
   startX: number;
@@ -74,10 +195,12 @@ export function calculateZones(groups: Map<string, Step[]>): DayZone[] {
 export function calculateSpotPositions(
   groups: Map<string, Step[]>,
   zones: DayZone[],
-  mapHeight: number
+  mapHeight: number,
+  laneIndex: number = 0,
 ): SpotPosition[] {
   const positions: SpotPosition[] = [];
   const yPositions = [0.3, 0.7, 0.3, 0.7];
+  const laneShift = Math.min(Math.max(laneIndex * 0.18, -0.4), 0.4);
 
   zones.forEach((zone, zoneIndex) => {
     const stepsInDay = groups.get(zone.date) || [];
@@ -86,7 +209,8 @@ export function calculateSpotPositions(
     stepsInDay.forEach((step, stepIndex) => {
       const x = spotStartX + stepIndex * SPOT_SPACING;
       const yRatio = yPositions[stepIndex % yPositions.length];
-      const y = mapHeight * yRatio;
+      const shifted = Math.min(Math.max(yRatio + laneShift, 0.12), 0.88);
+      const y = mapHeight * shifted;
 
       positions.push({
         x,

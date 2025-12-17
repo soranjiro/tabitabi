@@ -205,7 +205,24 @@ const pixelQuestDemo: DemoDataSet = {
       date: getDate(0),
       time: '10:00',
       location: '五合目付近',
-      notes: 'モンスターに注意',
+      notes:
+        'モンスターに注意\nPLANB::' +
+        JSON.stringify([
+          {
+            title: '秘密の山小屋',
+            date: getDate(0),
+            time: '13:00',
+            location: '旧登山道',
+            notes: '雨ならここで休憩',
+          },
+          {
+            title: '温泉で待機',
+            date: getDate(1),
+            time: '09:30',
+            location: '河口湖の温泉',
+            notes: '悪天候時は下山して温泉へ',
+          },
+        ]),
       created_at: now,
       updated_at: now,
     },

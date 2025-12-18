@@ -179,7 +179,7 @@ describe('Steps API', () => {
           date: '2024-01-01',
           time: '12:00',
           location: 'Tokyo Station',
-          notes: 'Try the ramen shop',
+          notes: '{"text":"Try the ramen shop"}',
         }),
       });
 
@@ -188,7 +188,7 @@ describe('Steps API', () => {
 
       const { data } = await response.json() as any;
       expect(data.location).toBe('Tokyo Station');
-      expect(data.notes).toBe('Try the ramen shop');
+      expect(data.notes).toBe('{"text":"Try the ramen shop"}');
     });
 
     it('returns 400 if required fields are missing', async () => {

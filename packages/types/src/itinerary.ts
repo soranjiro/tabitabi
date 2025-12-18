@@ -7,7 +7,7 @@ export interface Itinerary {
   id: string;
   title: string;
   theme_id: string;
-  memo?: string | null;
+  memo: string;
   walica_id?: string | null;
   password?: string | null;
   secret_settings?: ItinerarySecretSettings | null;

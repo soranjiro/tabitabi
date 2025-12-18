@@ -1,6 +1,7 @@
 import type { Step, CreateStepInput, UpdateStepInput } from '@tabitabi/types';
 import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
+import { validateMemoJson } from '../utils/memo';
 
 export class StepService {
   constructor(private db: D1Database) {}
@@ -50,6 +51,12 @@ export class StepService {
     const id = generateId(32);
     const now = getCurrentTimestamp();
 
+    const notes = input.notes ?? '{"text":""}';
+    const validation = validateMemoJson(notes);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
     const step: Step = {
       id,
       itinerary_id: input.itinerary_id,
@@ -57,7 +64,7 @@ export class StepService {
       date: input.date,
       time: input.time,
       location: input.location ?? null,
-      notes: input.notes ?? null,
+      notes,
       created_at: now,
       updated_at: now,
     };
@@ -107,8 +114,13 @@ export class StepService {
       values.push(input.location);
     }
     if (input.notes !== undefined) {
+      const notes = input.notes ?? '{"text":""}';
+      const validation = validateMemoJson(notes);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
       fields.push('notes = ?');
-      values.push(input.notes);
+      values.push(notes);
     }
 
     values.push(stepId);
@@ -146,7 +158,7 @@ export class StepService {
     if (step.is_hidden && maskSecrets) {
       step.title = '?????';
       step.location = null;
-      step.notes = null;
+      step.notes = '{"text":""}';
     }
 
     return step;

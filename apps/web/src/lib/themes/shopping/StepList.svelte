@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getMemoText, parseMemoData, stringifyMemoData } from "$lib/memo";
 
   interface Props {
     steps: Step[];
@@ -126,29 +127,23 @@
   }
 
   function isCompleted(step: Step): boolean {
-    return step.notes?.startsWith("Done") ?? false;
+    const data = parseMemoData(step.notes);
+    return data.completed === true;
   }
 
   function displayNotes(step: Step): string {
-    if (!step.notes) return "";
-    return step.notes.replace(/^Done\s*/, "").trim();
+    return getMemoText(step.notes);
   }
 
   async function toggleCompleted(step: Step) {
     if (!hasEditPermission || !onUpdateStep) return;
 
-    const currentlyCompleted = isCompleted(step);
-    let newNotes: string | null;
-
-    if (currentlyCompleted) {
-      const remaining = (step.notes?.replace(/^Done\s*/, "") ?? "").trim();
-      newNotes = remaining || null;
-    } else {
-      newNotes = step.notes ? `Done ${step.notes}` : "Done";
-    }
+    const data = parseMemoData(step.notes);
+    data.completed = !data.completed;
+    const newNotes = stringifyMemoData(data);
 
     await onUpdateStep(step.id, {
-      notes: newNotes ?? undefined,
+      notes: newNotes,
     });
   }
 </script>

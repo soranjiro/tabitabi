@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
   import { formatDateFull, getIconCategory } from "../utils/layout";
+  import { getMemoText } from "$lib/memo";
 
   interface Props {
     step: Step | null;
@@ -65,9 +66,9 @@
           </div>
         {/if}
 
-        {#if step.notes}
+        {#if getMemoText(step.notes)}
           <div class="pq-dialog-notes">
-            <div class="notes-text">{step.notes}</div>
+            <div class="notes-text">{getMemoText(step.notes)}</div>
           </div>
         {/if}
       </div>

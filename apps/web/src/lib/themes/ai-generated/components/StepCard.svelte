@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getMemoText } from "$lib/memo";
 
   interface Props {
     step: Step;
@@ -139,8 +140,8 @@
 
     <h2 class="step-title">{step.title}</h2>
 
-    {#if step.notes}
-      <p class="step-note">{step.notes}</p>
+    {#if getMemoText(step.notes)}
+      <p class="step-note">{getMemoText(step.notes)}</p>
     {/if}
   </div>
 

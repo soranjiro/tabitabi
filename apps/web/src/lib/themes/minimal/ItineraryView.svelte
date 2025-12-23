@@ -5,6 +5,7 @@
   import { auth } from "$lib/auth";
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { authApi } from "$lib/api/auth";
+  import { getMemoText, updateMemoText } from "$lib/memo";
   import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
   import "./styles/index.css";
@@ -54,7 +55,7 @@
   let hasEditPermission = $state(false);
   let showPasswordDialog = $state(false);
   let showMemoDialog = $state(false);
-  let editedMemo = $state(itinerary.memo || "");
+  let editedMemo = $state(getMemoText(itinerary.memo));
   let password = $state("");
   let isAuthenticating = $state(false);
 
@@ -170,7 +171,9 @@
 
   async function handleMemoUpdate() {
     if (onUpdateItinerary) {
-      await onUpdateItinerary({ memo: editedMemo.trim() || undefined });
+      await onUpdateItinerary({
+        memo: updateMemoText(itinerary.memo, editedMemo.trim()),
+      });
     }
     showMemoDialog = false;
   }
@@ -221,7 +224,7 @@
       {/if}
       <button
         onclick={() => {
-          editedMemo = itinerary.memo || "";
+          editedMemo = getMemoText(itinerary.memo);
           showMemoDialog = true;
         }}
         class="minimal-btn minimal-btn-edit"

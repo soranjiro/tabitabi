@@ -9,6 +9,7 @@
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { authApi } from "$lib/api/auth";
   import { getIsDemoMode } from "$lib/demo";
+  import { getMemoText, parseMemoData, stringifyMemoData } from "$lib/memo";
   import "./styles/index.css";
 
   let MapComponent: any = $state(null);
@@ -169,13 +170,9 @@
 
       // Load route display preference from memo
       if (itinerary.memo) {
-        try {
-          const memoData = JSON.parse(itinerary.memo);
-          if (typeof memoData.showRoute === "boolean") {
-            showRoute = memoData.showRoute;
-          }
-        } catch (e) {
-          // If memo is not JSON, ignore error
+        const memoData = parseMemoData(itinerary.memo);
+        if (typeof memoData.showRoute === "boolean") {
+          showRoute = memoData.showRoute;
         }
       }
     }
@@ -250,23 +247,10 @@
 
     // Debounce save to avoid too many updates
     const timer = setTimeout(async () => {
-      try {
-        let memoData: any = {};
-        if (itinerary.memo) {
-          try {
-            memoData = JSON.parse(itinerary.memo);
-          } catch (e) {
-            // Keep original memo text if it's not JSON
-            memoData.text = itinerary.memo;
-          }
-        }
-        memoData.showRoute = showRoute;
-
-        if (onUpdateItinerary) {
-          await onUpdateItinerary({ memo: JSON.stringify(memoData) });
-        }
-      } catch (e) {
-        console.error("Failed to save route preference", e);
+      const memoData = parseMemoData(itinerary.memo);
+      memoData.showRoute = showRoute;
+      if (onUpdateItinerary) {
+        await onUpdateItinerary({ memo: stringifyMemoData(memoData) });
       }
     }, 500);
 
@@ -367,25 +351,9 @@
 
   async function handleThemeChange(themeId: string) {
     if (onUpdateItinerary) {
-      let nextMemo = itinerary.memo ?? "";
-      try {
-        const parsed = JSON.parse(nextMemo);
-        if (parsed && typeof parsed === "object") {
-          delete parsed.showRoute;
-          if (typeof parsed.text === "string") {
-            nextMemo = parsed.text;
-          } else {
-            const cleaned = { ...parsed };
-            if (Object.keys(cleaned).length === 0) {
-              nextMemo = "";
-            } else {
-              nextMemo = JSON.stringify(cleaned);
-            }
-          }
-        }
-      } catch (e) {
-        // keep original memo text if not JSON
-      }
+      const memoData = parseMemoData(itinerary.memo);
+      delete memoData.showRoute;
+      const nextMemo = stringifyMemoData(memoData);
 
       await onUpdateItinerary({ theme_id: themeId, memo: nextMemo });
       window.location.reload();
@@ -869,7 +837,7 @@
           </div>
         {/if}
 
-        {#if selectedStep.notes}
+        {#if getMemoText(selectedStep.notes)}
           <div class="spot-section spot-notes">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -883,7 +851,9 @@
                 d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
               />
             </svg>
-            <div class="spot-notes-content">{selectedStep.notes}</div>
+            <div class="spot-notes-content">
+              {getMemoText(selectedStep.notes)}
+            </div>
           </div>
         {/if}
 

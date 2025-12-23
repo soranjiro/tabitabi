@@ -1,6 +1,7 @@
 import type { MemoData } from '@tabitabi/types';
 
 export const DEFAULT_MEMO: MemoData = { text: '' };
+export const DEFAULT_MEMO_JSON = JSON.stringify(DEFAULT_MEMO);
 
 export function parseMemoData(memo: string | null | undefined): MemoData {
   if (!memo) return { ...DEFAULT_MEMO };
@@ -15,12 +16,17 @@ export function parseMemoData(memo: string | null | undefined): MemoData {
   return { ...DEFAULT_MEMO };
 }
 
+export function getNotesText(notes: string | null | undefined): string {
+  return parseMemoData(notes).text;
+}
+
 export function stringifyMemoData(data: MemoData): string {
-  return JSON.stringify({ text: '', ...data });
+  return JSON.stringify({ ...data, text: data.text || '' });
 }
 
 export function getMemoText(memo: string | null | undefined): string {
-  return parseMemoData(memo).text;
+  const parsedMemo = parseMemoData(memo);
+  return parsedMemo.text;
 }
 
 export function updateMemoText(memo: string | null | undefined, text: string): string {

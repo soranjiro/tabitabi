@@ -1,4 +1,7 @@
-export function renderMarkdown(text: string): string {
+import { getMemoText } from "$lib/memo";
+
+export function renderMarkdown(memoOrNotes: string | null | undefined): string {
+  const text = getMemoText(memoOrNotes);
   if (!text) return '';
 
   let html = text
@@ -45,7 +48,8 @@ export function renderMarkdown(text: string): string {
   return html;
 }
 
-export function stripMarkdown(text: string): string {
+export function stripMarkdown(memoOrNotes: string | null | undefined): string {
+  const text = getMemoText(memoOrNotes);
   if (!text) return '';
 
   return text

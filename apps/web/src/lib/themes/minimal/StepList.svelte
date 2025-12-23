@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getMemoText } from "$lib/memo";
 
   interface Props {
     steps: Step[];
@@ -189,8 +190,10 @@
                 {#if step.location}
                   <div class="minimal-step-location">📍 {step.location}</div>
                 {/if}
-                {#if step.notes}
-                  <div class="minimal-step-notes">{step.notes}</div>
+                {#if getMemoText(step.notes)}
+                  <div class="minimal-step-notes">
+                    {getMemoText(step.notes)}
+                  </div>
                 {/if}
                 <div class="minimal-step-actions">
                   <button

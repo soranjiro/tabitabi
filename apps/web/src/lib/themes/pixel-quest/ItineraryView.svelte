@@ -6,6 +6,7 @@
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { getIsDemoMode } from "$lib/demo";
   import { authApi } from "$lib/api/auth";
+  import { parseMemoData, stringifyMemoData } from "$lib/memo";
   import { onMount } from "svelte";
   import { ContinuousMap, DetailPanel } from "./components";
   import {
@@ -662,25 +663,9 @@
 
   async function handleThemeChange() {
     if (onUpdateItinerary && selectedThemeId !== itinerary.theme_id) {
-      let nextMemo = itinerary.memo ?? "";
-      try {
-        const parsed = JSON.parse(nextMemo);
-        if (parsed && typeof parsed === "object") {
-          delete parsed.gameData;
-          if (typeof parsed.text === "string") {
-            nextMemo = parsed.text;
-          } else {
-            const cleaned = { ...parsed };
-            if (Object.keys(cleaned).length === 0) {
-              nextMemo = "";
-            } else {
-              nextMemo = JSON.stringify(cleaned);
-            }
-          }
-        }
-      } catch {
-        // invalid JSON
-      }
+      const memoData = parseMemoData(itinerary.memo);
+      delete memoData.gameData;
+      const nextMemo = stringifyMemoData(memoData);
       await onUpdateItinerary({ theme_id: selectedThemeId, memo: nextMemo });
       goto(`/${itinerary.id}`);
     }

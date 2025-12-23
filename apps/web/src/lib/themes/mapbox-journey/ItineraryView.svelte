@@ -9,6 +9,7 @@
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { authApi } from "$lib/api/auth";
   import { getIsDemoMode } from "$lib/demo";
+  import { getMemoText, parseMemoData, stringifyMemoData } from "$lib/memo";
   import "./styles/index.css";
 
   let MapComponent: any = $state(null);
@@ -130,24 +131,20 @@
 
       shareUrl = window.location.href.split("?")[0];
 
-      if (itinerary.memo) {
-        try {
-          const memoData = JSON.parse(itinerary.memo);
-          if (typeof memoData.showRoute === "boolean") {
-            showRoute = memoData.showRoute;
-          }
-          if (
-            memoData.mapStyle &&
-            ["day", "night", "satellite", "pixel"].includes(memoData.mapStyle)
-          ) {
-            mapStyle = memoData.mapStyle;
-          }
-          if (typeof memoData.show3D === "boolean") {
-            show3D = memoData.show3D;
-          }
-        } catch (e) {
-          // ignore
-        }
+      const memoData = parseMemoData(itinerary.memo);
+      if (typeof memoData.showRoute === "boolean") {
+        showRoute = memoData.showRoute;
+      }
+      if (
+        memoData.mapStyle &&
+        ["day", "night", "satellite", "pixel"].includes(
+          memoData.mapStyle as string,
+        )
+      ) {
+        mapStyle = memoData.mapStyle as MapStyle;
+      }
+      if (typeof memoData.show3D === "boolean") {
+        show3D = memoData.show3D;
       }
     }
   });
@@ -202,24 +199,13 @@
   }
 
   async function saveSettings() {
-    try {
-      let memoData: any = {};
-      if (itinerary.memo) {
-        try {
-          memoData = JSON.parse(itinerary.memo);
-        } catch (e) {
-          memoData.text = itinerary.memo;
-        }
-      }
-      memoData.showRoute = showRoute;
-      memoData.mapStyle = mapStyle;
-      memoData.show3D = show3D;
+    const memoData = parseMemoData(itinerary.memo);
+    memoData.showRoute = showRoute;
+    memoData.mapStyle = mapStyle;
+    memoData.show3D = show3D;
 
-      if (onUpdateItinerary) {
-        await onUpdateItinerary({ memo: JSON.stringify(memoData) });
-      }
-    } catch (e) {
-      console.error("Failed to save settings", e);
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({ memo: stringifyMemoData(memoData) });
     }
   }
 
@@ -341,27 +327,11 @@
 
   async function handleThemeChange(themeId: string) {
     if (onUpdateItinerary) {
-      let nextMemo = itinerary.memo ?? "";
-      try {
-        const parsed = JSON.parse(nextMemo);
-        if (parsed && typeof parsed === "object") {
-          delete parsed.showRoute;
-          delete parsed.mapStyle;
-          delete parsed.show3D;
-          if (typeof parsed.text === "string") {
-            nextMemo = parsed.text;
-          } else {
-            const cleaned = { ...parsed };
-            if (Object.keys(cleaned).length === 0) {
-              nextMemo = "";
-            } else {
-              nextMemo = JSON.stringify(cleaned);
-            }
-          }
-        }
-      } catch (e) {
-        // ignore
-      }
+      const memoData = parseMemoData(itinerary.memo);
+      delete memoData.showRoute;
+      delete memoData.mapStyle;
+      delete memoData.show3D;
+      const nextMemo = stringifyMemoData(memoData);
 
       await onUpdateItinerary({ theme_id: themeId, memo: nextMemo });
       window.location.reload();
@@ -672,14 +642,14 @@
           </div>
         {/if}
 
-        {#if selectedStep.notes}
+        {#if getMemoText(selectedStep.notes)}
           <div class="detail-section notes">
             <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
               <path
                 d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
               />
             </svg>
-            <span>{selectedStep.notes}</span>
+            <span>{getMemoText(selectedStep.notes)}</span>
           </div>
         {/if}
 

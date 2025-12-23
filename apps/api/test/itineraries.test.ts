@@ -94,14 +94,14 @@ describe('Itineraries API', () => {
       const request = new Request('http://localhost/api/v1/itineraries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Trip with Memo', memo: 'Remember to pack sunscreen' }),
+        body: JSON.stringify({ title: 'Trip with Memo', memo: '{"text":"Remember to pack sunscreen"}' }),
       });
 
       const response = await app.fetch(request, env);
       expect(response.status).toBe(201);
 
       const { data } = await response.json() as any;
-      expect(data.memo).toBe('Remember to pack sunscreen');
+      expect(data.memo).toBe('{"text":"Remember to pack sunscreen"}');
     });
   });
 

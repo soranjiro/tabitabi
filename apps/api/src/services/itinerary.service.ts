@@ -1,6 +1,7 @@
 import type { Itinerary, CreateItineraryInput, UpdateItineraryInput } from '@tabitabi/types';
 import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
+import { validateMemoJson } from '../utils/memo';
 
 const DEFAULT_THEME_ID = 'standard-autumn';
 
@@ -44,11 +45,17 @@ export class ItineraryService {
     const id = generateId(32);
     const now = getCurrentTimestamp();
 
+    const memo = input.memo ?? '{"text":""}';
+    const validation = validateMemoJson(memo);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
     const itinerary: Itinerary = {
       id,
       title: input.title,
       theme_id: input.theme_id || DEFAULT_THEME_ID,
-      memo: input.memo ?? null,
+      memo,
       walica_id: input.walica_id ?? null,
       password: input.password ?? null,
       secret_settings: input.secret_settings ? {
@@ -107,6 +114,10 @@ export class ItineraryService {
       values.push(input.theme_id || DEFAULT_THEME_ID);
     }
     if (input.memo !== undefined) {
+      const validation = validateMemoJson(input.memo);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
       fields.push('memo = ?');
       values.push(input.memo);
     }

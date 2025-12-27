@@ -1,6 +1,11 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
-  import { getMemoText, parseMemoData, stringifyMemoData } from "$lib/memo";
+  import {
+    getMemoText,
+    parseMemoData,
+    stringifyMemoData,
+    updateMemoText,
+  } from "$lib/memo";
 
   interface Props {
     steps: Step[];
@@ -83,7 +88,7 @@
 
   function startEdit(step: Step) {
     editingStepId = step.id;
-    editedStep = { ...step };
+    editedStep = { ...step, notes: getMemoText(step.notes) };
     const [hour, minute] = step.time.split(":");
     editStepHour = hour;
     editStepMinute = minute;
@@ -102,13 +107,17 @@
       return;
     }
 
+    const originalStep = steps.find((s) => s.id === editingStepId);
+    const noteText = (editedStep.notes ?? "").trim();
+    const notes = updateMemoText(originalStep?.notes, noteText);
+
     if (onUpdateStep) {
       await onUpdateStep(editingStepId, {
         title: editedStep.title.trim(),
         date: editedStep.date,
         time: editedStep.time,
         location: editedStep.location?.trim() || undefined,
-        notes: editedStep.notes?.trim() || undefined,
+        notes,
       });
     }
 

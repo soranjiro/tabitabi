@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { auth } from "$lib/auth";
+  import { resetDemoMode } from "$lib/demo";
   import {
     PreviewCarousel,
     FeatureCard,
@@ -58,6 +59,9 @@
   }
 
   onMount(() => {
+    // Reset demo mode when entering the home page
+    resetDemoMode();
+    
     setTimeout(() => {
       recentItineraries = auth.getRecentItineraries();
       showRecent = true;

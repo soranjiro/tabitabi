@@ -253,7 +253,13 @@
       return;
     }
     if (onCreateStep) {
-      await onCreateStep(newStep);
+      await onCreateStep({
+        title: newStep.title.trim(),
+        date: newStep.date,
+        time: newStep.time,
+        location: newStep.location.trim() || undefined,
+        notes: newStep.notes.trim() || undefined,
+      });
       closeModals();
       resetForm();
     }
@@ -287,11 +293,11 @@
     if (!editStepId || !onUpdateStep) return;
 
     const updatedData = {
-      title: editingStepForm.title,
+      title: editingStepForm.title.trim(),
       date: editingStepForm.date,
       time: `${editStepHour}:${editStepMinute}`,
-      location: editingStepForm.location,
-      notes: editingStepForm.notes,
+      location: editingStepForm.location.trim() || undefined,
+      notes: editingStepForm.notes.trim() || undefined,
     };
 
     await onUpdateStep(editStepId, updatedData);

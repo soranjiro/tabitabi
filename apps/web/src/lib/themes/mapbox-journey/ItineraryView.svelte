@@ -261,11 +261,11 @@
     const notes = noteText ? updateMemoText(undefined, noteText) : undefined;
     if (onCreateStep) {
       await onCreateStep({
-        title: newStep.title,
+        title: newStep.title.trim(),
         date: newStep.date,
         time: newStep.time,
-        location: newStep.location,
-        notes,
+        location: newStep.location.trim() || undefined,
+        notes: newStep.notes.trim() || undefined,
       });
       closeModals();
       resetForm();
@@ -303,11 +303,11 @@
     const notes = updateMemoText(selectedStep?.notes, noteText);
 
     const updatedData = {
-      title: editingStepForm.title,
+      title: editingStepForm.title.trim(),
       date: editingStepForm.date,
       time: `${editStepHour}:${editStepMinute}`,
-      location: editingStepForm.location,
-      notes,
+      location: editingStepForm.location.trim() || undefined,
+      notes: editingStepForm.notes.trim() || undefined,
     };
 
     await onUpdateStep(editStepId, updatedData);

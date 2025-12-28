@@ -9,7 +9,12 @@
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { authApi } from "$lib/api/auth";
   import { getIsDemoMode } from "$lib/demo";
-  import { getMemoText, parseMemoData, stringifyMemoData } from "$lib/memo";
+  import {
+    getMemoText,
+    parseMemoData,
+    stringifyMemoData,
+    updateMemoText,
+  } from "$lib/memo";
   import "./styles/index.css";
 
   let MapComponent: any = $state(null);
@@ -274,6 +279,8 @@
       alert("必須項目を入力してください");
       return;
     }
+    const noteText = newStep.notes.trim();
+    const notes = noteText ? updateMemoText(undefined, noteText) : undefined;
     if (onCreateStep) {
       await onCreateStep({
         title: newStep.title.trim(),
@@ -302,7 +309,7 @@
       date: selectedStep.date,
       time: selectedStep.time,
       location: selectedStep.location || "",
-      notes: selectedStep.notes || "",
+      notes: getMemoText(selectedStep.notes),
     };
     const [h, m] = selectedStep.time.split(":");
     editStepHour = h;
@@ -314,6 +321,9 @@
 
   async function handleEditSubmit() {
     if (!editStepId || !onUpdateStep) return;
+
+    const noteText = editingStepForm.notes.trim();
+    const notes = updateMemoText(selectedStep?.notes, noteText);
 
     const updatedData = {
       title: editingStepForm.title.trim(),

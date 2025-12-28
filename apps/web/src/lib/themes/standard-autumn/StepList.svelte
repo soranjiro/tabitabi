@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getMemoText, updateMemoText } from "$lib/memo";
   import { renderMarkdown } from "./utils/markdown";
   import {
     EditIcon,
@@ -171,7 +172,7 @@
 
   function startEdit(step: Step) {
     editingStepId = step.id;
-    editedStep = { ...step };
+    editedStep = { ...step, notes: getMemoText(step.notes) };
     const [hour, minute] = step.time.split(":");
     editStepHour = hour;
     editStepMinute = minute;
@@ -194,13 +195,16 @@
       alert("タイトル、日付、時刻は必須です");
       return;
     }
+    const originalStep = steps.find((s) => s.id === editingStepId);
+    const noteText = (editedStep.notes ?? "").trim();
+    const notes = updateMemoText(originalStep?.notes, noteText);
     if (onUpdateStep) {
       await onUpdateStep(editingStepId, {
         title: editedStep.title.trim(),
         date: editedStep.date,
         time: editedStep.time,
         location: editedStep.location?.trim() || undefined,
-        notes: editedStep.notes?.trim() || undefined,
+        notes,
       });
     }
     editingStepId = null;

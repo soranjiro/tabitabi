@@ -212,7 +212,11 @@
             </div>
           {/if}
         {:else}
-          <div class="edit-form-inline">
+          <div
+            class="edit-form-inline"
+            onclick={(e) => e.stopPropagation()}
+            onmousedown={(e) => e.stopPropagation()}
+          >
             <div class="form-group">
               <label>施設名</label>
               <input
@@ -237,7 +241,7 @@
             </div>
 
             <div class="form-actions-inline">
-              <button class="button-cancel" onclick={cancelEdit}>
+              <button class="button-cancel" onclick={(e) => { e.stopPropagation(); cancelEdit(); }}>
                 キャンセル
               </button>
               <button class="button-save" onclick={() => saveEdit(step)}>

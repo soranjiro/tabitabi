@@ -1,11 +1,12 @@
 .sauna-rally-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #FFF8F0 0%, #FFE5D0 100%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(135deg, #fff8f0 0%, #ffe5d0 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+    Arial, sans-serif;
 }
 
 .sauna-header {
-  background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%);
   color: white;
   padding: 1rem 1.5rem;
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
@@ -87,14 +88,13 @@
 }
 
 .theme-selector select option {
-  color: #2C3E50;
+  color: #2c3e50;
 }
-
 
 .add-sauna-button-header {
   padding: 0.5rem 1rem;
   background: white;
-  color: #FF6B35;
+  color: #ff6b35;
   border: none;
   border-radius: 8px;
   font-weight: 600;
@@ -109,7 +109,7 @@
 
 .progress-bar {
   height: 12px;
-  background: #E0E0E0;
+  background: #e0e0e0;
   border-radius: 6px;
   overflow: hidden;
   position: relative;
@@ -117,7 +117,7 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #FF6B35 0%, #F7B801 100%);
+  background: linear-gradient(90deg, #ff6b35 0%, #f7b801 100%);
   border-radius: 6px;
   transition: width 0.5s ease;
   box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
@@ -134,7 +134,7 @@
   max-width: 400px;
   margin: 0 auto 3rem;
   padding: 1.25rem;
-  background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -166,7 +166,7 @@
 .empty-stamp-card,
 .stamp-card {
   background: white;
-  border: 4px dashed #FF6B35;
+  border: 4px dashed #ff6b35;
   border-radius: 16px;
   padding: 1.5rem;
   display: flex;
@@ -188,13 +188,13 @@
 }
 
 .stamp-card.completed {
-  border-color: #4CAF50;
-  background: linear-gradient(135deg, #F0FFF4 0%, #FFFFFF 100%);
+  border-color: #4caf50;
+  background: linear-gradient(135deg, #f0fff4 0%, #ffffff 100%);
 }
 
 .stamp-card.editing {
   cursor: default;
-  border-color: #2196F3;
+  border-color: #2196f3;
 }
 
 .empty-stamp-card {
@@ -205,7 +205,7 @@
 .stamp-card-name {
   font-size: 1.1rem;
   font-weight: bold;
-  color: #2C3E50;
+  color: #2c3e50;
   text-align: center;
   margin-bottom: 1rem;
   min-height: 1.5rem;
@@ -274,19 +274,23 @@
 .stamp-circle {
   width: 140px;
   height: 140px;
-  border: 6px solid #D32F2F;
+  border: 6px solid #d32f2f;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle, rgba(211, 47, 47, 0.1) 0%, rgba(211, 47, 47, 0.05) 100%);
+  background: radial-gradient(
+    circle,
+    rgba(211, 47, 47, 0.1) 0%,
+    rgba(211, 47, 47, 0.05) 100%
+  );
   transform: rotate(-15deg);
   box-shadow: 0 2px 8px rgba(211, 47, 47, 0.3);
 }
 
 .stamp-text {
   text-align: center;
-  color: #D32F2F;
+  color: #d32f2f;
   font-weight: bold;
   line-height: 1.2;
 }
@@ -317,7 +321,7 @@
 
 .complete-button {
   padding: 0.6rem 1.5rem;
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   border: none;
   border-radius: 8px;
@@ -328,7 +332,7 @@
 }
 
 .complete-button:hover {
-  background: #45A049;
+  background: #45a049;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
 }
@@ -337,7 +341,7 @@
 .delete-icon-button {
   padding: 0.4rem 0.6rem;
   background: white;
-  border: 2px solid #E0E0E0;
+  border: 2px solid #e0e0e0;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -345,19 +349,19 @@
 }
 
 .edit-icon-button:hover {
-  border-color: #FF6B35;
-  background: #FFF3E0;
+  border-color: #ff6b35;
+  background: #fff3e0;
 }
 
 .delete-icon-button:hover {
-  border-color: #F44336;
-  background: #FFEBEE;
+  border-color: #f44336;
+  background: #ffebee;
 }
 
 .edit-form-inline {
   width: 100%;
   padding: 1rem;
-  background: #F8F9FA;
+  background: #f8f9fa;
   border-radius: 8px;
 }
 
@@ -368,7 +372,7 @@
 .form-group label {
   display: block;
   font-weight: 600;
-  color: #2C3E50;
+  color: #2c3e50;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
 }
@@ -376,7 +380,7 @@
 .form-input {
   width: 100%;
   padding: 0.6rem;
-  border: 2px solid #E0E0E0;
+  border: 2px solid #e0e0e0;
   border-radius: 6px;
   font-size: 0.95rem;
   transition: all 0.3s ease;
@@ -385,7 +389,7 @@
 
 .form-input:focus {
   outline: none;
-  border-color: #FF6B35;
+  border-color: #ff6b35;
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
@@ -396,7 +400,7 @@
 }
 
 .reference-link a {
-  color: #004E89;
+  color: #004e89;
   text-decoration: none;
   font-weight: 600;
 }
@@ -426,20 +430,20 @@
 .button-cancel {
   background: white;
   color: #666;
-  border: 2px solid #E0E0E0;
+  border: 2px solid #e0e0e0;
 }
 
 .button-cancel:hover {
-  background: #F5F5F5;
+  background: #f5f5f5;
 }
 
 .button-save {
-  background: #FF6B35;
+  background: #ff6b35;
   color: white;
 }
 
 .button-save:hover {
-  background: #FF5722;
+  background: #ff5722;
   box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
 }
 
@@ -462,7 +466,7 @@
 .delete-confirm-overlay p {
   margin: 0 0 1.5rem 0;
   font-weight: 600;
-  color: #C62828;
+  color: #c62828;
   font-size: 1.1rem;
 }
 
@@ -473,7 +477,7 @@
 
 .button-danger {
   padding: 0.6rem 1.5rem;
-  background: #F44336;
+  background: #f44336;
   color: white;
   border: none;
   border-radius: 6px;
@@ -483,7 +487,7 @@
 }
 
 .button-danger:hover {
-  background: #D32F2F;
+  background: #d32f2f;
   box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
 }
 
@@ -549,7 +553,7 @@
 .form-title {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #FF6B35;
+  color: #ff6b35;
   margin: 0 0 1.5rem 0;
 }
 
@@ -568,7 +572,7 @@
 .time-input {
   width: 60px;
   padding: 0.75rem;
-  border: 2px solid #E0E0E0;
+  border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 1rem;
   text-align: center;
@@ -590,7 +594,7 @@
 .form-textarea {
   width: 100%;
   padding: 0.75rem;
-  border: 2px solid #E0E0E0;
+  border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 1rem;
   transition: all 0.3s ease;
@@ -600,13 +604,13 @@
 
 .form-textarea:focus {
   outline: none;
-  border-color: #FF6B35;
+  border-color: #ff6b35;
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
 .button-primary {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -631,7 +635,7 @@
   padding: 0.75rem 1.5rem;
   background: white;
   color: #666;
-  border: 2px solid #E0E0E0;
+  border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
@@ -639,8 +643,8 @@
 }
 
 .button-secondary:hover {
-  background: #F5F5F5;
-  border-color: #CCC;
+  background: #f5f5f5;
+  border-color: #ccc;
 }
 
 .modal-overlay {
@@ -668,7 +672,7 @@
 
 .modal-content h2 {
   margin: 0 0 1rem 0;
-  color: #2C3E50;
+  color: #2c3e50;
 }
 
 .modal-content p {
@@ -679,7 +683,7 @@
 .password-input {
   width: 100%;
   padding: 0.75rem;
-  border: 2px solid #E0E0E0;
+  border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 1rem;
   margin-bottom: 1.5rem;
@@ -688,7 +692,7 @@
 
 .password-input:focus {
   outline: none;
-  border-color: #FF6B35;
+  border-color: #ff6b35;
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
@@ -751,7 +755,7 @@
 
 .modal-content h2 {
   margin: 0 0 1rem 0;
-  color: #2C3E50;
+  color: #2c3e50;
 }
 
 .modal-content p {
@@ -762,12 +766,12 @@
 .modal-title {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #FF6B35;
+  color: #ff6b35;
   margin: 0 0 1rem 0;
 }
 
 .reference-info {
-  background: #FFF3E0;
+  background: #fff3e0;
   padding: 0.75rem 1rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
@@ -779,7 +783,7 @@
 }
 
 .ikitai-link-small {
-  color: #004E89;
+  color: #004e89;
   text-decoration: none;
   font-weight: 600;
   display: inline-flex;

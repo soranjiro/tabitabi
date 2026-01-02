@@ -127,8 +127,12 @@
   {#if sortedSteps.length === 0}
     <div class="empty-stamp-card">
       <div class="stamp-area empty">
-        <div class="empty-icon">🏛️</div>
-        <p class="empty-text">スタンプ待ち</p>
+        <div class="empty-stamp-circle">
+          <div class="empty-stamp-text">
+            <div class="empty-stamp-message">サウナを</div>
+            <div class="empty-stamp-message">追加しましょう！</div>
+          </div>
+        </div>
       </div>
     </div>
   {:else}
@@ -160,22 +164,27 @@
                 </div>
               </div>
             {:else}
-              <div class="no-stamp">
-                <div class="stamp-placeholder">🔥</div>
+              <div class="stamp-image pending">
+                <div class="stamp-circle pending">
+                  <div class="stamp-text pending">
+                    <div class="stamp-top">サウナ</div>
+                    <div class="stamp-date pending"></div>
+                    <div class="stamp-bottom pending">未達成</div>
+                  </div>
+                </div>
               </div>
             {/if}
           </div>
 
           {#if hasEditPermission}
             <div class="stamp-card-actions">
-              {#if !isVisited}
-                <button
-                  class="complete-button"
-                  onclick={(e) => toggleVisited(step, e)}
-                >
-                  完了
-                </button>
-              {/if}
+              <button
+                class="complete-button"
+                class:undo={isVisited}
+                onclick={(e) => toggleVisited(step, e)}
+              >
+                {isVisited ? '取消' : '完了'}
+              </button>
               <button
                 class="edit-icon-button"
                 onclick={(e) => startEdit(step, e)}

@@ -54,6 +54,7 @@
   let isAddingSauna = $state(false);
   let hasEditPermission = $state(false);
   let showPasswordDialog = $state(false);
+  let showThemeSelect = $state(false);
   let password = $state("");
   let isAuthenticating = $state(false);
 
@@ -130,16 +131,7 @@
 
   let newSauna = $state({
     title: "",
-    date: new Date().toISOString().split("T")[0],
-    time: "10:00",
-    location: "",
-  });
-
-  let newSaunaHour = $state("10");
-  let newSaunaMinute = $state("00");
-
-  $effect(() => {
-    newSauna.time = `${newSaunaHour}:${newSaunaMinute}`;
+    sauna_url: "",
   });
 
   async function handleTitleUpdate() {
@@ -155,12 +147,13 @@
     isEditingTitle = false;
   }
 
-  async function handleThemeChange(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    const newThemeId = target.value;
-
-    if (newThemeId !== itinerary.theme_id && onUpdateItinerary) {
-      await onUpdateItinerary({ theme_id: newThemeId });
+  async function handleThemeChange(themeId: string) {
+    if (themeId === itinerary.theme_id) {
+      return;
+    }
+    showThemeSelect = false;
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({ theme_id: themeId });
     }
   }
 
@@ -172,15 +165,16 @@
 
     if (onCreateStep) {
       try {
+        const now = new Date();
         const saunaData: SaunaData = {
           visited: false,
+          sauna_url: newSauna.sauna_url.trim() || undefined,
         };
 
         const stepData = {
           title: newSauna.title.trim(),
-          date: newSauna.date,
-          time: newSauna.time,
-          location: newSauna.location.trim() || undefined,
+          date: now.toISOString().split("T")[0],
+          time: now.toTimeString().split(" ")[0].substring(0, 5),
           notes: JSON.stringify({ text: "", ...saunaData }),
         };
 
@@ -189,12 +183,8 @@
 
         newSauna = {
           title: "",
-          date: new Date().toISOString().split("T")[0],
-          time: "10:00",
-          location: "",
+          sauna_url: "",
         };
-        newSaunaHour = "10";
-        newSaunaMinute = "00";
         isAddingSauna = false;
       } catch (error) {
         console.error("サウナ追加エラー:", error);
@@ -206,28 +196,15 @@
   function cancelAddSauna() {
     newSauna = {
       title: "",
-      date: new Date().toISOString().split("T")[0],
-      time: "10:00",
-      location: "",
-      notes: "",
+      sauna_url: "",
     };
-    newSaunaHour = "10";
-    newSaunaMinute = "00";
     isAddingSauna = false;
-  }
-
-  function goBack() {
-    goto("/itineraries");
   }
 </script>
 
 <div class="sauna-rally-container">
   <header class="sauna-header">
     <div class="header-top">
-      <button class="back-button" onclick={goBack}>
-        <span class="back-icon">←</span>
-      </button>
-
       {#if isEditingTitle}
         <input
           type="text"
@@ -248,15 +225,10 @@
           <button class="add-sauna-button-header" onclick={() => (isAddingSauna = true)}>
             + サウナ追加
           </button>
+          <button class="theme-button" onclick={() => (showThemeSelect = !showThemeSelect)}>
+            テーマ変更
+          </button>
         {/if}
-
-        <label class="theme-selector">
-          <select onchange={handleThemeChange} value={itinerary.theme_id} disabled={!hasEditPermission}>
-            {#each themes as theme}
-              <option value={theme.id}>{theme.name}</option>
-            {/each}
-          </select>
-        </label>
 
         {#if !hasEditPermission}
           <button class="edit-button" onclick={attemptEditModeActivation}>
@@ -276,6 +248,31 @@
     />
   </main>
 </div>
+
+{#if showThemeSelect}
+  <div class="theme-modal-overlay" onclick={() => (showThemeSelect = false)}>
+    <div class="theme-modal-content" onclick={(e) => e.stopPropagation()}>
+      <h3 class="theme-modal-title">テーマを選択</h3>
+      <div class="theme-list">
+        {#each themes as theme}
+          <button
+            class="theme-option"
+            class:selected={theme.id === itinerary.theme_id}
+            onclick={() => handleThemeChange(theme.id)}
+          >
+            <span class="theme-name">{theme.name}</span>
+            {#if theme.id === itinerary.theme_id}
+              <span class="theme-check">✓</span>
+            {/if}
+          </button>
+        {/each}
+      </div>
+      <button class="theme-modal-close" onclick={() => (showThemeSelect = false)}>
+        閉じる
+      </button>
+    </div>
+  </div>
+{/if}
 
 {#if showPasswordDialog}
   <div class="modal-overlay" onclick={() => (showPasswordDialog = false)}>
@@ -331,48 +328,16 @@
         />
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="sauna-date">訪問予定日 *</label>
-          <input
-            id="sauna-date"
-            type="date"
-            bind:value={newSauna.date}
-            class="form-input"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="sauna-time">時間 *</label>
-          <div class="time-inputs">
-            <input
-              type="number"
-              bind:value={newSaunaHour}
-              min="0"
-              max="23"
-              class="time-input"
-            />
-            <span class="time-separator">:</span>
-            <input
-              type="number"
-              bind:value={newSaunaMinute}
-              min="0"
-              max="59"
-              class="time-input"
-            />
-          </div>
-        </div>
-      </div>
-
       <div class="form-group">
-        <label for="sauna-location">都道府県・エリア</label>
+        <label for="sauna-url">施設のURL</label>
         <input
-          id="sauna-location"
-          type="text"
-          bind:value={newSauna.location}
-          placeholder="例: 静岡県"
+          id="sauna-url"
+          type="url"
+          bind:value={newSauna.sauna_url}
+          placeholder="https://sauna-ikitai.com/..."
           class="form-input"
         />
+        <p class="form-hint">URLを設定すると、スタンプをクリックしてリンク先に移動できるようになります。</p>
       </div>
 
       <div class="modal-actions">

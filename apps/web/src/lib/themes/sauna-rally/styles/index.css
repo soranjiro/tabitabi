@@ -17,12 +17,14 @@
   position: sticky;
   top: 0;
   z-index: 20;
+  min-height: 88px;
 }
 
 .header-top {
   display: flex;
   align-items: center;
   gap: 1rem;
+  min-height: 56px;
 }
 
 .back-button {
@@ -62,11 +64,13 @@
   flex: 1;
   font-size: 1.8rem;
   font-weight: bold;
-  padding: 0.5rem;
+  padding: 0.55rem 1rem;
+  height: 56px;
   border: 2px solid white;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.2);
   color: white;
+  box-sizing: border-box;
 }
 
 .title-input::placeholder {

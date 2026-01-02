@@ -17,6 +17,8 @@ export async function loadTheme(themeId: string): Promise<Theme> {
       return (await import('./shopping')).default;
     case 'pixel-quest':
       return (await import('./pixel-quest')).default;
+    case 'sauna-rally':
+      return (await import('./sauna-rally')).default;
     default:
       return (await import('./standard-autumn')).default;
   }
@@ -33,6 +35,7 @@ const THEME_CATALOG: Array<{ id: AvailableTheme; name: string; description: stri
   { id: 'standard-autumn', name: '標準', description: 'モチーフ秋', phrase: '旅行のしおり' },
   { id: 'shopping', name: '買い物リスト', description: '買い物管理向け', phrase: '買い物プラン' },
   { id: 'pixel-quest', name: 'ピクセルクエスト', description: 'RPG風マップ表示', phrase: 'RPGデザイン' },
+  { id: 'sauna-rally', name: 'サウナスタンプラリー', description: 'サウナ旅を記録', phrase: 'サウナ巡り' },
   { id: 'map-only', name: 'Map Only', description: '地図のみを表示', phrase: '地図で計画' },
   { id: 'mapbox-journey', name: 'Mapbox Journey', description: '3D地図・グローブ表示', phrase: '世界旅行' },
   { id: 'ai-generated', name: 'AI Generated', description: 'purple', phrase: 'ユニーク計画' },
@@ -46,5 +49,5 @@ export function getThemePhrases(): string[] {
   return THEME_CATALOG.map(theme => theme.phrase);
 }
 
-export const availableThemes = ['map-only', 'mapbox-journey', 'standard-autumn', 'ai-generated', 'shopping', 'pixel-quest'] as const;
+export const availableThemes = ['map-only', 'mapbox-journey', 'standard-autumn', 'ai-generated', 'shopping', 'pixel-quest', 'sauna-rally'] as const;
 export type AvailableTheme = typeof availableThemes[number];

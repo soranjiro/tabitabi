@@ -277,6 +277,24 @@
   letter-spacing: 0.05em;
 }
 
+.empty-add-button {
+  margin-top: 1rem;
+  padding: 0.65rem 1.25rem;
+  background: #ff6b35;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.35);
+}
+
+.empty-add-button:hover {
+  background: #ff5722;
+  transform: translateY(-1px);
+}
+
 .empty-icon {
   font-size: 4rem;
   opacity: 0.3;

@@ -4,6 +4,7 @@
   interface Props {
     steps: Step[];
     hasEditPermission: boolean;
+    onAddSauna?: () => void;
     onUpdateStep?: (
       stepId: string,
       data: {
@@ -17,7 +18,7 @@
     onDeleteStep?: (stepId: string) => Promise<void>;
   }
 
-  let { steps, hasEditPermission, onUpdateStep, onDeleteStep }: Props = $props();
+  let { steps, hasEditPermission, onAddSauna, onUpdateStep, onDeleteStep }: Props = $props();
 
   interface SaunaData {
     visited?: boolean;
@@ -133,6 +134,11 @@
             <div class="empty-stamp-message">追加しましょう！</div>
           </div>
         </div>
+        {#if hasEditPermission && onAddSauna}
+          <button class="empty-add-button" onclick={() => onAddSauna?.()}>
+            + サウナを追加
+          </button>
+        {/if}
       </div>
     </div>
   {:else}

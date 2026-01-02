@@ -243,6 +243,7 @@
     <StepList
       {steps}
       {hasEditPermission}
+      onAddSauna={() => (isAddingSauna = true)}
       {onUpdateStep}
       {onDeleteStep}
     />

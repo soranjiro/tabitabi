@@ -197,7 +197,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 280px;
+  min-height: 380px;
   transition: all 0.3s ease;
   position: relative;
 }
@@ -623,7 +623,7 @@
   }
 
   .stamp-card {
-    min-height: 260px;
+    min-height: 340px;
   }
 
   .stamp-circle {

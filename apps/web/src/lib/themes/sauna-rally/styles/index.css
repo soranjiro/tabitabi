@@ -7,12 +7,42 @@
   background-attachment: fixed;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
     Arial, sans-serif;
+  position: relative;
+}
+
+.sauna-home-button {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 100;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff6b35;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.sauna-home-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background: #fff;
+}
+
+.sauna-home-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .sauna-header {
   background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%);
   color: white;
-  padding: 1rem 1.5rem;
+  padding: 1rem 1.5rem 1rem 5rem;
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
   position: sticky;
   top: 0;

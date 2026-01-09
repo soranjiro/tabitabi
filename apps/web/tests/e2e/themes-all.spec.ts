@@ -45,6 +45,13 @@ const themeChecks: Record<string, (page: import('@playwright/test').Page) => Pro
     await toggleButton.click();
     await expect(page.getByRole('button', { name: '+QUEST' })).toBeVisible();
   },
+  'sauna-rally': async (page) => {
+    await expect(page.locator('.sauna-rally-theme')).toBeVisible({ timeout: 15000 });
+    const addButton = page.getByRole('button', { name: 'サウナを追加' });
+    await expect(addButton).toBeVisible();
+    await addButton.click();
+    await expect(page.getByText('新しい予定を追加')).toBeVisible();
+  },
 };
 
 for (const themeId of Object.keys(themeChecks)) {

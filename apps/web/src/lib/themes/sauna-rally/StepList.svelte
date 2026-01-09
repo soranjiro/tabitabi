@@ -4,6 +4,7 @@
   interface Props {
     steps: Step[];
     hasEditPermission: boolean;
+    isViewMode: boolean;
     onAddSauna?: () => void;
     onUpdateStep?: (
       stepId: string,
@@ -18,7 +19,7 @@
     onDeleteStep?: (stepId: string) => Promise<void>;
   }
 
-  let { steps, hasEditPermission, onAddSauna, onUpdateStep, onDeleteStep }: Props = $props();
+  let { steps, hasEditPermission, isViewMode, onAddSauna, onUpdateStep, onDeleteStep }: Props = $props();
 
   interface SaunaData {
     visited?: boolean;
@@ -50,7 +51,7 @@
     event.preventDefault();
     event.stopPropagation();
     
-    if (!hasEditPermission || !onUpdateStep) return;
+    if (!onUpdateStep) return;
 
     const data = getSaunaData(step);
     const newData: SaunaData = {
@@ -182,15 +183,15 @@
             {/if}
           </div>
 
-          {#if hasEditPermission}
-            <div class="stamp-card-actions">
-              <button
-                class="complete-button"
-                class:undo={isVisited}
-                onclick={(e) => toggleVisited(step, e)}
-              >
-                {isVisited ? '取消' : '完了'}
-              </button>
+          <div class="stamp-card-actions">
+            <button
+              class="complete-button"
+              class:undo={isVisited}
+              onclick={(e) => toggleVisited(step, e)}
+            >
+              {isVisited ? '取消' : '完了'}
+            </button>
+            {#if hasEditPermission && !isViewMode}
               <button
                 class="edit-icon-button"
                 onclick={(e) => startEdit(step, e)}
@@ -209,8 +210,8 @@
               >
                 🗑️
               </button>
-            </div>
-          {/if}
+            {/if}
+          </div>
         {:else}
           <div
             class="edit-form-inline"

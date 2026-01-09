@@ -53,6 +53,7 @@
   let editedTitle = $state(itinerary.title);
   let isAddingSauna = $state(false);
   let hasEditPermission = $state(false);
+  let isViewMode = $state(false);
   let showPasswordDialog = $state(false);
   let showThemeSelect = $state(false);
   let password = $state("");
@@ -73,6 +74,13 @@
       return {};
     }
     return {};
+  }
+
+  function toggleViewMode() {
+    if (!hasEditPermission) return;
+    isViewMode = !isViewMode;
+    isAddingSauna = false;
+    showThemeSelect = false;
   }
 
   onMount(() => {
@@ -227,22 +235,25 @@
           placeholder="サウナ旅のタイトル"
         />
       {:else}
-        <h1 class="rally-title" onclick={() => hasEditPermission && (isEditingTitle = true)}>
+        <h1 class="rally-title" onclick={() => hasEditPermission && !isViewMode && (isEditingTitle = true)}>
           {itinerary.title}
         </h1>
       {/if}
 
       <div class="header-actions">
         {#if hasEditPermission}
-          <button class="add-sauna-button-header" onclick={() => (isAddingSauna = true)}>
-            + サウナ追加
+          <button class="view-mode-toggle-button" onclick={toggleViewMode}>
+            {isViewMode ? '編集モード' : '閲覧モード'}
           </button>
-          <button class="theme-button" onclick={() => (showThemeSelect = !showThemeSelect)}>
-            テーマ変更
-          </button>
-        {/if}
-
-        {#if !hasEditPermission}
+          {#if !isViewMode}
+            <button class="add-sauna-button-header" onclick={() => (isAddingSauna = true)}>
+              + サウナ追加
+            </button>
+            <button class="theme-button" onclick={() => (showThemeSelect = !showThemeSelect)}>
+              テーマ変更
+            </button>
+          {/if}
+        {:else}
           <button class="edit-button" onclick={attemptEditModeActivation}>
             編集モード
           </button>
@@ -255,6 +266,7 @@
     <StepList
       {steps}
       {hasEditPermission}
+      {isViewMode}
       onAddSauna={() => (isAddingSauna = true)}
       {onUpdateStep}
       {onDeleteStep}

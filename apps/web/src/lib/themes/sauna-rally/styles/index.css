@@ -146,6 +146,23 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
+.view-mode-toggle-button {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.95);
+  color: #ff6b35;
+  border: 2px solid white;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.view-mode-toggle-button:hover {
+  background: white;
+  color: #ff5722;
+}
+
 .add-sauna-button-header {
   padding: 0.5rem 1rem;
   background: white;

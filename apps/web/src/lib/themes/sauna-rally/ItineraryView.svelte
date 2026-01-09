@@ -9,6 +9,7 @@
   import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
   import "./styles/index.css";
+  import ShareDialog from "./components/ShareDialog.svelte";
 
   interface Props {
     itinerary: ItineraryResponse;
@@ -58,6 +59,8 @@
   let showThemeSelect = $state(false);
   let password = $state("");
   let isAuthenticating = $state(false);
+  let showShareDialog = $state(false);
+  let showCopyMessage = $state(false);
 
   interface SaunaData {
     visited?: boolean;
@@ -201,6 +204,49 @@
     }
   }
 
+  function handleShare() {
+    if (hasEditPermission) {
+      showShareDialog = true;
+    } else {
+      copyViewOnlyLink();
+    }
+  }
+
+  async function copyViewOnlyLink() {
+    try {
+      const url = window.location.origin + window.location.pathname;
+      await navigator.clipboard.writeText(url);
+      showCopyMessage = true;
+      setTimeout(() => {
+        showCopyMessage = false;
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  }
+
+  async function copyShareLink(includeToken: boolean) {
+    try {
+      let url = window.location.origin + window.location.pathname;
+
+      if (includeToken && hasEditPermission) {
+        const token = auth.getToken(itinerary.id);
+        if (token) {
+          url += `?token=${token}`;
+        }
+      }
+
+      await navigator.clipboard.writeText(url);
+      showShareDialog = false;
+      showCopyMessage = true;
+      setTimeout(() => {
+        showCopyMessage = false;
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  }
+
   function cancelAddSauna() {
     newSauna = {
       title: "",
@@ -241,6 +287,11 @@
 
       <div class="header-actions">
         {#if hasEditPermission}
+          <button class="share-button" onclick={handleShare} aria-label="共有">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+              <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.06c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.44 9.31 6.77 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.77 0 1.44-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" />
+            </svg>
+          </button>
           <button class="view-mode-toggle-button" onclick={toggleViewMode}>
             {isViewMode ? '編集モード' : '閲覧モード'}
           </button>
@@ -295,6 +346,19 @@
         閉じる
       </button>
     </div>
+  </div>
+{/if}
+
+<ShareDialog
+  show={showShareDialog}
+  {hasEditPermission}
+  onCopyLink={copyShareLink}
+  onClose={() => (showShareDialog = false)}
+/>
+
+{#if showCopyMessage}
+  <div class="sauna-copy-message">
+    🔗 リンクをコピーしました!
   </div>
 {/if}
 

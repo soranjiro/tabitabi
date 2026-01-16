@@ -8,7 +8,7 @@ export class StepService {
 
   async list(itineraryId: string, options?: { currentTime?: string; offsetMinutes?: number; maskSecrets?: boolean }): Promise<Step[]> {
     let query = 'SELECT * FROM steps WHERE itinerary_id = ?';
-    const bindings: any[] = [itineraryId];
+    const bindings: (string | number)[] = [itineraryId];
 
     // If time filtering is enabled (secret mode)
     if (options?.currentTime && options?.offsetMinutes !== undefined) {
@@ -48,7 +48,7 @@ export class StepService {
   }
 
   async create(input: CreateStepInput): Promise<Step> {
-    const id = generateId(32);
+    const id = generateId();
     const now = getCurrentTimestamp();
 
     const notes = input.notes ?? '{"text":""}';
@@ -95,7 +95,7 @@ export class StepService {
 
     const now = getCurrentTimestamp();
     const fields = ['updated_at = ?'];
-    const values: any[] = [now];
+    const values: (string | number | null)[] = [now];
 
     if (input.title !== undefined) {
       fields.push('title = ?');
@@ -141,7 +141,7 @@ export class StepService {
     return result.success;
   }
 
-  private mapToStep(row: any, maskSecrets: boolean = true): Step {
+  private mapToStep(row: Record<string, unknown>, maskSecrets: boolean = true): Step {
     const step: Step = {
       id: row.id,
       itinerary_id: row.itinerary_id,

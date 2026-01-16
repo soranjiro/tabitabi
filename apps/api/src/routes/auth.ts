@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { Env } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
 import { generateToken, verifyToken, extractBearerToken } from '../utils/jwt';
+import { verifyPassword } from '../utils/password';
 import type { PasswordAuthRequest } from '@tabitabi/types';
 
 const auth = new Hono<{ Bindings: Env }>();
@@ -52,17 +53,20 @@ auth.post('/password', async (c) => {
     }, 404);
   }
 
-  // If itinerary has a password, verify it
-  if (itinerary.password && itinerary.password !== password) {
-    return c.json({
-      success: false,
-      error: { code: 'UNAUTHORIZED', message: 'Invalid password' }
-    }, 401);
-  }
-
-  // If itinerary has no password, allow access (password can be anything or empty)
-  if (!itinerary.password) {
-    // No check needed
+  if (itinerary.password) {
+    if (!password) {
+      return c.json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Invalid password' }
+      }, 401);
+    }
+    const isValid = await verifyPassword(password, itinerary.password);
+    if (!isValid) {
+      return c.json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Invalid password' }
+      }, 401);
+    }
   }
 
   const token = await generateToken(shioriId, c.env.JWT_SECRET);

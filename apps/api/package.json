@@ -12,12 +12,14 @@
   },
   "dependencies": {
     "@tsndr/cloudflare-worker-jwt": "^3.2.0",
+    "bcryptjs": "^3.0.3",
     "hono": "^4.6.14"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.10.10",
     "@cloudflare/workers-types": "^4.20250110.0",
     "@tabitabi/types": "workspace:*",
+    "@types/bcryptjs": "^3.0.0",
     "typescript": "^5.6.3",
     "vitest": "^3.2.0",
     "wrangler": "^4.38.0"

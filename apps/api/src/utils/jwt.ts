@@ -27,9 +27,6 @@ export async function verifyToken(token: string, secret?: string): Promise<JwtPa
     throw new Error('JWT_SECRET is required');
   }
   try {
-    const isValid = await verify(token, secret);
-    if (!isValid) return null;
-
     const { payload } = await verify(token, secret, { throwError: true }) as { payload: JwtPayload };
 
     if (payload.exp < Math.floor(Date.now() / 1000)) {

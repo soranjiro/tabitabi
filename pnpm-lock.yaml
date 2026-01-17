@@ -24,8 +24,8 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0
       bcryptjs:
-        specifier: ^3.0.3
-        version: 3.0.3
+        specifier: ^2.4.3
+        version: 2.4.3
       hono:
         specifier: ^4.6.14
         version: 4.10.6
@@ -1474,9 +1474,8 @@ packages:
     resolution: {integrity: sha512-L+YvJwGAgwJBV1p6ffpSTa2KRc69EeeYGYjRVWKs0GKrK+LON0GC0gV+rKSNtALEDvMDqkvCFq9r1r94/Gjwxw==}
     hasBin: true
 
-  bcryptjs@3.0.3:
-    resolution: {integrity: sha512-GlF5wPWnSa/X5LKM1o0wz0suXIINz1iHRLvTS+sLyi7XPbe5ycmYI3DlZqVGZZtDgl4DmasFg7gOB3JYbphV5g==}
-    hasBin: true
+  bcryptjs@2.4.3:
+    resolution: {integrity: sha512-V/Hy/X9Vt7f3BbPJEi8BdVFMByHi+jNXrYkW3huaybV/kQ0KJg0Y6PkEMbn+zeT+i+SiKZ/HMqJGIIt4LZDqNQ==}
 
   bidi-js@1.0.3:
     resolution: {integrity: sha512-RKshQI1R3YQ+n9YJz2QQ147P66ELpa1FQEg20Dk8oW9t2KgLbpDLLp9aGZ7y8WHSshDknG0bknqGw5/tyCs5tw==}
@@ -3637,7 +3636,7 @@ snapshots:
 
   baseline-browser-mapping@2.8.4: {}
 
-  bcryptjs@3.0.3: {}
+  bcryptjs@2.4.3: {}
 
   bidi-js@1.0.3:
     dependencies:

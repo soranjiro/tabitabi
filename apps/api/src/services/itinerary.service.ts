@@ -2,6 +2,7 @@ import type { Itinerary, CreateItineraryInput, UpdateItineraryInput } from '@tab
 import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
 import { validateMemoJson } from '../utils/memo';
+import { hashPassword } from '../utils/password';
 
 const DEFAULT_THEME_ID = 'standard-autumn';
 
@@ -42,7 +43,7 @@ export class ItineraryService {
   }
 
   async create(input: CreateItineraryInput): Promise<Itinerary> {
-    const id = generateId(32);
+    const id = generateId();
     const now = getCurrentTimestamp();
 
     const memo = input.memo ?? '{"text":""}';
@@ -51,13 +52,15 @@ export class ItineraryService {
       throw new Error(validation.error);
     }
 
+    const hashedPassword = input.password ? await hashPassword(input.password) : null;
+
     const itinerary: Itinerary = {
       id,
       title: input.title,
       theme_id: input.theme_id || DEFAULT_THEME_ID,
       memo,
       walica_id: input.walica_id ?? null,
-      password: input.password ?? null,
+      password: hashedPassword,
       secret_settings: input.secret_settings ? {
         enabled: input.secret_settings.enabled,
         offset_minutes: input.secret_settings.offset_minutes
@@ -103,7 +106,7 @@ export class ItineraryService {
 
     const now = getCurrentTimestamp();
     const fields = ['updated_at = ?'];
-    const values: any[] = [now];
+    const values: (string | number | null)[] = [now];
 
     if (input.title !== undefined) {
       fields.push('title = ?');
@@ -123,7 +126,8 @@ export class ItineraryService {
     }
     if (input.password !== undefined) {
       fields.push('password = ?');
-      values.push(input.password);
+      const hashedPassword = input.password ? await hashPassword(input.password) : null;
+      values.push(hashedPassword);
     }
 
     if (fields.length > 1) {
@@ -200,7 +204,7 @@ export class ItineraryService {
     return result.success;
   }
 
-  private mapToItinerary(row: any): Itinerary {
+  private mapToItinerary(row: Record<string, unknown>): Itinerary {
     const itinerary: Itinerary = {
       id: row.id,
       title: row.title,

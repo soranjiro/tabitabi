@@ -4,13 +4,8 @@ export interface Env {
   JWT_SECRET?: string;
 }
 
-export function generateId(length: number = 32): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
+export function generateId(): string {
+  return crypto.randomUUID();
 }
 
 export function getCurrentTimestamp(): string {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import Dialog from "./Dialog.svelte";
   import { renderMarkdown } from "../utils/markdown";
+  import { getMemoText, updateMemoText } from "$lib/memo";
 
   interface Props {
     show: boolean;
@@ -12,21 +13,22 @@
 
   let { show, memo, hasEditPermission, onSave, onClose }: Props = $props();
 
-  let editedMemo = $state(memo);
+  let editedMemoText = $state(getMemoText(memo));
 
   $effect(() => {
-    editedMemo = memo;
+    editedMemoText = getMemoText(memo);
   });
 
   function handleSave() {
-    onSave(editedMemo.trim());
+    const updatedMemo = updateMemoText(memo, editedMemoText.trim());
+    onSave(updatedMemo);
   }
 </script>
 
 <Dialog {show} title="メモ" {onClose}>
   {#snippet children()}
     <textarea
-      bind:value={editedMemo}
+      bind:value={editedMemoText}
       placeholder="メモを入力..."
       class="standard-autumn-textarea"
       rows="6"

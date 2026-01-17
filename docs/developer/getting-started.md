@@ -185,3 +185,29 @@ const steps = await getSteps(itineraryId);
    ```
    - API: `http://localhost:8787`
    - Web: `http://localhost:5173`
+
+### 環境変数 / Secrets の設定
+
+JWTベースの認証を利用しているため、`JWT_SECRET` の設定が必要です。ローカルとテストはサンプル値で動作しますが、本番は必ずダッシュボードまたはWranglerのSecretsで設定してください。
+
+- ローカル開発: `apps/api/wrangler.toml` の `[vars]` に開発用値を設定済み
+- CI/テスト: `apps/api/wrangler.test.toml` にテスト用値を設定済み
+- 本番環境: Cloudflare Workers の Secrets に登録（ソースコードに秘密値は含めない）
+
+本番への設定例（Wrangler経由）
+
+```bash
+cd apps/api
+pnpm wrangler login
+pnpm wrangler secret put JWT_SECRET --env production
+```
+
+Cloudflareダッシュボードから設定する場合
+- Workers & Queues → 該当Worker（例: `tabitabi-api`）→ Settings → Variables → Secrets に `JWT_SECRET` を追加
+
+デプロイ時に `--env production` を指定していない場合、`[env.production]` の設定が反映されません。必要に応じて以下で明示します。
+
+```bash
+cd apps/api
+pnpm wrangler deploy --env production
+```

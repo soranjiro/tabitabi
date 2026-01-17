@@ -3,6 +3,7 @@
   import type { ItineraryResponse, Step } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
+  import { authApi } from "$lib/api/auth";
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { getIsDemoMode } from "$lib/demo";
   import { onMount } from "svelte";

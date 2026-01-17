@@ -31,7 +31,7 @@ export function getMemoText(memo: string | null | undefined): string {
 
 export function updateMemoText(memo: string | null | undefined, text: string): string {
   const data = parseMemoData(memo);
-  data.text = text;
+  data.text = sanitizeMemoText(text);
   return stringifyMemoData(data);
 }
 
@@ -54,4 +54,12 @@ export function removeMemoFields(
     }
   }
   return stringifyMemoData(data);
+}
+
+export function sanitizeMemoText(text: string): string {
+  return text
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+    .replace(/javascript:/gi, '');
 }

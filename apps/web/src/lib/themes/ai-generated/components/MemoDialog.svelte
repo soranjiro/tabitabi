@@ -1,6 +1,7 @@
 <script lang="ts">
   import Dialog from "./Dialog.svelte";
   import { renderMarkdown } from "../utils/markdown";
+  import { getMemoText, updateMemoText } from "$lib/memo";
 
   interface Props {
     show: boolean;
@@ -12,18 +13,19 @@
 
   let { show, memo, hasEditPermission, onSave, onClose }: Props = $props();
 
-  let editedMemo = $state(memo);
+  let editedMemoText = $state(getMemoText(memo));
   let activeTab = $state<"edit" | "preview">("edit");
 
   $effect(() => {
     if (show) {
-      editedMemo = memo;
+      editedMemoText = getMemoText(memo);
       activeTab = hasEditPermission ? "edit" : "preview";
     }
   });
 
   function handleSave() {
-    onSave(editedMemo);
+    const updatedMemo = updateMemoText(memo, editedMemoText);
+    onSave(updatedMemo);
   }
 </script>
 
@@ -51,14 +53,14 @@
 
       {#if activeTab === "edit"}
         <textarea
-          bind:value={editedMemo}
+          bind:value={editedMemoText}
           placeholder="Markdown形式で記入できます&#10;&#10;## 持ち物リスト&#10;- [ ] パスポート&#10;- [ ] 財布&#10;&#10;## 予約情報&#10;ホテル: ○○ホテル"
           class="ai-memo-textarea"
         ></textarea>
       {:else}
         <div class="ai-memo-preview ai-memo-content">
-          {#if editedMemo}
-            {@html renderMarkdown(editedMemo)}
+          {#if editedMemoText}
+            {@html renderMarkdown(editedMemoText)}
           {:else}
             <p class="ai-memo-empty">プレビューする内容がありません</p>
           {/if}

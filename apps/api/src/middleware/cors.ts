@@ -19,6 +19,7 @@ function matchOrigin(origin: string, allowed: string[]): boolean {
 
 export async function corsMiddleware(c: Context<{ Bindings: Env }>, next: () => Promise<void>) {
   const origin = c.req.header('Origin') || '';
+  const userAgent = c.req.header('User-Agent') || '';
   const allowedOriginsEnv = c.env.ALLOWED_ORIGINS || '*';
 
   const allowedOrigins = allowedOriginsEnv === '*'
@@ -37,6 +38,7 @@ export async function corsMiddleware(c: Context<{ Bindings: Env }>, next: () => 
           method: c.req.method,
           path: url.pathname,
           origin,
+          userAgent: userAgent.substring(0, 100), // 最初の100文字のみ
           allowedOrigins,
           timestamp: new Date().toISOString(),
         }));
@@ -44,6 +46,7 @@ export async function corsMiddleware(c: Context<{ Bindings: Env }>, next: () => 
         console.warn('[CORS_BLOCK]', JSON.stringify({
           method: c.req.method,
           origin,
+          userAgent: userAgent.substring(0, 100),
           allowedOrigins,
           timestamp: new Date().toISOString(),
         }));
@@ -54,6 +57,27 @@ export async function corsMiddleware(c: Context<{ Bindings: Env }>, next: () => 
       await next();
       return;
     }
+  }
+
+  // Log all requests for debugging
+  try {
+    const url = new URL(c.req.url);
+    console.log('[CORS_ALLOW]', JSON.stringify({
+      method: c.req.method,
+      path: url.pathname,
+      origin,
+      userAgent: userAgent.substring(0, 100),
+      allowedOrigin,
+      timestamp: new Date().toISOString(),
+    }));
+  } catch (_) {
+    console.log('[CORS_ALLOW]', JSON.stringify({
+      method: c.req.method,
+      origin,
+      userAgent: userAgent.substring(0, 100),
+      allowedOrigin,
+      timestamp: new Date().toISOString(),
+    }));
   }
 
   const reqAllowedHeaders = c.req.header('Access-Control-Request-Headers');

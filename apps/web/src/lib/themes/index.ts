@@ -56,28 +56,28 @@ const THEME_CATALOG: Array<{
     phrase: "RPGデザイン",
   },
   {
-    id: "sauna-rally",
-    name: "サウナスタンプラリー",
-    description: "サウナ旅を記録",
-    phrase: "サウナ巡り",
-  },
-  {
     id: "map-only",
     name: "Map Only",
     description: "地図のみを表示",
-    phrase: "地図で計画",
+    phrase: "地図での計画",
   },
   {
     id: "mapbox-journey",
     name: "Mapbox Journey",
     description: "3D地図・グローブ表示",
-    phrase: "世界旅行",
+    phrase: "Mapboxでの旅",
   },
   {
     id: "ai-generated",
     name: "AI Generated",
     description: "purple",
-    phrase: "ユニーク計画",
+    phrase: "AI生成デザイン",
+  },
+  {
+    id: "sauna-rally",
+    name: "サウナスタンプラリー",
+    description: "サウナ旅を記録",
+    phrase: "サウナ巡り",
   },
 ];
 

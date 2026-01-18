@@ -38,6 +38,14 @@
   let heroIconRef = $state<HTMLButtonElement | null>(null);
   let isFlying = $derived(flyingAirplanes.length > 0);
 
+  let scrollY = $state(0);
+  let heroRef = $state<HTMLElement | null>(null);
+  let featuresRef = $state<HTMLElement | null>(null);
+  let createRef = $state<HTMLElement | null>(null);
+  let featuresVisible = $state(false);
+  let createVisible = $state(false);
+  let pageReady = $state(false);
+
   function spawnFlyingAirplane() {
     if (!heroIconRef || isFlying) return;
 
@@ -59,25 +67,44 @@
   }
 
   onMount(() => {
-    // Reset demo mode when entering the home page
     resetDemoMode();
-    
-    setTimeout(() => {
-      recentItineraries = auth.getRecentItineraries();
-      showRecent = true;
-    }, 300);
+    pageReady = true;
+
+    recentItineraries = auth.getRecentItineraries();
+    showRecent = true;
 
     const interval = setInterval(() => {
       currentPreview = (currentPreview + 1) % previewItineraries.length;
     }, 3000);
+
     const handleScroll = () => {
       showScrollButton = window.scrollY > 300;
+      scrollY = window.scrollY;
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    const observerOptions = {
+      threshold: 0.15,
+      rootMargin: "0px 0px -50px 0px",
+    };
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.target === featuresRef && entry.isIntersecting) {
+          featuresVisible = true;
+        }
+        if (entry.target === createRef && entry.isIntersecting) {
+          createVisible = true;
+        }
+      });
+    }, observerOptions);
+
+    if (featuresRef) observer.observe(featuresRef);
+    if (createRef) observer.observe(createRef);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener("scroll", handleScroll);
+      observer.disconnect();
     };
   });
 
@@ -93,6 +120,9 @@
     auth.removeFromHistory(id);
     recentItineraries = auth.getRecentItineraries();
   }
+
+  let heroParallax = $derived(scrollY * 0.3);
+  let heroOpacity = $derived(Math.max(0, 1 - scrollY / 600));
 </script>
 
 <svelte:head>
@@ -120,7 +150,7 @@
   <link rel="canonical" href="https://tabitabi.pages.dev/" />
 </svelte:head>
 
-<div class="home-page">
+<div class="home-page" class:page-ready={pageReady}>
   {#each flyingAirplanes as id (id)}
     {@const pos = getHeroIconPosition()}
     <FlyingAirplane
@@ -130,9 +160,19 @@
     />
   {/each}
 
-  <section class="hero">
+  <section
+    class="hero"
+    bind:this={heroRef}
+    style="transform: translateY({heroParallax}px); opacity: {heroOpacity};"
+  >
+    <div class="hero-bg-decoration">
+      <div class="bg-circle bg-circle-1"></div>
+      <div class="bg-circle bg-circle-2"></div>
+      <div class="bg-circle bg-circle-3"></div>
+    </div>
+
     <div class="hero-main">
-      <div class="hero-content">
+      <div class="hero-content animate-slide-up">
         <h1 class="hero-title">
           <button
             class="hero-icon"
@@ -165,7 +205,7 @@
         </div>
       </div>
 
-      <div class="hero-preview">
+      <div class="hero-preview animate-slide-up animate-delay-1">
         <PreviewCarousel
           previews={previewItineraries}
           currentIndex={currentPreview}
@@ -176,7 +216,18 @@
     </div>
   </section>
 
-  <section id="features" class="features">
+  <section
+    id="features"
+    class="features"
+    bind:this={featuresRef}
+    class:section-visible={featuresVisible}
+  >
+    <div class="features-decoration">
+      <div class="deco-blob deco-blob-1"></div>
+      <div class="deco-blob deco-blob-2"></div>
+      <div class="deco-line deco-line-1"></div>
+      <div class="deco-line deco-line-2"></div>
+    </div>
     <div class="section-header">
       <h2 class="section-title">シンプルに、便利に</h2>
       <a href="/docs/index" class="docs-link" title="ドキュメントを見る">
@@ -189,47 +240,73 @@
       </a>
     </div>
     <div class="features-grid">
-      <FeatureCard
-        title="スマホ最適化"
-        description="どこでも旅程を確認{'\n'}アプリ不要"
-      >
-        {#snippet icon()}
-          <IconPhone size={32} />
-        {/snippet}
-      </FeatureCard>
-      <FeatureCard
-        title="URL共有"
-        description="リンク1つで仲間と共有{'\n'}ユーザ登録不要"
-      >
-        {#snippet icon()}
-          <IconLink size={32} />
-        {/snippet}
-      </FeatureCard>
-      <FeatureCard
-        title="テーマ選択"
-        description="シーンに合ったデザイン{'\n'}カスタマイズ自在"
-      >
-        {#snippet icon()}
-          <IconPalette size={32} />
-        {/snippet}
-      </FeatureCard>
-      <FeatureCard
-        title="軽量・高速"
-        description="表示まで1秒{'\n'}ストレスゼロ"
-      >
-        {#snippet icon()}
-          <IconBolt size={32} />
-        {/snippet}
-      </FeatureCard>
+      <div class="feature-item feature-delay-0">
+        <FeatureCard
+          title="スマホ最適化"
+          description="どこでも旅程を確認{'\n'}アプリ不要"
+        >
+          {#snippet icon()}
+            <IconPhone size={32} />
+          {/snippet}
+        </FeatureCard>
+      </div>
+      <div class="feature-item feature-delay-1">
+        <FeatureCard
+          title="URL共有"
+          description="リンク1つで仲間と共有{'\n'}ユーザ登録不要"
+        >
+          {#snippet icon()}
+            <IconLink size={32} />
+          {/snippet}
+        </FeatureCard>
+      </div>
+      <div class="feature-item feature-delay-2">
+        <FeatureCard
+          title="テーマ選択"
+          description="シーンに合ったデザイン{'\n'}カスタマイズ自在"
+        >
+          {#snippet icon()}
+            <IconPalette size={32} />
+          {/snippet}
+        </FeatureCard>
+      </div>
+      <div class="feature-item feature-delay-3">
+        <FeatureCard
+          title="軽量・高速"
+          description="表示まで1秒{'\n'}ストレスゼロ"
+        >
+          {#snippet icon()}
+            <IconBolt size={32} />
+          {/snippet}
+        </FeatureCard>
+      </div>
     </div>
   </section>
 
-  <section id="create" class="create-section">
+  <section
+    id="create"
+    class="create-section"
+    bind:this={createRef}
+    class:section-visible={createVisible}
+  >
+    <div class="create-decoration">
+      <div class="create-orb create-orb-1"></div>
+      <div class="create-orb create-orb-2"></div>
+      <div class="create-orb create-orb-3"></div>
+      <div class="grid-pattern"></div>
+    </div>
     <div class="create-container">
-      <CreateForm />
+      <div class="create-form-wrapper">
+        <CreateForm />
+      </div>
 
       {#if showRecent}
-        <RecentItineraries items={recentItineraries} onRemove={removeRecent} />
+        <div class="recent-wrapper">
+          <RecentItineraries
+            items={recentItineraries}
+            onRemove={removeRecent}
+          />
+        </div>
       {/if}
     </div>
   </section>
@@ -248,6 +325,7 @@
   .home-page {
     min-height: 100vh;
     background: linear-gradient(145deg, #84c6ff 0%, #a6b3ff 40%, #b5daf8 100%);
+    overflow-x: hidden;
   }
 
   .hero {
@@ -256,6 +334,79 @@
     align-items: center;
     justify-content: center;
     padding: 1.5rem 1rem;
+    position: relative;
+    will-change: transform, opacity;
+  }
+
+  .hero-bg-decoration {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .bg-circle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    animation: float 20s ease-in-out infinite;
+  }
+
+  .bg-circle-1 {
+    width: 300px;
+    height: 300px;
+    top: -100px;
+    right: -50px;
+    animation-delay: 0s;
+  }
+
+  .bg-circle-2 {
+    width: 200px;
+    height: 200px;
+    bottom: 10%;
+    left: -80px;
+    animation-delay: -7s;
+  }
+
+  .bg-circle-3 {
+    width: 150px;
+    height: 150px;
+    top: 40%;
+    right: 10%;
+    animation-delay: -14s;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(15px, -20px) scale(1.05);
+    }
+    66% {
+      transform: translate(-10px, 10px) scale(0.95);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-delay-1 {
+    animation-delay: 0.15s;
+    opacity: 0;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @media (max-width: 480px) {
@@ -273,6 +424,8 @@
     width: 100%;
     height: 100%;
     justify-content: center;
+    position: relative;
+    z-index: 1;
   }
 
   @media (min-width: 900px) {
@@ -398,13 +551,33 @@
     border-radius: 9999px;
     border: none;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      120deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 70%
+    );
+    transform: translateX(-100%);
+    transition: transform 0.6s;
   }
 
   .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-primary:hover::after {
+    transform: translateX(100%);
   }
 
   .hero-recent {
@@ -418,13 +591,112 @@
   }
 
   .features {
-    background: white;
-    padding: 4rem 1rem;
+    background: linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #f0f7ff 30%,
+      #e4f0fd 70%,
+      #dbe9ff 100%
+    );
+    padding: 5rem 1rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .features-decoration {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .deco-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.5;
+  }
+
+  .deco-blob-1 {
+    width: 400px;
+    height: 400px;
+    background: linear-gradient(135deg, #93c5fd 0%, #a5b4fc 100%);
+    top: -150px;
+    right: -100px;
+    animation: blobFloat 15s ease-in-out infinite;
+  }
+
+  .deco-blob-2 {
+    width: 300px;
+    height: 300px;
+    background: linear-gradient(135deg, #67e8f9 0%, #a5b4fc 100%);
+    bottom: -100px;
+    left: -80px;
+    animation: blobFloat 18s ease-in-out infinite reverse;
+  }
+
+  .deco-line {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(147, 197, 253, 0.4),
+      transparent
+    );
+    transform: rotate(-3deg);
+  }
+
+  .deco-line-1 {
+    width: 60%;
+    top: 30%;
+    left: 20%;
+  }
+
+  .deco-line-2 {
+    width: 40%;
+    bottom: 25%;
+    right: 15%;
+    transform: rotate(2deg);
+  }
+
+  @keyframes blobFloat {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(30px, -20px) scale(1.1);
+    }
+  }
+
+  .features::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(145deg, #84c6ff 0%, #a6b3ff 40%, #b5daf8 100%);
+    clip-path: polygon(0 0, 100% 0, 100% 20%, 0 100%);
+    pointer-events: none;
+  }
+
+  .features::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(135deg, #dbe9ff 0%, #d4e4ff 50%, #e0ecff 100%);
+    clip-path: polygon(0 80%, 100% 0, 100% 100%, 0 100%);
+    pointer-events: none;
   }
 
   @media (max-width: 480px) {
     .features {
-      padding: 2.5rem 1rem;
+      padding: 3.5rem 1rem 3rem;
     }
   }
 
@@ -434,6 +706,16 @@
     justify-content: center;
     gap: 0.5rem;
     margin-bottom: 2.5rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-visible .section-header {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   @media (max-width: 480px) {
@@ -502,6 +784,8 @@
     gap: 1rem;
     max-width: 500px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
   }
 
   @media (min-width: 768px) {
@@ -509,6 +793,30 @@
       grid-template-columns: repeat(4, 1fr);
       max-width: 700px;
     }
+  }
+
+  .feature-item {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .section-visible .feature-item {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .feature-delay-0 {
+    transition-delay: 0.1s;
+  }
+  .feature-delay-1 {
+    transition-delay: 0.2s;
+  }
+  .feature-delay-2 {
+    transition-delay: 0.3s;
+  }
+  .feature-delay-3 {
+    transition-delay: 0.4s;
   }
 
   .hero-preview {
@@ -531,23 +839,168 @@
 
   .create-section {
     background: linear-gradient(
-      to bottom,
-      white 0%,
-      #dceeff 2%,
-      #e1e6ff 20%,
-      #e4f3ff 100%
+      160deg,
+      #dbe9ff 0%,
+      #c7dcff 20%,
+      #b8d4ff 40%,
+      #c4dbff 60%,
+      #d8e8ff 80%,
+      #e8f2ff 100%
     );
-    padding: 4rem 1rem;
+    padding: 5rem 1rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .create-decoration {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .create-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+  }
+
+  .create-orb-1 {
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(
+      circle,
+      rgba(147, 197, 253, 0.5) 0%,
+      transparent 70%
+    );
+    top: -100px;
+    left: -80px;
+    animation: orbPulse 10s ease-in-out infinite;
+  }
+
+  .create-orb-2 {
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(
+      circle,
+      rgba(165, 180, 252, 0.4) 0%,
+      transparent 70%
+    );
+    bottom: -80px;
+    right: -60px;
+    animation: orbPulse 12s ease-in-out infinite 2s;
+  }
+
+  .create-orb-3 {
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(
+      circle,
+      rgba(103, 232, 249, 0.25) 0%,
+      transparent 70%
+    );
+    top: 40%;
+    right: 20%;
+    animation: orbPulse 8s ease-in-out infinite 4s;
+  }
+
+  .grid-pattern {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+        rgba(147, 197, 253, 0.08) 1px,
+        transparent 1px
+      ),
+      linear-gradient(90deg, rgba(147, 197, 253, 0.08) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(
+      ellipse at center,
+      black 30%,
+      transparent 80%
+    );
+  }
+
+  @keyframes orbPulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.15);
+      opacity: 0.7;
+    }
+  }
+
+  .create-section::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(180deg, #e4f0fd 0%, #dbe9ff 100%);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 20%);
+    pointer-events: none;
   }
 
   @media (max-width: 480px) {
     .create-section {
-      padding: 2.5rem 1rem;
+      padding: 3.5rem 1rem 3rem;
+    }
+
+    .create-orb-1,
+    .create-orb-2,
+    .create-orb-3 {
+      filter: blur(50px);
+    }
+
+    .grid-pattern {
+      background-size: 30px 30px;
     }
   }
 
   .create-container {
     max-width: 480px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .create-form-wrapper {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+    transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .section-visible .create-form-wrapper {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .recent-wrapper {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+  }
+
+  .section-visible .recent-wrapper {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .home-page {
+    opacity: 0;
+  }
+
+  .home-page.page-ready {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    to {
+      opacity: 1;
+    }
   }
 </style>

@@ -222,63 +222,59 @@
     bind:this={featuresRef}
     class:section-visible={featuresVisible}
   >
-    <div class="features-decoration">
-      <div class="deco-blob deco-blob-1"></div>
-      <div class="deco-blob deco-blob-2"></div>
-      <div class="deco-line deco-line-1"></div>
-      <div class="deco-line deco-line-2"></div>
-    </div>
-    <div class="section-header">
-      <h2 class="section-title">シンプルに、便利に</h2>
-      <a href="/docs/index" class="docs-link" title="ドキュメントを見る">
-        <span class="docs-icon-wrapper">
-          <IconBook size={30} />
-          <span class="external-badge">
-            <IconExternalLink size={18} />
+    <div class="section-inner">
+      <div class="section-header">
+        <h2 class="section-title">シンプルに、便利に</h2>
+        <a href="/docs/index" class="docs-link" title="ドキュメントを見る">
+          <span class="docs-icon-wrapper">
+            <IconBook size={30} />
+            <span class="external-badge">
+              <IconExternalLink size={18} />
+            </span>
           </span>
-        </span>
-      </a>
-    </div>
-    <div class="features-grid">
-      <div class="feature-item feature-delay-0">
-        <FeatureCard
-          title="スマホ最適化"
-          description="どこでも旅程を確認{'\n'}アプリ不要"
-        >
-          {#snippet icon()}
-            <IconPhone size={32} />
-          {/snippet}
-        </FeatureCard>
+        </a>
       </div>
-      <div class="feature-item feature-delay-1">
-        <FeatureCard
-          title="URL共有"
-          description="リンク1つで仲間と共有{'\n'}ユーザ登録不要"
-        >
-          {#snippet icon()}
-            <IconLink size={32} />
-          {/snippet}
-        </FeatureCard>
-      </div>
-      <div class="feature-item feature-delay-2">
-        <FeatureCard
-          title="テーマ選択"
-          description="シーンに合ったデザイン{'\n'}カスタマイズ自在"
-        >
-          {#snippet icon()}
-            <IconPalette size={32} />
-          {/snippet}
-        </FeatureCard>
-      </div>
-      <div class="feature-item feature-delay-3">
-        <FeatureCard
-          title="軽量・高速"
-          description="表示まで1秒{'\n'}ストレスゼロ"
-        >
-          {#snippet icon()}
-            <IconBolt size={32} />
-          {/snippet}
-        </FeatureCard>
+      <div class="features-grid">
+        <div class="feature-item feature-delay-0">
+          <FeatureCard
+            title="スマホ最適化"
+            description="どこでも旅程を確認{'\n'}アプリ不要"
+          >
+            {#snippet icon()}
+              <IconPhone size={32} />
+            {/snippet}
+          </FeatureCard>
+        </div>
+        <div class="feature-item feature-delay-1">
+          <FeatureCard
+            title="URL共有"
+            description="リンク1つで仲間と共有{'\n'}ユーザ登録不要"
+          >
+            {#snippet icon()}
+              <IconLink size={32} />
+            {/snippet}
+          </FeatureCard>
+        </div>
+        <div class="feature-item feature-delay-2">
+          <FeatureCard
+            title="テーマ選択"
+            description="シーンに合ったデザイン{'\n'}カスタマイズ自在"
+          >
+            {#snippet icon()}
+              <IconPalette size={32} />
+            {/snippet}
+          </FeatureCard>
+        </div>
+        <div class="feature-item feature-delay-3">
+          <FeatureCard
+            title="軽量・高速"
+            description="表示まで1秒{'\n'}ストレスゼロ"
+          >
+            {#snippet icon()}
+              <IconBolt size={32} />
+            {/snippet}
+          </FeatureCard>
+        </div>
       </div>
     </div>
   </section>
@@ -289,25 +285,21 @@
     bind:this={createRef}
     class:section-visible={createVisible}
   >
-    <div class="create-decoration">
-      <div class="create-orb create-orb-1"></div>
-      <div class="create-orb create-orb-2"></div>
-      <div class="create-orb create-orb-3"></div>
-      <div class="grid-pattern"></div>
-    </div>
-    <div class="create-container">
-      <div class="create-form-wrapper">
-        <CreateForm />
-      </div>
-
-      {#if showRecent}
-        <div class="recent-wrapper">
-          <RecentItineraries
-            items={recentItineraries}
-            onRemove={removeRecent}
-          />
+    <div class="section-inner">
+      <div class="create-container">
+        <div class="create-form-wrapper">
+          <CreateForm />
         </div>
-      {/if}
+
+        {#if showRecent}
+          <div class="recent-wrapper">
+            <RecentItineraries
+              items={recentItineraries}
+              onRemove={removeRecent}
+            />
+          </div>
+        {/if}
+      </div>
     </div>
   </section>
 
@@ -326,6 +318,13 @@
     min-height: 100vh;
     background: linear-gradient(145deg, #84c6ff 0%, #a6b3ff 40%, #b5daf8 100%);
     overflow-x: hidden;
+  }
+
+  .section-inner {
+    max-width: 980px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
   }
 
   .hero {
@@ -593,105 +592,27 @@
   .features {
     background: linear-gradient(
       180deg,
-      #ffffff 0%,
-      #f0f7ff 30%,
-      #e4f0fd 70%,
-      #dbe9ff 100%
+      rgba(255, 255, 255, 0.92) 0%,
+      #f7fbff 35%,
+      #f3f7ff 100%
     );
-    padding: 5rem 1rem 4rem;
+    padding: 4.5rem 1rem 3.75rem;
     position: relative;
     overflow: hidden;
-  }
-
-  .features-decoration {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-  }
-
-  .deco-blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(60px);
-    opacity: 0.5;
-  }
-
-  .deco-blob-1 {
-    width: 400px;
-    height: 400px;
-    background: linear-gradient(135deg, #93c5fd 0%, #a5b4fc 100%);
-    top: -150px;
-    right: -100px;
-    animation: blobFloat 15s ease-in-out infinite;
-  }
-
-  .deco-blob-2 {
-    width: 300px;
-    height: 300px;
-    background: linear-gradient(135deg, #67e8f9 0%, #a5b4fc 100%);
-    bottom: -100px;
-    left: -80px;
-    animation: blobFloat 18s ease-in-out infinite reverse;
-  }
-
-  .deco-line {
-    position: absolute;
-    height: 2px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(147, 197, 253, 0.4),
-      transparent
-    );
-    transform: rotate(-3deg);
-  }
-
-  .deco-line-1 {
-    width: 60%;
-    top: 30%;
-    left: 20%;
-  }
-
-  .deco-line-2 {
-    width: 40%;
-    bottom: 25%;
-    right: 15%;
-    transform: rotate(2deg);
-  }
-
-  @keyframes blobFloat {
-    0%,
-    100% {
-      transform: translate(0, 0) scale(1);
-    }
-    50% {
-      transform: translate(30px, -20px) scale(1.1);
-    }
+    border-top: 1px solid rgba(255, 255, 255, 0.55);
   }
 
   .features::before {
     content: "";
     position: absolute;
-    top: -2px;
-    left: 0;
-    right: 0;
-    height: 80px;
-    background: linear-gradient(145deg, #84c6ff 0%, #a6b3ff 40%, #b5daf8 100%);
-    clip-path: polygon(0 0, 100% 0, 100% 20%, 0 100%);
+    inset: 0;
     pointer-events: none;
-  }
-
-  .features::after {
-    content: "";
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 80px;
-    background: linear-gradient(135deg, #dbe9ff 0%, #d4e4ff 50%, #e0ecff 100%);
-    clip-path: polygon(0 80%, 100% 0, 100% 100%, 0 100%);
-    pointer-events: none;
+    background-image: radial-gradient(
+      rgba(61, 90, 153, 0.08) 1px,
+      transparent 1px
+    );
+    background-size: 22px 22px;
+    opacity: 0.35;
   }
 
   @media (max-width: 480px) {
@@ -730,6 +651,7 @@
     font-weight: 800;
     color: #374151;
     margin: 0;
+    letter-spacing: 0.02em;
   }
 
   @media (max-width: 480px) {
@@ -744,16 +666,20 @@
     justify-content: center;
     color: #3d5a99;
     padding: 0.375rem;
-    border-radius: 6px;
-    background: white;
-    border: 2px solid rgba(61, 90, 153, 0.3);
-    transition: all 0.2s;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(61, 90, 153, 0.2);
+    transition:
+      transform 0.12s ease,
+      background 0.12s ease,
+      border-color 0.12s ease;
   }
 
   .docs-link:hover {
     color: #2c3e50;
-    background: rgba(107, 140, 206, 0.12);
-    border-color: rgba(61, 90, 153, 0.5);
+    background: rgba(255, 255, 255, 1);
+    border-color: rgba(61, 90, 153, 0.35);
+    transform: translateY(-1px);
   }
 
   .docs-link:active {
@@ -772,7 +698,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: white;
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 3px;
     padding: 1px;
     color: #3d5a99;
@@ -782,7 +708,7 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
-    max-width: 500px;
+    max-width: 760px;
     margin: 0 auto;
     position: relative;
     z-index: 1;
@@ -838,126 +764,29 @@
   }
 
   .create-section {
-    background: linear-gradient(
-      160deg,
-      #dbe9ff 0%,
-      #c7dcff 20%,
-      #b8d4ff 40%,
-      #c4dbff 60%,
-      #d8e8ff 80%,
-      #e8f2ff 100%
-    );
-    padding: 5rem 1rem 4rem;
+    background: #f3f7ff;
+    padding: 4.25rem 1rem 4rem;
     position: relative;
     overflow: hidden;
-  }
-
-  .create-decoration {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-  }
-
-  .create-orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-  }
-
-  .create-orb-1 {
-    width: 350px;
-    height: 350px;
-    background: radial-gradient(
-      circle,
-      rgba(147, 197, 253, 0.5) 0%,
-      transparent 70%
-    );
-    top: -100px;
-    left: -80px;
-    animation: orbPulse 10s ease-in-out infinite;
-  }
-
-  .create-orb-2 {
-    width: 280px;
-    height: 280px;
-    background: radial-gradient(
-      circle,
-      rgba(165, 180, 252, 0.4) 0%,
-      transparent 70%
-    );
-    bottom: -80px;
-    right: -60px;
-    animation: orbPulse 12s ease-in-out infinite 2s;
-  }
-
-  .create-orb-3 {
-    width: 200px;
-    height: 200px;
-    background: radial-gradient(
-      circle,
-      rgba(103, 232, 249, 0.25) 0%,
-      transparent 70%
-    );
-    top: 40%;
-    right: 20%;
-    animation: orbPulse 8s ease-in-out infinite 4s;
-  }
-
-  .grid-pattern {
-    position: absolute;
-    inset: 0;
-    background-image: linear-gradient(
-        rgba(147, 197, 253, 0.08) 1px,
-        transparent 1px
-      ),
-      linear-gradient(90deg, rgba(147, 197, 253, 0.08) 1px, transparent 1px);
-    background-size: 40px 40px;
-    mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-    -webkit-mask-image: radial-gradient(
-      ellipse at center,
-      black 30%,
-      transparent 80%
-    );
-  }
-
-  @keyframes orbPulse {
-    0%,
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.15);
-      opacity: 0.7;
-    }
+    border-top: 1px solid rgba(61, 90, 153, 0.12);
   }
 
   .create-section::before {
     content: "";
     position: absolute;
-    top: -2px;
-    left: 0;
-    right: 0;
-    height: 80px;
-    background: linear-gradient(180deg, #e4f0fd 0%, #dbe9ff 100%);
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 20%);
+    inset: 0;
     pointer-events: none;
+    background-image: linear-gradient(
+      rgba(61, 90, 153, 0.06) 1px,
+      transparent 1px
+    );
+    background-size: 34px 34px;
+    opacity: 0.22;
   }
 
   @media (max-width: 480px) {
     .create-section {
       padding: 3.5rem 1rem 3rem;
-    }
-
-    .create-orb-1,
-    .create-orb-2,
-    .create-orb-3 {
-      filter: blur(50px);
-    }
-
-    .grid-pattern {
-      background-size: 30px 30px;
     }
   }
 
@@ -966,6 +795,7 @@
     margin: 0 auto;
     position: relative;
     z-index: 1;
+    padding: 1.1rem;
   }
 
   .create-form-wrapper {
@@ -1001,6 +831,27 @@
   @keyframes fadeIn {
     to {
       opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bg-circle,
+    .home-page.page-ready,
+    .animate-slide-up {
+      animation: none !important;
+    }
+
+    .hero {
+      will-change: auto;
+    }
+
+    .feature-item,
+    .section-header,
+    .create-form-wrapper,
+    .recent-wrapper {
+      transition: none !important;
+      transform: none !important;
+      opacity: 1 !important;
     }
   }
 </style>

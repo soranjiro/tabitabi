@@ -38,6 +38,14 @@
   let heroIconRef = $state<HTMLButtonElement | null>(null);
   let isFlying = $derived(flyingAirplanes.length > 0);
 
+  let scrollY = $state(0);
+  let heroRef = $state<HTMLElement | null>(null);
+  let featuresRef = $state<HTMLElement | null>(null);
+  let createRef = $state<HTMLElement | null>(null);
+  let featuresVisible = $state(false);
+  let createVisible = $state(false);
+  let pageReady = $state(false);
+
   function spawnFlyingAirplane() {
     if (!heroIconRef || isFlying) return;
 
@@ -59,25 +67,44 @@
   }
 
   onMount(() => {
-    // Reset demo mode when entering the home page
     resetDemoMode();
-    
-    setTimeout(() => {
-      recentItineraries = auth.getRecentItineraries();
-      showRecent = true;
-    }, 300);
+    pageReady = true;
+
+    recentItineraries = auth.getRecentItineraries();
+    showRecent = true;
 
     const interval = setInterval(() => {
       currentPreview = (currentPreview + 1) % previewItineraries.length;
     }, 3000);
+
     const handleScroll = () => {
       showScrollButton = window.scrollY > 300;
+      scrollY = window.scrollY;
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    const observerOptions = {
+      threshold: 0.15,
+      rootMargin: "0px 0px -50px 0px",
+    };
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.target === featuresRef && entry.isIntersecting) {
+          featuresVisible = true;
+        }
+        if (entry.target === createRef && entry.isIntersecting) {
+          createVisible = true;
+        }
+      });
+    }, observerOptions);
+
+    if (featuresRef) observer.observe(featuresRef);
+    if (createRef) observer.observe(createRef);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener("scroll", handleScroll);
+      observer.disconnect();
     };
   });
 
@@ -93,6 +120,9 @@
     auth.removeFromHistory(id);
     recentItineraries = auth.getRecentItineraries();
   }
+
+  let heroParallax = $derived(scrollY * 0.3);
+  let heroOpacity = $derived(Math.max(0, 1 - scrollY / 600));
 </script>
 
 <svelte:head>
@@ -120,7 +150,7 @@
   <link rel="canonical" href="https://tabitabi.pages.dev/" />
 </svelte:head>
 
-<div class="home-page">
+<div class="home-page" class:page-ready={pageReady}>
   {#each flyingAirplanes as id (id)}
     {@const pos = getHeroIconPosition()}
     <FlyingAirplane
@@ -130,9 +160,19 @@
     />
   {/each}
 
-  <section class="hero">
+  <section
+    class="hero"
+    bind:this={heroRef}
+    style="transform: translateY({heroParallax}px); opacity: {heroOpacity};"
+  >
+    <div class="hero-bg-decoration">
+      <div class="bg-circle bg-circle-1"></div>
+      <div class="bg-circle bg-circle-2"></div>
+      <div class="bg-circle bg-circle-3"></div>
+    </div>
+
     <div class="hero-main">
-      <div class="hero-content">
+      <div class="hero-content animate-slide-up">
         <h1 class="hero-title">
           <button
             class="hero-icon"
@@ -165,7 +205,7 @@
         </div>
       </div>
 
-      <div class="hero-preview">
+      <div class="hero-preview animate-slide-up animate-delay-1">
         <PreviewCarousel
           previews={previewItineraries}
           currentIndex={currentPreview}
@@ -176,61 +216,90 @@
     </div>
   </section>
 
-  <section id="features" class="features">
-    <div class="section-header">
-      <h2 class="section-title">シンプルに、便利に</h2>
-      <a href="/docs/index" class="docs-link" title="ドキュメントを見る">
-        <span class="docs-icon-wrapper">
-          <IconBook size={30} />
-          <span class="external-badge">
-            <IconExternalLink size={18} />
+  <section
+    id="features"
+    class="features"
+    bind:this={featuresRef}
+    class:section-visible={featuresVisible}
+  >
+    <div class="section-inner">
+      <div class="section-header">
+        <h2 class="section-title">シンプルに、便利に</h2>
+        <a href="/docs/index" class="docs-link" title="ドキュメントを見る">
+          <span class="docs-icon-wrapper">
+            <IconBook size={30} />
+            <span class="external-badge">
+              <IconExternalLink size={18} />
+            </span>
           </span>
-        </span>
-      </a>
-    </div>
-    <div class="features-grid">
-      <FeatureCard
-        title="スマホ最適化"
-        description="どこでも旅程を確認{'\n'}アプリ不要"
-      >
-        {#snippet icon()}
-          <IconPhone size={32} />
-        {/snippet}
-      </FeatureCard>
-      <FeatureCard
-        title="URL共有"
-        description="リンク1つで仲間と共有{'\n'}ユーザ登録不要"
-      >
-        {#snippet icon()}
-          <IconLink size={32} />
-        {/snippet}
-      </FeatureCard>
-      <FeatureCard
-        title="テーマ選択"
-        description="シーンに合ったデザイン{'\n'}カスタマイズ自在"
-      >
-        {#snippet icon()}
-          <IconPalette size={32} />
-        {/snippet}
-      </FeatureCard>
-      <FeatureCard
-        title="軽量・高速"
-        description="表示まで1秒{'\n'}ストレスゼロ"
-      >
-        {#snippet icon()}
-          <IconBolt size={32} />
-        {/snippet}
-      </FeatureCard>
+        </a>
+      </div>
+      <div class="features-grid">
+        <div class="feature-item feature-delay-0">
+          <FeatureCard
+            title="スマホ最適化"
+            description="どこでも旅程を確認{'\n'}アプリ不要"
+          >
+            {#snippet icon()}
+              <IconPhone size={32} />
+            {/snippet}
+          </FeatureCard>
+        </div>
+        <div class="feature-item feature-delay-1">
+          <FeatureCard
+            title="URL共有"
+            description="リンク1つで仲間と共有{'\n'}ユーザ登録不要"
+          >
+            {#snippet icon()}
+              <IconLink size={32} />
+            {/snippet}
+          </FeatureCard>
+        </div>
+        <div class="feature-item feature-delay-2">
+          <FeatureCard
+            title="テーマ選択"
+            description="シーンに合ったデザイン{'\n'}カスタマイズ自在"
+          >
+            {#snippet icon()}
+              <IconPalette size={32} />
+            {/snippet}
+          </FeatureCard>
+        </div>
+        <div class="feature-item feature-delay-3">
+          <FeatureCard
+            title="軽量・高速"
+            description="表示まで1秒{'\n'}ストレスゼロ"
+          >
+            {#snippet icon()}
+              <IconBolt size={32} />
+            {/snippet}
+          </FeatureCard>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section id="create" class="create-section">
-    <div class="create-container">
-      <CreateForm />
+  <section
+    id="create"
+    class="create-section"
+    bind:this={createRef}
+    class:section-visible={createVisible}
+  >
+    <div class="section-inner">
+      <div class="create-container">
+        <div class="create-form-wrapper">
+          <CreateForm />
+        </div>
 
-      {#if showRecent}
-        <RecentItineraries items={recentItineraries} onRemove={removeRecent} />
-      {/if}
+        {#if showRecent}
+          <div class="recent-wrapper">
+            <RecentItineraries
+              items={recentItineraries}
+              onRemove={removeRecent}
+            />
+          </div>
+        {/if}
+      </div>
     </div>
   </section>
 
@@ -248,6 +317,14 @@
   .home-page {
     min-height: 100vh;
     background: linear-gradient(145deg, #84c6ff 0%, #a6b3ff 40%, #b5daf8 100%);
+    overflow-x: hidden;
+  }
+
+  .section-inner {
+    max-width: 980px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
   }
 
   .hero {
@@ -256,6 +333,79 @@
     align-items: center;
     justify-content: center;
     padding: 1.5rem 1rem;
+    position: relative;
+    will-change: transform, opacity;
+  }
+
+  .hero-bg-decoration {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .bg-circle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    animation: float 20s ease-in-out infinite;
+  }
+
+  .bg-circle-1 {
+    width: 300px;
+    height: 300px;
+    top: -100px;
+    right: -50px;
+    animation-delay: 0s;
+  }
+
+  .bg-circle-2 {
+    width: 200px;
+    height: 200px;
+    bottom: 10%;
+    left: -80px;
+    animation-delay: -7s;
+  }
+
+  .bg-circle-3 {
+    width: 150px;
+    height: 150px;
+    top: 40%;
+    right: 10%;
+    animation-delay: -14s;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(15px, -20px) scale(1.05);
+    }
+    66% {
+      transform: translate(-10px, 10px) scale(0.95);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-delay-1 {
+    animation-delay: 0.15s;
+    opacity: 0;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @media (max-width: 480px) {
@@ -273,6 +423,8 @@
     width: 100%;
     height: 100%;
     justify-content: center;
+    position: relative;
+    z-index: 1;
   }
 
   @media (min-width: 900px) {
@@ -398,13 +550,33 @@
     border-radius: 9999px;
     border: none;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      120deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 70%
+    );
+    transform: translateX(-100%);
+    transition: transform 0.6s;
   }
 
   .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-primary:hover::after {
+    transform: translateX(100%);
   }
 
   .hero-recent {
@@ -418,13 +590,34 @@
   }
 
   .features {
-    background: white;
-    padding: 4rem 1rem;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.92) 0%,
+      #f7fbff 35%,
+      #f3f7ff 100%
+    );
+    padding: 4.5rem 1rem 3.75rem;
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid rgba(255, 255, 255, 0.55);
+  }
+
+  .features::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(
+      rgba(61, 90, 153, 0.08) 1px,
+      transparent 1px
+    );
+    background-size: 22px 22px;
+    opacity: 0.35;
   }
 
   @media (max-width: 480px) {
     .features {
-      padding: 2.5rem 1rem;
+      padding: 3.5rem 1rem 3rem;
     }
   }
 
@@ -434,6 +627,16 @@
     justify-content: center;
     gap: 0.5rem;
     margin-bottom: 2.5rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-visible .section-header {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   @media (max-width: 480px) {
@@ -448,6 +651,7 @@
     font-weight: 800;
     color: #374151;
     margin: 0;
+    letter-spacing: 0.02em;
   }
 
   @media (max-width: 480px) {
@@ -462,16 +666,20 @@
     justify-content: center;
     color: #3d5a99;
     padding: 0.375rem;
-    border-radius: 6px;
-    background: white;
-    border: 2px solid rgba(61, 90, 153, 0.3);
-    transition: all 0.2s;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(61, 90, 153, 0.2);
+    transition:
+      transform 0.12s ease,
+      background 0.12s ease,
+      border-color 0.12s ease;
   }
 
   .docs-link:hover {
     color: #2c3e50;
-    background: rgba(107, 140, 206, 0.12);
-    border-color: rgba(61, 90, 153, 0.5);
+    background: rgba(255, 255, 255, 1);
+    border-color: rgba(61, 90, 153, 0.35);
+    transform: translateY(-1px);
   }
 
   .docs-link:active {
@@ -490,7 +698,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: white;
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 3px;
     padding: 1px;
     color: #3d5a99;
@@ -500,8 +708,10 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
-    max-width: 500px;
+    max-width: 760px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
   }
 
   @media (min-width: 768px) {
@@ -509,6 +719,30 @@
       grid-template-columns: repeat(4, 1fr);
       max-width: 700px;
     }
+  }
+
+  .feature-item {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .section-visible .feature-item {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .feature-delay-0 {
+    transition-delay: 0.1s;
+  }
+  .feature-delay-1 {
+    transition-delay: 0.2s;
+  }
+  .feature-delay-2 {
+    transition-delay: 0.3s;
+  }
+  .feature-delay-3 {
+    transition-delay: 0.4s;
   }
 
   .hero-preview {
@@ -530,24 +764,94 @@
   }
 
   .create-section {
-    background: linear-gradient(
-      to bottom,
-      white 0%,
-      #dceeff 2%,
-      #e1e6ff 20%,
-      #e4f3ff 100%
+    background: #f3f7ff;
+    padding: 4.25rem 1rem 4rem;
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid rgba(61, 90, 153, 0.12);
+  }
+
+  .create-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: linear-gradient(
+      rgba(61, 90, 153, 0.06) 1px,
+      transparent 1px
     );
-    padding: 4rem 1rem;
+    background-size: 34px 34px;
+    opacity: 0.22;
   }
 
   @media (max-width: 480px) {
     .create-section {
-      padding: 2.5rem 1rem;
+      padding: 3.5rem 1rem 3rem;
     }
   }
 
   .create-container {
     max-width: 480px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
+    padding: 1.1rem;
+  }
+
+  .create-form-wrapper {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+    transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .section-visible .create-form-wrapper {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .recent-wrapper {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+  }
+
+  .section-visible .recent-wrapper {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .home-page {
+    opacity: 0;
+  }
+
+  .home-page.page-ready {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bg-circle,
+    .home-page.page-ready,
+    .animate-slide-up {
+      animation: none !important;
+    }
+
+    .hero {
+      will-change: auto;
+    }
+
+    .feature-item,
+    .section-header,
+    .create-form-wrapper,
+    .recent-wrapper {
+      transition: none !important;
+      transform: none !important;
+      opacity: 1 !important;
+    }
   }
 </style>

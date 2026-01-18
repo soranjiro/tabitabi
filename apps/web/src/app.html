@@ -2,19 +2,55 @@
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
-    <meta name="google-site-verification" content="bAPgHJtGH7RpJvL69NqIBtQ6e0u9SSdMM-jD7dyZzWc" />
+
+    <!-- SEO基本 -->
+    <meta name="description" content="旅のしおりをサクッと作成・共有できる無料Webアプリ。テーマをカスタマイズして、友達や家族との旅行計画をまとめましょう。アカウント登録不要で今すぐ始められます。" />
+    <meta name="keywords" content="旅行, しおり, 旅のしおり, 旅行計画, 無料, Webアプリ, 旅行管理, 行程管理" />
+    <meta name="theme-color" content="#f9fafb" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="light" />
+    <meta name="apple-mobile-web-app-title" content="たびたび" />
+
+    <!-- Google 検証 -->
+    <meta name="google-site-verification" content="Xdfjc_OP5gOA4OTSCDjN38wuIU2SbvsLsXK4Ta1MKao" />
+
+    <!-- Open Graph（SNS共有用） -->
+    <meta property="og:title" content="たびたび - 旅のしおり作成アプリ" />
+    <meta property="og:description" content="旅のしおりをサクッと作成・共有できる無料Webアプリ。友達や家族との旅行計画に。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tabitabi.pages.dev/" />
+    <meta property="og:image" content="https://tabitabi.pages.dev/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:site_name" content="たびたび" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="たびたび - 旅のしおり作成アプリ" />
+    <meta name="twitter:description" content="旅のしおりをサクッと作成・共有できる無料Webアプリ" />
+    <meta name="twitter:image" content="https://tabitabi.pages.dev/og-image.png" />
+
+    <!-- 基本 -->
     <link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="canonical" href="https://tabitabi.pages.dev/" />
+    <link rel="alternate" hreflang="ja" href="https://tabitabi.pages.dev/" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    <!-- Robots / クローリング -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large" />
+    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large" />
+
     <style>
       body{margin:0;background:#f9fafb;color:#111827;font-family:system-ui,-apple-system,sans-serif}
       .home-page{min-height:100vh;background:linear-gradient(145deg,#84c6ff 0%,#a6b3ff 40%,#b5daf8 100%)}
       .home-page .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem 1rem}
       .home-page .hero-title{font-size:3rem;font-weight:900;color:#fff;margin:0}
     </style>
-    <meta name="robots" content="index, follow" />
-    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large" />
-    <link rel="canonical" href="https://tabitabi.pages.dev" />
+
+    <!-- Schema.org 構造化データ -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -22,16 +58,53 @@
       "name": "たびたび",
       "description": "旅のしおりをサクッと作成・共有できる無料Webアプリ",
       "url": "https://tabitabi.pages.dev",
+      "image": "https://tabitabi.pages.dev/og-image.png",
       "applicationCategory": "TravelApplication",
       "operatingSystem": "Web",
+      "browserRequirements": "JavaScript enabled",
       "offers": {
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "JPY"
       },
-      "inLanguage": "ja"
+      "inLanguage": "ja",
+      "author": {
+        "@type": "Organization",
+        "name": "たびたび"
+      },
+      "creator": {
+        "@type": "Organization",
+        "name": "たびたび"
+      }
     }
     </script>
+
+    <!-- Breadcrumb Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "ホーム",
+          "item": "https://tabitabi.pages.dev/"
+        }
+      ]
+    }
+    </script>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-T80SMS1MXE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-T80SMS1MXE');
+    </script>
+
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

@@ -5,11 +5,13 @@ on:
     branches: [main, "copilot/**"]
     paths-ignore:
       - "**/*.md"
+      - "**/*.png"
       - "docs/**"
   pull_request:
     branches: [main]
     paths-ignore:
       - "**/*.md"
+      - "**/*.png"
       - "docs/**"
 
 jobs:

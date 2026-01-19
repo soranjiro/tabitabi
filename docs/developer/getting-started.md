@@ -11,6 +11,40 @@
 - バンドルサイズを意識する
 - 遅延読み込み（lazy loading）を活用する
 
+## プレビュー環境
+
+PRで変更内容を確認したい場合、コメントでプレビュー環境をデプロイできます。
+
+### デプロイ方法
+
+PRのコメント欄に以下を投稿：
+
+```
+/deploy-preview
+```
+
+または、GitHub ActionsのUIから手動実行も可能。
+
+### 仕組み
+
+- コメントトリガーでGitHub Actionsの`.github/workflows/preview.yml`が実行される
+- Cloudflare WorkersとPagesに`preview-pr-{番号}`環境が作成される
+- PRのコメントにプレビューURLが投稿される
+
+### アクセス
+
+デプロイ後、以下のURLでアクセス可能：
+
+- **Web**: `https://preview-pr-{番号}.tabitabi.pages.dev`
+- **API**: `https://tabitabi-api-preview-pr-{番号}.oranda.workers.dev/api/v1`
+
+### 注意事項
+
+- データベースは本番環境と同じものを共有
+- PRをクローズすると自動的にクリーンアップされる
+- プレビュー環境は開発・検証用途のみ
+- 必要な時だけデプロイすることで、リソースを節約できる
+
 ## 開発の進め方
 ### ディレクトリ構成
 

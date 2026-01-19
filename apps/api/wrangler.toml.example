@@ -28,3 +28,17 @@ binding = "DB"
 database_name = "tabitabi"
 database_id = "PLACEHOLDER_DATABASE_ID"
 migrations_dir = "./migrations"
+
+[env.preview]
+
+[env.preview.vars]
+ALLOWED_ORIGINS = "*"
+
+[env.preview.observability]
+enabled = true
+
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "tabitabi"
+database_id = "PLACEHOLDER_DATABASE_ID"
+migrations_dir = "./migrations"

@@ -20,6 +20,11 @@ pnpm dev
 pnpm test
 ```
 
+## プレビュー環境
+
+Pull Requestで変更内容を確認したい場合、PRのコメント欄に `/deploy-preview` と投稿してください。
+プレビュー環境がデプロイされ、PRコメントにURLが投稿されます。
+
 ## コミットメッセージ
 
 Conventional Commits に従ってください：

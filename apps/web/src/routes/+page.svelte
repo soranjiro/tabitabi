@@ -548,16 +548,23 @@
     justify-content: center;
     gap: 0.5rem;
     margin-bottom: 2.5rem;
-    opacity: 0;
-    transform: translateY(20px);
+    opacity: 1;
+    transform: translateY(0);
     transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     z-index: 1;
   }
 
-  .section-visible .section-header {
-    opacity: 1;
-    transform: translateY(0);
+  @media (min-width: 769px) {
+    .section-header {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .section-visible .section-header {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @media (max-width: 480px) {
@@ -643,14 +650,21 @@
   }
 
   .feature-item {
-    opacity: 0;
-    transform: translateY(30px);
+    opacity: 1;
+    transform: translateY(0);
     transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .section-visible .feature-item {
-    opacity: 1;
-    transform: translateY(0);
+  @media (min-width: 769px) {
+    .feature-item {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    .section-visible .feature-item {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .feature-delay-0 {
@@ -707,25 +721,39 @@
   }
 
   .create-form-wrapper {
-    opacity: 0;
-    transform: translateY(30px) scale(0.98);
+    opacity: 1;
+    transform: translateY(0) scale(1);
     transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .section-visible .create-form-wrapper {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+  @media (min-width: 769px) {
+    .create-form-wrapper {
+      opacity: 0;
+      transform: translateY(30px) scale(0.98);
+    }
+
+    .section-visible .create-form-wrapper {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 
   .recent-wrapper {
-    opacity: 0;
-    transform: translateY(20px);
+    opacity: 1;
+    transform: translateY(0);
     transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
   }
 
-  .section-visible .recent-wrapper {
-    opacity: 1;
-    transform: translateY(0);
+  @media (min-width: 769px) {
+    .recent-wrapper {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .section-visible .recent-wrapper {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .home-page {
@@ -737,9 +765,6 @@
   }
 
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
     to {
       opacity: 1;
     }
@@ -749,6 +774,10 @@
     .home-page.page-ready,
     .animate-slide-up {
       animation: none !important;
+    }
+
+    .animate-delay-1 {
+      opacity: 1 !important;
     }
 
     .hero {

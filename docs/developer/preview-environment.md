@@ -2,6 +2,24 @@
 
 このプロジェクトでは、Pull Requestでコメントトリガーによりプレビュー環境を作成できます。
 
+## プレビュー環境の仕組み
+
+### API (Workers)
+
+1. PRコメントで `/deploy-preview` をトリガー
+2. `tabitabi-api-preview-pr-{番号}` という名前でWorkerをデプロイ
+3. URL: `https://tabitabi-api-preview-pr-{番号}.oranda.workers.dev/api/v1`
+
+各PR専用のWorkerが作成されるため、他のPRと干渉しません。
+
+### Web (Pages)
+
+1. ビルド時に環境変数 `VITE_API_URL` でpreview API URLを設定
+2. `preview-pr-{番号}` ブランチ名でPagesにデプロイ
+3. WebアプリはビルドされたpreviewのAPI URLに自動的にアクセス
+
+**重要**: Webはビルド時にAPI URLが埋め込まれるため、プレビュー環境のWebは常に対応するpreview Workerにアクセスします。
+
 ## プレビュー環境の種類
 
 ### 1. コメントトリガー型（推奨）

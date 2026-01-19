@@ -33,8 +33,8 @@ jobs:
       - name: Delete Preview API Worker
         working-directory: apps/api
         run: |
-          ENV_NAME="preview-pr-${PR_NUMBER}"
-          pnpm wrangler delete --name "tabitabi-api-${ENV_NAME}" || echo "Worker may not exist"
+          WORKER_NAME="tabitabi-api-preview-pr-${PR_NUMBER}"
+          pnpm wrangler delete --name "${WORKER_NAME}" || echo "Worker may not exist"
         continue-on-error: true
 
       - name: Cleanup Pages preview deployments

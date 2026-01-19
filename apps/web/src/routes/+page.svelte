@@ -821,7 +821,7 @@
   }
 
   .home-page {
-    opacity: 0;
+    opacity: 1;
   }
 
   .home-page.page-ready {
@@ -829,6 +829,9 @@
   }
 
   @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
     to {
       opacity: 1;
     }

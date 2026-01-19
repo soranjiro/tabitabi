@@ -4,6 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.16.1",
   "description": "旅のしおり管理アプリ",
+  "license": "MIT",
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",

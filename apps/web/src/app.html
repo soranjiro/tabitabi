@@ -48,61 +48,12 @@
       .home-page{min-height:100vh;background:linear-gradient(145deg,#84c6ff 0%,#a6b3ff 40%,#b5daf8 100%)}
       .home-page .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem 1rem}
       .home-page .hero-title{font-size:3rem;font-weight:900;color:#fff;margin:0}
+      .hero-subtitle{font-size:1.2rem;opacity:.95;margin-right:.5rem;margin-bottom:.5rem;font-weight:500;text-shadow:0 2px 4px rgba(0,0,0,.25);color:#fff}
     </style>
-
-    <!-- Schema.org 構造化データ -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "たびたび",
-      "description": "旅のしおりをサクッと作成・共有できる無料Webアプリ",
-      "url": "https://tabitabi.pages.dev",
-      "image": "https://tabitabi.pages.dev/og-image.png",
-      "applicationCategory": "TravelApplication",
-      "operatingSystem": "Web",
-      "browserRequirements": "JavaScript enabled",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "JPY"
-      },
-      "inLanguage": "ja",
-      "author": {
-        "@type": "Organization",
-        "name": "たびたび"
-      },
-      "creator": {
-        "@type": "Organization",
-        "name": "たびたび"
-      }
-    }
-    </script>
-
-    <!-- Breadcrumb Schema -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "ホーム",
-          "item": "https://tabitabi.pages.dev/"
-        }
-      ]
-    }
-    </script>
-
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-T80SMS1MXE"></script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"たびたび","description":"旅のしおりをサクッと作成・共有できる無料Webアプリ","url":"https://tabitabi.pages.dev","applicationCategory":"TravelApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"},"inLanguage":"ja"}</script>
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-T80SMS1MXE');
+      window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
+      if(typeof requestIdleCallback!=='undefined'){requestIdleCallback(function(){var s=document.createElement('script');s.src='https://www.googletagmanager.com/gtag/js?id=G-T80SMS1MXE';s.async=true;document.head.appendChild(s);gtag('js',new Date());gtag('config','G-T80SMS1MXE')})}else{setTimeout(function(){var s=document.createElement('script');s.src='https://www.googletagmanager.com/gtag/js?id=G-T80SMS1MXE';s.async=true;document.head.appendChild(s);gtag('js',new Date());gtag('config','G-T80SMS1MXE')},2000)}
     </script>
 
     %sveltekit.head%

@@ -25,16 +25,7 @@ export default defineConfig({
     port: 5173
   },
   build: {
-    cssCodeSplit: true,
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          if (id.includes('themes/ai-generated')) return 'theme-ai';
-          if (id.includes('themes/standard-autumn')) return 'theme-autumn';
-          if (id.includes('themes/minimal')) return 'theme-minimal';
-        }
-      }
-    }
+    cssCodeSplit: true
   },
   test: {
     include: ['src/**/*.{test,spec}.{js,ts}'],

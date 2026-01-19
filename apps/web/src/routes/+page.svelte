@@ -776,6 +776,10 @@
       animation: none !important;
     }
 
+    .animate-delay-1 {
+      opacity: 1 !important;
+    }
+
     .hero {
       will-change: auto;
     }

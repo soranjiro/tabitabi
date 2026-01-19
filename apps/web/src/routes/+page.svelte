@@ -39,7 +39,6 @@
   let isFlying = $derived(flyingAirplanes.length > 0);
 
   let scrollY = $state(0);
-  let heroRef = $state<HTMLElement | null>(null);
   let featuresRef = $state<HTMLElement | null>(null);
   let createRef = $state<HTMLElement | null>(null);
   let featuresVisible = $state(false);
@@ -127,27 +126,6 @@
 
 <svelte:head>
   <title>たびたび - 旅のしおり作成アプリ</title>
-  <meta
-    name="description"
-    content="たびたびは、旅のしおりをサクッと作成・共有できる無料Webアプリです。友達や家族との旅行計画に。"
-  />
-  <meta name="theme-color" content="#f9fafb" />
-  <meta property="og:title" content="たびたび - 旅のしおり作成アプリ" />
-  <meta
-    property="og:description"
-    content="旅のしおりをサクッと作成・共有できる無料Webアプリ。友達や家族との旅行計画に。"
-  />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://tabitabi.pages.dev/" />
-  <meta property="og:locale" content="ja_JP" />
-  <meta property="og:site_name" content="たびたび" />
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="たびたび - 旅のしおり作成アプリ" />
-  <meta
-    name="twitter:description"
-    content="旅のしおりをサクッと作成・共有できる無料Webアプリ。"
-  />
-  <link rel="canonical" href="https://tabitabi.pages.dev/" />
 </svelte:head>
 
 <div class="home-page" class:page-ready={pageReady}>
@@ -162,13 +140,11 @@
 
   <section
     class="hero"
-    bind:this={heroRef}
     style="transform: translateY({heroParallax}px); opacity: {heroOpacity};"
   >
     <div class="hero-bg-decoration">
       <div class="bg-circle bg-circle-1"></div>
       <div class="bg-circle bg-circle-2"></div>
-      <div class="bg-circle bg-circle-3"></div>
     </div>
 
     <div class="hero-main">
@@ -348,7 +324,6 @@
     position: absolute;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.08);
-    animation: float 20s ease-in-out infinite;
   }
 
   .bg-circle-1 {
@@ -356,7 +331,6 @@
     height: 300px;
     top: -100px;
     right: -50px;
-    animation-delay: 0s;
   }
 
   .bg-circle-2 {
@@ -364,28 +338,6 @@
     height: 200px;
     bottom: 10%;
     left: -80px;
-    animation-delay: -7s;
-  }
-
-  .bg-circle-3 {
-    width: 150px;
-    height: 150px;
-    top: 40%;
-    right: 10%;
-    animation-delay: -14s;
-  }
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translate(0, 0) scale(1);
-    }
-    33% {
-      transform: translate(15px, -20px) scale(1.05);
-    }
-    66% {
-      transform: translate(-10px, 10px) scale(0.95);
-    }
   }
 
   .animate-slide-up {
@@ -550,33 +502,15 @@
     border-radius: 9999px;
     border: none;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn-primary::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      120deg,
-      transparent 30%,
-      rgba(255, 255, 255, 0.4) 50%,
-      transparent 70%
-    );
-    transform: translateX(-100%);
-    transition: transform 0.6s;
   }
 
   .btn-primary:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-  }
-
-  .btn-primary:hover::after {
-    transform: translateX(100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
   }
 
   .hero-recent {
@@ -600,19 +534,6 @@
     position: relative;
     overflow: hidden;
     border-top: 1px solid rgba(255, 255, 255, 0.55);
-  }
-
-  .features::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image: radial-gradient(
-      rgba(61, 90, 153, 0.08) 1px,
-      transparent 1px
-    );
-    background-size: 22px 22px;
-    opacity: 0.35;
   }
 
   @media (max-width: 480px) {
@@ -785,19 +706,6 @@
     border-top: 1px solid rgba(61, 90, 153, 0.12);
   }
 
-  .create-section::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image: linear-gradient(
-      rgba(61, 90, 153, 0.06) 1px,
-      transparent 1px
-    );
-    background-size: 34px 34px;
-    opacity: 0.22;
-  }
-
   @media (max-width: 480px) {
     .create-section {
       padding: 3.5rem 1rem 3rem;
@@ -863,7 +771,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .bg-circle,
     .home-page.page-ready,
     .animate-slide-up {
       animation: none !important;

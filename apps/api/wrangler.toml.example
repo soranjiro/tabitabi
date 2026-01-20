@@ -19,6 +19,7 @@ name = "tabitabi-api"
 
 [env.production.vars]
 ALLOWED_ORIGINS = "https://tabitabi.pages.dev"
+JWT_SECRET = "PLACEHOLDER_PROD_SECRET"
 
 [env.production.observability]
 enabled = true

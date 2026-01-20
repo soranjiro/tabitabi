@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "copilot/**"]
+    branches: ["copilot/**"]
     paths-ignore:
       - "**/*.md"
       - "**/*.png"

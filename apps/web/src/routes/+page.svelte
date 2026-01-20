@@ -38,12 +38,11 @@
   let heroIconRef = $state<HTMLButtonElement | null>(null);
   let isFlying = $derived(flyingAirplanes.length > 0);
 
-  let scrollY = $state(0);
   let featuresRef = $state<HTMLElement | null>(null);
   let createRef = $state<HTMLElement | null>(null);
   let featuresVisible = $state(false);
   let createVisible = $state(false);
-  let pageReady = $state(false);
+  let heroHidden = $state(false);
 
   function spawnFlyingAirplane() {
     if (!heroIconRef || isFlying) return;
@@ -67,7 +66,6 @@
 
   onMount(() => {
     resetDemoMode();
-    pageReady = true;
 
     recentItineraries = auth.getRecentItineraries();
     showRecent = true;
@@ -78,7 +76,7 @@
 
     const handleScroll = () => {
       showScrollButton = window.scrollY > 300;
-      scrollY = window.scrollY;
+      heroHidden = window.scrollY > 400;
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
 
@@ -125,7 +123,7 @@
   <title>たびたび - 旅のしおり作成アプリ</title>
 </svelte:head>
 
-<div class="home-page" class:page-ready={pageReady}>
+<div class="home-page">
   {#each flyingAirplanes as id (id)}
     {@const pos = getHeroIconPosition()}
     <FlyingAirplane
@@ -135,7 +133,7 @@
     />
   {/each}
 
-  <section class="hero" class:hero-hidden={scrollY > 400}>
+  <section class="hero" class:hero-hidden={heroHidden}>
     <div class="hero-bg-decoration">
       <div class="bg-circle bg-circle-1"></div>
       <div class="bg-circle bg-circle-2"></div>
@@ -763,32 +761,13 @@
     }
   }
 
-  .home-page {
-    opacity: 1;
-  }
-
-  .home-page.page-ready {
-    animation: fadeIn 0.4s ease-out forwards;
-  }
-
-  @keyframes fadeIn {
-    to {
-      opacity: 1;
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .home-page.page-ready,
     .animate-slide-up {
       animation: none !important;
     }
 
     .animate-delay-1 {
       opacity: 1 !important;
-    }
-
-    .hero {
-      will-change: auto;
     }
 
     .feature-item,

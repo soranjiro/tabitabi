@@ -119,9 +119,6 @@
     auth.removeFromHistory(id);
     recentItineraries = auth.getRecentItineraries();
   }
-
-  let heroParallax = $derived(scrollY * 0.3);
-  let heroOpacity = $derived(Math.max(0, 1 - scrollY / 600));
 </script>
 
 <svelte:head>
@@ -138,10 +135,7 @@
     />
   {/each}
 
-  <section
-    class="hero"
-    style="transform: translateY({heroParallax}px); opacity: {heroOpacity};"
-  >
+  <section class="hero" class:hero-hidden={scrollY > 400}>
     <div class="hero-bg-decoration">
       <div class="bg-circle bg-circle-1"></div>
       <div class="bg-circle bg-circle-2"></div>
@@ -310,7 +304,12 @@
     justify-content: center;
     padding: 1.5rem 1rem;
     position: relative;
-    will-change: transform, opacity;
+    transition: opacity 0.3s ease-out;
+  }
+
+  .hero.hero-hidden {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .hero-bg-decoration {
@@ -341,18 +340,18 @@
   }
 
   .animate-slide-up {
-    animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: slideUp 0.5s ease-out forwards;
   }
 
   .animate-delay-1 {
-    animation-delay: 0.15s;
+    animation-delay: 0.1s;
     opacity: 0;
   }
 
   @keyframes slideUp {
     from {
       opacity: 0;
-      transform: translateY(30px);
+      transform: translateY(20px);
     }
     to {
       opacity: 1;
@@ -551,8 +550,8 @@
     opacity: 1;
     transform: translateY(0);
     transition:
-      opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      opacity 0.4s ease-out,
+      transform 0.4s ease-out;
     position: relative;
     z-index: 1;
   }
@@ -560,7 +559,7 @@
   @media (min-width: 769px) {
     .section-header {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(15px);
     }
 
     .section-visible .section-header {
@@ -655,14 +654,14 @@
     opacity: 1;
     transform: translateY(0);
     transition:
-      opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      opacity 0.4s ease-out,
+      transform 0.4s ease-out;
   }
 
   @media (min-width: 769px) {
     .feature-item {
       opacity: 0;
-      transform: translateY(30px);
+      transform: translateY(20px);
     }
 
     .section-visible .feature-item {
@@ -672,16 +671,16 @@
   }
 
   .feature-delay-0 {
-    transition-delay: 0.1s;
+    transition-delay: 0s;
   }
   .feature-delay-1 {
-    transition-delay: 0.2s;
+    transition-delay: 0.05s;
   }
   .feature-delay-2 {
-    transition-delay: 0.3s;
+    transition-delay: 0.1s;
   }
   .feature-delay-3 {
-    transition-delay: 0.4s;
+    transition-delay: 0.15s;
   }
 
   .hero-preview {
@@ -726,21 +725,21 @@
 
   .create-form-wrapper {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
     transition:
-      opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      opacity 0.4s ease-out,
+      transform 0.4s ease-out;
   }
 
   @media (min-width: 769px) {
     .create-form-wrapper {
       opacity: 0;
-      transform: translateY(30px) scale(0.98);
+      transform: translateY(20px);
     }
 
     .section-visible .create-form-wrapper {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateY(0);
     }
   }
 
@@ -748,14 +747,14 @@
     opacity: 1;
     transform: translateY(0);
     transition:
-      opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s,
-      transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+      opacity 0.4s ease-out 0.1s,
+      transform 0.4s ease-out 0.1s;
   }
 
   @media (min-width: 769px) {
     .recent-wrapper {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(15px);
     }
 
     .section-visible .recent-wrapper {

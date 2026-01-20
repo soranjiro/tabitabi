@@ -49,16 +49,17 @@
       .home-page .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem 1rem}
       .home-page .hero-title{font-size:3rem;font-weight:900;color:#fff;margin:0}
       .hero-subtitle{font-size:1.2rem;opacity:.95;margin-right:.5rem;margin-bottom:.5rem;font-weight:500;text-shadow:0 2px 4px rgba(0,0,0,.25);color:#fff}
+      .btn-primary{background:#fff;color:#3d5a99;font-size:1.05rem;font-weight:700;padding:1rem 2.25rem;border-radius:9999px;border:none;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,.15)}
     </style>
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"たびたび","description":"旅のしおりをサクッと作成・共有できる無料Webアプリ","url":"https://tabitabi.pages.dev","applicationCategory":"TravelApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"},"inLanguage":"ja"}</script>
-    <script>
-      window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
-      if(typeof requestIdleCallback!=='undefined'){requestIdleCallback(function(){var s=document.createElement('script');s.src='https://www.googletagmanager.com/gtag/js?id=G-T80SMS1MXE';s.async=true;document.head.appendChild(s);gtag('js',new Date());gtag('config','G-T80SMS1MXE')})}else{setTimeout(function(){var s=document.createElement('script');s.src='https://www.googletagmanager.com/gtag/js?id=G-T80SMS1MXE';s.async=true;document.head.appendChild(s);gtag('js',new Date());gtag('config','G-T80SMS1MXE')},2000)}
-    </script>
 
     %sveltekit.head%
   </head>
-  <body data-sveltekit-preload-data="hover">
+  <body data-sveltekit-preload-data="tap">
+    <script>
+      window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
+      if(typeof requestIdleCallback!=='undefined'){requestIdleCallback(function(){var s=document.createElement('script');s.src='https://www.googletagmanager.com/gtag/js?id=G-T80SMS1MXE';s.async=true;document.head.appendChild(s);gtag('js',new Date());gtag('config','G-T80SMS1MXE')})}else{setTimeout(function(){var s=document.createElement('script');s.src='https://www.googletagmanager.com/gtag/js?id=G-T80SMS1MXE';s.async=true;document.head.appendChild(s);gtag('js',new Date());gtag('config','G-T80SMS1MXE')},3000)}
+    </script>
     <div style="display: contents">%sveltekit.body%</div>
   </body>
 </html>

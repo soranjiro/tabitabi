@@ -106,9 +106,9 @@
             id: trailId++,
           },
           ...trail
-            .slice(0, 15)
-            .map((t) => ({ ...t, opacity: t.opacity * 0.88 })),
-        ].filter((t) => t.opacity > 0.05);
+            .slice(0, 8)
+            .map((t) => ({ ...t, opacity: t.opacity * 0.85 })),
+        ].filter((t) => t.opacity > 0.1);
 
         x = newX;
         y = newY;
@@ -217,8 +217,8 @@
           opacity: 0.7,
           id: trailId++,
         },
-        ...trail.slice(0, 15).map((t) => ({ ...t, opacity: t.opacity * 0.88 })),
-      ].filter((t) => t.opacity > 0.05);
+        ...trail.slice(0, 8).map((t) => ({ ...t, opacity: t.opacity * 0.85 })),
+      ].filter((t) => t.opacity > 0.1);
 
       x = newX;
       y = newY;
@@ -266,7 +266,6 @@
     top: 0;
     color: white;
     filter: drop-shadow(2px 2px 6px rgba(0, 0, 0, 0.3));
-    will-change: transform;
   }
 
   .flying-airplane.hidden {
@@ -277,11 +276,9 @@
     position: absolute;
     left: 0;
     top: 0;
-    width: 6px;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.9);
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.8);
     border-radius: 50%;
-    filter: blur(2px);
-    will-change: transform, opacity;
   }
 </style>

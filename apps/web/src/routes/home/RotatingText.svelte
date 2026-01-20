@@ -70,14 +70,13 @@
     letter-spacing: 0.01em;
     white-space: nowrap;
     text-align: center;
-    will-change: transform, opacity;
     transition:
-      opacity 0.2s,
-      transform 0.3s;
+      opacity 0.2s ease-out,
+      transform 0.2s ease-out;
   }
 
   .fade-out {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
 </style>

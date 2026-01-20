@@ -229,7 +229,6 @@
             <div class="journey-preview">
               <div class="journey-globe">
                 <svg viewBox="0 0 200 100" class="journey-svg">
-                  <!-- Globe Background -->
                   <defs>
                     <radialGradient id="globe-grad" cx="50%" cy="50%" r="50%">
                       <stop offset="0%" stop-color="#1e293b" />
@@ -245,8 +244,6 @@
                     stroke="#334155"
                     stroke-width="1"
                   />
-
-                  <!-- Continents (Abstract) -->
                   <path
                     d="M60 100 Q80 80 100 90 T140 80"
                     stroke="#334155"
@@ -254,53 +251,18 @@
                     fill="none"
                     opacity="0.5"
                   />
-
-                  <!-- Flight Path -->
                   <path
                     d="M50 90 Q100 40 150 80"
                     stroke="#38bdf8"
                     stroke-width="2"
                     fill="none"
                     stroke-dasharray="4 4"
+                  />
+                  <circle cx="50" cy="90" r="4" fill="#f472b6" />
+                  <circle cx="150" cy="80" r="4" fill="#f472b6" />
+                  <text x="100" y="60" font-size="12" text-anchor="middle"
+                    >✈️</text
                   >
-                    <animate
-                      attributeName="stroke-dashoffset"
-                      from="100"
-                      to="0"
-                      dur="3s"
-                      repeatCount="indefinite"
-                    />
-                  </path>
-
-                  <!-- Points -->
-                  <circle cx="50" cy="90" r="3" fill="#f472b6">
-                    <animate
-                      attributeName="r"
-                      values="3;5;3"
-                      dur="2s"
-                      repeatCount="indefinite"
-                    />
-                  </circle>
-                  <circle cx="150" cy="80" r="3" fill="#f472b6">
-                    <animate
-                      attributeName="r"
-                      values="3;5;3"
-                      dur="2s"
-                      repeatCount="indefinite"
-                      begin="1s"
-                    />
-                  </circle>
-
-                  <!-- Plane -->
-                  <g>
-                    <text x="0" y="0" font-size="12">✈️</text>
-                    <animateMotion
-                      path="M50 90 Q100 40 150 80"
-                      dur="3s"
-                      repeatCount="indefinite"
-                      rotate="auto"
-                    />
-                  </g>
                 </svg>
               </div>
               <div class="journey-info">
@@ -470,14 +432,14 @@
     opacity: 0;
     transform: translateX(40px) scale(0.9);
     transition:
-      opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity 0.4s ease-out,
+      transform 0.4s ease-out;
     pointer-events: none;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    will-change: transform, opacity;
     contain: layout style paint;
+    content-visibility: auto;
   }
 
   @media (max-width: 480px) {
@@ -993,18 +955,6 @@
     left: 12%;
     top: 42%;
     transform: translate(-50%, -50%);
-    animation: pq-bounce 0.6s ease-in-out infinite;
-    will-change: transform;
-  }
-
-  @keyframes pq-bounce {
-    0%,
-    100% {
-      transform: translate(-50%, -50%) translateY(0);
-    }
-    50% {
-      transform: translate(-50%, -50%) translateY(-3px);
-    }
   }
 
   .pq-player-body {

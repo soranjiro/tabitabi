@@ -6,11 +6,7 @@
 <footer class="footer">
   <div class="footer-content">
     <div class="footer-links">
-      <a
-        href="/docs/index"
-        rel="noopener noreferrer"
-        class="footer-link"
-      >
+      <a href="/docs/index" rel="noopener noreferrer" class="footer-link">
         <IconBook size={18} />
         ドキュメント
       </a>
@@ -49,7 +45,7 @@
   }
 
   .footer-link {
-    color: #d1d5db;
+    color: #e5e7eb;
     text-decoration: none;
     font-size: 0.875rem;
     transition: color 0.2s;
@@ -69,7 +65,7 @@
   }
 
   .footer-copy {
-    color: #9ca3af;
+    color: #d1d5db;
     font-size: 0.75rem;
   }
 </style>

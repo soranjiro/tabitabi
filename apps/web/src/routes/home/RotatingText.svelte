@@ -70,6 +70,7 @@
     letter-spacing: 0.01em;
     white-space: nowrap;
     text-align: center;
+    will-change: transform, opacity;
     transition:
       opacity 0.2s,
       transform 0.3s;

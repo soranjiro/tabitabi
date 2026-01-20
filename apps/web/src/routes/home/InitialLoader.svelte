@@ -67,39 +67,32 @@
 
   .airplane {
     position: absolute;
+    left: 50%;
+    top: 50%;
     width: 48px;
     height: 48px;
     color: white;
     filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.2));
     animation: fly 2s ease-in-out infinite;
     transform-origin: center;
+    will-change: transform;
   }
 
   @keyframes fly {
     0% {
-      left: -10%;
-      top: 50%;
-      transform: translateY(-50%) rotate(-90deg);
+      transform: translate(-150%, -50%) rotate(-90deg);
     }
     25% {
-      left: 30%;
-      top: 30%;
-      transform: translateY(-50%) rotate(-60deg);
+      transform: translate(-20%, -70%) rotate(-60deg);
     }
     50% {
-      left: 60%;
-      top: 55%;
-      transform: translateY(-50%) rotate(-110deg);
+      transform: translate(60%, -45%) rotate(-110deg);
     }
     75% {
-      left: 85%;
-      top: 35%;
-      transform: translateY(-50%) rotate(-70deg);
+      transform: translate(135%, -65%) rotate(-70deg);
     }
     100% {
-      left: 110%;
-      top: 50%;
-      transform: translateY(-50%) rotate(-90deg);
+      transform: translate(210%, -50%) rotate(-90deg);
     }
   }
 
@@ -108,6 +101,7 @@
     background: rgba(255, 255, 255, 0.6);
     border-radius: 50px;
     animation: drift linear infinite;
+    will-change: transform;
   }
 
   .cloud::before,

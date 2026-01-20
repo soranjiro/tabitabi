@@ -294,7 +294,9 @@
     border: none;
     cursor: pointer;
     padding: 0;
-    transition: all 0.2s;
+    transition:
+      background 0.2s,
+      transform 0.2s;
   }
 
   .dot.active {
@@ -438,15 +440,16 @@
     top: 42%;
     transform: translate(-50%, -50%);
     animation: pq-bounce 0.6s ease-in-out infinite;
+    will-change: transform;
   }
 
   @keyframes pq-bounce {
     0%,
     100% {
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) translateY(0);
     }
     50% {
-      transform: translate(-50%, calc(-50% - 3px));
+      transform: translate(-50%, -50%) translateY(-3px);
     }
   }
 

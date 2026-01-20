@@ -97,7 +97,10 @@
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition:
+      border-color 0.2s,
+      background 0.2s,
+      box-shadow 0.2s;
     text-align: left;
   }
 
@@ -128,7 +131,9 @@
     color: #404040;
     cursor: pointer;
     border-radius: 8px;
-    transition: all 0.2s;
+    transition:
+      background 0.2s,
+      color 0.2s;
     font-size: 1rem;
     display: flex;
     align-items: center;

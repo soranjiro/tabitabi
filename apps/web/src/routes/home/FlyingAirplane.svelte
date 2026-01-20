@@ -238,14 +238,14 @@
   {#each trail as point (point.id)}
     <div
       class="trail-dot"
-      style="left: {point.x}%; top: {point.y}%; opacity: {point.opacity};"
+      style="transform: translate(calc({point.x}vw - 50%), calc({point.y}vh - 50%)); opacity: {point.opacity};"
     ></div>
   {/each}
 
   <div
     class="flying-airplane"
     class:hidden={!visible}
-    style="left: {x}%; top: {y}%; transform: translate(-50%, -50%) rotate({rotation}deg);"
+    style="transform: translate(calc({x}vw - 50%), calc({y}vh - 50%)) rotate({rotation}deg);"
   >
     <IconAirplane size={44} />
   </div>
@@ -257,34 +257,31 @@
     inset: 0;
     pointer-events: none;
     z-index: 100;
+    contain: layout style;
   }
 
   .flying-airplane {
     position: absolute;
+    left: 0;
+    top: 0;
     color: white;
     filter: drop-shadow(2px 2px 6px rgba(0, 0, 0, 0.3));
-    transition:
-      left 0.03s linear,
-      top 0.03s linear,
-      transform 0.05s linear;
+    will-change: transform;
   }
 
   .flying-airplane.hidden {
     opacity: 0;
-    transition: none;
   }
 
   .trail-dot {
     position: absolute;
+    left: 0;
+    top: 0;
     width: 6px;
     height: 6px;
     background: rgba(255, 255, 255, 0.9);
     border-radius: 50%;
-    transform: translate(-50%, -50%);
     filter: blur(2px);
-    transition:
-      left 0.03s linear,
-      top 0.03s linear,
-      opacity 0.08s linear;
+    will-change: transform, opacity;
   }
 </style>

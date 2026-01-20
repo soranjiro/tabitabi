@@ -73,7 +73,9 @@
     padding: 0.35rem 0.6rem;
     border-radius: 20px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
     max-width: 95px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -94,7 +96,9 @@
     cursor: pointer;
     padding: 0.35rem 0.5rem;
     border-radius: 20px;
-    transition: all 0.15s;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
     white-space: nowrap;
     font-weight: 700;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);

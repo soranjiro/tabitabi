@@ -25,7 +25,16 @@ export default defineConfig({
     port: 5173
   },
   build: {
-    cssCodeSplit: true
+    cssCodeSplit: true,
+    cssMinify: true,
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('mapbox-gl')) return 'mapbox';
+          if (id.includes('node_modules')) return 'vendor';
+        }
+      }
+    }
   },
   test: {
     include: ['src/**/*.{test,spec}.{js,ts}'],

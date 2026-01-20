@@ -124,7 +124,10 @@
     padding: 1rem;
     text-align: left;
     cursor: pointer;
-    transition: all 0.2s;
+    transition:
+      border-color 0.2s,
+      background 0.2s,
+      transform 0.2s;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -161,7 +164,9 @@
     font-weight: 500;
     color: #6b7280;
     cursor: pointer;
-    transition: all 0.2s;
+    transition:
+      background 0.2s,
+      color 0.2s;
   }
 
   .close-btn:hover {

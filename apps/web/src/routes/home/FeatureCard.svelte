@@ -58,7 +58,6 @@
   .feature-icon {
     margin-bottom: 0.75rem;
     color: #6b8cce;
-    transition: transform 0.3s;
     background: none;
     border: none;
     padding: 0.75rem;
@@ -69,6 +68,10 @@
     justify-content: center;
     min-width: 48px;
     min-height: 48px;
+    will-change: transform;
+    transition:
+      transform 0.3s,
+      background 0.2s;
   }
 
   .feature-icon:hover {
@@ -97,6 +100,7 @@
 
   .anim-flip {
     animation: iconFlip 0.6s ease-in-out;
+    backface-visibility: hidden;
   }
 
   @keyframes iconBounce {
@@ -148,37 +152,26 @@
   }
 
   @keyframes iconPulse {
-    0% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    25% {
-      transform: scale(1.3);
-      opacity: 0.6;
-    }
-    50% {
-      transform: scale(0.8);
-      opacity: 0.3;
-    }
-    75% {
-      transform: scale(1.1);
-      opacity: 0.8;
-    }
+    0%,
     100% {
       transform: scale(1);
       opacity: 1;
+    }
+    50% {
+      transform: scale(1.15);
+      opacity: 0.6;
     }
   }
 
   @keyframes iconFlip {
     0% {
-      transform: perspective(400px) rotateY(0);
+      transform: rotateY(0deg);
     }
     50% {
-      transform: perspective(400px) rotateY(180deg) scale(1.1);
+      transform: rotateY(180deg) scale(1.1);
     }
     100% {
-      transform: perspective(400px) rotateY(360deg);
+      transform: rotateY(360deg);
     }
   }
 

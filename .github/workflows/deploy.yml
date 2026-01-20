@@ -45,6 +45,7 @@ jobs:
         run: |
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${CLOUDFLARE_DATABASE_ID}/g" wrangler.toml
+          sed -i "s/PLACEHOLDER_PROD_SECRET/${secrets.JWT_SECRET}/g" wrangler.toml
 
       - name: Build all packages
         run: pnpm run build

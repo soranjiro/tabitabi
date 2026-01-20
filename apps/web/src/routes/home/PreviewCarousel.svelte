@@ -1143,18 +1143,20 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.4);
+    background: white;
     border: none;
     cursor: pointer;
-    transition:
-      background 0.2s,
-      transform 0.2s;
     padding: 4px;
     box-sizing: content-box;
+    opacity: 0.4;
+    transform: scale(1);
+    transition:
+      opacity 0.2s ease-out,
+      transform 0.2s ease-out;
   }
 
   .dot.active {
-    background: white;
+    opacity: 1;
     transform: scale(1.2);
   }
 

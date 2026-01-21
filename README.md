@@ -1,4 +1,4 @@
-# たびたび
+# [たびたび](https://tabitabi.pages.dev)
 
 たびたびは、旅のしおりを作成・共有できる多機能Webアプリケーションです。
 
@@ -11,7 +11,7 @@
 旅行の予定を日程ごとに整理し、場所や時間、メモを記録できます。
 編集パスワードを設定することも可能です。
 
-<img src="./docs/assets/home.png" alt="ホーム画面" width="800"/>
+<a href="https://tabitabi.pages.dev"><img src="./docs/assets/home.png" alt="ホーム画面" width="800"/></a>
 
 ### 2. テーマの変更
 
@@ -20,10 +20,10 @@
 テーマは随時作成中で、デザインテーマのみをhtml,css,jsのみで作成することも可能なため、デザインアイデアなども募集中です！
 
 
-<img src="./docs/assets/theme/standard-autumn.png" alt="standard-autumn" width="800"/>
+<a href="https://tabitabi.pages.dev/demo?theme=standard-autumn"><img src="./docs/assets/theme/standard-autumn.png" alt="standard-autumn" width="800"/></a>
 
-<img src="./docs/assets/theme/ai-generated.png" alt="ai-generated" width="400"/> <img src="./docs/assets/theme/shopping.png" alt="shopping" width="400"/>
+<a href="https://tabitabi.pages.dev/demo?theme=ai-generated"><img src="./docs/assets/theme/ai-generated.png" alt="ai-generated" width="400"/></a> <a href="https://tabitabi.pages.dev/demo?theme=shopping"><img src="./docs/assets/theme/shopping.png" alt="shopping" width="400"/></a>
 
-<img src="./docs/assets/theme/sauna-raily.png" alt="sauna-raily" width="400"/> <img src="./docs/assets/theme/pixel-quest.png" alt="pixel-quest" width="400"/>
+<a href="https://tabitabi.pages.dev/demo?theme=sauna-rally"><img src="./docs/assets/theme/sauna-rally.png" alt="sauna-rally" width="400"/></a> <a href="https://tabitabi.pages.dev/demo?theme=pixel-quest"><img src="./docs/assets/theme/pixel-quest.png" alt="pixel-quest" width="400"/></a>
 
-<img src="./docs/assets/theme/map-only.png" alt="map-only" width="400"/> <img src="./docs/assets/theme/mapbox-journey.png" alt="mapbox-journey" width="400"/>
+<a href="https://tabitabi.pages.dev/demo?theme=map-only"><img src="./docs/assets/theme/map-only.png" alt="map-only" width="400"/></a> <a href="https://tabitabi.pages.dev/demo?theme=mapbox-journey"><img src="./docs/assets/theme/mapbox-journey.png" alt="mapbox-journey" width="400"/></a>

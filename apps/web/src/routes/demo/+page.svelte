@@ -39,6 +39,13 @@
   }
 
   onMount(async () => {
+    const handleUnload = () => {
+      demoStorage.clear();
+    };
+
+    window.addEventListener("pagehide", handleUnload);
+    window.addEventListener("beforeunload", handleUnload);
+
     try {
       // Enable demo mode for this page
       setDemoMode(true);
@@ -73,6 +80,8 @@
     }
 
     return () => {
+      window.removeEventListener("pagehide", handleUnload);
+      window.removeEventListener("beforeunload", handleUnload);
       resetDemoMode();
     };
   });

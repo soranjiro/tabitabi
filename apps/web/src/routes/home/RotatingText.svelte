@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getThemePhrases } from "$lib/themes";
+  import { getThemePhrases } from "$lib/themes/catalog";
 
   interface Props {
     currentIndex: number;

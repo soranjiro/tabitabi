@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
   import { auth } from "$lib/auth";
-  import { defaultThemeId, getAvailableThemes } from "$lib/themes";
+  import { defaultThemeId, getAvailableThemes } from "$lib/themes/catalog";
 
   let title = $state("");
   let password = $state("");

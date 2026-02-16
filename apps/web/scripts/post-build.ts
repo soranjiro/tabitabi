@@ -40,3 +40,45 @@ routesJson.exclude = newExcludes;
 
 fs.writeFileSync(ROUTES_FILE, JSON.stringify(routesJson, null, '\t'));
 console.log('Updated _routes.json with html-less doc paths');
+
+function inlineCssInHtml(htmlPath: string, baseDir: string, altAssetDirs: string[] = []): boolean {
+  let html = fs.readFileSync(htmlPath, 'utf-8');
+  const linkRegex = /<link\s+href="([^"]*\.css)"\s+rel="stylesheet"\s*>/g;
+  let changed = false;
+
+  html = html.replace(linkRegex, (_match, cssHref: string) => {
+    const candidates = [
+      path.resolve(path.dirname(htmlPath), cssHref),
+      ...altAssetDirs.map(d => path.resolve(d, cssHref.replace(/^\.\//, '')))
+    ];
+    const cssPath = candidates.find(p => fs.existsSync(p));
+    if (!cssPath) return _match;
+
+    const cssContent = fs.readFileSync(cssPath, 'utf-8');
+    changed = true;
+    return `<style>${cssContent}</style>`;
+  });
+
+  if (changed) {
+    fs.writeFileSync(htmlPath, html);
+  }
+  return changed;
+}
+
+const htmlFiles = ['index.html', 'itineraries/index.html'];
+let inlinedCount = 0;
+const PRERENDERED_DIR = path.join(PROJECT_ROOT, '.svelte-kit/output/prerendered/pages');
+const CLIENT_DIR = path.join(PROJECT_ROOT, '.svelte-kit/output/client');
+const dirs: Array<{ dir: string; altAssetDirs: string[] }> = [
+  { dir: CLOUDFLARE_DIR, altAssetDirs: [] },
+  { dir: PRERENDERED_DIR, altAssetDirs: [CLIENT_DIR] },
+];
+for (const { dir, altAssetDirs } of dirs) {
+  for (const htmlFile of htmlFiles) {
+    const htmlPath = path.join(dir, htmlFile);
+    if (fs.existsSync(htmlPath) && inlineCssInHtml(htmlPath, dir, altAssetDirs)) {
+      inlinedCount++;
+    }
+  }
+}
+console.log(`Inlined CSS in ${inlinedCount} HTML files`);

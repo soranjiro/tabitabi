@@ -27,7 +27,7 @@ function formatScore(score) {
 
 async function runLighthouse(url, options = {}) {
   const chrome = await chromeLauncher.launch({
-    chromeFlags: ['--headless', '--disable-gpu'],
+    chromeFlags: ['--headless', '--disable-gpu', '--no-first-run', '--disable-default-apps'],
   });
 
   const config = {
@@ -38,6 +38,9 @@ async function runLighthouse(url, options = {}) {
       screenEmulation: options.mobile
         ? { mobile: true, width: 375, height: 667, deviceScaleFactor: 2 }
         : { mobile: false, width: 1350, height: 940, deviceScaleFactor: 1 },
+      throttling: options.mobile
+        ? { rttMs: 150, throughputKbps: 1638.4, cpuSlowdownMultiplier: 4 }
+        : { rttMs: 40, throughputKbps: 10240, cpuSlowdownMultiplier: 1 },
     },
   };
 

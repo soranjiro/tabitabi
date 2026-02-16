@@ -477,6 +477,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    color: white;
   }
 
   .preview-theme-name {

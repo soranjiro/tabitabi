@@ -9,7 +9,7 @@ import type {
   ItinerarySecretRecord,
   ItineraryWalicaSettingsRecord
 } from '@tabitabi/types';
-import { availableThemes, defaultThemeId, type AvailableTheme } from '$lib/themes';
+import { availableThemes, defaultThemeId, type AvailableTheme } from '$lib/themes/catalog';
 
 interface DemoDataSet {
   itinerary: Itinerary;

@@ -342,11 +342,21 @@
   }
 
   .animate-delay-1 {
+    animation-name: slideUpFade;
     animation-delay: 0.1s;
     opacity: 0;
   }
 
   @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUpFade {
     from {
       opacity: 0;
       transform: translateY(20px);

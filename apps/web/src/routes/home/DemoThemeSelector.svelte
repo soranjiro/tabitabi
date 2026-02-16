@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { getAvailableThemes, type AvailableTheme } from "$lib/themes";
+  import { getAvailableThemes, type AvailableTheme } from "$lib/themes/catalog";
   import { demoStorage, getDemoData } from "$lib/demo";
 
   interface Props {

@@ -17,7 +17,9 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "chrome-launcher": "^1.2.1",
     "husky": "^9.1.7",
+    "lighthouse": "^13.0.3",
     "turbo": "^2.3.3",
     "wrangler": "^4.47.0"
   }

@@ -1,4 +1,4 @@
-.PHONY: build build-docs deploy deploy-api deploy-web dev migrate-local migrate-remote test test-api test-web
+.PHONY: build build-docs deploy deploy-api deploy-web dev lighthouse migrate-local migrate-remote test test-api test-web
 
 build: build-docs
 	pnpm run build
@@ -16,6 +16,9 @@ deploy-web:
 
 dev:
 	pnpm run dev
+
+lighthouse:
+	node tools/run-lighthouse.js http://localhost:5173
 
 migrate-local:
 	cd apps/api && pnpm wrangler d1 migrations apply tabitabi --local

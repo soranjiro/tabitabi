@@ -10,15 +10,11 @@ export default defineConfig({
       name: 'partytown-copy',
       async buildStart() {
         const dest = path.join(process.cwd(), 'static', '~partytown');
-        if (!fs.existsSync(dest)) {
-          await copyLibFiles(dest, { debugDir: false });
-        }
+        await copyLibFiles(dest, { debugDir: false });
       },
-      configureServer() {
+      async configureServer() {
         const dest = path.join(process.cwd(), 'static', '~partytown');
-        if (!fs.existsSync(dest)) {
-          copyLibFiles(dest, { debugDir: false });
-        }
+        await copyLibFiles(dest, { debugDir: false });
       }
     },
     {

@@ -21,6 +21,7 @@
     "mapbox-gl": "^3.17.0"
   },
   "devDependencies": {
+    "@builder.io/partytown": "^0.10.3",
     "@cloudflare/workers-types": "^4.20250110.0",
     "@playwright/test": "^1.57.0",
     "@sveltejs/adapter-cloudflare": "^4.7.4",

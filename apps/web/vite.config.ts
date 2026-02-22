@@ -1,10 +1,22 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
+import { copyLibFiles } from '@builder.io/partytown/utils';
 import fs from 'node:fs';
 import path from 'node:path';
 
 export default defineConfig({
   plugins: [
+    {
+      name: 'partytown-copy',
+      async buildStart() {
+        const dest = path.join(process.cwd(), 'static', '~partytown');
+        await copyLibFiles(dest, { debugDir: false });
+      },
+      async configureServer() {
+        const dest = path.join(process.cwd(), 'static', '~partytown');
+        await copyLibFiles(dest, { debugDir: false });
+      }
+    },
     {
       name: 'html-ext-fallback',
       configureServer(server) {

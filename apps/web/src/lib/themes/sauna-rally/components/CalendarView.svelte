@@ -46,6 +46,7 @@
   let currentMonth = $state(new Date().getMonth()); // 0-indexed
   let selectedStepId = $state<string | null>(null);
   let showDetail = $state(false);
+  let selectedDate = $state<string | null>(null);
 
   // Always derive the latest step data from steps prop
   const selectedStep = $derived(
@@ -167,9 +168,28 @@
     if (!dateStr) return;
     const visited = visitedByDate.get(dateStr);
     if (visited && visited.length > 0) {
-      openDetail(visited[0].id);
+      // If only one sauna visited that day, open directly
+      if (visited.length === 1) {
+        openDetail(visited[0].id);
+        return;
+      }
     }
+    // Select the date (highlight it and filter the list below)
+    selectedDate = selectedDate === dateStr ? null : dateStr;
   }
+
+  // Steps shown in the list (filtered by selectedDate if set)
+  const displayedSteps = $derived.by(() => {
+    if (!selectedDate) return sortedSteps;
+    const visited = visitedByDate.get(selectedDate);
+    const visitedIds = new Set(visited?.map((s) => s.id) ?? []);
+    if (visitedIds.size === 0) return sortedSteps;
+    // Put visited-on-date steps first
+    return [
+      ...sortedSteps.filter((s) => visitedIds.has(s.id)),
+      ...sortedSteps.filter((s) => !visitedIds.has(s.id)),
+    ];
+  });
 </script>
 
 <div class="cv-container">
@@ -200,13 +220,15 @@
         {@const visits = dateStr ? visitedByDate.get(dateStr) : null}
         {@const isToday = dateStr === TODAY}
         {@const hasVisit = visits != null && visits.length > 0}
+        {@const isSelected = dateStr === selectedDate}
         <button
           class="cv-day"
           class:empty={!day}
           class:today={isToday}
           class:has-visit={hasVisit}
+          class:selected={isSelected}
           onclick={() => handleDayClick(dateStr)}
-          disabled={!hasVisit}
+          disabled={!day}
         >
           {#if day}
             <span class="cv-day-num">{day}</span>
@@ -236,16 +258,26 @@
       </div>
     {:else}
       <div class="cv-list-header">
-        <h3 class="cv-list-title">🏕️ サウナリスト</h3>
-        {#if hasEditPermission && !isViewMode && onAddSauna}
-          <button class="cv-add-btn-sm" onclick={() => onAddSauna?.()}>
-            + 追加
-          </button>
-        {/if}
+        <h3 class="cv-list-title">
+          🏕️ サウナリスト
+          {#if selectedDate}
+            <span class="cv-date-filter-badge">{selectedDate}</span>
+          {/if}
+        </h3>
+        <div class="cv-list-header-actions">
+          {#if selectedDate}
+            <button class="cv-clear-date-btn" onclick={() => (selectedDate = null)}>✕ 絞り込み解除</button>
+          {/if}
+          {#if hasEditPermission && !isViewMode && onAddSauna}
+            <button class="cv-add-btn-sm" onclick={() => onAddSauna?.()}>
+              + 追加
+            </button>
+          {/if}
+        </div>
       </div>
 
       <div class="cv-cards">
-        {#each sortedSteps as step (step.id)}
+        {#each displayedSteps as step (step.id)}
           {@const data = parseSaunaData(step.notes)}
           <button
             class="cv-sauna-card"
@@ -411,6 +443,13 @@
     background: #ffe5cc;
   }
 
+  .cv-day.selected {
+    background: #fff0e8;
+    outline: 2px solid #ff6b35;
+    outline-offset: -2px;
+    z-index: 1;
+  }
+
   .cv-day-num {
     font-size: 0.8rem;
     color: #333;
@@ -499,6 +538,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   .cv-list-title {
@@ -506,6 +547,41 @@
     font-size: 1rem;
     color: white;
     font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .cv-date-filter-badge {
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  .cv-list-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .cv-clear-date-btn {
+    padding: 0.3rem 0.65rem;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .cv-clear-date-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
   }
 
   .cv-add-btn-sm {

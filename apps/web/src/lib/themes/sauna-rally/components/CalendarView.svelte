@@ -47,6 +47,7 @@
   let selectedStepId = $state<string | null>(null);
   let showDetail = $state(false);
   let selectedDate = $state<string | null>(null);
+  let defaultVisitDate = $state<string | null>(null);
 
   // Always derive the latest step data from steps prop
   const selectedStep = $derived(
@@ -161,6 +162,7 @@
 
   function openDetail(stepId: string) {
     selectedStepId = stepId;
+    defaultVisitDate = selectedDate;
     showDetail = true;
   }
 
@@ -177,10 +179,16 @@
     }
   }
 
-  // Steps shown in the list: only visited-on-date when a date is selected
+  // Steps shown in the list: all saunas, visited-on-date first
   const displayedSteps = $derived.by(() => {
     if (!selectedDate) return sortedSteps;
-    return visitedByDate.get(selectedDate) ?? [];
+    const visitedOnDate = new Set(
+      (visitedByDate.get(selectedDate) ?? []).map((s) => s.id),
+    );
+    return [
+      ...sortedSteps.filter((s) => visitedOnDate.has(s.id)),
+      ...sortedSteps.filter((s) => !visitedOnDate.has(s.id)),
+    ];
   });
 </script>
 
@@ -268,12 +276,6 @@
         </div>
       </div>
 
-      {#if selectedDate && displayedSteps.length === 0}
-        <div class="cv-no-visit">
-          <span>💧</span> {selectedDate} の訪問記録はありません
-        </div>
-      {/if}
-
       <div class="cv-cards">
         {#each displayedSteps as step (step.id)}
           {@const data = parseSaunaData(step.notes)}
@@ -321,11 +323,13 @@
   step={selectedStep}
   {hasEditPermission}
   {isViewMode}
+  initialVisitDate={defaultVisitDate}
   onUpdate={onUpdateStep}
   onDelete={onDeleteStep}
   onClose={() => {
     showDetail = false;
     selectedStepId = null;
+    defaultVisitDate = null;
   }}
 />
 

@@ -18,6 +18,7 @@
     step: Step | null;
     hasEditPermission: boolean;
     isViewMode: boolean;
+    initialVisitDate?: string | null;
     onUpdate?: (
       stepId: string,
       data: { title?: string; notes?: string },
@@ -31,6 +32,7 @@
     step,
     hasEditPermission,
     isViewMode,
+    initialVisitDate = null,
     onUpdate,
     onDelete,
     onClose,
@@ -74,7 +76,8 @@
       editTitle = step.title;
       editUrl = data.sauna_url || "";
       editVisited = data.visited ?? false;
-      editVisitDate = data.visit_date || "";
+      // Pre-fill visit date from calendar selection if not yet set
+      editVisitDate = data.visit_date || initialVisitDate || "";
       editRating = data.rating ?? 0;
       editComment = data.comment || "";
       editSaunaTemp = data.sauna_temp ?? "";

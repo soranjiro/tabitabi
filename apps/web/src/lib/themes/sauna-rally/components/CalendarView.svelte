@@ -166,29 +166,21 @@
 
   function handleDayClick(dateStr: string | null) {
     if (!dateStr) return;
-    const visited = visitedByDate.get(dateStr);
-    if (visited && visited.length > 0) {
-      // If only one sauna visited that day, open directly
-      if (visited.length === 1) {
+    // Toggle date selection
+    selectedDate = selectedDate === dateStr ? null : dateStr;
+    // If exactly one sauna visited that day, also open detail dialog
+    if (selectedDate) {
+      const visited = visitedByDate.get(selectedDate);
+      if (visited && visited.length === 1) {
         openDetail(visited[0].id);
-        return;
       }
     }
-    // Select the date (highlight it and filter the list below)
-    selectedDate = selectedDate === dateStr ? null : dateStr;
   }
 
-  // Steps shown in the list (filtered by selectedDate if set)
+  // Steps shown in the list: only visited-on-date when a date is selected
   const displayedSteps = $derived.by(() => {
     if (!selectedDate) return sortedSteps;
-    const visited = visitedByDate.get(selectedDate);
-    const visitedIds = new Set(visited?.map((s) => s.id) ?? []);
-    if (visitedIds.size === 0) return sortedSteps;
-    // Put visited-on-date steps first
-    return [
-      ...sortedSteps.filter((s) => visitedIds.has(s.id)),
-      ...sortedSteps.filter((s) => !visitedIds.has(s.id)),
-    ];
+    return visitedByDate.get(selectedDate) ?? [];
   });
 </script>
 
@@ -220,7 +212,7 @@
         {@const visits = dateStr ? visitedByDate.get(dateStr) : null}
         {@const isToday = dateStr === TODAY}
         {@const hasVisit = visits != null && visits.length > 0}
-        {@const isSelected = dateStr === selectedDate}
+        {@const isSelected = dateStr !== null && dateStr === selectedDate}
         <button
           class="cv-day"
           class:empty={!day}
@@ -275,6 +267,12 @@
           {/if}
         </div>
       </div>
+
+      {#if selectedDate && displayedSteps.length === 0}
+        <div class="cv-no-visit">
+          <span>💧</span> {selectedDate} の訪問記録はありません
+        </div>
+      {/if}
 
       <div class="cv-cards">
         {#each displayedSteps as step (step.id)}
@@ -598,6 +596,15 @@
 
   .cv-add-btn-sm:hover {
     background: white;
+  }
+
+  .cv-no-visit {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
   }
 
   .cv-cards {

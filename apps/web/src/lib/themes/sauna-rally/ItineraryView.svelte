@@ -10,6 +10,7 @@
   import StepList from "./StepList.svelte";
   import "./styles/index.css";
   import PasswordDialog from "./components/PasswordDialog.svelte";
+  import PasswordSettingsDialog from "./components/PasswordSettingsDialog.svelte";
   import ShareDialog from "./components/ShareDialog.svelte";
 
   interface Props {
@@ -24,6 +25,7 @@
         enabled: boolean;
         offset_minutes: number;
       } | null;
+      password?: string | null;
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
@@ -62,6 +64,7 @@
   let hasEditPermission = $state(false);
   let isViewMode = $state(false);
   let showPasswordDialog = $state(false);
+  let showPasswordSettingsDialog = $state(false);
   let showThemeSelect = $state(false);
   let showShareDialog = $state(false);
   let showCopyMessage = $state(false);
@@ -258,6 +261,13 @@
     };
     isAddingSauna = false;
   }
+
+  async function handlePasswordSettingsSave(password: string | null) {
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({ password });
+    }
+    showPasswordSettingsDialog = false;
+  }
 </script>
 
 <div class="sauna-rally-container">
@@ -305,6 +315,9 @@
             </button>
             <button class="theme-button" onclick={() => (showThemeSelect = !showThemeSelect)}>
               テーマ変更
+            </button>
+            <button class="password-settings-button" onclick={() => (showPasswordSettingsDialog = true)} aria-label="パスワード設定">
+              🔑
             </button>
           {/if}
         {:else}
@@ -365,6 +378,13 @@
   isAuthenticating={passwordDialogAuthenticating}
   onAuth={onPasswordAuth}
   onClose={() => (showPasswordDialog = false)}
+/>
+
+<PasswordSettingsDialog
+  show={showPasswordSettingsDialog}
+  isPasswordProtected={itinerary.is_password_protected}
+  onSave={handlePasswordSettingsSave}
+  onClose={() => (showPasswordSettingsDialog = false)}
 />
 
 {#if showCopyMessage}

@@ -68,6 +68,7 @@
 
       if (!itinerary) {
         error = "デモデータの読み込みに失敗しました";
+        loading = false;
         return;
       }
 
@@ -77,6 +78,7 @@
     } catch (e) {
       console.error("Failed to load demo:", e);
       error = "デモの読み込みに失敗しました";
+      loading = false;
     }
 
     return () => {

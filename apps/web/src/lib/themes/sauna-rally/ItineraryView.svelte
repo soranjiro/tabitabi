@@ -7,7 +7,7 @@
   import { getIsDemoMode } from "$lib/demo";
   import { authApi } from "$lib/api/auth";
   import { onMount } from "svelte";
-  import StepList from "./StepList.svelte";
+  import CalendarView from "./components/CalendarView.svelte";
   import "./styles/index.css";
   import PasswordDialog from "./components/PasswordDialog.svelte";
   import PasswordSettingsDialog from "./components/PasswordSettingsDialog.svelte";
@@ -330,13 +330,13 @@
   </header>
 
   <main class="sauna-content">
-    <StepList
+    <CalendarView
       {steps}
       {hasEditPermission}
       {isViewMode}
       onAddSauna={() => (isAddingSauna = true)}
-      {onUpdateStep}
-      {onDeleteStep}
+      onUpdateStep={onUpdateStep}
+      onDeleteStep={onDeleteStep}
     />
   </main>
 </div>

@@ -9,6 +9,7 @@
   import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
   import "./styles/index.css";
+  import PasswordDialog from "./components/PasswordDialog.svelte";
   import ShareDialog from "./components/ShareDialog.svelte";
 
   interface Props {
@@ -18,6 +19,11 @@
       title?: string;
       theme_id?: string;
       memo?: string;
+      walica_id?: string | null;
+      secret_settings?: {
+        enabled: boolean;
+        offset_minutes: number;
+      } | null;
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
@@ -57,10 +63,9 @@
   let isViewMode = $state(false);
   let showPasswordDialog = $state(false);
   let showThemeSelect = $state(false);
-  let password = $state("");
-  let isAuthenticating = $state(false);
   let showShareDialog = $state(false);
   let showCopyMessage = $state(false);
+  let passwordDialogAuthenticating = $state(false);
 
   interface SaunaData {
     visited?: boolean;
@@ -100,7 +105,7 @@
     auth.updateAccessTime(itinerary.id, itinerary.title);
   });
 
-  async function onPasswordAuth() {
+  async function onPasswordAuth(password: string) {
     await handlePasswordAuth({
       shioriId: itinerary.id,
       title: itinerary.title,
@@ -108,10 +113,9 @@
       onSuccess: () => {
         hasEditPermission = true;
         showPasswordDialog = false;
-        password = "";
       },
       onError: (message) => alert(message),
-      setAuthenticating: (value) => (isAuthenticating = value),
+      setAuthenticating: (value) => (passwordDialogAuthenticating = value),
     });
   }
 
@@ -356,40 +360,16 @@
   onClose={() => (showShareDialog = false)}
 />
 
+<PasswordDialog
+  show={showPasswordDialog}
+  isAuthenticating={passwordDialogAuthenticating}
+  onAuth={onPasswordAuth}
+  onClose={() => (showPasswordDialog = false)}
+/>
+
 {#if showCopyMessage}
   <div class="sauna-copy-message">
     🔗 リンクをコピーしました!
-  </div>
-{/if}
-
-{#if showPasswordDialog}
-  <div class="modal-overlay" onclick={() => (showPasswordDialog = false)}>
-    <div class="modal-content" onclick={(e) => e.stopPropagation()}>
-      <h2>パスワード入力</h2>
-      <p>このしおりを編集するにはパスワードが必要です</p>
-      <input
-        type="password"
-        bind:value={password}
-        placeholder="パスワード"
-        class="password-input"
-        onkeydown={(e) => e.key === "Enter" && onPasswordAuth()}
-      />
-      <div class="modal-actions">
-        <button
-          class="button-secondary"
-          onclick={() => (showPasswordDialog = false)}
-        >
-          キャンセル
-        </button>
-        <button
-          class="button-primary"
-          onclick={onPasswordAuth}
-          disabled={isAuthenticating}
-        >
-          {isAuthenticating ? "確認中..." : "確認"}
-        </button>
-      </div>
-    </div>
   </div>
 {/if}
 
@@ -440,33 +420,3 @@
   </div>
 {/if}
 
-{#if showPasswordDialog}
-  <div class="modal-overlay" onclick={() => (showPasswordDialog = false)}>
-    <div class="modal-content" onclick={(e) => e.stopPropagation()}>
-      <h2>パスワード入力</h2>
-      <p>このしおりを編集するにはパスワードが必要です</p>
-      <input
-        type="password"
-        bind:value={password}
-        placeholder="パスワード"
-        class="password-input"
-        onkeydown={(e) => e.key === "Enter" && onPasswordAuth()}
-      />
-      <div class="modal-actions">
-        <button
-          class="button-secondary"
-          onclick={() => (showPasswordDialog = false)}
-        >
-          キャンセル
-        </button>
-        <button
-          class="button-primary"
-          onclick={onPasswordAuth}
-          disabled={isAuthenticating}
-        >
-          {isAuthenticating ? "確認中..." : "確認"}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if} 

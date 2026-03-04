@@ -127,6 +127,25 @@
   color: #ff5722;
 }
 
+.password-settings-button {
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.password-settings-button:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
 .edit-button {
   padding: 0.5rem 1rem;
   background: rgba(255, 255, 255, 0.2);

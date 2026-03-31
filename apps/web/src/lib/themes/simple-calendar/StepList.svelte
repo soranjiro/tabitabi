@@ -275,17 +275,19 @@
                       <div class="step-actions">
                         <button
                           class="btn-edit"
-                          title="編集"
+                          title="予定を編集"
                           onclick={() => startEdit(step)}
                         >
-                          ✏️
+                          <span class="icon">✏️</span>
+                          <span class="label">編集</span>
                         </button>
                         <button
                           class="btn-delete"
-                          title="削除"
+                          title="予定を削除"
                           onclick={() => handleDelete(step.id)}
                         >
-                          🗑️
+                          <span class="icon">🗑️</span>
+                          <span class="label">削除</span>
                         </button>
                       </div>
                     {/if}
@@ -485,27 +487,40 @@
 
   .step-actions {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     flex-shrink: 0;
   }
 
   .btn-edit,
   .btn-delete {
-    padding: 6px 8px;
-    border: none;
-    background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: 1px solid #d0d0d0;
+    background: white;
     cursor: pointer;
-    font-size: 14px;
-    border-radius: 4px;
+    font-size: 13px;
+    border-radius: 6px;
     transition: all 0.2s;
+    font-weight: 500;
+  }
+
+  .btn-edit .icon,
+  .btn-delete .icon {
+    font-size: 14px;
   }
 
   .btn-edit:hover {
-    background: #f0f0f0;
+    border-color: #3b82f6;
+    background: #eff6ff;
+    color: #1e40af;
   }
 
   .btn-delete:hover {
-    background: #fee;
+    border-color: #ef4444;
+    background: #fee2e2;
+    color: #991b1b;
   }
 
   .step-edit-container {

@@ -265,6 +265,13 @@
       <div class="header-spacer"></div>
 
       {#if hasEditPermission}
+        <button
+          class="add-btn"
+          title="新しい予定を追加"
+          onclick={() => (isAddingStep = true)}
+        >
+          + 予定を追加
+        </button>
         <button class="mode-btn active" onclick={exitEditMode}>
           編集中を終了
         </button>
@@ -290,6 +297,7 @@
       onChangeTheme={() => (showThemeMenu = true)}
       onEditMemo={() => (showMemoDialog = true)}
       onPrint={handlePrint}
+      onClose={() => (showSettingsMenu = false)}
     />
 
     <div class="title-section">

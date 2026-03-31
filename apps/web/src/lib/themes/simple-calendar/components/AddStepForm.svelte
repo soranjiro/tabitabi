@@ -1,43 +1,69 @@
 <script lang="ts">
   interface Props {
-    show: boolean;
-    stepData: {
+    isAddingStep: boolean;
+    newStep: {
       title: string;
       date: string;
       location: string;
       notes: string;
     };
-    stepHour: string;
-    stepMinute: string;
-    onUpdate: (
-      data: {
-        title: string;
-        date: string;
-        location: string;
-        notes: string;
-      },
-      hour: string,
-      minute: string,
-    ) => void;
-    onClose: () => void;
+    newStepHour: string;
+    newStepMinute: string;
+    onCreateStep?: (data: {
+      title: string;
+      date: string;
+      time: string;
+      location?: string;
+      notes?: string;
+    }) => Promise<void>;
   }
 
-  let { show, stepData, stepHour, stepMinute, onUpdate, onClose }: Props =
-    $props();
-  let localData = $state({ ...stepData });
-  let localHour = $state(stepHour);
-  let localMinute = $state(stepMinute);
+  let {
+    isAddingStep = $bindable(),
+    newStep = $bindable(),
+    newStepHour = $bindable(),
+    newStepMinute = $bindable(),
+    onCreateStep,
+  }: Props = $props();
 
-  $effect(() => {
-    if (show) {
-      localData = { ...stepData };
-      localHour = stepHour;
-      localMinute = stepMinute;
+  async function handleSubmit() {
+    if (!newStep.title.trim() || !newStep.date || !newStepHour.trim() || !newStepMinute.trim()) {
+      alert("タイトル、日付、時刻は必須です");
+      return;
     }
-  });
+
+    if (onCreateStep) {
+      try {
+        const hour = newStepHour.padStart(2, "0");
+        const minute = newStepMinute.padStart(2, "0");
+        await onCreateStep({
+          title: newStep.title.trim(),
+          date: newStep.date,
+          time: `${hour}:${minute}`,
+          location: newStep.location.trim() || undefined,
+          notes: newStep.notes.trim() || undefined,
+        });
+
+        newStep = { title: "", date: "", location: "", notes: "" };
+        newStepHour = "09";
+        newStepMinute = "00";
+        isAddingStep = false;
+      } catch (error) {
+        console.error("Failed to create step:", error);
+        alert("予定の作成に失敗しました");
+      }
+    }
+  }
+
+  function handleCancel() {
+    newStep = { title: "", date: "", location: "", notes: "" };
+    newStepHour = "09";
+    newStepMinute = "00";
+    isAddingStep = false;
+  }
 </script>
 
-{#if show}
+{#if isAddingStep}
   <div class="add-step-form">
     <h3>新しい予定を追加</h3>
 
@@ -46,15 +72,16 @@
       <input
         id="add-step-title"
         type="text"
-        bind:value={localData.title}
+        bind:value={newStep.title}
         placeholder="予定のタイトル"
+        autofocus
       />
     </div>
 
     <div class="form-row">
       <div class="form-group">
         <label for="add-step-date">日付 *</label>
-        <input id="add-step-date" type="date" bind:value={localData.date} />
+        <input id="add-step-date" type="date" bind:value={newStep.date} />
       </div>
       <div class="form-group">
         <label for="add-step-hour">時刻 *</label>
@@ -62,14 +89,14 @@
           <input
             id="add-step-hour"
             type="text"
-            bind:value={localHour}
+            bind:value={newStepHour}
             maxlength="2"
             placeholder="09"
           />
           <span>:</span>
           <input
             type="text"
-            bind:value={localMinute}
+            bind:value={newStepMinute}
             maxlength="2"
             placeholder="00"
           />
@@ -82,7 +109,7 @@
       <input
         id="add-step-location"
         type="text"
-        bind:value={localData.location}
+        bind:value={newStep.location}
         placeholder="場所（オプション）"
       />
     </div>
@@ -91,21 +118,16 @@
       <label for="add-step-notes">メモ</label>
       <textarea
         id="add-step-notes"
-        bind:value={localData.notes}
+        bind:value={newStep.notes}
         placeholder="メモ（オプション）"
       ></textarea>
     </div>
 
     <div class="form-actions">
-      <button
-        class="btn-primary"
-        onclick={() => {
-          onUpdate(localData, localHour, localMinute);
-        }}
-      >
+      <button class="btn-primary" onclick={handleSubmit}>
         追加
       </button>
-      <button class="btn-secondary" onclick={onClose}> キャンセル </button>
+      <button class="btn-secondary" onclick={handleCancel}> キャンセル </button>
     </div>
   </div>
 {/if}

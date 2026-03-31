@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   interface Props {
     show: boolean;
     onCopyShareUrl: () => void;
@@ -7,6 +9,7 @@
     onEditMemo?: () => void;
     onPrint: () => void;
     hasEditPermission: boolean;
+    onClose?: () => void;
   }
 
   let {
@@ -17,24 +20,82 @@
     onEditMemo,
     onPrint,
     hasEditPermission,
+    onClose,
   }: Props = $props();
+
+  let menuElement: HTMLDivElement | undefined;
+
+  onMount(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (show && menuElement && !menuElement.contains(e.target as Node)) {
+        // Check if click is on the menu button itself
+        const menuBtn = document.querySelector(".menu-btn");
+        if (menuBtn && !menuBtn.contains(e.target as Node)) {
+          onClose?.();
+        }
+      }
+    }
+
+    if (show) {
+      document.addEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  });
 </script>
 
 {#if show}
-  <div class="settings-menu">
-    <button onclick={onCopyShareUrl}>閲覧URLをコピー</button>
+  <div bind:this={menuElement} class="settings-menu">
+    <button
+      onclick={() => {
+        onCopyShareUrl();
+        onClose?.();
+      }}
+    >
+      閲覧URLをコピー
+    </button>
     {#if hasEditPermission}
       {#if onCopyEditUrl}
-        <button onclick={onCopyEditUrl}>編集URLをコピー</button>
+        <button
+          onclick={() => {
+            onCopyEditUrl();
+            onClose?.();
+          }}
+        >
+          編集URLをコピー
+        </button>
       {/if}
       {#if onChangeTheme}
-        <button onclick={onChangeTheme}>テーマを変更</button>
+        <button
+          onclick={() => {
+            onChangeTheme();
+            onClose?.();
+          }}
+        >
+          テーマを変更
+        </button>
       {/if}
       {#if onEditMemo}
-        <button onclick={onEditMemo}>メモを編集</button>
+        <button
+          onclick={() => {
+            onEditMemo();
+            onClose?.();
+          }}
+        >
+          メモを編集
+        </button>
       {/if}
     {/if}
-    <button onclick={onPrint}>印刷</button>
+    <button
+      onclick={() => {
+        onPrint();
+        onClose?.();
+      }}
+    >
+      印刷
+    </button>
   </div>
 {/if}
 

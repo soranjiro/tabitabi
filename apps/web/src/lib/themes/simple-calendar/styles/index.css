@@ -51,7 +51,8 @@ body {
 
 .home-btn,
 .mode-btn,
-.menu-btn {
+.menu-btn,
+.add-btn {
   background: white;
   border: 1px solid var(--border);
   padding: 0.5rem 1rem;
@@ -63,8 +64,21 @@ body {
 
 .home-btn:hover,
 .mode-btn:hover,
-.menu-btn:hover {
+.menu-btn:hover,
+.add-btn:hover {
   background: var(--bg-light);
+}
+
+.add-btn {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+.add-btn:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
 }
 
 .mode-btn.active {

@@ -248,16 +248,14 @@
     window.print();
   }
 
-  function getStartAndEndDate(): { start: string; end: string } {
+  const dateRange = $derived.by(() => {
     if (steps.length === 0) return { start: "", end: "" };
     const dates = steps.map((s) => s.date).sort();
     return {
       start: dates[0],
       end: dates[dates.length - 1],
     };
-  }
-
-  const { start, end } = $derive(getStartAndEndDate());
+  });
 </script>
 
 <div class="simple-calendar-theme">
@@ -324,14 +322,14 @@
         </h1>
       {/if}
 
-      {#if start && end}
+      {#if dateRange.start && dateRange.end}
         <div class="date-range">
-          {new Date(start).toLocaleDateString("ja-JP", {
+          {new Date(dateRange.start).toLocaleDateString("ja-JP", {
             month: "short",
             day: "numeric",
           })}
           →
-          {new Date(end).toLocaleDateString("ja-JP", {
+          {new Date(dateRange.end).toLocaleDateString("ja-JP", {
             month: "short",
             day: "numeric",
           })}
@@ -420,4 +418,3 @@
     {/if}
   </main>
 </div>
-

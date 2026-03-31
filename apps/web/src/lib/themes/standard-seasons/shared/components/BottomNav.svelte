@@ -29,6 +29,7 @@
     onWalicaUpdate: (url: string) => void;
     onWalicaOpen: () => void;
     onViewModeClick?: () => void;
+    onShowThemeSelector?: () => void;
   }
 
   let {
@@ -45,6 +46,7 @@
     onWalicaUpdate,
     onWalicaOpen,
     onViewModeClick,
+    onShowThemeSelector,
   }: Props = $props();
 
   let showSettingsMenu = $state(false);
@@ -58,8 +60,10 @@
   }
 
   function handleShowThemeSelect() {
-    showThemeSelect = true;
     showSettingsMenu = false;
+    if (onShowThemeSelector) {
+      onShowThemeSelector();
+    }
   }
 
   function handleThemeChange(themeId: string) {
@@ -97,30 +101,28 @@
   {/if}
 
   <div class="standard-autumn-btn-wrapper">
-    {#if hasEditPermission}
-      <button
-        class="standard-autumn-bottom-btn"
-        title="閲覧モードに切り替え"
-        aria-label="閲覧モードに切り替え"
-        onclick={handleEditModeToggle}
-      >
-        {@html ViewIcon}
-        <span>View</span>
-      </button>
-    {:else}
-      <button
-        class="standard-autumn-bottom-btn"
-        title="ビューモード選択"
-        aria-label="ビューモード選択"
-        onclick={onViewModeClick}
-      >
-        {@html ModeIcon}
-        <span>Mode</span>
-      </button>
-    {/if}
+    <button
+      class="standard-autumn-bottom-btn"
+      title="ビューモード選択"
+      aria-label="ビューモード選択"
+      onclick={onViewModeClick}
+    >
+      {@html ModeIcon}
+      <span>Mode</span>
+    </button>
   </div>
 
-  {#if !hasEditPermission}
+  {#if hasEditPermission}
+    <button
+      class="standard-autumn-bottom-btn"
+      title="閲覧モードに切り替え"
+      aria-label="閲覧モードに切り替え"
+      onclick={handleEditModeToggle}
+    >
+      {@html ViewIcon}
+      <span>View</span>
+    </button>
+  {:else}
     <button
       class="standard-autumn-bottom-btn"
       title="編集モードに切り替え"

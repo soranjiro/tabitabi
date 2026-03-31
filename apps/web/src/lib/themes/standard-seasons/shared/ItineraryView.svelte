@@ -15,6 +15,7 @@
   import ShareDialog from "./components/ShareDialog.svelte";
   import WalicaOverlay from "./components/WalicaOverlay.svelte";
   import ViewModeSelector from "./components/ViewModeSelector.svelte";
+  import ThemeSelectorPopup from "./components/ThemeSelectorPopup.svelte";
   import { LinkIcon } from "./components/icons/index.svelte";
   import { renderMarkdown } from "./utils/markdown";
   import { getViewMode, setViewMode, type ViewMode } from "./utils/storage";
@@ -85,7 +86,8 @@
   );
   let showWalica = $state(false);
   let showViewModeSelector = $state(false);
-  let currentViewMode = $state<ViewMode>('dayCard');
+  let showThemeSelectorPopup = $state(false);
+  let currentViewMode = $state<ViewMode>("dayCard");
 
   let newStep = $state({
     title: "",
@@ -109,7 +111,7 @@
 
   onMount(() => {
     currentViewMode = getViewMode(itinerary.id);
-    
+
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -315,7 +317,98 @@
   }
 </script>
 
-<div class="standard-autumn-theme">
+<div
+  class="standard-autumn-theme"
+  class:standard-spring-theme={selectedThemeId === "standard-spring"}
+  class:standard-summer-theme={selectedThemeId === "standard-summer"}
+  class:standard-winter-theme={selectedThemeId === "standard-winter"}
+  style="
+    --standard-autumn-bg: {selectedThemeId === 'standard-spring'
+    ? 'var(--standard-spring-bg)'
+    : selectedThemeId === 'standard-summer'
+      ? 'var(--standard-summer-bg)'
+      : selectedThemeId === 'standard-winter'
+        ? 'var(--standard-winter-bg)'
+        : 'var(--standard-autumn-bg)'};
+    --standard-autumn-primary: {selectedThemeId === 'standard-spring'
+    ? 'var(--standard-spring-primary)'
+    : selectedThemeId === 'standard-summer'
+      ? 'var(--standard-summer-primary)'
+      : selectedThemeId === 'standard-winter'
+        ? 'var(--standard-winter-primary)'
+        : 'var(--standard-autumn-primary)'};
+    --standard-autumn-primary-light: {selectedThemeId === 'standard-spring'
+    ? 'var(--standard-spring-primary-light)'
+    : selectedThemeId === 'standard-summer'
+      ? 'var(--standard-summer-primary-light)'
+      : selectedThemeId === 'standard-winter'
+        ? 'var(--standard-winter-primary-light)'
+        : 'var(--standard-autumn-primary-light)'};
+    --standard-autumn-secondary: {selectedThemeId === 'standard-spring'
+    ? 'var(--standard-spring-secondary)'
+    : selectedThemeId === 'standard-summer'
+      ? 'var(--standard-summer-secondary)'
+      : selectedThemeId === 'standard-winter'
+        ? 'var(--standard-winter-secondary)'
+        : 'var(--standard-autumn-secondary)'};
+    --standard-autumn-accent: {selectedThemeId === 'standard-spring'
+    ? 'var(--standard-spring-accent)'
+    : selectedThemeId === 'standard-summer'
+      ? 'var(--standard-summer-accent)'
+      : selectedThemeId === 'standard-winter'
+        ? 'var(--standard-winter-accent)'
+        : 'var(--standard-autumn-accent)'};
+    --standard-autumn-text: {selectedThemeId === 'standard-spring'
+    ? 'var(--standard-spring-text)'
+    : selectedThemeId === 'standard-summer'
+      ? 'var(--standard-summer-text)'
+      : selectedThemeId === 'standard-winter'
+        ? 'var(--standard-winter-text)'
+        : 'var(--standard-autumn-text)'};
+    --standard-autumn-text-light: {selectedThemeId === 'standard-spring'
+    ? 'var(--standard-spring-text-light)'
+    : selectedThemeId === 'standard-summer'
+      ? 'var(--standard-summer-text-light)'
+      : selectedThemeId === 'standard-winter'
+        ? 'var(--standard-winter-text-light)'
+        : 'var(--standard-autumn-text-light)'};
+    --standard-autumn-border: {selectedThemeId === 'standard-spring'
+    ? 'var(--standard-spring-border)'
+    : selectedThemeId === 'standard-summer'
+      ? 'var(--standard-summer-border)'
+      : selectedThemeId === 'standard-winter'
+        ? 'var(--standard-winter-border)'
+        : 'var(--standard-autumn-border)'};
+    --standard-autumn-line-color: {selectedThemeId === 'standard-spring'
+    ? 'var(--standard-spring-line-color)'
+    : selectedThemeId === 'standard-summer'
+      ? 'var(--standard-summer-line-color)'
+      : selectedThemeId === 'standard-winter'
+        ? 'var(--standard-winter-line-color)'
+        : 'var(--standard-autumn-line-color)'};
+    --standard-autumn-dot-bg: {selectedThemeId === 'standard-spring'
+    ? 'var(--standard-spring-dot-bg)'
+    : selectedThemeId === 'standard-summer'
+      ? 'var(--standard-summer-dot-bg)'
+      : selectedThemeId === 'standard-winter'
+        ? 'var(--standard-winter-dot-bg)'
+        : 'var(--standard-autumn-dot-bg)'};
+    --standard-autumn-shadow: {selectedThemeId === 'standard-spring'
+    ? 'var(--standard-spring-shadow)'
+    : selectedThemeId === 'standard-summer'
+      ? 'var(--standard-summer-shadow)'
+      : selectedThemeId === 'standard-winter'
+        ? 'var(--standard-winter-shadow)'
+        : 'var(--standard-autumn-shadow)'};
+    --standard-autumn-shadow-sm: {selectedThemeId === 'standard-spring'
+    ? 'var(--standard-spring-shadow-sm)'
+    : selectedThemeId === 'standard-summer'
+      ? 'var(--standard-summer-shadow-sm)'
+      : selectedThemeId === 'standard-winter'
+        ? 'var(--standard-winter-shadow-sm)'
+        : 'var(--standard-autumn-shadow-sm)'};
+  "
+>
   <div class="standard-autumn-container">
     <header class="standard-autumn-header">
       <div class="standard-autumn-share-wrapper">
@@ -474,6 +567,7 @@
       onSecretModeChange={handleSecretModeUpdate}
       onWalicaUpdate={handleWalicaUpdate}
       onWalicaOpen={() => (showWalica = true)}
+      onShowThemeSelector={() => (showThemeSelectorPopup = true)}
     />
   </div>
 
@@ -512,6 +606,14 @@
       onClose={() => (showViewModeSelector = false)}
     />
   {/if}
+
+  <ThemeSelectorPopup
+    open={showThemeSelectorPopup}
+    {themes}
+    {selectedThemeId}
+    onThemeChange={handleThemeChange}
+    onClose={() => (showThemeSelectorPopup = false)}
+  />
 
   <FloatingActions {hasEditPermission} onAddStep={openAddStepForm} />
 </div>

@@ -13,4 +13,52 @@
   --standard-autumn-dot-bg: #a93529;
   --standard-autumn-shadow: 0 12px 36px -8px rgba(74, 59, 50, 0.12);
   --standard-autumn-shadow-sm: 0 4px 12px -2px rgba(74, 59, 50, 0.08);
+
+  /* Spring Theme */
+  --standard-spring-bg: #fdf2f8;
+  --standard-spring-primary: #d946a6;
+  --standard-spring-primary-light: #ec4899;
+  --standard-spring-secondary: #ec4899;
+  --standard-spring-accent: #f472b6;
+  --standard-spring-text: #831843;
+  --standard-spring-text-light: #be185d;
+  --standard-spring-card-bg: #ffffff;
+  --standard-spring-header-bg: transparent;
+  --standard-spring-border: #f2d4e6;
+  --standard-spring-line-color: #fbcfe8;
+  --standard-spring-dot-bg: #d946a6;
+  --standard-spring-shadow: 0 12px 36px -8px rgba(131, 24, 67, 0.12);
+  --standard-spring-shadow-sm: 0 4px 12px -2px rgba(131, 24, 67, 0.08);
+
+  /* Summer Theme */
+  --standard-summer-bg: #f0f9ff;
+  --standard-summer-primary: #0369a1;
+  --standard-summer-primary-light: #0284c7;
+  --standard-summer-secondary: #0284c7;
+  --standard-summer-accent: #0ea5e9;
+  --standard-summer-text: #082f49;
+  --standard-summer-text-light: #0c4a6e;
+  --standard-summer-card-bg: #ffffff;
+  --standard-summer-header-bg: transparent;
+  --standard-summer-border: #bae6fd;
+  --standard-summer-line-color: #e0f2fe;
+  --standard-summer-dot-bg: #0369a1;
+  --standard-summer-shadow: 0 12px 36px -8px rgba(8, 47, 73, 0.12);
+  --standard-summer-shadow-sm: 0 4px 12px -2px rgba(8, 47, 73, 0.08);
+
+  /* Winter Theme */
+  --standard-winter-bg: #f8fafc;
+  --standard-winter-primary: #1e40af;
+  --standard-winter-primary-light: #1e3a8a;
+  --standard-winter-secondary: #1e3a8a;
+  --standard-winter-accent: #3b82f6;
+  --standard-winter-text: #0c2340;
+  --standard-winter-text-light: #0f172a;
+  --standard-winter-card-bg: #ffffff;
+  --standard-winter-header-bg: transparent;
+  --standard-winter-border: #dbeafe;
+  --standard-winter-line-color: #e0e7ff;
+  --standard-winter-dot-bg: #1e40af;
+  --standard-winter-shadow: 0 12px 36px -8px rgba(12, 35, 64, 0.12);
+  --standard-winter-shadow-sm: 0 4px 12px -2px rgba(12, 35, 64, 0.08);
 }

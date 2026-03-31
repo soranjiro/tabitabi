@@ -39,7 +39,7 @@
     focusedDate = $bindable(null),
     secretModeEnabled = false,
     secretModeOffset = 60,
-    viewMode = 'dayCard',
+    viewMode = "dayCard",
     onUpdateStep,
     onDeleteStep,
   }: Props = $props();
@@ -221,6 +221,13 @@
     if (!confirm("この予定を削除しますか?")) return;
     if (onDeleteStep) {
       await onDeleteStep(stepId);
+    }
+  }
+
+  function handleStepClick(stepId: string) {
+    const step = steps.find((s) => s.id === stepId);
+    if (step) {
+      startEdit(step);
     }
   }
 
@@ -434,7 +441,7 @@
   }
 </script>
 
-{#if viewMode === 'list'}
+{#if viewMode === "list"}
   <ListView
     {steps}
     {hasEditPermission}
@@ -443,7 +450,7 @@
     {onUpdateStep}
     {onDeleteStep}
   />
-{:else if viewMode === 'month'}
+{:else if viewMode === "month"}
   <MonthView
     {steps}
     {hasEditPermission}
@@ -451,8 +458,9 @@
     {secretModeOffset}
     {onUpdateStep}
     {onDeleteStep}
+    onStepClick={handleStepClick}
   />
-{:else if viewMode === 'week'}
+{:else if viewMode === "week"}
   <WeekView
     {steps}
     {hasEditPermission}
@@ -460,6 +468,7 @@
     {secretModeOffset}
     {onUpdateStep}
     {onDeleteStep}
+    onStepClick={handleStepClick}
   />
 {:else if steps.length === 0}
   <div class="standard-autumn-empty">予定がまだ登録されていません</div>
@@ -558,6 +567,7 @@
                     class:dragging={draggedStepId === step.id}
                     class:drag-over={dragOverStepId === step.id}
                     class:touch-dragging={touchDragStepId === step.id}
+                    role="none"
                     draggable={hasEditPermission && !editingStepId}
                     ondragstart={(e) => handleDragStart(e, step.id)}
                     ondragover={(e) => handleDragOver(e, step.id)}

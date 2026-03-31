@@ -5,8 +5,7 @@ export function getDemoData(): DemoDataSet {
     itinerary: {
       id: 'demo',
       title: '秋の紅葉狩り旅',
-      theme_id: 'standard-autumn',
-      memo: '{"text":"紅葉シーズンは混雑するので早めの行動を！\\n\\n持ち物リスト\\n- カメラ\\n- 防寒具"}',
+      theme_id: 'standard-autumn',      memo: '{"text":"紅葉シーズンは混雑するので早めの行動を！\\n\\n持ち物リスト\\n- カメラ\\n- 防寒具"}',
       password: null,
       created_at: now,
       updated_at: now,
@@ -75,6 +74,11 @@ export function getDemoData(): DemoDataSet {
       created_at: now,
       updated_at: now,
     },
-    itinerary_walica_settings: null,
+    itinerary_walica_settings: {
+      itinerary_id: 'demo',
+      walica_id: 'https://walica.jp/group/01KBTSYADVKY8HPQ1CHRHTNG19',
+      created_at: now,
+      updated_at: now,
+    },
   };
 }

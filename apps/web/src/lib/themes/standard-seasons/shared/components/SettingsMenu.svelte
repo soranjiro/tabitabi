@@ -57,14 +57,13 @@
     onWalicaUpdate(localWalicaUrl);
   }
 
-  function handleThemeSelect(e: Event) {
-    const target = e.target as HTMLSelectElement;
-    onThemeChange(target.value);
+  function handleShowThemeSelect() {
+    onShowThemeSelect();
   }
 </script>
 
 <div class="standard-autumn-settings-menu">
-  <button onclick={onShowThemeSelect} class="standard-autumn-settings-item">
+  <button onclick={handleShowThemeSelect} class="standard-autumn-settings-item">
     {@html PaletteIcon}
     テーマを変更
   </button>
@@ -123,21 +122,3 @@
     </label>
   </div>
 </div>
-
-{#if showThemeSelect}
-  <div class="standard-autumn-theme-select-popup">
-    <label for="theme-select" class="standard-autumn-theme-select-label"
-      >テーマを選択</label
-    >
-    <select
-      id="theme-select"
-      value={selectedThemeId}
-      onchange={handleThemeSelect}
-      class="standard-autumn-theme-select-input"
-    >
-      {#each themes as theme}
-        <option value={theme.id}>{theme.name}</option>
-      {/each}
-    </select>
-  </div>
-{/if}

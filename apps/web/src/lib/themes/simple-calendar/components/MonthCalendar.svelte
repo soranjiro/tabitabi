@@ -99,6 +99,12 @@
                     tabindex="0"
                     onclick={() => onEditStep?.(step)}
                     ondblclick={() => onDeleteStep?.(step.id)}
+                    onkeydown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onEditStep?.(step);
+                      }
+                    }}
                   >
                     <span class="month-step-time">{step.time}</span>
                     <span class="month-step-title"
@@ -124,13 +130,15 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    padding: 12px 0;
   }
 
   .month-section {
     border: 1px solid #e5e5e5;
     border-radius: 8px;
-    padding: 1rem;
+    padding: 12px;
     background: white;
+    margin: 0 12px;
   }
 
   .month-header {

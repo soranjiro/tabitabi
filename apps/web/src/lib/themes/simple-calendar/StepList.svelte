@@ -201,8 +201,9 @@
                   <!-- Edit Mode -->
                   <div class="step-edit-container">
                     <div class="form-group">
-                      <label>タイトル</label>
+                      <label for="step-title-{editingStepId}">タイトル</label>
                       <input
+                        id="step-title-{editingStepId}"
                         type="text"
                         bind:value={editedStep.title}
                         placeholder="タイトルを入力"
@@ -210,9 +211,10 @@
                     </div>
                     <div class="form-row">
                       <div class="form-group">
-                        <label>時刻</label>
+                        <label for="step-hour-{editingStepId}">時刻</label>
                         <div class="time-input">
                           <input
+                            id="step-hour-{editingStepId}"
                             type="text"
                             bind:value={editStepHour}
                             maxlength="2"
@@ -229,16 +231,18 @@
                       </div>
                     </div>
                     <div class="form-group">
-                      <label>場所</label>
+                      <label for="step-location-{editingStepId}">場所</label>
                       <input
+                        id="step-location-{editingStepId}"
                         type="text"
                         bind:value={editedStep.location}
                         placeholder="場所（オプション）"
                       />
                     </div>
                     <div class="form-group">
-                      <label>メモ</label>
+                      <label for="step-notes-{editingStepId}">メモ</label>
                       <textarea
+                        id="step-notes-{editingStepId}"
                         bind:value={editedStep.notes}
                         placeholder="メモを入力"
                       ></textarea>
@@ -668,79 +672,5 @@
 
   .month-view {
     padding: 16px;
-  }
-
-  .month-header {
-    text-align: center;
-    font-size: 18px;
-    font-weight: 700;
-    color: #1f2937;
-    margin-bottom: 16px;
-  }
-
-  .month-weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    margin-bottom: 8px;
-  }
-
-  .month-weekday {
-    text-align: center;
-    font-weight: 600;
-    color: #1f2937;
-    font-size: 12px;
-    padding: 8px 0;
-  }
-
-  .month-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-  }
-
-  .month-cell {
-    border: 1px solid #e5e5e5;
-    border-radius: 6px;
-    padding: 8px;
-    background: white;
-    min-height: 90px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .month-cell.has-steps {
-    background: #f9fbff;
-    border-color: #d0e1ff;
-  }
-
-  .month-date {
-    font-weight: 600;
-    color: #1f2937;
-    font-size: 13px;
-    margin-bottom: 4px;
-  }
-
-  .month-cell-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    font-size: 10px;
-  }
-
-  .month-step-item {
-    padding: 2px 4px;
-    background: #2563eb;
-    color: white;
-    border-radius: 3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .month-step-more {
-    padding: 2px 4px;
-    color: #2563eb;
-    font-weight: 600;
   }
 </style>

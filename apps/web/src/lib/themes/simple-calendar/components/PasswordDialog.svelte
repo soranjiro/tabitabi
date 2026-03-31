@@ -19,8 +19,24 @@
 </script>
 
 {#if show}
-  <div class="dialog-overlay" onclick={onClose}>
-    <div class="dialog" onclick={(e) => e.stopPropagation()}>
+  <div
+    class="dialog-overlay"
+    onclick={onClose}
+    onkeydown={(e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    }}
+    role="presentation"
+  >
+    <div
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      onkeydown={(e) => e.stopPropagation()}
+      onclick={(e) => e.stopPropagation()}
+    >
       <h2>パスワード入力</h2>
       <input
         type="password"

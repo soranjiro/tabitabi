@@ -42,8 +42,9 @@
     <h3>新しい予定を追加</h3>
 
     <div class="form-group">
-      <label>タイトル *</label>
+      <label for="add-step-title">タイトル *</label>
       <input
+        id="add-step-title"
         type="text"
         bind:value={localData.title}
         placeholder="予定のタイトル"
@@ -52,13 +53,14 @@
 
     <div class="form-row">
       <div class="form-group">
-        <label>日付 *</label>
-        <input type="date" bind:value={localData.date} />
+        <label for="add-step-date">日付 *</label>
+        <input id="add-step-date" type="date" bind:value={localData.date} />
       </div>
       <div class="form-group">
-        <label>時刻 *</label>
+        <label for="add-step-hour">時刻 *</label>
         <div class="time-input">
           <input
+            id="add-step-hour"
             type="text"
             bind:value={localHour}
             maxlength="2"
@@ -76,8 +78,9 @@
     </div>
 
     <div class="form-group">
-      <label>場所</label>
+      <label for="add-step-location">場所</label>
       <input
+        id="add-step-location"
         type="text"
         bind:value={localData.location}
         placeholder="場所（オプション）"
@@ -85,8 +88,11 @@
     </div>
 
     <div class="form-group">
-      <label>メモ</label>
-      <textarea bind:value={localData.notes} placeholder="メモ（オプション）"
+      <label for="add-step-notes">メモ</label>
+      <textarea
+        id="add-step-notes"
+        bind:value={localData.notes}
+        placeholder="メモ（オプション）"
       ></textarea>
     </div>
 

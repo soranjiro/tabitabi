@@ -22,8 +22,9 @@
 <section class="settings-section">
   <h3>Walica連携</h3>
   <div class="setting-item">
-    <label>グループID</label>
+    <label for="walica-group-id">グループID</label>
     <input
+      id="walica-group-id"
       type="text"
       bind:value={localWalicaId}
       placeholder="グループIDを入力"
@@ -43,8 +44,14 @@
     </label>
     {#if localSecretEnabled}
       <div class="secret-setting">
-        <label>公開まで待機する時間（分）</label>
-        <input type="number" bind:value={localSecretOffset} min="1" step="1" />
+        <label for="secret-offset">公開まで待機する時間（分）</label>
+        <input
+          id="secret-offset"
+          type="number"
+          bind:value={localSecretOffset}
+          min="1"
+          step="1"
+        />
       </div>
     {/if}
     <button

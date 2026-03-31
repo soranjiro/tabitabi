@@ -1,5 +1,6 @@
 /* Print styles for standard-autumn theme - Premium Brochure Style */
 @media print {
+
   /* Hide non-essential UI elements */
   .standard-autumn-bottom-nav,
   .standard-autumn-carousel-controls,
@@ -15,7 +16,8 @@
   .standard-autumn-container::before,
   .standard-autumn-container::after,
   .standard-autumn-carousel-wrapper::before,
-  .standard-autumn-carousel-wrapper::after {
+  .standard-autumn-carousel-wrapper::after,
+  .demo-banner {
     display: none !important;
   }
 
@@ -36,7 +38,8 @@
     box-sizing: border-box;
   }
 
-  html, body {
+  html,
+  body {
     width: 100% !important;
     height: auto !important;
     margin: 0 !important;
@@ -365,7 +368,7 @@
   /* Secret Steps */
   .standard-autumn-step-hidden {
     opacity: 1 !important;
-    background: rgba(0,0,0,0.02) !important;
+    background: rgba(0, 0, 0, 0.02) !important;
     border-radius: 2mm !important;
     padding: 2mm !important;
   }
@@ -411,7 +414,9 @@
   }
 
   /* Ensure orphan/widow control */
-  p, li, .standard-autumn-step-title {
+  p,
+  li,
+  .standard-autumn-step-title {
     orphans: 2 !important;
     widows: 2 !important;
   }

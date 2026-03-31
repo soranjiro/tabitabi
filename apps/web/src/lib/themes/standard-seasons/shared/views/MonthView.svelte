@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import EventDetailDialog from "../components/EventDetailDialog.svelte";
 
   interface Props {
     steps: Step[];
@@ -20,9 +21,12 @@
     secretModeEnabled = false,
     secretModeOffset = 60,
     onStepClick,
+    onUpdateStep,
+    onDeleteStep,
   }: Props = $props();
 
   let currentDate = $state(new Date());
+  let selectedStep = $state<Step | null>(null);
 
   function isSecretStep(stepDate: string, stepTime: string): boolean {
     if (!secretModeEnabled) return false;
@@ -128,6 +132,18 @@
     return days[date.getDay()];
   }
 
+  function handleEventClick(step: Step) {
+    if (hasEditPermission) {
+      onStepClick?.(step.id);
+    } else {
+      selectedStep = step;
+    }
+  }
+
+  function closeDialog() {
+    selectedStep = null;
+  }
+
   const monthDays = $derived(getMonthDays(currentDate));
 </script>
 
@@ -187,7 +203,7 @@
                   class="standard-autumn-month-event"
                   class:secret={isSecretStep(step.date, step.time) &&
                     !hasEditPermission}
-                  onclick={() => onStepClick?.(step.id)}
+                  onclick={() => handleEventClick(step)}
                   title={step.title}
                 >
                   {#if isSecretStep(step.date, step.time) && !hasEditPermission}
@@ -214,3 +230,13 @@
     </div>
   </div>
 </div>
+
+{#if selectedStep}
+  <EventDetailDialog
+    step={selectedStep}
+    {hasEditPermission}
+    onClose={closeDialog}
+    {onUpdateStep}
+    {onDeleteStep}
+  />
+{/if}

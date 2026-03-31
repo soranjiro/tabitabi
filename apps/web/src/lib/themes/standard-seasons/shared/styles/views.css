@@ -7,6 +7,7 @@
 
 .standard-autumn-list-view {
   padding: 1rem;
+  padding-bottom: 100px;
   max-width: 800px;
   margin: 0 auto;
 }
@@ -83,6 +84,7 @@
 .standard-autumn-month-view {
   width: 100%;
   padding: 1rem;
+  padding-bottom: 100px;
 }
 
 .standard-autumn-month-header {
@@ -297,6 +299,10 @@
     padding: 0.2rem 0.4rem;
   }
 
+  .standard-autumn-month-event-time {
+    display: none;
+  }
+
   .standard-autumn-month-weekday {
     padding: 0.5rem 0.25rem;
     font-size: 0.8rem;
@@ -318,6 +324,17 @@
     padding: 0.15rem 0.3rem;
   }
 
+  .standard-autumn-month-event-time {
+    display: none;
+  }
+
+  .standard-autumn-month-event-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
   .standard-autumn-month-weekday {
     padding: 0.4rem 0.1rem;
     font-size: 0.7rem;
@@ -330,6 +347,7 @@
 
 .standard-autumn-week-view {
   padding: 0.5rem;
+  padding-bottom: 100px;
   overflow-x: auto;
 }
 

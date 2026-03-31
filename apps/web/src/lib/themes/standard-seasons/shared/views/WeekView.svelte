@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import EventDetailDialog from "../components/EventDetailDialog.svelte";
 
   interface Props {
     steps: Step[];
@@ -20,7 +21,11 @@
     secretModeEnabled = false,
     secretModeOffset = 60,
     onStepClick,
+    onUpdateStep,
+    onDeleteStep,
   }: Props = $props();
+
+  let selectedStep = $state<Step | null>(null);
 
   function isSecretStep(stepDate: string, stepTime: string): boolean {
     if (!secretModeEnabled) return false;
@@ -110,6 +115,18 @@
   function getEventCountForCell(dateStr: string, hour: number): number {
     return getEventsForCell(dateStr, hour).length;
   }
+
+  function handleEventClick(step: Step) {
+    if (hasEditPermission) {
+      onStepClick?.(step.id);
+    } else {
+      selectedStep = step;
+    }
+  }
+
+  function closeDialog() {
+    selectedStep = null;
+  }
 </script>
 
 <div class="standard-autumn-week-view">
@@ -155,7 +172,7 @@
                       getEventCountForCell(formatDateKey(date), hour),
                     )}
                     title="Secret"
-                    onclick={() => onStepClick?.(step.id)}
+                    onclick={() => handleEventClick(step)}
                   >
                     🔒 Secret
                   </button>
@@ -169,7 +186,7 @@
                       getEventCountForCell(formatDateKey(date), hour),
                     )}
                     title={step.title}
-                    onclick={() => onStepClick?.(step.id)}
+                    onclick={() => handleEventClick(step)}
                   >
                     {step.title}
                   </button>
@@ -182,3 +199,13 @@
     </div>
   {/if}
 </div>
+
+{#if selectedStep}
+  <EventDetailDialog
+    step={selectedStep}
+    {hasEditPermission}
+    onClose={closeDialog}
+    {onUpdateStep}
+    {onDeleteStep}
+  />
+{/if}

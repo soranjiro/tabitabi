@@ -266,3 +266,36 @@
 .standard-autumn-secret-line.short {
   width: 60%;
 }
+
+@media (max-width: 600px) {
+  .standard-autumn-step-time {
+    width: 32px;
+    font-size: 0.8rem;
+    padding-right: 8px;
+  }
+
+  .standard-autumn-timeline-line {
+    left: 32px;
+  }
+
+  .standard-autumn-step-content {
+    margin-left: 1rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .standard-autumn-step-time {
+    width: 28px;
+    font-size: 0.75rem;
+    padding-right: 6px;
+  }
+
+  .standard-autumn-timeline-line {
+    left: 28px;
+  }
+
+  .standard-autumn-step-content {
+    margin-left: 0.75rem;
+    padding: 1rem;
+  }
+}

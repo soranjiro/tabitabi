@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
   import { renderMarkdown } from "../utils/markdown";
+  import EventDetailDialog from "../components/EventDetailDialog.svelte";
 
   interface Props {
     steps: Step[];
@@ -21,7 +22,11 @@
     secretModeEnabled = false,
     secretModeOffset = 60,
     onStepClick,
+    onUpdateStep,
+    onDeleteStep,
   }: Props = $props();
+
+  let selectedStep = $state<Step | null>(null);
 
   function isSecretStep(stepDate: string, stepTime: string): boolean {
     if (!secretModeEnabled) return false;
@@ -51,6 +56,18 @@
       return a.time.localeCompare(b.time);
     }),
   );
+
+  function handleRowClick(step: Step) {
+    if (hasEditPermission) {
+      onStepClick?.(step.id);
+    } else {
+      selectedStep = step;
+    }
+  }
+
+  function closeDialog() {
+    selectedStep = null;
+  }
 </script>
 
 <div class="standard-autumn-list-view">
@@ -84,7 +101,7 @@
                 e.currentTarget?.style.setProperty("cursor", "pointer")}
               onmouseleave={(e) =>
                 e.currentTarget?.style.setProperty("cursor", "default")}
-              onclick={() => onStepClick?.(step.id)}
+              onclick={() => handleRowClick(step)}
             >
               <td class="standard-autumn-list-date">{formatDate(step.date)}</td>
               <td class="standard-autumn-list-day">{getDayOfWeek(step.date)}</td
@@ -119,3 +136,13 @@
     </table>
   {/if}
 </div>
+
+{#if selectedStep}
+  <EventDetailDialog
+    step={selectedStep}
+    {hasEditPermission}
+    onClose={closeDialog}
+    {onUpdateStep}
+    {onDeleteStep}
+  />
+{/if}

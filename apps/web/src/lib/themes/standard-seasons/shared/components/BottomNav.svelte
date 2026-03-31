@@ -1,0 +1,181 @@
+<script lang="ts">
+  import { goto } from "$app/navigation";
+  import {
+    HomeIcon,
+    WalicaIcon,
+    ViewIcon,
+    EditIcon,
+    SettingsIcon,
+  } from "./icons/index.svelte";
+  import SettingsMenu from "./SettingsMenu.svelte";
+
+  interface ThemeOption {
+    id: string;
+    name: string;
+    description?: string;
+  }
+
+  interface Props {
+    hasEditPermission: boolean;
+    walicaId?: string | null;
+    themes: ThemeOption[];
+    selectedThemeId: string;
+    secretModeEnabled: boolean;
+    secretModeOffset: number;
+    walicaUrl: string;
+    onEditModeToggle: () => void;
+    onThemeChange: (themeId: string) => void;
+    onSecretModeChange: (enabled: boolean, offset: number) => void;
+    onWalicaUpdate: (url: string) => void;
+    onWalicaOpen: () => void;
+    onViewModeClick?: () => void;
+  }
+
+  let {
+    hasEditPermission,
+    walicaId,
+    themes,
+    selectedThemeId,
+    secretModeEnabled,
+    secretModeOffset,
+    walicaUrl,
+    onEditModeToggle,
+    onThemeChange,
+    onSecretModeChange,
+    onWalicaUpdate,
+    onWalicaOpen,
+    onViewModeClick,
+  }: Props = $props();
+
+  let showSettingsMenu = $state(false);
+  let showThemeSelect = $state(false);
+
+  const ModeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18v2H3V5zm0 6h18v2H3v-2zm0 6h18v2H3v-2z"/></svg>`;
+
+  function handleSettingsClick() {
+    showSettingsMenu = !showSettingsMenu;
+    showThemeSelect = false;
+  }
+
+  function handleShowThemeSelect() {
+    showThemeSelect = true;
+    showSettingsMenu = false;
+  }
+
+  function handleThemeChange(themeId: string) {
+    showThemeSelect = false;
+    onThemeChange(themeId);
+  }
+
+  function handleEditModeToggle() {
+    showSettingsMenu = false;
+    onEditModeToggle();
+  }
+</script>
+
+<nav class="standard-autumn-bottom-nav" aria-label="フッターメニュー">
+  <button
+    class="standard-autumn-bottom-btn"
+    title="ホーム"
+    aria-label="ホーム"
+    onclick={() => goto("/")}
+  >
+    {@html HomeIcon}
+    <span>Home</span>
+  </button>
+
+  {#if walicaId}
+    <button
+      class="standard-autumn-bottom-btn"
+      title="Walica"
+      aria-label="Walica"
+      onclick={onWalicaOpen}
+    >
+      {@html WalicaIcon}
+      <span>Walica</span>
+    </button>
+  {/if}
+
+  <div class="standard-autumn-btn-wrapper">
+    {#if hasEditPermission}
+      <button
+        class="standard-autumn-bottom-btn"
+        title="閲覧モードに切り替え"
+        aria-label="閲覧モードに切り替え"
+        onclick={handleEditModeToggle}
+      >
+        {@html ViewIcon}
+        <span>View</span>
+      </button>
+    {:else}
+      <button
+        class="standard-autumn-bottom-btn"
+        title="ビューモード選択"
+        aria-label="ビューモード選択"
+        onclick={onViewModeClick}
+      >
+        {@html ModeIcon}
+        <span>Mode</span>
+      </button>
+    {/if}
+  </div>
+
+  {#if !hasEditPermission}
+    <button
+      class="standard-autumn-bottom-btn"
+      title="編集モードに切り替え"
+      aria-label="編集モードに切り替え"
+      onclick={handleEditModeToggle}
+    >
+      {@html EditIcon}
+      <span>Edit</span>
+    </button>
+  {/if}
+
+  {#if hasEditPermission}
+    <div class="standard-autumn-btn-wrapper">
+      <button
+        class="standard-autumn-bottom-btn"
+        title="設定"
+        aria-label="設定"
+        onclick={handleSettingsClick}
+      >
+        {@html SettingsIcon}
+        <span>Settings</span>
+      </button>
+      {#if showSettingsMenu}
+        <SettingsMenu
+          {themes}
+          {selectedThemeId}
+          {secretModeEnabled}
+          {secretModeOffset}
+          {walicaUrl}
+          {showThemeSelect}
+          onThemeChange={handleThemeChange}
+          {onSecretModeChange}
+          {onWalicaUpdate}
+          onShowThemeSelect={handleShowThemeSelect}
+          onClose={() => (showSettingsMenu = false)}
+        />
+      {/if}
+      {#if showThemeSelect}
+        <div class="standard-autumn-theme-select-popup">
+          <label for="theme-select" class="standard-autumn-theme-select-label"
+            >テーマを選択</label
+          >
+          <select
+            id="theme-select"
+            value={selectedThemeId}
+            onchange={(e) =>
+              handleThemeChange((e.target as HTMLSelectElement).value)}
+            class="standard-autumn-theme-select-input"
+          >
+            {#each themes as theme}
+              <option value={theme.id}>{theme.name}</option>
+            {/each}
+          </select>
+        </div>
+      {/if}
+    </div>
+  {/if}
+</nav>

@@ -3,7 +3,10 @@ export const defaultThemeId = "standard-autumn" as const;
 export const availableThemes = [
   "map-only",
   "mapbox-journey",
+  "standard-spring",
+  "standard-summer",
   "standard-autumn",
+  "standard-winter",
   "ai-generated",
   "shopping",
   "pixel-quest",
@@ -19,10 +22,28 @@ const THEME_CATALOG: Array<{
   phrase: string;
 }> = [
   {
+    id: "standard-spring",
+    name: "標準（春）",
+    description: "やさしく、かわいらしい",
+    phrase: "春の旅",
+  },
+  {
+    id: "standard-summer",
+    name: "標準（夏）",
+    description: "爽やかで涼しい",
+    phrase: "夏の旅",
+  },
+  {
     id: "standard-autumn",
-    name: "標準",
-    description: "モチーフ秋",
-    phrase: "旅行のしおり",
+    name: "標準（秋）",
+    description: "温かみがあり、落ち着いている",
+    phrase: "秋の旅",
+  },
+  {
+    id: "standard-winter",
+    name: "標準（冬）",
+    description: "静寂で、凛とした雰囲気",
+    phrase: "冬の旅",
   },
   {
     id: "shopping",

@@ -1,0 +1,377 @@
+.standard-autumn-views-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 120px;
+}
+
+.standard-autumn-list-view {
+  padding: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.standard-autumn-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.standard-autumn-list-table th {
+  text-align: left;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 2px solid var(--standard-autumn-border);
+  color: var(--standard-autumn-text-light);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.standard-autumn-list-table td {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--standard-autumn-border);
+  color: var(--standard-autumn-text);
+  vertical-align: top;
+}
+
+.standard-autumn-list-table tr:last-child td {
+  border-bottom: none;
+}
+
+.standard-autumn-list-date {
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.standard-autumn-list-day {
+  white-space: nowrap;
+  color: var(--standard-autumn-text-light);
+  font-size: 0.85rem;
+}
+
+.standard-autumn-list-time {
+  white-space: nowrap;
+  font-family: "SF Mono", Monaco, monospace;
+  font-size: 0.85rem;
+}
+
+.standard-autumn-list-title-cell {
+  font-weight: 500;
+}
+
+.standard-autumn-list-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--standard-autumn-text-light);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.standard-autumn-list-location svg {
+  width: 14px;
+  height: 14px;
+}
+
+.standard-autumn-list-notes {
+  color: var(--standard-autumn-text-light);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.standard-autumn-month-view {
+  padding: 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.standard-autumn-month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  margin-bottom: 0.5rem;
+}
+
+.standard-autumn-month-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--standard-autumn-text);
+}
+
+.standard-autumn-month-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.standard-autumn-month-nav-btn {
+  background: transparent;
+  border: 1px solid var(--standard-autumn-border);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--standard-autumn-text);
+}
+
+.standard-autumn-month-nav-btn:hover {
+  background: var(--standard-autumn-border);
+}
+
+.standard-autumn-month-nav-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.standard-autumn-month-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--standard-autumn-text-light);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--standard-autumn-border);
+}
+
+.standard-autumn-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-top: 0.25rem;
+}
+
+.standard-autumn-month-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  color: var(--standard-autumn-text);
+}
+
+.standard-autumn-month-day:hover {
+  background: rgba(169, 53, 41, 0.08);
+}
+
+.standard-autumn-month-day.other-month {
+  color: var(--standard-autumn-text-light);
+  opacity: 0.4;
+}
+
+.standard-autumn-month-day.has-events {
+  font-weight: 600;
+}
+
+.standard-autumn-month-day.has-events::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: var(--standard-autumn-primary);
+  border-radius: 50%;
+}
+
+.standard-autumn-month-day.selected {
+  background: var(--standard-autumn-primary);
+  color: #fff;
+}
+
+.standard-autumn-month-day.selected::after {
+  background: #fff;
+}
+
+.standard-autumn-month-day.today {
+  border: 2px solid var(--standard-autumn-primary);
+}
+
+.standard-autumn-month-detail {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--standard-autumn-border);
+}
+
+.standard-autumn-month-detail-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--standard-autumn-text);
+  margin-bottom: 0.75rem;
+}
+
+.standard-autumn-month-detail-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.standard-autumn-month-detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--standard-autumn-border);
+}
+
+.standard-autumn-month-detail-item:last-child {
+  border-bottom: none;
+}
+
+.standard-autumn-month-detail-time {
+  font-family: "SF Mono", Monaco, monospace;
+  font-size: 0.85rem;
+  color: var(--standard-autumn-primary);
+  min-width: 50px;
+}
+
+.standard-autumn-month-detail-content {
+  flex: 1;
+}
+
+.standard-autumn-month-detail-step-title {
+  font-weight: 500;
+  color: var(--standard-autumn-text);
+}
+
+.standard-autumn-month-detail-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--standard-autumn-text-light);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.standard-autumn-month-detail-location svg {
+  width: 14px;
+  height: 14px;
+}
+
+.standard-autumn-week-view {
+  padding: 0.5rem;
+  overflow-x: auto;
+}
+
+.standard-autumn-week-container {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  min-width: 600px;
+}
+
+.standard-autumn-week-header {
+  display: contents;
+}
+
+.standard-autumn-week-corner {
+  grid-column: 1;
+  grid-row: 1;
+  border-bottom: 1px solid var(--standard-autumn-border);
+}
+
+.standard-autumn-week-day-header {
+  padding: 0.5rem;
+  text-align: center;
+  border-bottom: 1px solid var(--standard-autumn-border);
+  font-size: 0.8rem;
+}
+
+.standard-autumn-week-day-name {
+  font-weight: 600;
+  color: var(--standard-autumn-text);
+}
+
+.standard-autumn-week-day-date {
+  font-size: 0.75rem;
+  color: var(--standard-autumn-text-light);
+}
+
+.standard-autumn-week-day-header.has-events .standard-autumn-week-day-date {
+  background: var(--standard-autumn-primary);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.standard-autumn-week-body {
+  display: contents;
+}
+
+.standard-autumn-week-time-label {
+  grid-column: 1;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--standard-autumn-text-light);
+  text-align: right;
+  border-right: 1px solid var(--standard-autumn-border);
+  height: 40px;
+}
+
+.standard-autumn-week-cell {
+  border-right: 1px solid var(--standard-autumn-border);
+  border-bottom: 1px solid var(--standard-autumn-border);
+  height: 40px;
+  position: relative;
+  min-height: 40px;
+}
+
+.standard-autumn-week-cell:last-child {
+  border-right: none;
+}
+
+.standard-autumn-week-event {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  background: var(--standard-autumn-primary);
+  color: #fff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 10;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.standard-autumn-week-event:hover {
+  transform: scale(1.02);
+  z-index: 20;
+}
+
+.standard-autumn-week-no-events {
+  text-align: center;
+  padding: 2rem;
+  color: var(--standard-autumn-text-light);
+}
+
+@media (max-width: 600px) {
+  .standard-autumn-list-table {
+    font-size: 0.8rem;
+  }
+
+  .standard-autumn-list-table th,
+  .standard-autumn-list-table td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .standard-autumn-month-day {
+    font-size: 0.8rem;
+  }
+
+  .standard-autumn-week-container {
+    grid-template-columns: 50px repeat(7, minmax(70px, 1fr));
+  }
+}

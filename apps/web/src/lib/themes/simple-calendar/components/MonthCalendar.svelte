@@ -152,116 +152,154 @@
   .month-weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-    margin-bottom: 6px;
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
   .month-weekday {
     text-align: center;
-    font-size: 11px;
-    font-weight: 600;
-    color: #666;
-    padding: 4px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1f2937;
+    padding: 12px 0;
+    border-bottom: 2px solid #e5e5e5;
   }
 
   .month-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-    auto-rows: 70px;
+    gap: 8px;
+    auto-rows: 120px;
   }
 
   .month-cell {
     border: 1px solid #e5e5e5;
-    border-radius: 4px;
-    padding: 4px;
+    border-radius: 8px;
+    padding: 12px;
     background: white;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     transition: all 0.2s;
+    cursor: pointer;
   }
 
   .month-cell:hover {
     border-color: #2563eb;
-    box-shadow: 0 1px 4px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+    transform: translateY(-2px);
   }
 
   .month-cell.has-steps {
-    background: #f9fbff;
+    background: linear-gradient(135deg, #f9fbff 0%, #ffffff 100%);
   }
 
   .month-date {
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 700;
     color: #1f2937;
-    margin-bottom: 2px;
+    margin-bottom: 8px;
   }
 
   .month-cell-content {
     flex: 1;
     overflow-y: auto;
-    font-size: 9px;
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 4px;
   }
 
   .month-step-item {
-    background: #e0e7ff;
-    padding: 1px 2px;
-    border-radius: 2px;
-    color: #2563eb;
-    font-weight: 500;
+    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #1e40af;
+    font-weight: 600;
     cursor: pointer;
     display: flex;
-    gap: 1px;
+    gap: 4px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
     transition: all 0.2s;
+    font-size: 12px;
   }
 
   .month-step-item:hover {
     background: #bfdbfe;
-    color: #1d4ed8;
+    color: #0c4a6e;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
   }
 
   .month-step-time {
     flex-shrink: 0;
     font-family: monospace;
-    font-size: 8px;
+    font-size: 11px;
+    font-weight: 700;
   }
 
   .month-step-title {
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: 8px;
+    font-size: 11px;
   }
 
   .month-step-more {
     color: #666;
-    font-size: 8px;
+    font-size: 11px;
     font-weight: 600;
-    padding: 1px 2px;
+    padding: 2px 4px;
+  }
+
+  @media (max-width: 1024px) {
+    .month-grid {
+      gap: 6px;
+      auto-rows: 100px;
+    }
+
+    .month-cell {
+      padding: 8px;
+    }
+
+    .month-date {
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .month-step-item {
+      font-size: 11px;
+      padding: 2px 6px;
+    }
   }
 
   @media (max-width: 480px) {
-    .month-view-container {
-      gap: 1rem;
-    }
-
-    .month-section {
-      padding: 0.75rem;
-    }
-
     .month-grid {
-      auto-rows: 60px;
+      gap: 4px;
+      auto-rows: 80px;
+    }
+
+    .month-cell {
+      padding: 6px;
+    }
+
+    .month-weekday {
+      font-size: 11px;
+      padding: 8px 0;
+    }
+
+    .month-date {
+      font-size: 11px;
+      margin-bottom: 4px;
     }
 
     .month-cell-content {
-      font-size: 8px;
+      gap: 2px;
+    }
+
+    .month-step-item {
+      font-size: 9px;
+      padding: 2px 4px;
     }
   }
 </style>

@@ -74,7 +74,6 @@
         type="text"
         bind:value={newStep.title}
         placeholder="予定のタイトル"
-        autofocus
       />
     </div>
 
@@ -134,41 +133,43 @@
 
 <style>
   .add-step-form {
-    background: #f9fbff;
-    padding: 16px;
-    border-radius: 8px;
-    border: 1px solid #e0e7ff;
-    margin-bottom: 12px;
+    background: linear-gradient(135deg, #f9fbff 0%, #f0f4ff 100%);
+    padding: 24px;
+    border-radius: 12px;
+    border: 2px solid #e0e7ff;
+    margin-bottom: 24px;
+    max-width: 900px;
   }
 
   .add-step-form h3 {
-    margin: 0 0 16px 0;
-    font-size: 14px;
-    font-weight: 600;
+    margin: 0 0 20px 0;
+    font-size: 16px;
+    font-weight: 700;
     color: #1f2937;
   }
 
   .form-group {
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
 
   .form-group label {
     display: block;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
-    color: #1f2937;
-    margin-bottom: 4px;
+    color: #374151;
+    margin-bottom: 6px;
   }
 
   .form-group input,
   .form-group textarea {
     width: 100%;
-    padding: 8px;
+    padding: 10px;
     border: 1px solid #d0d0d0;
-    border-radius: 4px;
-    font-size: 13px;
+    border-radius: 6px;
+    font-size: 14px;
     font-family: inherit;
     box-sizing: border-box;
+    transition: all 0.2s;
   }
 
   .form-group textarea {
@@ -180,42 +181,46 @@
   .form-group textarea:focus {
     outline: none;
     border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    background-color: #fafbff;
   }
 
   .time-input {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
   }
 
   .time-input input {
-    width: 50px;
+    width: 60px;
     text-align: center;
   }
 
   .form-row {
-    display: flex;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
   }
 
-  .form-row .form-group {
-    flex: 1;
+  @media (min-width: 768px) {
+    .form-row {
+      grid-template-columns: 2fr 1.5fr;
+    }
   }
 
   .form-actions {
     display: flex;
-    gap: 8px;
-    margin-top: 16px;
+    gap: 12px;
+    margin-top: 20px;
   }
 
   .btn-primary,
   .btn-secondary {
     flex: 1;
-    padding: 10px;
+    padding: 12px;
     border: none;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
@@ -228,16 +233,23 @@
 
   .btn-primary:hover {
     background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
   }
 
   .btn-secondary {
     background: white;
     color: #666;
-    border: 1px solid #d0d0d0;
+    border: 1.5px solid #d0d0d0;
   }
 
   .btn-secondary:hover {
-    border-color: #666;
+    border-color: #999;
     color: #333;
+    background: #f9f9f9;
   }
 </style>

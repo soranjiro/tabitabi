@@ -406,8 +406,10 @@
     <section class="section">
       <StepList {steps} {hasEditPermission} {onUpdateStep} {onDeleteStep} />
     </section>
+  </main>
 
-    {#if hasEditPermission}
+  {#if hasEditPermission}
+    <div class="edit-forms">
       <AddStepForm
         bind:isAddingStep
         bind:newStep
@@ -423,6 +425,6 @@
         onWalicaUpdate={handleWalicaUpdate}
         onSecretModeUpdate={handleSecretModeUpdate}
       />
-    {/if}
-  </main>
+    </div>
+  {/if}
 </div>

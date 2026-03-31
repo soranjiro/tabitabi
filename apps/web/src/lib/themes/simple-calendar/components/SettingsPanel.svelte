@@ -81,80 +81,100 @@
 
 <style>
   :global(.main-content) {
-    max-width: 600px;
-    margin: 0 auto;
+    width: 100%;
+  }
+
+  :global(.section) {
+    max-width: 900px;
   }
 
   .settings-section {
-    padding: 16px;
+    padding: 20px;
     border-bottom: 1px solid #e5e5e5;
     max-width: 100%;
   }
 
+  .settings-section:last-of-type {
+    border-bottom: none;
+  }
+
   .settings-section h3 {
-    margin: 0 0 12px 0;
-    font-size: 15px;
-    font-weight: 600;
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 700;
     color: #1f2937;
   }
 
   .setting-item {
-    background: #f9f9f9;
-    padding: 12px;
-    border-radius: 6px;
+    background: linear-gradient(135deg, #f9f9f9 0%, #fafbfc 100%);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e5e5e5;
   }
 
   .setting-item label {
     display: block;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     color: #374151;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
 
   .checkbox-group {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 10px;
+    margin-bottom: 16px;
   }
 
   .checkbox-group input[type="checkbox"] {
     cursor: pointer;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
+    accent-color: #2563eb;
   }
 
   .checkbox-group label {
     margin: 0;
     cursor: pointer;
     font-weight: 500;
+    user-select: none;
   }
 
   .input-group {
     display: flex;
-    gap: 8px;
+    gap: 12px;
+    align-items: flex-end;
   }
 
   .setting-item input[type="text"],
   .setting-item input[type="number"] {
     flex: 1;
-    min-width: 0;
-    padding: 8px;
+    min-width: 200px;
+    padding: 10px;
     border: 1px solid #d0d0d0;
-    border-radius: 4px;
-    font-size: 13px;
+    border-radius: 6px;
+    font-size: 14px;
     box-sizing: border-box;
+    transition: all 0.2s;
+  }
+
+  .setting-item input[type="text"]:focus,
+  .setting-item input[type="number"]:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    background-color: #fafbff;
   }
 
   .btn-save {
-    padding: 8px 16px;
+    padding: 10px 24px;
     border: none;
     border-radius: 6px;
     background: #2563eb;
     color: white;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     transition: all 0.2s;
     white-space: nowrap;
@@ -162,15 +182,17 @@
 
   .btn-save:hover {
     background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
   }
 
   .btn-save:active {
-    transform: scale(0.98);
+    transform: translateY(0);
   }
 
   .secret-setting {
-    margin-top: 12px;
-    padding-top: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
     border-top: 1px solid #e5e5e5;
   }
 
@@ -178,9 +200,29 @@
     margin-bottom: 8px;
   }
 
-  @media (max-width: 480px) {
+  @media (min-width: 768px) {
+    .input-group {
+      flex-direction: row;
+    }
+
+    .btn-save {
+      flex-shrink: 0;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .settings-section {
+      padding: 16px;
+    }
+
     .input-group {
       flex-direction: column;
+      align-items: stretch;
+    }
+
+    .setting-item input[type="text"],
+    .setting-item input[type="number"] {
+      min-width: 0;
     }
 
     .btn-save {

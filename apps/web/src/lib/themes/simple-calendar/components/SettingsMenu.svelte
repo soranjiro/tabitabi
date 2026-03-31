@@ -23,7 +23,7 @@
     onClose,
   }: Props = $props();
 
-  let menuElement: HTMLDivElement | undefined;
+  let menuElement = $state<HTMLDivElement | undefined>(undefined);
 
   onMount(() => {
     function handleClickOutside(e: MouseEvent) {

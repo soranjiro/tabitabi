@@ -2,6 +2,7 @@
   import type { Step } from "@tabitabi/types";
   import { getMemoText, updateMemoText } from "$lib/memo";
   import MonthCalendar from "./components/MonthCalendar.svelte";
+  import { EditIcon, DeleteIcon } from "./assets/index.js";
 
   interface Props {
     steps: Step[];
@@ -277,17 +278,17 @@
                           class="btn-edit"
                           title="予定を編集"
                           onclick={() => startEdit(step)}
+                          aria-label="編集"
                         >
-                          <span class="icon">✏️</span>
-                          <span class="label">編集</span>
+                          <EditIcon size={18} color="currentColor" />
                         </button>
                         <button
                           class="btn-delete"
                           title="予定を削除"
                           onclick={() => handleDelete(step.id)}
+                          aria-label="削除"
                         >
-                          <span class="icon">🗑️</span>
-                          <span class="label">削除</span>
+                          <DeleteIcon size={18} color="currentColor" />
                         </button>
                       </div>
                     {/if}
@@ -349,9 +350,12 @@
 <style>
   .sc-container {
     width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
     padding: 0;
+    overflow: hidden;
   }
 
   .view-mode-selector {
@@ -362,7 +366,8 @@
     border-bottom: 1px solid #e5e5e5;
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 20;
+    flex-shrink: 0;
   }
 
   .view-btn {
@@ -389,7 +394,26 @@
     border-color: #2563eb;
   }
 
+  .timeline-view,
+  .week-view,
+  .month-view {
+    flex: 1;
+    width: 100%;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
   .timeline-view {
+    padding: 16px;
+    max-width: 900px;
+  }
+
+  .week-view {
+    padding: 16px;
+  }
+
+  .month-view {
     padding: 16px;
   }
 
@@ -495,20 +519,14 @@
   .btn-delete {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 6px 12px;
+    justify-content: center;
+    padding: 6px 8px;
     border: 1px solid #d0d0d0;
     background: white;
     cursor: pointer;
-    font-size: 13px;
     border-radius: 6px;
     transition: all 0.2s;
-    font-weight: 500;
-  }
-
-  .btn-edit .icon,
-  .btn-delete .icon {
-    font-size: 14px;
+    color: #666;
   }
 
   .btn-edit:hover {
@@ -630,62 +648,83 @@
   .week-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
+    gap: 12px;
+    width: 100%;
   }
 
   .week-header {
     text-align: center;
     font-weight: 600;
     color: #1f2937;
-    padding: 8px 4px;
-    font-size: 12px;
+    padding: 12px 4px;
+    font-size: 13px;
+    border-bottom: 2px solid #e5e5e5;
+    grid-column: 1 / -1;
   }
 
   .week-cell {
     border: 1px solid #e5e5e5;
     border-radius: 6px;
-    padding: 8px;
+    padding: 12px;
     background: white;
-    min-height: 100px;
+    min-height: 200px;
     display: flex;
     flex-direction: column;
+    transition: box-shadow 0.2s;
+  }
+
+  .week-cell:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
 
   .week-date {
-    font-weight: 600;
+    font-weight: 700;
     color: #1f2937;
-    font-size: 13px;
-    margin-bottom: 6px;
+    font-size: 16px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #f0f0f0;
   }
 
   .week-steps {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 8px;
     flex: 1;
-    font-size: 10px;
   }
 
   .week-step-item {
-    padding: 2px 4px;
-    background: #f0f4ff;
-    color: #2563eb;
-    border-radius: 3px;
+    padding: 8px;
+    background: linear-gradient(135deg, #e0e7ff 0%, #f0f4ff 100%);
+    color: #1e40af;
+    border-radius: 4px;
+    border-left: 3px solid #2563eb;
+    font-size: 12px;
+    transition: all 0.2s;
+  }
+
+  .week-step-item:hover {
+    box-shadow: 0 1px 4px rgba(37, 99, 235, 0.2);
+    transform: translateX(2px);
+  }
+
+  .week-step-time {
+    font-weight: 700;
+    display: block;
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+
+  .week-step-title {
+    display: block;
+    font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .week-step-time {
-    font-weight: 600;
-    display: inline;
-  }
-
-  .week-step-title {
-    margin-left: 2px;
-  }
-
   .month-view {
     padding: 16px;
+    width: 100%;
   }
 </style>

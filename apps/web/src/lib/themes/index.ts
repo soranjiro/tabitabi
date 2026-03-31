@@ -24,6 +24,8 @@ export async function loadTheme(themeId: string): Promise<Theme> {
       return (await import("./pixel-quest")).default;
     case "sauna-rally":
       return (await import("./sauna-rally")).default;
+    case "simple-calendar":
+      return (await import("./simple-calendar")).default;
     default:
       return (await import("./standard-autumn")).default;
   }

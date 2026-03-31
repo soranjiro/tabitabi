@@ -8,6 +8,7 @@ export const availableThemes = [
   "shopping",
   "pixel-quest",
   "sauna-rally",
+  "simple-calendar",
 ] as const;
 
 export type AvailableTheme = (typeof availableThemes)[number];
@@ -59,6 +60,12 @@ const THEME_CATALOG: Array<{
     name: "サウナスタンプラリー",
     description: "サウナ旅を記録",
     phrase: "サウナ巡り",
+  },
+  {
+    id: "simple-calendar",
+    name: "シンプルカレンダー",
+    description: "使いやすい縦スクロールカレンダー",
+    phrase: "シンプル計画",
   },
 ];
 

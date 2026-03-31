@@ -550,6 +550,108 @@ const saunaRallyDemo: DemoDataSet = {
   ],
 };
 
+const simpleCalendarDemo: DemoDataSet = {
+  itinerary: {
+    id: 'demo',
+    title: '東京3日間',
+    theme_id: 'simple-calendar',
+    memo: '{"text":"シンプルな旅程プラン。必要な情報だけを管理"}',
+    password: null,
+    created_at: now,
+    updated_at: now,
+  },
+  steps: [
+    {
+      id: 'demo-step-1',
+      itinerary_id: 'demo',
+      title: '羽田空港到着',
+      date: getDate(0),
+      time: '10:30',
+      location: '羽田空港',
+      notes: '{"text":"ANA便で到着予定"}',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-step-2',
+      itinerary_id: 'demo',
+      title: 'ランチ',
+      date: getDate(0),
+      time: '12:00',
+      location: 'シナガワグース',
+      notes: '{"text":""}',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-step-3',
+      itinerary_id: 'demo',
+      title: '浅草寺観光',
+      date: getDate(0),
+      time: '15:00',
+      location: '浅草',
+      notes: '{"text":"人力車体験を予約"}',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-step-4',
+      itinerary_id: 'demo',
+      title: '晩御飯',
+      date: getDate(0),
+      time: '18:00',
+      location: 'ホテル周辺',
+      notes: '{"text":""}',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-step-5',
+      itinerary_id: 'demo',
+      title: '渋谷スクランブル交差点',
+      date: getDate(1),
+      time: '10:00',
+      location: '渋谷',
+      notes: '{"text":"朝がおすすめ"}',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-step-6',
+      itinerary_id: 'demo',
+      title: '国立西洋美術館',
+      date: getDate(1),
+      time: '14:00',
+      location: '上野',
+      notes: '{"text":""}',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-step-7',
+      itinerary_id: 'demo',
+      title: '根津神社',
+      date: getDate(2),
+      time: '09:00',
+      location: '根津',
+      notes: '{"text":"朝関わらず参拝"}',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-step-8',
+      itinerary_id: 'demo',
+      title: '羽田空港出発',
+      date: getDate(2),
+      time: '18:00',
+      location: '羽田空港',
+      notes: '{"text":""}',
+      created_at: now,
+      updated_at: now,
+    },
+  ],
+};
+
 const isAvailableTheme = (themeId: string): themeId is AvailableTheme =>
   (availableThemes as readonly string[]).includes(themeId);
 
@@ -561,6 +663,7 @@ export const demoDataSets: Record<AvailableTheme, DemoDataSet> = {
   'pixel-quest': pixelQuestDemo,
   'ai-generated': aiGeneratedDemo,
   'sauna-rally': saunaRallyDemo,
+  'simple-calendar': simpleCalendarDemo,
 } satisfies Record<AvailableTheme, DemoDataSet>;
 
 export function getDemoData(themeId: string): DemoDataSet {

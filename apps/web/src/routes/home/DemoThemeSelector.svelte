@@ -12,9 +12,9 @@
 
   const themes = getAvailableThemes();
 
-  function selectTheme(themeId: string) {
+  async function selectTheme(themeId: string) {
     // Initialize demo with selected theme's data
-    const demoData = getDemoData(themeId as AvailableTheme);
+    const demoData = await getDemoData(themeId as AvailableTheme);
     demoStorage.initializeDemo(demoData);
 
     // Navigate to demo page

@@ -2,5 +2,5 @@ export {
 	demoStorage,
 	type DemoData,
 } from './demoStorage';
-export { getDemoData, demoDataSets } from './demoData';
+export { getDemoData } from './demoData';
 export { setDemoMode, getIsDemoMode, resetDemoMode } from './demoContext';

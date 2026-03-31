@@ -38,7 +38,7 @@
     return defaultThemeId;
   }
 
-  onMount(async () => {
+  onMount(() => {
     const handleUnload = () => {
       demoStorage.clear();
     };
@@ -46,40 +46,44 @@
     window.addEventListener("pagehide", handleUnload);
     window.addEventListener("beforeunload", handleUnload);
 
-    try {
-      // Enable demo mode for this page
-      setDemoMode(true);
+    const initializeDemo = async () => {
+      try {
+        // Enable demo mode for this page
+        setDemoMode(true);
 
-      // Get theme from URL parameter
-      const themeId = resolveThemeId($page.url.searchParams.get("theme"));
+        // Get theme from URL parameter
+        const themeId = resolveThemeId($page.url.searchParams.get("theme"));
 
-      // Check if demo data exists, if not initialize
-      if (!demoStorage.hasData()) {
-        const demoData = getDemoData(themeId);
-        demoStorage.initializeDemo(demoData);
-      }
+        // Check if demo data exists, if not initialize
+        if (!demoStorage.hasData()) {
+          const demoData = await getDemoData(themeId);
+          demoStorage.initializeDemo(demoData);
+        }
 
-      // Load theme
-      theme = await loadTheme(themeId);
+        // Load theme
+        theme = await loadTheme(themeId);
 
-      // Load data from demo storage
-      itinerary = demoStorage.getItinerary();
-      steps = demoStorage.getSteps();
+        // Load data from demo storage
+        itinerary = demoStorage.getItinerary();
+        steps = demoStorage.getSteps();
 
-      if (!itinerary) {
-        error = "デモデータの読み込みに失敗しました";
+        if (!itinerary) {
+          error = "デモデータの読み込みに失敗しました";
+          loading = false;
+          return;
+        }
+
+        document.body.style.backgroundColor = backgroundColor;
+        document.documentElement.style.backgroundColor = backgroundColor;
         loading = false;
-        return;
+      } catch (e) {
+        console.error("Failed to load demo:", e);
+        error = "デモの読み込みに失敗しました";
+        loading = false;
       }
+    };
 
-      document.body.style.backgroundColor = backgroundColor;
-      document.documentElement.style.backgroundColor = backgroundColor;
-      loading = false;
-    } catch (e) {
-      console.error("Failed to load demo:", e);
-      error = "デモの読み込みに失敗しました";
-      loading = false;
-    }
+    initializeDemo();
 
     return () => {
       window.removeEventListener("pagehide", handleUnload);
@@ -121,6 +125,7 @@
     if (!itinerary) return;
     const newStep = demoStorage.createStep({
       ...stepData,
+      notes: stepData.notes || "",
       itinerary_id: itinerary.id,
     });
     steps = [...steps, newStep];

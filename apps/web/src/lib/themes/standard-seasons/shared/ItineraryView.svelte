@@ -99,6 +99,7 @@
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
   let focusedDate = $state<string | null>(null);
+  let stepListRef: any = undefined;
 
   function openAddStepForm() {
     isAddingStep = true;
@@ -153,7 +154,14 @@
 
   function handleEditModeToggle() {
     if (hasEditPermission) {
-      hasEditPermission = false;
+      // Check if currently editing
+      if (stepListRef?.isCurrentlyEditing?.()) {
+        if (confirm("編集中です。編集を棄却して閲覧モードに変更しますか？")) {
+          hasEditPermission = false;
+        }
+      } else {
+        hasEditPermission = false;
+      }
     } else {
       if (getIsDemoMode()) {
         hasEditPermission = true;
@@ -543,6 +551,7 @@
     {/if}
 
     <StepList
+      bind:this={stepListRef}
       {steps}
       {onUpdateStep}
       {onDeleteStep}

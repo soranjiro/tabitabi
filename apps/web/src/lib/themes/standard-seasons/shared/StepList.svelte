@@ -231,6 +231,10 @@
     }
   }
 
+  function isCurrentlyEditing(): boolean {
+    return editingStepId !== null;
+  }
+
   // Drag and drop handlers
   function handleDragStart(e: DragEvent, stepId: string) {
     if (!hasEditPermission || editingStepId) return;
@@ -449,6 +453,7 @@
     {secretModeOffset}
     {onUpdateStep}
     {onDeleteStep}
+    onStepClick={handleStepClick}
   />
 {:else if viewMode === "month"}
   <MonthView

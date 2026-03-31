@@ -53,13 +53,7 @@
       current.setDate(current.getDate() + 1);
     }
 
-    while (weekDates.length < 7) {
-      const next = new Date(weekDates[weekDates.length - 1]);
-      next.setDate(next.getDate() + 1);
-      weekDates.push(next);
-    }
-
-    return weekDates.slice(0, 7);
+    return weekDates;
   }
 
   function formatDateKey(date: Date): string {
@@ -124,7 +118,10 @@
       予定がまだ登録されていません
     </div>
   {:else}
-    <div class="standard-autumn-week-container">
+    <div
+      class="standard-autumn-week-container"
+      style="grid-template-columns: 60px repeat({weekDates.length}, 1fr);"
+    >
       <div class="standard-autumn-week-header">
         <div class="standard-autumn-week-corner"></div>
         {#each weekDates as date}

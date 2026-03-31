@@ -2,6 +2,7 @@
   flex: 1;
   overflow-y: auto;
   padding-bottom: 120px;
+  scrollbar-gutter: stable;
 }
 
 .standard-autumn-list-view {
@@ -443,5 +444,13 @@
 
   .standard-autumn-week-container {
     grid-template-columns: 50px repeat(7, minmax(70px, 1fr));
+  }
+}
+
+@media print {
+
+  .standard-autumn-month-nav,
+  .standard-autumn-bottom-nav {
+    display: none !important;
   }
 }

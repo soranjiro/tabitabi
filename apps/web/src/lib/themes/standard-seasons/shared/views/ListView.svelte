@@ -79,7 +79,13 @@
               </td>
             </tr>
           {:else}
-            <tr>
+            <tr
+              onmouseenter={(e) =>
+                e.currentTarget?.style.setProperty("cursor", "pointer")}
+              onmouseleave={(e) =>
+                e.currentTarget?.style.setProperty("cursor", "default")}
+              onclick={() => onStepClick?.(step.id)}
+            >
               <td class="standard-autumn-list-date">{formatDate(step.date)}</td>
               <td class="standard-autumn-list-day">{getDayOfWeek(step.date)}</td
               >

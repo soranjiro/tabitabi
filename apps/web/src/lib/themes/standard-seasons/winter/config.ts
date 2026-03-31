@@ -17,11 +17,11 @@ export const seasonWinterTheme: ThemeConfig = {
     layout: "single",
     colorScheme: "light",
     customColors: {
-      primary: "#1e40af",
-      secondary: "#1e3a8a",
-      background: "#f8fafc",
-      text: "#0c2340",
-      accent: "#3b82f6",
+      primary: "#2563eb",
+      secondary: "#06b6d4",
+      background: "#f0f8ff",
+      text: "#1e3a8a",
+      accent: "#0ea5e9",
     },
   },
 };

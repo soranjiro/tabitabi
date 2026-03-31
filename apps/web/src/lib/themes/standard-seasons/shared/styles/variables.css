@@ -47,18 +47,18 @@
   --standard-summer-shadow-sm: 0 4px 12px -2px rgba(8, 47, 73, 0.08);
 
   /* Winter Theme */
-  --standard-winter-bg: #f8fafc;
-  --standard-winter-primary: #1e40af;
-  --standard-winter-primary-light: #1e3a8a;
-  --standard-winter-secondary: #1e3a8a;
-  --standard-winter-accent: #3b82f6;
-  --standard-winter-text: #0c2340;
-  --standard-winter-text-light: #0f172a;
+  --standard-winter-bg: #f0f8ff;
+  --standard-winter-primary: #2563eb;
+  --standard-winter-primary-light: #3b82f6;
+  --standard-winter-secondary: #06b6d4;
+  --standard-winter-accent: #0ea5e9;
+  --standard-winter-text: #1e3a8a;
+  --standard-winter-text-light: #475569;
   --standard-winter-card-bg: #ffffff;
   --standard-winter-header-bg: transparent;
   --standard-winter-border: #dbeafe;
-  --standard-winter-line-color: #e0e7ff;
-  --standard-winter-dot-bg: #1e40af;
-  --standard-winter-shadow: 0 12px 36px -8px rgba(12, 35, 64, 0.12);
-  --standard-winter-shadow-sm: 0 4px 12px -2px rgba(12, 35, 64, 0.08);
+  --standard-winter-line-color: #e0f2fe;
+  --standard-winter-dot-bg: #2563eb;
+  --standard-winter-shadow: 0 12px 36px -8px rgba(30, 58, 138, 0.15);
+  --standard-winter-shadow-sm: 0 4px 12px -2px rgba(30, 58, 138, 0.1);
 }

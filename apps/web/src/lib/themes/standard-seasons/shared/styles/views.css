@@ -303,6 +303,11 @@
     display: none;
   }
 
+  .standard-autumn-month-event-title {
+    max-width: 55px;
+    font-size: 0.65rem;
+  }
+
   .standard-autumn-month-weekday {
     padding: 0.5rem 0.25rem;
     font-size: 0.8rem;
@@ -320,7 +325,7 @@
   }
 
   .standard-autumn-month-event {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     padding: 0.15rem 0.3rem;
   }
 
@@ -332,7 +337,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 100%;
+    max-width: 40px;
+    font-size: 0.55rem;
   }
 
   .standard-autumn-month-weekday {

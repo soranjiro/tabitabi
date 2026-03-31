@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
   import { getMemoText, updateMemoText } from "$lib/memo";
+  import MonthCalendar from "./components/MonthCalendar.svelte";
 
   interface Props {
     steps: Step[];
@@ -131,16 +132,6 @@
     if (onDeleteStep) {
       await onDeleteStep(stepId);
     }
-  }
-
-  function getDatesInMonth(year: number, month: number): Date[] {
-    const dates: Date[] = [];
-    const date = new Date(year, month, 1);
-    while (date.getMonth() === month) {
-      dates.push(new Date(date));
-      date.setDate(date.getDate() + 1);
-    }
-    return dates;
   }
 
   function getWeekNumber(date: Date): number {
@@ -338,43 +329,12 @@
 
   {#if viewMode === "month"}
     <div class="month-view">
-      {#if groups.length === 0}
+      {#if steps.length === 0}
         <div class="empty-state">
           <p>予定を追加してください</p>
         </div>
       {:else}
-        {@const firstDate = new Date(groups[0][0])}
-        {@const lastDate = new Date(groups[groups.length - 1][0])}
-        {@const year = firstDate.getFullYear()}
-        {@const month = firstDate.getMonth()}
-        {@const daysInMonth = getDatesInMonth(year, month)}
-        <div class="month-header">
-          {year}年{month + 1}月
-        </div>
-        <div class="month-weekdays">
-          {#each ["日", "月", "火", "水", "木", "金", "土"] as dayName (dayName)}
-            <div class="month-weekday">{dayName}</div>
-          {/each}
-        </div>
-        <div class="month-grid">
-          {#each daysInMonth as date (date.toISOString().split("T")[0])}
-            {@const dateStr = date.toISOString().split("T")[0]}
-            {@const daySteps = groups.find(([d]) => d === dateStr)?.[1] || []}
-            <div class="month-cell" class:has-steps={daySteps.length > 0}>
-              <div class="month-date">{date.getDate()}</div>
-              <div class="month-cell-steps">
-                {#each daySteps.slice(0, 2) as step (step.id)}
-                  <div class="month-step-item" title={step.title}>
-                    {step.time}
-                  </div>
-                {/each}
-                {#if daySteps.length > 2}
-                  <div class="month-step-more">+{daySteps.length - 2}</div>
-                {/if}
-              </div>
-            </div>
-          {/each}
-        </div>
+        <MonthCalendar {steps} {hasEditPermission} />
       {/if}
     </div>
   {/if}

@@ -16,6 +16,8 @@ export async function loadTheme(themeId: string): Promise<Theme> {
       return (await import("./mapbox-journey")).default;
     case "standard-autumn":
       return (await import("./standard-autumn")).default;
+    case "standard-seasons":
+      return (await import("./standard-seasons")).default;
     case "ai-generated":
       return (await import("./ai-generated")).default;
     case "shopping":

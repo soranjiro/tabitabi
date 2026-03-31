@@ -4,6 +4,7 @@ export const availableThemes = [
   "map-only",
   "mapbox-journey",
   "standard-autumn",
+  "standard-seasons",
   "ai-generated",
   "shopping",
   "pixel-quest",
@@ -23,6 +24,12 @@ const THEME_CATALOG: Array<{
     name: "標準",
     description: "モチーフ秋",
     phrase: "旅行のしおり",
+  },
+  {
+    id: "standard-seasons",
+    name: "スタンダード（季節）",
+    description: "複数ビュー対応",
+    phrase: "スタンダードビュー",
   },
   {
     id: "shopping",

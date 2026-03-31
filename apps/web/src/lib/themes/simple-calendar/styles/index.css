@@ -92,8 +92,6 @@ body {
 
 .title-section {
   padding: 1rem;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
 }
 
 .title {
@@ -115,7 +113,6 @@ body {
   padding: 0.75rem 1rem;
   background: var(--bg-light);
   border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
 }
 
 .memo-label {

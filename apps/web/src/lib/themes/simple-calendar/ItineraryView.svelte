@@ -89,11 +89,26 @@
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
 
+  let themeContainer: HTMLDivElement | undefined = $state();
+
   $effect(() => {
     const hour = newStepHour.padStart(2, "0");
     const minute = newStepMinute.padStart(2, "0");
     newStep.time = `${hour}:${minute}`;
   });
+
+  function handleDocumentClick(e: MouseEvent) {
+    // Close menu when clicking outside (except on the menu button itself)
+    if (showSettingsMenu) {
+      const menuBtn = document.querySelector(".menu-btn");
+      if (menuBtn && !menuBtn.contains(e.target as Node)) {
+        const menu = document.querySelector(".settings-menu");
+        if (menu && !menu.contains(e.target as Node)) {
+          showSettingsMenu = false;
+        }
+      }
+    }
+  }
 
   onMount(() => {
     const token = auth.extractTokenFromUrl();
@@ -102,6 +117,13 @@
     }
     hasEditPermission = auth.hasEditPermission(itinerary.id);
     auth.updateAccessTime(itinerary.id, itinerary.title);
+
+    // Add global click listener to close menu when clicking outside
+    document.addEventListener("click", handleDocumentClick);
+
+    return () => {
+      document.removeEventListener("click", handleDocumentClick);
+    };
   });
 
   async function onPasswordAuth() {
@@ -297,7 +319,6 @@
       onChangeTheme={() => (showThemeMenu = true)}
       onEditMemo={() => (showMemoDialog = true)}
       onPrint={handlePrint}
-      onClose={() => (showSettingsMenu = false)}
     />
 
     <div class="title-section">
@@ -378,31 +399,31 @@
     onClose={() => (showWalicaOverlay = false)}
   />
 
-  {#if !hasEditPermission && itinerary.memo && getMemoText(itinerary.memo).trim()}
-    <div class="memo-banner">
-      <div class="memo-label">メモ</div>
-      <div class="memo-text">
-        {getMemoText(itinerary.memo)}
-      </div>
-    </div>
-  {/if}
-
-  {#if itinerary.walica_id}
-    <div class="walica-banner">
-      <button onclick={() => (showWalicaOverlay = true)}>
-        Walicaグループを表示
-      </button>
-    </div>
-  {/if}
-
-  {#if itinerary.secret_settings?.enabled}
-    <div class="secret-banner">
-      シークレットモード有効 (公開まで {itinerary.secret_settings
-        .offset_minutes}分)
-    </div>
-  {/if}
-
   <main class="main-content">
+    {#if !hasEditPermission && itinerary.memo && getMemoText(itinerary.memo).trim()}
+      <div class="memo-banner">
+        <div class="memo-label">メモ</div>
+        <div class="memo-text">
+          {getMemoText(itinerary.memo)}
+        </div>
+      </div>
+    {/if}
+
+    {#if itinerary.walica_id}
+      <div class="walica-banner">
+        <button onclick={() => (showWalicaOverlay = true)}>
+          Walicaグループを表示
+        </button>
+      </div>
+    {/if}
+
+    {#if itinerary.secret_settings?.enabled}
+      <div class="secret-banner">
+        シークレットモード有効 (公開まで {itinerary.secret_settings
+          .offset_minutes}分)
+      </div>
+    {/if}
+
     <section class="section">
       <StepList {steps} {hasEditPermission} {onUpdateStep} {onDeleteStep} />
     </section>

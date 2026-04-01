@@ -16,6 +16,7 @@
   import WalicaOverlay from "./components/WalicaOverlay.svelte";
   import ViewModeSelector from "./components/ViewModeSelector.svelte";
   import ThemeSelectorPopup from "./components/ThemeSelectorPopup.svelte";
+  import SettingsDialog from "./components/SettingsDialog.svelte";
   import { LinkIcon } from "./components/icons/index.svelte";
   import { renderMarkdown } from "./utils/markdown";
   import { getViewMode, setViewMode, type ViewMode } from "./utils/storage";
@@ -74,6 +75,7 @@
   let hasEditPermission = $state(false);
   let showPasswordDialog = $state(false);
   let showMemoDialog = $state(false);
+  let showSettingsDialog = $state(false);
   let isAuthenticating = $state(false);
 
   let selectedThemeId = $state(itinerary.theme_id || "standard-autumn");
@@ -577,6 +579,7 @@
       onWalicaUpdate={handleWalicaUpdate}
       onWalicaOpen={() => (showWalica = true)}
       onShowThemeSelector={() => (showThemeSelectorPopup = true)}
+      onSettingsClick={() => (showSettingsDialog = true)}
     />
   </div>
 
@@ -622,6 +625,19 @@
     {selectedThemeId}
     onThemeChange={handleThemeChange}
     onClose={() => (showThemeSelectorPopup = false)}
+  />
+
+  <SettingsDialog
+    show={showSettingsDialog}
+    {themes}
+    {selectedThemeId}
+    {secretModeEnabled}
+    {secretModeOffset}
+    {walicaUrl}
+    onThemeChange={handleThemeChange}
+    onSecretModeChange={handleSecretModeUpdate}
+    onWalicaUpdate={handleWalicaUpdate}
+    onClose={() => (showSettingsDialog = false)}
   />
 
   <FloatingActions {hasEditPermission} onAddStep={openAddStepForm} />

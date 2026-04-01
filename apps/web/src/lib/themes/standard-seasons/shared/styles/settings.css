@@ -24,6 +24,31 @@
   margin-bottom: 0.75rem;
 }
 
+.standard-autumn-settings-page-section-header-clickable {
+  cursor: pointer;
+  user-select: none;
+  padding: 0.5rem 0;
+  transition: opacity 0.2s;
+}
+
+.standard-autumn-settings-page-section-header-clickable:hover {
+  opacity: 0.8;
+}
+
+.standard-autumn-collapse-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  transition: transform 0.3s ease;
+  color: var(--standard-autumn-primary);
+  font-size: 0.75rem;
+}
+
+.standard-autumn-collapse-icon.expanded {
+  transform: rotate(180deg);
+}
+
 .standard-autumn-settings-page-section-header h3 {
   font-size: 1.25rem;
   font-weight: 600;

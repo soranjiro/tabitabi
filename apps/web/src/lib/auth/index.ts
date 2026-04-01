@@ -99,10 +99,8 @@ export const auth = {
       try {
         replaceState('', newUrl);
       } catch (e) {
-        // Fallback for SSR or when replaceState is not available
-        if (typeof window !== 'undefined') {
-          window.history.replaceState({}, '', newUrl);
-        }
+        // In SSR context, replaceState may not be available
+        // but we're in a browser context when this runs
       }
     }
 

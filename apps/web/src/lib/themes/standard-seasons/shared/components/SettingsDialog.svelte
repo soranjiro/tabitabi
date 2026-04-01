@@ -38,6 +38,7 @@
   let localSecretOffset = $state(secretModeOffset);
   let localWalicaUrl = $state(walicaUrl);
   let localThemeId = $state(selectedThemeId);
+  let showThemeList = $state(false);
 
   $effect(() => {
     localSecretEnabled = secretModeEnabled;
@@ -65,36 +66,46 @@
 <Dialog {show} title="設定" onClose={handleCancel}>
   <div class="standard-autumn-settings-page">
     <div class="standard-autumn-settings-page-section">
-      <div class="standard-autumn-settings-page-section-header">
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="standard-autumn-settings-page-section-header standard-autumn-settings-page-section-header-clickable"
+        onclick={() => (showThemeList = !showThemeList)}
+      >
         {@html PaletteIcon}
         <h3>テーマ</h3>
+        <span class="standard-autumn-collapse-icon" class:expanded={showThemeList}
+          >▼</span
+        >
       </div>
       <p class="standard-autumn-settings-page-description">
         しおりの見た目とスタイルを選択できます
       </p>
-      <div class="standard-autumn-settings-page-field">
-        {#each themes as theme}
-          <label class="standard-autumn-settings-page-radio">
-            <input
-              type="radio"
-              name="theme"
-              value={theme.id}
-              bind:group={localThemeId}
-            />
-            <div class="standard-autumn-settings-page-radio-content">
-              <span class="standard-autumn-settings-page-radio-title"
-                >{theme.name}</span
-              >
-              {#if theme.description}
-                <span class="standard-autumn-settings-page-radio-desc"
-                  >{theme.description}</span
+      {#if showThemeList}
+        <div class="standard-autumn-settings-page-field">
+          {#each themes as theme}
+            <label class="standard-autumn-settings-page-radio">
+              <input
+                type="radio"
+                name="theme"
+                value={theme.id}
+                bind:group={localThemeId}
+              />
+              <div class="standard-autumn-settings-page-radio-content">
+                <span class="standard-autumn-settings-page-radio-title"
+                  >{theme.name}</span
                 >
-              {/if}
-            </div>
-            <div class="standard-autumn-settings-page-radio-check"></div>
-          </label>
-        {/each}
-      </div>
+                {#if theme.description}
+                  <span class="standard-autumn-settings-page-radio-desc"
+                    >{theme.description}</span
+                  >
+                {/if}
+              </div>
+              <div class="standard-autumn-settings-page-radio-check"></div>
+            </label>
+          {/each}
+        </div>
+      {/if}
     </div>
 
     <div class="standard-autumn-settings-page-divider"></div>

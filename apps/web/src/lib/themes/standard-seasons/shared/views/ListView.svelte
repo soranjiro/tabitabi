@@ -58,11 +58,7 @@
   );
 
   function handleRowClick(step: Step) {
-    if (hasEditPermission) {
-      onStepClick?.(step.id);
-    } else {
-      selectedStep = step;
-    }
+    selectedStep = step;
   }
 
   function closeDialog() {
@@ -75,23 +71,27 @@
     <div class="standard-autumn-empty">予定がまだ登録されていません</div>
   {:else}
     <table class="standard-autumn-list-table">
-      <thead>
-        <tr>
-          <th>日付</th>
-          <th>曜日</th>
-          <th>時間</th>
-          <th>予定</th>
-        </tr>
-      </thead>
       <tbody>
-        {#each sortedSteps as step}
+        {#each sortedSteps as step, idx}
+          {#if idx === 0 || sortedSteps[idx - 1].date !== step.date}
+            <tr class="standard-autumn-list-date-header">
+              <td colspan="4" class="standard-autumn-list-date-header-cell">
+                <div class="standard-autumn-list-date-header-content">
+                  <span class="standard-autumn-list-date-header-date"
+                    >{formatDate(step.date)}</span
+                  >
+                  <span class="standard-autumn-list-date-header-day"
+                    >({getDayOfWeek(step.date)})</span
+                  >
+                </div>
+              </td>
+            </tr>
+          {/if}
+
           {#if isSecretStep(step.date, step.time) && !hasEditPermission}
             <tr>
-              <td class="standard-autumn-list-date">{formatDate(step.date)}</td>
-              <td class="standard-autumn-list-day">{getDayOfWeek(step.date)}</td
-              >
               <td class="standard-autumn-list-time">{step.time}</td>
-              <td class="standard-autumn-list-title-cell">
+              <td colspan="3" class="standard-autumn-list-title-cell">
                 <span class="standard-autumn-secret-text">🔒 Secret</span>
               </td>
             </tr>
@@ -103,31 +103,30 @@
                 e.currentTarget?.style.setProperty("cursor", "default")}
               onclick={() => handleRowClick(step)}
             >
-              <td class="standard-autumn-list-date">{formatDate(step.date)}</td>
-              <td class="standard-autumn-list-day">{getDayOfWeek(step.date)}</td
-              >
               <td class="standard-autumn-list-time">{step.time}</td>
-              <td class="standard-autumn-list-title-cell">
-                {step.title}
-                {#if step.location}
-                  <div class="standard-autumn-list-location">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <path
-                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-                      />
-                    </svg>
-                    {step.location}
-                  </div>
-                {/if}
-                {#if step.notes}
-                  <div class="standard-autumn-list-notes">
-                    {@html renderMarkdown(step.notes)}
-                  </div>
-                {/if}
+              <td colspan="3" class="standard-autumn-list-title-cell">
+                <div class="standard-autumn-list-title-content">
+                  <span class="standard-autumn-list-title">{step.title}</span>
+                  {#if step.location}
+                    <div class="standard-autumn-list-location">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path
+                          d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                        />
+                      </svg>
+                      {step.location}
+                    </div>
+                  {/if}
+                  {#if step.notes}
+                    <div class="standard-autumn-list-notes">
+                      {@html renderMarkdown(step.notes)}
+                    </div>
+                  {/if}
+                </div>
               </td>
             </tr>
           {/if}
@@ -142,6 +141,7 @@
     step={selectedStep}
     {hasEditPermission}
     onClose={closeDialog}
+    onEditMode={closeDialog}
     {onUpdateStep}
     {onDeleteStep}
   />

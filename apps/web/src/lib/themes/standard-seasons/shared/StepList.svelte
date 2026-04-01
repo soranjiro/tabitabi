@@ -12,6 +12,7 @@
   } from "./components/icons/index.svelte";
   import { type ViewMode } from "./utils/storage";
   import { ListView, MonthView, WeekView } from "./views";
+  import EventDetailDialog from "./components/EventDetailDialog.svelte";
 
   interface Props {
     steps: Step[];
@@ -58,6 +59,7 @@
   let editedStep = $state<Partial<Step>>({});
   let editStepHour = $state("09");
   let editStepMinute = $state("00");
+  let selectedStepForDialog = $state<Step | null>(null);
 
   let trackEl = $state<HTMLDivElement | null>(null);
   let touchStartX = $state<number | null>(null);
@@ -227,7 +229,19 @@
   function handleStepClick(stepId: string) {
     const step = steps.find((s) => s.id === stepId);
     if (step) {
-      startEdit(step);
+      // Show detail dialog first for all views
+      selectedStepForDialog = step;
+    }
+  }
+
+  function closeDetailDialog() {
+    selectedStepForDialog = null;
+  }
+
+  function startEditFromDialog() {
+    if (selectedStepForDialog) {
+      startEdit(selectedStepForDialog);
+      selectedStepForDialog = null;
     }
   }
 
@@ -809,4 +823,15 @@
       </div>
     {/if}
   </div>
+
+  {#if selectedStepForDialog}
+    <EventDetailDialog
+      step={selectedStepForDialog}
+      {hasEditPermission}
+      onClose={closeDetailDialog}
+      onEditMode={startEditFromDialog}
+      {onUpdateStep}
+      {onDeleteStep}
+    />
+  {/if}
 {/if}

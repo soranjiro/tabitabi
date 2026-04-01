@@ -8,6 +8,7 @@
     SettingsIcon,
   } from "./icons/index.svelte";
   import SettingsMenu from "./SettingsMenu.svelte";
+  import SettingsDialog from "./SettingsDialog.svelte";
 
   interface ThemeOption {
     id: string;
@@ -50,12 +51,14 @@
   }: Props = $props();
 
   let showSettingsMenu = $state(false);
+  let showSettingsDialog = $state(false);
   let showThemeSelect = $state(false);
 
   const ModeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18v2H3V5zm0 6h18v2H3v-2zm0 6h18v2H3v-2z"/></svg>`;
 
   function handleSettingsClick() {
-    showSettingsMenu = !showSettingsMenu;
+    showSettingsDialog = !showSettingsDialog;
+    showSettingsMenu = false;
     showThemeSelect = false;
   }
 
@@ -145,19 +148,18 @@
         {@html SettingsIcon}
         <span>Settings</span>
       </button>
-      {#if showSettingsMenu}
-        <SettingsMenu
+      {#if showSettingsDialog}
+        <SettingsDialog
+          show={showSettingsDialog}
           {themes}
           {selectedThemeId}
           {secretModeEnabled}
           {secretModeOffset}
           {walicaUrl}
-          {showThemeSelect}
-          onThemeChange={handleThemeChange}
+          {onThemeChange}
           {onSecretModeChange}
           {onWalicaUpdate}
-          onShowThemeSelect={handleShowThemeSelect}
-          onClose={() => (showSettingsMenu = false)}
+          onClose={() => (showSettingsDialog = false)}
         />
       {/if}
       {#if showThemeSelect}

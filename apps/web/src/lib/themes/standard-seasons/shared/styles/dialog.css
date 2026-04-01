@@ -21,6 +21,15 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   animation: dialogSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid rgba(255, 255, 255, 0.5);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+@media (min-width: 768px) {
+  .standard-autumn-dialog {
+    max-width: 600px;
+    width: 90%;
+  }
 }
 
 @keyframes dialogSlideUp {

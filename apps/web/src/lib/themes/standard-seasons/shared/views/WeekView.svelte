@@ -117,11 +117,7 @@
   }
 
   function handleEventClick(step: Step) {
-    if (hasEditPermission) {
-      onStepClick?.(step.id);
-    } else {
-      selectedStep = step;
-    }
+    selectedStep = step;
   }
 
   function closeDialog() {
@@ -205,6 +201,7 @@
     step={selectedStep}
     {hasEditPermission}
     onClose={closeDialog}
+    onEditMode={closeDialog}
     {onUpdateStep}
     {onDeleteStep}
   />

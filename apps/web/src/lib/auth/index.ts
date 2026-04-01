@@ -1,4 +1,5 @@
 import type { ShioriHistory } from '@tabitabi/types';
+import { replaceState } from '$app/navigation';
 
 const STORAGE_KEY = 'shiori_history';
 
@@ -94,7 +95,15 @@ export const auth = {
       const newUrl = params.toString()
         ? `${window.location.pathname}?${params.toString()}`
         : window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
+      
+      try {
+        replaceState('', newUrl);
+      } catch (e) {
+        // Fallback for SSR or when replaceState is not available
+        if (typeof window !== 'undefined') {
+          window.history.replaceState({}, '', newUrl);
+        }
+      }
     }
 
     return token;

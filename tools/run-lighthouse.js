@@ -107,7 +107,21 @@ function printReport(result) {
   for (const [key, category] of Object.entries(categories)) {
     if (category.score < 0.9) {
       hasIssues = true;
-      console.log(`   ${COLORS.yellow}⚠ ${category.title}: Score ${formatScore(category.score)}/100${COLORS.reset}`);
+      console.log(`\n   ${COLORS.yellow}⚠ ${category.title}: Score ${formatScore(category.score)}/100${COLORS.reset}`);
+      
+      // Show failing audits for this category
+      if (category.auditRefs) {
+        for (const auditRef of category.auditRefs) {
+          const audit = lhr.audits[auditRef.id];
+          if (audit && audit.score !== null && audit.score < 1) {
+            const scorePercent = formatScore(audit.score);
+            console.log(`      • ${audit.title} (${scorePercent}/100)`);
+            if (audit.displayValue) {
+              console.log(`        ${COLORS.dim}${audit.displayValue}${COLORS.reset}`);
+            }
+          }
+        }
+      }
     }
   }
 

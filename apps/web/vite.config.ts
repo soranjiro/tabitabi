@@ -1,6 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
-import { copyLibFiles } from '@builder.io/partytown/utils';
+import { copyLibFiles } from '@qwik.dev/partytown/utils';
 import fs from 'node:fs';
 import path from 'node:path';
 

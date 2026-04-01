@@ -19,6 +19,7 @@ export interface PreviewItinerary {
   themeId: string;
   themeName: string;
   description: string;
+  phrase: string;
   layout: "list" | "timeline" | "card";
   colors: ThemeColors;
   steps: PreviewStep[];

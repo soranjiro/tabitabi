@@ -7,7 +7,10 @@ type DemoDataLoader = () => Promise<{ getDemoData: () => DemoDataSet }>;
 const demoDataLoaders: Record<AvailableTheme, DemoDataLoader> = {
   'map-only': () => import('$lib/themes/map-only/demo-data'),
   'mapbox-journey': () => import('$lib/themes/mapbox-journey/demo-data'),
-  'standard-autumn': () => import('$lib/themes/standard-autumn/demo-data'),
+  'standard-spring': () => import('$lib/themes/standard-seasons/spring/demo-data'),
+  'standard-summer': () => import('$lib/themes/standard-seasons/summer/demo-data'),
+  'standard-autumn': () => import('$lib/themes/standard-seasons/autumn/demo-data'),
+  'standard-winter': () => import('$lib/themes/standard-seasons/winter/demo-data'),
   'ai-generated': () => import('$lib/themes/ai-generated/demo-data'),
   'shopping': () => import('$lib/themes/shopping/demo-data'),
   'pixel-quest': () => import('$lib/themes/pixel-quest/demo-data'),

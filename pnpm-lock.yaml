@@ -67,15 +67,15 @@ importers:
         specifier: ^3.17.0
         version: 3.17.0
     devDependencies:
-      '@builder.io/partytown':
-        specifier: ^0.10.3
-        version: 0.10.3
       '@cloudflare/workers-types':
         specifier: ^4.20250110.0
         version: 4.20250917.0
       '@playwright/test':
         specifier: ^1.57.0
         version: 1.57.0
+      '@qwik.dev/partytown':
+        specifier: ^0.11.2
+        version: 0.11.2
       '@sveltejs/adapter-cloudflare':
         specifier: ^4.7.4
         version: 4.9.0(@sveltejs/kit@2.42.1(@opentelemetry/api@1.9.0)(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.38.10)(vite@6.4.1(@types/node@24.10.1)(jiti@1.21.7)(lightningcss@1.30.1)(tsx@4.21.0)))(svelte@5.38.10)(vite@6.4.1(@types/node@24.10.1)(jiti@1.21.7)(lightningcss@1.30.1)(tsx@4.21.0)))(wrangler@4.38.0(@cloudflare/workers-types@4.20250917.0))
@@ -175,12 +175,6 @@ packages:
   '@babel/runtime@7.28.4':
     resolution: {integrity: sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==}
     engines: {node: '>=6.9.0'}
-
-  '@builder.io/partytown@0.10.3':
-    resolution: {integrity: sha512-N2SWA3c5vEad3rgdAFM3zMb6uc7aXqibkgAz4ijvYzycgQXJ4dE5oH6fGFMXSQWj6ayVlLT1/CmpflYUJHfmQg==}
-    engines: {node: '>=18.0.0'}
-    deprecated: Use @qwik.dev/partytown instead
-    hasBin: true
 
   '@cloudflare/kv-asset-handler@0.4.0':
     resolution: {integrity: sha512-+tv3z+SPp+gqTIcImN9o0hqE9xyfQjI1XD9pL6NuKjua9B1y7mNYv0S9cP+QEbA4ppVgGZEmKOvHX5G5Ei1CVA==}
@@ -1367,6 +1361,11 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
+  '@qwik.dev/partytown@0.11.2':
+    resolution: {integrity: sha512-795y49CqBiKiwKAD+QBZlzlqEK275hVcazZ7wBPSfgC23L+vWuA7PJmMpgxojOucZHzYi5rAAQ+IP1I3BKVZxw==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+
   '@rollup/rollup-android-arm-eabi@4.50.2':
     resolution: {integrity: sha512-uLN8NAiFVIRKX9ZQha8wy6UUs06UNSZ32xj6giK/rmMXAgKahwExvK6SsmgU5/brh4w/nSgj8e0k3c1HBQpa0A==}
     cpu: [arm]
@@ -2038,6 +2037,10 @@ packages:
   dot-prop@9.0.0:
     resolution: {integrity: sha512-1gxPBJpI/pcjQhKgIU91II6Wkay+dLcN3M6rf2uwP8hRur3HtQXjVrdAK3sjC0piaEuxzMwjXChcETiJl47lAQ==}
     engines: {node: '>=18'}
+
+  dotenv@16.6.1:
+    resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
+    engines: {node: '>=12'}
 
   earcut@3.0.2:
     resolution: {integrity: sha512-X7hshQbLyMJ/3RPhyObLARM2sNxxmRALLKx1+NVFFnQ9gKzmCrxm9+uLIAdBcvc8FNLpctqlQ2V6AE92Ol9UDQ==}
@@ -3475,8 +3478,6 @@ snapshots:
 
   '@babel/runtime@7.28.4': {}
 
-  '@builder.io/partytown@0.10.3': {}
-
   '@cloudflare/kv-asset-handler@0.4.0':
     dependencies:
       mime: 3.0.0
@@ -4358,6 +4359,10 @@ snapshots:
       - react-native-b4a
       - supports-color
 
+  '@qwik.dev/partytown@0.11.2':
+    dependencies:
+      dotenv: 16.6.1
+
   '@rollup/rollup-android-arm-eabi@4.50.2':
     optional: true
 
@@ -5011,6 +5016,8 @@ snapshots:
   dot-prop@9.0.0:
     dependencies:
       type-fest: 4.41.0
+
+  dotenv@16.6.1: {}
 
   earcut@3.0.2: {}
 

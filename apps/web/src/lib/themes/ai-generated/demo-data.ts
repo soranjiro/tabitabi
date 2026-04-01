@@ -77,7 +77,7 @@ export function getDemoData(): DemoDataSet {
     },
     itinerary_walica_settings: {
       itinerary_id: 'demo',
-      walica_id: 'https://walica.jp/group/01KBTSYADVKY8HPQ1CHRHTNG19',
+      walica_id: '01KBTSYADVKY8HPQ1CHRHTNG19',
       created_at: now,
       updated_at: now,
     },

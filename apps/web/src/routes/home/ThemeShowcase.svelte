@@ -214,9 +214,12 @@
   </div>
 
   <div class="carousel-info">
-    <span class="theme-badge" style="background: {current.colors.primary};"
-      >{current.themeName}</span
-    >
+    <div class="theme-name-group">
+      <span class="theme-badge" style="background: {current.colors.primary};"
+        >{current.themeName}</span
+      >
+      <span class="theme-phrase">{current.phrase}</span>
+    </div>
     <span class="theme-desc">{current.description}</span>
   </div>
 
@@ -264,7 +267,13 @@
 
   .carousel-info {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .theme-name-group {
+    display: flex;
+    align-items: baseline;
     gap: 0.5rem;
   }
 
@@ -274,6 +283,12 @@
     font-weight: 700;
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
+  }
+
+  .theme-phrase {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.65rem;
+    font-style: italic;
   }
 
   .theme-desc {

@@ -5,6 +5,7 @@ export const pixelQuestPreview: PreviewItinerary = {
   themeId: "pixel-quest",
   themeName: "ピクセルクエスト",
   description: "RPG風マップ",
+  phrase: "RPGデザイン",
   layout: "timeline",
   colors: {
     primary: "#5d8a4a",

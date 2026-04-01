@@ -14,8 +14,14 @@ export async function loadTheme(themeId: string): Promise<Theme> {
       return (await import("./map-only")).default;
     case "mapbox-journey":
       return (await import("./mapbox-journey")).default;
+    case "standard-spring":
+      return (await import("./standard-seasons/spring")).default;
+    case "standard-summer":
+      return (await import("./standard-seasons/summer")).default;
     case "standard-autumn":
-      return (await import("./standard-autumn")).default;
+      return (await import("./standard-seasons/autumn")).default;
+    case "standard-winter":
+      return (await import("./standard-seasons/winter")).default;
     case "ai-generated":
       return (await import("./ai-generated")).default;
     case "shopping":
@@ -25,7 +31,7 @@ export async function loadTheme(themeId: string): Promise<Theme> {
     case "sauna-rally":
       return (await import("./sauna-rally")).default;
     default:
-      return (await import("./standard-autumn")).default;
+      return (await import("./standard-seasons/autumn")).default;
   }
 }
 

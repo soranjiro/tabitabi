@@ -1,0 +1,514 @@
+.standard-autumn-views-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 120px;
+  scrollbar-gutter: stable;
+}
+
+.standard-autumn-list-view {
+  padding: 1rem;
+  padding-bottom: 100px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.standard-autumn-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.standard-autumn-list-table th {
+  text-align: left;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 2px solid var(--standard-autumn-border);
+  color: var(--standard-autumn-text-light);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.standard-autumn-list-table td {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--standard-autumn-border);
+  color: var(--standard-autumn-text);
+  vertical-align: top;
+}
+
+.standard-autumn-list-table tr:last-child td {
+  border-bottom: none;
+}
+
+.standard-autumn-list-date {
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.standard-autumn-list-day {
+  white-space: nowrap;
+  color: var(--standard-autumn-text-light);
+  font-size: 0.85rem;
+}
+
+.standard-autumn-list-time {
+  white-space: nowrap;
+  font-family: "SF Mono", Monaco, monospace;
+  font-size: 0.85rem;
+}
+
+.standard-autumn-list-date-header {
+  background: rgba(169, 53, 41, 0.05);
+  border-top: 2px solid var(--standard-autumn-primary);
+}
+
+.standard-autumn-list-date-header-cell {
+  padding: 0.75rem 0.5rem !important;
+  border-bottom: 1px solid var(--standard-autumn-primary) !important;
+}
+
+.standard-autumn-list-date-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--standard-autumn-text);
+}
+
+.standard-autumn-list-date-header-date {
+  font-size: 1rem;
+}
+
+.standard-autumn-list-date-header-day {
+  color: var(--standard-autumn-text-light);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.standard-autumn-list-title-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.standard-autumn-list-title {
+  font-weight: 500;
+}
+
+.standard-autumn-list-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--standard-autumn-text-light);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.standard-autumn-list-location svg {
+  width: 14px;
+  height: 14px;
+}
+
+.standard-autumn-list-notes {
+  color: var(--standard-autumn-text-light);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.standard-autumn-month-view {
+  width: 100%;
+  padding: 1rem;
+  padding-bottom: 100px;
+}
+
+.standard-autumn-month-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.standard-autumn-month-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--standard-autumn-text);
+}
+
+.standard-autumn-month-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.standard-autumn-month-nav-btn {
+  background: none;
+  border: none;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--standard-autumn-primary);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.standard-autumn-month-nav-btn:hover {
+  background: var(--standard-autumn-border);
+}
+
+.standard-autumn-month-nav-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.standard-autumn-month-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--standard-autumn-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--standard-autumn-card-bg);
+  box-shadow: var(--standard-autumn-shadow-sm);
+}
+
+.standard-autumn-month-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  border-bottom: 2px solid var(--standard-autumn-border);
+  background: rgba(169, 53, 41, 0.05);
+}
+
+.standard-autumn-month-weekday {
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--standard-autumn-text);
+  border-right: 1px solid var(--standard-autumn-border);
+  font-size: 0.9rem;
+}
+
+.standard-autumn-month-weekday:last-child {
+  border-right: none;
+}
+
+.standard-autumn-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+}
+
+.standard-autumn-month-day {
+  min-height: 120px;
+  border-right: 1px solid var(--standard-autumn-border);
+  border-bottom: 1px solid var(--standard-autumn-border);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  background: var(--standard-autumn-card-bg);
+  position: relative;
+}
+
+.standard-autumn-month-day:nth-child(7n) {
+  border-right: none;
+}
+
+.standard-autumn-month-day:nth-last-child(-n+7) {
+  border-bottom: none;
+}
+
+.standard-autumn-month-day.other-month {
+  background: rgba(74, 59, 50, 0.02);
+}
+
+.standard-autumn-month-day.today::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at top-right, rgba(169, 53, 41, 0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.standard-autumn-month-day-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.25rem;
+  position: relative;
+  z-index: 1;
+}
+
+.standard-autumn-month-day-number {
+  font-weight: 600;
+  color: var(--standard-autumn-text);
+  font-size: 0.95rem;
+}
+
+.standard-autumn-month-day.today .standard-autumn-month-day-number {
+  background: var(--standard-autumn-primary);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.standard-autumn-month-day-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  position: relative;
+  z-index: 2;
+  min-height: 0;
+}
+
+.standard-autumn-month-event {
+  background: var(--standard-autumn-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.standard-autumn-month-event:hover {
+  background: var(--standard-autumn-primary-light);
+  transform: translateY(-1px);
+}
+
+.standard-autumn-month-event.secret {
+  background: #999;
+}
+
+.standard-autumn-month-event-time {
+  font-weight: 600;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+}
+
+.standard-autumn-month-event-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.standard-autumn-month-more {
+  color: var(--standard-autumn-text-light);
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .standard-autumn-month-view {
+    padding: 0.5rem;
+  }
+
+  .standard-autumn-month-day {
+    min-height: 100px;
+  }
+
+  .standard-autumn-month-event {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  .standard-autumn-month-event-time {
+    display: none;
+  }
+
+  .standard-autumn-month-event-title {
+    max-width: 55px;
+    font-size: 0.65rem;
+  }
+
+  .standard-autumn-month-weekday {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
+  }
+
+  .standard-autumn-month-day-number {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .standard-autumn-month-day {
+    min-height: 80px;
+    padding: 0.25rem;
+  }
+
+  .standard-autumn-month-event {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.3rem;
+  }
+
+  .standard-autumn-month-event-time {
+    display: none;
+  }
+
+  .standard-autumn-month-event-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 40px;
+    font-size: 0.55rem;
+  }
+
+  .standard-autumn-month-weekday {
+    padding: 0.4rem 0.1rem;
+    font-size: 0.7rem;
+  }
+
+  .standard-autumn-month-day-number {
+    font-size: 0.75rem;
+  }
+}
+
+.standard-autumn-week-view {
+  padding: 0.5rem;
+  padding-bottom: 100px;
+  overflow-x: auto;
+}
+
+.standard-autumn-week-container {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  min-width: 600px;
+}
+
+.standard-autumn-week-header {
+  display: contents;
+}
+
+.standard-autumn-week-corner {
+  grid-column: 1;
+  grid-row: 1;
+  border-bottom: 1px solid var(--standard-autumn-border);
+}
+
+.standard-autumn-week-day-header {
+  padding: 0.5rem;
+  text-align: center;
+  border-bottom: 1px solid var(--standard-autumn-border);
+  font-size: 0.8rem;
+}
+
+.standard-autumn-week-day-name {
+  font-weight: 600;
+  color: var(--standard-autumn-text);
+}
+
+.standard-autumn-week-day-date {
+  font-size: 0.75rem;
+  color: var(--standard-autumn-text-light);
+}
+
+.standard-autumn-week-day-header.has-events .standard-autumn-week-day-date {
+  background: var(--standard-autumn-primary);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.standard-autumn-week-body {
+  display: contents;
+}
+
+.standard-autumn-week-time-label {
+  grid-column: 1;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--standard-autumn-text-light);
+  text-align: right;
+  border-right: 1px solid var(--standard-autumn-border);
+  height: 40px;
+}
+
+.standard-autumn-week-cell {
+  border-right: 1px solid var(--standard-autumn-border);
+  border-bottom: 1px solid var(--standard-autumn-border);
+  height: 40px;
+  position: relative;
+  min-height: 40px;
+}
+
+.standard-autumn-week-cell:last-child {
+  border-right: none;
+}
+
+.standard-autumn-week-event {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  background: var(--standard-autumn-primary);
+  color: #fff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 10;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.standard-autumn-week-event:hover {
+  transform: scale(1.02);
+  z-index: 20;
+}
+
+.standard-autumn-week-no-events {
+  text-align: center;
+  padding: 2rem;
+  color: var(--standard-autumn-text-light);
+}
+
+@media (max-width: 600px) {
+  .standard-autumn-list-table {
+    font-size: 0.8rem;
+  }
+
+  .standard-autumn-list-table th,
+  .standard-autumn-list-table td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .standard-autumn-month-day {
+    font-size: 0.8rem;
+  }
+
+  .standard-autumn-week-container {
+    grid-template-columns: 50px repeat(7, minmax(70px, 1fr));
+  }
+}
+
+@media print {
+
+  .standard-autumn-month-nav,
+  .standard-autumn-bottom-nav {
+    display: none !important;
+  }
+}

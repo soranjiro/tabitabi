@@ -164,5 +164,5 @@ apps/web/static/docs/
 **/blob-report/
 **/playwright/.cache/
 
-# Partytown (generated from @builder.io/partytown)
+# Partytown (generated from @qwik.dev/partytown)
 apps/web/static/~partytown/

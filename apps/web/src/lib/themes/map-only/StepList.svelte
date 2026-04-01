@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime } from "@tabitabi/types";
 
   interface Props {
     steps: Step[];
@@ -33,15 +34,15 @@
 
   function getSortedSteps(): Step[] {
     return [...steps].sort((a, b) => {
-      const dateCompare = a.date.localeCompare(b.date);
+      const dateCompare = getStepDate(a).localeCompare(getStepDate(b));
       if (dateCompare !== 0) return dateCompare;
-      return a.time.localeCompare(b.time);
+      return getStepTime(a).localeCompare(getStepTime(b));
     });
   }
 
   function getUniqueDates(): string[] {
     const sorted = getSortedSteps();
-    return [...new Set(sorted.map((s) => s.date))];
+    return [...new Set(sorted.map((s) => getStepDate(s)))];
   }
 
   function getDateColor(date: string): string {
@@ -55,13 +56,11 @@
     return sorted.findIndex((s) => s.id === step.id) + 1;
   }
 
-  function isSecretStep(stepDate: string, stepTime: string): boolean {
+  function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
-    const now = new Date();
-    const stepDateTime = new Date(`${stepDate}T${stepTime}:00`);
-    return (
-      now.getTime() < stepDateTime.getTime() - secretModeOffset * 60 * 1000
-    );
+    const now = Date.now();
+    const revealTime = step.start_at - secretModeOffset * 60 * 1000;
+    return now < revealTime;
   }
 
   function getStepsWithoutLocation(): Step[] {
@@ -133,7 +132,7 @@
     </button>
     <div class="step-list-items">
       {#each getDisplaySteps() as step}
-        {#if !isSecretStep(step.date, step.time)}
+        {#if !isSecretStep(step)}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div
@@ -142,13 +141,16 @@
           >
             <div
               class="step-number-badge"
-              style="background-color: {getDateColor(step.date)}"
+              style="background-color: {getDateColor(getStepDate(step))}"
             >
               {getStepNumber(step)}
             </div>
             <div class="step-info">
               <div class="step-title">{step.title}</div>
-              <div class="step-time">{formatDate(step.date)} {step.time}</div>
+              <div class="step-time">
+                {formatDate(getStepDate(step))}
+                {getStepTime(step)}
+              </div>
               {#if step.location}
                 <div class="step-location">
                   <svg
@@ -204,19 +206,22 @@
     </div>
     <div class="no-location-list">
       {#each getStepsWithoutLocation() as step}
-        {#if !isSecretStep(step.date, step.time)}
+        {#if !isSecretStep(step)}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div class="no-location-item" onclick={() => handleStepClick(step)}>
             <div
               class="step-number-badge"
-              style="background-color: {getDateColor(step.date)}"
+              style="background-color: {getDateColor(getStepDate(step))}"
             >
               {getStepNumber(step)}
             </div>
             <div class="step-info">
               <div class="step-title">{step.title}</div>
-              <div class="step-time">{step.date} {step.time}</div>
+              <div class="step-time">
+                {getStepDate(step)}
+                {getStepTime(step)}
+              </div>
             </div>
           </div>
         {/if}

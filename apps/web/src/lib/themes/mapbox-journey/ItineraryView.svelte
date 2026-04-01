@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ItineraryResponse, Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime, createTimestamp, createEndTimestamp } from "@tabitabi/types";
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
   import StepList from "./StepList.svelte";
@@ -96,12 +97,10 @@
   ];
 
   function getUniqueDates(): string[] {
-    const sortedSteps = [...steps].sort((a, b) => {
-      const dateCompare = a.date.localeCompare(b.date);
-      if (dateCompare !== 0) return dateCompare;
-      return a.time.localeCompare(b.time);
-    });
-    return [...new Set(sortedSteps.map((s) => s.date))];
+    const sortedSteps = [...steps].sort((a, b) =>
+      a.start_at - b.start_at,
+    );
+    return [...new Set(sortedSteps.map((s) => getStepDate(s)))];
   }
 
   function getDateColor(date: string): string {
@@ -111,11 +110,9 @@
   }
 
   function getStepNumber(step: Step): number {
-    const sortedSteps = [...steps].sort((a, b) => {
-      const dateCompare = a.date.localeCompare(b.date);
-      if (dateCompare !== 0) return dateCompare;
-      return a.time.localeCompare(b.time);
-    });
+    const sortedSteps = [...steps].sort((a, b) =>
+      a.start_at - b.start_at,
+    );
     return sortedSteps.findIndex((s) => s.id === step.id) + 1;
   }
 
@@ -260,10 +257,11 @@
     const noteText = newStep.notes.trim();
     const notes = noteText ? updateMemoText(undefined, noteText) : undefined;
     if (onCreateStep) {
+      const startAt = createTimestamp(newStep.date, newStep.time);
       await onCreateStep({
         title: newStep.title.trim(),
-        date: newStep.date,
-        time: newStep.time,
+        start_at: startAt,
+        end_at: createEndTimestamp(startAt, 60),
         location: newStep.location.trim() || undefined,
         notes: newStep.notes.trim() || undefined,
       });
@@ -283,12 +281,12 @@
     editStepId = selectedStep.id;
     editingStepForm = {
       title: selectedStep.title,
-      date: selectedStep.date,
-      time: selectedStep.time,
+      date: getStepDate(selectedStep),
+      time: getStepTime(selectedStep),
       location: selectedStep.location || "",
       notes: getMemoText(selectedStep.notes),
     };
-    const [h, m] = selectedStep.time.split(":");
+    const [h, m] = getStepTime(selectedStep).split(":");
     editStepHour = h;
     editStepMinute = m;
     isEditing = true;
@@ -627,15 +625,15 @@
           <div
             class="detail-number"
             style="background: linear-gradient(135deg, {getDateColor(
-              selectedStep.date,
-            )}, {getDateColor(selectedStep.date)}99)"
+              getStepDate(selectedStep),
+            )}, {getDateColor(getStepDate(selectedStep))}99)"
           >
             {getStepNumber(selectedStep)}
           </div>
           <div class="detail-info">
             <h3 class="detail-title">{selectedStep.title}</h3>
             <p class="detail-datetime">
-              {formatDate(selectedStep.date)} • {selectedStep.time}
+              {formatDate(getStepDate(selectedStep))} • {getStepTime(selectedStep)}
             </p>
           </div>
           <button class="close-btn" onclick={closeModals} aria-label="Close">

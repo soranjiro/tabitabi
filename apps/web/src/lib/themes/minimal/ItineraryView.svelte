@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import type { ItineraryResponse, Step } from "@tabitabi/types";
+  import { createTimestamp, createEndTimestamp } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
@@ -20,8 +21,8 @@
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
-      date: string;
-      time: string;
+      start_at: string;
+      end_at: string;
       location?: string;
       notes?: string;
     }) => Promise<void>;
@@ -147,10 +148,11 @@
     }
 
     if (onCreateStep) {
+      const startAt = createTimestamp(newStep.date, newStep.time);
       await onCreateStep({
         title: newStep.title.trim(),
-        date: newStep.date,
-        time: newStep.time,
+        start_at: startAt,
+        end_at: createEndTimestamp(startAt, 60),
         location: newStep.location.trim() || undefined,
         notes: newStep.notes.trim() || undefined,
       });

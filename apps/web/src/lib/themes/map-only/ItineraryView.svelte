@@ -1,5 +1,11 @@
 <script lang="ts">
   import type { ItineraryResponse, Step } from "@tabitabi/types";
+  import {
+    getStepDate,
+    getStepTime,
+    createTimestamp,
+    createEndTimestamp,
+  } from "@tabitabi/types";
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
   import StepList from "./StepList.svelte";
@@ -104,11 +110,11 @@
 
   function getUniqueDates(): string[] {
     const sortedSteps = [...steps].sort((a, b) => {
-      const dateCompare = a.date.localeCompare(b.date);
+      const dateCompare = getStepDate(a).localeCompare(getStepDate(b));
       if (dateCompare !== 0) return dateCompare;
-      return a.time.localeCompare(b.time);
+      return getStepTime(a).localeCompare(getStepTime(b));
     });
-    return [...new Set(sortedSteps.map((s) => s.date))];
+    return [...new Set(sortedSteps.map((s) => getStepDate(s)))];
   }
 
   function getDateColor(date: string): string {
@@ -119,33 +125,31 @@
 
   function getStepNumber(step: Step): number {
     const sortedSteps = [...steps].sort((a, b) => {
-      const dateCompare = a.date.localeCompare(b.date);
+      const dateCompare = getStepDate(a).localeCompare(getStepDate(b));
       if (dateCompare !== 0) return dateCompare;
-      return a.time.localeCompare(b.time);
+      return getStepTime(a).localeCompare(getStepTime(b));
     });
     return sortedSteps.findIndex((s) => s.id === step.id) + 1;
   }
 
-  function isSecretStep(stepDate: string, stepTime: string): boolean {
+  function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
-    const now = new Date();
-    const stepDateTime = new Date(`${stepDate}T${stepTime}:00`);
-    return (
-      now.getTime() < stepDateTime.getTime() - secretModeOffset * 60 * 1000
-    );
+    const now = Date.now();
+    const revealTime = step.start_at - secretModeOffset * 60 * 1000;
+    return now < revealTime;
   }
 
   function getNextStep(basedOnTime: boolean = true): Step | null {
     const sorted = [...steps].sort((a, b) => {
-      const dc = a.date.localeCompare(b.date);
+      const dc = getStepDate(a).localeCompare(getStepDate(b));
       if (dc !== 0) return dc;
-      return a.time.localeCompare(b.time);
+      return getStepTime(a).localeCompare(getStepTime(b));
     });
 
     if (basedOnTime) {
-      const now = new Date();
+      const now = Date.now();
       for (const s of sorted) {
-        const dt = new Date(`${s.date}T${s.time}:00`);
+        const dt = new Date(s.start_at);
         if (dt.getTime() >= now.getTime()) return s;
       }
       return sorted.length ? sorted[sorted.length - 1] : null;
@@ -282,10 +286,11 @@
     const noteText = newStep.notes.trim();
     const notes = noteText ? updateMemoText(undefined, noteText) : undefined;
     if (onCreateStep) {
+      const startAt = createTimestamp(newStep.date, newStep.time);
       await onCreateStep({
         title: newStep.title.trim(),
-        date: newStep.date,
-        time: newStep.time,
+        start_at: startAt,
+        end_at: createEndTimestamp(startAt, 60),
         location: newStep.location.trim() || undefined,
         notes: newStep.notes.trim() || undefined,
       });
@@ -306,12 +311,12 @@
     editStepId = selectedStep.id;
     editingStepForm = {
       title: selectedStep.title,
-      date: selectedStep.date,
-      time: selectedStep.time,
+      date: getStepDate(selectedStep),
+      time: getStepTime(selectedStep),
       location: selectedStep.location || "",
       notes: getMemoText(selectedStep.notes),
     };
-    const [h, m] = selectedStep.time.split(":");
+    const [h, m] = getStepTime(selectedStep).split(":");
     editStepHour = h;
     editStepMinute = m;
     isEditing = true;
@@ -606,8 +611,8 @@
       <div class="direction-info">
         <div class="direction-info-text">
           <p class="next-destination">{nextStepForDisplay.title}</p>
-          {#if !isSecretStep(nextStepForDisplay.date, nextStepForDisplay.time)}
-            <p class="next-time">{nextStepForDisplay.time}</p>
+          {#if !isSecretStep(nextStepForDisplay)}
+            <p class="next-time">{getStepTime(nextStepForDisplay)}</p>
           {/if}
         </div>
         <div
@@ -822,15 +827,15 @@
         <div class="spot-header">
           <div
             class="spot-number"
-            style="background-color: {getDateColor(selectedStep.date)}"
+            style="background-color: {getDateColor(getStepDate(selectedStep))}"
           >
             {getStepNumber(selectedStep)}
           </div>
           <div class="spot-info">
             <h3 class="spot-title">{selectedStep.title}</h3>
             <p class="spot-datetime">
-              {formatDate(selectedStep.date)}
-              {selectedStep.time}
+              {formatDate(getStepDate(selectedStep))}
+              {getStepTime(selectedStep)}
             </p>
           </div>
         </div>

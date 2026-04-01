@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import type { ItineraryResponse, Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime, createTimestamp, createEndTimestamp } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
@@ -32,8 +33,8 @@
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
-      date: string;
-      time: string;
+      start_at: number;
+      end_at: number;
       location?: string;
       notes?: string;
     }) => Promise<void>;
@@ -41,8 +42,8 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
+        end_at?: number;
         location?: string;
         notes?: string;
       },
@@ -376,11 +377,7 @@
 
   const completedQuests = $derived(() => {
     const now = new Date();
-    const today = now.toISOString().split("T")[0];
-    const currentTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    return planASteps.filter(
-      (s) => s.date < today || (s.date === today && s.time <= currentTimeStr),
-    ).length;
+    return planASteps.filter((s) => new Date(s.start_at) <= now).length;
   });
 
   const totalQuests = $derived(planASteps.length);
@@ -505,10 +502,11 @@
     }
     if (onCreateStep) {
       const mergedNotes = mergeNotesWithPlanB(newStep.notes, planBPayload);
+      const startAt = createTimestamp(newStep.date, time);
       await onCreateStep({
         title: newStep.title.trim(),
-        date: newStep.date,
-        time,
+        start_at: startAt,
+        end_at: createEndTimestamp(startAt, 60),
         location: newStep.location?.trim() || undefined,
         notes: mergedNotes,
       });
@@ -525,17 +523,17 @@
     editingPlanBJson = planBJson;
     planBEntries = parsePlanBEntries(
       planBJson,
-      selectedStep.date,
-      selectedStep.time,
+      getStepDate(selectedStep),
+      getStepTime(selectedStep),
     );
     editStep = {
       title: selectedStep.title,
-      date: selectedStep.date,
-      time: selectedStep.time,
+      date: getStepDate(selectedStep),
+      time: getStepTime(selectedStep),
       location: selectedStep.location || "",
       notes: visibleNotes,
     };
-    const [hour, minute] = selectedStep.time.split(":");
+    const [hour, minute] = getStepTime(selectedStep).split(":");
     editStepHour = hour;
     editStepMinute = minute;
     showEditForm = true;

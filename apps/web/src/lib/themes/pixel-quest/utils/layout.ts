@@ -1,4 +1,5 @@
 import type { Step } from "@tabitabi/types";
+import { getStepDate, getStepTime } from "@tabitabi/types";
 
 export interface SpotPosition {
   x: number;
@@ -49,9 +50,9 @@ export function extractPlanBSteps(step: Step): PlanStep[] {
     if (!entry || typeof entry !== "object") return;
     const obj = entry as Record<string, unknown>;
     const title = typeof obj.title === "string" ? obj.title : null;
-    const date = typeof obj.date === "string" ? obj.date : null;
-    const time = typeof obj.time === "string" ? obj.time : null;
-    if (!title || !date || !time) return;
+    const startAt = typeof obj.start_at === "string" ? obj.start_at : null;
+    const endAt = typeof obj.end_at === "string" ? obj.end_at : null;
+    if (!title || !startAt) return;
 
     const location =
       typeof obj.location === "string" && obj.location.trim() !== ""
@@ -66,8 +67,8 @@ export function extractPlanBSteps(step: Step): PlanStep[] {
       id: `${step.id}-planb-${index}`,
       itinerary_id: step.itinerary_id,
       title,
-      date,
-      time,
+      start_at: startAt,
+      end_at: endAt || new Date(new Date(startAt).getTime() + 60 * 60 * 1000).toISOString().slice(0, 19),
       location,
       notes,
       is_hidden: step.is_hidden,
@@ -96,10 +97,7 @@ export function splitStepsByPlan(
     });
   }
 
-  planB.sort((a, b) => {
-    if (a.date === b.date) return a.time.localeCompare(b.time);
-    return a.date.localeCompare(b.date);
-  });
+  planB.sort((a, b) => a.start_at - b.start_at);
 
   return { planA, planB };
 }
@@ -154,14 +152,14 @@ export function getTerrainColor(index: number): { bg: string; pattern: string } 
 export function groupStepsByDate(steps: Step[]): Map<string, Step[]> {
   const groups = new Map<string, Step[]>();
   for (const step of steps) {
-    const date = step.date;
+    const date = getStepDate(step);
     if (!groups.has(date)) {
       groups.set(date, []);
     }
     groups.get(date)!.push(step);
   }
   for (const [_, groupSteps] of groups) {
-    groupSteps.sort((a, b) => a.time.localeCompare(b.time));
+    groupSteps.sort((a, b) => a.start_at - b.start_at);
   }
   return groups;
 }
@@ -359,13 +357,11 @@ export function findCurrentSpotIndex(positions: SpotPosition[]): number {
   if (positions.length === 0) return -1;
 
   const now = new Date();
-  const today = now.toISOString().split("T")[0];
-  const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
   for (let i = positions.length - 1; i >= 0; i--) {
     const pos = positions[i];
-    if (pos.step.date < today) return i;
-    if (pos.step.date === today && pos.step.time <= currentTime) return i;
+    const stepDateTime = new Date(pos.step.start_at);
+    if (stepDateTime <= now) return i;
   }
 
   return -1;
@@ -385,8 +381,8 @@ export function getPlayerPosition(
   const next = positions[currentIndex + 1];
 
   const now = new Date();
-  const currentDateTime = new Date(`${current.step.date}T${current.step.time}`);
-  const nextDateTime = new Date(`${next.step.date}T${next.step.time}`);
+  const currentDateTime = new Date(current.step.start_at);
+  const nextDateTime = new Date(next.step.start_at);
 
   const totalMs = nextDateTime.getTime() - currentDateTime.getTime();
   const elapsedMs = now.getTime() - currentDateTime.getTime();

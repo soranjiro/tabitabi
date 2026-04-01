@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime, createTimestamp } from "@tabitabi/types";
   import {
     getMemoText,
     parseMemoData,
@@ -14,8 +15,7 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
         location?: string;
         notes?: string;
       },
@@ -32,14 +32,9 @@
 
   let editingStepId = $state<string | null>(null);
   let editedStep = $state<Partial<Step>>({});
+  let editStepDate = $state("");
   let editStepHour = $state("10");
   let editStepMinute = $state("00");
-
-  $effect(() => {
-    if (editingStepId && editStepHour && editStepMinute) {
-      editedStep.time = `${editStepHour}:${editStepMinute}`;
-    }
-  });
 
   const groupedByStore = $derived(() => {
     const groups = new Map<string, Step[]>();
@@ -54,8 +49,10 @@
 
     for (const [_, storeSteps] of groups) {
       storeSteps.sort((a, b) => {
-        if (a.date !== b.date) return a.date.localeCompare(b.date);
-        return a.time.localeCompare(b.time);
+        const aDate = getStepDate(a);
+        const bDate = getStepDate(b);
+        if (aDate !== bDate) return aDate.localeCompare(bDate);
+        return getStepTime(a).localeCompare(getStepTime(b));
       });
     }
 
@@ -89,7 +86,8 @@
   function startEdit(step: Step) {
     editingStepId = step.id;
     editedStep = { ...step, notes: getMemoText(step.notes) };
-    const [hour, minute] = step.time.split(":");
+    editStepDate = getStepDate(step);
+    const [hour, minute] = getStepTime(step).split(":");
     editStepHour = hour;
     editStepMinute = minute;
   }
@@ -97,6 +95,7 @@
   function cancelEdit() {
     editingStepId = null;
     editedStep = {};
+    editStepDate = "";
     editStepHour = "10";
     editStepMinute = "00";
   }
@@ -112,10 +111,10 @@
     const notes = updateMemoText(originalStep?.notes, noteText);
 
     if (onUpdateStep) {
+      const time = `${editStepHour}:${editStepMinute}`;
       await onUpdateStep(editingStepId, {
         title: editedStep.title.trim(),
-        date: editedStep.date,
-        time: editedStep.time,
+        start_at: createTimestamp(editStepDate, time),
         location: editedStep.location?.trim() || undefined,
         notes,
       });
@@ -123,6 +122,7 @@
 
     editingStepId = null;
     editedStep = {};
+    editStepDate = "";
     editStepHour = "10";
     editStepMinute = "00";
   }
@@ -227,7 +227,7 @@
                     <span class="shopping-label">日付</span>
                     <input
                       type="date"
-                      bind:value={editedStep.date}
+                      bind:value={editStepDate}
                       class="shopping-input"
                     />
                   </div>
@@ -295,9 +295,9 @@
                   <h3 class="shopping-item-title">{step.title}</h3>
                   <div class="shopping-item-meta">
                     <span class="shopping-item-date">
-                      {formatDate(step.date)}
+                      {formatDate(getStepDate(step))}
                     </span>
-                    <span class="shopping-item-time">{step.time}</span>
+                    <span class="shopping-item-time">{getStepTime(step)}</span>
                   </div>
                   {#if displayNotes(step)}
                     <div class="shopping-item-notes">{displayNotes(step)}</div>

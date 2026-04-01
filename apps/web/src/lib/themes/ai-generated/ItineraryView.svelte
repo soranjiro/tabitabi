@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import type { ItineraryResponse, Step } from "@tabitabi/types";
+  import { getStepDate, createTimestamp, createEndTimestamp } from "@tabitabi/types";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
@@ -37,8 +38,8 @@
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
-      date: string;
-      time: string;
+      start_at: number;
+      end_at: number;
       location?: string;
       notes?: string;
     }) => Promise<void>;
@@ -46,8 +47,8 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
+        end_at?: number;
         location?: string;
         notes?: string;
       },
@@ -239,10 +240,11 @@
       return;
     }
     if (onCreateStep) {
+      const startAt = createTimestamp(newStep.date, newStep.time);
       await onCreateStep({
         title: newStep.title.trim(),
-        date: newStep.date,
-        time: newStep.time,
+        start_at: startAt,
+        end_at: createEndTimestamp(startAt, 60),
         location: newStep.location.trim() || undefined,
         notes: newStep.notes.trim() || undefined,
       });
@@ -297,7 +299,7 @@
 
   const tripDates = $derived(() => {
     if (steps.length === 0) return { start: undefined, end: undefined };
-    const dates = [...new Set(steps.map((s) => s.date))].sort();
+    const dates = [...new Set(steps.map((s) => getStepDate(s)))].sort();
     return { start: dates[0], end: dates[dates.length - 1] };
   });
 </script>

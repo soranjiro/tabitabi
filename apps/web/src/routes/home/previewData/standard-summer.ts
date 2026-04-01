@@ -5,7 +5,7 @@ export const standardSummerPreview: PreviewItinerary = {
   themeId: "standard-summer",
   themeName: "標準（夏）",
   description: "爽やかで涼しい",
-  phrase: "夏の旅",
+  phrase: "夏の旅行計画",
   layout: "timeline",
   colors: {
     primary: "#0369a1",

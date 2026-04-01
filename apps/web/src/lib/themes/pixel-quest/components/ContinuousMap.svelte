@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime } from "@tabitabi/types";
   import { onMount } from "svelte";
   import {
     groupStepsByDate,
@@ -152,12 +153,7 @@
   );
 
   function isStepDone(step: Step): boolean {
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
-    const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    return (
-      step.date < today || (step.date === today && step.time <= currentTime)
-    );
+    return new Date(step.start_at) <= new Date();
   }
 
   function saveGameData() {

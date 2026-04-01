@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { createTimestamp, createEndTimestamp } from "@tabitabi/types";
+
   interface Props {
     newStep: {
       title: string;
@@ -9,7 +11,7 @@
     };
     newStepHour: string;
     newStepMinute: string;
-    onSubmit: () => void;
+    onSubmit: (data: { start_at: number; end_at: number }) => void;
     onCancel: () => void;
   }
 
@@ -27,7 +29,9 @@
 
   function handleSubmit(e: Event) {
     e.preventDefault();
-    onSubmit();
+    const startAt = createTimestamp(newStep.date, newStep.time);
+    const endAt = createEndTimestamp(startAt);
+    onSubmit({ start_at: startAt, end_at: endAt });
   }
 </script>
 

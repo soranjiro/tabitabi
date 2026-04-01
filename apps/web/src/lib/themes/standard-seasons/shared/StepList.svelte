@@ -1,5 +1,11 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import {
+    getStepDate,
+    getStepTime,
+    createTimestamp,
+    createEndTimestamp,
+  } from "@tabitabi/types";
   import { getMemoText, updateMemoText } from "$lib/memo";
   import { renderMarkdown } from "./utils/markdown";
   import {
@@ -25,8 +31,8 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
+        end_at?: number;
         location?: string;
         notes?: string;
       },
@@ -45,18 +51,21 @@
     onDeleteStep,
   }: Props = $props();
 
-  function isSecretStep(stepDate: string, stepTime: string): boolean {
+  function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
-    const now = new Date();
-    const stepDateTime = new Date(`${stepDate}T${stepTime}`);
-    const revealTime = new Date(
-      stepDateTime.getTime() - secretModeOffset * 60 * 1000,
-    );
+    const now = Date.now();
+    const revealTime = step.start_at - secretModeOffset * 60 * 1000;
     return now < revealTime;
   }
 
   let editingStepId = $state<string | null>(null);
-  let editedStep = $state<Partial<Step>>({});
+  let editedStep = $state<{
+    title?: string;
+    date?: string;
+    time?: string;
+    location?: string | null;
+    notes?: string;
+  }>({});
   let editStepHour = $state("09");
   let editStepMinute = $state("00");
   let selectedStepForDialog = $state<Step | null>(null);
@@ -65,11 +74,9 @@
   let touchStartX = $state<number | null>(null);
   let touchDeltaX = $state(0);
 
-  // Drag and drop state
   let draggedStepId = $state<string | null>(null);
   let dragOverStepId = $state<string | null>(null);
 
-  // Touch drag state for mobile
   let touchDragStepId = $state<string | null>(null);
   let touchStartY = $state<number | null>(null);
   let touchCurrentY = $state<number | null>(null);
@@ -77,12 +84,12 @@
   function computeGroupedSteps(stepList: Step[]): [string, Step[]][] {
     const groups = new Map<string, Step[]>();
     for (const step of stepList) {
-      const date = step.date;
+      const date = getStepDate(step);
       if (!groups.has(date)) groups.set(date, []);
       groups.get(date)!.push(step);
     }
     for (const [_, groupSteps] of groups) {
-      groupSteps.sort((a, b) => a.time.localeCompare(b.time));
+      groupSteps.sort((a, b) => a.start_at - b.start_at);
     }
     return Array.from(groups.entries()).sort((a, b) =>
       a[0].localeCompare(b[0]),
@@ -178,8 +185,16 @@
 
   function startEdit(step: Step) {
     editingStepId = step.id;
-    editedStep = { ...step, notes: getMemoText(step.notes) };
-    const [hour, minute] = step.time.split(":");
+    const time = getStepTime(step);
+    const date = getStepDate(step);
+    editedStep = {
+      title: step.title,
+      date,
+      time,
+      location: step.location,
+      notes: getMemoText(step.notes),
+    };
+    const [hour, minute] = time.split(":");
     editStepHour = hour;
     editStepMinute = minute;
   }
@@ -204,11 +219,13 @@
     const originalStep = steps.find((s) => s.id === editingStepId);
     const noteText = (editedStep.notes ?? "").trim();
     const notes = updateMemoText(originalStep?.notes, noteText);
+    const start_at = createTimestamp(editedStep.date, editedStep.time);
+    const end_at = createEndTimestamp(start_at, 60);
     if (onUpdateStep) {
       await onUpdateStep(editingStepId, {
         title: editedStep.title.trim(),
-        date: editedStep.date,
-        time: editedStep.time,
+        start_at,
+        end_at,
         location: editedStep.location?.trim() || undefined,
         notes,
       });
@@ -296,7 +313,7 @@
     }
 
     // Calculate new time for the dragged step
-    const targetTime = dateSteps[targetIndex].time;
+    const targetTime = getStepTime(dateSteps[targetIndex]);
 
     try {
       // Only update the dragged step's time to match the target position
@@ -395,7 +412,7 @@
     }
 
     // Get target time
-    const targetTime = dateSteps[targetIndex].time;
+    const targetTime = getStepTime(dateSteps[targetIndex]);
 
     try {
       await onUpdateStep(touchDragStepId, {
@@ -428,7 +445,8 @@
 
       // Actually, handleTouchDragEnd needs dateSteps.
       // Let's find the dateSteps for this stepId.
-      const date = steps.find((s) => s.id === stepId)?.date;
+      const stepObj = steps.find((s) => s.id === stepId);
+      const date = stepObj ? getStepDate(stepObj) : null;
       if (date) {
         const dateSteps = groupedSteps().find(([d]) => d === date)?.[1] || [];
         handleTouchDragEnd(e, dateSteps);
@@ -588,7 +606,9 @@
                     ondrop={(e) => handleDrop(e, step.id, dateSteps)}
                     use:setupTouchDrag={step.id}
                   >
-                    <div class="standard-autumn-step-time">{step.time}</div>
+                    <div class="standard-autumn-step-time">
+                      {getStepTime(step)}
+                    </div>
                     <div class="standard-autumn-timeline-line"></div>
                     <div class="standard-autumn-step-dot"></div>
 
@@ -659,7 +679,7 @@
                           >
                         </div>
                       </div>
-                    {:else if isSecretStep(step.date, step.time) && !hasEditPermission}
+                    {:else if isSecretStep(step) && !hasEditPermission}
                       <div
                         class="standard-autumn-step-content standard-autumn-step-hidden"
                       >

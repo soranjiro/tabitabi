@@ -1,5 +1,11 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import {
+    getStepDate,
+    getStepTime,
+    createTimestamp,
+    createEndTimestamp,
+  } from "@tabitabi/types";
   import { renderMarkdown } from "../utils/markdown";
   import { getMemoText, updateMemoText } from "$lib/memo";
 
@@ -11,8 +17,8 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
+        end_at?: number;
         location?: string;
         notes?: string;
       },
@@ -29,9 +35,15 @@
   }: Props = $props();
 
   let isEditing = $state(false);
-  let editedStep = $state<Partial<Step>>({ ...step });
-  let editStepHour = $state(step.time.split(":")[0]);
-  let editStepMinute = $state(step.time.split(":")[1]);
+  let editedStep = $state<{
+    title?: string;
+    date?: string;
+    time?: string;
+    location?: string | null;
+    notes?: string;
+  }>({});
+  let editStepHour = $state(getStepTime(step).split(":")[0]);
+  let editStepMinute = $state(getStepTime(step).split(":")[1]);
 
   $effect(() => {
     if (isEditing && editStepHour && editStepMinute) {
@@ -42,18 +54,21 @@
   function startEdit() {
     isEditing = true;
     editedStep = {
-      ...step,
+      title: step.title,
+      date: getStepDate(step),
+      time: getStepTime(step),
+      location: step.location,
       notes: getMemoText(step.notes) || "",
     };
-    const [hour, minute] = step.time.split(":");
+    const [hour, minute] = getStepTime(step).split(":");
     editStepHour = hour;
     editStepMinute = minute;
   }
 
   function cancelEdit() {
     isEditing = false;
-    editedStep = { ...step };
-    const [hour, minute] = step.time.split(":");
+    editedStep = {};
+    const [hour, minute] = getStepTime(step).split(":");
     editStepHour = hour;
     editStepMinute = minute;
   }
@@ -71,11 +86,12 @@
 
     const noteText = (editedStep.notes ?? "").trim();
     const notes = updateMemoText(step.notes, noteText);
+    const startAt = createTimestamp(editedStep.date, editedStep.time);
 
     await onUpdateStep(step.id, {
       title: editedStep.title.trim(),
-      date: editedStep.date,
-      time: editedStep.time,
+      start_at: startAt,
+      end_at: createEndTimestamp(startAt),
       location: editedStep.location?.trim() || undefined,
       notes,
     });
@@ -205,11 +221,11 @@
           <div class="standard-autumn-event-detail-row">
             <div class="standard-autumn-event-detail-field">
               <label>日付</label>
-              <div class="standard-autumn-event-detail-value">{step.date}</div>
+              <div class="standard-autumn-event-detail-value">{getStepDate(step)}</div>
             </div>
             <div class="standard-autumn-event-detail-field">
               <label>時間</label>
-              <div class="standard-autumn-event-detail-value">{step.time}</div>
+              <div class="standard-autumn-event-detail-value">{getStepTime(step)}</div>
             </div>
           </div>
           {#if step.location}

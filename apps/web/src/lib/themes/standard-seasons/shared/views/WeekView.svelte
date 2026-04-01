@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime, getStepEndTime } from "@tabitabi/types";
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
 
   interface Props {
@@ -27,21 +28,19 @@
 
   let selectedStep = $state<Step | null>(null);
 
-  function isSecretStep(stepDate: string, stepTime: string): boolean {
+  function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
-    const now = new Date();
-    const stepDateTime = new Date(`${stepDate}T${stepTime}`);
-    const revealTime = new Date(
-      stepDateTime.getTime() - secretModeOffset * 60 * 1000,
-    );
+    const now = Date.now();
+    const revealTime = step.start_at - secretModeOffset * 60 * 1000;
     return now < revealTime;
   }
 
   function getWeekDates(): Date[] {
     const dates: string[] = [];
     for (const step of steps) {
-      if (!dates.includes(step.date)) {
-        dates.push(step.date);
+      const date = getStepDate(step);
+      if (!dates.includes(date)) {
+        dates.push(date);
       }
     }
     dates.sort();
@@ -80,7 +79,7 @@
   const stepsByDate = $derived(() => {
     const map = new Map<string, Step[]>();
     for (const step of steps) {
-      const date = step.date;
+      const date = getStepDate(step);
       if (!map.has(date)) map.set(date, []);
       map.get(date)!.push(step);
     }
@@ -94,8 +93,8 @@
   function getEventsForCell(dateStr: string, hour: number): Step[] {
     const daySteps = stepsByDate().get(dateStr) || [];
     return daySteps.filter((step) => {
-      const [h] = step.time.split(":").map(Number);
-      return h === hour;
+      const startHour = parseInt(getStepTime(step).split(":")[0], 10);
+      return startHour === hour;
     });
   }
 
@@ -104,9 +103,15 @@
     index: number,
     totalCount: number,
   ): string {
-    const [startH, startM] = step.time.split(":").map(Number);
-    const topOffset = (startM / 60) * 40;
-    const height = 38;
+    const startTs = new Date(step.start_at);
+    const endTs = new Date(step.end_at);
+
+    const topOffset = (startTs.getMinutes() / 60) * 40;
+    const durationMinutes = Math.max(
+      15,
+      Math.round((endTs.getTime() - startTs.getTime()) / 60000),
+    );
+    const height = Math.max((durationMinutes / 60) * 40, 38);
     const width = 100 / totalCount;
     const left = index * width;
     return `top: ${topOffset}px; height: ${height}px; left: ${left}%; width: ${width}%;`;
@@ -158,7 +163,7 @@
           {#each weekDates as date}
             <div class="standard-autumn-week-cell">
               {#each getEventsForCell(formatDateKey(date), hour) as step, idx}
-                {#if isSecretStep(step.date, step.time) && !hasEditPermission}
+                {#if isSecretStep(step) && !hasEditPermission}
                   <button
                     type="button"
                     class="standard-autumn-week-event"

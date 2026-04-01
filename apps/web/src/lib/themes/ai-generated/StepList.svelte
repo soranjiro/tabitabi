@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime, createTimestamp } from "@tabitabi/types";
   import { getMemoText, updateMemoText } from "$lib/memo";
   import { formatDate, getDayNumber, isSecretStep } from "./utils";
   import { renderMarkdown } from "./utils/markdown";
@@ -14,8 +15,8 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
+        end_at?: number;
         location?: string;
         notes?: string;
       },
@@ -38,36 +39,40 @@
   let editStepHour = $state("09");
   let editStepMinute = $state("00");
 
+  let editStepDate = $state("");
+
   $effect(() => {
-    if (editingStepId && editStepHour && editStepMinute) {
-      editedStep.time = `${editStepHour}:${editStepMinute}`;
+    if (editingStepId && editStepDate && editStepHour && editStepMinute) {
+      const time = `${editStepHour}:${editStepMinute}`;
+      editedStep.start_at = createTimestamp(editStepDate, time);
     }
   });
 
   const groupedSteps = $derived(() => {
     const groups = new Map<string, Step[]>();
     for (const step of steps) {
-      const date = step.date;
+      const date = getStepDate(step);
       if (!groups.has(date)) {
         groups.set(date, []);
       }
       groups.get(date)!.push(step);
     }
     for (const [_, groupSteps] of groups) {
-      groupSteps.sort((a, b) => a.time.localeCompare(b.time));
+      groupSteps.sort((a, b) => a.start_at - b.start_at);
     }
     return Array.from(groups.entries()).sort((a, b) =>
       a[0].localeCompare(b[0]),
     );
   });
 
-  const allDates = $derived(steps.map((s) => s.date));
+  const allDates = $derived(steps.map((s) => getStepDate(s)));
 
   function startEdit(step: Step) {
     if (!hasEditPermission) return;
     editingStepId = step.id;
     editedStep = { ...step, notes: getMemoText(step.notes) };
-    const [hour, minute] = step.time.split(":");
+    editStepDate = getStepDate(step);
+    const [hour, minute] = getStepTime(step).split(":");
     editStepHour = hour;
     editStepMinute = minute;
   }
@@ -75,6 +80,7 @@
   function cancelEdit() {
     editingStepId = null;
     editedStep = {};
+    editStepDate = "";
     editStepHour = "09";
     editStepMinute = "00";
   }
@@ -83,8 +89,9 @@
     if (
       !editingStepId ||
       !editedStep.title?.trim() ||
-      !editedStep.date ||
-      !editedStep.time
+      !editStepDate ||
+      !editStepHour ||
+      !editStepMinute
     ) {
       alert("タイトル、日付、時刻は必須です");
       return;
@@ -92,11 +99,11 @@
     const originalStep = steps.find((s) => s.id === editingStepId);
     const noteText = (editedStep.notes ?? "").trim();
     const notes = updateMemoText(originalStep?.notes, noteText);
+    const startAt = createTimestamp(editStepDate, `${editStepHour}:${editStepMinute}`);
     if (onUpdateStep) {
       await onUpdateStep(editingStepId, {
         title: editedStep.title.trim(),
-        date: editedStep.date,
-        time: editedStep.time,
+        start_at: startAt,
         location: editedStep.location?.trim() || undefined,
         notes,
       });
@@ -159,9 +166,10 @@
   function isCurrentStep(step: Step): boolean {
     const now = new Date();
     const today = now.toISOString().split("T")[0];
-    if (step.date !== today) return false;
+    if (getStepDate(step) !== today) return false;
 
-    const [hour, minute] = step.time.split(":").map(Number);
+    const time = getStepTime(step);
+    const [hour, minute] = time.split(":").map(Number);
     const stepMinutes = hour * 60 + minute;
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
     return Math.abs(stepMinutes - nowMinutes) <= 30;
@@ -202,7 +210,7 @@
         <div class="ai-steps-list">
           {#each dateSteps as step, stepIndex}
             {@const isStepSecret =
-              isSecret && isSecretStep(step.date, step.time, secretModeOffset)}
+              isSecret && isSecretStep(getStepDate(step), getStepTime(step), secretModeOffset)}
             {@const isCurrent = isCurrentStep(step)}
 
             {#if editingStepId === step.id}
@@ -219,7 +227,7 @@
                     <div class="ai-datetime-row">
                       <input
                         type="date"
-                        bind:value={editedStep.date}
+                        bind:value={editStepDate}
                         class="ai-input"
                       />
                       <div class="ai-time-picker">
@@ -281,7 +289,7 @@
                 style="--step-delay: {stepIndex * 0.08}s"
               >
                 <div class="ai-step-timeline-marker">
-                  <div class="ai-step-time-icon">{getTimeIcon(step.time)}</div>
+                  <div class="ai-step-time-icon">{getTimeIcon(getStepTime(step))}</div>
                   <div class="ai-step-connector"></div>
                 </div>
 
@@ -294,7 +302,7 @@
                   {/if}
 
                   <div class="ai-step-card-header">
-                    <div class="ai-step-time-badge">{step.time}</div>
+                    <div class="ai-step-time-badge">{getStepTime(step)}</div>
                     <span class="ai-step-category-icon"
                       >{getCategoryIcon(step)}</span
                     >

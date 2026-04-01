@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime, createTimestamp } from "@tabitabi/types";
   import { getMemoText } from "$lib/memo";
 
   interface Props {
@@ -9,8 +10,8 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
+        end_at?: number;
         location?: string;
         notes?: string;
       },
@@ -26,7 +27,13 @@
   }: Props = $props();
 
   let editingStepId = $state<string | null>(null);
-  let editedStep = $state<Partial<Step>>({});
+  let editedStep = $state<{
+    title?: string;
+    date?: string;
+    time?: string;
+    location?: string;
+    notes?: string;
+  }>({});
   let editStepHour = $state("09");
   let editStepMinute = $state("00");
 
@@ -36,24 +43,21 @@
     }
   });
 
-  // 日付ごとにグループ化
   const groupedSteps = $derived(() => {
     const groups = new Map<string, Step[]>();
 
     for (const step of steps) {
-      const date = step.date;
+      const date = getStepDate(step);
       if (!groups.has(date)) {
         groups.set(date, []);
       }
       groups.get(date)!.push(step);
     }
 
-    // 各グループ内を時刻順にソート
     for (const [_, groupSteps] of groups) {
-      groupSteps.sort((a, b) => a.time.localeCompare(b.time));
+      groupSteps.sort((a, b) => a.start_at - b.start_at);
     }
 
-    // 日付順にソート
     return Array.from(groups.entries()).sort((a, b) =>
       a[0].localeCompare(b[0]),
     );
@@ -71,8 +75,16 @@
 
   function startEdit(step: Step) {
     editingStepId = step.id;
-    editedStep = { ...step };
-    const [hour, minute] = step.time.split(":");
+    const date = getStepDate(step);
+    const time = getStepTime(step);
+    editedStep = {
+      title: step.title,
+      date,
+      time,
+      location: step.location ?? undefined,
+      notes: step.notes ?? undefined,
+    };
+    const [hour, minute] = time.split(":");
     editStepHour = hour;
     editStepMinute = minute;
   }
@@ -96,10 +108,10 @@
     }
 
     if (onUpdateStep) {
+      const start_at = createTimestamp(editedStep.date, editedStep.time);
       await onUpdateStep(editingStepId, {
         title: editedStep.title.trim(),
-        date: editedStep.date,
-        time: editedStep.time,
+        start_at,
         location: editedStep.location?.trim() || undefined,
         notes: editedStep.notes?.trim() || undefined,
       });
@@ -185,7 +197,7 @@
               </div>
             {:else}
               <div class="minimal-step">
-                <div class="minimal-step-time">{step.time}</div>
+                <div class="minimal-step-time">{getStepTime(step)}</div>
                 <h3 class="minimal-step-title">{step.title}</h3>
                 {#if step.location}
                   <div class="minimal-step-location">📍 {step.location}</div>

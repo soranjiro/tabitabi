@@ -6,6 +6,13 @@ import { extractBearerToken, verifyToken } from '../utils/jwt';
 
 const steps = new Hono<{ Bindings: Env }>();
 
+function parseToUnixMs(value: number | string | undefined | null): number | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'number') return value;
+  const ms = Date.parse(value);
+  return isNaN(ms) ? null : ms;
+}
+
 steps.get('/', async (c) => {
   const itineraryId = c.req.query('itinerary_id');
 
@@ -16,7 +23,6 @@ steps.get('/', async (c) => {
     }, 400);
   }
 
-  // Check if user is authenticated (edit mode)
   const authHeader = c.req.header('Authorization');
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
@@ -32,27 +38,19 @@ steps.get('/', async (c) => {
   const itinerary = await itineraryService.get(itineraryId);
 
   if (itinerary?.secret_settings?.enabled) {
-    // Get current time in JST (UTC+9) because DB stores local time
-    const now = new Date();
-    const jstOffset = 9 * 60 * 60 * 1000;
-    const jstTime = new Date(now.getTime() + jstOffset).toISOString().replace('Z', '');
-
+    const now = Date.now();
     const offsetMinutes = itinerary.secret_settings.offset_minutes || 60;
-
-    // Filter steps based on time
-    // If isEditMode is true OR itinerary has no password, we DO NOT mask secrets (maskSecrets: false)
-    // But we still pass time/offset so is_hidden is calculated
     const hasEditPermission = isEditMode || !itinerary.password;
 
     const data = await stepService.list(itineraryId, {
-      currentTime: jstTime,
-      offsetMinutes: offsetMinutes,
+      currentTime: now,
+      offsetMinutes,
       maskSecrets: !hasEditPermission
     });
+
     return c.json({ success: true, data });
   }
 
-  // Secret mode disabled: return all steps
   const data = await stepService.list(itineraryId);
   return c.json({ success: true, data });
 });
@@ -73,21 +71,24 @@ steps.get('/:stepId', async (c) => {
 });
 
 steps.post('/', async (c) => {
-  const input = await c.req.json();
+  const raw = await c.req.json();
 
-  if (!input.itinerary_id || !input.title || !input.date || !input.time) {
+  if (!raw.itinerary_id || !raw.title) {
     return c.json({
       success: false,
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'itinerary_id, title, date, and time are required'
-      }
+      error: { code: 'VALIDATION_ERROR', message: 'itinerary_id and title are required' }
     }, 400);
   }
 
-  // Authorization: required only when itinerary has a password
+  const startAt = parseToUnixMs(raw.start_at);
+  if (!startAt) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'start_at is required and must be a valid timestamp (number or ISO string)' } }, 400);
+  }
+
+  const endAt = raw.end_at ? parseToUnixMs(raw.end_at) : undefined;
+
   const itineraryService = new ItineraryService(c.env.DB);
-  const itinerary = await itineraryService.get(input.itinerary_id);
+  const itinerary = await itineraryService.get(raw.itinerary_id);
   if (!itinerary) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   }
@@ -95,7 +96,7 @@ steps.post('/', async (c) => {
   if (itinerary.password) {
     const token = extractBearerToken(c.req.header('Authorization'));
     const payload = token ? await verifyToken(token, c.env.JWT_SECRET) : null;
-    if (!payload || payload.shioriId !== input.itinerary_id) {
+    if (!payload || payload.shioriId !== raw.itinerary_id) {
       return c.json({
         success: false,
         error: { code: 'FORBIDDEN', message: 'You can only add steps to your own password-protected itinerary' }
@@ -104,24 +105,21 @@ steps.post('/', async (c) => {
   }
 
   const service = new StepService(c.env.DB);
-  const data = await service.create(input);
+  const payload = { ...raw, start_at: startAt, end_at: endAt };
+  const data = await service.create(payload);
   return c.json({ success: true, data }, 201);
 });
 
 steps.put('/:stepId', async (c) => {
   const stepId = c.req.param('stepId');
-  const input = await c.req.json();
+  const raw = await c.req.json();
   const service = new StepService(c.env.DB);
 
   const existingStep = await service.get(stepId);
   if (!existingStep) {
-    return c.json({
-      success: false,
-      error: { code: 'NOT_FOUND', message: 'Step not found' }
-    }, 404);
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Step not found' } }, 404);
   }
 
-  // Require auth only when itinerary has a password
   const itineraryService = new ItineraryService(c.env.DB);
   const itinerary = await itineraryService.get(existingStep.itinerary_id);
   if (!itinerary) {
@@ -138,7 +136,23 @@ steps.put('/:stepId', async (c) => {
     }
   }
 
-  const data = await service.update(stepId, input);
+  const updatePayload: Record<string, unknown> = { ...raw };
+  if (raw.start_at !== undefined) {
+    const parsed = parseToUnixMs(raw.start_at);
+    if (!parsed) {
+      return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'start_at provided is invalid' } }, 400);
+    }
+    updatePayload.start_at = parsed;
+  }
+  if (raw.end_at !== undefined) {
+    const parsedEnd = parseToUnixMs(raw.end_at);
+    if (!parsedEnd) {
+      return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'end_at provided is invalid' } }, 400);
+    }
+    updatePayload.end_at = parsedEnd;
+  }
+
+  const data = await service.update(stepId, updatePayload as any);
   return c.json({ success: true, data });
 });
 

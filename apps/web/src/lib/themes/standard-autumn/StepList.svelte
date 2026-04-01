@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime, createTimestamp } from "@tabitabi/types";
   import { getMemoText, updateMemoText } from "$lib/memo";
   import { renderMarkdown } from "./utils/markdown";
   import {
@@ -21,8 +22,8 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
+        end_at?: number;
         location?: string;
         notes?: string;
       },
@@ -40,13 +41,10 @@
     onDeleteStep,
   }: Props = $props();
 
-  function isSecretStep(stepDate: string, stepTime: string): boolean {
+  function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
-    const now = new Date();
-    const stepDateTime = new Date(`${stepDate}T${stepTime}`);
-    const revealTime = new Date(
-      stepDateTime.getTime() - secretModeOffset * 60 * 1000,
-    );
+    const now = Date.now();
+    const revealTime = step.start_at - secretModeOffset * 60 * 1000;
     return now < revealTime;
   }
 
@@ -54,6 +52,7 @@
   let editedStep = $state<Partial<Step>>({});
   let editStepHour = $state("09");
   let editStepMinute = $state("00");
+  let editStepDate = $state("");
 
   let trackEl = $state<HTMLDivElement | null>(null);
   let touchStartX = $state<number | null>(null);
@@ -71,12 +70,12 @@
   function computeGroupedSteps(stepList: Step[]): [string, Step[]][] {
     const groups = new Map<string, Step[]>();
     for (const step of stepList) {
-      const date = step.date;
+      const date = getStepDate(step);
       if (!groups.has(date)) groups.set(date, []);
       groups.get(date)!.push(step);
     }
     for (const [_, groupSteps] of groups) {
-      groupSteps.sort((a, b) => a.time.localeCompare(b.time));
+      groupSteps.sort((a, b) => a.start_at - b.start_at);
     }
     return Array.from(groups.entries()).sort((a, b) =>
       a[0].localeCompare(b[0]),
@@ -105,8 +104,11 @@
   const groupedSteps = $derived(() => computeGroupedSteps(steps));
 
   $effect(() => {
-    if (editingStepId && editStepHour && editStepMinute) {
-      editedStep.time = `${editStepHour}:${editStepMinute}`;
+    if (editingStepId && editStepDate && editStepHour && editStepMinute) {
+      editedStep.start_at = createTimestamp(
+        editStepDate,
+        `${editStepHour}:${editStepMinute}`,
+      );
     }
   });
 
@@ -173,7 +175,8 @@
   function startEdit(step: Step) {
     editingStepId = step.id;
     editedStep = { ...step, notes: getMemoText(step.notes) };
-    const [hour, minute] = step.time.split(":");
+    editStepDate = getStepDate(step);
+    const [hour, minute] = getStepTime(step).split(":");
     editStepHour = hour;
     editStepMinute = minute;
   }
@@ -181,34 +184,32 @@
   function cancelEdit() {
     editingStepId = null;
     editedStep = {};
+    editStepDate = "";
     editStepHour = "09";
     editStepMinute = "00";
   }
 
   async function handleUpdate() {
-    if (
-      !editingStepId ||
-      !editedStep.title?.trim() ||
-      !editedStep.date ||
-      !editedStep.time
-    ) {
+    const editTime = `${editStepHour}:${editStepMinute}`;
+    if (!editingStepId || !editedStep.title?.trim() || !editStepDate) {
       alert("タイトル、日付、時刻は必須です");
       return;
     }
     const originalStep = steps.find((s) => s.id === editingStepId);
     const noteText = (editedStep.notes ?? "").trim();
     const notes = updateMemoText(originalStep?.notes, noteText);
+    const start_at = createTimestamp(editStepDate, editTime);
     if (onUpdateStep) {
       await onUpdateStep(editingStepId, {
         title: editedStep.title.trim(),
-        date: editedStep.date,
-        time: editedStep.time,
+        start_at,
         location: editedStep.location?.trim() || undefined,
         notes,
       });
     }
     editingStepId = null;
     editedStep = {};
+    editStepDate = "";
     editStepHour = "09";
     editStepMinute = "00";
   }
@@ -274,12 +275,12 @@
     }
 
     // Calculate new time for the dragged step
-    const targetTime = dateSteps[targetIndex].time;
+    const targetStartAt = dateSteps[targetIndex].start_at;
 
     try {
       // Only update the dragged step's time to match the target position
       await onUpdateStep(draggedStepId, {
-        time: targetTime,
+        start_at: targetStartAt,
       });
     } catch (error) {
       console.error("Failed to update step time:", error);
@@ -373,11 +374,11 @@
     }
 
     // Get target time
-    const targetTime = dateSteps[targetIndex].time;
+    const targetStartAt = dateSteps[targetIndex].start_at;
 
     try {
       await onUpdateStep(touchDragStepId, {
-        time: targetTime,
+        start_at: targetStartAt,
       });
     } catch (error) {
       console.error("Failed to update step time:", error);
@@ -406,7 +407,8 @@
 
       // Actually, handleTouchDragEnd needs dateSteps.
       // Let's find the dateSteps for this stepId.
-      const date = steps.find((s) => s.id === stepId)?.date;
+      const foundStep = steps.find((s) => s.id === stepId);
+      const date = foundStep ? getStepDate(foundStep) : undefined;
       if (date) {
         const dateSteps = groupedSteps().find(([d]) => d === date)?.[1] || [];
         handleTouchDragEnd(e, dateSteps);
@@ -535,7 +537,9 @@
                     ondrop={(e) => handleDrop(e, step.id, dateSteps)}
                     use:setupTouchDrag={step.id}
                   >
-                    <div class="standard-autumn-step-time">{step.time}</div>
+                    <div class="standard-autumn-step-time">
+                      {getStepTime(step)}
+                    </div>
                     <div class="standard-autumn-timeline-line"></div>
                     <div class="standard-autumn-step-dot"></div>
 
@@ -554,7 +558,7 @@
                           <div class="standard-autumn-datetime">
                             <input
                               type="date"
-                              bind:value={editedStep.date}
+                              bind:value={editStepDate}
                               class="standard-autumn-input"
                             />
                             <div class="standard-autumn-time-picker">
@@ -606,7 +610,7 @@
                           >
                         </div>
                       </div>
-                    {:else if isSecretStep(step.date, step.time) && !hasEditPermission}
+                    {:else if isSecretStep(step) && !hasEditPermission}
                       <div
                         class="standard-autumn-step-content standard-autumn-step-hidden"
                       >

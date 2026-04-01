@@ -5,7 +5,7 @@ export const standardSpringPreview: PreviewItinerary = {
   themeId: "standard-spring",
   themeName: "標準（春）",
   description: "やさしく、かわいらしい",
-  phrase: "春の旅",
+  phrase: "春の旅行計画",
   layout: "timeline",
   colors: {
     primary: "#d946a6",

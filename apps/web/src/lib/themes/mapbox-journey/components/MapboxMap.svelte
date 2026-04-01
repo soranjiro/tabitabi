@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import type { Step } from "@tabitabi/types";
+  import { getStepDate } from "@tabitabi/types";
   import { browser } from "$app/environment";
 
   type MapStyle = "day" | "night" | "satellite" | "pixel";
@@ -97,15 +98,11 @@
   }
 
   function getSortedSteps(): Step[] {
-    return [...steps].sort((a, b) => {
-      const dateCompare = a.date.localeCompare(b.date);
-      if (dateCompare !== 0) return dateCompare;
-      return a.time.localeCompare(b.time);
-    });
+    return [...steps].sort((a, b) => a.start_at - b.start_at);
   }
 
   function getUniqueDates(): string[] {
-    return [...new Set(getSortedSteps().map((s) => s.date))];
+    return [...new Set(getSortedSteps().map((s) => getStepDate(s)))];
   }
 
   async function geocodeLocation(
@@ -246,7 +243,7 @@
 
       const coords = await geocodeLocation(step.location);
       if (coords) {
-        const color = getDateColor(step.date, uniqueDates);
+        const color = getDateColor(getStepDate(step), uniqueDates);
         const currentNumber = stepNumber;
         const originalIndex = steps.findIndex((s) => s.id === step.id);
 

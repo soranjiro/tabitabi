@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepTime } from "@tabitabi/types";
   import { getIconCategory, type IconCategory } from "../utils/layout";
 
   interface Props {
@@ -61,7 +62,7 @@
       <div class="plan-b-label">PLAN B</div>
     {/if}
     <div class="spot-label">{step.title}</div>
-    <div class="spot-time">{step.time}</div>
+    <div class="spot-time">{getStepTime(step)}</div>
   </div>
 </button>
 

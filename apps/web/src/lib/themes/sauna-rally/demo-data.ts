@@ -1,4 +1,4 @@
-import { type DemoDataSet, now, getDate } from '../types';
+import { type DemoDataSet, now, getTimestamp, getEndTimestamp, getDate } from '../types';
 
 export function getDemoData(): DemoDataSet {
   return {
@@ -16,8 +16,8 @@ export function getDemoData(): DemoDataSet {
         id: 'demo-step-1',
         itinerary_id: 'demo',
         title: 'サウナ&ホテル かるまる池袋',
-        date: getDate(0),
-        time: '14:00',
+        start_at: getTimestamp(0, '14:00'),
+        end_at: getEndTimestamp(getTimestamp(0, '14:00'), 180),
         location: '東京都豊島区',
         notes: JSON.stringify({
           visited: true,
@@ -31,8 +31,8 @@ export function getDemoData(): DemoDataSet {
         id: 'demo-step-2',
         itinerary_id: 'demo',
         title: 'スカイスパYOKOHAMA',
-        date: getDate(1),
-        time: '16:00',
+        start_at: getTimestamp(1, '16:00'),
+        end_at: getEndTimestamp(getTimestamp(1, '16:00'), 180),
         location: '神奈川県横浜市',
         notes: JSON.stringify({
           visited: false,
@@ -45,8 +45,8 @@ export function getDemoData(): DemoDataSet {
         id: 'demo-step-3',
         itinerary_id: 'demo',
         title: '改良湯',
-        date: getDate(2),
-        time: '18:00',
+        start_at: getTimestamp(2, '18:00'),
+        end_at: getEndTimestamp(getTimestamp(2, '18:00'), 120),
         location: '東京都台東区',
         notes: JSON.stringify({
           visited: false,

@@ -5,6 +5,7 @@ export const mapOnlyPreview: PreviewItinerary = {
   themeId: "map-only",
   themeName: "Map Only",
   description: "地図に集中",
+  phrase: "地図での計画",
   layout: "timeline",
   colors: {
     primary: "#111827",

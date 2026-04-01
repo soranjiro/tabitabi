@@ -64,7 +64,10 @@
           class="preview-header"
           style="background: {preview.colors.primary};"
         >
-          <span class="preview-theme-name">{preview.themeName}</span>
+          <div class="preview-title">
+            <span class="preview-theme-name">{preview.themeName}</span>
+            <span class="preview-theme-phrase">{preview.phrase}</span>
+          </div>
           <span class="preview-theme-desc">{preview.description}</span>
         </div>
 
@@ -475,15 +478,27 @@
   .preview-header {
     padding: 0.5rem 0.75rem;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 0.3rem;
     color: white;
+  }
+
+  .preview-title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
   }
 
   .preview-theme-name {
     color: white;
     font-size: 0.7rem;
     font-weight: 700;
+  }
+
+  .preview-theme-phrase {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.6rem;
+    font-style: italic;
   }
 
   .preview-theme-desc {

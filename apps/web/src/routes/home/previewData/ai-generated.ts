@@ -5,6 +5,7 @@ export const aiGeneratedPreview: PreviewItinerary = {
   themeId: "ai-generated",
   themeName: "AI Generated",
   description: "開発中",
+  phrase: "AI生成デザイン",
   layout: "card",
   colors: {
     primary: "#0284c7",

@@ -5,6 +5,7 @@ export const standardAutumnPreview: PreviewItinerary = {
   themeId: "standard-autumn",
   themeName: "標準",
   description: "多機能",
+  phrase: "秋の旅",
   layout: "timeline",
   colors: {
     primary: "#a93529",

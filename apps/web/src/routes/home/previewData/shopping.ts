@@ -5,6 +5,7 @@ export const shoppingPreview: PreviewItinerary = {
   themeId: "shopping",
   themeName: "買い物リスト",
   description: "お使い管理",
+  phrase: "買い物プラン",
   layout: "list",
   colors: {
     primary: "#10b981",

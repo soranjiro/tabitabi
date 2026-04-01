@@ -5,6 +5,7 @@ export const mapboxJourneyPreview: PreviewItinerary = {
   themeId: "mapbox-journey",
   themeName: "Mapbox Journey",
   description: "3Dグローブ",
+  phrase: "Mapboxでの旅",
   layout: "card",
   colors: {
     primary: "#7c3aed",

@@ -7,7 +7,6 @@
     step: Step;
     hasEditPermission?: boolean;
     onClose: () => void;
-    onEditMode?: () => void;
     onUpdateStep?: (
       stepId: string,
       data: {
@@ -25,7 +24,6 @@
     step,
     hasEditPermission = false,
     onClose,
-    onEditMode,
     onUpdateStep,
     onDeleteStep,
   }: Props = $props();
@@ -248,17 +246,7 @@
           <div class="standard-autumn-event-dialog-actions">
             <button
               type="button"
-              onclick={() => {
-                onEditMode?.();
-                isEditing = true;
-                editedStep = {
-                  ...step,
-                  notes: getMemoText(step.notes) || "",
-                };
-                const [hour, minute] = step.time.split(":");
-                editStepHour = hour;
-                editStepMinute = minute;
-              }}
+              onclick={startEdit}
               class="standard-autumn-btn standard-autumn-btn-primary"
             >
               編集

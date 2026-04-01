@@ -238,13 +238,6 @@
     selectedStepForDialog = null;
   }
 
-  function startEditFromDialog() {
-    if (selectedStepForDialog) {
-      startEdit(selectedStepForDialog);
-      selectedStepForDialog = null;
-    }
-  }
-
   function isCurrentlyEditing(): boolean {
     return editingStepId !== null;
   }
@@ -829,7 +822,6 @@
       step={selectedStepForDialog}
       {hasEditPermission}
       onClose={closeDetailDialog}
-      onEditMode={startEditFromDialog}
       {onUpdateStep}
       {onDeleteStep}
     />

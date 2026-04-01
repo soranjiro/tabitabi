@@ -141,7 +141,6 @@
     step={selectedStep}
     {hasEditPermission}
     onClose={closeDialog}
-    onEditMode={closeDialog}
     {onUpdateStep}
     {onDeleteStep}
   />

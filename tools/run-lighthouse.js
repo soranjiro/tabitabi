@@ -108,7 +108,7 @@ function printReport(result) {
     if (category.score < 0.9) {
       hasIssues = true;
       console.log(`\n   ${COLORS.yellow}⚠ ${category.title}: Score ${formatScore(category.score)}/100${COLORS.reset}`);
-      
+
       // Show failing audits for this category
       if (category.auditRefs) {
         for (const auditRef of category.auditRefs) {

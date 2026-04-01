@@ -95,7 +95,7 @@ export const auth = {
       const newUrl = params.toString()
         ? `${window.location.pathname}?${params.toString()}`
         : window.location.pathname;
-      
+
       try {
         replaceState('', newUrl);
       } catch (e) {

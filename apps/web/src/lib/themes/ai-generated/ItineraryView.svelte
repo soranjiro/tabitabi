@@ -1,7 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import type { ItineraryResponse, Step } from "@tabitabi/types";
-  import { getStepDate, createTimestamp, createEndTimestamp } from "@tabitabi/types";
+  import {
+    getStepDate,
+    createTimestamp,
+    createEndTimestamp,
+  } from "@tabitabi/types";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";

@@ -938,12 +938,7 @@
 
         {#if branchPaths.length}
           {#each branchPaths as path}
-            <path
-              d={path}
-              fill="none"
-              stroke="#2a1a8c"
-              stroke-width="12"
-            />
+            <path d={path} fill="none" stroke="#2a1a8c" stroke-width="12" />
             <path d={path} fill="none" stroke="#4a5fa8" stroke-width="8" />
             <path
               d={path}

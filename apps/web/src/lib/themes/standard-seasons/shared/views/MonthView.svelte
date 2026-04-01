@@ -109,7 +109,10 @@
   const monthEventSegments = $derived(() => {
     const days = monthDays().map((d) => d.date);
     const weeksCount = Math.ceil(days.length / 7);
-    const weeksSegments: Array<any[]> = Array.from({ length: weeksCount }, () => []);
+    const weeksSegments: Array<any[]> = Array.from(
+      { length: weeksCount },
+      () => [],
+    );
 
     for (const step of steps) {
       const startDate = getStepDate(step);
@@ -131,12 +134,23 @@
           const segmentsForWeek = weeksSegments[w];
           let rowIndex = 0;
           while (true) {
-            const rowOccupied = segmentsForWeek.filter((s) => s.rowIndex === rowIndex);
-            const overlap = rowOccupied.some((s) => !(segEnd < s.startIdx || segStart > s.endIdx));
+            const rowOccupied = segmentsForWeek.filter(
+              (s) => s.rowIndex === rowIndex,
+            );
+            const overlap = rowOccupied.some(
+              (s) => !(segEnd < s.startIdx || segStart > s.endIdx),
+            );
             if (!overlap) break;
             rowIndex++;
           }
-          segmentsForWeek.push({ step, leftPercent, widthPercent, rowIndex, startIdx: segStart, endIdx: segEnd });
+          segmentsForWeek.push({
+            step,
+            leftPercent,
+            widthPercent,
+            rowIndex,
+            startIdx: segStart,
+            endIdx: segEnd,
+          });
         }
       }
     }
@@ -223,22 +237,30 @@
 
     <div class="standard-autumn-month-grid">
       {#each weeks() as weekDays, wIdx}
-        <div class="standard-autumn-month-week" style="position: relative; display: grid; grid-template-columns: repeat(7, 1fr);">
+        <div
+          class="standard-autumn-month-week"
+          style="position: relative; display: grid; grid-template-columns: repeat(7, 1fr);"
+        >
           {#each weekDays as dateStr}
-            {@const dayInfo = monthDays().find(d => d.date === dateStr)}
+            {@const dayInfo = monthDays().find((d) => d.date === dateStr)}
             <div
               class="standard-autumn-month-day"
               class:other-month={!dayInfo?.isCurrentMonth}
               class:today={isToday(dateStr)}
             >
               <div class="standard-autumn-month-day-header">
-                <span class="standard-autumn-month-day-number">{dayInfo?.day}</span>
+                <span class="standard-autumn-month-day-number"
+                  >{dayInfo?.day}</span
+                >
               </div>
             </div>
           {/each}
 
-          <div class="standard-autumn-month-week-events" style="position:absolute; left:0; right:0; top:36px;">
-            {#each (monthEventSegments()[wIdx] || []) as seg}
+          <div
+            class="standard-autumn-month-week-events"
+            style="position:absolute; left:0; right:0; top:36px;"
+          >
+            {#each monthEventSegments()[wIdx] || [] as seg}
               <button
                 type="button"
                 class="standard-autumn-month-event"
@@ -249,8 +271,12 @@
                 {#if isSecretStep(seg.step) && !hasEditPermission}
                   <span class="standard-autumn-month-event-time">🔒</span>
                 {:else}
-                  <span class="standard-autumn-month-event-time">{getStepTime(seg.step)}</span>
-                  <span class="standard-autumn-month-event-title">{seg.step.title}</span>
+                  <span class="standard-autumn-month-event-time"
+                    >{getStepTime(seg.step)}</span
+                  >
+                  <span class="standard-autumn-month-event-title"
+                    >{seg.step.title}</span
+                  >
                 {/if}
               </button>
             {/each}

@@ -1,6 +1,11 @@
 <script lang="ts">
   import type { ItineraryResponse, Step } from "@tabitabi/types";
-  import { getStepDate, getStepTime, createTimestamp, createEndTimestamp } from "@tabitabi/types";
+  import {
+    getStepDate,
+    getStepTime,
+    createTimestamp,
+    createEndTimestamp,
+  } from "@tabitabi/types";
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
   import StepList from "./StepList.svelte";
@@ -97,9 +102,7 @@
   ];
 
   function getUniqueDates(): string[] {
-    const sortedSteps = [...steps].sort((a, b) =>
-      a.start_at - b.start_at,
-    );
+    const sortedSteps = [...steps].sort((a, b) => a.start_at - b.start_at);
     return [...new Set(sortedSteps.map((s) => getStepDate(s)))];
   }
 
@@ -110,9 +113,7 @@
   }
 
   function getStepNumber(step: Step): number {
-    const sortedSteps = [...steps].sort((a, b) =>
-      a.start_at - b.start_at,
-    );
+    const sortedSteps = [...steps].sort((a, b) => a.start_at - b.start_at);
     return sortedSteps.findIndex((s) => s.id === step.id) + 1;
   }
 
@@ -633,7 +634,9 @@
           <div class="detail-info">
             <h3 class="detail-title">{selectedStep.title}</h3>
             <p class="detail-datetime">
-              {formatDate(getStepDate(selectedStep))} • {getStepTime(selectedStep)}
+              {formatDate(getStepDate(selectedStep))} • {getStepTime(
+                selectedStep,
+              )}
             </p>
           </div>
           <button class="close-btn" onclick={closeModals} aria-label="Close">

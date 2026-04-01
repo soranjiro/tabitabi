@@ -221,11 +221,15 @@
           <div class="standard-autumn-event-detail-row">
             <div class="standard-autumn-event-detail-field">
               <label>日付</label>
-              <div class="standard-autumn-event-detail-value">{getStepDate(step)}</div>
+              <div class="standard-autumn-event-detail-value">
+                {getStepDate(step)}
+              </div>
             </div>
             <div class="standard-autumn-event-detail-field">
               <label>時間</label>
-              <div class="standard-autumn-event-detail-value">{getStepTime(step)}</div>
+              <div class="standard-autumn-event-detail-value">
+                {getStepTime(step)}
+              </div>
             </div>
           </div>
           {#if step.location}

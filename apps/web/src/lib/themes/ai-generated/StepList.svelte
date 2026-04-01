@@ -99,7 +99,10 @@
     const originalStep = steps.find((s) => s.id === editingStepId);
     const noteText = (editedStep.notes ?? "").trim();
     const notes = updateMemoText(originalStep?.notes, noteText);
-    const startAt = createTimestamp(editStepDate, `${editStepHour}:${editStepMinute}`);
+    const startAt = createTimestamp(
+      editStepDate,
+      `${editStepHour}:${editStepMinute}`,
+    );
     if (onUpdateStep) {
       await onUpdateStep(editingStepId, {
         title: editedStep.title.trim(),
@@ -210,7 +213,12 @@
         <div class="ai-steps-list">
           {#each dateSteps as step, stepIndex}
             {@const isStepSecret =
-              isSecret && isSecretStep(getStepDate(step), getStepTime(step), secretModeOffset)}
+              isSecret &&
+              isSecretStep(
+                getStepDate(step),
+                getStepTime(step),
+                secretModeOffset,
+              )}
             {@const isCurrent = isCurrentStep(step)}
 
             {#if editingStepId === step.id}
@@ -289,7 +297,9 @@
                 style="--step-delay: {stepIndex * 0.08}s"
               >
                 <div class="ai-step-timeline-marker">
-                  <div class="ai-step-time-icon">{getTimeIcon(getStepTime(step))}</div>
+                  <div class="ai-step-time-icon">
+                    {getTimeIcon(getStepTime(step))}
+                  </div>
                   <div class="ai-step-connector"></div>
                 </div>
 

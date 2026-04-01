@@ -70,7 +70,7 @@ export function getDemoData(): DemoDataSet {
     itinerary_secrets: {
       itinerary_id: 'demo',
       enabled: true,
-      offset_minutes: 30,
+      offset_minutes: 60,
       created_at: now,
       updated_at: now,
     },

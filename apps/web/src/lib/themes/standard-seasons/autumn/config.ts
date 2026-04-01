@@ -17,11 +17,11 @@ export const seasonAutumnTheme: ThemeConfig = {
     layout: "single",
     colorScheme: "light",
     customColors: {
-      primary: "#a93529",
-      secondary: "#e6b422",
-      background: "#fcf9f2",
-      text: "#4a3b32",
-      accent: "#d4762c",
+      primary: "#8b2e1f",
+      secondary: "#d89f2e",
+      background: "#faf5f0",
+      text: "#3a2d25",
+      accent: "#c46b1f",
     },
   },
 };

@@ -1,29 +1,21 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import type { ItineraryResponse, Step } from "@tabitabi/types";
-  import {
-    getStepDate,
-    createTimestamp,
-    createEndTimestamp,
-  } from "@tabitabi/types";
+  import { createTimestamp, createEndTimestamp } from "@tabitabi/types";
+  import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { getIsDemoMode } from "$lib/demo";
   import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
-  import {
-    AddStepForm,
-    BottomNav,
-    MemoDialog,
-    PasswordDialog,
-    ShareDialog,
-    WalicaOverlay,
-  } from "./components";
-  import TripProgress from "./components/TripProgress.svelte";
-  import HeroHeader from "./components/HeroHeader.svelte";
+  import AddStepForm from "./components/AddStepForm.svelte";
+  import BottomNav from "./components/BottomNav.svelte";
   import FloatingActions from "./components/FloatingActions.svelte";
-  import ParticleBackground from "./components/ParticleBackground.svelte";
+  import MemoDialog from "./components/MemoDialog.svelte";
+  import PasswordDialog from "./components/PasswordDialog.svelte";
+  import ShareDialog from "./components/ShareDialog.svelte";
+  import WalicaOverlay from "./components/WalicaOverlay.svelte";
+  import { LinkIcon } from "./components/icons/index.svelte";
   import { renderMarkdown } from "./utils/markdown";
   import "./styles/index.css";
 
@@ -42,7 +34,9 @@
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
+      // Unix ms
       start_at: number;
+      // Unix ms
       end_at: number;
       location?: string;
       notes?: string;
@@ -51,8 +45,8 @@
       stepId: string,
       data: {
         title?: string;
-        start_at?: number;
-        end_at?: number;
+        date?: string;
+        time?: string;
         location?: string;
         notes?: string;
       },
@@ -69,17 +63,20 @@
     onDeleteStep,
   }: Props = $props();
 
+  const themes = getAvailableThemes();
+
   let isEditingTitle = $state(false);
   let editedTitle = $state(itinerary.title);
   let isAddingStep = $state(false);
   let showCopyMessage = $state(false);
   let showShareDialog = $state(false);
+  let showShareMenu = $state(false);
   let hasEditPermission = $state(false);
   let showPasswordDialog = $state(false);
   let showMemoDialog = $state(false);
   let isAuthenticating = $state(false);
 
-  let selectedThemeId = $state(itinerary.theme_id || "ai-generated");
+  let selectedThemeId = $state(itinerary.theme_id || "standard-autumn");
   let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
   let secretModeOffset = $state(
     itinerary.secret_settings?.offset_minutes ?? 60,
@@ -114,11 +111,14 @@
     }
     hasEditPermission = auth.hasEditPermission(itinerary.id);
 
+    // パスワード未設定なら即座に編集可、それ以外は手動トグルで実施
     if (!hasEditPermission && !itinerary.is_password_protected) {
-      attemptEditModeActivation();
+      hasEditPermission = true;
     }
 
-    auth.updateAccessTime(itinerary.id, itinerary.title);
+    if (hasEditPermission) {
+      auth.updateAccessTime(itinerary.id, itinerary.title);
+    }
   });
 
   async function onPasswordAuth(password: string) {
@@ -139,6 +139,10 @@
     if (hasEditPermission) {
       hasEditPermission = false;
     } else {
+      if (getIsDemoMode()) {
+        hasEditPermission = true;
+        return;
+      }
       attemptEditModeActivation();
     }
   }
@@ -160,7 +164,7 @@
       }
     }
 
-    // パスワード未設定なら即座に編集可能、設定ありなら入力ダイアログ
+    // パスワード不要なら即許可、必要なら入力ダイアログを開く
     if (!itinerary.is_password_protected) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
@@ -177,17 +181,19 @@
   }
 
   function handleShare() {
-    if (hasEditPermission) {
-      showShareDialog = true;
-    } else {
-      copyViewOnlyLink();
-    }
+    showShareMenu = !showShareMenu;
+  }
+
+  function handlePrint() {
+    showShareMenu = false;
+    window.print();
   }
 
   async function copyViewOnlyLink() {
     try {
       const url = window.location.origin + window.location.pathname;
       await navigator.clipboard.writeText(url);
+      showShareMenu = false;
       showCopyMessage = true;
       setTimeout(() => {
         showCopyMessage = false;
@@ -210,6 +216,7 @@
 
       await navigator.clipboard.writeText(url);
       showShareDialog = false;
+      showShareMenu = false;
       showCopyMessage = true;
       setTimeout(() => {
         showCopyMessage = false;
@@ -299,93 +306,167 @@
       await onUpdateItinerary({ walica_id: walicaId });
     }
   }
-
-  const tripDates = $derived(() => {
-    if (steps.length === 0) return { start: undefined, end: undefined };
-    const dates = [...new Set(steps.map((s) => getStepDate(s)))].sort();
-    return { start: dates[0], end: dates[dates.length - 1] };
-  });
 </script>
 
-<div class="ai-theme">
-  <ParticleBackground />
-
-  <main class="ai-container">
-    {#if showCopyMessage}
-      <div class="ai-copy-toast">✓ コピーしました</div>
-    {/if}
-
-    <HeroHeader
-      title={itinerary.title}
-      startDate={tripDates().start}
-      endDate={tripDates().end}
-    />
-
-    <TripProgress {steps} title={itinerary.title} />
-
-    {#if itinerary.memo}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="ai-memo-section" onclick={() => (showMemoDialog = true)}>
-        <div class="ai-memo-card ai-card">
-          <div class="ai-memo-header">📝 メモ</div>
-          <div class="ai-memo-content">
-            {@html renderMarkdown(itinerary.memo)}
+<div class="standard-autumn-theme">
+  <div class="standard-autumn-container">
+    <header class="standard-autumn-header">
+      <div class="standard-autumn-share-wrapper">
+        <button
+          type="button"
+          class="standard-autumn-share-icon"
+          onclick={handleShare}
+          aria-label="共有メニュー"
+          title="共有メニュー"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            width="24"
+            height="24"
+          >
+            <path
+              d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"
+            />
+          </svg>
+        </button>
+        {#if showShareMenu}
+          <div class="standard-autumn-share-menu">
+            <button
+              type="button"
+              class="standard-autumn-share-menu-item"
+              onclick={hasEditPermission
+                ? () => (showShareDialog = true)
+                : copyViewOnlyLink}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                />
+              </svg>
+              リンクをコピー
+            </button>
+            <button
+              type="button"
+              class="standard-autumn-share-menu-item"
+              onclick={handlePrint}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"
+                />
+              </svg>
+              印刷・PDF出力
+            </button>
           </div>
-        </div>
+        {/if}
       </div>
-    {:else if hasEditPermission}
-      <button
-        type="button"
-        class="ai-btn ai-btn-secondary ai-btn-memo"
-        onclick={() => (showMemoDialog = true)}
-      >
-        📝 メモを追加
-      </button>
-    {/if}
-
-    {#if hasEditPermission && isAddingStep}
-      <div class="ai-add-step-form">
-        <AddStepForm
-          bind:newStep
-          bind:newStepHour
-          bind:newStepMinute
-          onSubmit={handleAddStep}
-          onCancel={cancelAddStep}
+      {#if showCopyMessage}
+        <div class="standard-autumn-copy-msg">コピーしました</div>
+      {/if}
+      {#if isEditingTitle}
+        <input
+          type="text"
+          bind:value={editedTitle}
+          onblur={handleTitleUpdate}
+          onkeydown={(e) => e.key === "Enter" && handleTitleUpdate()}
+          class="standard-autumn-title-input"
         />
+      {:else}
+        <button
+          type="button"
+          onclick={() => {
+            isEditingTitle = true;
+          }}
+          class="standard-autumn-title-button"
+          disabled={!hasEditPermission}>{itinerary.title}</button
+        >
+      {/if}
+      <div class="standard-autumn-controls">
+        {#if itinerary.memo}
+          {#if hasEditPermission}
+            <button
+              type="button"
+              class="standard-autumn-memo-display"
+              onclick={(e) => {
+                if ((e.target as HTMLElement).closest("a")) return;
+                showMemoDialog = true;
+              }}
+            >
+              {@html renderMarkdown(itinerary.memo)}
+            </button>
+          {:else}
+            <div class="standard-autumn-memo-display">
+              {@html renderMarkdown(itinerary.memo)}
+            </div>
+          {/if}
+        {:else if hasEditPermission}
+          <button
+            onclick={() => {
+              showMemoDialog = true;
+            }}
+            class="standard-autumn-btn standard-autumn-btn-edit"
+          >
+            📝 メモを追加
+          </button>
+        {/if}
+      </div>
+    </header>
+
+    {#if hasEditPermission}
+      <div class="standard-autumn-add-step">
+        {#if isAddingStep}
+          <AddStepForm
+            bind:newStep
+            bind:newStepHour
+            bind:newStepMinute
+            onSubmit={handleAddStep}
+            onCancel={cancelAddStep}
+          />
+        {:else}
+          <button
+            onclick={openAddStepForm}
+            class="standard-autumn-btn-add"
+            disabled={!hasEditPermission}>＋ 予定を追加</button
+          >
+        {/if}
       </div>
     {/if}
 
     <StepList
       {steps}
+      {onUpdateStep}
+      {onDeleteStep}
       {hasEditPermission}
       {secretModeEnabled}
       {secretModeOffset}
       bind:focusedDate
-      {onUpdateStep}
-      {onDeleteStep}
     />
-  </main>
 
-  <FloatingActions
-    onAdd={hasEditPermission ? openAddStepForm : undefined}
-    onShare={handleShare}
-  />
-
-  <BottomNav
-    {hasEditPermission}
-    walicaId={itinerary.walica_id}
-    {selectedThemeId}
-    {secretModeEnabled}
-    {secretModeOffset}
-    {walicaUrl}
-    onEditModeToggle={handleEditModeToggle}
-    onThemeChange={handleThemeChange}
-    onSecretModeChange={handleSecretModeUpdate}
-    onWalicaUpdate={handleWalicaUpdate}
-    onWalicaOpen={() => (showWalica = true)}
-    onMemoOpen={() => (showMemoDialog = true)}
-  />
+    <BottomNav
+      {hasEditPermission}
+      walicaId={itinerary.walica_id}
+      {themes}
+      {selectedThemeId}
+      {secretModeEnabled}
+      {secretModeOffset}
+      {walicaUrl}
+      onEditModeToggle={handleEditModeToggle}
+      onThemeChange={handleThemeChange}
+      onSecretModeChange={handleSecretModeUpdate}
+      onWalicaUpdate={handleWalicaUpdate}
+      onWalicaOpen={() => (showWalica = true)}
+    />
+  </div>
 
   <MemoDialog
     show={showMemoDialog}
@@ -414,4 +495,6 @@
     onCopyLink={copyShareLink}
     onClose={() => (showShareDialog = false)}
   />
+
+  <FloatingActions {hasEditPermission} onAddStep={openAddStepForm} />
 </div>

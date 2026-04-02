@@ -90,11 +90,43 @@
 
   const hours = Array.from({ length: 16 }, (_, i) => i + 6);
 
+  function getOverlappingEventsForCell(
+    dateStr: string,
+    hour: number,
+  ): Array<{ step: Step; overlapCount: number }> {
+    const daySteps = stepsByDate().get(dateStr) || [];
+    const hourStart = hour * 60;
+    const hourEnd = (hour + 1) * 60;
+
+    const eventsInHour = daySteps.filter((step) => {
+      const startTime = new Date(step.start_at);
+      const endTime = new Date(step.end_at);
+      const stepStartMinutes =
+        startTime.getHours() * 60 + startTime.getMinutes();
+      const stepEndMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+
+      return stepStartMinutes < hourEnd && stepEndMinutes > hourStart;
+    });
+
+    return eventsInHour.map((step) => ({
+      step,
+      overlapCount: eventsInHour.length,
+    }));
+  }
+
   function getEventsForCell(dateStr: string, hour: number): Step[] {
     const daySteps = stepsByDate().get(dateStr) || [];
+    const hourStart = hour * 60;
+    const hourEnd = (hour + 1) * 60;
+
     return daySteps.filter((step) => {
-      const startHour = parseInt(getStepTime(step).split(":")[0], 10);
-      return startHour === hour;
+      const startTime = new Date(step.start_at);
+      const endTime = new Date(step.end_at);
+      const stepStartMinutes =
+        startTime.getHours() * 60 + startTime.getMinutes();
+      const stepEndMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+
+      return stepStartMinutes < hourEnd && stepEndMinutes > hourStart;
     });
   }
 
@@ -205,6 +237,8 @@
   <EventDetailDialog
     step={selectedStep}
     {hasEditPermission}
+    {secretModeEnabled}
+    {secretModeOffset}
     onClose={closeDialog}
     {onUpdateStep}
     {onDeleteStep}

@@ -59,15 +59,6 @@
   }
 
   let editingStepId = $state<string | null>(null);
-  let editedStep = $state<{
-    title?: string;
-    date?: string;
-    time?: string;
-    location?: string | null;
-    notes?: string;
-  }>({});
-  let editStepHour = $state("09");
-  let editStepMinute = $state("00");
   let selectedStepForDialog = $state<Step | null>(null);
 
   let trackEl = $state<HTMLDivElement | null>(null);
@@ -116,12 +107,6 @@
   let activeIndex = $state(getInitialIndex(computeGroupedSteps(steps)));
 
   const groupedSteps = $derived(() => computeGroupedSteps(steps));
-
-  $effect(() => {
-    if (editingStepId && editStepHour && editStepMinute) {
-      editedStep.time = `${editStepHour}:${editStepMinute}`;
-    }
-  });
 
   $effect(() => {
     const groups = groupedSteps();
@@ -183,70 +168,9 @@
     return date.toLocaleDateString("ja-JP", { month: "long", day: "numeric" });
   }
 
-  function startEdit(step: Step) {
-    editingStepId = step.id;
-    const time = getStepTime(step);
-    const date = getStepDate(step);
-    editedStep = {
-      title: step.title,
-      date,
-      time,
-      location: step.location,
-      notes: getMemoText(step.notes),
-    };
-    const [hour, minute] = time.split(":");
-    editStepHour = hour;
-    editStepMinute = minute;
-  }
-
-  function cancelEdit() {
-    editingStepId = null;
-    editedStep = {};
-    editStepHour = "09";
-    editStepMinute = "00";
-  }
-
-  async function handleUpdate() {
-    if (
-      !editingStepId ||
-      !editedStep.title?.trim() ||
-      !editedStep.date ||
-      !editedStep.time
-    ) {
-      alert("タイトル、日付、時刻は必須です");
-      return;
-    }
-    const originalStep = steps.find((s) => s.id === editingStepId);
-    const noteText = (editedStep.notes ?? "").trim();
-    const notes = updateMemoText(originalStep?.notes, noteText);
-    const start_at = createTimestamp(editedStep.date, editedStep.time);
-    const end_at = createEndTimestamp(start_at, 60);
-    if (onUpdateStep) {
-      await onUpdateStep(editingStepId, {
-        title: editedStep.title.trim(),
-        start_at,
-        end_at,
-        location: editedStep.location?.trim() || undefined,
-        notes,
-      });
-    }
-    editingStepId = null;
-    editedStep = {};
-    editStepHour = "09";
-    editStepMinute = "00";
-  }
-
-  async function handleDelete(stepId: string) {
-    if (!confirm("この予定を削除しますか?")) return;
-    if (onDeleteStep) {
-      await onDeleteStep(stepId);
-    }
-  }
-
   function handleStepClick(stepId: string) {
     const step = steps.find((s) => s.id === stepId);
     if (step) {
-      // Show detail dialog first for all views
       selectedStepForDialog = step;
     }
   }
@@ -255,13 +179,8 @@
     selectedStepForDialog = null;
   }
 
-  function isCurrentlyEditing(): boolean {
-    return editingStepId !== null;
-  }
-
-  // Drag and drop handlers
   function handleDragStart(e: DragEvent, stepId: string) {
-    if (!hasEditPermission || editingStepId) return;
+    if (!hasEditPermission) return;
     draggedStepId = stepId;
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = "move";
@@ -269,7 +188,7 @@
   }
 
   function handleDragOver(e: DragEvent, stepId: string) {
-    if (!hasEditPermission || !draggedStepId || editingStepId) return;
+    if (!hasEditPermission || !draggedStepId) return;
     e.preventDefault();
     dragOverStepId = stepId;
     if (e.dataTransfer) {
@@ -334,7 +253,7 @@
 
   // Touch event handlers for mobile drag and drop
   function handleTouchDragStart(e: TouchEvent, stepId: string) {
-    if (!hasEditPermission || editingStepId) return;
+    if (!hasEditPermission) return;
     touchDragStepId = stepId;
     touchStartY = e.touches[0].clientY;
     touchCurrentY = touchStartY;
@@ -406,7 +325,7 @@
 
     try {
       await onUpdateStep(touchDragStepId, {
-        start_at: targetTimestamp
+        start_at: targetTimestamp,
       });
     } catch (error) {
       console.error("Failed to update step time:", error);
@@ -602,76 +521,16 @@
                     <div class="standard-autumn-timeline-line"></div>
                     <div class="standard-autumn-step-dot"></div>
 
-                    {#if editingStepId === step.id}
-                      <!-- ... editing form ... -->
-                      <div class="standard-autumn-step-editing">
-                        <h3 class="standard-autumn-form-title">予定を編集</h3>
-                        <!-- ... form fields ... -->
-                        <div class="standard-autumn-form-grid">
-                          <input
-                            type="text"
-                            bind:value={editedStep.title}
-                            placeholder="予定のタイトル *"
-                            class="standard-autumn-input"
-                          />
-                          <div class="standard-autumn-datetime">
-                            <input
-                              type="date"
-                              bind:value={editedStep.date}
-                              class="standard-autumn-input"
-                            />
-                            <div class="standard-autumn-time-picker">
-                              <select
-                                bind:value={editStepHour}
-                                class="standard-autumn-select-time"
-                              >
-                                {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
-                                  <option value={hour}>{hour}</option>
-                                {/each}
-                              </select>
-                              <span class="standard-autumn-time-separator"
-                                >:</span
-                              >
-                              <select
-                                bind:value={editStepMinute}
-                                class="standard-autumn-select-time"
-                              >
-                                <option value="00">00</option>
-                                <option value="15">15</option>
-                                <option value="30">30</option>
-                                <option value="45">45</option>
-                              </select>
-                            </div>
-                          </div>
-                          <input
-                            type="text"
-                            bind:value={editedStep.location}
-                            placeholder="場所 (任意)"
-                            class="standard-autumn-input"
-                          />
-                          <textarea
-                            bind:value={editedStep.notes}
-                            placeholder="メモ (任意)"
-                            class="standard-autumn-textarea"
-                            rows="3"
-                          ></textarea>
-                        </div>
-                        <div class="standard-autumn-form-actions">
-                          <button
-                            onclick={handleUpdate}
-                            class="standard-autumn-btn standard-autumn-btn-primary"
-                            >保存</button
-                          >
-                          <button
-                            onclick={cancelEdit}
-                            class="standard-autumn-btn standard-autumn-btn-secondary"
-                            >キャンセル</button
-                          >
-                        </div>
-                      </div>
-                    {:else if isSecretStep(step) && !hasEditPermission}
+                    {#if isSecretStep(step) && !hasEditPermission}
                       <div
                         class="standard-autumn-step-content standard-autumn-step-hidden"
+                        onclick={() => handleStepClick(step.id)}
+                        role="button"
+                        tabindex="0"
+                        onkeydown={(e) =>
+                          (e.key === "Enter" || e.key === " ") &&
+                          handleStepClick(step.id)}
+                        title="詳細を表示"
                       >
                         <div class="standard-autumn-step-title">
                           <span class="standard-autumn-secret-text"
@@ -696,16 +555,32 @@
                         </div>
                       </div>
                     {:else}
-                      <div class="standard-autumn-step-content">
+                      <div
+                        class="standard-autumn-step-content"
+                        onclick={() => handleStepClick(step.id)}
+                        role="button"
+                        tabindex="0"
+                        onkeydown={(e) =>
+                          (e.key === "Enter" || e.key === " ") &&
+                          handleStepClick(step.id)}
+                        title="詳細を表示"
+                      >
                         <div class="standard-autumn-step-title">
                           {step.title}
                           {#if hasEditPermission}
-                            <div class="standard-autumn-step-actions">
+                            <div
+                              class="standard-autumn-step-actions"
+                              role="toolbar"
+                              aria-label="アクション"
+                            >
                               <button
-                                onclick={() => startEdit(step)}
+                                type="button"
                                 class="standard-autumn-btn-icon"
                                 title="編集"
                                 aria-label="編集"
+                                onclick={(e) => {
+                                  e.stopPropagation();
+                                }}
                               >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
@@ -718,7 +593,11 @@
                                 </svg>
                               </button>
                               <button
-                                onclick={() => handleDelete(step.id)}
+                                type="button"
+                                onclick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteStep?.(step.id);
+                                }}
                                 class="standard-autumn-btn-icon"
                                 title="削除"
                                 aria-label="削除"
@@ -831,6 +710,8 @@
     <EventDetailDialog
       step={selectedStepForDialog}
       {hasEditPermission}
+      {secretModeEnabled}
+      {secretModeOffset}
       onClose={closeDetailDialog}
       {onUpdateStep}
       {onDeleteStep}

@@ -29,8 +29,8 @@
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
-      date: string;
-      time: string;
+      start_at: number;
+      end_at: number;
       location?: string;
       notes?: string;
     }) => Promise<void>;
@@ -189,15 +189,15 @@
           sauna_url: newSauna.sauna_url.trim() || undefined,
         };
 
-        const stepData = {
-          title: newSauna.title.trim(),
-          date: now.toISOString().split("T")[0],
-          time: now.toTimeString().split(" ")[0].substring(0, 5),
-          notes: JSON.stringify({ text: "", ...saunaData }),
-        };
+        const startAt = now.getTime();
+        const endAt = startAt + 60 * 60 * 1000;
 
-        console.log("Creating sauna step:", stepData);
-        await onCreateStep(stepData);
+        await onCreateStep({
+          title: newSauna.title.trim(),
+          start_at: startAt,
+          end_at: endAt,
+          notes: JSON.stringify({ text: "", ...saunaData }),
+        });
 
         newSauna = {
           title: "",
@@ -294,7 +294,11 @@
           placeholder="サウナ旅のタイトル"
         />
       {:else}
-        <h1 class="rally-title" onclick={() => hasEditPermission && !isViewMode && (isEditingTitle = true)}>
+        <h1
+          class="rally-title"
+          onclick={() =>
+            hasEditPermission && !isViewMode && (isEditingTitle = true)}
+        >
           {itinerary.title}
         </h1>
       {/if}
@@ -302,21 +306,39 @@
       <div class="header-actions">
         {#if hasEditPermission}
           <button class="share-button" onclick={handleShare} aria-label="共有">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-              <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.06c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.44 9.31 6.77 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.77 0 1.44-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              width="20"
+              height="20"
+            >
+              <path
+                d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.06c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.44 9.31 6.77 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.77 0 1.44-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"
+              />
             </svg>
           </button>
           <button class="view-mode-toggle-button" onclick={toggleViewMode}>
-            {isViewMode ? '編集モード' : '閲覧モード'}
+            {isViewMode ? "編集モード" : "閲覧モード"}
           </button>
           {#if !isViewMode}
-            <button class="add-sauna-button-header" onclick={() => (isAddingSauna = true)}>
+            <button
+              class="add-sauna-button-header"
+              onclick={() => (isAddingSauna = true)}
+            >
               + サウナ追加
             </button>
-            <button class="theme-button" onclick={() => (showThemeSelect = !showThemeSelect)}>
+            <button
+              class="theme-button"
+              onclick={() => (showThemeSelect = !showThemeSelect)}
+            >
               テーマ変更
             </button>
-            <button class="password-settings-button" onclick={() => (showPasswordSettingsDialog = true)} aria-label="パスワード設定">
+            <button
+              class="password-settings-button"
+              onclick={() => (showPasswordSettingsDialog = true)}
+              aria-label="パスワード設定"
+            >
               🔑
             </button>
           {/if}
@@ -359,7 +381,10 @@
           </button>
         {/each}
       </div>
-      <button class="theme-modal-close" onclick={() => (showThemeSelect = false)}>
+      <button
+        class="theme-modal-close"
+        onclick={() => (showThemeSelect = false)}
+      >
         閉じる
       </button>
     </div>
@@ -388,9 +413,7 @@
 />
 
 {#if showCopyMessage}
-  <div class="sauna-copy-message">
-    🔗 リンクをコピーしました!
-  </div>
+  <div class="sauna-copy-message">🔗 リンクをコピーしました!</div>
 {/if}
 
 {#if isAddingSauna}
@@ -400,7 +423,12 @@
 
       <div class="reference-info">
         <span>施設を探す: </span>
-        <a href="https://sauna-ikitai.com/" target="_blank" rel="noopener noreferrer" class="ikitai-link-small">
+        <a
+          href="https://sauna-ikitai.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="ikitai-link-small"
+        >
           サウナイキタイ →
         </a>
       </div>
@@ -425,7 +453,9 @@
           placeholder="https://sauna-ikitai.com/..."
           class="form-input"
         />
-        <p class="form-hint">URLを設定すると、スタンプをクリックしてリンク先に移動できるようになります。</p>
+        <p class="form-hint">
+          URLを設定すると、スタンプをクリックしてリンク先に移動できるようになります。
+        </p>
       </div>
 
       <div class="modal-actions">
@@ -439,4 +469,3 @@
     </div>
   </div>
 {/if}
-

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime } from "@tabitabi/types";
 
   interface Props {
     steps: Step[];
@@ -10,8 +11,6 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
         location?: string;
         notes?: string;
       },
@@ -19,7 +18,14 @@
     onDeleteStep?: (stepId: string) => Promise<void>;
   }
 
-  let { steps, hasEditPermission, isViewMode, onAddSauna, onUpdateStep, onDeleteStep }: Props = $props();
+  let {
+    steps,
+    hasEditPermission,
+    isViewMode,
+    onAddSauna,
+    onUpdateStep,
+    onDeleteStep,
+  }: Props = $props();
 
   interface SaunaData {
     visited?: boolean;
@@ -50,14 +56,16 @@
   async function toggleVisited(step: Step, event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
-    
+
     if (!onUpdateStep) return;
 
     const data = getSaunaData(step);
     const newData: SaunaData = {
       ...data,
       visited: !data.visited,
-      visit_date: !data.visited ? new Date().toISOString().split("T")[0] : undefined,
+      visit_date: !data.visited
+        ? new Date().toISOString().split("T")[0]
+        : undefined,
     };
 
     await onUpdateStep(step.id, {
@@ -67,7 +75,7 @@
 
   function handleCardClick(step: Step, event: MouseEvent) {
     if (editingStepId === step.id) return;
-    
+
     const data = getSaunaData(step);
     if (data.sauna_url) {
       window.open(data.sauna_url, "_blank", "noopener,noreferrer");
@@ -77,7 +85,7 @@
   function startEdit(step: Step, event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
-    
+
     if (!hasEditPermission) return;
     editingStepId = step.id;
     editTitle = step.title;
@@ -118,9 +126,9 @@
 
   const sortedSteps = $derived(
     [...steps].sort((a, b) => {
-      const dateCompare = a.date.localeCompare(b.date);
+      const dateCompare = getStepDate(a).localeCompare(getStepDate(b));
       if (dateCompare !== 0) return dateCompare;
-      return a.time.localeCompare(b.time);
+      return getStepTime(a).localeCompare(getStepTime(b));
     }),
   );
 </script>
@@ -148,8 +156,8 @@
       {@const isVisited = saunaData.visited ?? false}
       {@const isEditing = editingStepId === step.id}
 
-      <div 
-        class="stamp-card" 
+      <div
+        class="stamp-card"
         class:completed={isVisited}
         class:editing={isEditing}
         onclick={(e) => !isEditing && handleCardClick(step, e)}
@@ -158,14 +166,14 @@
       >
         {#if !isEditing}
           <div class="stamp-card-name">{step.title}</div>
-          
+
           <div class="stamp-area" class:stamped={isVisited}>
             {#if isVisited}
               <div class="stamp-image">
                 <div class="stamp-circle">
                   <div class="stamp-text">
                     <div class="stamp-top">サウナ</div>
-                    <div class="stamp-date">{saunaData.visit_date || ''}</div>
+                    <div class="stamp-date">{saunaData.visit_date || ""}</div>
                     <div class="stamp-bottom">達成</div>
                   </div>
                 </div>
@@ -189,7 +197,7 @@
               class:undo={isVisited}
               onclick={(e) => toggleVisited(step, e)}
             >
-              {isVisited ? '取消' : '完了'}
+              {isVisited ? "取消" : "完了"}
             </button>
             {#if hasEditPermission && !isViewMode}
               <button
@@ -237,12 +245,22 @@
                 class="form-input"
               />
               <div class="reference-link">
-                参考: <a href="https://sauna-ikitai.com/" target="_blank" rel="noopener noreferrer">サウナイキタイ</a>
+                参考: <a
+                  href="https://sauna-ikitai.com/"
+                  target="_blank"
+                  rel="noopener noreferrer">サウナイキタイ</a
+                >
               </div>
             </div>
 
             <div class="form-actions-inline">
-              <button class="button-cancel" onclick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+              <button
+                class="button-cancel"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  cancelEdit();
+                }}
+              >
                 キャンセル
               </button>
               <button class="button-save" onclick={() => saveEdit(step)}>
@@ -253,7 +271,10 @@
         {/if}
 
         {#if showDeleteConfirm === step.id}
-          <div class="delete-confirm-overlay" onclick={(e) => e.stopPropagation()}>
+          <div
+            class="delete-confirm-overlay"
+            onclick={(e) => e.stopPropagation()}
+          >
             <p>削除しますか？</p>
             <div class="confirm-actions">
               <button

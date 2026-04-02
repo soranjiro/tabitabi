@@ -70,11 +70,12 @@
 
   let editingStepForm = $state({
     title: "",
-    date: "",
-    time: "",
+    start_at: "",
+    end_at: "",
     location: "",
     notes: "",
   });
+  let editingStepDate = $state("");
 
   let streetViewLocation = $state<{ lat: number; lng: number } | null>(null);
   let mapComponent: any = $state(null);
@@ -89,13 +90,12 @@
 
   let newStep = $state({
     title: "",
-    date: "",
-    time: "",
     location: "",
     notes: "",
   });
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
+  let focusedDate = $state<string | null>(null);
 
   const DATE_COLORS = [
     "#4285F4",
@@ -275,18 +275,21 @@
     showAddModal = true;
     isEditing = false;
     const today = new Date().toISOString().split("T")[0];
-    newStep.date = today;
+    newStepDate = today;
   }
 
   async function handleAddSubmit() {
-    if (!newStep.title || !newStep.date || !newStep.time) {
+    if (!newStep.title || !focusedDate || !newStepHour || !newStepMinute) {
       alert("必須項目を入力してください");
       return;
     }
     const noteText = newStep.notes.trim();
     const notes = noteText ? updateMemoText(undefined, noteText) : undefined;
     if (onCreateStep) {
-      const startAt = createTimestamp(newStep.date, newStep.time);
+      const startAt = createTimestamp(
+        focusedDate,
+        `${newStepHour}:${newStepMinute}`,
+      );
       await onCreateStep({
         title: newStep.title.trim(),
         start_at: startAt,
@@ -311,11 +314,12 @@
     editStepId = selectedStep.id;
     editingStepForm = {
       title: selectedStep.title,
-      date: getStepDate(selectedStep),
-      time: getStepTime(selectedStep),
+      start_at: "",
+      end_at: "",
       location: selectedStep.location || "",
       notes: getMemoText(selectedStep.notes),
     };
+    editingStepDate = getStepDate(selectedStep);
     const [h, m] = getStepTime(selectedStep).split(":");
     editStepHour = h;
     editStepMinute = m;
@@ -325,20 +329,22 @@
   }
 
   async function handleEditSubmit() {
-    if (!editStepId || !onUpdateStep) return;
+    if (!editStepId || !onUpdateStep || !editingStepDate) return;
 
     const noteText = editingStepForm.notes.trim();
     const notes = updateMemoText(selectedStep?.notes, noteText);
+    const startAt = createTimestamp(
+      editingStepDate,
+      `${editStepHour}:${editStepMinute}`,
+    );
 
-    const updatedData = {
+    await onUpdateStep(editStepId, {
       title: editingStepForm.title.trim(),
-      date: editingStepForm.date,
-      time: `${editStepHour}:${editStepMinute}`,
+      start_at: startAt,
+      end_at: createEndTimestamp(startAt, 60),
       location: editingStepForm.location.trim() || undefined,
       notes: editingStepForm.notes.trim() || undefined,
-    };
-
-    await onUpdateStep(editStepId, updatedData);
+    });
     closeModals();
   }
 
@@ -922,6 +928,7 @@
         {#if isEditing}
           <AddStepForm
             bind:newStep={editingStepForm}
+            bind:newStepDate={editingStepDate}
             bind:newStepHour={editStepHour}
             bind:newStepMinute={editStepMinute}
             isEditing={true}
@@ -939,6 +946,7 @@
         {:else}
           <AddStepForm
             bind:newStep
+            bind:focusedDate
             bind:newStepHour
             bind:newStepMinute
             onSubmit={handleAddSubmit}

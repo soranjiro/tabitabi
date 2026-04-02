@@ -264,7 +264,7 @@
               <button
                 type="button"
                 class="standard-autumn-month-event"
-                style={`position:absolute; left:${seg.leftPercent}%; width:${seg.widthPercent}%; top:${seg.rowIndex * 24}px;`}
+                style={`position:absolute; left:${seg.leftPercent}%; width:${seg.widthPercent}%; top:${seg.rowIndex * 24}px; margin-bottom: 3px;`}
                 onclick={() => handleEventClick(seg.step)}
                 title={seg.step.title}
               >
@@ -291,6 +291,8 @@
   <EventDetailDialog
     step={selectedStep}
     {hasEditPermission}
+    {secretModeEnabled}
+    {secretModeOffset}
     onClose={closeDialog}
     {onUpdateStep}
     {onDeleteStep}

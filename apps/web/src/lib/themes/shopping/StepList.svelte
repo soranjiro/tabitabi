@@ -32,9 +32,6 @@
 
   let editingStepId = $state<string | null>(null);
   let editedStep = $state<Partial<Step>>({});
-  let editStepDate = $state("");
-  let editStepHour = $state("10");
-  let editStepMinute = $state("00");
 
   const groupedByStore = $derived(() => {
     const groups = new Map<string, Step[]>();
@@ -86,18 +83,11 @@
   function startEdit(step: Step) {
     editingStepId = step.id;
     editedStep = { ...step, notes: getMemoText(step.notes) };
-    editStepDate = getStepDate(step);
-    const [hour, minute] = getStepTime(step).split(":");
-    editStepHour = hour;
-    editStepMinute = minute;
   }
 
   function cancelEdit() {
     editingStepId = null;
     editedStep = {};
-    editStepDate = "";
-    editStepHour = "10";
-    editStepMinute = "00";
   }
 
   async function handleUpdate() {
@@ -111,10 +101,9 @@
     const notes = updateMemoText(originalStep?.notes, noteText);
 
     if (onUpdateStep) {
-      const time = `${editStepHour}:${editStepMinute}`;
       await onUpdateStep(editingStepId, {
         title: editedStep.title.trim(),
-        start_at: createTimestamp(editStepDate, time),
+        start_at: originalStep?.start_at,
         location: editedStep.location?.trim() || undefined,
         notes,
       });
@@ -122,9 +111,6 @@
 
     editingStepId = null;
     editedStep = {};
-    editStepDate = "";
-    editStepHour = "10";
-    editStepMinute = "00";
   }
 
   async function handleDelete(stepId: string) {
@@ -222,36 +208,7 @@
                     class="shopping-input"
                   />
                 </div>
-                <div class="shopping-form-row">
-                  <div class="shopping-form-field">
-                    <span class="shopping-label">日付</span>
-                    <input
-                      type="date"
-                      bind:value={editStepDate}
-                      class="shopping-input"
-                    />
-                  </div>
-                  <div class="shopping-form-field">
-                    <span class="shopping-label">時刻</span>
-                    <div class="shopping-time-picker">
-                      <select bind:value={editStepHour} class="shopping-select">
-                        {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
-                          <option value={hour}>{hour}</option>
-                        {/each}
-                      </select>
-                      <span class="shopping-time-separator">:</span>
-                      <select
-                        bind:value={editStepMinute}
-                        class="shopping-select"
-                      >
-                        <option value="00">00</option>
-                        <option value="15">15</option>
-                        <option value="30">30</option>
-                        <option value="45">45</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
+
                 <div class="shopping-form-field">
                   <span class="shopping-label">メモ</span>
                   <textarea

@@ -119,8 +119,8 @@
     stepId: string,
     updateData: {
       title?: string;
-      date?: string;
-      time?: string;
+      start_at?: number;
+      end_at?: number;
       location?: string;
       notes?: string;
     },

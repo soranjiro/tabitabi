@@ -130,18 +130,13 @@
 
   let newItem = $state({
     title: "",
-    date: new Date().toISOString().split("T")[0],
-    time: "10:00",
     location: "",
     notes: "",
   });
 
+  let newItemDate = $state(new Date().toISOString().split("T")[0]);
   let newItemHour = $state("10");
   let newItemMinute = $state("00");
-
-  $effect(() => {
-    newItem.time = `${newItemHour}:${newItemMinute}`;
-  });
 
   async function handleTitleUpdate() {
     if (!editedTitle.trim() || editedTitle === itinerary.title) {
@@ -172,7 +167,8 @@
     }
 
     if (onCreateStep) {
-      const startAt = createTimestamp(newItem.date, newItem.time);
+      const time = `${newItemHour}:${newItemMinute}`;
+      const startAt = createTimestamp(newItemDate, time);
       await onCreateStep({
         title: newItem.title.trim(),
         start_at: startAt,
@@ -183,11 +179,10 @@
 
       newItem = {
         title: "",
-        date: new Date().toISOString().split("T")[0],
-        time: "10:00",
         location: "",
         notes: "",
       };
+      newItemDate = new Date().toISOString().split("T")[0];
       newItemHour = "10";
       newItemMinute = "00";
       isAddingItem = false;
@@ -197,11 +192,10 @@
   function cancelAddItem() {
     newItem = {
       title: "",
-      date: new Date().toISOString().split("T")[0],
-      time: "10:00",
       location: "",
       notes: "",
     };
+    newItemDate = new Date().toISOString().split("T")[0];
     newItemHour = "10";
     newItemMinute = "00";
     isAddingItem = false;
@@ -350,7 +344,7 @@
             <span class="shopping-label">日付</span>
             <input
               type="date"
-              bind:value={newItem.date}
+              bind:value={newItemDate}
               class="shopping-input"
             />
           </div>

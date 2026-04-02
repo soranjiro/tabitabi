@@ -5,20 +5,16 @@
       location: string;
       notes: string;
     };
-    focusedDate: string | null;
     newStepHour: string;
     newStepMinute: string;
-    isEditing?: boolean;
     onSubmit: () => void;
     onCancel: () => void;
   }
 
   let {
     newStep = $bindable(),
-    focusedDate = $bindable(),
     newStepHour = $bindable(),
     newStepMinute = $bindable(),
-    isEditing = false,
     onSubmit,
     onCancel,
   }: Props = $props();
@@ -29,37 +25,31 @@
   }
 </script>
 
-<form class="map-theme-form" onsubmit={handleSubmit}>
-  <h3 class="text-xl font-bold mb-4">
-    {isEditing ? "予定を編集" : "新しい予定を追加"}
-  </h3>
-
-  <div class="map-form-group">
+<form class="standard-autumn-form" onsubmit={handleSubmit}>
+  <h3 class="standard-autumn-form-title">新しい予定を追加</h3>
+  <div class="standard-autumn-form-grid">
     <input
       type="text"
       bind:value={newStep.title}
-      placeholder="タイトル *"
-      class="map-input"
+      placeholder="予定のタイトル *"
+      class="standard-autumn-input"
       required
     />
-  </div>
-
-  <div class="map-form-group flex gap-2">
-    <div
-      class="flex items-center gap-1 bg-gray-50 rounded-lg border border-gray-200 px-2"
-    >
+    <div class="standard-autumn-time-picker">
       <select
         bind:value={newStepHour}
-        class="bg-transparent text-lg outline-none"
+        class="standard-autumn-select-time"
+        required
       >
         {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
           <option value={hour}>{hour}</option>
         {/each}
       </select>
-      <span>:</span>
+      <span class="standard-autumn-time-separator">:</span>
       <select
         bind:value={newStepMinute}
-        class="bg-transparent text-lg outline-none"
+        class="standard-autumn-select-time"
+        required
       >
         <option value="00">00</option>
         <option value="15">15</option>
@@ -67,32 +57,29 @@
         <option value="45">45</option>
       </select>
     </div>
-  </div>
-
-  <div class="map-form-group">
     <input
       type="text"
       bind:value={newStep.location}
-      placeholder="場所 (Google Mapsで検索されます)"
-      class="map-input"
+      placeholder="場所 (任意)"
+      class="standard-autumn-input"
     />
-  </div>
-
-  <div class="map-form-group">
     <textarea
       bind:value={newStep.notes}
-      placeholder="メモ"
-      class="map-input"
+      placeholder="メモ (任意)"
+      class="standard-autumn-textarea"
       rows="3"
     ></textarea>
   </div>
-
-  <div class="mt-6">
-    <button type="submit" class="map-btn map-btn-primary">
-      {isEditing ? "保存する" : "追加する"}
-    </button>
-    <button type="button" onclick={onCancel} class="map-btn map-btn-secondary">
-      キャンセル
-    </button>
+  <div class="standard-autumn-form-actions">
+    <button
+      type="submit"
+      class="standard-autumn-btn standard-autumn-btn-primary">追加する</button
+    >
+    <button
+      type="button"
+      onclick={onCancel}
+      class="standard-autumn-btn standard-autumn-btn-secondary"
+      >キャンセル</button
+    >
   </div>
 </form>

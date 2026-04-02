@@ -115,6 +115,13 @@ steps.put('/:stepId', async (c) => {
   const raw = await c.req.json();
   const service = new StepService(c.env.DB);
 
+  // TODO: refactor
+  if (raw.start_at !== undefined && raw.end_at !== undefined && raw.start_at > raw.end_at) {
+    let tmp_timestamp = raw.start_at;
+    raw.start_at = raw.end_at;
+    raw.end_at = tmp_timestamp;
+  }
+
   const existingStep = await service.get(stepId);
   if (!existingStep) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Step not found' } }, 404);

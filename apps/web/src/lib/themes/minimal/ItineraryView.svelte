@@ -108,18 +108,13 @@
 
   let newStep = $state({
     title: "",
-    date: "",
-    time: "",
     location: "",
     notes: "",
   });
 
+  let newStepDate = $state("");
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
-
-  $effect(() => {
-    newStep.time = `${newStepHour}:${newStepMinute}`;
-  });
 
   async function handleTitleUpdate() {
     if (!editedTitle.trim() || editedTitle === itinerary.title) {
@@ -144,13 +139,14 @@
   }
 
   async function handleAddStep() {
-    if (!newStep.title.trim() || !newStep.date || !newStep.time) {
+    if (!newStep.title.trim() || !newStepDate) {
       alert("タイトル、日付、時刻は必須です");
       return;
     }
 
     if (onCreateStep) {
-      const startAt = createTimestamp(newStep.date, newStep.time);
+      const time = `${newStepHour}:${newStepMinute}`;
+      const startAt = createTimestamp(newStepDate, time);
       await onCreateStep({
         title: newStep.title.trim(),
         start_at: startAt,
@@ -159,7 +155,8 @@
         notes: newStep.notes.trim() || undefined,
       });
 
-      newStep = { title: "", date: "", time: "", location: "", notes: "" };
+      newStep = { title: "", location: "", notes: "" };
+      newStepDate = "";
       newStepHour = "09";
       newStepMinute = "00";
       isAddingStep = false;
@@ -167,7 +164,8 @@
   }
 
   function cancelAddStep() {
-    newStep = { title: "", date: "", time: "", location: "", notes: "" };
+    newStep = { title: "", location: "", notes: "" };
+    newStepDate = "";
     newStepHour = "09";
     newStepMinute = "00";
     isAddingStep = false;
@@ -267,7 +265,7 @@
         <div class="minimal-datetime">
           <input
             type="date"
-            bind:value={newStep.date}
+            bind:value={newStepDate}
             class="minimal-input"
             required
           />

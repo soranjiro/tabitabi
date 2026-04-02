@@ -6,11 +6,11 @@ import { extractBearerToken, verifyToken } from '../utils/jwt';
 
 const steps = new Hono<{ Bindings: Env }>();
 
-function parseToUnixMs(value: number | string | undefined | null): number | null {
+function parseToUnixMs(value: unknown): number | null {
+  // Strict: only accept numeric Unix timestamps in milliseconds.
   if (value === undefined || value === null) return null;
-  if (typeof value === 'number') return value;
-  const ms = Date.parse(value);
-  return isNaN(ms) ? null : ms;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  return null;
 }
 
 steps.get('/', async (c) => {
@@ -81,11 +81,11 @@ steps.post('/', async (c) => {
   }
 
   const startAt = parseToUnixMs(raw.start_at);
-  if (!startAt) {
-    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'start_at is required and must be a valid timestamp (number or ISO string)' } }, 400);
+  if (startAt === null) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'start_at is required and must be a numeric timestamp (milliseconds)' } }, 400);
   }
 
-  const endAt = raw.end_at ? parseToUnixMs(raw.end_at) : undefined;
+  const endAt = raw.end_at !== undefined ? parseToUnixMs(raw.end_at) : undefined;
 
   const itineraryService = new ItineraryService(c.env.DB);
   const itinerary = await itineraryService.get(raw.itinerary_id);
@@ -139,15 +139,15 @@ steps.put('/:stepId', async (c) => {
   const updatePayload: Record<string, unknown> = { ...raw };
   if (raw.start_at !== undefined) {
     const parsed = parseToUnixMs(raw.start_at);
-    if (!parsed) {
-      return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'start_at provided is invalid' } }, 400);
+    if (parsed === null) {
+      return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'start_at provided is invalid (must be numeric milliseconds)' } }, 400);
     }
     updatePayload.start_at = parsed;
   }
   if (raw.end_at !== undefined) {
     const parsedEnd = parseToUnixMs(raw.end_at);
-    if (!parsedEnd) {
-      return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'end_at provided is invalid' } }, 400);
+    if (parsedEnd === null) {
+      return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'end_at provided is invalid (must be numeric milliseconds)' } }, 400);
     }
     updatePayload.end_at = parsedEnd;
   }

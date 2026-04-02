@@ -98,7 +98,7 @@
   const monthDays = $derived(getMonthDays(currentDate));
 
   const weeks = $derived(() => {
-    const days = monthDays().map((d) => d.date);
+    const days = monthDays.map((d) => d.date);
     const res: string[][] = [];
     for (let i = 0; i < days.length; i += 7) {
       res.push(days.slice(i, i + 7));
@@ -107,7 +107,7 @@
   });
 
   const monthEventSegments = $derived(() => {
-    const days = monthDays().map((d) => d.date);
+    const days = monthDays.map((d) => d.date);
     const weeksCount = Math.ceil(days.length / 7);
     const weeksSegments: Array<any[]> = Array.from(
       { length: weeksCount },
@@ -242,7 +242,7 @@
           style="position: relative; display: grid; grid-template-columns: repeat(7, 1fr);"
         >
           {#each weekDays as dateStr}
-            {@const dayInfo = monthDays().find((d) => d.date === dateStr)}
+            {@const dayInfo = monthDays.find((d) => d.date === dateStr)}
             <div
               class="standard-autumn-month-day"
               class:other-month={!dayInfo?.isCurrentMonth}

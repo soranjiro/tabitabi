@@ -3,11 +3,11 @@ import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
 import { validateMemoJson } from '../utils/memo';
 
-function parseToUnixMs(value: number | string | undefined | null): number | null {
+function parseToUnixMs(value: unknown): number | null {
+  // Only accept numeric Unix timestamps in milliseconds.
   if (value === undefined || value === null) return null;
-  if (typeof value === 'number') return value;
-  const ms = Date.parse(value);
-  return isNaN(ms) ? null : ms;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  return null;
 }
 
 export class StepService {
@@ -61,10 +61,13 @@ export class StepService {
     }
 
     const startAt = parseToUnixMs(input.start_at);
-    if (!startAt) {
-      throw new Error('start_at is required and must be a valid timestamp');
+    if (startAt === null) {
+      throw new Error('start_at is required and must be a numeric timestamp (milliseconds)');
     }
-    const endAt = input.end_at ? parseToUnixMs(input.end_at) : startAt + 60 * 60 * 1000;
+    const endAt = input.end_at !== undefined ? parseToUnixMs(input.end_at) : startAt + 60 * 60 * 1000;
+    if (endAt === null) {
+      throw new Error('end_at must be a numeric timestamp (milliseconds)');
+    }
 
     const step: Step = {
       id,
@@ -112,14 +115,14 @@ export class StepService {
     }
     if (input.start_at !== undefined) {
       const startAt = parseToUnixMs(input.start_at);
-      if (startAt) {
+      if (startAt !== null) {
         fields.push('start_at = ?');
         values.push(startAt);
       }
     }
     if (input.end_at !== undefined) {
       const endAt = parseToUnixMs(input.end_at);
-      if (endAt) {
+      if (endAt !== null) {
         fields.push('end_at = ?');
         values.push(endAt);
       }

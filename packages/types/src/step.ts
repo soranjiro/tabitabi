@@ -14,25 +14,22 @@ export interface Step {
 export interface CreateStepInput {
   itinerary_id: string;
   title: string;
-  start_at: number | string;
-  end_at?: number | string;
+  // Unix timestamp in milliseconds
+  start_at: number;
+  // Unix timestamp in milliseconds
+  end_at?: number;
   location?: string;
   notes?: string;
 }
 
 export interface UpdateStepInput {
   title?: string;
-  start_at?: number | string;
-  end_at?: number | string;
+  // Unix timestamp in milliseconds
+  start_at?: number;
+  // Unix timestamp in milliseconds
+  end_at?: number;
   location?: string | null;
   notes?: string | null;
-}
-
-function toTimestamp(value: number | string | undefined | null): number {
-  if (value === undefined || value === null) return 0;
-  if (typeof value === 'number') return value;
-  const ms = Date.parse(value);
-  return isNaN(ms) ? 0 : ms;
 }
 
 export function getStepDate(step: Step): string {
@@ -58,6 +55,7 @@ export function getStepEndTime(step: Step): string {
 }
 
 export function createTimestamp(date: string, time: string, timezone?: string): number {
+  // Helper for UI: constructs a Unix ms timestamp from date + time (and optional timezone)
   if (timezone) {
     const dtStr = `${date}T${time}:00`;
     const utcDate = new Date(dtStr + 'Z');
@@ -81,14 +79,14 @@ export function createTimestamp(date: string, time: string, timezone?: string): 
   return new Date(`${date}T${time}:00`).getTime();
 }
 
-export function createEndTimestamp(startAt: number | string, durationMinutes: number = 60): number {
-  const start = toTimestamp(startAt);
-  return start + durationMinutes * 60 * 1000;
+export function createEndTimestamp(startAt: number, durationMinutes: number = 60): number {
+  // startAt must be a Unix ms number
+  return startAt + durationMinutes * 60 * 1000;
 }
 
-export function parseTimestampInput(value: number | string | undefined | null): number | null {
+export function parseTimestampInput(value: number | undefined | null): number | null {
+  // Strict: only accept numeric Unix ms timestamps. Legacy ISO strings are not accepted.
   if (value === undefined || value === null) return null;
-  if (typeof value === 'number') return value;
-  const ms = Date.parse(value);
-  return isNaN(ms) ? null : ms;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  return null;
 }

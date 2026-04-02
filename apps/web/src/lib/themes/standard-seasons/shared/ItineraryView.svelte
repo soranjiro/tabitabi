@@ -38,7 +38,8 @@
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
-      start_at: string;
+      // Unix ms
+      start_at: number;
       end_at: string;
       location?: string;
       notes?: string;

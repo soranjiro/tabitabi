@@ -313,12 +313,15 @@
     }
 
     // Calculate new time for the dragged step
+    const targetDate = getStepDate(dateSteps[targetIndex]);
     const targetTime = getStepTime(dateSteps[targetIndex]);
+
+    const targetTimestamp = createTimestamp(targetDate, targetTime);
 
     try {
       // Only update the dragged step's time to match the target position
       await onUpdateStep(draggedStepId, {
-        time: targetTime,
+        start_at: targetTimestamp,
       });
     } catch (error) {
       console.error("Failed to update step time:", error);
@@ -327,22 +330,6 @@
 
     draggedStepId = null;
     dragOverStepId = null;
-  }
-
-  function recalculateTimes(steps: Step[]): Step[] {
-    // This function is no longer used
-    return steps;
-  }
-
-  function timeToMinutes(time: string): number {
-    const [h, m] = time.split(":").map(Number);
-    return h * 60 + m;
-  }
-
-  function minutesToTime(minutes: number): string {
-    const h = Math.floor(minutes / 60) % 24;
-    const m = minutes % 60;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   }
 
   // Touch event handlers for mobile drag and drop
@@ -412,11 +399,14 @@
     }
 
     // Get target time
+    const targetDate = getStepDate(dateSteps[targetIndex]);
     const targetTime = getStepTime(dateSteps[targetIndex]);
+
+    const targetTimestamp = createTimestamp(targetDate, targetTime);
 
     try {
       await onUpdateStep(touchDragStepId, {
-        time: targetTime,
+        start_at: targetTimestamp
       });
     } catch (error) {
       console.error("Failed to update step time:", error);

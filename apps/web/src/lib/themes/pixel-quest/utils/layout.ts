@@ -50,9 +50,9 @@ export function extractPlanBSteps(step: Step): PlanStep[] {
     if (!entry || typeof entry !== "object") return;
     const obj = entry as Record<string, unknown>;
     const title = typeof obj.title === "string" ? obj.title : null;
-    const startAt = typeof obj.start_at === "string" ? obj.start_at : null;
-    const endAt = typeof obj.end_at === "string" ? obj.end_at : null;
-    if (!title || !startAt) return;
+    const startAt = typeof obj.start_at === "number" && Number.isFinite(obj.start_at) ? obj.start_at : null;
+    const endAt = typeof obj.end_at === "number" && Number.isFinite(obj.end_at) ? obj.end_at : null;
+    if (!title || startAt === null) return;
 
     const location =
       typeof obj.location === "string" && obj.location.trim() !== ""
@@ -68,7 +68,7 @@ export function extractPlanBSteps(step: Step): PlanStep[] {
       itinerary_id: step.itinerary_id,
       title,
       start_at: startAt,
-      end_at: endAt || new Date(new Date(startAt).getTime() + 60 * 60 * 1000).toISOString().slice(0, 19),
+      end_at: endAt !== null ? endAt : startAt + 60 * 60 * 1000,
       location,
       notes,
       is_hidden: step.is_hidden,

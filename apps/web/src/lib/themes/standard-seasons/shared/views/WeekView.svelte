@@ -100,45 +100,15 @@
     const positioned: { step: Step; index: number; totalCount: number }[] = [];
 
     for (const step of sortedSteps) {
-      let assignedIndex = 0;
-      let maxOverlapCount = 1;
-
-      for (const other of sortedSteps) {
-        if (other === step) continue;
-
-        const conflicts = sortedSteps.every((s) => {
-          if (s === step || s === other) return true;
-          const startTime = s.start_at;
-          const endTime = s.end_at;
-          return !(
-            step.start_at < endTime &&
-            step.end_at > startTime &&
-            other.start_at < endTime &&
-            other.end_at > startTime
-          );
-        });
-
-        if (!conflicts) {
-          const overlap = sortedSteps.filter(
-            (s) =>
-              s.start_at < step.end_at &&
-              s.end_at > step.start_at &&
-              s.start_at < other.end_at &&
-              s.end_at > other.start_at,
-          );
-          maxOverlapCount = Math.max(maxOverlapCount, overlap.length);
-        }
-      }
-
       const conflicting = sortedSteps.filter(
         (s) =>
           s !== step && s.start_at < step.end_at && s.end_at > step.start_at,
       );
 
-      assignedIndex = conflicting.filter(
+      const assignedIndex = conflicting.filter(
         (s) => s.start_at < step.start_at,
       ).length;
-      maxOverlapCount = conflicting.length + 1;
+      const maxOverlapCount = conflicting.length + 1;
 
       positioned.push({
         step,
@@ -154,7 +124,6 @@
     dateStr: string,
     hour: number,
   ): Array<{ step: Step; index: number; totalCount: number }> {
-    const daySteps = stepsByDate().get(dateStr) || [];
     const hourStart = hour * 60;
     const hourEnd = (hour + 1) * 60;
     const dayPositions = getOverlappingStepsForDay(dateStr);

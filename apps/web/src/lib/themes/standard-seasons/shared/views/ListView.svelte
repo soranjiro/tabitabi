@@ -3,7 +3,8 @@
   import { getStepDate, getStepTime } from "@tabitabi/types";
   import { renderMarkdown } from "../utils/markdown";
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
-  import { getStepTypeIcon, isTransportType } from "../utils/step-type";
+  import IconRenderer from "../icons/IconRenderer.svelte";
+  import { isTransportType } from "../utils/step-type";
 
   interface Props {
     steps: Step[];
@@ -104,7 +105,7 @@
             >
               <td class="standard-autumn-list-time">{getStepTime(step)}</td>
               <td class="standard-autumn-list-icon">
-                {getStepTypeIcon(step.type)}
+                <IconRenderer type={step.type} size="sm" />
               </td>
               <td colspan="2" class="standard-autumn-list-title-cell">
                 <div class="standard-autumn-list-title-content">

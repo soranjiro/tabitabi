@@ -2,7 +2,8 @@
   import type { Step } from "@tabitabi/types";
   import { getStepDate, getStepTime, getStepEndTime } from "@tabitabi/types";
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
-  import { getStepTypeIcon, isTransportType } from "../utils/step-type";
+  import IconRenderer from "../icons/IconRenderer.svelte";
+  import { isTransportType } from "../utils/step-type";
 
   interface Props {
     steps: Step[];
@@ -135,7 +136,7 @@
         startTime.getHours() * 60 + startTime.getMinutes();
       const stepEndMinutes = endTime.getHours() * 60 + endTime.getMinutes();
 
-      return stepStartMinutes < hourEnd && stepEndMinutes > hourStart;
+      return stepStartMinutes >= hourStart && stepStartMinutes < hourEnd;
     });
   }
 
@@ -226,7 +227,7 @@
                     onclick={() => handleEventClick(step)}
                   >
                     <span class="standard-autumn-week-event-icon">
-                      {getStepTypeIcon(step.type)}
+                      <IconRenderer type={step.type} size="sm" />
                     </span>
                     <span class="standard-autumn-week-event-title">
                       {step.title}

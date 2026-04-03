@@ -16,6 +16,7 @@
     ChevronLeftIcon,
     ChevronRightIcon,
   } from "./components/icons/index.svelte";
+  import IconRenderer from "./icons/IconRenderer.svelte";
   import { type ViewMode } from "./utils/storage";
   import { ListView, MonthView, WeekView } from "./views";
   import EventDetailDialog from "./components/EventDetailDialog.svelte";
@@ -565,8 +566,13 @@
                           handleStepClick(step.id)}
                         title="詳細を表示"
                       >
-                        <div class="standard-autumn-step-title">
-                          {step.title}
+                        <div class="standard-autumn-step-header">
+                          <div class="standard-autumn-step-title">
+                            {step.title}
+                          </div>
+                          <div class="standard-autumn-step-type-icon">
+                            <IconRenderer type={step.type} size="sm" />
+                          </div>
                         </div>
                         {#if step.location}
                           <div class="standard-autumn-step-location">

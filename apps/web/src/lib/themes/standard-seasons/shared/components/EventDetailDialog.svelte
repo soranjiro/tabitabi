@@ -10,10 +10,11 @@
   import { renderMarkdown } from "../utils/markdown";
   import { getMemoText, updateMemoText } from "$lib/memo";
   import {
-    getStepTypeIcon,
     STEP_TYPES_BY_CATEGORY,
     STEP_TYPE_CONFIGS,
   } from "../utils/step-type";
+  import TypePicker from "./TypePicker.svelte";
+  import IconRenderer from "../icons/IconRenderer.svelte";
 
   interface Props {
     step: Step;
@@ -308,29 +309,13 @@
             />
           </div>
           <div class="standard-autumn-form-field">
-            <label for="type-input" class="standard-autumn-form-label"
-              >予定の種類</label
-            >
-            <select
-              id="type-input"
-              bind:value={editedStep.type}
-              class="standard-autumn-input"
-            >
-              <optgroup label="通常の予定">
-                {#each STEP_TYPES_BY_CATEGORY.normal as type}
-                  <option value={type}>
-                    {STEP_TYPE_CONFIGS[type as StepType].label}
-                  </option>
-                {/each}
-              </optgroup>
-              <optgroup label="移動">
-                {#each STEP_TYPES_BY_CATEGORY.transport as type}
-                  <option value={type}>
-                    {STEP_TYPE_CONFIGS[type as StepType].label}
-                  </option>
-                {/each}
-              </optgroup>
-            </select>
+            <div class="standard-autumn-form-label">予定の種類</div>
+            <TypePicker
+              value={editedStep.type}
+              onSelect={(type: StepType) => {
+                editedStep.type = type;
+              }}
+            />
           </div>
           <div class="standard-autumn-form-field">
             <label for="notes-textarea" class="standard-autumn-form-label"
@@ -344,22 +329,6 @@
               rows="5"
             ></textarea>
           </div>
-        </div>
-        <div class="standard-autumn-form-actions">
-          <button
-            type="button"
-            onclick={handleUpdate}
-            class="standard-autumn-btn standard-autumn-btn-primary"
-          >
-            保存
-          </button>
-          <button
-            type="button"
-            onclick={cancelEdit}
-            class="standard-autumn-btn standard-autumn-btn-secondary"
-          >
-            キャンセル
-          </button>
         </div>
       {:else}
         <div class="standard-autumn-event-detail-content">
@@ -420,27 +389,44 @@
             </div>
           {/if}
         </div>
-
-        {#if hasEditPermission}
-          <div class="standard-autumn-event-dialog-actions">
-            <button
-              type="button"
-              onclick={startEdit}
-              class="standard-autumn-btn standard-autumn-btn-primary"
-            >
-              編集
-            </button>
-            <button
-              type="button"
-              onclick={handleDelete}
-              class="standard-autumn-btn standard-autumn-btn-danger"
-            >
-              削除
-            </button>
-          </div>
-        {/if}
       {/if}
     </div>
+
+    {#if isEditing}
+      <div class="standard-autumn-event-dialog-actions-footer">
+        <button
+          type="button"
+          onclick={handleUpdate}
+          class="standard-autumn-btn standard-autumn-btn-primary"
+        >
+          保存
+        </button>
+        <button
+          type="button"
+          onclick={cancelEdit}
+          class="standard-autumn-btn standard-autumn-btn-secondary"
+        >
+          キャンセル
+        </button>
+      </div>
+    {:else if hasEditPermission && !isSecretStep(step)}
+      <div class="standard-autumn-event-dialog-actions-footer">
+        <button
+          type="button"
+          onclick={startEdit}
+          class="standard-autumn-btn standard-autumn-btn-primary"
+        >
+          編集
+        </button>
+        <button
+          type="button"
+          onclick={handleDelete}
+          class="standard-autumn-btn standard-autumn-btn-danger"
+        >
+          削除
+        </button>
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -540,6 +526,15 @@
   .standard-autumn-event-dialog-body {
     padding: 1.5rem;
     overflow-y: auto;
+    flex: 1;
+  }
+
+  .standard-autumn-event-dialog-actions-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--standard-autumn-line-color, #e0dcd8);
+    display: flex;
+    gap: 0.75rem;
+    flex-shrink: 0;
   }
 
   .standard-autumn-event-detail-content {
@@ -599,13 +594,7 @@
     display: block;
   }
 
-  .standard-autumn-event-dialog-actions {
-    display: flex;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--standard-autumn-border);
-  }
+
 
   .standard-autumn-form-grid {
     display: flex;
@@ -764,11 +753,6 @@
 
     .standard-autumn-form-grid {
       gap: 1.25rem;
-    }
-
-    .standard-autumn-form-actions {
-      flex-direction: column;
-      gap: 0.875rem;
     }
 
     .standard-autumn-btn {

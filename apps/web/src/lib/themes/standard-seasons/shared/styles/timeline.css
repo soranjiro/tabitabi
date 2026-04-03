@@ -108,6 +108,24 @@
   font-weight: 600;
   color: var(--standard-autumn-text);
   margin: 0 0 0.5rem 0;
+}
+
+.standard-autumn-step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.standard-autumn-step-type-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: var(--standard-autumn-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
   line-height: 1.4;
   display: flex;
   justify-content: space-between;

@@ -5,6 +5,7 @@
     STEP_TYPES_BY_CATEGORY,
     STEP_TYPE_CONFIGS,
   } from "../utils/step-type";
+  import TypePicker from "./TypePicker.svelte";
 
   interface Props {
     newStep: {
@@ -92,29 +93,13 @@
       class="standard-autumn-input"
     />
     <div class="standard-autumn-form-field">
-      <label for="type-input" class="standard-autumn-form-label"
-        >予定の種類</label
-      >
-      <select
-        id="type-input"
-        bind:value={newStep.type}
-        class="standard-autumn-input"
-      >
-        <optgroup label="通常の予定">
-          {#each STEP_TYPES_BY_CATEGORY.normal as type}
-            <option value={type}>
-              {STEP_TYPE_CONFIGS[type as StepType].label}
-            </option>
-          {/each}
-        </optgroup>
-        <optgroup label="移動">
-          {#each STEP_TYPES_BY_CATEGORY.transport as type}
-            <option value={type}>
-              {STEP_TYPE_CONFIGS[type as StepType].label}
-            </option>
-          {/each}
-        </optgroup>
-      </select>
+      <div class="standard-autumn-form-label">予定の種類</div>
+      <TypePicker
+        value={newStep.type}
+        onSelect={(type: StepType) => {
+          newStep.type = type;
+        }}
+      />
     </div>
     <textarea
       bind:value={newStep.notes}

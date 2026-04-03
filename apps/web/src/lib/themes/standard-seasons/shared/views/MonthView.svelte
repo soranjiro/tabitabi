@@ -2,7 +2,8 @@
   import type { Step } from "@tabitabi/types";
   import { getStepDate, getStepTime } from "@tabitabi/types";
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
-  import { getStepTypeIcon, isTransportType } from "../utils/step-type";
+  import IconRenderer from "../icons/IconRenderer.svelte";
+  import { isTransportType } from "../utils/step-type";
 
   interface Props {
     steps: Step[];
@@ -276,7 +277,7 @@
                   <span class="standard-autumn-month-event-time">🔒</span>
                 {:else}
                   <span class="standard-autumn-month-event-icon">
-                    {getStepTypeIcon(seg.step.type)}
+                    <IconRenderer type={seg.step.type} size="sm" />
                   </span>
                   <span class="standard-autumn-month-event-title"
                     >{seg.step.title}</span

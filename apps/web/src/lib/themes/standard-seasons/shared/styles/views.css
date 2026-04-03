@@ -49,13 +49,15 @@
 }
 
 .standard-autumn-list-row-transport {
-  background: linear-gradient(90deg, transparent 0%, rgba(169, 53, 41, 0.1) 50%, transparent 100%);
-  border-top: 1px dashed var(--standard-autumn-primary);
-  border-bottom: 1px dashed var(--standard-autumn-primary);
+  background: linear-gradient(90deg, transparent 0%, rgba(230, 180, 34, 0.15) 50%, transparent 100%);
+  border-left: 3px solid var(--standard-autumn-accent);
+  border-right: 3px solid var(--standard-autumn-accent);
+  border-top: 1px solid var(--standard-autumn-accent);
+  border-bottom: 1px solid var(--standard-autumn-accent);
 }
 
 .standard-autumn-list-row-transport:hover {
-  background: linear-gradient(90deg, transparent 0%, rgba(169, 53, 41, 0.15) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(230, 180, 34, 0.25) 50%, transparent 100%);
 }
 
 .standard-autumn-list-icon {
@@ -326,13 +328,14 @@
 }
 
 .standard-autumn-month-event-transport {
-  background: linear-gradient(135deg, var(--standard-autumn-primary) 0%, rgba(255, 255, 255, 0.1) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  font-weight: 500;
+  background: linear-gradient(135deg, var(--standard-autumn-accent) 0%, rgba(230, 180, 34, 0.8) 100%);
+  border: 2px solid var(--standard-autumn-accent);
+  font-weight: 600;
+  color: #fff;
 }
 
 .standard-autumn-month-event-transport:hover {
-  background: linear-gradient(135deg, var(--standard-autumn-primary-light) 0%, rgba(255, 255, 255, 0.15) 100%);
+  background: linear-gradient(135deg, var(--standard-autumn-accent-light, rgba(230, 180, 34, 0.9)) 0%, rgba(230, 180, 34, 0.9) 100%);
 }
 
 .standard-autumn-month-event-time {
@@ -545,13 +548,15 @@
 }
 
 .standard-autumn-week-event-transport {
-  background: linear-gradient(135deg, var(--standard-autumn-primary) 0%, rgba(255, 255, 255, 0.1) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  font-weight: 500;
+  background: linear-gradient(135deg, var(--standard-autumn-accent) 0%, rgba(230, 180, 34, 0.8) 100%);
+  border: 2px solid var(--standard-autumn-accent);
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(139, 46, 31, 0.15);
 }
 
 .standard-autumn-week-event-transport:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(139, 46, 31, 0.25);
+  background: linear-gradient(135deg, var(--standard-autumn-accent-light, rgba(230, 180, 34, 0.9)) 0%, rgba(230, 180, 34, 0.9) 100%);
 }
 
 .standard-autumn-week-no-events {

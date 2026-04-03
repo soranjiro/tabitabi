@@ -68,32 +68,80 @@ export const availableThemes = [..., 'new-theme'] as const;
 
 現在、以下のテーマが利用可能です。
 
-### Map Only
-- **ID**: `map-only`
-- **特徴**: 地図とスポット表示に特化した軽量UI。
-- **用途**: ルートを素早く確認したいときに。
-
-### Mapbox Journey
-- **ID**: `mapbox-journey`
-- **特徴**: 3Dグローブとアニメーションルートで没入感のある体験。
-- **用途**: 景色や航路を魅せたい旅程に。
-
-### 標準
+### Standard Autumn（秋）- デフォルト
 - **ID**: `standard-autumn`
-- **特徴**: 秋をモチーフにしたデザイン。Google Maps連携機能を含みます。（デフォルト）
-- **用途**: 観光地巡りなど、地図を活用したい旅行に。
+- **Color**: #8b2e1f (深い茶色)
+- **特徴**: 秋をモチーフにしたデザイン。完全なUI機能セットを含みます。
 
-### 買い物リスト
-- **ID**: `shopping`
-- **特徴**: 買い物管理に特化したUI。
-- **用途**: お土産リストや買い出しリストの作成に。
+### Standard Spring（春）
+- **ID**: `standard-spring`
+- **Color**: #d946a6 (ピンク)
+- **特徴**: 春をモチーフにしたデザイン。
 
-### ピクセルクエスト
-- **ID**: `pixel-quest`
-- **特徴**: RPG風のドット絵マップ表示。
-- **用途**: 冒険心をくすぐる旅行に。
+### Standard Summer（夏）
+- **ID**: `standard-summer`
+- **Color**: #0369a1 (青)
+- **特徴**: 夏をモチーフにしたデザイン。
 
-### AI Generated
-- **ID**: `ai-generated`
-- **特徴**: AIによって生成された実験的なデザイン（パープル基調）。
-- **用途**: 新しいUIのテスト用。
+### Standard Winter（冬）
+- **ID**: `standard-winter`
+- **Color**: #2563eb (紫青)
+- **特徴**: 冬をモチーフにしたデザイン。
+
+## Step Type システム
+
+### 概要
+
+予定（Step）には「種類」（type）を指定できます。これにより、旅行中の異なる活動を視覚的に区別できます。
+
+### Type 格式
+
+Type は `category:type` 形式で指定されます。
+
+#### 通常の予定 (normal)
+- `normal:general` - 一般的な予定
+- `normal:food` - 食事
+- `normal:hotel` - 宿泊
+- `normal:sightseeing` - 観光
+
+#### 移動 (transport)
+- `transport:general` - 一般的な移動
+- `transport:train` - 電車
+- `transport:car` - 車
+- `transport:plane` - 飛行機
+- `transport:bus` - バス
+
+### アイコン
+
+各Type には SVG アイコンが関連付けられています。アイコンは [IconRenderer.svelte](../../../apps/web/src/lib/themes/standard-seasons/shared/icons/IconRenderer.svelte) で管理されます。
+
+### UI での表現
+
+- **リストビュー**: アイコン + タイトルを表示
+- **週ビュー**: 色分けされたブロック内にアイコンを表示
+  - 通常の予定：紫茶色
+  - 移動：黄色（accent カラー）
+- **月ビュー**: 色分けされたタグ形式で表示
+
+### Type 編集
+
+Type の編集は、予定作成・編集モーダルで **アイコン選択器** から行います。
+
+```
+[📋 一般的な予定] [🍽️ 食事] [🏨 宿泊] [🎌 観光]
+その他の移動手段
+
+[🚗 一般的な移動] [🚄 電車] [🚙 車] [✈️ 飛行機] [🚌 バス]
+移動手段
+
+※ アイコンをタップすることで選択できます
+```
+
+## その他のテーマ
+
+以下のテーマは、以前のバージョンで提供されていました：
+
+- **Map Only**: 地図中心のシンプルUI
+- **Mapbox Journey**: 3Dグローブ表示
+- **Pixel Quest**: RPG風ドット絵表示
+- **Shopping**: 買い物リスト管理UI

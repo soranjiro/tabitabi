@@ -38,23 +38,23 @@
   }
 
   function getWeekDates(): Date[] {
-    const dates: string[] = [];
-    for (const step of steps) {
-      const date = getStepDate(step);
-      if (!dates.includes(date)) {
-        dates.push(date);
-      }
+    if (steps.length === 0) return [];
+
+    let minDay = Infinity;
+    let maxDay = -Infinity;
+
+    for (const s of steps) {
+      const sd = new Date(s.start_at);
+      sd.setHours(0, 0, 0, 0);
+      const ed = new Date(s.end_at);
+      ed.setHours(0, 0, 0, 0);
+      minDay = Math.min(minDay, sd.getTime());
+      maxDay = Math.max(maxDay, ed.getTime());
     }
-    dates.sort();
-
-    if (dates.length === 0) return [];
-
-    const startDate = new Date(dates[0]);
-    const endDate = new Date(dates[dates.length - 1]);
 
     const weekDates: Date[] = [];
-    const current = new Date(startDate);
-    while (current <= endDate) {
+    const current = new Date(minDay);
+    while (current.getTime() <= maxDay) {
       weekDates.push(new Date(current));
       current.setDate(current.getDate() + 1);
     }
@@ -95,26 +95,44 @@
   function getOverlappingStepsForDay(
     dateStr: string,
   ): Array<{ step: Step; index: number; totalCount: number }> {
-    const daySteps = stepsByDate().get(dateStr) || [];
-    const sortedSteps = [...daySteps].sort((a, b) => a.start_at - b.start_at);
+    const DAY_START = new Date(`${dateStr}T00:00:00`).getTime();
+    const DAY_END = DAY_START + 24 * 60 * 60 * 1000;
 
-    const positioned: { step: Step; index: number; totalCount: number }[] = [];
+    const daySteps = steps.filter(
+      (s) => s.start_at < DAY_END && s.end_at > DAY_START,
+    );
 
-    for (const step of sortedSteps) {
-      const conflicting = sortedSteps.filter(
-        (s) =>
-          s !== step && s.start_at < step.end_at && s.end_at > step.start_at,
+    const enriched = daySteps.map((s) => {
+      const relStart = Math.max(
+        0,
+        Math.floor((Math.max(s.start_at, DAY_START) - DAY_START) / 60000),
+      );
+      const relEnd = Math.min(
+        24 * 60,
+        Math.ceil((Math.min(s.end_at, DAY_END) - DAY_START) / 60000),
+      );
+      return { step: s, relStart, relEnd };
+    });
+
+    enriched.sort((a, b) => a.relStart - b.relStart || a.relEnd - b.relEnd);
+
+    const positioned: { step: Step; index: number; totalCount: number; relStart: number; relEnd: number }[] = [];
+
+    for (const item of enriched) {
+      const conflicting = enriched.filter(
+        (o) =>
+          o.step !== item.step && !(o.relEnd <= item.relStart || o.relStart >= item.relEnd),
       );
 
-      const assignedIndex = conflicting.filter(
-        (s) => s.start_at < step.start_at,
-      ).length;
-      const maxOverlapCount = conflicting.length + 1;
+      const assignedIndex = conflicting.filter((o) => o.relStart < item.relStart).length;
+      const maxOverlapCount = Math.max(1, conflicting.length + 1);
 
       positioned.push({
-        step,
+        step: item.step,
         index: assignedIndex,
         totalCount: maxOverlapCount,
+        relStart: item.relStart,
+        relEnd: item.relEnd,
       });
     }
 
@@ -127,16 +145,16 @@
   ): Array<{ step: Step; index: number; totalCount: number }> {
     const hourStart = hour * 60;
     const hourEnd = (hour + 1) * 60;
-    const dayPositions = getOverlappingStepsForDay(dateStr);
+    const dayPositions = getOverlappingStepsForDay(dateStr) as Array<{
+      step: Step;
+      index: number;
+      totalCount: number;
+      relStart: number;
+      relEnd: number;
+    }>;
 
-    return dayPositions.filter(({ step }) => {
-      const startTime = new Date(step.start_at);
-      const endTime = new Date(step.end_at);
-      const stepStartMinutes =
-        startTime.getHours() * 60 + startTime.getMinutes();
-      const stepEndMinutes = endTime.getHours() * 60 + endTime.getMinutes();
-
-      return stepStartMinutes >= hourStart && stepStartMinutes < hourEnd;
+    return dayPositions.filter(({ relStart, relEnd }) => {
+      return relStart < hourEnd && relEnd > hourStart;
     });
   }
 
@@ -144,15 +162,11 @@
     step: Step,
     index: number,
     totalCount: number,
+    relStart: number,
+    relEnd: number,
   ): string {
-    const startTs = new Date(step.start_at);
-    const endTs = new Date(step.end_at);
-
-    const topOffset = (startTs.getMinutes() / 60) * 40;
-    const durationMinutes = Math.max(
-      15,
-      Math.round((endTs.getTime() - startTs.getTime()) / 60000),
-    );
+    const topOffset = ((relStart % 60) / 60) * 40;
+    const durationMinutes = Math.max(15, relEnd - relStart);
     const height = Math.max((durationMinutes / 60) * 40, 38);
     const width = 100 / totalCount;
     const left = index * width;
@@ -187,7 +201,7 @@
         {#each weekDates as date}
           <div
             class="standard-autumn-week-day-header"
-            class:has-events={stepsByDate().has(formatDateKey(date))}
+            class:has-events={getOverlappingStepsForDay(formatDateKey(date)).length > 0}
           >
             <div class="standard-autumn-week-day-name">{getDayName(date)}</div>
             <div class="standard-autumn-week-day-date">
@@ -204,12 +218,12 @@
           </div>
           {#each weekDates as date}
             <div class="standard-autumn-week-cell">
-              {#each getEventsForCell(formatDateKey(date), hour) as { step, index, totalCount }}
+              {#each getEventsForCell(formatDateKey(date), hour) as { step, index, totalCount, relStart, relEnd }}
                 {#if isSecretStep(step) && !hasEditPermission}
                   <button
                     type="button"
                     class="standard-autumn-week-event"
-                    style={getEventStyle(step, index, totalCount)}
+                    style={getEventStyle(step, index, totalCount, relStart, relEnd)}
                     title="Secret"
                     onclick={() => handleEventClick(step)}
                   >
@@ -222,7 +236,7 @@
                     class:standard-autumn-week-event-transport={isTransportType(
                       step.type,
                     )}
-                    style={getEventStyle(step, index, totalCount)}
+                    style={getEventStyle(step, index, totalCount, relStart, relEnd)}
                     title={step.title}
                     onclick={() => handleEventClick(step)}
                   >

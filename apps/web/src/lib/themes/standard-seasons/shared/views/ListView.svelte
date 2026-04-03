@@ -3,6 +3,7 @@
   import { getStepDate, getStepTime } from "@tabitabi/types";
   import { renderMarkdown } from "../utils/markdown";
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
+  import { getStepTypeIcon, isTransportType } from "../utils/step-type";
 
   interface Props {
     steps: Step[];
@@ -91,6 +92,10 @@
             </tr>
           {:else}
             <tr
+              class="standard-autumn-list-row"
+              class:standard-autumn-list-row-transport={isTransportType(
+                step.type,
+              )}
               onmouseenter={(e) =>
                 e.currentTarget?.style.setProperty("cursor", "pointer")}
               onmouseleave={(e) =>
@@ -98,7 +103,10 @@
               onclick={() => handleRowClick(step)}
             >
               <td class="standard-autumn-list-time">{getStepTime(step)}</td>
-              <td colspan="3" class="standard-autumn-list-title-cell">
+              <td class="standard-autumn-list-icon">
+                {getStepTypeIcon(step.type)}
+              </td>
+              <td colspan="2" class="standard-autumn-list-title-cell">
                 <div class="standard-autumn-list-title-content">
                   <span class="standard-autumn-list-title">{step.title}</span>
                   {#if step.location}

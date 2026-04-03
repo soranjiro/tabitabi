@@ -77,13 +77,14 @@ export class StepService {
       end_at: endAt!,
       location: input.location ?? null,
       notes,
+      type: input.type ?? 'normal:general',
       created_at: now,
       updated_at: now,
     };
 
     await this.db
       .prepare(
-        'INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       )
       .bind(
         step.id,
@@ -93,6 +94,7 @@ export class StepService {
         step.end_at,
         step.location,
         step.notes,
+        step.type,
         step.created_at,
         step.updated_at
       )
@@ -140,6 +142,10 @@ export class StepService {
       fields.push('notes = ?');
       values.push(notes);
     }
+    if (input.type !== undefined) {
+      fields.push('type = ?');
+      values.push(input.type);
+    }
 
     values.push(stepId);
     await this.db
@@ -168,6 +174,7 @@ export class StepService {
       end_at: row.end_at as number,
       location: row.location as string | null,
       notes: row.notes as string,
+      type: row.type as any ?? 'normal:general',
       is_hidden: !!row.is_hidden_flag,
       created_at: row.created_at as string,
       updated_at: row.updated_at as string,

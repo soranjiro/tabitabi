@@ -1,5 +1,10 @@
 <script lang="ts">
+  import type { StepType } from "@tabitabi/types";
   import { createTimestamp, createEndTimestamp } from "@tabitabi/types";
+  import {
+    STEP_TYPES_BY_CATEGORY,
+    STEP_TYPE_CONFIGS,
+  } from "../utils/step-type";
 
   interface Props {
     newStep: {
@@ -8,10 +13,15 @@
       time: string;
       location: string;
       notes: string;
+      type?: StepType;
     };
     newStepHour: string;
     newStepMinute: string;
-    onSubmit: (data: { start_at: number; end_at: number }) => void;
+    onSubmit: (data: {
+      start_at: number;
+      end_at: number;
+      type?: StepType;
+    }) => void;
     onCancel: () => void;
   }
 
@@ -31,7 +41,7 @@
     e.preventDefault();
     const startAt = createTimestamp(newStep.date, newStep.time);
     const endAt = createEndTimestamp(startAt);
-    onSubmit({ start_at: startAt, end_at: endAt });
+    onSubmit({ start_at: startAt, end_at: endAt, type: newStep.type });
   }
 </script>
 
@@ -81,6 +91,31 @@
       placeholder="場所 (任意)"
       class="standard-autumn-input"
     />
+    <div class="standard-autumn-form-field">
+      <label for="type-input" class="standard-autumn-form-label"
+        >予定の種類</label
+      >
+      <select
+        id="type-input"
+        bind:value={newStep.type}
+        class="standard-autumn-input"
+      >
+        <optgroup label="通常の予定">
+          {#each STEP_TYPES_BY_CATEGORY.normal as type}
+            <option value={type}>
+              {STEP_TYPE_CONFIGS[type as StepType].label}
+            </option>
+          {/each}
+        </optgroup>
+        <optgroup label="移動">
+          {#each STEP_TYPES_BY_CATEGORY.transport as type}
+            <option value={type}>
+              {STEP_TYPE_CONFIGS[type as StepType].label}
+            </option>
+          {/each}
+        </optgroup>
+      </select>
+    </div>
     <textarea
       bind:value={newStep.notes}
       placeholder="メモ (任意)"

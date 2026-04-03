@@ -2,6 +2,7 @@
   import type { Step } from "@tabitabi/types";
   import { getStepDate, getStepTime } from "@tabitabi/types";
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
+  import { getStepTypeIcon, isTransportType } from "../utils/step-type";
 
   interface Props {
     steps: Step[];
@@ -264,6 +265,9 @@
               <button
                 type="button"
                 class="standard-autumn-month-event"
+                class:standard-autumn-month-event-transport={isTransportType(
+                  seg.step.type,
+                )}
                 style={`position:absolute; left:${seg.leftPercent}%; width:${seg.widthPercent}%; top:${seg.rowIndex * 24}px; margin-bottom: 3px;`}
                 onclick={() => handleEventClick(seg.step)}
                 title={seg.step.title}
@@ -271,9 +275,9 @@
                 {#if isSecretStep(seg.step) && !hasEditPermission}
                   <span class="standard-autumn-month-event-time">🔒</span>
                 {:else}
-                  <span class="standard-autumn-month-event-time"
-                    >{getStepTime(seg.step)}</span
-                  >
+                  <span class="standard-autumn-month-event-icon">
+                    {getStepTypeIcon(seg.step.type)}
+                  </span>
                   <span class="standard-autumn-month-event-title"
                     >{seg.step.title}</span
                   >

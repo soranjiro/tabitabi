@@ -1,3 +1,14 @@
+export type StepType =
+  | 'normal:general'
+  | 'normal:food'
+  | 'normal:hotel'
+  | 'normal:sightseeing'
+  | 'transport:general'
+  | 'transport:train'
+  | 'transport:car'
+  | 'transport:plane'
+  | 'transport:bus';
+
 export interface Step {
   id: string;
   itinerary_id: string;
@@ -6,6 +17,7 @@ export interface Step {
   end_at: number;
   location?: string | null;
   notes: string;
+  type?: StepType;
   is_hidden?: boolean;
   created_at: string;
   updated_at: string;
@@ -20,6 +32,7 @@ export interface CreateStepInput {
   end_at?: number;
   location?: string;
   notes?: string;
+  type?: StepType;
 }
 
 export interface UpdateStepInput {
@@ -30,6 +43,7 @@ export interface UpdateStepInput {
   end_at?: number;
   location?: string | null;
   notes?: string | null;
+  type?: StepType;
 }
 
 export function getStepDate(step: Step): string {

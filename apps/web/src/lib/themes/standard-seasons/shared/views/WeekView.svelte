@@ -2,6 +2,7 @@
   import type { Step } from "@tabitabi/types";
   import { getStepDate, getStepTime, getStepEndTime } from "@tabitabi/types";
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
+  import { getStepTypeIcon, isTransportType } from "../utils/step-type";
 
   interface Props {
     steps: Step[];
@@ -90,36 +91,75 @@
 
   const hours = Array.from({ length: 16 }, (_, i) => i + 6);
 
-  function getOverlappingEventsForCell(
+  function getOverlappingStepsForDay(
     dateStr: string,
-    hour: number,
-  ): Array<{ step: Step; overlapCount: number }> {
+  ): Array<{ step: Step; index: number; totalCount: number }> {
     const daySteps = stepsByDate().get(dateStr) || [];
-    const hourStart = hour * 60;
-    const hourEnd = (hour + 1) * 60;
+    const sortedSteps = [...daySteps].sort((a, b) => a.start_at - b.start_at);
 
-    const eventsInHour = daySteps.filter((step) => {
-      const startTime = new Date(step.start_at);
-      const endTime = new Date(step.end_at);
-      const stepStartMinutes =
-        startTime.getHours() * 60 + startTime.getMinutes();
-      const stepEndMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+    const positioned: { step: Step; index: number; totalCount: number }[] = [];
 
-      return stepStartMinutes < hourEnd && stepEndMinutes > hourStart;
-    });
+    for (const step of sortedSteps) {
+      let assignedIndex = 0;
+      let maxOverlapCount = 1;
 
-    return eventsInHour.map((step) => ({
-      step,
-      overlapCount: eventsInHour.length,
-    }));
+      for (const other of sortedSteps) {
+        if (other === step) continue;
+
+        const conflicts = sortedSteps.every((s) => {
+          if (s === step || s === other) return true;
+          const startTime = s.start_at;
+          const endTime = s.end_at;
+          return !(
+            step.start_at < endTime &&
+            step.end_at > startTime &&
+            other.start_at < endTime &&
+            other.end_at > startTime
+          );
+        });
+
+        if (!conflicts) {
+          const overlap = sortedSteps.filter(
+            (s) =>
+              s.start_at < step.end_at &&
+              s.end_at > step.start_at &&
+              s.start_at < other.end_at &&
+              s.end_at > other.start_at,
+          );
+          maxOverlapCount = Math.max(maxOverlapCount, overlap.length);
+        }
+      }
+
+      const conflicting = sortedSteps.filter(
+        (s) =>
+          s !== step && s.start_at < step.end_at && s.end_at > step.start_at,
+      );
+
+      assignedIndex = conflicting.filter(
+        (s) => s.start_at < step.start_at,
+      ).length;
+      maxOverlapCount = conflicting.length + 1;
+
+      positioned.push({
+        step,
+        index: assignedIndex,
+        totalCount: maxOverlapCount,
+      });
+    }
+
+    return positioned;
   }
 
-  function getEventsForCell(dateStr: string, hour: number): Step[] {
+  function getEventsForCell(
+    dateStr: string,
+    hour: number,
+  ): Array<{ step: Step; index: number; totalCount: number }> {
     const daySteps = stepsByDate().get(dateStr) || [];
     const hourStart = hour * 60;
     const hourEnd = (hour + 1) * 60;
+    const dayPositions = getOverlappingStepsForDay(dateStr);
 
-    return daySteps.filter((step) => {
+    return dayPositions.filter(({ step }) => {
       const startTime = new Date(step.start_at);
       const endTime = new Date(step.end_at);
       const stepStartMinutes =
@@ -194,16 +234,12 @@
           </div>
           {#each weekDates as date}
             <div class="standard-autumn-week-cell">
-              {#each getEventsForCell(formatDateKey(date), hour) as step, idx}
+              {#each getEventsForCell(formatDateKey(date), hour) as { step, index, totalCount }}
                 {#if isSecretStep(step) && !hasEditPermission}
                   <button
                     type="button"
                     class="standard-autumn-week-event"
-                    style={getEventStyle(
-                      step,
-                      idx,
-                      getEventCountForCell(formatDateKey(date), hour),
-                    )}
+                    style={getEventStyle(step, index, totalCount)}
                     title="Secret"
                     onclick={() => handleEventClick(step)}
                   >
@@ -213,15 +249,19 @@
                   <button
                     type="button"
                     class="standard-autumn-week-event"
-                    style={getEventStyle(
-                      step,
-                      idx,
-                      getEventCountForCell(formatDateKey(date), hour),
+                    class:standard-autumn-week-event-transport={isTransportType(
+                      step.type,
                     )}
+                    style={getEventStyle(step, index, totalCount)}
                     title={step.title}
                     onclick={() => handleEventClick(step)}
                   >
-                    {step.title}
+                    <span class="standard-autumn-week-event-icon">
+                      {getStepTypeIcon(step.type)}
+                    </span>
+                    <span class="standard-autumn-week-event-title">
+                      {step.title}
+                    </span>
                   </button>
                 {/if}
               {/each}

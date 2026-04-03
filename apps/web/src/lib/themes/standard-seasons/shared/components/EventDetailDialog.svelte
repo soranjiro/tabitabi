@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Step } from "@tabitabi/types";
+  import type { Step, StepType } from "@tabitabi/types";
   import {
     getStepDate,
     getStepTime,
@@ -9,6 +9,11 @@
   } from "@tabitabi/types";
   import { renderMarkdown } from "../utils/markdown";
   import { getMemoText, updateMemoText } from "$lib/memo";
+  import {
+    getStepTypeIcon,
+    STEP_TYPES_BY_CATEGORY,
+    STEP_TYPE_CONFIGS,
+  } from "../utils/step-type";
 
   interface Props {
     step: Step;
@@ -24,6 +29,7 @@
         end_at?: number;
         location?: string;
         notes?: string;
+        type?: StepType;
       },
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
@@ -55,6 +61,7 @@
     endTime?: string;
     location?: string | null;
     notes?: string;
+    type?: StepType;
   }>({});
   let editStartHour = $state(getStepTime(step).split(":")[0]);
   let editStartMinute = $state(getStepTime(step).split(":")[1]);
@@ -86,6 +93,7 @@
       endTime: `${endHour}:${endMinute}`,
       location: step.location,
       notes: getMemoText(step.notes) || "",
+      type: step.type || "normal:general",
     };
     editStartHour = startHour;
     editStartMinute = startMinute;
@@ -127,6 +135,7 @@
       end_at: endAt,
       location: editedStep.location?.trim() || undefined,
       notes,
+      type: editedStep.type,
     });
 
     isEditing = false;
@@ -297,6 +306,31 @@
               placeholder="場所を入力"
               class="standard-autumn-input"
             />
+          </div>
+          <div class="standard-autumn-form-field">
+            <label for="type-input" class="standard-autumn-form-label"
+              >予定の種類</label
+            >
+            <select
+              id="type-input"
+              bind:value={editedStep.type}
+              class="standard-autumn-input"
+            >
+              <optgroup label="通常の予定">
+                {#each STEP_TYPES_BY_CATEGORY.normal as type}
+                  <option value={type}>
+                    {STEP_TYPE_CONFIGS[type as StepType].label}
+                  </option>
+                {/each}
+              </optgroup>
+              <optgroup label="移動">
+                {#each STEP_TYPES_BY_CATEGORY.transport as type}
+                  <option value={type}>
+                    {STEP_TYPE_CONFIGS[type as StepType].label}
+                  </option>
+                {/each}
+              </optgroup>
+            </select>
           </div>
           <div class="standard-autumn-form-field">
             <label for="notes-textarea" class="standard-autumn-form-label"

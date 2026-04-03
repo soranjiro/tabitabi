@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ItineraryResponse, Step } from "@tabitabi/types";
   import { createTimestamp, createEndTimestamp } from "@tabitabi/types";
+  import type { StepType } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
@@ -43,6 +44,7 @@
       end_at: number;
       location?: string;
       notes?: string;
+      type?: StepType;
     }) => Promise<void>;
     onUpdateStep?: (
       stepId: string,
@@ -52,6 +54,7 @@
         end_at?: number;
         location?: string;
         notes?: string;
+        type?: StepType;
       },
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
@@ -99,6 +102,7 @@
     time: "",
     location: "",
     notes: "",
+    type: "normal:general" as StepType,
   });
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
@@ -279,8 +283,16 @@
         end_at: createEndTimestamp(startAt, 60),
         location: newStep.location.trim() || undefined,
         notes: newStep.notes.trim() || undefined,
+        type: newStep.type,
       });
-      newStep = { title: "", date: "", time: "", location: "", notes: "" };
+      newStep = {
+        title: "",
+        date: "",
+        time: "",
+        location: "",
+        notes: "",
+        type: "normal:general",
+      };
       newStepHour = "09";
       newStepMinute = "00";
       isAddingStep = false;
@@ -288,7 +300,14 @@
   }
 
   function cancelAddStep() {
-    newStep = { title: "", date: "", time: "", location: "", notes: "" };
+    newStep = {
+      title: "",
+      date: "",
+      time: "",
+      location: "",
+      notes: "",
+      type: "normal:general",
+    };
     newStepHour = "09";
     newStepMinute = "00";
     isAddingStep = false;

@@ -27,3 +27,15 @@ export function getDate(offsetDays: number = 0, timeZone: string = 'Asia/Tokyo')
     .format(date)
     .replace(/\//g, '-');
 }
+
+export function getTimestamp(offsetDays: number = 0, time: string = '09:00', timeZone: string = 'Asia/Tokyo'): number {
+  const date = getDate(offsetDays, timeZone);
+  if (timeZone === 'Asia/Tokyo') {
+    return new Date(`${date}T${time}:00+09:00`).getTime();
+  }
+  return new Date(`${date}T${time}:00`).getTime();
+}
+
+export function getEndTimestamp(startAt: number, durationMinutes: number = 60): number {
+  return startAt + durationMinutes * 60 * 1000;
+}

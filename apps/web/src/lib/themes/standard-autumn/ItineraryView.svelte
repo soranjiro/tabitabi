@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ItineraryResponse, Step } from "@tabitabi/types";
+  import { createTimestamp, createEndTimestamp } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
@@ -33,8 +34,10 @@
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
-      date: string;
-      time: string;
+      // Unix ms
+      start_at: number;
+      // Unix ms
+      end_at: number;
       location?: string;
       notes?: string;
     }) => Promise<void>;
@@ -85,8 +88,6 @@
 
   let newStep = $state({
     title: "",
-    date: "",
-    time: "",
     location: "",
     notes: "",
   });
@@ -96,11 +97,6 @@
 
   function openAddStepForm() {
     isAddingStep = true;
-    if (focusedDate) {
-      newStep.date = focusedDate;
-    } else {
-      newStep.date = "";
-    }
   }
 
   onMount(() => {
@@ -243,19 +239,26 @@
   }
 
   async function handleAddStep() {
-    if (!newStep.title.trim() || !newStep.date || !newStep.time) {
+    if (
+      !newStep.title.trim() ||
+      !focusedDate ||
+      !newStepHour ||
+      !newStepMinute
+    ) {
       alert("タイトル、日付、時刻は必須です");
       return;
     }
     if (onCreateStep) {
+      const timeStr = `${newStepHour}:${newStepMinute}`;
+      const startAt = createTimestamp(focusedDate, timeStr);
       await onCreateStep({
         title: newStep.title.trim(),
-        date: newStep.date,
-        time: newStep.time,
+        start_at: startAt,
+        end_at: createEndTimestamp(startAt, 60),
         location: newStep.location.trim() || undefined,
         notes: newStep.notes.trim() || undefined,
       });
-      newStep = { title: "", date: "", time: "", location: "", notes: "" };
+      newStep = { title: "", location: "", notes: "" };
       newStepHour = "09";
       newStepMinute = "00";
       isAddingStep = false;
@@ -263,7 +266,7 @@
   }
 
   function cancelAddStep() {
-    newStep = { title: "", date: "", time: "", location: "", notes: "" };
+    newStep = { title: "", location: "", notes: "" };
     newStepHour = "09";
     newStepMinute = "00";
     isAddingStep = false;

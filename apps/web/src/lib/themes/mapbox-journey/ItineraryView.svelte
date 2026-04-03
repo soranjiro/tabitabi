@@ -1,5 +1,11 @@
 <script lang="ts">
   import type { ItineraryResponse, Step } from "@tabitabi/types";
+  import {
+    getStepDate,
+    getStepTime,
+    createTimestamp,
+    createEndTimestamp,
+  } from "@tabitabi/types";
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
   import StepList from "./StepList.svelte";
@@ -68,21 +74,19 @@
 
   let editingStepForm = $state({
     title: "",
-    date: "",
-    time: "",
     location: "",
     notes: "",
   });
+  let editingStepDate = $state("");
 
   let newStep = $state({
     title: "",
-    date: "",
-    time: "",
     location: "",
     notes: "",
   });
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
+  let focusedDate = $state<string | null>(null);
 
   const DATE_COLORS = [
     "#8B5CF6",
@@ -96,12 +100,8 @@
   ];
 
   function getUniqueDates(): string[] {
-    const sortedSteps = [...steps].sort((a, b) => {
-      const dateCompare = a.date.localeCompare(b.date);
-      if (dateCompare !== 0) return dateCompare;
-      return a.time.localeCompare(b.time);
-    });
-    return [...new Set(sortedSteps.map((s) => s.date))];
+    const sortedSteps = [...steps].sort((a, b) => a.start_at - b.start_at);
+    return [...new Set(sortedSteps.map((s) => getStepDate(s)))];
   }
 
   function getDateColor(date: string): string {
@@ -111,11 +111,7 @@
   }
 
   function getStepNumber(step: Step): number {
-    const sortedSteps = [...steps].sort((a, b) => {
-      const dateCompare = a.date.localeCompare(b.date);
-      if (dateCompare !== 0) return dateCompare;
-      return a.time.localeCompare(b.time);
-    });
+    const sortedSteps = [...steps].sort((a, b) => a.start_at - b.start_at);
     return sortedSteps.findIndex((s) => s.id === step.id) + 1;
   }
 
@@ -241,29 +237,32 @@
     showAddModal = true;
     isEditing = false;
     const today = new Date().toISOString().split("T")[0];
+    focusedDate = today;
     newStepHour = "09";
     newStepMinute = "00";
     newStep = {
       title: "",
-      date: today,
-      time: `${newStepHour}:${newStepMinute}`,
       location: prefill?.location ?? "",
       notes: "",
     };
   }
 
   async function handleAddSubmit() {
-    if (!newStep.title || !newStep.date || !newStep.time) {
+    if (!newStep.title || !focusedDate || !newStepHour || !newStepMinute) {
       alert("必須項目を入力してください");
       return;
     }
     const noteText = newStep.notes.trim();
     const notes = noteText ? updateMemoText(undefined, noteText) : undefined;
     if (onCreateStep) {
+      const startAt = createTimestamp(
+        focusedDate,
+        `${newStepHour}:${newStepMinute}`,
+      );
       await onCreateStep({
         title: newStep.title.trim(),
-        date: newStep.date,
-        time: newStep.time,
+        start_at: startAt,
+        end_at: createEndTimestamp(startAt, 60),
         location: newStep.location.trim() || undefined,
         notes: newStep.notes.trim() || undefined,
       });
@@ -283,12 +282,11 @@
     editStepId = selectedStep.id;
     editingStepForm = {
       title: selectedStep.title,
-      date: selectedStep.date,
-      time: selectedStep.time,
       location: selectedStep.location || "",
       notes: getMemoText(selectedStep.notes),
     };
-    const [h, m] = selectedStep.time.split(":");
+    editingStepDate = getStepDate(selectedStep);
+    const [h, m] = getStepTime(selectedStep).split(":");
     editStepHour = h;
     editStepMinute = m;
     isEditing = true;
@@ -297,20 +295,22 @@
   }
 
   async function handleEditSubmit() {
-    if (!editStepId || !onUpdateStep) return;
+    if (!editStepId || !onUpdateStep || !editingStepDate) return;
 
     const noteText = editingStepForm.notes.trim();
     const notes = updateMemoText(selectedStep?.notes, noteText);
+    const startAt = createTimestamp(
+      editingStepDate,
+      `${editStepHour}:${editStepMinute}`,
+    );
 
-    const updatedData = {
+    await onUpdateStep(editStepId, {
       title: editingStepForm.title.trim(),
-      date: editingStepForm.date,
-      time: `${editStepHour}:${editStepMinute}`,
+      start_at: startAt,
+      end_at: createEndTimestamp(startAt, 60),
       location: editingStepForm.location.trim() || undefined,
       notes: editingStepForm.notes.trim() || undefined,
-    };
-
-    await onUpdateStep(editStepId, updatedData);
+    });
     closeModals();
   }
 
@@ -336,7 +336,8 @@
   }
 
   function resetForm() {
-    newStep = { title: "", date: "", time: "", location: "", notes: "" };
+    newStep = { title: "", location: "", notes: "" };
+    focusedDate = null;
     newStepHour = "09";
     newStepMinute = "00";
   }
@@ -627,15 +628,17 @@
           <div
             class="detail-number"
             style="background: linear-gradient(135deg, {getDateColor(
-              selectedStep.date,
-            )}, {getDateColor(selectedStep.date)}99)"
+              getStepDate(selectedStep),
+            )}, {getDateColor(getStepDate(selectedStep))}99)"
           >
             {getStepNumber(selectedStep)}
           </div>
           <div class="detail-info">
             <h3 class="detail-title">{selectedStep.title}</h3>
             <p class="detail-datetime">
-              {formatDate(selectedStep.date)} • {selectedStep.time}
+              {formatDate(getStepDate(selectedStep))} • {getStepTime(
+                selectedStep,
+              )}
             </p>
           </div>
           <button class="close-btn" onclick={closeModals} aria-label="Close">
@@ -693,6 +696,7 @@
         {#if isEditing}
           <AddStepForm
             bind:newStep={editingStepForm}
+            bind:newStepDate={editingStepDate}
             bind:newStepHour={editStepHour}
             bind:newStepMinute={editStepMinute}
             isEditing={true}
@@ -705,6 +709,7 @@
         {:else}
           <AddStepForm
             bind:newStep
+            bind:focusedDate
             bind:newStepHour
             bind:newStepMinute
             onSubmit={handleAddSubmit}

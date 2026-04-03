@@ -1,4 +1,12 @@
 <script lang="ts">
+  import type { StepType } from "@tabitabi/types";
+  import { createTimestamp, createEndTimestamp } from "@tabitabi/types";
+  import {
+    STEP_TYPES_BY_CATEGORY,
+    STEP_TYPE_CONFIGS,
+  } from "../utils/step-type";
+  import TypePicker from "./TypePicker.svelte";
+
   interface Props {
     newStep: {
       title: string;
@@ -6,10 +14,15 @@
       time: string;
       location: string;
       notes: string;
+      type?: StepType;
     };
     newStepHour: string;
     newStepMinute: string;
-    onSubmit: () => void;
+    onSubmit: (data: {
+      start_at: number;
+      end_at: number;
+      type?: StepType;
+    }) => void;
     onCancel: () => void;
   }
 
@@ -27,7 +40,9 @@
 
   function handleSubmit(e: Event) {
     e.preventDefault();
-    onSubmit();
+    const startAt = createTimestamp(newStep.date, newStep.time);
+    const endAt = createEndTimestamp(startAt);
+    onSubmit({ start_at: startAt, end_at: endAt, type: newStep.type });
   }
 </script>
 
@@ -77,6 +92,15 @@
       placeholder="場所 (任意)"
       class="standard-autumn-input"
     />
+    <div class="standard-autumn-form-field">
+      <div class="standard-autumn-form-label">予定の種類</div>
+      <TypePicker
+        value={newStep.type}
+        onSelect={(type: StepType) => {
+          newStep.type = type;
+        }}
+      />
+    </div>
     <textarea
       bind:value={newStep.notes}
       placeholder="メモ (任意)"

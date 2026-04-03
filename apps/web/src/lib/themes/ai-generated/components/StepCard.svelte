@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepTime } from "@tabitabi/types";
   import { getMemoText } from "$lib/memo";
 
   interface Props {
@@ -11,7 +12,8 @@
   let { step, index, isCurrentStep = false }: Props = $props();
 
   const timeIcon = $derived(() => {
-    const hour = parseInt(step.time.split(":")[0]);
+    const time = getStepTime(step);
+    const hour = parseInt(time.split(":")[0]);
 
     if (hour >= 5 && hour < 7) return { icon: "🌅", label: "早朝" };
     if (hour >= 7 && hour < 11) return { icon: "☀️", label: "午前" };
@@ -134,7 +136,7 @@
 
   <div class="step-content">
     <div class="step-header">
-      <span class="step-time">{step.time}</span>
+      <span class="step-time">{getStepTime(step)}</span>
       <span class="step-category-icon">{categoryIcon()}</span>
     </div>
 

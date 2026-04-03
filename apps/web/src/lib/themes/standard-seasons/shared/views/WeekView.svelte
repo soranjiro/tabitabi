@@ -1,6 +1,9 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime, getStepEndTime } from "@tabitabi/types";
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
+  import IconRenderer from "../icons/IconRenderer.svelte";
+  import { isTransportType } from "../utils/step-type";
 
   interface Props {
     steps: Step[];
@@ -27,21 +30,19 @@
 
   let selectedStep = $state<Step | null>(null);
 
-  function isSecretStep(stepDate: string, stepTime: string): boolean {
+  function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
-    const now = new Date();
-    const stepDateTime = new Date(`${stepDate}T${stepTime}`);
-    const revealTime = new Date(
-      stepDateTime.getTime() - secretModeOffset * 60 * 1000,
-    );
+    const now = Date.now();
+    const revealTime = step.start_at - secretModeOffset * 60 * 1000;
     return now < revealTime;
   }
 
   function getWeekDates(): Date[] {
     const dates: string[] = [];
     for (const step of steps) {
-      if (!dates.includes(step.date)) {
-        dates.push(step.date);
+      const date = getStepDate(step);
+      if (!dates.includes(date)) {
+        dates.push(date);
       }
     }
     dates.sort();
@@ -80,7 +81,7 @@
   const stepsByDate = $derived(() => {
     const map = new Map<string, Step[]>();
     for (const step of steps) {
-      const date = step.date;
+      const date = getStepDate(step);
       if (!map.has(date)) map.set(date, []);
       map.get(date)!.push(step);
     }
@@ -91,11 +92,51 @@
 
   const hours = Array.from({ length: 16 }, (_, i) => i + 6);
 
-  function getEventsForCell(dateStr: string, hour: number): Step[] {
+  function getOverlappingStepsForDay(
+    dateStr: string,
+  ): Array<{ step: Step; index: number; totalCount: number }> {
     const daySteps = stepsByDate().get(dateStr) || [];
-    return daySteps.filter((step) => {
-      const [h] = step.time.split(":").map(Number);
-      return h === hour;
+    const sortedSteps = [...daySteps].sort((a, b) => a.start_at - b.start_at);
+
+    const positioned: { step: Step; index: number; totalCount: number }[] = [];
+
+    for (const step of sortedSteps) {
+      const conflicting = sortedSteps.filter(
+        (s) =>
+          s !== step && s.start_at < step.end_at && s.end_at > step.start_at,
+      );
+
+      const assignedIndex = conflicting.filter(
+        (s) => s.start_at < step.start_at,
+      ).length;
+      const maxOverlapCount = conflicting.length + 1;
+
+      positioned.push({
+        step,
+        index: assignedIndex,
+        totalCount: maxOverlapCount,
+      });
+    }
+
+    return positioned;
+  }
+
+  function getEventsForCell(
+    dateStr: string,
+    hour: number,
+  ): Array<{ step: Step; index: number; totalCount: number }> {
+    const hourStart = hour * 60;
+    const hourEnd = (hour + 1) * 60;
+    const dayPositions = getOverlappingStepsForDay(dateStr);
+
+    return dayPositions.filter(({ step }) => {
+      const startTime = new Date(step.start_at);
+      const endTime = new Date(step.end_at);
+      const stepStartMinutes =
+        startTime.getHours() * 60 + startTime.getMinutes();
+      const stepEndMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+
+      return stepStartMinutes >= hourStart && stepStartMinutes < hourEnd;
     });
   }
 
@@ -104,9 +145,15 @@
     index: number,
     totalCount: number,
   ): string {
-    const [startH, startM] = step.time.split(":").map(Number);
-    const topOffset = (startM / 60) * 40;
-    const height = 38;
+    const startTs = new Date(step.start_at);
+    const endTs = new Date(step.end_at);
+
+    const topOffset = (startTs.getMinutes() / 60) * 40;
+    const durationMinutes = Math.max(
+      15,
+      Math.round((endTs.getTime() - startTs.getTime()) / 60000),
+    );
+    const height = Math.max((durationMinutes / 60) * 40, 38);
     const width = 100 / totalCount;
     const left = index * width;
     return `top: ${topOffset}px; height: ${height}px; left: ${left}%; width: ${width}%;`;
@@ -157,16 +204,12 @@
           </div>
           {#each weekDates as date}
             <div class="standard-autumn-week-cell">
-              {#each getEventsForCell(formatDateKey(date), hour) as step, idx}
-                {#if isSecretStep(step.date, step.time) && !hasEditPermission}
+              {#each getEventsForCell(formatDateKey(date), hour) as { step, index, totalCount }}
+                {#if isSecretStep(step) && !hasEditPermission}
                   <button
                     type="button"
                     class="standard-autumn-week-event"
-                    style={getEventStyle(
-                      step,
-                      idx,
-                      getEventCountForCell(formatDateKey(date), hour),
-                    )}
+                    style={getEventStyle(step, index, totalCount)}
                     title="Secret"
                     onclick={() => handleEventClick(step)}
                   >
@@ -176,15 +219,19 @@
                   <button
                     type="button"
                     class="standard-autumn-week-event"
-                    style={getEventStyle(
-                      step,
-                      idx,
-                      getEventCountForCell(formatDateKey(date), hour),
+                    class:standard-autumn-week-event-transport={isTransportType(
+                      step.type,
                     )}
+                    style={getEventStyle(step, index, totalCount)}
                     title={step.title}
                     onclick={() => handleEventClick(step)}
                   >
-                    {step.title}
+                    <span class="standard-autumn-week-event-icon">
+                      <IconRenderer type={step.type} size="sm" />
+                    </span>
+                    <span class="standard-autumn-week-event-title">
+                      {step.title}
+                    </span>
                   </button>
                 {/if}
               {/each}
@@ -200,6 +247,8 @@
   <EventDetailDialog
     step={selectedStep}
     {hasEditPermission}
+    {secretModeEnabled}
+    {secretModeOffset}
     onClose={closeDialog}
     {onUpdateStep}
     {onDeleteStep}

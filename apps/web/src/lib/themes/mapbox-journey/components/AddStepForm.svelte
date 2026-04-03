@@ -10,11 +10,10 @@
   interface Props {
     newStep: {
       title: string;
-      date: string;
-      time: string;
       location: string;
       notes: string;
     };
+    focusedDate: string | null;
     newStepHour: string;
     newStepMinute: string;
     isEditing?: boolean;
@@ -24,6 +23,7 @@
 
   let {
     newStep = $bindable(),
+    focusedDate = $bindable(),
     newStepHour = $bindable(),
     newStepMinute = $bindable(),
     isEditing = false,
@@ -36,10 +36,6 @@
   let isSearching = $state(false);
   let searchError = $state("");
   let lastQuery = "";
-
-  $effect(() => {
-    newStep.time = `${newStepHour}:${newStepMinute}`;
-  });
 
   $effect(() => {
     searchQuery = newStep.location;
@@ -138,34 +134,22 @@
     />
   </div>
 
-  <div class="form-row">
-    <div class="form-group flex-1">
-      <label class="form-label" for="date">日付 *</label>
-      <input
-        id="date"
-        type="date"
-        bind:value={newStep.date}
-        class="form-input"
-        required
-      />
-    </div>
-    <div class="form-group time-group">
-      <!-- svelte-ignore a11y_label_has_associated_control -->
-      <label class="form-label">時刻 *</label>
-      <div class="time-picker">
-        <select bind:value={newStepHour} class="time-select">
-          {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
-            <option value={hour}>{hour}</option>
-          {/each}
-        </select>
-        <span class="time-separator">:</span>
-        <select bind:value={newStepMinute} class="time-select">
-          <option value="00">00</option>
-          <option value="15">15</option>
-          <option value="30">30</option>
-          <option value="45">45</option>
-        </select>
-      </div>
+  <div class="form-group time-group">
+    <!-- svelte-ignore a11y_label_has_associated_control -->
+    <label class="form-label">時刻 *</label>
+    <div class="time-picker">
+      <select bind:value={newStepHour} class="time-select">
+        {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
+          <option value={hour}>{hour}</option>
+        {/each}
+      </select>
+      <span class="time-separator">:</span>
+      <select bind:value={newStepMinute} class="time-select">
+        <option value="00">00</option>
+        <option value="15">15</option>
+        <option value="30">30</option>
+        <option value="45">45</option>
+      </select>
     </div>
   </div>
 

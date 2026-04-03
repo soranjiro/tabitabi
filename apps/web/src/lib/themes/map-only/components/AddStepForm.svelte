@@ -2,11 +2,10 @@
   interface Props {
     newStep: {
       title: string;
-      date: string;
-      time: string;
       location: string;
       notes: string;
     };
+    focusedDate: string | null;
     newStepHour: string;
     newStepMinute: string;
     isEditing?: boolean;
@@ -16,16 +15,13 @@
 
   let {
     newStep = $bindable(),
+    focusedDate = $bindable(),
     newStepHour = $bindable(),
     newStepMinute = $bindable(),
     isEditing = false,
     onSubmit,
     onCancel,
   }: Props = $props();
-
-  $effect(() => {
-    newStep.time = `${newStepHour}:${newStepMinute}`;
-  });
 
   function handleSubmit(e: Event) {
     e.preventDefault();
@@ -49,12 +45,6 @@
   </div>
 
   <div class="map-form-group flex gap-2">
-    <input
-      type="date"
-      bind:value={newStep.date}
-      class="map-input flex-1"
-      required
-    />
     <div
       class="flex items-center gap-1 bg-gray-50 rounded-lg border border-gray-200 px-2"
     >

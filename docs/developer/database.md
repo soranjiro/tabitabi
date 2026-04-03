@@ -41,11 +41,29 @@ erDiagram
         TEXT id PK
         TEXT itinerary_id FK
         TEXT title
-        TEXT date
-        TEXT time
         TEXT location
         TEXT notes
+        INTEGER start_at
+        INTEGER end_at
+        TEXT "type (format: category:type)"
         TEXT created_at
         TEXT updated_at
     }
 ```
+
+## Step Type Format
+
+Step の `type` カラムはカテゴリとタイプを `category:type` 形式で保存します。
+
+### 通常の予定 (normal)
+- `normal:general` - 一般的な予定
+- `normal:food` - 食事
+- `normal:hotel` - 宿泊
+- `normal:sightseeing` - 観光
+
+### 移動 (transport)
+- `transport:general` - 一般的な移動
+- `transport:train` - 電車
+- `transport:car` - 車
+- `transport:plane` - 飛行機
+- `transport:bus` - バス

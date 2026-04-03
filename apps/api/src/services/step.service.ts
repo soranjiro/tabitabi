@@ -3,32 +3,35 @@ import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
 import { validateMemoJson } from '../utils/memo';
 
+function parseToUnixMs(value: unknown): number | null {
+  // Only accept numeric Unix timestamps in milliseconds.
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  return null;
+}
+
 export class StepService {
   constructor(private db: D1Database) {}
 
-  async list(itineraryId: string, options?: { currentTime?: string; offsetMinutes?: number; maskSecrets?: boolean }): Promise<Step[]> {
+  async list(itineraryId: string, options?: { currentTime?: number; offsetMinutes?: number; maskSecrets?: boolean }): Promise<Step[]> {
     let query = 'SELECT * FROM steps WHERE itinerary_id = ?';
     const bindings: (string | number)[] = [itineraryId];
 
-    // If time filtering is enabled (secret mode)
     if (options?.currentTime && options?.offsetMinutes !== undefined) {
-      // Calculate is_hidden_flag: 1 if (step_time > current_time + offset), else 0
-      // We select all steps but mark them as hidden if they are in the future beyond the offset
       query = `
         SELECT *,
-        (datetime(date || ' ' || time) > datetime(?, '+' || ? || ' minutes')) as is_hidden_flag
+        (start_at > ? + ? * 60000) as is_hidden_flag
         FROM steps
         WHERE itinerary_id = ?
       `;
 
-      // Bindings order: currentTime, offsetMinutes, itineraryId
       bindings.length = 0;
       bindings.push(options.currentTime);
-      bindings.push(options.offsetMinutes.toString());
+      bindings.push(options.offsetMinutes);
       bindings.push(itineraryId);
     }
 
-    query += ' ORDER BY date ASC, time ASC';
+    query += ' ORDER BY start_at ASC';
 
     const result = await this.db
       .prepare(query)
@@ -57,30 +60,41 @@ export class StepService {
       throw new Error(validation.error);
     }
 
+    const startAt = parseToUnixMs(input.start_at);
+    if (startAt === null) {
+      throw new Error('start_at is required and must be a numeric timestamp (milliseconds)');
+    }
+    const endAt = input.end_at !== undefined ? parseToUnixMs(input.end_at) : startAt + 60 * 60 * 1000;
+    if (endAt === null) {
+      throw new Error('end_at must be a numeric timestamp (milliseconds)');
+    }
+
     const step: Step = {
       id,
       itinerary_id: input.itinerary_id,
       title: input.title,
-      date: input.date,
-      time: input.time,
+      start_at: startAt,
+      end_at: endAt!,
       location: input.location ?? null,
       notes,
+      type: input.type ?? 'normal:general',
       created_at: now,
       updated_at: now,
     };
 
     await this.db
       .prepare(
-        'INSERT INTO steps (id, itinerary_id, title, date, time, location, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       )
       .bind(
         step.id,
         step.itinerary_id,
         step.title,
-        step.date,
-        step.time,
+        step.start_at,
+        step.end_at,
         step.location,
         step.notes,
+        step.type,
         step.created_at,
         step.updated_at
       )
@@ -101,13 +115,19 @@ export class StepService {
       fields.push('title = ?');
       values.push(input.title);
     }
-    if (input.date !== undefined) {
-      fields.push('date = ?');
-      values.push(input.date);
+    if (input.start_at !== undefined) {
+      const startAt = parseToUnixMs(input.start_at);
+      if (startAt !== null) {
+        fields.push('start_at = ?');
+        values.push(startAt);
+      }
     }
-    if (input.time !== undefined) {
-      fields.push('time = ?');
-      values.push(input.time);
+    if (input.end_at !== undefined) {
+      const endAt = parseToUnixMs(input.end_at);
+      if (endAt !== null) {
+        fields.push('end_at = ?');
+        values.push(endAt);
+      }
     }
     if (input.location !== undefined) {
       fields.push('location = ?');
@@ -121,6 +141,10 @@ export class StepService {
       }
       fields.push('notes = ?');
       values.push(notes);
+    }
+    if (input.type !== undefined) {
+      fields.push('type = ?');
+      values.push(input.type);
     }
 
     values.push(stepId);
@@ -143,16 +167,17 @@ export class StepService {
 
   private mapToStep(row: Record<string, unknown>, maskSecrets: boolean = true): Step {
     const step: Step = {
-      id: row.id,
-      itinerary_id: row.itinerary_id,
-      title: row.title,
-      date: row.date,
-      time: row.time,
-      location: row.location,
-      notes: row.notes,
+      id: row.id as string,
+      itinerary_id: row.itinerary_id as string,
+      title: row.title as string,
+      start_at: row.start_at as number,
+      end_at: row.end_at as number,
+      location: row.location as string | null,
+      notes: row.notes as string,
+      type: row.type as any ?? 'normal:general',
       is_hidden: !!row.is_hidden_flag,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
+      created_at: row.created_at as string,
+      updated_at: row.updated_at as string,
     };
 
     if (step.is_hidden && maskSecrets) {

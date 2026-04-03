@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { ItineraryResponse, Step } from "@tabitabi/types";
+  import { createTimestamp, createEndTimestamp } from "@tabitabi/types";
+  import type { StepType } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
@@ -37,19 +39,22 @@
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
-      date: string;
-      time: string;
+      // Unix ms
+      start_at: number;
+      end_at: number;
       location?: string;
       notes?: string;
+      type?: StepType;
     }) => Promise<void>;
     onUpdateStep?: (
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
+        end_at?: number;
         location?: string;
         notes?: string;
+        type?: StepType;
       },
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
@@ -97,6 +102,7 @@
     time: "",
     location: "",
     notes: "",
+    type: "normal:general" as StepType,
   });
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
@@ -270,14 +276,23 @@
       return;
     }
     if (onCreateStep) {
+      const startAt = createTimestamp(newStep.date, newStep.time);
       await onCreateStep({
         title: newStep.title.trim(),
-        date: newStep.date,
-        time: newStep.time,
+        start_at: startAt,
+        end_at: createEndTimestamp(startAt, 60),
         location: newStep.location.trim() || undefined,
         notes: newStep.notes.trim() || undefined,
+        type: newStep.type,
       });
-      newStep = { title: "", date: "", time: "", location: "", notes: "" };
+      newStep = {
+        title: "",
+        date: "",
+        time: "",
+        location: "",
+        notes: "",
+        type: "normal:general",
+      };
       newStepHour = "09";
       newStepMinute = "00";
       isAddingStep = false;
@@ -285,7 +300,14 @@
   }
 
   function cancelAddStep() {
-    newStep = { title: "", date: "", time: "", location: "", notes: "" };
+    newStep = {
+      title: "",
+      date: "",
+      time: "",
+      location: "",
+      notes: "",
+      type: "normal:general",
+    };
     newStepHour = "09";
     newStepMinute = "00";
     isAddingStep = false;

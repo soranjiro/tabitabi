@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime } from "@tabitabi/types";
 
   interface Props {
     steps: Step[];
@@ -19,16 +20,12 @@
   ];
 
   function getSortedSteps(): Step[] {
-    return [...steps].sort((a, b) => {
-      const dateCompare = a.date.localeCompare(b.date);
-      if (dateCompare !== 0) return dateCompare;
-      return a.time.localeCompare(b.time);
-    });
+    return [...steps].sort((a, b) => a.start_at - b.start_at);
   }
 
   function getUniqueDates(): string[] {
     const sorted = getSortedSteps();
-    return [...new Set(sorted.map((s) => s.date))];
+    return [...new Set(sorted.map((s) => getStepDate(s)))];
   }
 
   function getDateColor(date: string): string {
@@ -79,15 +76,15 @@
           <div
             class="step-badge"
             style="background: linear-gradient(135deg, {getDateColor(
-              step.date,
-            )}, {getDateColor(step.date)}99)"
+              getStepDate(step),
+            )}, {getDateColor(getStepDate(step))}99)"
           >
             {getStepNumber(step)}
           </div>
           <div class="step-content">
             <div class="step-title">{step.title}</div>
             <div class="step-meta">
-              <span class="step-time">{formatTime(step.time)}</span>
+              <span class="step-time">{formatTime(getStepTime(step))}</span>
             </div>
           </div>
           <div class="step-arrow">

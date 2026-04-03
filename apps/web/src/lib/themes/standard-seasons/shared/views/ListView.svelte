@@ -1,7 +1,10 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime } from "@tabitabi/types";
   import { renderMarkdown } from "../utils/markdown";
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
+  import IconRenderer from "../icons/IconRenderer.svelte";
+  import { isTransportType } from "../utils/step-type";
 
   interface Props {
     steps: Step[];
@@ -28,13 +31,10 @@
 
   let selectedStep = $state<Step | null>(null);
 
-  function isSecretStep(stepDate: string, stepTime: string): boolean {
+  function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
-    const now = new Date();
-    const stepDateTime = new Date(`${stepDate}T${stepTime}`);
-    const revealTime = new Date(
-      stepDateTime.getTime() - secretModeOffset * 60 * 1000,
-    );
+    const now = Date.now();
+    const revealTime = step.start_at - secretModeOffset * 60 * 1000;
     return now < revealTime;
   }
 
@@ -50,11 +50,7 @@
   }
 
   const sortedSteps = $derived(
-    [...steps].sort((a, b) => {
-      const dateCompare = a.date.localeCompare(b.date);
-      if (dateCompare !== 0) return dateCompare;
-      return a.time.localeCompare(b.time);
-    }),
+    [...steps].sort((a, b) => a.start_at - b.start_at),
   );
 
   function handleRowClick(step: Step) {
@@ -73,38 +69,45 @@
     <table class="standard-autumn-list-table">
       <tbody>
         {#each sortedSteps as step, idx}
-          {#if idx === 0 || sortedSteps[idx - 1].date !== step.date}
+          {#if idx === 0 || getStepDate(sortedSteps[idx - 1]) !== getStepDate(step)}
             <tr class="standard-autumn-list-date-header">
               <td colspan="4" class="standard-autumn-list-date-header-cell">
                 <div class="standard-autumn-list-date-header-content">
                   <span class="standard-autumn-list-date-header-date"
-                    >{formatDate(step.date)}</span
+                    >{formatDate(getStepDate(step))}</span
                   >
                   <span class="standard-autumn-list-date-header-day"
-                    >({getDayOfWeek(step.date)})</span
+                    >({getDayOfWeek(getStepDate(step))})</span
                   >
                 </div>
               </td>
             </tr>
           {/if}
 
-          {#if isSecretStep(step.date, step.time) && !hasEditPermission}
+          {#if isSecretStep(step) && !hasEditPermission}
             <tr>
-              <td class="standard-autumn-list-time">{step.time}</td>
+              <td class="standard-autumn-list-time">{getStepTime(step)}</td>
               <td colspan="3" class="standard-autumn-list-title-cell">
                 <span class="standard-autumn-secret-text">🔒 Secret</span>
               </td>
             </tr>
           {:else}
             <tr
+              class="standard-autumn-list-row"
+              class:standard-autumn-list-row-transport={isTransportType(
+                step.type,
+              )}
               onmouseenter={(e) =>
                 e.currentTarget?.style.setProperty("cursor", "pointer")}
               onmouseleave={(e) =>
                 e.currentTarget?.style.setProperty("cursor", "default")}
               onclick={() => handleRowClick(step)}
             >
-              <td class="standard-autumn-list-time">{step.time}</td>
-              <td colspan="3" class="standard-autumn-list-title-cell">
+              <td class="standard-autumn-list-time">{getStepTime(step)}</td>
+              <td class="standard-autumn-list-icon">
+                <IconRenderer type={step.type} size="sm" />
+              </td>
+              <td colspan="2" class="standard-autumn-list-title-cell">
                 <div class="standard-autumn-list-title-content">
                   <span class="standard-autumn-list-title">{step.title}</span>
                   {#if step.location}

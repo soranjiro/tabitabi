@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import type { ItineraryResponse, Step } from "@tabitabi/types";
+  import { createTimestamp, createEndTimestamp } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
@@ -20,8 +21,10 @@
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
-      date: string;
-      time: string;
+      // Unix ms
+      start_at: number;
+      // Unix ms
+      end_at: number;
       location?: string;
       notes?: string;
     }) => Promise<void>;
@@ -105,18 +108,13 @@
 
   let newStep = $state({
     title: "",
-    date: "",
-    time: "",
     location: "",
     notes: "",
   });
 
+  let newStepDate = $state("");
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
-
-  $effect(() => {
-    newStep.time = `${newStepHour}:${newStepMinute}`;
-  });
 
   async function handleTitleUpdate() {
     if (!editedTitle.trim() || editedTitle === itinerary.title) {
@@ -141,21 +139,24 @@
   }
 
   async function handleAddStep() {
-    if (!newStep.title.trim() || !newStep.date || !newStep.time) {
+    if (!newStep.title.trim() || !newStepDate) {
       alert("タイトル、日付、時刻は必須です");
       return;
     }
 
     if (onCreateStep) {
+      const time = `${newStepHour}:${newStepMinute}`;
+      const startAt = createTimestamp(newStepDate, time);
       await onCreateStep({
         title: newStep.title.trim(),
-        date: newStep.date,
-        time: newStep.time,
+        start_at: startAt,
+        end_at: createEndTimestamp(startAt, 60),
         location: newStep.location.trim() || undefined,
         notes: newStep.notes.trim() || undefined,
       });
 
-      newStep = { title: "", date: "", time: "", location: "", notes: "" };
+      newStep = { title: "", location: "", notes: "" };
+      newStepDate = "";
       newStepHour = "09";
       newStepMinute = "00";
       isAddingStep = false;
@@ -163,7 +164,8 @@
   }
 
   function cancelAddStep() {
-    newStep = { title: "", date: "", time: "", location: "", notes: "" };
+    newStep = { title: "", location: "", notes: "" };
+    newStepDate = "";
     newStepHour = "09";
     newStepMinute = "00";
     isAddingStep = false;
@@ -263,7 +265,7 @@
         <div class="minimal-datetime">
           <input
             type="date"
-            bind:value={newStep.date}
+            bind:value={newStepDate}
             class="minimal-input"
             required
           />

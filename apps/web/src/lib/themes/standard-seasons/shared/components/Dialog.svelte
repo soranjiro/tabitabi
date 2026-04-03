@@ -17,12 +17,16 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="standard-autumn-dialog" onclick={(e) => e.stopPropagation()}>
-      <h3 class="standard-autumn-dialog-title">{title}</h3>
-      {#if children}
-        {@render children()}
-      {/if}
+      <div class="standard-autumn-dialog-header">
+        <h3 class="standard-autumn-dialog-title">{title}</h3>
+      </div>
+      <div class="standard-autumn-dialog-content">
+        {#if children}
+          {@render children()}
+        {/if}
+      </div>
       {#if actions}
-        <div class="standard-autumn-dialog-actions">
+        <div class="standard-autumn-dialog-actions-footer">
           {@render actions()}
         </div>
       {/if}

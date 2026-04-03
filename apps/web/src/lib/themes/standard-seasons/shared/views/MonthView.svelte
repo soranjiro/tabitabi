@@ -1,6 +1,9 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime } from "@tabitabi/types";
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
+  import IconRenderer from "../icons/IconRenderer.svelte";
+  import { isTransportType } from "../utils/step-type";
 
   interface Props {
     steps: Step[];
@@ -28,28 +31,19 @@
   let currentDate = $state(new Date());
   let selectedStep = $state<Step | null>(null);
 
-  function isSecretStep(stepDate: string, stepTime: string): boolean {
+  function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
-    const now = new Date();
-    const stepDateTime = new Date(`${stepDate}T${stepTime}`);
-    const revealTime = new Date(
-      stepDateTime.getTime() - secretModeOffset * 60 * 1000,
-    );
+    const now = Date.now();
+    const revealTime = step.start_at - secretModeOffset * 60 * 1000;
     return now < revealTime;
   }
 
-  const stepsByDate = $derived(() => {
-    const map = new Map<string, Step[]>();
-    for (const step of steps) {
-      const date = step.date;
-      if (!map.has(date)) map.set(date, []);
-      map.get(date)!.push(step);
-    }
-    for (const [_, stepList] of map) {
-      stepList.sort((a, b) => a.time.localeCompare(b.time));
-    }
-    return map;
-  });
+  function formatDateKey(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
 
   function getMonthDays(
     date: Date,
@@ -95,12 +89,76 @@
     return days;
   }
 
-  function formatDateKey(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
+  function getStepEndDate(step: Step): string {
+    const d = new Date(step.end_at);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
   }
+
+  const monthDays = $derived(getMonthDays(currentDate));
+
+  const weeks = $derived(() => {
+    const days = monthDays.map((d) => d.date);
+    const res: string[][] = [];
+    for (let i = 0; i < days.length; i += 7) {
+      res.push(days.slice(i, i + 7));
+    }
+    return res;
+  });
+
+  const monthEventSegments = $derived(() => {
+    const days = monthDays.map((d) => d.date);
+    const weeksCount = Math.ceil(days.length / 7);
+    const weeksSegments: Array<any[]> = Array.from(
+      { length: weeksCount },
+      () => [],
+    );
+
+    for (const step of steps) {
+      const startDate = getStepDate(step);
+      const endDate = getStepEndDate(step);
+      let startIdx = days.indexOf(startDate);
+      let endIdx = days.indexOf(endDate);
+      if (startIdx === -1 && endIdx === -1) continue;
+      if (startIdx === -1) startIdx = 0;
+      if (endIdx === -1) endIdx = days.length - 1;
+
+      for (let w = 0; w < weeksCount; w++) {
+        const weekStart = w * 7;
+        const weekEnd = weekStart + 6;
+        const segStart = Math.max(startIdx, weekStart);
+        const segEnd = Math.min(endIdx, weekEnd);
+        if (segStart <= segEnd) {
+          const leftPercent = ((segStart - weekStart) / 7) * 100;
+          const widthPercent = ((segEnd - segStart + 1) / 7) * 100;
+          const segmentsForWeek = weeksSegments[w];
+          let rowIndex = 0;
+          while (true) {
+            const rowOccupied = segmentsForWeek.filter(
+              (s) => s.rowIndex === rowIndex,
+            );
+            const overlap = rowOccupied.some(
+              (s) => !(segEnd < s.startIdx || segStart > s.endIdx),
+            );
+            if (!overlap) break;
+            rowIndex++;
+          }
+          segmentsForWeek.push({
+            step,
+            leftPercent,
+            widthPercent,
+            rowIndex,
+            startIdx: segStart,
+            endIdx: segEnd,
+          });
+        }
+      }
+    }
+
+    return weeksSegments;
+  });
 
   function formatMonthTitle(date: Date): string {
     return `${date.getFullYear()}年${date.getMonth() + 1}月`;
@@ -139,8 +197,6 @@
   function closeDialog() {
     selectedStep = null;
   }
-
-  const monthDays = $derived(getMonthDays(currentDate));
 </script>
 
 <div class="standard-autumn-month-view">
@@ -182,44 +238,53 @@
     </div>
 
     <div class="standard-autumn-month-grid">
-      {#each monthDays as dayInfo}
+      {#each weeks() as weekDays, wIdx}
         <div
-          class="standard-autumn-month-day"
-          class:other-month={!dayInfo.isCurrentMonth}
-          class:today={isToday(dayInfo.date)}
+          class="standard-autumn-month-week"
+          style="position: relative; display: grid; grid-template-columns: repeat(7, 1fr);"
         >
-          <div class="standard-autumn-month-day-header">
-            <span class="standard-autumn-month-day-number">{dayInfo.day}</span>
-          </div>
-          <div class="standard-autumn-month-day-content">
-            {#each stepsByDate().get(dayInfo.date) || [] as step, idx}
-              {#if idx < 3}
-                <button
-                  type="button"
-                  class="standard-autumn-month-event"
-                  class:secret={isSecretStep(step.date, step.time) &&
-                    !hasEditPermission}
-                  onclick={() => handleEventClick(step)}
-                  title={step.title}
+          {#each weekDays as dateStr}
+            {@const dayInfo = monthDays.find((d) => d.date === dateStr)}
+            <div
+              class="standard-autumn-month-day"
+              class:other-month={!dayInfo?.isCurrentMonth}
+              class:today={isToday(dateStr)}
+            >
+              <div class="standard-autumn-month-day-header">
+                <span class="standard-autumn-month-day-number"
+                  >{dayInfo?.day}</span
                 >
-                  {#if isSecretStep(step.date, step.time) && !hasEditPermission}
-                    <span class="standard-autumn-month-event-time">🔒</span>
-                  {:else}
-                    <span class="standard-autumn-month-event-time"
-                      >{step.time}</span
-                    >
-                    <span class="standard-autumn-month-event-title"
-                      >{step.title}</span
-                    >
-                  {/if}
-                </button>
-              {/if}
-            {/each}
-            {#if (stepsByDate().get(dayInfo.date) || []).length > 3}
-              <div class="standard-autumn-month-more">
-                +{(stepsByDate().get(dayInfo.date) || []).length - 3}件
               </div>
-            {/if}
+            </div>
+          {/each}
+
+          <div
+            class="standard-autumn-month-week-events"
+            style="position:absolute; left:0; right:0; top:36px;"
+          >
+            {#each monthEventSegments()[wIdx] || [] as seg}
+              <button
+                type="button"
+                class="standard-autumn-month-event"
+                class:standard-autumn-month-event-transport={isTransportType(
+                  seg.step.type,
+                )}
+                style={`position:absolute; left:${seg.leftPercent}%; width:${seg.widthPercent}%; top:${seg.rowIndex * 24}px; margin-bottom: 3px;`}
+                onclick={() => handleEventClick(seg.step)}
+                title={seg.step.title}
+              >
+                {#if isSecretStep(seg.step) && !hasEditPermission}
+                  <span class="standard-autumn-month-event-time">🔒</span>
+                {:else}
+                  <span class="standard-autumn-month-event-icon">
+                    <IconRenderer type={seg.step.type} size="sm" />
+                  </span>
+                  <span class="standard-autumn-month-event-title"
+                    >{seg.step.title}</span
+                  >
+                {/if}
+              </button>
+            {/each}
           </div>
         </div>
       {/each}
@@ -231,6 +296,8 @@
   <EventDetailDialog
     step={selectedStep}
     {hasEditPermission}
+    {secretModeEnabled}
+    {secretModeOffset}
     onClose={closeDialog}
     {onUpdateStep}
     {onDeleteStep}

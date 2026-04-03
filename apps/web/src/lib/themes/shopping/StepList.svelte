@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime, createTimestamp } from "@tabitabi/types";
   import {
     getMemoText,
     parseMemoData,
@@ -14,8 +15,7 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
         location?: string;
         notes?: string;
       },
@@ -32,14 +32,6 @@
 
   let editingStepId = $state<string | null>(null);
   let editedStep = $state<Partial<Step>>({});
-  let editStepHour = $state("10");
-  let editStepMinute = $state("00");
-
-  $effect(() => {
-    if (editingStepId && editStepHour && editStepMinute) {
-      editedStep.time = `${editStepHour}:${editStepMinute}`;
-    }
-  });
 
   const groupedByStore = $derived(() => {
     const groups = new Map<string, Step[]>();
@@ -54,8 +46,10 @@
 
     for (const [_, storeSteps] of groups) {
       storeSteps.sort((a, b) => {
-        if (a.date !== b.date) return a.date.localeCompare(b.date);
-        return a.time.localeCompare(b.time);
+        const aDate = getStepDate(a);
+        const bDate = getStepDate(b);
+        if (aDate !== bDate) return aDate.localeCompare(bDate);
+        return getStepTime(a).localeCompare(getStepTime(b));
       });
     }
 
@@ -89,16 +83,11 @@
   function startEdit(step: Step) {
     editingStepId = step.id;
     editedStep = { ...step, notes: getMemoText(step.notes) };
-    const [hour, minute] = step.time.split(":");
-    editStepHour = hour;
-    editStepMinute = minute;
   }
 
   function cancelEdit() {
     editingStepId = null;
     editedStep = {};
-    editStepHour = "10";
-    editStepMinute = "00";
   }
 
   async function handleUpdate() {
@@ -114,8 +103,7 @@
     if (onUpdateStep) {
       await onUpdateStep(editingStepId, {
         title: editedStep.title.trim(),
-        date: editedStep.date,
-        time: editedStep.time,
+        start_at: originalStep?.start_at,
         location: editedStep.location?.trim() || undefined,
         notes,
       });
@@ -123,8 +111,6 @@
 
     editingStepId = null;
     editedStep = {};
-    editStepHour = "10";
-    editStepMinute = "00";
   }
 
   async function handleDelete(stepId: string) {
@@ -222,36 +208,7 @@
                     class="shopping-input"
                   />
                 </div>
-                <div class="shopping-form-row">
-                  <div class="shopping-form-field">
-                    <span class="shopping-label">日付</span>
-                    <input
-                      type="date"
-                      bind:value={editedStep.date}
-                      class="shopping-input"
-                    />
-                  </div>
-                  <div class="shopping-form-field">
-                    <span class="shopping-label">時刻</span>
-                    <div class="shopping-time-picker">
-                      <select bind:value={editStepHour} class="shopping-select">
-                        {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
-                          <option value={hour}>{hour}</option>
-                        {/each}
-                      </select>
-                      <span class="shopping-time-separator">:</span>
-                      <select
-                        bind:value={editStepMinute}
-                        class="shopping-select"
-                      >
-                        <option value="00">00</option>
-                        <option value="15">15</option>
-                        <option value="30">30</option>
-                        <option value="45">45</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
+
                 <div class="shopping-form-field">
                   <span class="shopping-label">メモ</span>
                   <textarea
@@ -295,9 +252,9 @@
                   <h3 class="shopping-item-title">{step.title}</h3>
                   <div class="shopping-item-meta">
                     <span class="shopping-item-date">
-                      {formatDate(step.date)}
+                      {formatDate(getStepDate(step))}
                     </span>
-                    <span class="shopping-item-time">{step.time}</span>
+                    <span class="shopping-item-time">{getStepTime(step)}</span>
                   </div>
                   {#if displayNotes(step)}
                     <div class="shopping-item-notes">{displayNotes(step)}</div>

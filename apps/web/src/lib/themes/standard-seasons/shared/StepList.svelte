@@ -1,5 +1,11 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import {
+    getStepDate,
+    getStepTime,
+    createTimestamp,
+    createEndTimestamp,
+  } from "@tabitabi/types";
   import { getMemoText, updateMemoText } from "$lib/memo";
   import { renderMarkdown } from "./utils/markdown";
   import {
@@ -10,6 +16,7 @@
     ChevronLeftIcon,
     ChevronRightIcon,
   } from "./components/icons/index.svelte";
+  import IconRenderer from "./icons/IconRenderer.svelte";
   import { type ViewMode } from "./utils/storage";
   import { ListView, MonthView, WeekView } from "./views";
   import EventDetailDialog from "./components/EventDetailDialog.svelte";
@@ -25,8 +32,8 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
+        end_at?: number;
         location?: string;
         notes?: string;
       },
@@ -45,31 +52,23 @@
     onDeleteStep,
   }: Props = $props();
 
-  function isSecretStep(stepDate: string, stepTime: string): boolean {
+  function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
-    const now = new Date();
-    const stepDateTime = new Date(`${stepDate}T${stepTime}`);
-    const revealTime = new Date(
-      stepDateTime.getTime() - secretModeOffset * 60 * 1000,
-    );
+    const now = Date.now();
+    const revealTime = step.start_at - secretModeOffset * 60 * 1000;
     return now < revealTime;
   }
 
   let editingStepId = $state<string | null>(null);
-  let editedStep = $state<Partial<Step>>({});
-  let editStepHour = $state("09");
-  let editStepMinute = $state("00");
   let selectedStepForDialog = $state<Step | null>(null);
 
   let trackEl = $state<HTMLDivElement | null>(null);
   let touchStartX = $state<number | null>(null);
   let touchDeltaX = $state(0);
 
-  // Drag and drop state
   let draggedStepId = $state<string | null>(null);
   let dragOverStepId = $state<string | null>(null);
 
-  // Touch drag state for mobile
   let touchDragStepId = $state<string | null>(null);
   let touchStartY = $state<number | null>(null);
   let touchCurrentY = $state<number | null>(null);
@@ -77,12 +76,12 @@
   function computeGroupedSteps(stepList: Step[]): [string, Step[]][] {
     const groups = new Map<string, Step[]>();
     for (const step of stepList) {
-      const date = step.date;
+      const date = getStepDate(step);
       if (!groups.has(date)) groups.set(date, []);
       groups.get(date)!.push(step);
     }
     for (const [_, groupSteps] of groups) {
-      groupSteps.sort((a, b) => a.time.localeCompare(b.time));
+      groupSteps.sort((a, b) => a.start_at - b.start_at);
     }
     return Array.from(groups.entries()).sort((a, b) =>
       a[0].localeCompare(b[0]),
@@ -109,12 +108,6 @@
   let activeIndex = $state(getInitialIndex(computeGroupedSteps(steps)));
 
   const groupedSteps = $derived(() => computeGroupedSteps(steps));
-
-  $effect(() => {
-    if (editingStepId && editStepHour && editStepMinute) {
-      editedStep.time = `${editStepHour}:${editStepMinute}`;
-    }
-  });
 
   $effect(() => {
     const groups = groupedSteps();
@@ -176,60 +169,9 @@
     return date.toLocaleDateString("ja-JP", { month: "long", day: "numeric" });
   }
 
-  function startEdit(step: Step) {
-    editingStepId = step.id;
-    editedStep = { ...step, notes: getMemoText(step.notes) };
-    const [hour, minute] = step.time.split(":");
-    editStepHour = hour;
-    editStepMinute = minute;
-  }
-
-  function cancelEdit() {
-    editingStepId = null;
-    editedStep = {};
-    editStepHour = "09";
-    editStepMinute = "00";
-  }
-
-  async function handleUpdate() {
-    if (
-      !editingStepId ||
-      !editedStep.title?.trim() ||
-      !editedStep.date ||
-      !editedStep.time
-    ) {
-      alert("タイトル、日付、時刻は必須です");
-      return;
-    }
-    const originalStep = steps.find((s) => s.id === editingStepId);
-    const noteText = (editedStep.notes ?? "").trim();
-    const notes = updateMemoText(originalStep?.notes, noteText);
-    if (onUpdateStep) {
-      await onUpdateStep(editingStepId, {
-        title: editedStep.title.trim(),
-        date: editedStep.date,
-        time: editedStep.time,
-        location: editedStep.location?.trim() || undefined,
-        notes,
-      });
-    }
-    editingStepId = null;
-    editedStep = {};
-    editStepHour = "09";
-    editStepMinute = "00";
-  }
-
-  async function handleDelete(stepId: string) {
-    if (!confirm("この予定を削除しますか?")) return;
-    if (onDeleteStep) {
-      await onDeleteStep(stepId);
-    }
-  }
-
   function handleStepClick(stepId: string) {
     const step = steps.find((s) => s.id === stepId);
     if (step) {
-      // Show detail dialog first for all views
       selectedStepForDialog = step;
     }
   }
@@ -238,13 +180,8 @@
     selectedStepForDialog = null;
   }
 
-  function isCurrentlyEditing(): boolean {
-    return editingStepId !== null;
-  }
-
-  // Drag and drop handlers
   function handleDragStart(e: DragEvent, stepId: string) {
-    if (!hasEditPermission || editingStepId) return;
+    if (!hasEditPermission) return;
     draggedStepId = stepId;
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = "move";
@@ -252,7 +189,7 @@
   }
 
   function handleDragOver(e: DragEvent, stepId: string) {
-    if (!hasEditPermission || !draggedStepId || editingStepId) return;
+    if (!hasEditPermission || !draggedStepId) return;
     e.preventDefault();
     dragOverStepId = stepId;
     if (e.dataTransfer) {
@@ -296,12 +233,15 @@
     }
 
     // Calculate new time for the dragged step
-    const targetTime = dateSteps[targetIndex].time;
+    const targetDate = getStepDate(dateSteps[targetIndex]);
+    const targetTime = getStepTime(dateSteps[targetIndex]);
+
+    const targetTimestamp = createTimestamp(targetDate, targetTime);
 
     try {
       // Only update the dragged step's time to match the target position
       await onUpdateStep(draggedStepId, {
-        time: targetTime,
+        start_at: targetTimestamp,
       });
     } catch (error) {
       console.error("Failed to update step time:", error);
@@ -312,25 +252,9 @@
     dragOverStepId = null;
   }
 
-  function recalculateTimes(steps: Step[]): Step[] {
-    // This function is no longer used
-    return steps;
-  }
-
-  function timeToMinutes(time: string): number {
-    const [h, m] = time.split(":").map(Number);
-    return h * 60 + m;
-  }
-
-  function minutesToTime(minutes: number): string {
-    const h = Math.floor(minutes / 60) % 24;
-    const m = minutes % 60;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-  }
-
   // Touch event handlers for mobile drag and drop
   function handleTouchDragStart(e: TouchEvent, stepId: string) {
-    if (!hasEditPermission || editingStepId) return;
+    if (!hasEditPermission) return;
     touchDragStepId = stepId;
     touchStartY = e.touches[0].clientY;
     touchCurrentY = touchStartY;
@@ -395,11 +319,14 @@
     }
 
     // Get target time
-    const targetTime = dateSteps[targetIndex].time;
+    const targetDate = getStepDate(dateSteps[targetIndex]);
+    const targetTime = getStepTime(dateSteps[targetIndex]);
+
+    const targetTimestamp = createTimestamp(targetDate, targetTime);
 
     try {
       await onUpdateStep(touchDragStepId, {
-        time: targetTime,
+        start_at: targetTimestamp,
       });
     } catch (error) {
       console.error("Failed to update step time:", error);
@@ -428,7 +355,8 @@
 
       // Actually, handleTouchDragEnd needs dateSteps.
       // Let's find the dateSteps for this stepId.
-      const date = steps.find((s) => s.id === stepId)?.date;
+      const stepObj = steps.find((s) => s.id === stepId);
+      const date = stepObj ? getStepDate(stepObj) : null;
       if (date) {
         const dateSteps = groupedSteps().find(([d]) => d === date)?.[1] || [];
         handleTouchDragEnd(e, dateSteps);
@@ -588,80 +516,22 @@
                     ondrop={(e) => handleDrop(e, step.id, dateSteps)}
                     use:setupTouchDrag={step.id}
                   >
-                    <div class="standard-autumn-step-time">{step.time}</div>
+                    <div class="standard-autumn-step-time">
+                      {getStepTime(step)}
+                    </div>
                     <div class="standard-autumn-timeline-line"></div>
                     <div class="standard-autumn-step-dot"></div>
 
-                    {#if editingStepId === step.id}
-                      <!-- ... editing form ... -->
-                      <div class="standard-autumn-step-editing">
-                        <h3 class="standard-autumn-form-title">予定を編集</h3>
-                        <!-- ... form fields ... -->
-                        <div class="standard-autumn-form-grid">
-                          <input
-                            type="text"
-                            bind:value={editedStep.title}
-                            placeholder="予定のタイトル *"
-                            class="standard-autumn-input"
-                          />
-                          <div class="standard-autumn-datetime">
-                            <input
-                              type="date"
-                              bind:value={editedStep.date}
-                              class="standard-autumn-input"
-                            />
-                            <div class="standard-autumn-time-picker">
-                              <select
-                                bind:value={editStepHour}
-                                class="standard-autumn-select-time"
-                              >
-                                {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
-                                  <option value={hour}>{hour}</option>
-                                {/each}
-                              </select>
-                              <span class="standard-autumn-time-separator"
-                                >:</span
-                              >
-                              <select
-                                bind:value={editStepMinute}
-                                class="standard-autumn-select-time"
-                              >
-                                <option value="00">00</option>
-                                <option value="15">15</option>
-                                <option value="30">30</option>
-                                <option value="45">45</option>
-                              </select>
-                            </div>
-                          </div>
-                          <input
-                            type="text"
-                            bind:value={editedStep.location}
-                            placeholder="場所 (任意)"
-                            class="standard-autumn-input"
-                          />
-                          <textarea
-                            bind:value={editedStep.notes}
-                            placeholder="メモ (任意)"
-                            class="standard-autumn-textarea"
-                            rows="3"
-                          ></textarea>
-                        </div>
-                        <div class="standard-autumn-form-actions">
-                          <button
-                            onclick={handleUpdate}
-                            class="standard-autumn-btn standard-autumn-btn-primary"
-                            >保存</button
-                          >
-                          <button
-                            onclick={cancelEdit}
-                            class="standard-autumn-btn standard-autumn-btn-secondary"
-                            >キャンセル</button
-                          >
-                        </div>
-                      </div>
-                    {:else if isSecretStep(step.date, step.time) && !hasEditPermission}
+                    {#if isSecretStep(step) && !hasEditPermission}
                       <div
                         class="standard-autumn-step-content standard-autumn-step-hidden"
+                        onclick={() => handleStepClick(step.id)}
+                        role="button"
+                        tabindex="0"
+                        onkeydown={(e) =>
+                          (e.key === "Enter" || e.key === " ") &&
+                          handleStepClick(step.id)}
+                        title="詳細を表示"
                       >
                         <div class="standard-autumn-step-title">
                           <span class="standard-autumn-secret-text"
@@ -686,45 +556,23 @@
                         </div>
                       </div>
                     {:else}
-                      <div class="standard-autumn-step-content">
-                        <div class="standard-autumn-step-title">
-                          {step.title}
-                          {#if hasEditPermission}
-                            <div class="standard-autumn-step-actions">
-                              <button
-                                onclick={() => startEdit(step)}
-                                class="standard-autumn-btn-icon"
-                                title="編集"
-                                aria-label="編集"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
-                                  fill="currentColor"
-                                >
-                                  <path
-                                    d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-                                  />
-                                </svg>
-                              </button>
-                              <button
-                                onclick={() => handleDelete(step.id)}
-                                class="standard-autumn-btn-icon"
-                                title="削除"
-                                aria-label="削除"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
-                                  fill="currentColor"
-                                >
-                                  <path
-                                    d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
-                                  />
-                                </svg>
-                              </button>
-                            </div>
-                          {/if}
+                      <div
+                        class="standard-autumn-step-content"
+                        onclick={() => handleStepClick(step.id)}
+                        role="button"
+                        tabindex="0"
+                        onkeydown={(e) =>
+                          (e.key === "Enter" || e.key === " ") &&
+                          handleStepClick(step.id)}
+                        title="詳細を表示"
+                      >
+                        <div class="standard-autumn-step-header">
+                          <div class="standard-autumn-step-title">
+                            {step.title}
+                          </div>
+                          <div class="standard-autumn-step-type-icon">
+                            <IconRenderer type={step.type} size="sm" />
+                          </div>
                         </div>
                         {#if step.location}
                           <div class="standard-autumn-step-location">
@@ -821,6 +669,8 @@
     <EventDetailDialog
       step={selectedStepForDialog}
       {hasEditPermission}
+      {secretModeEnabled}
+      {secretModeOffset}
       onClose={closeDetailDialog}
       {onUpdateStep}
       {onDeleteStep}

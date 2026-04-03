@@ -1,6 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import type { ItineraryResponse, Step } from "@tabitabi/types";
+  import {
+    getStepDate,
+    getStepTime,
+    createTimestamp,
+    createEndTimestamp,
+  } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
@@ -32,8 +38,8 @@
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
-      date: string;
-      time: string;
+      start_at: number;
+      end_at: number;
       location?: string;
       notes?: string;
     }) => Promise<void>;
@@ -41,8 +47,8 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
+        end_at?: number;
         location?: string;
         notes?: string;
       },
@@ -89,21 +95,19 @@
 
   let newStep = $state({
     title: "",
-    date: "",
-    time: "",
     location: "",
     notes: "",
   });
+  let newStepDate = $state("");
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
 
   let editStep = $state({
     title: "",
-    date: "",
-    time: "",
     location: "",
     notes: "",
   });
+  let editingStepDate = $state("");
   let editStepHour = $state("09");
   let editStepMinute = $state("00");
   let editingStepId = $state<string | null>(null);
@@ -376,11 +380,7 @@
 
   const completedQuests = $derived(() => {
     const now = new Date();
-    const today = now.toISOString().split("T")[0];
-    const currentTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    return planASteps.filter(
-      (s) => s.date < today || (s.date === today && s.time <= currentTimeStr),
-    ).length;
+    return planASteps.filter((s) => new Date(s.start_at) <= now).length;
   });
 
   const totalQuests = $derived(planASteps.length);
@@ -474,11 +474,10 @@
     const today = new Date().toISOString().split("T")[0];
     newStep = {
       title: "",
-      date: today,
-      time: "",
       location: "",
       notes: "",
     };
+    newStepDate = today;
     newStepHour = "09";
     newStepMinute = "00";
     newPlanBEntries = [];
@@ -487,12 +486,13 @@
 
   function closeAddForm() {
     showAddForm = false;
-    newStep = { title: "", date: "", time: "", location: "", notes: "" };
+    newStep = { title: "", location: "", notes: "" };
+    newStepDate = "";
     newPlanBEntries = [];
   }
 
   async function handleAddStep() {
-    if (!newStep.title.trim() || !newStep.date) {
+    if (!newStep.title.trim() || !newStepDate) {
       alert("Title and date are required");
       return;
     }
@@ -505,10 +505,11 @@
     }
     if (onCreateStep) {
       const mergedNotes = mergeNotesWithPlanB(newStep.notes, planBPayload);
+      const startAt = createTimestamp(newStepDate, time);
       await onCreateStep({
         title: newStep.title.trim(),
-        date: newStep.date,
-        time,
+        start_at: startAt,
+        end_at: createEndTimestamp(startAt, 60),
         location: newStep.location?.trim() || undefined,
         notes: mergedNotes,
       });
@@ -525,17 +526,16 @@
     editingPlanBJson = planBJson;
     planBEntries = parsePlanBEntries(
       planBJson,
-      selectedStep.date,
-      selectedStep.time,
+      getStepDate(selectedStep),
+      getStepTime(selectedStep),
     );
     editStep = {
       title: selectedStep.title,
-      date: selectedStep.date,
-      time: selectedStep.time,
       location: selectedStep.location || "",
       notes: visibleNotes,
     };
-    const [hour, minute] = selectedStep.time.split(":");
+    editingStepDate = getStepDate(selectedStep);
+    const [hour, minute] = getStepTime(selectedStep).split(":");
     editStepHour = hour;
     editStepMinute = minute;
     showEditForm = true;
@@ -546,11 +546,12 @@
     editingStepId = null;
     editingPlanBJson = null;
     planBEntries = [];
-    editStep = { title: "", date: "", time: "", location: "", notes: "" };
+    editStep = { title: "", location: "", notes: "" };
+    editingStepDate = "";
   }
 
   async function handleUpdateStep() {
-    if (!editingStepId || !editStep.title.trim() || !editStep.date) {
+    if (!editingStepId || !editStep.title.trim() || !editingStepDate) {
       alert("Title and date are required");
       return;
     }
@@ -564,10 +565,11 @@
     editingPlanBJson = planBPayload;
     if (onUpdateStep) {
       const mergedNotes = mergeNotesWithPlanB(editStep.notes, planBPayload);
+      const startAt = createTimestamp(editingStepDate, time);
       await onUpdateStep(editingStepId, {
         title: editStep.title.trim(),
-        date: editStep.date,
-        time,
+        start_at: startAt,
+        end_at: createEndTimestamp(startAt, 60),
         location: editStep.location?.trim() || undefined,
         notes: mergedNotes,
       });
@@ -920,7 +922,7 @@
       <div class="pq-form-row">
         <div class="pq-form-group">
           <span class="pq-form-label">DATE *</span>
-          <input type="date" class="pq-form-input" bind:value={newStep.date} />
+          <input type="date" class="pq-form-input" bind:value={newStepDate} />
         </div>
         <div class="pq-form-group">
           <span class="pq-form-label">TIME</span>
@@ -1060,7 +1062,7 @@
           onclick={() =>
             addPlanBEntry(
               "new",
-              newStep.date || new Date().toISOString().split("T")[0],
+              newStepDate || new Date().toISOString().split("T")[0],
               `${newStepHour}:${newStepMinute}`,
             )}
         >
@@ -1098,7 +1100,11 @@
       <div class="pq-form-row">
         <div class="pq-form-group">
           <span class="pq-form-label">DATE *</span>
-          <input type="date" class="pq-form-input" bind:value={editStep.date} />
+          <input
+            type="date"
+            class="pq-form-input"
+            bind:value={editingStepDate}
+          />
         </div>
         <div class="pq-form-group">
           <span class="pq-form-label">TIME</span>
@@ -1230,7 +1236,7 @@
           onclick={() =>
             addPlanBEntry(
               "edit",
-              editStep.date || new Date().toISOString().split("T")[0],
+              editingStepDate || new Date().toISOString().split("T")[0],
               `${editStepHour}:${editStepMinute}`,
             )}
         >

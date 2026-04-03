@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime } from "@tabitabi/types";
   import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 
   interface Props {
@@ -238,12 +239,12 @@
     routeRenderers = [];
 
     const sortedSteps = [...steps].sort((a, b) => {
-      const dateCompare = a.date.localeCompare(b.date);
+      const dateCompare = getStepDate(a).localeCompare(getStepDate(b));
       if (dateCompare !== 0) return dateCompare;
-      return a.time.localeCompare(b.time);
+      return getStepTime(a).localeCompare(getStepTime(b));
     });
 
-    const uniqueDates = [...new Set(sortedSteps.map((s) => s.date))];
+    const uniqueDates = [...new Set(sortedSteps.map((s) => getStepDate(s)))];
 
     const path: google.maps.LatLngLiteral[] = [];
     const bounds = new google.maps.LatLngBounds();
@@ -281,7 +282,7 @@
       }
 
       if (location) {
-        const color = getDateColor(step.date, uniqueDates);
+        const color = getDateColor(getStepDate(step), uniqueDates);
         const currentNumber = stepNumber;
         const originalIndex = steps.findIndex((s) => s.id === step.id);
 

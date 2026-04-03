@@ -117,8 +117,10 @@
 
   async function handleCreateStep(stepData: {
     title: string;
-    date: string;
-    time: string;
+    // Unix ms
+    start_at: number;
+    // Unix ms
+    end_at: number;
     location?: string;
     notes?: string;
   }) {

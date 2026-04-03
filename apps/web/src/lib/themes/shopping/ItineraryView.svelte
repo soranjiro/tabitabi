@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import type { ItineraryResponse, Step } from "@tabitabi/types";
+  import { createTimestamp, createEndTimestamp } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
@@ -20,8 +21,10 @@
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
-      date: string;
-      time: string;
+      // Unix ms
+      start_at: number;
+      // Unix ms
+      end_at: number;
       location?: string;
       notes?: string;
     }) => Promise<void>;
@@ -127,18 +130,13 @@
 
   let newItem = $state({
     title: "",
-    date: new Date().toISOString().split("T")[0],
-    time: "10:00",
     location: "",
     notes: "",
   });
 
+  let newItemDate = $state(new Date().toISOString().split("T")[0]);
   let newItemHour = $state("10");
   let newItemMinute = $state("00");
-
-  $effect(() => {
-    newItem.time = `${newItemHour}:${newItemMinute}`;
-  });
 
   async function handleTitleUpdate() {
     if (!editedTitle.trim() || editedTitle === itinerary.title) {
@@ -169,21 +167,22 @@
     }
 
     if (onCreateStep) {
+      const time = `${newItemHour}:${newItemMinute}`;
+      const startAt = createTimestamp(newItemDate, time);
       await onCreateStep({
         title: newItem.title.trim(),
-        date: newItem.date,
-        time: newItem.time,
+        start_at: startAt,
+        end_at: createEndTimestamp(startAt, 60),
         location: newItem.location.trim() || undefined,
         notes: newItem.notes.trim() || undefined,
       });
 
       newItem = {
         title: "",
-        date: new Date().toISOString().split("T")[0],
-        time: "10:00",
         location: "",
         notes: "",
       };
+      newItemDate = new Date().toISOString().split("T")[0];
       newItemHour = "10";
       newItemMinute = "00";
       isAddingItem = false;
@@ -193,11 +192,10 @@
   function cancelAddItem() {
     newItem = {
       title: "",
-      date: new Date().toISOString().split("T")[0],
-      time: "10:00",
       location: "",
       notes: "",
     };
+    newItemDate = new Date().toISOString().split("T")[0];
     newItemHour = "10";
     newItemMinute = "00";
     isAddingItem = false;
@@ -346,7 +344,7 @@
             <span class="shopping-label">日付</span>
             <input
               type="date"
-              bind:value={newItem.date}
+              bind:value={newItemDate}
               class="shopping-input"
             />
           </div>

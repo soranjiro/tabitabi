@@ -1,6 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import type { ItineraryResponse, Step } from "@tabitabi/types";
+  import {
+    getStepDate,
+    createTimestamp,
+    createEndTimestamp,
+  } from "@tabitabi/types";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
@@ -37,8 +42,8 @@
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
-      date: string;
-      time: string;
+      start_at: number;
+      end_at: number;
       location?: string;
       notes?: string;
     }) => Promise<void>;
@@ -46,8 +51,8 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
+        end_at?: number;
         location?: string;
         notes?: string;
       },
@@ -86,8 +91,6 @@
 
   let newStep = $state({
     title: "",
-    date: "",
-    time: "",
     location: "",
     notes: "",
   });
@@ -97,11 +100,6 @@
 
   function openAddStepForm() {
     isAddingStep = true;
-    if (focusedDate) {
-      newStep.date = focusedDate;
-    } else {
-      newStep.date = "";
-    }
   }
 
   onMount(() => {
@@ -234,19 +232,26 @@
   }
 
   async function handleAddStep() {
-    if (!newStep.title.trim() || !newStep.date || !newStep.time) {
+    if (
+      !newStep.title.trim() ||
+      !focusedDate ||
+      !newStepHour ||
+      !newStepMinute
+    ) {
       alert("タイトル、日付、時刻は必須です");
       return;
     }
     if (onCreateStep) {
+      const timeStr = `${newStepHour}:${newStepMinute}`;
+      const startAt = createTimestamp(focusedDate, timeStr);
       await onCreateStep({
         title: newStep.title.trim(),
-        date: newStep.date,
-        time: newStep.time,
+        start_at: startAt,
+        end_at: createEndTimestamp(startAt, 60),
         location: newStep.location.trim() || undefined,
         notes: newStep.notes.trim() || undefined,
       });
-      newStep = { title: "", date: "", time: "", location: "", notes: "" };
+      newStep = { title: "", location: "", notes: "" };
       newStepHour = "09";
       newStepMinute = "00";
       isAddingStep = false;
@@ -254,7 +259,7 @@
   }
 
   function cancelAddStep() {
-    newStep = { title: "", date: "", time: "", location: "", notes: "" };
+    newStep = { title: "", location: "", notes: "" };
     newStepHour = "09";
     newStepMinute = "00";
     isAddingStep = false;
@@ -297,7 +302,7 @@
 
   const tripDates = $derived(() => {
     if (steps.length === 0) return { start: undefined, end: undefined };
-    const dates = [...new Set(steps.map((s) => s.date))].sort();
+    const dates = [...new Set(steps.map((s) => getStepDate(s)))].sort();
     return { start: dates[0], end: dates[dates.length - 1] };
   });
 </script>

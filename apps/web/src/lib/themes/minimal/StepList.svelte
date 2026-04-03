@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime, createTimestamp } from "@tabitabi/types";
   import { getMemoText } from "$lib/memo";
 
   interface Props {
@@ -9,8 +10,8 @@
       stepId: string,
       data: {
         title?: string;
-        date?: string;
-        time?: string;
+        start_at?: number;
+        end_at?: number;
         location?: string;
         notes?: string;
       },
@@ -26,34 +27,27 @@
   }: Props = $props();
 
   let editingStepId = $state<string | null>(null);
-  let editedStep = $state<Partial<Step>>({});
-  let editStepHour = $state("09");
-  let editStepMinute = $state("00");
+  let editedStep = $state<{
+    title?: string;
+    location?: string;
+    notes?: string;
+  }>({});
 
-  $effect(() => {
-    if (editingStepId && editStepHour && editStepMinute) {
-      editedStep.time = `${editStepHour}:${editStepMinute}`;
-    }
-  });
-
-  // 日付ごとにグループ化
   const groupedSteps = $derived(() => {
     const groups = new Map<string, Step[]>();
 
     for (const step of steps) {
-      const date = step.date;
+      const date = getStepDate(step);
       if (!groups.has(date)) {
         groups.set(date, []);
       }
       groups.get(date)!.push(step);
     }
 
-    // 各グループ内を時刻順にソート
     for (const [_, groupSteps] of groups) {
-      groupSteps.sort((a, b) => a.time.localeCompare(b.time));
+      groupSteps.sort((a, b) => a.start_at - b.start_at);
     }
 
-    // 日付順にソート
     return Array.from(groups.entries()).sort((a, b) =>
       a[0].localeCompare(b[0]),
     );
@@ -71,35 +65,31 @@
 
   function startEdit(step: Step) {
     editingStepId = step.id;
-    editedStep = { ...step };
-    const [hour, minute] = step.time.split(":");
-    editStepHour = hour;
-    editStepMinute = minute;
+    editedStep = {
+      title: step.title,
+      location: step.location ?? undefined,
+      notes: step.notes ?? undefined,
+    };
   }
 
   function cancelEdit() {
     editingStepId = null;
     editedStep = {};
-    editStepHour = "09";
-    editStepMinute = "00";
   }
 
   async function handleUpdate() {
-    if (
-      !editingStepId ||
-      !editedStep.title?.trim() ||
-      !editedStep.date ||
-      !editedStep.time
-    ) {
-      alert("タイトル、日付、時刻は必須です");
+    if (!editingStepId || !editedStep.title?.trim()) {
+      alert("タイトル、位置、時刻は必須です");
       return;
     }
 
-    if (onUpdateStep) {
+    const originalStep = steps.find((s) => s.id === editingStepId);
+    const start_at = originalStep?.start_at;
+
+    if (onUpdateStep && start_at !== undefined) {
       await onUpdateStep(editingStepId, {
         title: editedStep.title.trim(),
-        date: editedStep.date,
-        time: editedStep.time,
+        start_at,
         location: editedStep.location?.trim() || undefined,
         notes: editedStep.notes?.trim() || undefined,
       });
@@ -107,8 +97,6 @@
 
     editingStepId = null;
     editedStep = {};
-    editStepHour = "09";
-    editStepMinute = "00";
   }
 
   async function handleDelete(stepId: string) {
@@ -139,27 +127,6 @@
                   placeholder="予定のタイトル *"
                   class="minimal-input"
                 />
-                <div class="minimal-datetime">
-                  <input
-                    type="date"
-                    bind:value={editedStep.date}
-                    class="minimal-input"
-                  />
-                  <div class="minimal-time-picker">
-                    <select bind:value={editStepHour} class="minimal-select">
-                      {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
-                        <option value={hour}>{hour}</option>
-                      {/each}
-                    </select>
-                    <span class="minimal-time-separator">:</span>
-                    <select bind:value={editStepMinute} class="minimal-select">
-                      <option value="00">00</option>
-                      <option value="15">15</option>
-                      <option value="30">30</option>
-                      <option value="45">45</option>
-                    </select>
-                  </div>
-                </div>
                 <input
                   type="text"
                   bind:value={editedStep.location}
@@ -185,7 +152,7 @@
               </div>
             {:else}
               <div class="minimal-step">
-                <div class="minimal-step-time">{step.time}</div>
+                <div class="minimal-step-time">{getStepTime(step)}</div>
                 <h3 class="minimal-step-title">{step.title}</h3>
                 {#if step.location}
                   <div class="minimal-step-location">📍 {step.location}</div>

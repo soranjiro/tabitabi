@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate, getStepTime } from "@tabitabi/types";
   import { formatDateFull, getIconCategory } from "../utils/layout";
   import { getMemoText } from "$lib/memo";
 
@@ -16,12 +17,7 @@
 
   const isCompleted = $derived(() => {
     if (!step) return false;
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
-    const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    return (
-      step.date < today || (step.date === today && step.time <= currentTime)
-    );
+    return new Date(step.start_at) <= new Date();
   });
 </script>
 
@@ -52,8 +48,8 @@
             </span>
           </div>
           <div class="detail-meta">
-            <span class="detail-date">{formatDateFull(step.date)}</span>
-            <span class="detail-time">{step.time}</span>
+            <span class="detail-date">{formatDateFull(getStepDate(step))}</span>
+            <span class="detail-time">{getStepTime(step)}</span>
           </div>
         </div>
       </div>

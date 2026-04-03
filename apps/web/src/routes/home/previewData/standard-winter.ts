@@ -5,7 +5,7 @@ export const standardWinterPreview: PreviewItinerary = {
   themeId: "standard-winter",
   themeName: "標準（冬）",
   description: "静寂で、凛とした雰囲気",
-  phrase: "冬の旅",
+  phrase: "冬の旅行計画",
   layout: "timeline",
   colors: {
     primary: "#2563eb",

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
+  import { getStepDate } from "@tabitabi/types";
 
   interface Props {
     steps: Step[];
@@ -11,7 +12,7 @@
   const tripInfo = $derived(() => {
     if (steps.length === 0) return null;
 
-    const dates = [...new Set(steps.map((s) => s.date))].sort();
+    const dates = [...new Set(steps.map((s) => getStepDate(s)))].sort();
     const startDate = new Date(dates[0]);
     const endDate = new Date(dates[dates.length - 1]);
     const now = new Date();
@@ -32,7 +33,7 @@
     }
 
     const completedSteps = steps.filter((s) => {
-      const stepDateTime = new Date(`${s.date}T${s.time}`);
+      const stepDateTime = new Date(s.start_at);
       return stepDateTime < now;
     }).length;
 

@@ -2,8 +2,6 @@
   interface Props {
     newStep: {
       title: string;
-      date: string;
-      time: string;
       location: string;
       notes: string;
     };
@@ -20,10 +18,6 @@
     onSubmit,
     onCancel,
   }: Props = $props();
-
-  $effect(() => {
-    newStep.time = `${newStepHour}:${newStepMinute}`;
-  });
 
   function handleSubmit(e: Event) {
     e.preventDefault();
@@ -52,44 +46,30 @@
       />
     </div>
 
-    <div class="form-row">
-      <div class="form-field">
-        <label class="form-label" for="step-date"
-          >日付 <span class="required">*</span></label
-        >
-        <input
-          id="step-date"
-          type="date"
-          bind:value={newStep.date}
-          class="form-input"
+    <div class="form-field">
+      <span class="form-label">時刻 <span class="required">*</span></span>
+      <div class="time-picker">
+        <select
+          bind:value={newStepHour}
+          class="time-select"
           required
-        />
-      </div>
-      <div class="form-field">
-        <span class="form-label">時刻 <span class="required">*</span></span>
-        <div class="time-picker">
-          <select
-            bind:value={newStepHour}
-            class="time-select"
-            required
-            aria-label="時"
-          >
-            {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
-              <option value={hour}>{hour}</option>
-            {/each}
-          </select>
-          <span class="time-sep">:</span>
-          <select
-            bind:value={newStepMinute}
-            class="time-select"
-            required
-            aria-label="分"
-          >
-            {#each ["00", "15", "30", "45"] as minute}
-              <option value={minute}>{minute}</option>
-            {/each}
-          </select>
-        </div>
+          aria-label="時"
+        >
+          {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
+            <option value={hour}>{hour}</option>
+          {/each}
+        </select>
+        <span class="time-sep">:</span>
+        <select
+          bind:value={newStepMinute}
+          class="time-select"
+          required
+          aria-label="分"
+        >
+          {#each ["00", "15", "30", "45"] as minute}
+            <option value={minute}>{minute}</option>
+          {/each}
+        </select>
       </div>
     </div>
 

@@ -1,4 +1,4 @@
-import { type DemoDataSet, now, getDate } from '../types';
+import { type DemoDataSet, now, getTimestamp, getEndTimestamp } from '../types';
 
 export function getDemoData(): DemoDataSet {
   return {
@@ -16,8 +16,8 @@ export function getDemoData(): DemoDataSet {
         id: 'demo-step-1',
         itinerary_id: 'demo',
         title: '牛乳',
-        date: getDate(0),
-        time: '10:00',
+        start_at: getTimestamp(0, '10:00'),
+        end_at: getEndTimestamp(getTimestamp(0, '10:00'), 30),
         location: 'スーパー',
         notes: '{"text":"低脂肪"}',
         created_at: now,
@@ -27,8 +27,8 @@ export function getDemoData(): DemoDataSet {
         id: 'demo-step-2',
         itinerary_id: 'demo',
         title: '卵',
-        date: getDate(0),
-        time: '10:00',
+        start_at: getTimestamp(0, '10:00'),
+        end_at: getEndTimestamp(getTimestamp(0, '10:00'), 30),
         location: 'スーパー',
         notes: '{"text":"10個入り"}',
         created_at: now,
@@ -38,8 +38,8 @@ export function getDemoData(): DemoDataSet {
         id: 'demo-step-3',
         itinerary_id: 'demo',
         title: 'シャンプー',
-        date: getDate(0),
-        time: '11:00',
+        start_at: getTimestamp(0, '11:00'),
+        end_at: getEndTimestamp(getTimestamp(0, '11:00'), 30),
         location: 'ドラッグストア',
         notes: '{"text":""}',
         created_at: now,
@@ -49,8 +49,8 @@ export function getDemoData(): DemoDataSet {
         id: 'demo-step-4',
         itinerary_id: 'demo',
         title: '本棚',
-        date: getDate(0),
-        time: '14:00',
+        start_at: getTimestamp(0, '14:00'),
+        end_at: getEndTimestamp(getTimestamp(0, '14:00'), 120),
         location: 'IKEA',
         notes: '{"text":"組み立て式"}',
         created_at: now,

@@ -31,7 +31,7 @@ export async function loadTheme(themeId: string): Promise<Theme> {
     case "sauna-rally":
       return (await import("./sauna-rally")).default;
     default:
-      return (await import("./standard-seasons/autumn")).default;
+      return (await import("./standard-seasons/spring")).default;
   }
 }
 

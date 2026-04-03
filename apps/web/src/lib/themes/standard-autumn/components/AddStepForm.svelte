@@ -2,8 +2,6 @@
   interface Props {
     newStep: {
       title: string;
-      date: string;
-      time: string;
       location: string;
       notes: string;
     };
@@ -21,10 +19,6 @@
     onCancel,
   }: Props = $props();
 
-  $effect(() => {
-    newStep.time = `${newStepHour}:${newStepMinute}`;
-  });
-
   function handleSubmit(e: Event) {
     e.preventDefault();
     onSubmit();
@@ -41,35 +35,27 @@
       class="standard-autumn-input"
       required
     />
-    <div class="standard-autumn-datetime">
-      <input
-        type="date"
-        bind:value={newStep.date}
-        class="standard-autumn-input"
+    <div class="standard-autumn-time-picker">
+      <select
+        bind:value={newStepHour}
+        class="standard-autumn-select-time"
         required
-      />
-      <div class="standard-autumn-time-picker">
-        <select
-          bind:value={newStepHour}
-          class="standard-autumn-select-time"
-          required
-        >
-          {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
-            <option value={hour}>{hour}</option>
-          {/each}
-        </select>
-        <span class="standard-autumn-time-separator">:</span>
-        <select
-          bind:value={newStepMinute}
-          class="standard-autumn-select-time"
-          required
-        >
-          <option value="00">00</option>
-          <option value="15">15</option>
-          <option value="30">30</option>
-          <option value="45">45</option>
-        </select>
-      </div>
+      >
+        {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
+          <option value={hour}>{hour}</option>
+        {/each}
+      </select>
+      <span class="standard-autumn-time-separator">:</span>
+      <select
+        bind:value={newStepMinute}
+        class="standard-autumn-select-time"
+        required
+      >
+        <option value="00">00</option>
+        <option value="15">15</option>
+        <option value="30">30</option>
+        <option value="45">45</option>
+      </select>
     </div>
     <input
       type="text"

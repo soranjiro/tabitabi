@@ -21,6 +21,7 @@ async function applyMigrations(db: D1Database) {
       end_at INTEGER NOT NULL,
       location TEXT,
       notes TEXT,
+      type TEXT NOT NULL DEFAULT 'normal:general',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE

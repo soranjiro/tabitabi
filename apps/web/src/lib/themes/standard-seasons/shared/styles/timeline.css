@@ -126,10 +126,11 @@
   align-items: center;
   justify-content: center;
 }
-  line-height: 1.4;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+
+line-height: 1.4;
+display: flex;
+justify-content: space-between;
+align-items: flex-start;
 }
 
 .standard-autumn-step-notes {

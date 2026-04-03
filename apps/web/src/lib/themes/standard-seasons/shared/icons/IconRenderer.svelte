@@ -15,7 +15,11 @@
     class?: string;
   }
 
-  const { type = "normal:general", size = "md", class: className = "" } = $props();
+  const {
+    type = "normal:general",
+    size = "md",
+    class: className = "",
+  } = $props();
 
   const iconMap: Record<StepType, any> = {
     "normal:general": GeneralIcon,

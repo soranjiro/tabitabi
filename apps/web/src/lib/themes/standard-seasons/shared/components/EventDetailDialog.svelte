@@ -594,8 +594,6 @@
     display: block;
   }
 
-
-
   .standard-autumn-form-grid {
     display: flex;
     flex-direction: column;

@@ -35,6 +35,18 @@ export function getDemoData(): DemoDataSet {
         updated_at: now,
       },
       {
+        id: 'demo-step-2-transport',
+        itinerary_id: 'demo',
+        title: '湯滝から華厳滝へ移動',
+        start_at: getTimestamp(0, '13:30'),
+        end_at: getEndTimestamp(getTimestamp(0, '13:30'), 60),
+        location: '中禅寺湖周辺',
+        notes: '{"text":"バスでの移動を想定"}',
+        type: 'transport:bus',
+        created_at: now,
+        updated_at: now,
+      },
+      {
         id: 'demo-step-3',
         itinerary_id: 'demo',
         title: '華厳滝',

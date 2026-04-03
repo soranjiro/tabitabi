@@ -24,6 +24,18 @@ export function getDemoData(): DemoDataSet {
         updated_at: now,
       },
       {
+        id: 'demo-step-1-transport',
+        itinerary_id: 'demo',
+        title: '空港からビーチへ移動',
+        start_at: getTimestamp(0, '11:15'),
+        end_at: getEndTimestamp(getTimestamp(0, '11:15'), 90),
+        location: '恩納村へ移動',
+        notes: '{"text":"レンタカーでの移動を想定"}',
+        type: 'transport:car',
+        created_at: now,
+        updated_at: now,
+      },
+      {
         id: 'demo-step-2',
         itinerary_id: 'demo',
         title: 'ビーチでシュノーケリング',

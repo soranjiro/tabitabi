@@ -127,12 +127,6 @@
   justify-content: center;
 }
 
-line-height: 1.4;
-display: flex;
-justify-content: space-between;
-align-items: flex-start;
-}
-
 .standard-autumn-step-notes {
   font-size: 0.95rem;
   color: var(--standard-autumn-text-light);

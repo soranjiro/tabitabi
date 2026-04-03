@@ -23,6 +23,7 @@
     <h4 class="standard-autumn-type-picker-title">通常の予定</h4>
     <div class="standard-autumn-type-picker-grid">
       {#each STEP_TYPES_BY_CATEGORY.normal as type}
+        {console.log({value}, {type})}
         <button
           type="button"
           class="standard-autumn-type-picker-item"
@@ -35,9 +36,9 @@
           <div class="standard-autumn-type-picker-label">
             {STEP_TYPE_CONFIGS[type as StepType].label}
           </div>
-          <div class="standard-autumn-type-picker-description">
+          <!-- <div class="standard-autumn-type-picker-description">
             {STEP_TYPE_CONFIGS[type as StepType].description}
-          </div>
+          </div> -->
         </button>
       {/each}
     </div>
@@ -59,9 +60,9 @@
           <div class="standard-autumn-type-picker-label">
             {STEP_TYPE_CONFIGS[type as StepType].label}
           </div>
-          <div class="standard-autumn-type-picker-description">
+          <!-- <div class="standard-autumn-type-picker-description">
             {STEP_TYPE_CONFIGS[type as StepType].description}
-          </div>
+          </div> -->
         </button>
       {/each}
     </div>
@@ -101,8 +102,8 @@
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
-    padding: 1rem;
-    border: 2px solid var(--border-color);
+    padding: 0.5rem;
+    border: 2px solid #aaa;
     border-radius: 0.5rem;
     background: inherit;
     cursor: pointer;
@@ -110,13 +111,11 @@
   }
 
   .standard-autumn-type-picker-item:hover {
-    border-color: var(--primary-color);
-    background: var(--hover-bg);
+    border-color: var(--standard-autumn-secondary);
   }
 
   .standard-autumn-type-picker-item-active {
-    border-color: var(--primary-color);
-    background: var(--primary-color-10);
+    border: 2px solid var(--standard-autumn-primary);
   }
 
   .standard-autumn-type-picker-icon {
@@ -126,7 +125,7 @@
   }
 
   .standard-autumn-type-picker-label {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 600;
     text-align: center;
   }

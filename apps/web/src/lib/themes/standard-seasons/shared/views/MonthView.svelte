@@ -48,15 +48,7 @@
     }
   });
 
-  function getEventBackgroundStyle(step: Step): string {
-    if (step.is_all_day) {
-      return `background: var(--theme-primary) !important; color: #fff !important; opacity: 0.95;`;
-    }
-    if (isTransportType(step.type)) {
-      return `background: rgba(255, 255, 255, 0.96) !important; color: var(--theme-text) !important; border: 1px solid var(--theme-accent) !important;`;
-    }
-    return `background: rgba(255, 255, 255, 0.96) !important; color: var(--theme-text) !important; border: 1px solid rgba(0, 0, 0, 0.08) !important;`;
-  }
+  const MONTH_EVENT_ROW_HEIGHT = 24;
 
   function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
@@ -193,7 +185,7 @@
         (max, segment) => Math.max(max, segment.rowIndex + 1),
         0,
       );
-      return Math.max(140, 40 + rowCount * 34);
+      return Math.max(100, 30 + rowCount * MONTH_EVENT_ROW_HEIGHT);
     });
   });
 
@@ -308,7 +300,7 @@
 
           <div
             class="standard-month-week-events"
-            style="position:absolute; left:0; right:0; top:36px;"
+            style="position:absolute; left:0; right:0; top:28px;"
           >
             {#each monthEventSegments()[wIdx] || [] as seg}
               <button
@@ -318,7 +310,7 @@
                   seg.step.type,
                 )}
                 class:standard-month-event-allday={seg.step.is_all_day}
-                style={`position:absolute; left:calc(${seg.leftPercent}% + 2px); width:calc(${seg.widthPercent}% - 4px); top:${seg.rowIndex * 34 + 2}px; min-height: 18px; height: auto; ${getEventBackgroundStyle(seg.step)}`}
+                style={`position:absolute; left:calc(${seg.leftPercent}% + 2px); width:calc(${seg.widthPercent}% - 4px); top:${seg.rowIndex * MONTH_EVENT_ROW_HEIGHT + 1}px; min-height: 16px; height: auto;`}
                 onclick={() => handleEventClick(seg.step)}
                 title={seg.step.title}
               >

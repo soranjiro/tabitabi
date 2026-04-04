@@ -285,26 +285,29 @@
     font-size: 1rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
   }
 
   .standard-autumn-week-day-date {
     font-size: 0.85rem;
     color: var(--standard-autumn-text-light);
     font-weight: 600;
+    letter-spacing: 0.02em;
   }
 
   .standard-autumn-week-day-header.has-events .standard-autumn-week-day-date {
     background: var(--standard-autumn-primary);
     color: #fff;
     padding: 4px 10px;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
+    border-radius: 6px;
+    width: auto;
+    height: auto;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
     font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
   .standard-autumn-week-body {
@@ -313,6 +316,7 @@
     grid-template-columns: 70px repeat(var(--week-cols, 7), 1fr);
     grid-auto-rows: 56px;
     grid-auto-flow: row;
+    background: var(--standard-autumn-bg);
   }
 
   .standard-autumn-week-time-label {

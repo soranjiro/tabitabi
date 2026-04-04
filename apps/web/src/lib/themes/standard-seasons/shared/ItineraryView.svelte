@@ -375,31 +375,6 @@
       await onUpdateItinerary({ walica_id: walicaId });
     }
   }
-  function buildThemeOverrideStyle(themeId: string): string {
-    const season =
-      themeId && themeId.startsWith("standard-")
-        ? themeId.replace("standard-", "")
-        : "autumn";
-    const props = [
-      "bg",
-      "primary",
-      "primary-light",
-      "secondary",
-      "accent",
-      "text",
-      "text-light",
-      "card-bg",
-      "header-bg",
-      "border",
-      "line-color",
-      "dot-bg",
-      "shadow",
-      "shadow-sm",
-    ];
-    return props
-      .map((p) => `--standard-${p}: var(--standard-${season}-${p})`)
-      .join("; ");
-  }
 </script>
 
 <div
@@ -407,7 +382,6 @@
   class:standard-spring-theme={selectedThemeId === "standard-spring"}
   class:standard-summer-theme={selectedThemeId === "standard-summer"}
   class:standard-winter-theme={selectedThemeId === "standard-winter"}
-  style={buildThemeOverrideStyle(selectedThemeId)}
 >
   <div class="standard-container">
     <header class="standard-header">

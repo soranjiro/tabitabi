@@ -82,7 +82,7 @@
   .standard-viewmode-title {
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--standard-text-light);
+    color: var(--theme-text-light);
     padding: 1rem 1rem 0.5rem;
     margin: 0;
     text-transform: uppercase;
@@ -124,13 +124,13 @@
     flex: 1;
     font-size: 0.95rem;
     font-weight: 500;
-    color: var(--standard-text);
+    color: var(--theme-text);
   }
 
   .standard-viewmode-check {
     width: 20px;
     height: 20px;
-    color: var(--standard-primary);
+    color: var(--theme-primary);
   }
 
   @keyframes fadeIn {

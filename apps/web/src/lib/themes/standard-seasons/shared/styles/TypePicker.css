@@ -14,7 +14,7 @@
   font-size: 0.875rem;
   font-weight: 600;
   margin: 0;
-  color: var(--standard-text-light);
+  color: var(--theme-text-light);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -31,7 +31,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  border: 2px solid var(--standard-border);
+  border: 2px solid var(--theme-border);
   border-radius: 0.5rem;
   background: inherit;
   cursor: pointer;
@@ -39,17 +39,17 @@
 }
 
 .standard-type-picker-item:hover {
-  border-color: var(--standard-secondary);
+  border-color: var(--theme-secondary);
 }
 
 .standard-type-picker-item-active {
-  border: 2px solid var(--standard-primary);
+  border: 2px solid var(--theme-primary);
 }
 
 .standard-type-picker-icon {
   width: 2rem;
   height: 2rem;
-  color: var(--standard-primary);
+  color: var(--theme-primary);
 }
 
 .standard-type-picker-label {
@@ -60,6 +60,6 @@
 
 .standard-type-picker-description {
   font-size: 0.75rem;
-  color: var(--standard-text-light);
+  color: var(--theme-text-light);
   text-align: center;
 }

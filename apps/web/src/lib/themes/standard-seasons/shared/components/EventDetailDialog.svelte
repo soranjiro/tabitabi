@@ -595,10 +595,10 @@
     padding: 1.5rem;
     background: linear-gradient(
       135deg,
-      var(--standard-accent) 0%,
-      var(--standard-accent-light, rgba(230, 180, 34, 0.8)) 100%
+      var(--theme-accent) 0%,
+      var(--theme-accent-light, rgba(230, 180, 34, 0.8)) 100%
     );
-    border-bottom: 2px solid var(--standard-border);
+    border-bottom: 2px solid var(--theme-border);
   }
 
   .standard-event-dialog-title {
@@ -640,7 +640,7 @@
 
   .standard-event-dialog-actions-footer {
     padding: 1.5rem;
-    border-top: 1px solid var(--standard-line-color, #e0dcd8);
+    border-top: 1px solid var(--theme-line-color, #e0dcd8);
     display: flex;
     gap: 0.75rem;
     flex-shrink: 0;
@@ -663,14 +663,14 @@
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--standard-text-light);
+    color: var(--theme-text-light);
     margin-bottom: 0.5rem;
     font-weight: 600;
   }
 
   .standard-event-detail-value {
     font-size: 0.95rem;
-    color: var(--standard-text);
+    color: var(--theme-text);
     line-height: 1.6;
     display: flex;
     flex-direction: column;
@@ -679,19 +679,19 @@
 
   .standard-event-date {
     font-weight: 500;
-    color: var(--standard-text);
+    color: var(--theme-text);
   }
 
   .standard-event-time {
     font-size: 0.9rem;
-    color: var(--standard-text-light);
+    color: var(--theme-text-light);
     font-weight: 600;
   }
 
   .standard-event-detail-icon {
     width: 16px;
     height: 16px;
-    color: var(--standard-accent);
+    color: var(--theme-accent);
     flex-shrink: 0;
   }
 
@@ -699,7 +699,7 @@
     background: rgba(230, 180, 34, 0.05);
     padding: 1rem;
     border-radius: 8px;
-    border: 1px dashed var(--standard-line-color);
+    border: 1px dashed var(--theme-line-color);
     display: block;
   }
 
@@ -719,7 +719,7 @@
     display: block;
     font-size: 0.875rem;
     font-weight: 600;
-    color: var(--standard-text);
+    color: var(--theme-text);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -740,10 +740,10 @@
     font-family: inherit;
     font-size: 1rem;
     padding: 0.625rem 0.875rem;
-    border: 1px solid var(--standard-border);
+    border: 1px solid var(--theme-border);
     border-radius: 8px;
     background: #fff;
-    color: var(--standard-text);
+    color: var(--theme-text);
     transition: all 0.2s;
   }
 
@@ -751,7 +751,7 @@
   .standard-textarea:focus,
   .standard-select-time:focus {
     outline: none;
-    border-color: var(--standard-accent);
+    border-color: var(--theme-accent);
     box-shadow: 0 0 0 3px rgba(230, 180, 34, 0.1);
     background: #fff;
   }
@@ -780,7 +780,7 @@
   }
 
   .standard-time-separator {
-    color: var(--standard-text-light);
+    color: var(--theme-text-light);
     font-weight: 600;
     font-size: 1rem;
   }
@@ -809,12 +809,12 @@
   }
 
   .standard-btn-primary {
-    background: var(--standard-accent);
+    background: var(--theme-accent);
     color: #fff;
   }
 
   .standard-btn-primary:hover {
-    background: var(--standard-accent-dark, #d4a726);
+    background: var(--theme-accent-dark, #d4a726);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(230, 180, 34, 0.3);
   }
@@ -825,13 +825,13 @@
 
   .standard-btn-secondary {
     background: #f5f5f5;
-    color: var(--standard-text);
-    border: 1px solid var(--standard-border);
+    color: var(--theme-text);
+    border: 1px solid var(--theme-border);
   }
 
   .standard-btn-secondary:hover {
     background: #e8e8e8;
-    border-color: var(--standard-text-light);
+    border-color: var(--theme-text-light);
   }
 
   @media (max-width: 600px) {
@@ -890,25 +890,25 @@
       rgba(230, 180, 34, 0.02) 100%
     );
     border-radius: 12px;
-    border: 2px dashed var(--standard-accent);
+    border: 2px dashed var(--theme-accent);
   }
 
   .standard-secret-icon {
     width: 48px;
     height: 48px;
-    color: var(--standard-accent);
+    color: var(--theme-accent);
     opacity: 0.8;
   }
 
   .standard-event-secret-notice p {
     margin: 0;
-    color: var(--standard-text);
+    color: var(--theme-text);
     font-weight: 500;
   }
 
   .standard-secret-notice-sub {
     font-size: 0.85rem;
-    color: var(--standard-text-light) !important;
+    color: var(--theme-text-light) !important;
     font-weight: 400;
     margin-top: 0.5rem;
   }

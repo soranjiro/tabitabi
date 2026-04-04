@@ -227,13 +227,13 @@
     padding-bottom: 100px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    background: var(--standard-bg);
+    background: var(--theme-bg);
   }
 
   .standard-week-no-events {
     padding: 2rem;
     text-align: center;
-    color: var(--standard-text-light);
+    color: var(--theme-text-light);
     font-size: 0.95rem;
   }
 
@@ -241,8 +241,8 @@
     display: grid;
     grid-template-columns: 60px repeat(var(--week-cols, 7), minmax(80px, 1fr));
     gap: 0;
-    background: var(--standard-card-bg);
-    border: 2px solid var(--standard-primary);
+    background: var(--theme-card-bg);
+    border: 2px solid var(--theme-primary);
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
@@ -255,9 +255,9 @@
   }
 
   .standard-week-corner {
-    background: var(--standard-header-bg);
-    border-bottom: 1px solid var(--standard-border);
-    border-right: 1px solid var(--standard-border);
+    background: var(--theme-header-bg);
+    border-bottom: 1px solid var(--theme-border);
+    border-right: 1px solid var(--theme-border);
   }
 
   .standard-week-day-header {
@@ -265,7 +265,7 @@
     text-align: center;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     border-right: 1px solid rgba(0, 0, 0, 0.08);
-    background: var(--standard-header-bg);
+    background: var(--theme-header-bg);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -279,18 +279,18 @@
 
   .standard-week-day-name {
     font-weight: 600;
-    color: var(--standard-primary);
+    color: var(--theme-primary);
     font-size: 0.9rem;
   }
 
   .standard-week-day-date {
     font-size: 0.8rem;
-    color: var(--standard-text-light);
+    color: var(--theme-text-light);
     font-weight: 500;
   }
 
   .standard-week-day-header.has-events .standard-week-day-date {
-    background: var(--standard-primary);
+    background: var(--theme-primary);
     color: #fff;
     padding: 2px 8px;
     border-radius: 4px;
@@ -303,7 +303,7 @@
     grid-template-columns: 60px repeat(var(--week-cols, 7), minmax(80px, 1fr));
     grid-auto-rows: 56px;
     grid-auto-flow: row;
-    background: var(--standard-bg);
+    background: var(--theme-bg);
     position: relative;
   }
 
@@ -311,10 +311,10 @@
     padding: 0.25rem 0.5rem;
     font-size: 0.7rem;
     font-weight: 600;
-    color: var(--standard-text-light);
+    color: var(--theme-text-light);
     text-align: right;
     border-right: 1px solid rgba(0, 0, 0, 0.08);
-    background: var(--standard-header-bg);
+    background: var(--theme-header-bg);
     display: flex;
     align-items: flex-start;
     justify-content: flex-end;
@@ -324,7 +324,7 @@
     border-right: 1px solid rgba(0, 0, 0, 0.08);
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     position: relative;
-    background: var(--standard-bg);
+    background: var(--theme-bg);
     overflow: visible;
   }
 
@@ -350,7 +350,7 @@
     padding: 4px 6px;
     border-radius: 4px;
     background-color: rgba(255, 255, 255, 0.96);
-    color: var(--standard-text);
+    color: var(--theme-text);
     border: 1px solid rgba(0, 0, 0, 0.08);
     display: flex;
     gap: 4px;
@@ -378,7 +378,7 @@
 
   .standard-week-event-transport {
     background-color: rgba(246, 250, 255, 0.98) !important;
-    color: var(--standard-text) !important;
+    color: var(--theme-text) !important;
     border: 1px solid rgba(82, 120, 255, 0.22) !important;
     box-shadow: inset 0 0 0 1px rgba(82, 120, 255, 0.08);
     border-left: 3px solid rgba(82, 120, 255, 0.8);
@@ -413,10 +413,10 @@
     padding: 0.6rem 0.25rem;
     font-size: 0.75rem;
     font-weight: 700;
-    color: var(--standard-primary);
+    color: var(--theme-primary);
     text-align: right;
-    border-right: 1px solid var(--standard-border);
-    border-bottom: 2px solid var(--standard-primary);
+    border-right: 1px solid var(--theme-border);
+    border-bottom: 2px solid var(--theme-primary);
     background: linear-gradient(
       180deg,
       rgba(255, 255, 255, 0.8) 0%,
@@ -431,11 +431,11 @@
 
   .standard-week-allday-cell {
     padding: 6px;
-    border-right: 1px solid var(--standard-border);
-    border-bottom: 2px solid var(--standard-primary);
+    border-right: 1px solid var(--theme-border);
+    border-bottom: 2px solid var(--theme-primary);
     background: linear-gradient(
       120deg,
-      var(--standard-bg) 0%,
+      var(--theme-bg) 0%,
       rgba(255, 255, 255, 0.6) 100%
     );
     display: flex;
@@ -453,7 +453,7 @@
     padding: 5px 10px;
     border-radius: 6px;
     background-color: rgba(255, 255, 255, 0.88);
-    color: var(--standard-primary);
+    color: var(--theme-primary);
     border: 1px solid rgba(0, 0, 0, 0.08);
     display: flex;
     gap: 4px;
@@ -477,17 +477,26 @@
 
   @media (max-width: 600px) {
     .standard-week-container {
-      grid-template-columns: 50px repeat(var(--week-cols, 7), minmax(70px, 1fr));
+      grid-template-columns: 50px repeat(
+          var(--week-cols, 7),
+          minmax(calc((100vw - 50px) / 3.5), 1fr)
+        );
       min-width: max-content;
       width: 100%;
     }
 
     .standard-week-body {
-      grid-template-columns: 50px repeat(var(--week-cols, 7), minmax(70px, 1fr));
+      grid-template-columns: 50px repeat(
+          var(--week-cols, 7),
+          minmax(calc((100vw - 50px) / 3.5), 1fr)
+        );
     }
 
     .standard-week-events-layer {
-      grid-template-columns: 50px repeat(var(--week-cols, 7), minmax(70px, 1fr));
+      grid-template-columns: 50px repeat(
+          var(--week-cols, 7),
+          minmax(calc((100vw - 50px) / 3.5), 1fr)
+        );
     }
 
     .standard-week-event {

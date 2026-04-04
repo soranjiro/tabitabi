@@ -6,7 +6,7 @@ export const standardSummerPreview: PreviewItinerary = {
   themeName: "標準（夏）",
   description: "爽やかで涼しい",
   phrase: "夏の旅行計画",
-  layout: "timeline",
+  layout: "list",
   colors: {
     primary: "#0369a1",
     secondary: "#0284c7",
@@ -20,5 +20,5 @@ export const standardSummerPreview: PreviewItinerary = {
     { time: "19:00", label: "屋台グルメ", icon: "🍡" },
     { time: "21:00", label: "花火見物", icon: "🎆" },
   ],
-  features: ["タイムライン", "secret", "複数ビュー"],
+  features: ["リストビュー", "夏祭り", "涼やか"],
 };

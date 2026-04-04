@@ -153,7 +153,7 @@
 .standard-month-view {
   width: 100%;
   padding: 1rem;
-  padding-bottom: 100px;
+  padding-bottom: 140px;
 }
 
 .standard-month-header {
@@ -333,7 +333,7 @@
   color: var(--theme-text);
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 4px;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.45rem;
   font-size: 0.75rem;
   cursor: pointer;
   text-align: left;
@@ -343,13 +343,9 @@
   transition: background-color 0.15s, border-color 0.15s;
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  margin: 1px 2px;
-}
-
-.standard-month-event:hover {
-  background-color: rgba(169, 53, 41, 0.08) !important;
-  border-color: var(--theme-primary);
+  gap: 0.15rem;
+  margin: 0 0.4px;
+  min-width: 0;
 }
 
 .standard-month-event.secret {
@@ -398,11 +394,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.standard-month-more {
-  color: var(--theme-text-light);
-  font-size: 0.7rem;
+  min-width: 0;
   padding: 0.25rem 0.5rem;
   font-weight: 500;
 }
@@ -410,6 +402,7 @@
 @media (max-width: 768px) {
   .standard-month-view {
     padding: 0.5rem;
+    padding-bottom: 180px;
   }
 
   .standard-month-day {
@@ -417,9 +410,11 @@
   }
 
   .standard-month-event {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.4rem;
-    line-height: 1.2;
+    font-size: 0.72rem;
+    line-height: 1.1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
   .standard-month-event-icon {
@@ -431,9 +426,12 @@
   }
 
   .standard-month-event-title {
-    max-width: calc(100% - 4px);
+    max-width: 100%;
     font-size: 0.65rem;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+    line-height: 1.1;
   }
 
   .standard-month-weekday {
@@ -447,16 +445,21 @@
 }
 
 @media (max-width: 480px) {
+  .standard-month-view {
+    padding-bottom: 110px;
+  }
+
   .standard-month-day {
     min-height: 80px;
     padding: 0.25rem;
   }
 
   .standard-month-event {
-    font-size: 0.6rem;
-    padding: 0.15rem 0.3rem;
+    font-size: 0.68rem;
     height: auto;
     white-space: nowrap;
+    overflow: hidden;
+    min-width: 0;
   }
 
   .standard-month-event-icon {
@@ -469,10 +472,12 @@
 
   .standard-month-event-title {
     overflow: hidden;
-    text-overflow: ellipsis;
+    text-overflow: clip;
     white-space: nowrap;
-    max-width: calc(100% - 4px);
-    font-size: 0.55rem;
+    max-width: 100%;
+    font-size: 0.6rem;
+    min-width: 0;
+    line-height: 1.1;
   }
 
   .standard-month-weekday {
@@ -510,12 +515,8 @@
 .standard-week-day-header {
   padding: 0.5rem;
   text-align: center;
-  border-bottom: 1px solid var(--theme-border);
-  font-size: 0.8rem;
-}
-
-.standard-week-day-name {
-  font-weight: 600;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
   color: var(--theme-text);
 }
 
@@ -542,16 +543,11 @@
   font-size: 0.75rem;
   color: var(--theme-text-light);
   text-align: right;
-  border-right: 1px solid var(--theme-border);
-  height: 40px;
-}
-
-.standard-week-cell {
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
   height: 40px;
   position: relative;
   min-height: 40px;
+  background: rgba(255, 255, 255, 0.98);
 }
 
 .standard-week-cell:last-child {

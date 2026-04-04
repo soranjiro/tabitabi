@@ -66,16 +66,6 @@
 
   const timedSteps = $derived(() => steps.filter((s) => !s.is_all_day));
 
-  function getEventBackgroundStyle(step: Step): string {
-    if (step.is_all_day) {
-      return `background: var(--theme-primary) !important; color: #fff !important; opacity: 0.95;`;
-    }
-    if (isTransportType(step.type)) {
-      return `background: rgba(255, 255, 255, 0.96) !important; color: var(--theme-text) !important; border: 1px solid var(--theme-accent) !important;`;
-    }
-    return `background: rgba(255, 255, 255, 0.96) !important; color: var(--theme-text) !important; border: 1px solid rgba(0, 0, 0, 0.08) !important;`;
-  }
-
   function getAllDayStepsForDate(date: Date): Step[] {
     const dateStr = formatDateKey(date);
     const dayStart = new Date(`${dateStr}T00:00:00`).getTime();
@@ -132,7 +122,6 @@
                 <button
                   type="button"
                   class="standard-week-allday-event"
-                  style={getEventBackgroundStyle(step)}
                   title={step.title}
                   onclick={() => handleEventClick(step)}
                 >
@@ -193,13 +182,13 @@
                     class:standard-week-event-transport={isTransportType(
                       step.type,
                     )}
-                    style={`${utilGetEventStyleForDay(
+                    style={utilGetEventStyleForDay(
                       hours(),
                       relStart,
                       relEnd,
                       index,
                       totalCount,
-                    )} ${getEventBackgroundStyle(step)}`}
+                    )}
                     title={step.title}
                     onclick={() => handleEventClick(step)}
                   >
@@ -272,8 +261,8 @@
   .standard-week-day-header {
     padding: 0.75rem 0.5rem;
     text-align: center;
-    border-bottom: 2px solid var(--standard-primary);
-    border-right: 1px solid var(--standard-border);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
     background: var(--standard-header-bg);
     display: flex;
     flex-direction: column;
@@ -322,7 +311,7 @@
     font-weight: 600;
     color: var(--standard-text-light);
     text-align: right;
-    border-right: 1px solid var(--standard-border);
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
     background: var(--standard-header-bg);
     display: flex;
     align-items: flex-start;
@@ -330,8 +319,8 @@
   }
 
   .standard-week-cell {
-    border-right: 1px solid var(--standard-border);
-    border-bottom: 1px solid var(--standard-border);
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     position: relative;
     background: var(--standard-bg);
     overflow: visible;
@@ -358,9 +347,9 @@
     box-sizing: border-box;
     padding: 4px 6px;
     border-radius: 4px;
-    background-color: var(--standard-primary) !important;
-    color: #fff;
-    border: none;
+    background-color: rgba(255, 255, 255, 0.96);
+    color: var(--standard-text);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     display: flex;
     gap: 4px;
     align-items: center;
@@ -370,8 +359,10 @@
     z-index: 10;
     cursor: pointer;
     pointer-events: auto;
-    transition: background-color 0.15s;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition:
+      background-color 0.15s,
+      border-color 0.15s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     margin: 2px;
     white-space: nowrap;
     min-width: 60px;
@@ -379,28 +370,21 @@
 
   .standard-week-event:hover {
     z-index: 20;
-    background-color: var(--standard-primary-light) !important;
+    background-color: rgba(255, 255, 255, 1);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   }
 
   .standard-week-event-transport {
-    background-color: var(--standard-accent) !important;
-    border-left: 3px dashed rgba(255, 255, 255, 0.6);
+    background-color: rgba(246, 250, 255, 0.98) !important;
+    color: var(--standard-text) !important;
+    border: 1px solid rgba(82, 120, 255, 0.22) !important;
+    box-shadow: inset 0 0 0 1px rgba(82, 120, 255, 0.08);
+    border-left: 3px solid rgba(82, 120, 255, 0.8);
     padding-left: 4px;
   }
 
   .standard-week-event-transport:hover {
-    background-color: rgba(230, 180, 34, 0.9) !important;
-  }
-
-  .standard-week-event-allday {
-    background: rgba(169, 53, 41, 0.15);
-    color: var(--standard-primary);
-    border: 1px solid var(--standard-primary);
-  }
-
-  .standard-week-event-allday:hover {
-    background: rgba(169, 53, 41, 0.25);
+    background-color: rgba(255, 255, 255, 1) !important;
   }
 
   .standard-week-event-icon {
@@ -466,9 +450,9 @@
   .standard-week-allday-event {
     padding: 5px 10px;
     border-radius: 6px;
-    background-color: var(--standard-primary) !important;
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.88);
+    color: var(--standard-primary);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     display: flex;
     gap: 4px;
     align-items: center;
@@ -484,7 +468,7 @@
   }
 
   .standard-week-allday-event:hover {
-    background-color: var(--standard-primary-light) !important;
+    background-color: rgba(255, 255, 255, 0.96);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }

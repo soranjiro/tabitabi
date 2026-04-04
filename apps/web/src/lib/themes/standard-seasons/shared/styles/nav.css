@@ -239,7 +239,7 @@
 
 @media (max-width: 480px) {
   .standard-bottom-nav {
-    bottom: 20px;
+    bottom: 10px;
     height: 64px;
     padding: 0 24px;
     gap: 24px;

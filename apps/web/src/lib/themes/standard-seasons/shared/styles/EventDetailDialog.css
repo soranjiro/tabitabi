@@ -53,9 +53,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  background: linear-gradient(135deg,
-      var(--theme-accent) 0%,
-      var(--theme-accent-light, rgba(230, 180, 34, 0.8)) 100%);
+  background: var(--theme-bg, #fff);
   border-bottom: 2px solid var(--theme-border);
 }
 
@@ -64,7 +62,7 @@
   font-size: 1.35rem;
   font-weight: 700;
   color: var(--theme-text);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  text-shadow: none;
 }
 
 .standard-event-dialog-close {
@@ -100,13 +98,26 @@
   padding: 1.5rem;
   border-top: 1px solid var(--theme-line-color, #e0dcd8);
   display: flex;
-  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
   gap: 0.75rem;
   flex-shrink: 0;
 }
 
 .standard-event-dialog-actions-footer .standard-btn {
-  width: 100%;
+  flex: 0 1 auto;
+  min-width: 140px;
+}
+
+.standard-event-dialog-actions-footer .standard-btn.standard-btn-primary {
+  background: rgba(169, 53, 41, 0.12);
+  color: var(--theme-text);
+  border: 1px solid rgba(169, 53, 41, 0.2);
+  box-shadow: none;
+}
+
+.standard-event-dialog-actions-footer .standard-btn.standard-btn-primary:hover {
+  background: rgba(169, 53, 41, 0.18);
 }
 
 .standard-event-detail-content {
@@ -249,7 +260,7 @@
 }
 
 .standard-btn-danger {
-  background: #d24b4b;
+  background: #fb5656;
   color: white;
 }
 

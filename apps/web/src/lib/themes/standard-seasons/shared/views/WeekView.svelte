@@ -6,9 +6,9 @@
   import { isTransportType } from "../utils/step-type";
   import {
     getWeekDatesFromSteps,
+    getWeekHours,
     getOverlappingStepsForDay as utilGetOverlappingStepsForDay,
     getEventStyleForDay as utilGetEventStyleForDay,
-    DEFAULT_HOURS,
   } from "./weekview-utils";
 
   interface Props {
@@ -60,7 +60,7 @@
   }
 
   const weekDates = $derived(() => getWeekDatesFromSteps(steps));
-  const hours = DEFAULT_HOURS;
+  const hours = $derived(() => getWeekHours(steps));
 
   function handleEventClick(step: Step) {
     selectedStep = step;
@@ -99,60 +99,71 @@
       </div>
 
       <div class="standard-autumn-week-body">
-        {#each hours as hour}
+        {#each hours() as hour}
           <div class="standard-autumn-week-time-label">
             {String(hour).padStart(2, "0")}:00
           </div>
           {#each weekDates() as date}
-            <div class="standard-autumn-week-cell">
-              <div class="standard-autumn-week-cell-content">
-                {#each utilGetOverlappingStepsForDay(steps, formatDateKey(date)) as { step, index, totalCount, relStart, relEnd }}
-                  {#if isSecretStep(step) && !hasEditPermission}
-                    <button
-                      type="button"
-                      class="standard-autumn-week-event"
-                      style={utilGetEventStyleForDay(
-                        hours,
-                        relStart,
-                        relEnd,
-                        index,
-                        totalCount,
-                      )}
-                      title="Secret"
-                      onclick={() => handleEventClick(step)}
-                    >
-                      🔒 Secret
-                    </button>
-                  {:else if relStart < (hour + 1) * 60 && relEnd > hour * 60}
-                    <button
-                      type="button"
-                      class="standard-autumn-week-event"
-                      class:standard-autumn-week-event-transport={isTransportType(
-                        step.type,
-                      )}
-                      style={utilGetEventStyleForDay(
-                        hours,
-                        relStart,
-                        relEnd,
-                        index,
-                        totalCount,
-                      )}
-                      title={step.title}
-                      onclick={() => handleEventClick(step)}
-                    >
-                      <span class="standard-autumn-week-event-icon">
-                        <IconRenderer type={step.type} size="sm" />
-                      </span>
-                      <span class="standard-autumn-week-event-title">
-                        {step.title}
-                      </span>
-                    </button>
-                  {/if}
-                {/each}
-              </div>
-            </div>
+            <div class="standard-autumn-week-cell"></div>
           {/each}
         {/each}
+
+        <div
+          class="standard-autumn-week-events-layer"
+          style="--week-hour-rows: {hours().length};"
+        >
+          {#each weekDates() as date, dayIndex}
+            <div
+              class="standard-autumn-week-day-events"
+              style="grid-column: {dayIndex + 2}; grid-row: 1 / span {hours()
+                .length};"
+            >
+              {#each utilGetOverlappingStepsForDay(steps, formatDateKey(date)) as { step, index, totalCount, relStart, relEnd }}
+                {#if isSecretStep(step) && !hasEditPermission}
+                  <button
+                    type="button"
+                    class="standard-autumn-week-event"
+                    style={utilGetEventStyleForDay(
+                      hours(),
+                      relStart,
+                      relEnd,
+                      index,
+                      totalCount,
+                    )}
+                    title="Secret"
+                    onclick={() => handleEventClick(step)}
+                  >
+                    🔒 Secret
+                  </button>
+                {:else}
+                  <button
+                    type="button"
+                    class="standard-autumn-week-event"
+                    class:standard-autumn-week-event-transport={isTransportType(
+                      step.type,
+                    )}
+                    style={utilGetEventStyleForDay(
+                      hours(),
+                      relStart,
+                      relEnd,
+                      index,
+                      totalCount,
+                    )}
+                    title={step.title}
+                    onclick={() => handleEventClick(step)}
+                  >
+                    <span class="standard-autumn-week-event-icon">
+                      <IconRenderer type={step.type} size="sm" />
+                    </span>
+                    <span class="standard-autumn-week-event-title">
+                      {step.title}
+                    </span>
+                  </button>
+                {/if}
+              {/each}
+            </div>
+          {/each}
+        </div>
       </div>
     </div>
   {/if}
@@ -316,6 +327,7 @@
     grid-auto-rows: 56px;
     grid-auto-flow: row;
     background: var(--standard-autumn-bg);
+    position: relative;
   }
 
   .standard-autumn-week-time-label {
@@ -384,10 +396,20 @@
     pointer-events: none;
   }
 
-  .standard-autumn-week-cell-content {
+  .standard-autumn-week-events-layer {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 70px repeat(var(--week-cols, 7), 1fr);
+    grid-template-rows: repeat(var(--week-hour-rows, 16), 56px);
+    pointer-events: none;
+    z-index: 8;
+  }
+
+  .standard-autumn-week-day-events {
     position: relative;
-    width: 100%;
-    height: 100%;
+    overflow: visible;
+    pointer-events: none;
   }
 
   .standard-autumn-week-event {
@@ -406,6 +428,7 @@
     font-weight: 700;
     z-index: 10;
     cursor: pointer;
+    pointer-events: auto;
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     box-shadow:
       0 2px 6px rgba(0, 0, 0, 0.12),
@@ -454,9 +477,16 @@
   }
 
   .standard-autumn-week-event-transport {
-    background: var(--standard-autumn-accent);
+    background: repeating-linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, 0.1),
+        rgba(255, 255, 255, 0.1) 6px,
+        rgba(255, 255, 255, 0.02) 6px,
+        rgba(255, 255, 255, 0.02) 12px
+      ),
+      var(--standard-autumn-accent);
     border-color: var(--standard-autumn-accent);
-    border-left: 4px solid rgba(255, 255, 255, 0.6);
+    border-left: 4px dashed rgba(255, 255, 255, 0.7);
     padding-left: 6px;
     box-shadow:
       0 2px 6px rgba(0, 0, 0, 0.15),

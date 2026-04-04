@@ -1,6 +1,29 @@
 import type { Step } from '@tabitabi/types';
 
+export const WEEK_VIEW_START_HOUR = 6;
+export const WEEK_VIEW_DEFAULT_END_HOUR = 21;
+export const WEEK_VIEW_EXTENDED_END_HOUR = 23;
+export const WEEK_VIEW_ROW_HEIGHT = 56;
+
 export const DEFAULT_HOURS = Array.from({ length: 16 }, (_, i) => i + 6);
+
+export function getWeekHours(steps: Step[]): number[] {
+  if (steps.length === 0) {
+    return DEFAULT_HOURS;
+  }
+
+  const showUntilEndOfDay = steps.some((step) => {
+    const start = new Date(step.start_at);
+    const end = new Date(step.end_at);
+    const startMinutes = start.getHours() * 60 + start.getMinutes();
+    const endMinutes = end.getHours() * 60 + end.getMinutes();
+    return startMinutes >= WEEK_VIEW_DEFAULT_END_HOUR * 60 || endMinutes >= WEEK_VIEW_DEFAULT_END_HOUR * 60;
+  });
+
+  const endHour = showUntilEndOfDay ? WEEK_VIEW_EXTENDED_END_HOUR : WEEK_VIEW_DEFAULT_END_HOUR;
+  const length = endHour - WEEK_VIEW_START_HOUR + 1;
+  return Array.from({ length }, (_, i) => i + WEEK_VIEW_START_HOUR);
+}
 
 export function getWeekDatesFromSteps(steps: Step[]): Date[] {
   if (steps.length === 0) return [];
@@ -84,8 +107,8 @@ export function getEventStyleForDay(
   const durationMinutes = Math.max(15, visibleEnd - visibleStart);
 
   const topOffsetMinutes = Math.max(0, visibleStart - hoursStartMin);
-  const top = (topOffsetMinutes / 60) * 40;
-  const height = Math.max((durationMinutes / 60) * 40, 38);
+  const top = (topOffsetMinutes / 60) * WEEK_VIEW_ROW_HEIGHT;
+  const height = Math.max((durationMinutes / 60) * WEEK_VIEW_ROW_HEIGHT, 38);
   const width = 100 / totalCount;
   const left = index * width;
 

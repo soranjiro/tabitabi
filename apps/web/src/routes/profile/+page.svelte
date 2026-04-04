@@ -56,7 +56,7 @@
         userAuth.setSession(result.token, result.user);
       }
       username = userAuth.getUser()?.username ?? null;
-      loggedIn = true;
+      loggedIn = userAuth.isLoggedIn();
       await loadBookmarks();
     } catch (e) {
       formError = e instanceof Error ? e.message : "エラーが発生しました";

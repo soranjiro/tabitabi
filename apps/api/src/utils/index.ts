@@ -5,8 +5,8 @@ export interface Env {
 }
 
 export interface Variables {
-  shioriId: string;
-  userId: string;
+  shioriId?: string;
+  userId?: string;
 }
 
 export function generateId(): string {

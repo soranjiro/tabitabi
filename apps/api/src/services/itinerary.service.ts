@@ -206,20 +206,20 @@ export class ItineraryService {
 
   private mapToItinerary(row: Record<string, unknown>): Itinerary {
     const itinerary: Itinerary = {
-      id: row.id,
-      title: row.title,
-      theme_id: row.theme_id,
-      memo: row.memo,
-      walica_id: row.walica_id,
-      password: row.password,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
+      id: row.id as string,
+      title: row.title as string,
+      theme_id: row.theme_id as string,
+      memo: row.memo as string,
+      walica_id: row.walica_id as string | null | undefined,
+      password: row.password as string | null | undefined,
+      created_at: row.created_at as string,
+      updated_at: row.updated_at as string,
     };
 
     if (row.secret_enabled !== null && row.secret_enabled !== undefined) {
       itinerary.secret_settings = {
         enabled: row.secret_enabled === 1,
-        offset_minutes: row.secret_offset
+        offset_minutes: row.secret_offset as number,
       };
     }
 

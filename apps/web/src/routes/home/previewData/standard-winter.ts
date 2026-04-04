@@ -16,9 +16,13 @@ export const standardWinterPreview: PreviewItinerary = {
     border: "#bfdbfe",
   },
   steps: [
-    { time: "09:00", label: "新千歳空港着", icon: "🛫", dayOffset: 3 },
-    { time: "12:00", label: "支笏湖展望", icon: "❄️", dayOffset: 5, durationDays: 3 },
-    { time: "17:00", label: "温泉でリラックス", icon: "♨️", dayOffset: 10, durationDays: 2 },
+    { time: "08:30", label: "東京駅から長野駅へ移動", icon: "🚄", dayOffset: 0, durationDays: 1 },
+    { time: "11:30", label: "長野駅から白馬へバス移動", icon: "🚌", dayOffset: 0, durationDays: 1 },
+    { time: "13:30", label: "スキー用具レンタル", icon: "🎿", dayOffset: 1, durationDays: 1 },
+    { time: "14:45", label: "スキー初心者レッスン", icon: "⛷️", dayOffset: 1, durationDays: 1 },
+    { time: "19:30", label: "地元居酒屋で夕食", icon: "🍶", dayOffset: 1, durationDays: 1 },
+    { time: "21:00", label: "温泉宿にチェックイン", icon: "♨️", dayOffset: 1, durationDays: 2 },
+    { time: "09:30", label: "雪見カフェで休憩", icon: "☕", dayOffset: 3, durationDays: 1 },
   ],
   features: ["月ビュー", "雪景色", "複数日イベント"],
 };

@@ -5,6 +5,7 @@ export interface PreviewStep {
   location?: string;
   dayOffset?: number;
   durationDays?: number;
+  durationHours?: number;
 }
 
 export interface ThemeColors {

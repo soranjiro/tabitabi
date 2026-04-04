@@ -48,7 +48,7 @@
     }
   });
 
-  const MONTH_EVENT_ROW_HEIGHT = 24;
+  const MONTH_EVENT_ROW_HEIGHT = 28;
 
   function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
@@ -300,7 +300,7 @@
 
           <div
             class="standard-month-week-events"
-            style="position:absolute; left:0; right:0; top:28px;"
+            style="position:absolute; left:0; right:0; top:26px;"
           >
             {#each monthEventSegments()[wIdx] || [] as seg}
               <button
@@ -310,7 +310,7 @@
                   seg.step.type,
                 )}
                 class:standard-month-event-allday={seg.step.is_all_day}
-                style={`position:absolute; left:calc(${seg.leftPercent}% + 2px); width:calc(${seg.widthPercent}% - 4px); top:${seg.rowIndex * MONTH_EVENT_ROW_HEIGHT + 1}px; min-height: 16px; height: auto;`}
+                style={`position:absolute; left:calc(${seg.leftPercent}% + 2px); top:${seg.rowIndex * MONTH_EVENT_ROW_HEIGHT + 2}px; min-height: 18px; height: 20px; --segment-width: ${seg.widthPercent}%;`}
                 onclick={() => handleEventClick(seg.step)}
                 title={seg.step.title}
               >

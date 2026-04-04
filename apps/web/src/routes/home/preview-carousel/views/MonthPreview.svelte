@@ -1,64 +1,136 @@
 <script lang="ts">
-  import type { PreviewItinerary } from "../../previewData/types";
+  import type { PreviewItinerary, PreviewStep } from "../../previewData/types";
+  import "../styles/month.css";
   export let preview: PreviewItinerary;
 
   const visibleDays = 14;
+  const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
-  const eventSegments = preview.steps.map((step, index) => {
+  type MonthSegment = {
+    step: PreviewStep;
+    start: number;
+    length: number;
+    row: number;
+  };
+
+  function splitSegment(start: number, length: number, step: PreviewStep) {
+    const segments: MonthSegment[] = [];
+    let currentStart = start;
+    let remaining = length;
+
+    while (remaining > 0) {
+      const row = Math.floor((currentStart - 1) / 7);
+      const rowEnd = row * 7 + 7;
+      const segmentLength = Math.min(remaining, rowEnd - currentStart + 1);
+      segments.push({
+        step,
+        start: currentStart - row * 7,
+        length: segmentLength,
+        row,
+      });
+      currentStart += segmentLength;
+      remaining -= segmentLength;
+    }
+
+    return segments;
+  }
+
+  function assignTracks(segments: MonthSegment[]) {
+    const tracks: MonthSegment[][] = [];
+
+    for (const segment of segments) {
+      let track = tracks.find((row) =>
+        row.every(
+          (existing) =>
+            existing.start + existing.length <= segment.start ||
+            segment.start + segment.length <= existing.start,
+        ),
+      );
+
+      if (!track) {
+        track = [];
+        tracks.push(track);
+      }
+
+      track.push(segment);
+    }
+
+    return tracks;
+  }
+
+  const eventSegments = preview.steps.flatMap((step, index) => {
     const start =
-      typeof step.dayOffset === "number" ? step.dayOffset : 2 + index * 4;
-    const length =
-      typeof step.durationDays === "number" ? step.durationDays : 1;
-    return { step, start, length };
+      typeof step.dayOffset === "number" ? step.dayOffset + 1 : 1 + index * 4;
+    const length = Math.max(
+      1,
+      typeof step.durationDays === "number" ? step.durationDays : 1,
+    );
+
+    return splitSegment(start, length, step);
   });
 
-  const days = Array.from({ length: visibleDays }, (_, idx) => {
-    const day = idx + 1;
-    const event = eventSegments.find(
-      (segment) => day >= segment.start && day < segment.start + segment.length,
-    );
-    return { day, event };
-  });
+  const weeks = Array.from({ length: 2 }, (_, weekIndex) => ({
+    weekIndex,
+    days: Array.from({ length: 7 }, (_, idx) => {
+      const day = weekIndex * 7 + idx + 1;
+      return {
+        day,
+        active: eventSegments.some(
+          (segment) =>
+            segment.row === weekIndex &&
+            idx + 1 >= segment.start &&
+            idx + 1 < segment.start + segment.length,
+        ),
+      };
+    }),
+    tracks: assignTracks(
+      eventSegments
+        .filter((segment) => segment.row === weekIndex)
+        .sort((a, b) => a.start - b.start),
+    ),
+  }));
 </script>
 
 <div class="month-preview">
   <div class="month-header">
     <div>
       <div class="month-title">{preview.title}</div>
-      <div class="month-subtitle">2週間の予定</div>
+      <div class="month-subtitle">2週間のカレンダー</div>
     </div>
     <div class="month-label">MONTH</div>
   </div>
 
-  <div class="month-grid">
-    {#each ["日", "月", "火", "水", "木", "金", "土"] as weekday}
+  <div class="month-weekdays">
+    {#each weekdays as weekday}
       <div class="month-weekday">{weekday}</div>
-    {/each}
-
-    {#each days as dayInfo}
-      <div
-        class="month-day {dayInfo.event ? 'has-event' : ''}"
-        title={dayInfo.event ? dayInfo.event.step.label : ""}
-      >
-        <div class="month-day-number">{dayInfo.day}</div>
-        {#if dayInfo.event}
-          <div class="month-event-pill">
-            {#if dayInfo.event.start === dayInfo.day}
-              {dayInfo.event.step.label}
-            {:else}
-              ・
-            {/if}
-          </div>
-        {/if}
-      </div>
     {/each}
   </div>
 
-  <div class="month-events-summary">
-    {#each eventSegments as segment}
-      <div class="month-event-summary">
-        <span class="month-event-summary-label">{segment.step.label}</span>
-        <span class="month-event-summary-duration">{segment.length}日</span>
+  <div class="month-grid">
+    {#each weeks as week}
+      <div class="month-week">
+        {#each week.days as dayData}
+          <div class="month-day {dayData.active ? 'has-event' : ''}">
+            <div class="month-day-number">{dayData.day}</div>
+          </div>
+        {/each}
+
+        <div class="month-week-events">
+          {#each week.tracks as track}
+            <div class="month-event-row">
+              {#each track as segment}
+                <div
+                  class="month-event-bar"
+                  style="grid-column: {segment.start} / span {segment.length};"
+                  title={segment.step.label}
+                >
+                  <span class="month-event-bar-label">{segment.step.label}</span
+                  >
+                </div>
+              {/each}
+            </div>
+          {/each}
+        </div>
       </div>
     {/each}
   </div>

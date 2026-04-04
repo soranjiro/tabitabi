@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PreviewItinerary } from "../../previewData/types";
+  import "../styles/timeline.css";
   export let preview: PreviewItinerary;
 </script>
 

@@ -1,0 +1,80 @@
+.card-preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.card-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+}
+
+.card-date-header {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+  border-radius: 8px;
+  padding: 0.4rem 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.date-icon {
+  font-size: 0.7rem;
+}
+
+.date-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.card-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.card-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.4rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.card-time-badge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: linear-gradient(135deg, rgba(232, 121, 169, 0.15), rgba(168, 85, 247, 0.1));
+  padding: 0.25rem 0.4rem;
+  border-radius: 12px;
+  min-width: 36px;
+  text-align: center;
+}
+
+.card-main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+}
+
+.card-label {
+  font-size: 0.7rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.card-location {
+  font-size: 0.55rem;
+  color: var(--primary);
+  opacity: 0.8;
+}

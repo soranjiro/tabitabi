@@ -1,0 +1,75 @@
+.shopping-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.preview-card.theme-shopping .preview-content {
+  padding: 0.5rem;
+}
+
+.shopping-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.shopping-store {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.shopping-store-name {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(16, 185, 129, 0.1);
+  padding: 0.1rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.shopping-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.shopping-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.shopping-item:last-child {
+  border-bottom: none;
+}
+
+.shopping-item.done {
+  opacity: 0.5;
+}
+
+.shopping-checkbox {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--primary);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.5rem;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.shopping-item.done .shopping-checkbox {
+  background: var(--primary);
+  color: white;
+}
+
+.shopping-label {
+  font-size: 0.65rem;
+  color: var(--text);
+}

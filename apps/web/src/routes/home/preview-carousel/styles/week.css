@@ -1,0 +1,98 @@
+.week-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  height: 100%;
+}
+
+.week-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.week-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.week-subtitle {
+  font-size: 0.65rem;
+  color: var(--secondary);
+}
+
+.week-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.week-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(92px, 1fr));
+  gap: 0.28rem;
+}
+
+.week-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  position: relative;
+  padding-left: 0.35rem;
+}
+
+.week-column:not(:first-child) {
+  border-left: 1px solid rgba(145, 84, 67, 0.35);
+}
+
+.week-column-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+}
+
+.week-column-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.15rem 0.25rem;
+  background: rgba(255, 248, 239, 0.94);
+  border-radius: 16px;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.92) 45%, transparent 45%);
+  background-size: 100% 46px;
+  background-repeat: repeat-y;
+}
+
+.week-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.18rem;
+  min-height: 42px;
+  padding: 0.1rem 0rem 0.1rem 0.35rem;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid rgba(219, 185, 148, 0.2);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  align-items: flex-start;
+}
+
+.week-card-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.week-card-time {
+  display: none;
+}

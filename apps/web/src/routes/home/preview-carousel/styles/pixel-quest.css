@@ -1,0 +1,65 @@
+.preview-card.theme-pixel-quest {
+  background: #2d1b0e;
+}
+
+.preview-card.theme-pixel-quest .preview-content {
+  padding: 0;
+}
+
+.pq-preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.pq-map {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.pq-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.pq-player {
+  position: absolute;
+  left: 12%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+}
+
+.pq-player-body {
+  width: 12px;
+  height: 16px;
+  background: linear-gradient(180deg, #8b4513 0% 20%, #f4c898 20% 45%, #4a90d9 45% 75%, #5b3c11 75% 100%);
+  border-radius: 2px 2px 0 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.pq-quest-bar {
+  background: linear-gradient(180deg, #3d2815 0%, #2d1b0e 100%);
+  border-top: 2px solid #d4a853;
+  padding: 0.4rem 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pq-quest-icon {
+  font-size: 0.8rem;
+}
+
+.pq-quest-text {
+  flex: 1;
+  font-size: 0.7rem;
+  color: #f4e8d3;
+  font-weight: 600;
+}
+
+.pq-exp {
+  font-size: 0.6rem;
+  color: #ffd700;
+  font-weight: 700;
+}

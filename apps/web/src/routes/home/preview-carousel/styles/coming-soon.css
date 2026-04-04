@@ -1,0 +1,26 @@
+.preview-card.theme-coming-soon {
+  background: #333333;
+}
+
+.preview-card.theme-coming-soon .preview-header {
+  background: #333333 !important;
+  border-bottom: 1px solid #333;
+}
+
+.preview-card.theme-coming-soon .preview-features {
+  border-top: 1px solid #333;
+}
+
+.coming-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.coming-question {
+  font-size: 4rem;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 2rem;
+}

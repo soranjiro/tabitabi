@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PreviewItinerary } from "../../previewData/types";
+  import "../styles/card.css";
   export let preview: PreviewItinerary;
   export let dateDisplay: string;
 </script>

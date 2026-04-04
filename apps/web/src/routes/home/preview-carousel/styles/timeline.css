@@ -1,0 +1,112 @@
+.timeline-preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  position: relative;
+}
+
+.timeline-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+}
+
+.timeline-day-card {
+  background: linear-gradient(135deg, #fffdf8 0%, #fcf9f2 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+}
+
+.timeline-ribbon {
+  position: absolute;
+  top: 0;
+  left: 0.75rem;
+  width: 1.2rem;
+  height: 2rem;
+  background: linear-gradient(180deg, var(--primary) 0%, var(--accent) 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%);
+}
+
+.timeline-date-header {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  padding: 0.25rem 0 0.35rem;
+  border-bottom: 1px dashed var(--border);
+  margin-bottom: 0.35rem;
+}
+
+.timeline-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.timeline-step {
+  display: flex;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+.timeline-time-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 2.5rem;
+  flex-shrink: 0;
+}
+
+.timeline-time {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.timeline-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--primary);
+  border-radius: 50%;
+  margin: 0.15rem 0;
+}
+
+.timeline-content-card {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: white;
+  border-radius: 6px;
+  padding: 0.35rem 0.4rem;
+  border-left: 3px solid var(--primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.timeline-content-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.timeline-label {
+  font-size: 0.65rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.timeline-location {
+  font-size: 0.5rem;
+  color: var(--accent);
+  opacity: 0.9;
+}
+
+.timeline-step.active .timeline-dot {
+  background: var(--primary);
+  box-shadow: 0 0 0 2px rgba(169, 53, 41, 0.2);
+}

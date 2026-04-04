@@ -1,0 +1,47 @@
+.preview-card.theme-map-only .preview-content {
+  padding: 0;
+}
+
+.map-preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-container {
+  flex: 1;
+  position: relative;
+  background: #f3f4f6;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.map-svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.map-card-float {
+  position: absolute;
+  background: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.map-card-float.top-left {
+  top: 15%;
+  left: 10%;
+}
+
+.map-card-float.bottom-right {
+  bottom: 20%;
+  right: 10%;
+}

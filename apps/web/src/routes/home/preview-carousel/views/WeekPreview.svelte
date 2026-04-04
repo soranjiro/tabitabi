@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PreviewItinerary, PreviewStep } from "../../previewData/types";
+  import "../styles/week.css";
   export let preview: PreviewItinerary;
 
   const startMonth = 11;

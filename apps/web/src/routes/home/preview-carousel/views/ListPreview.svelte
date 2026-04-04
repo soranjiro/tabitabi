@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PreviewItinerary } from "../../previewData/types";
+  import "../styles/list.css";
   export let preview: PreviewItinerary;
 </script>
 

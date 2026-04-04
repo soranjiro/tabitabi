@@ -226,6 +226,7 @@
     padding: 1rem;
     padding-bottom: 100px;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     background: var(--standard-bg);
   }
 
@@ -245,7 +246,8 @@
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-    min-width: min-content;
+    min-width: max-content;
+    width: 100%;
   }
 
   .standard-week-header {
@@ -476,6 +478,8 @@
   @media (max-width: 600px) {
     .standard-week-container {
       grid-template-columns: 50px repeat(var(--week-cols, 7), minmax(70px, 1fr));
+      min-width: max-content;
+      width: 100%;
     }
 
     .standard-week-body {
@@ -508,10 +512,6 @@
     .standard-week-allday-event {
       white-space: normal;
       min-width: 0;
-    }
-
-    .standard-week-container {
-      min-width: 100%;
     }
   }
 </style>

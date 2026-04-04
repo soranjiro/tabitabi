@@ -529,12 +529,15 @@
   padding: 0.5rem;
   padding-bottom: 100px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .standard-week-container {
   display: grid;
-  grid-template-columns: 60px repeat(7, 1fr);
-  min-width: 600px;
+  grid-template-columns: 60px repeat(var(--week-cols, 7), minmax(80px, 1fr));
+  min-width: max-content;
+  width: 100%;
 }
 
 .standard-week-header {
@@ -674,7 +677,9 @@
   }
 
   .standard-week-container {
-    grid-template-columns: 50px repeat(7, minmax(60px, 1fr));
+    grid-template-columns: 50px repeat(var(--week-cols, 7), minmax(60px, 1fr));
+    min-width: max-content;
+    width: 100%;
     border: 1px solid rgba(0, 0, 0, 0.08);
   }
 

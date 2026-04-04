@@ -4,6 +4,7 @@
   import { stepApi } from "$lib/api/step";
   import { auth } from "$lib/auth";
   import { onMount } from "svelte";
+  import type { Theme } from "@tabitabi/types";
 
   let { data } = $props();
 
@@ -11,6 +12,37 @@
   let backgroundColor = $derived(
     data.theme.ui.customColors?.background || "#f9fafb",
   );
+
+  function applyThemeCssVars(theme: Theme) {
+    const colors = theme.ui.customColors;
+    if (!colors) return;
+    document.documentElement.style.setProperty(
+      "--theme-primary",
+      colors.primary ?? "",
+    );
+    document.documentElement.style.setProperty(
+      "--theme-secondary",
+      colors.secondary ?? "",
+    );
+    document.documentElement.style.setProperty(
+      "--theme-accent",
+      colors.accent ?? "",
+    );
+    document.documentElement.style.setProperty(
+      "--theme-text",
+      colors.text ?? "",
+    );
+    document.documentElement.style.setProperty(
+      "--theme-bg",
+      colors.background ?? "",
+    );
+  }
+
+  $effect(() => {
+    if (data.theme) {
+      applyThemeCssVars(data.theme);
+    }
+  });
 
   // Use local state for steps to allow client-side updates (e.g. unmasking secrets)
   let steps = $state(data.steps);

@@ -14,6 +14,23 @@
   --theme-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.12);
   --theme-shadow-sm: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
 
+  --standard-bg: var(--theme-bg);
+  --standard-primary: var(--theme-primary);
+  --standard-primary-light: var(--theme-primary-light);
+  --standard-secondary: var(--theme-secondary);
+  --standard-accent: var(--theme-accent);
+  --standard-text: var(--theme-text);
+  --standard-text-light: var(--theme-text-light);
+  --standard-card-bg: var(--theme-card-bg);
+  --standard-header-bg: var(--theme-header-bg);
+  --standard-border: var(--theme-border);
+  --standard-line-color: var(--theme-line-color);
+  --standard-dot-bg: var(--theme-dot-bg);
+  --standard-shadow: var(--theme-shadow);
+  --standard-shadow-sm: var(--theme-shadow-sm);
+  --standard-accent-light: rgba(230, 180, 34, 0.8);
+  --standard-accent-dark: #d4a726;
+
   --theme-decoration-primary: #000000;
   --theme-decoration-secondary: #666666;
   --theme-decoration-accent: #999999;

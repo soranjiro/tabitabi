@@ -151,7 +151,7 @@
           {#if mode === "login"}
             アカウントをお持ちでない方は
             <button onclick={() => { mode = "register"; formError = null; }} class="text-indigo-600 hover:underline">
-              ���規登録
+              新規登録
             </button>
           {:else}
             すでにアカウントをお持ちの方は

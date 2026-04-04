@@ -44,7 +44,7 @@ export function getDemoData(): DemoDataSet {
         end_at: getEndTimestamp(getTimestamp(0, '12:00'), 90),
         location: '祇園',
         notes: '{"text":"京料理を堪能"}',
-        type: 'normal:meal',
+        type: 'normal:food',
         created_at: now,
         updated_at: now,
       },

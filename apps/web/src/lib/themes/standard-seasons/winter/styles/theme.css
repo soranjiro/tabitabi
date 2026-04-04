@@ -40,7 +40,6 @@
 }
 
 @keyframes float {
-
   0%,
   100% {
     transform: translateY(0) rotate(15deg);
@@ -86,7 +85,6 @@
 }
 
 @keyframes gentleFloat {
-
   0%,
   100% {
     transform: translateY(0) rotate(-45deg);

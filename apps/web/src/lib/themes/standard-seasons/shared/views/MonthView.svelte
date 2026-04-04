@@ -37,35 +37,39 @@
 
   let currentDate = $state(getInitialMonth(steps));
   let selectedStep = $state<Step | null>(null);
+  let compactMonthEvents = $state(false);
 
   $effect(() => {
-    if (steps.length > 0 && currentDate.getTime() === new Date().setHours(0,0,0,0)) {
+    if (
+      steps.length > 0 &&
+      currentDate.getTime() === new Date().setHours(0, 0, 0, 0)
+    ) {
       currentDate = getInitialMonth(steps);
     }
   });
 
   function getEventBackgroundStyle(step: Step): string {
     // テーマに応じた色を設定
-    let primaryColor = '#8b2e1f';  // default: autumn
-    let accentColor = '#c46b1f';
-    
+    let primaryColor = "#8b2e1f"; // default: autumn
+    let accentColor = "#c46b1f";
+
     // URLからテーマを判定
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
-      const theme = urlParams.get('theme') || '';
-      
-      if (theme.includes('spring')) {
-        primaryColor = '#4a7c59';
-        accentColor = '#7fb069';
-      } else if (theme.includes('summer')) {
-        primaryColor = '#006494';
-        accentColor = '#52cfe0';
-      } else if (theme.includes('winter')) {
-        primaryColor = '#2b4c6b';
-        accentColor = '#7899c4';
+      const theme = urlParams.get("theme") || "";
+
+      if (theme.includes("spring")) {
+        primaryColor = "#4a7c59";
+        accentColor = "#7fb069";
+      } else if (theme.includes("summer")) {
+        primaryColor = "#006494";
+        accentColor = "#52cfe0";
+      } else if (theme.includes("winter")) {
+        primaryColor = "#2b4c6b";
+        accentColor = "#7899c4";
       }
     }
-    
+
     if (step.is_all_day) {
       return `background: ${primaryColor} !important; background-color: ${primaryColor} !important; color: #fff !important; opacity: 0.8;`;
     }
@@ -204,6 +208,16 @@
     return weeksSegments;
   });
 
+  const weekRowHeights = $derived(() => {
+    return monthEventSegments().map((week) => {
+      const rowCount = week.reduce(
+        (max, segment) => Math.max(max, segment.rowIndex + 1),
+        0,
+      );
+      return Math.max(120, 36 + rowCount * 22 + 6);
+    });
+  });
+
   function formatMonthTitle(date: Date): string {
     return `${date.getFullYear()}年${date.getMonth() + 1}月`;
   }
@@ -246,27 +260,38 @@
 <div class="standard-month-view">
   <div class="standard-month-header">
     <h2 class="standard-month-title">{formatMonthTitle(currentDate)}</h2>
-    <div class="standard-month-nav">
-      <button
-        type="button"
-        class="standard-month-nav-btn"
-        onclick={prevMonth}
-        aria-label="前の月"
-      >
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        class="standard-month-nav-btn"
-        onclick={nextMonth}
-        aria-label="次の月"
-      >
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-        </svg>
-      </button>
+    <div class="standard-month-header-actions">
+      <label class="standard-month-toggle standard-settings-toggle">
+        <span class="standard-settings-label-text"> 複数予定を省略表示 </span>
+        <input
+          type="checkbox"
+          bind:checked={compactMonthEvents}
+          class="standard-toggle-input"
+        />
+        <span class="standard-toggle-slider"></span>
+      </label>
+      <div class="standard-month-nav">
+        <button
+          type="button"
+          class="standard-month-nav-btn"
+          onclick={prevMonth}
+          aria-label="前の月"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="standard-month-nav-btn"
+          onclick={nextMonth}
+          aria-label="次の月"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -285,7 +310,9 @@
       {#each weeks() as weekDays, wIdx}
         <div
           class="standard-month-week"
-          style="position: relative; display: grid; grid-template-columns: repeat(7, 1fr);"
+          style="position: relative; display: grid; grid-template-columns: repeat(7, 1fr); min-height: {compactMonthEvents
+            ? 120
+            : (weekRowHeights()[wIdx] ?? 120)}px;"
         >
           {#each weekDays as dateStr}
             {@const dayInfo = monthDays.find((d) => d.date === dateStr)}
@@ -295,9 +322,7 @@
               class:today={isToday(dateStr)}
             >
               <div class="standard-month-day-header">
-                <span class="standard-month-day-number"
-                  >{dayInfo?.day}</span
-                >
+                <span class="standard-month-day-number">{dayInfo?.day}</span>
               </div>
             </div>
           {/each}

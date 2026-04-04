@@ -217,7 +217,7 @@
   }
 
   .standard-autumn-week-corner::before {
-    content: '';
+    content: "";
     position: absolute;
     bottom: 0;
     left: 0;
@@ -242,7 +242,7 @@
   }
 
   .standard-autumn-week-day-header::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
@@ -254,20 +254,19 @@
   }
 
   .standard-autumn-week-day-header::after {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-      repeating-linear-gradient(
-        -45deg,
-        transparent,
-        transparent 10px,
-        rgba(var(--standard-autumn-primary-rgb), 0.03) 10px,
-        rgba(var(--standard-autumn-primary-rgb), 0.03) 11px
-      );
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 10px,
+      rgba(var(--standard-autumn-primary-rgb), 0.03) 10px,
+      rgba(var(--standard-autumn-primary-rgb), 0.03) 11px
+    );
     pointer-events: none;
   }
 
@@ -336,7 +335,7 @@
   }
 
   .standard-autumn-week-time-label::before {
-    content: '';
+    content: "";
     position: absolute;
     right: 0;
     top: 50%;
@@ -347,7 +346,7 @@
   }
 
   .standard-autumn-week-time-label::after {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     right: 0;
@@ -369,20 +368,19 @@
   }
 
   .standard-autumn-week-cell::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-      repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 20px,
-        rgba(var(--standard-autumn-primary-rgb), 0.01) 20px,
-        rgba(var(--standard-autumn-primary-rgb), 0.01) 21px
-      );
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 20px,
+      rgba(var(--standard-autumn-primary-rgb), 0.01) 20px,
+      rgba(var(--standard-autumn-primary-rgb), 0.01) 21px
+    );
     pointer-events: none;
   }
 
@@ -409,7 +407,7 @@
     z-index: 10;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 
+    box-shadow:
       0 2px 6px rgba(0, 0, 0, 0.12),
       inset 0 1px 2px rgba(255, 255, 255, 0.15);
     margin: 2px;
@@ -418,7 +416,7 @@
   }
 
   .standard-autumn-week-event::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 2px;
     left: 2px;
@@ -429,7 +427,7 @@
   }
 
   .standard-autumn-week-event::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: 2px;
     left: 50%;
@@ -443,14 +441,14 @@
   .standard-autumn-week-event:hover {
     z-index: 20;
     transform: translateY(-4px) scale(1.06);
-    box-shadow: 
+    box-shadow:
       0 8px 16px rgba(0, 0, 0, 0.18),
       inset 0 1px 2px rgba(255, 255, 255, 0.25);
   }
 
   .standard-autumn-week-event:active {
     transform: translateY(-1px) scale(0.98);
-    box-shadow: 
+    box-shadow:
       0 2px 4px rgba(0, 0, 0, 0.12),
       inset 0 1px 2px rgba(255, 255, 255, 0.15);
   }
@@ -460,7 +458,7 @@
     border-color: var(--standard-autumn-accent);
     border-left: 4px solid rgba(255, 255, 255, 0.6);
     padding-left: 6px;
-    box-shadow: 
+    box-shadow:
       0 2px 6px rgba(0, 0, 0, 0.15),
       inset 0 0 8px rgba(255, 255, 255, 0.1);
   }
@@ -471,7 +469,7 @@
   }
 
   .standard-autumn-week-event-transport::after {
-    content: '→';
+    content: "→";
     position: absolute !important;
     right: 4px;
     top: 50%;
@@ -485,7 +483,8 @@
   }
 
   @keyframes shimmer-top {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 0.6;
     }
     50% {
@@ -494,7 +493,8 @@
   }
 
   @keyframes pulse-arrow {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateY(-50%) translateX(0);
       opacity: 0.9;
     }

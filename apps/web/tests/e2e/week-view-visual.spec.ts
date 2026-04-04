@@ -3,10 +3,10 @@ import { test } from '@playwright/test';
 test('@quick week view visualization', async ({ page }) => {
   // Go to demo page
   await page.goto('http://localhost:5173/?demo=true', { waitUntil: 'networkidle', timeout: 10000 });
-  
+
   // Wait for content to fully load
   await page.waitForTimeout(2000);
-  
+
   // Try to access the mode selector button (view mode switch)
   const buttons = await page.locator('button').all();
   let found = false;
@@ -18,7 +18,7 @@ test('@quick week view visualization', async ({ page }) => {
       break;
     }
   }
-  
+
   if (!found) {
     // Try using aria-label for Mode button
     const modeBtn = page.locator('[aria-label*="mode"]').first();
@@ -26,9 +26,9 @@ test('@quick week view visualization', async ({ page }) => {
       await modeBtn.click();
     }
   }
-  
+
   await page.waitForTimeout(500);
-  
+
   // Look for week view button
   const options = await page.locator('[role="button"], button').all();
   for (const opt of options) {
@@ -38,9 +38,9 @@ test('@quick week view visualization', async ({ page }) => {
       break;
     }
   }
-  
+
   await page.waitForTimeout(1000);
-  
+
   // Check if week view is visible and take screenshot
   const weekView = page.locator('.standard-autumn-week-view').first();
   if (await weekView.isVisible()) {

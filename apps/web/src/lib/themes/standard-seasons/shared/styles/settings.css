@@ -226,6 +226,7 @@
 /* Actions */
 .standard-settings-page-actions {
   display: flex;
+  flex-direction: column;
   gap: 1rem;
   margin-top: 2rem;
   padding-top: 1.5rem;
@@ -233,7 +234,7 @@
 }
 
 .standard-settings-page-actions button {
-  flex: 1;
+  width: 100%;
   padding: 1rem;
   font-size: 1rem;
   font-weight: 600;
@@ -255,7 +256,8 @@
 
   .standard-settings-page-input,
   .standard-settings-page-select {
-    font-size: 16px; /* Prevent zoom on iOS */
+    font-size: 16px;
+    /* Prevent zoom on iOS */
   }
 
   .standard-settings-page-actions {

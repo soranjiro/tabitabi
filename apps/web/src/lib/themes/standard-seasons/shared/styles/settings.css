@@ -225,16 +225,23 @@
 
 /* Actions */
 .standard-settings-page-actions {
+  position: sticky;
+  bottom: 0;
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
   margin-top: 2rem;
-  padding-top: 1.5rem;
+  padding: 1rem 0 0.75rem;
   border-top: 1px solid var(--theme-line-color);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #fff 50%, #fff 100%);
+  z-index: 1;
 }
 
 .standard-settings-page-actions button {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 120px;
   padding: 1rem;
   font-size: 1rem;
   font-weight: 600;
@@ -260,11 +267,4 @@
     /* Prevent zoom on iOS */
   }
 
-  .standard-settings-page-actions {
-    flex-direction: column-reverse;
-  }
-
-  .standard-settings-page-actions button {
-    width: 100%;
-  }
 }

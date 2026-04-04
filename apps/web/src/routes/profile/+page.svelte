@@ -1,9 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
   import { userApi } from "$lib/api/user";
   import { userAuth } from "$lib/user-auth";
   import type { UserBookmarkWithItinerary } from "@tabitabi/types";
 
+  let loggedIn = $state(false);
   let bookmarks: UserBookmarkWithItinerary[] = $state([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
@@ -18,7 +20,8 @@
   let submitting = $state(false);
 
   onMount(async () => {
-    if (!userAuth.isLoggedIn()) {
+    loggedIn = userAuth.isLoggedIn();
+    if (!loggedIn) {
       loading = false;
       return;
     }
@@ -53,6 +56,7 @@
         userAuth.setSession(result.token, result.user);
       }
       username = userAuth.getUser()?.username ?? null;
+      loggedIn = userAuth.isLoggedIn();
       await loadBookmarks();
     } catch (e) {
       formError = e instanceof Error ? e.message : "エラーが発生しました";
@@ -63,10 +67,12 @@
 
   function handleLogout() {
     userAuth.clearSession();
+    loggedIn = false;
     bookmarks = [];
     username = null;
     email = "";
     password = "";
+    goto("/");
   }
 
   async function toggleVisibility(itineraryId: string, current: boolean) {
@@ -96,7 +102,7 @@
 <div class="min-h-screen bg-gray-50">
   <div class="max-w-3xl mx-auto px-4 py-8">
 
-    {#if !userAuth.isLoggedIn()}
+    {#if !loggedIn}
       <!-- ログイン / 新規登録フォーム -->
       <div class="bg-white rounded-lg shadow-md p-6 max-w-md mx-auto">
         <h1 class="text-2xl font-bold text-gray-900 mb-6">
@@ -151,7 +157,7 @@
           {#if mode === "login"}
             アカウントをお持ちでない方は
             <button onclick={() => { mode = "register"; formError = null; }} class="text-indigo-600 hover:underline">
-              ���規登録
+              新規登録
             </button>
           {:else}
             すでにアカウントをお持ちの方は

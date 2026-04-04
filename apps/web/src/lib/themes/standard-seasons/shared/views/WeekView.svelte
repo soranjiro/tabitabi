@@ -213,7 +213,7 @@
 
   .standard-autumn-week-corner {
     background: var(--standard-autumn-header-bg);
-    border-bottom: 3px solid var(--standard-autumn-primary);
+    border-bottom: 1px solid var(--standard-autumn-primary);
     border-right: 1px solid var(--standard-autumn-border);
     display: flex;
     align-items: flex-end;

@@ -60,32 +60,34 @@
   }
 
   const weekDates = $derived(() => getWeekDatesFromSteps(steps));
-  const hours = $derived(() => getWeekHours(steps.filter((s) => !s.is_all_day)));
+  const hours = $derived(() =>
+    getWeekHours(steps.filter((s) => !s.is_all_day)),
+  );
 
   const timedSteps = $derived(() => steps.filter((s) => !s.is_all_day));
 
   function getEventBackgroundStyle(step: Step): string {
     // テーマに応じた色を設定
-    let primaryColor = '#8b2e1f';  // default: autumn
-    let accentColor = '#c46b1f';
-    
+    let primaryColor = "#8b2e1f"; // default: autumn
+    let accentColor = "#c46b1f";
+
     // URLからテーマを判定
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
-      const theme = urlParams.get('theme') || '';
-      
-      if (theme.includes('spring')) {
-        primaryColor = '#4a7c59';
-        accentColor = '#7fb069';
-      } else if (theme.includes('summer')) {
-        primaryColor = '#006494';
-        accentColor = '#52cfe0';
-      } else if (theme.includes('winter')) {
-        primaryColor = '#2b4c6b';
-        accentColor = '#7899c4';
+      const theme = urlParams.get("theme") || "";
+
+      if (theme.includes("spring")) {
+        primaryColor = "#4a7c59";
+        accentColor = "#7fb069";
+      } else if (theme.includes("summer")) {
+        primaryColor = "#006494";
+        accentColor = "#52cfe0";
+      } else if (theme.includes("winter")) {
+        primaryColor = "#2b4c6b";
+        accentColor = "#7899c4";
       }
     }
-    
+
     if (step.is_all_day) {
       return `background: ${primaryColor} !important; background-color: ${primaryColor} !important; color: #fff !important; opacity: 0.8;`;
     }
@@ -121,9 +123,7 @@
 
 <div class="standard-week-view" style="--week-cols: {numCols};">
   {#if weekDates().length === 0}
-    <div class="standard-week-no-events">
-      予定がまだ登録されていません
-    </div>
+    <div class="standard-week-no-events">予定がまだ登録されていません</div>
   {:else}
     <div class="standard-week-container">
       <div class="standard-week-header">
@@ -445,29 +445,39 @@
   }
 
   .standard-week-allday-label {
-    padding: 0.5rem 0.25rem;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--standard-text-light);
+    padding: 0.6rem 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--standard-primary);
     text-align: right;
     border-right: 1px solid var(--standard-border);
     border-bottom: 2px solid var(--standard-primary);
-    background: var(--standard-header-bg);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.8) 0%,
+      rgba(255, 255, 255, 0.5) 100%
+    );
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
   .standard-week-allday-cell {
-    padding: 4px;
+    padding: 6px;
     border-right: 1px solid var(--standard-border);
     border-bottom: 2px solid var(--standard-primary);
-    background: var(--standard-bg);
+    background: linear-gradient(
+      120deg,
+      var(--standard-bg) 0%,
+      rgba(255, 255, 255, 0.6) 100%
+    );
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    min-height: 36px;
-    align-items: flex-start;
+    min-height: 44px;
+    align-items: center;
   }
 
   .standard-week-allday-cell:last-child {
@@ -475,26 +485,29 @@
   }
 
   .standard-week-allday-event {
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 5px 10px;
+    border-radius: 6px;
     background-color: var(--standard-primary) !important;
     color: #fff;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.3);
     display: flex;
     gap: 4px;
     align-items: center;
-    font-size: 0.7rem;
-    font-weight: 600;
+    font-size: 0.75rem;
+    font-weight: 700;
     cursor: pointer;
-    transition: background-color 0.15s;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   }
 
   .standard-week-allday-event:hover {
     background-color: var(--standard-primary-light) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   @media (max-width: 600px) {

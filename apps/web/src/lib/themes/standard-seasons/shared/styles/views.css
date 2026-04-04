@@ -240,8 +240,8 @@
 
 .standard-month-day {
   min-height: 120px;
-  border-right: 1px solid var(--theme-border);
-  border-bottom: 1px solid var(--theme-border);
+  border-right: 1px solid var(--theme-line-color);
+  border-bottom: 1px solid var(--theme-line-color);
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
@@ -512,8 +512,8 @@
 }
 
 .standard-week-cell {
-  border-right: 1px solid var(--theme-border);
-  border-bottom: 1px solid var(--theme-border);
+  border-right: 1px solid var(--theme-line-color);
+  border-bottom: 1px solid var(--theme-line-color);
   height: 40px;
   position: relative;
   min-height: 40px;

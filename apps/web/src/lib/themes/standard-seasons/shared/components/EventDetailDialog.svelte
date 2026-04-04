@@ -206,7 +206,10 @@
     if (editIsAllDay) {
       // 終日の場合
       startAt = createTimestamp(editedStep.startDate, "00:00");
-      endAt = createTimestamp(editedStep.endDate || editedStep.startDate, "23:59");
+      endAt = createTimestamp(
+        editedStep.endDate || editedStep.startDate,
+        "23:59",
+      );
     } else {
       // 時刻付きの場合
       startAt = createTimestamp(
@@ -414,9 +417,7 @@
             </div>
           </div>
           <div class="standard-form-field">
-            <label for="location-input" class="standard-form-label"
-              >場所</label
-            >
+            <label for="location-input" class="standard-form-label">場所</label>
             <input
               id="location-input"
               type="text"
@@ -435,9 +436,7 @@
             />
           </div>
           <div class="standard-form-field">
-            <label for="notes-textarea" class="standard-form-label"
-              >メモ</label
-            >
+            <label for="notes-textarea" class="standard-form-label">メモ</label>
             <textarea
               id="notes-textarea"
               bind:value={editedStep.notes}
@@ -457,23 +456,15 @@
             <div class="standard-event-detail-field">
               <span class="standard-event-detail-label">開始日時</span>
               <div class="standard-event-detail-value">
-                <span class="standard-event-date"
-                  >{getStepDate(step)}</span
-                >
-                <span class="standard-event-time"
-                  >{getStepTime(step)}</span
-                >
+                <span class="standard-event-date">{getStepDate(step)}</span>
+                <span class="standard-event-time">{getStepTime(step)}</span>
               </div>
             </div>
             <div class="standard-event-detail-field">
               <span class="standard-event-detail-label">終了日時</span>
               <div class="standard-event-detail-value">
-                <span class="standard-event-date"
-                  >{getStepEndDate(step)}</span
-                >
-                <span class="standard-event-time"
-                  >{getStepEndTime(step)}</span
-                >
+                <span class="standard-event-date">{getStepEndDate(step)}</span>
+                <span class="standard-event-time">{getStepEndTime(step)}</span>
               </div>
             </div>
           </div>
@@ -613,8 +604,8 @@
     margin: 0;
     font-size: 1.35rem;
     font-weight: 700;
-    color: #fff;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    color: var(--theme-text);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 
   .standard-event-dialog-close {
@@ -622,7 +613,7 @@
     border: none;
     padding: 0.5rem;
     cursor: pointer;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text-light);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -631,8 +622,8 @@
   }
 
   .standard-event-dialog-close:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--theme-text);
   }
 
   .standard-event-dialog-close svg {

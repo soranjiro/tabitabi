@@ -415,6 +415,9 @@
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;
+    padding: 0.12rem 0.2rem;
+    margin: 0 0.15px;
+    gap: 0.15rem;
   }
 
   .standard-month-event-icon {
@@ -427,11 +430,12 @@
 
   .standard-month-event-title {
     max-width: 100%;
-    font-size: 0.65rem;
+    font-size: 0.72rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: clip;
-    line-height: 1.1;
+    line-height: 1.2;
+    padding: 0;
   }
 
   .standard-month-weekday {
@@ -456,10 +460,13 @@
 
   .standard-month-event {
     font-size: 0.68rem;
+    padding: 0.1rem 0.18rem;
     height: auto;
     white-space: nowrap;
     overflow: hidden;
     min-width: 0;
+    margin: 0 0.12px;
+    gap: 0.12rem;
   }
 
   .standard-month-event-icon {
@@ -475,9 +482,10 @@
     text-overflow: clip;
     white-space: nowrap;
     max-width: 100%;
-    font-size: 0.6rem;
+    font-size: 0.64rem;
     min-width: 0;
-    line-height: 1.1;
+    line-height: 1.2;
+    padding: 0;
   }
 
   .standard-month-weekday {

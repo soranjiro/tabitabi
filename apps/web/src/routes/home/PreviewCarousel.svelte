@@ -68,7 +68,7 @@
             <span class="preview-theme-name">{preview.themeName}</span>
             <span class="preview-theme-phrase">{preview.phrase}</span>
           </div>
-          <span class="preview-theme-desc">{preview.description}</span>
+          <!-- <span class="preview-theme-desc">{preview.description}</span> -->
         </div>
 
         <div class="preview-content">

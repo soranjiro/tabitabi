@@ -20,6 +20,7 @@ export function getDemoData(): DemoDataSet {
         end_at: getEndTimestamp(getTimestamp(0, '08:00'), 120),
         location: '東京駅',
         notes: '{"text":"北陸新幹線で長野へ"}',
+        type: 'transport:train',
         created_at: now,
         updated_at: now,
       },

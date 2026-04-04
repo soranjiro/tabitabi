@@ -74,8 +74,9 @@
       >
         {@html PaletteIcon}
         <h3>テーマ</h3>
-        <span class="standard-autumn-collapse-icon" class:expanded={showThemeList}
-          >▼</span
+        <span
+          class="standard-autumn-collapse-icon"
+          class:expanded={showThemeList}>▼</span
         >
       </div>
       <p class="standard-autumn-settings-page-description">
@@ -132,10 +133,14 @@
 
       {#if localSecretEnabled}
         <div class="standard-autumn-settings-page-field">
-          <label class="standard-autumn-settings-page-label">
+          <label
+            for="secret-offset-select"
+            class="standard-autumn-settings-page-label"
+          >
             予定の表示開始時刻
           </label>
           <select
+            id="secret-offset-select"
             bind:value={localSecretOffset}
             class="standard-autumn-settings-page-select"
           >
@@ -174,10 +179,14 @@
         Walicaの割り勘グループと連携できます
       </p>
       <div class="standard-autumn-settings-page-field">
-        <label class="standard-autumn-settings-page-label">
+        <label
+          for="walica-url-input"
+          class="standard-autumn-settings-page-label"
+        >
           Walica グループURL
         </label>
         <input
+          id="walica-url-input"
           type="text"
           bind:value={localWalicaUrl}
           placeholder="https://walica.jp/group/..."

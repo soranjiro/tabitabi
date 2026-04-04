@@ -68,6 +68,9 @@
   let editStartMinute = $state(getStepTime(step).split(":")[1]);
   let editEndHour = $state("10");
   let editEndMinute = $state("00");
+  let startUserChanged = $state(false);
+  let endUserChanged = $state(false);
+  let originalDuration = $state(60);
 
   function formatTime(ms: number): [string, string] {
     const date = new Date(ms);
@@ -100,6 +103,12 @@
     editStartMinute = startMinute;
     editEndHour = endHour;
     editEndMinute = endMinute;
+    startUserChanged = false;
+    endUserChanged = false;
+    originalDuration = Math.max(
+      1,
+      Math.round((step.end_at - step.start_at) / 60000),
+    );
   }
 
   function cancelEdit() {
@@ -110,15 +119,75 @@
     editStartMinute = startMinute;
     editEndHour = "10";
     editEndMinute = "00";
+    startUserChanged = false;
+    endUserChanged = false;
   }
+
+  $effect(() => {
+    // when start changes and end hasn't been edited by the user,
+    // only auto-adjust end if the start would move past the current end
+    if (!isEditing) return;
+    if (!editedStep.startDate) return;
+    if (endUserChanged) return;
+    try {
+      const startTime = `${editStartHour}:${editStartMinute}`;
+      const startAt = createTimestamp(editedStep.startDate, startTime);
+      const currentEndAt = createTimestamp(
+        editedStep.endDate || editedStep.startDate,
+        `${editEndHour}:${editEndMinute}`,
+      );
+      if (startAt >= currentEndAt) {
+        const newEndAt = createEndTimestamp(startAt, originalDuration);
+        const d = new Date(newEndAt);
+        const eh = String(d.getHours()).padStart(2, "0");
+        const em = String(d.getMinutes()).padStart(2, "0");
+        editEndHour = eh;
+        editEndMinute = em;
+        editedStep.endDate = d.toISOString().split("T")[0];
+        editedStep.endTime = `${eh}:${em}`;
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+  });
+
+  $effect(() => {
+    // when end changes and start hasn't been edited by the user,
+    // only auto-adjust start if the end would move before the current start
+    if (!isEditing) return;
+    if (!editedStep.endDate) return;
+    if (startUserChanged) return;
+    try {
+      const endTime = `${editEndHour}:${editEndMinute}`;
+      const endAt = createTimestamp(editedStep.endDate, endTime);
+      const currentStartAt = createTimestamp(
+        editedStep.startDate || editedStep.endDate,
+        `${editStartHour}:${editStartMinute}`,
+      );
+      if (endAt <= currentStartAt) {
+        const newStartAt = endAt - Math.max(1, originalDuration) * 60 * 1000;
+        const d = new Date(newStartAt);
+        const sh = String(d.getHours()).padStart(2, "0");
+        const sm = String(d.getMinutes()).padStart(2, "0");
+        editStartHour = sh;
+        editStartMinute = sm;
+        editedStep.startDate = d.toISOString().split("T")[0];
+        editedStep.startTime = `${sh}:${sm}`;
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+  });
 
   async function handleUpdate() {
     if (
       !editedStep.title?.trim() ||
       !editedStep.startDate ||
-      !editedStep.startTime ||
+      !editStartHour ||
+      !editStartMinute ||
       !editedStep.endDate ||
-      !editedStep.endTime ||
+      !editEndHour ||
+      !editEndMinute ||
       !onUpdateStep
     ) {
       alert("タイトル、日付、開始時刻、終了時刻は必須です");
@@ -127,8 +196,19 @@
 
     const noteText = (editedStep.notes ?? "").trim();
     const notes = updateMemoText(step.notes, noteText);
-    const startAt = createTimestamp(editedStep.startDate, editedStep.startTime);
-    const endAt = createTimestamp(editedStep.endDate, editedStep.endTime);
+    const startAt = createTimestamp(
+      editedStep.startDate,
+      `${editStartHour}:${editStartMinute}`,
+    );
+    const endAt = createTimestamp(
+      editedStep.endDate,
+      `${editEndHour}:${editEndMinute}`,
+    );
+
+    if (endAt <= startAt) {
+      alert("終了時刻は開始時刻より後にしてください");
+      return;
+    }
 
     await onUpdateStep(step.id, {
       title: editedStep.title.trim(),
@@ -232,6 +312,7 @@
                   id="start-date-input"
                   type="date"
                   bind:value={editedStep.startDate}
+                  onchange={() => (startUserChanged = true)}
                   class="standard-autumn-input"
                 />
               </div>
@@ -240,6 +321,7 @@
                   bind:value={editStartHour}
                   class="standard-autumn-select-time"
                   title="時間を選択"
+                  onchange={() => (startUserChanged = true)}
                 >
                   {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
                     <option value={hour}>{hour}</option>
@@ -250,6 +332,7 @@
                   bind:value={editStartMinute}
                   class="standard-autumn-select-time"
                   title="分を選択"
+                  onchange={() => (startUserChanged = true)}
                 >
                   <option value="00">00</option>
                   <option value="15">15</option>
@@ -269,6 +352,7 @@
                   id="end-date-input"
                   type="date"
                   bind:value={editedStep.endDate}
+                  onchange={() => (endUserChanged = true)}
                   class="standard-autumn-input"
                 />
               </div>
@@ -277,6 +361,7 @@
                   bind:value={editEndHour}
                   class="standard-autumn-select-time"
                   title="時間を選択"
+                  onchange={() => (endUserChanged = true)}
                 >
                   {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
                     <option value={hour}>{hour}</option>
@@ -287,6 +372,7 @@
                   bind:value={editEndMinute}
                   class="standard-autumn-select-time"
                   title="分を選択"
+                  onchange={() => (endUserChanged = true)}
                 >
                   <option value="00">00</option>
                   <option value="15">15</option>

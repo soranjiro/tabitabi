@@ -270,21 +270,46 @@
     isEditingTitle = false;
   }
 
-  async function handleAddStep() {
-    if (!newStep.title.trim() || !newStep.date || !newStep.time) {
-      alert("タイトル、日付、時刻は必須です");
+  async function handleAddStep(payload?: {
+    start_at?: number;
+    end_at?: number;
+    type?: StepType;
+  }) {
+    if (!newStep.title.trim()) {
+      alert("タイトル、日付は必須です");
       return;
     }
-    if (onCreateStep) {
-      const startAt = createTimestamp(newStep.date, newStep.time);
+
+    let startAt: number | undefined = undefined;
+    let endAt: number | undefined = undefined;
+
+    if (payload && payload.start_at) {
+      startAt = payload.start_at;
+      endAt = payload.end_at ?? createEndTimestamp(startAt, 60);
+    } else {
+      if (!newStep.date || !newStep.time) {
+        alert("日時の指定が正しくありません");
+        return;
+      }
+      startAt = createTimestamp(newStep.date, newStep.time);
+      endAt = createEndTimestamp(startAt, 60);
+    }
+
+    if (endAt <= startAt) {
+      alert("終了時刻は開始時刻より後にしてください");
+      return;
+    }
+
+    if (onCreateStep && startAt) {
       await onCreateStep({
         title: newStep.title.trim(),
         start_at: startAt,
-        end_at: createEndTimestamp(startAt, 60),
+        end_at: endAt,
         location: newStep.location.trim() || undefined,
         notes: newStep.notes.trim() || undefined,
-        type: newStep.type,
+        type: payload?.type ?? newStep.type,
       });
+
       newStep = {
         title: "",
         date: "",
@@ -347,6 +372,31 @@
       await onUpdateItinerary({ walica_id: walicaId });
     }
   }
+  function buildThemeOverrideStyle(themeId: string): string {
+    const season =
+      themeId && themeId.startsWith("standard-")
+        ? themeId.replace("standard-", "")
+        : "autumn";
+    const props = [
+      "bg",
+      "primary",
+      "primary-light",
+      "secondary",
+      "accent",
+      "text",
+      "text-light",
+      "card-bg",
+      "header-bg",
+      "border",
+      "line-color",
+      "dot-bg",
+      "shadow",
+      "shadow-sm",
+    ];
+    return props
+      .map((p) => `--standard-autumn-${p}: var(--standard-${season}-${p})`)
+      .join("; ");
+  }
 </script>
 
 <div
@@ -354,92 +404,7 @@
   class:standard-spring-theme={selectedThemeId === "standard-spring"}
   class:standard-summer-theme={selectedThemeId === "standard-summer"}
   class:standard-winter-theme={selectedThemeId === "standard-winter"}
-  style="
-    --standard-autumn-bg: {selectedThemeId === 'standard-spring'
-    ? 'var(--standard-spring-bg)'
-    : selectedThemeId === 'standard-summer'
-      ? 'var(--standard-summer-bg)'
-      : selectedThemeId === 'standard-winter'
-        ? 'var(--standard-winter-bg)'
-        : 'var(--standard-autumn-bg)'};
-    --standard-autumn-primary: {selectedThemeId === 'standard-spring'
-    ? 'var(--standard-spring-primary)'
-    : selectedThemeId === 'standard-summer'
-      ? 'var(--standard-summer-primary)'
-      : selectedThemeId === 'standard-winter'
-        ? 'var(--standard-winter-primary)'
-        : 'var(--standard-autumn-primary)'};
-    --standard-autumn-primary-light: {selectedThemeId === 'standard-spring'
-    ? 'var(--standard-spring-primary-light)'
-    : selectedThemeId === 'standard-summer'
-      ? 'var(--standard-summer-primary-light)'
-      : selectedThemeId === 'standard-winter'
-        ? 'var(--standard-winter-primary-light)'
-        : 'var(--standard-autumn-primary-light)'};
-    --standard-autumn-secondary: {selectedThemeId === 'standard-spring'
-    ? 'var(--standard-spring-secondary)'
-    : selectedThemeId === 'standard-summer'
-      ? 'var(--standard-summer-secondary)'
-      : selectedThemeId === 'standard-winter'
-        ? 'var(--standard-winter-secondary)'
-        : 'var(--standard-autumn-secondary)'};
-    --standard-autumn-accent: {selectedThemeId === 'standard-spring'
-    ? 'var(--standard-spring-accent)'
-    : selectedThemeId === 'standard-summer'
-      ? 'var(--standard-summer-accent)'
-      : selectedThemeId === 'standard-winter'
-        ? 'var(--standard-winter-accent)'
-        : 'var(--standard-autumn-accent)'};
-    --standard-autumn-text: {selectedThemeId === 'standard-spring'
-    ? 'var(--standard-spring-text)'
-    : selectedThemeId === 'standard-summer'
-      ? 'var(--standard-summer-text)'
-      : selectedThemeId === 'standard-winter'
-        ? 'var(--standard-winter-text)'
-        : 'var(--standard-autumn-text)'};
-    --standard-autumn-text-light: {selectedThemeId === 'standard-spring'
-    ? 'var(--standard-spring-text-light)'
-    : selectedThemeId === 'standard-summer'
-      ? 'var(--standard-summer-text-light)'
-      : selectedThemeId === 'standard-winter'
-        ? 'var(--standard-winter-text-light)'
-        : 'var(--standard-autumn-text-light)'};
-    --standard-autumn-border: {selectedThemeId === 'standard-spring'
-    ? 'var(--standard-spring-border)'
-    : selectedThemeId === 'standard-summer'
-      ? 'var(--standard-summer-border)'
-      : selectedThemeId === 'standard-winter'
-        ? 'var(--standard-winter-border)'
-        : 'var(--standard-autumn-border)'};
-    --standard-autumn-line-color: {selectedThemeId === 'standard-spring'
-    ? 'var(--standard-spring-line-color)'
-    : selectedThemeId === 'standard-summer'
-      ? 'var(--standard-summer-line-color)'
-      : selectedThemeId === 'standard-winter'
-        ? 'var(--standard-winter-line-color)'
-        : 'var(--standard-autumn-line-color)'};
-    --standard-autumn-dot-bg: {selectedThemeId === 'standard-spring'
-    ? 'var(--standard-spring-dot-bg)'
-    : selectedThemeId === 'standard-summer'
-      ? 'var(--standard-summer-dot-bg)'
-      : selectedThemeId === 'standard-winter'
-        ? 'var(--standard-winter-dot-bg)'
-        : 'var(--standard-autumn-dot-bg)'};
-    --standard-autumn-shadow: {selectedThemeId === 'standard-spring'
-    ? 'var(--standard-spring-shadow)'
-    : selectedThemeId === 'standard-summer'
-      ? 'var(--standard-summer-shadow)'
-      : selectedThemeId === 'standard-winter'
-        ? 'var(--standard-winter-shadow)'
-        : 'var(--standard-autumn-shadow)'};
-    --standard-autumn-shadow-sm: {selectedThemeId === 'standard-spring'
-    ? 'var(--standard-spring-shadow-sm)'
-    : selectedThemeId === 'standard-summer'
-      ? 'var(--standard-summer-shadow-sm)'
-      : selectedThemeId === 'standard-winter'
-        ? 'var(--standard-winter-shadow-sm)'
-        : 'var(--standard-autumn-shadow-sm)'};
-  "
+  style={buildThemeOverrideStyle(selectedThemeId)}
 >
   <div class="standard-autumn-container">
     <header class="standard-autumn-header">

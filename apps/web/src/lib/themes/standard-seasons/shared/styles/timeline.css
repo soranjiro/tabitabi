@@ -86,6 +86,80 @@
   position: relative;
 }
 
+/* Transport (移動) style — visual movement feeling */
+.standard-autumn-step-content.standard-autumn-step-transport {
+  background: linear-gradient(90deg, rgba(13, 110, 253, 0.06), rgba(56, 189, 248, 0.04));
+  border-left-style: dashed;
+  border-left-color: var(--standard-autumn-primary);
+  color: var(--standard-autumn-text);
+  overflow: visible;
+}
+
+.standard-autumn-transport-overlay {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.moving-vehicle {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--standard-autumn-primary);
+  animation: vehicle-move 1.4s linear infinite;
+}
+
+.moving-trail {
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, rgba(13, 110, 253, 0.2), rgba(13, 110, 253, 0));
+  border-radius: 4px;
+  opacity: 0.8;
+  transform-origin: left center;
+  animation: trail-flow 1.4s linear infinite;
+}
+
+@keyframes vehicle-move {
+  0% {
+    transform: translateX(-6px);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: translateX(6px);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(-6px);
+    opacity: 0.6;
+  }
+}
+
+@keyframes trail-flow {
+  0% {
+    transform: scaleX(0.2);
+    opacity: 0.4;
+  }
+
+  50% {
+    transform: scaleX(1);
+    opacity: 0.9;
+  }
+
+  100% {
+    transform: scaleX(0.2);
+    opacity: 0.4;
+  }
+}
+
 .standard-autumn-step-location {
   font-size: 0.85rem;
   color: var(--standard-autumn-text-light);

@@ -62,3 +62,23 @@
   --standard-winter-shadow: 0 12px 36px -8px rgba(30, 58, 138, 0.15);
   --standard-winter-shadow-sm: 0 4px 12px -2px rgba(30, 58, 138, 0.1);
 }
+
+/* Semantic aliases for the active theme (default: autumn).
+   These provide a stable set of variables to use when implementing
+   theme-agnostic components or future refactors. */
+:root {
+  --theme-bg: var(--standard-autumn-bg);
+  --theme-primary: var(--standard-autumn-primary);
+  --theme-primary-light: var(--standard-autumn-primary-light);
+  --theme-secondary: var(--standard-autumn-secondary);
+  --theme-accent: var(--standard-autumn-accent);
+  --theme-text: var(--standard-autumn-text);
+  --theme-text-light: var(--standard-autumn-text-light);
+  --theme-card-bg: var(--standard-autumn-card-bg);
+  --theme-header-bg: var(--standard-autumn-header-bg);
+  --theme-border: var(--standard-autumn-border);
+  --theme-line-color: var(--standard-autumn-line-color);
+  --theme-dot-bg: var(--standard-autumn-dot-bg);
+  --theme-shadow: var(--standard-autumn-shadow);
+  --theme-shadow-sm: var(--standard-autumn-shadow-sm);
+}

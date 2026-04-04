@@ -1,0 +1,7 @@
+/* Summer theme variables (delegates to shared variables by default)
+   Add season-specific overrides here when appropriate */
+@import '../../shared/styles/variables.css';
+
+:root {
+  /* Summer-specific overrides can be placed here */
+}

@@ -35,6 +35,18 @@ export function getDemoData(): DemoDataSet {
         updated_at: now,
       },
       {
+        id: 'demo-step-2-transport',
+        itinerary_id: 'demo',
+        title: '祇園から嵐山へ移動',
+        start_at: getTimestamp(0, '13:30'),
+        end_at: getEndTimestamp(getTimestamp(0, '13:30'), 60),
+        location: '京都市内',
+        notes: '{"text":"移動中：電車での移動を想定"}',
+        type: 'transport:train',
+        created_at: now,
+        updated_at: now,
+      },
+      {
         id: 'demo-step-3',
         itinerary_id: 'demo',
         title: '嵐山の桜散策',

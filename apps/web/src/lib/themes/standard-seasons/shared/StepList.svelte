@@ -17,6 +17,7 @@
     ChevronRightIcon,
   } from "./components/icons/index.svelte";
   import IconRenderer from "./icons/IconRenderer.svelte";
+  import { isTransportType } from "./utils/step-type";
   import { type ViewMode } from "./utils/storage";
   import { ListView, MonthView, WeekView } from "./views";
   import EventDetailDialog from "./components/EventDetailDialog.svelte";
@@ -525,6 +526,9 @@
                     {#if isSecretStep(step) && !hasEditPermission}
                       <div
                         class="standard-autumn-step-content standard-autumn-step-hidden"
+                        class:standard-autumn-step-transport={isTransportType(
+                          step.type,
+                        )}
                         onclick={() => handleStepClick(step.id)}
                         role="button"
                         tabindex="0"
@@ -558,6 +562,9 @@
                     {:else}
                       <div
                         class="standard-autumn-step-content"
+                        class:standard-autumn-step-transport={isTransportType(
+                          step.type,
+                        )}
                         onclick={() => handleStepClick(step.id)}
                         role="button"
                         tabindex="0"
@@ -574,6 +581,23 @@
                             <IconRenderer type={step.type} size="sm" />
                           </div>
                         </div>
+                        {#if isTransportType(step.type)}
+                          <div
+                            class="standard-autumn-transport-overlay"
+                            aria-hidden="true"
+                          >
+                            <div class="moving-vehicle">
+                              <svg
+                                viewBox="0 0 24 24"
+                                width="18"
+                                height="18"
+                                fill="currentColor"
+                                ><path d="M3 12h18v2H3z" /></svg
+                              >
+                            </div>
+                            <div class="moving-trail"></div>
+                          </div>
+                        {/if}
                         {#if step.location}
                           <div class="standard-autumn-step-location">
                             <svg

@@ -1,4 +1,4 @@
-export const defaultThemeId = "standard-autumn" as const;
+export const defaultThemeId = "standard-spring" as const;
 
 export const availableThemes = [
   "map-only",

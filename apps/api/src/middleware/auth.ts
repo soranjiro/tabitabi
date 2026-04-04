@@ -1,8 +1,8 @@
 import type { Context, Next } from 'hono';
-import { Env } from '../utils';
-import { verifyToken, extractBearerToken } from '../utils/jwt';
+import { Env, Variables } from '../utils';
+import { verifyToken, verifyUserToken, extractBearerToken } from '../utils/jwt';
 
-export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
+export async function authMiddleware(c: Context<{ Bindings: Env; Variables: Variables }>, next: Next) {
   const authHeader = c.req.header('Authorization');
   const token = extractBearerToken(authHeader);
 
@@ -26,7 +26,7 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
   await next();
 }
 
-export async function optionalAuthMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
+export async function optionalAuthMiddleware(c: Context<{ Bindings: Env; Variables: Variables }>, next: Next) {
   const authHeader = c.req.header('Authorization');
   const token = extractBearerToken(authHeader);
 
@@ -37,5 +37,29 @@ export async function optionalAuthMiddleware(c: Context<{ Bindings: Env }>, next
     }
   }
 
+  await next();
+}
+
+export async function userAuthMiddleware(c: Context<{ Bindings: Env; Variables: Variables }>, next: Next) {
+  const authHeader = c.req.header('Authorization');
+  const token = extractBearerToken(authHeader);
+
+  if (!token) {
+    return c.json({
+      success: false,
+      error: { code: 'UNAUTHORIZED', message: 'No token provided' }
+    }, 401);
+  }
+
+  const payload = await verifyUserToken(token, c.env.JWT_SECRET);
+
+  if (!payload) {
+    return c.json({
+      success: false,
+      error: { code: 'UNAUTHORIZED', message: 'Invalid or expired token' }
+    }, 401);
+  }
+
+  c.set('userId', payload.userId);
   await next();
 }

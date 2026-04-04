@@ -8,3 +8,4 @@ export type { Step, CreateStepInput, UpdateStepInput, StepType } from './step';
 export { getStepDate, getStepTime, getStepEndTime, getStepEndDate, createTimestamp, createEndTimestamp } from './step';
 export * from './theme';
 export * from './timeline';
+export * from './user';

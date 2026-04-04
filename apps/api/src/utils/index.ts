@@ -4,6 +4,11 @@ export interface Env {
   JWT_SECRET?: string;
 }
 
+export interface Variables {
+  shioriId: string;
+  userId: string;
+}
+
 export function generateId(): string {
   return crypto.randomUUID();
 }

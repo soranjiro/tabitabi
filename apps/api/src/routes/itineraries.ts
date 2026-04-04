@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
-import { Env } from '../utils';
+import { Env, Variables } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
 import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth';
 import { generateToken } from '../utils/jwt';
 
-const itineraries = new Hono<{ Bindings: Env }>();
+const itineraries = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 itineraries.get('/', async (c) => {
   const service = new ItineraryService(c.env.DB);

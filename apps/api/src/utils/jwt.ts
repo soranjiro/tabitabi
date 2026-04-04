@@ -6,6 +6,12 @@ export interface JwtPayload {
   exp: number;
 }
 
+export interface UserJwtPayload {
+  userId: string;
+  iat: number;
+  exp: number;
+}
+
 const TOKEN_EXPIRY = 30 * 24 * 60 * 60;
 
 export async function generateToken(shioriId: string, secret?: string): Promise<string> {
@@ -30,6 +36,37 @@ export async function verifyToken(token: string, secret?: string): Promise<JwtPa
     const { payload } = await verify(token, secret, { throwError: true }) as { payload: JwtPayload };
 
     if (payload.exp < Math.floor(Date.now() / 1000)) {
+      return null;
+    }
+
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+export async function generateUserToken(userId: string, secret?: string): Promise<string> {
+  if (!secret) {
+    throw new Error('JWT_SECRET is required');
+  }
+  const now = Math.floor(Date.now() / 1000);
+  const payload: UserJwtPayload = {
+    userId,
+    iat: now,
+    exp: now + TOKEN_EXPIRY,
+  };
+
+  return await sign(payload, secret);
+}
+
+export async function verifyUserToken(token: string, secret?: string): Promise<UserJwtPayload | null> {
+  if (!secret) {
+    throw new Error('JWT_SECRET is required');
+  }
+  try {
+    const { payload } = await verify(token, secret, { throwError: true }) as { payload: UserJwtPayload };
+
+    if (!payload.userId || payload.exp < Math.floor(Date.now() / 1000)) {
       return null;
     }
 

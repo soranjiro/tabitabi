@@ -7,7 +7,7 @@ enabled = true
 
 [[d1_databases]]
 binding = "DB"
-database_name = "tabitabi"
+database_name = "tabitabi-db"
 database_id = "PLACEHOLDER_DATABASE_ID"
 migrations_dir = "./migrations"
 
@@ -27,7 +27,7 @@ enabled = true
 
 [[env.production.d1_databases]]
 binding = "DB"
-database_name = "tabitabi"
+database_name = "tabitabi-db"
 database_id = "PLACEHOLDER_DATABASE_ID"
 migrations_dir = "./migrations"
 
@@ -41,6 +41,6 @@ enabled = true
 
 [[env.preview.d1_databases]]
 binding = "DB"
-database_name = "tabitabi"
+database_name = "tabitabi-db"
 database_id = "PLACEHOLDER_DATABASE_ID"
 migrations_dir = "./migrations"

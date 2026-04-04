@@ -1,5 +1,6 @@
 import type {
   User,
+  UserPublicProfile,
   UserBookmark,
   UserBookmarkWithItinerary,
   PublicBookmark,
@@ -9,10 +10,13 @@ import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
 import { hashPassword, verifyPassword } from '../utils/password';
 
+// register/login 用の内部型（id が必要なため UserPublicProfile を拡張）
+type UserProfileWithId = UserPublicProfile & { id: string };
+
 export class UserService {
   constructor(private db: D1Database) {}
 
-  async register(input: RegisterInput): Promise<User> {
+  async register(input: RegisterInput): Promise<UserProfileWithId> {
     const existing = await this.db
       .prepare('SELECT id FROM users WHERE email = ? OR username = ?')
       .bind(input.email, input.username)
@@ -40,10 +44,10 @@ export class UserService {
       .bind(id, input.username, input.email, password_hash, now, now)
       .run();
 
-    return { id, username: input.username, email: input.email, password_hash, created_at: now, updated_at: now };
+    return { id, username: input.username, created_at: now };
   }
 
-  async login(email: string, password: string): Promise<User> {
+  async login(email: string, password: string): Promise<UserProfileWithId> {
     const user = await this.db
       .prepare('SELECT * FROM users WHERE email = ?')
       .bind(email)
@@ -58,7 +62,7 @@ export class UserService {
       throw new Error('INVALID_CREDENTIALS');
     }
 
-    return user;
+    return { id: user.id, username: user.username, created_at: user.created_at };
   }
 
   async getByUsername(username: string): Promise<User | null> {
@@ -162,12 +166,16 @@ export class UserService {
       .bind(userId, itineraryId)
       .first<Record<string, unknown>>();
 
+    if (!result) {
+      throw new Error('Failed to create bookmark');
+    }
+
     return {
-      user_id: result!.user_id as string,
-      itinerary_id: result!.itinerary_id as string,
-      is_visible: result!.is_visible === 1,
-      created_at: result!.created_at as string,
-      updated_at: result!.updated_at as string,
+      user_id: result.user_id as string,
+      itinerary_id: result.itinerary_id as string,
+      is_visible: result.is_visible === 1,
+      created_at: result.created_at as string,
+      updated_at: result.updated_at as string,
     };
   }
 }

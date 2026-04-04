@@ -70,13 +70,17 @@
   }
 
   async function toggleVisibility(itineraryId: string, current: boolean) {
+    // 楽観的更新
+    bookmarks = bookmarks.map((b) =>
+      b.itinerary_id === itineraryId ? { ...b, is_visible: !current } : b
+    );
     try {
       await userApi.updateVisibility(itineraryId, { is_visible: !current });
-      bookmarks = bookmarks.map((b) =>
-        b.itinerary_id === itineraryId ? { ...b, is_visible: !current } : b
-      );
     } catch {
-      // silent
+      // 失敗時はロールバック
+      bookmarks = bookmarks.map((b) =>
+        b.itinerary_id === itineraryId ? { ...b, is_visible: current } : b
+      );
     }
   }
 

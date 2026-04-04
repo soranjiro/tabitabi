@@ -21,15 +21,12 @@ users.post('/register', async (c) => {
   const service = new UserService(c.env.DB);
 
   try {
-    const user = await service.register(input);
-    const token = await generateUserToken(user.id, c.env.JWT_SECRET);
+    const profile = await service.register(input);
+    const token = await generateUserToken(profile.id, c.env.JWT_SECRET);
 
     return c.json({
       success: true,
-      data: {
-        token,
-        user: { username: user.username, created_at: user.created_at }
-      }
+      data: { token, user: { username: profile.username, created_at: profile.created_at } }
     }, 201);
   } catch (err) {
     const code = err instanceof Error ? err.message : 'UNKNOWN_ERROR';
@@ -54,15 +51,12 @@ users.post('/login', async (c) => {
   const service = new UserService(c.env.DB);
 
   try {
-    const user = await service.login(input.email, input.password);
-    const token = await generateUserToken(user.id, c.env.JWT_SECRET);
+    const profile = await service.login(input.email, input.password);
+    const token = await generateUserToken(profile.id, c.env.JWT_SECRET);
 
     return c.json({
       success: true,
-      data: {
-        token,
-        user: { username: user.username, created_at: user.created_at }
-      }
+      data: { token, user: { username: profile.username, created_at: profile.created_at } }
     });
   } catch (err) {
     const code = err instanceof Error ? err.message : 'UNKNOWN_ERROR';
@@ -71,6 +65,38 @@ users.post('/login', async (c) => {
     }
     throw err;
   }
+});
+
+// ※ 静的ルート (/me/...) は動的ルート (/:username/...) より先に登録すること
+// GET /users/me/bookmarks (認証必須 - 全しおり)
+users.get('/me/bookmarks', userAuthMiddleware, async (c) => {
+  const userId = c.get('userId')!;
+  const service = new UserService(c.env.DB);
+  const bookmarks = await service.getMyBookmarks(userId);
+  return c.json({ success: true, data: { bookmarks } });
+});
+
+// PATCH /users/me/bookmarks/:itineraryId/visibility (認証必須)
+users.patch('/me/bookmarks/:itineraryId/visibility', userAuthMiddleware, async (c) => {
+  const userId = c.get('userId')!;
+  const itineraryId = c.req.param('itineraryId');
+  const input: UpdateVisibilityInput = await c.req.json();
+
+  if (typeof input.is_visible !== 'boolean') {
+    return c.json({
+      success: false,
+      error: { code: 'INVALID_INPUT', message: 'is_visible must be a boolean' }
+    }, 400);
+  }
+
+  const service = new UserService(c.env.DB);
+  const result = await service.updateBookmarkVisibility(userId, itineraryId, input.is_visible);
+
+  if (!result) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Bookmark not found' } }, 404);
+  }
+
+  return c.json({ success: true, data: result });
 });
 
 // GET /users/:username/profile (認証不要)
@@ -100,41 +126,7 @@ users.get('/:username/bookmarks', async (c) => {
   }
 
   const bookmarks = await service.getPublicBookmarks(username);
-
   return c.json({ success: true, data: { username, bookmarks } });
-});
-
-// GET /users/me/bookmarks (認証必須 - 全しおり)
-users.get('/me/bookmarks', userAuthMiddleware, async (c) => {
-  const userId = c.get('userId');
-  const service = new UserService(c.env.DB);
-
-  const bookmarks = await service.getMyBookmarks(userId);
-
-  return c.json({ success: true, data: { bookmarks } });
-});
-
-// PATCH /users/me/bookmarks/:itineraryId/visibility (認証必須)
-users.patch('/me/bookmarks/:itineraryId/visibility', userAuthMiddleware, async (c) => {
-  const userId = c.get('userId');
-  const itineraryId = c.req.param('itineraryId');
-  const input: UpdateVisibilityInput = await c.req.json();
-
-  if (typeof input.is_visible !== 'boolean') {
-    return c.json({
-      success: false,
-      error: { code: 'INVALID_INPUT', message: 'is_visible must be a boolean' }
-    }, 400);
-  }
-
-  const service = new UserService(c.env.DB);
-  const result = await service.updateBookmarkVisibility(userId, itineraryId, input.is_visible);
-
-  if (!result) {
-    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Bookmark not found' } }, 404);
-  }
-
-  return c.json({ success: true, data: result });
 });
 
 export default users;

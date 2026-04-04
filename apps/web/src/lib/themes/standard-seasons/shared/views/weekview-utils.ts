@@ -75,18 +75,48 @@ export function getOverlappingStepsForDay(
     relEnd: number;
   }[] = [];
 
-  for (const item of enriched) {
-    const conflicting = enriched.filter((o) => o.step !== item.step && !(o.relEnd <= item.relStart || o.relStart >= item.relEnd));
-    const assignedIndex = conflicting.filter((o) => o.relStart < item.relStart).length;
-    const maxOverlapCount = Math.max(1, conflicting.length + 1);
+  const columns: { end: number }[] = [];
 
-    positioned.push({
-      step: item.step,
-      index: assignedIndex,
-      totalCount: maxOverlapCount,
-      relStart: item.relStart,
-      relEnd: item.relEnd,
-    });
+  for (const item of enriched) {
+    let placed = false;
+    for (let col = 0; col < columns.length; col++) {
+      if (columns[col].end <= item.relStart) {
+        columns[col].end = item.relEnd;
+        const conflicting = enriched.filter(
+          (o) => o.step !== item.step && !(o.relEnd <= item.relStart || o.relStart >= item.relEnd)
+        );
+        positioned.push({
+          step: item.step,
+          index: col,
+          totalCount: Math.max(columns.length, conflicting.length + 1),
+          relStart: item.relStart,
+          relEnd: item.relEnd,
+        });
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      columns.push({ end: item.relEnd });
+      const conflicting = enriched.filter(
+        (o) => o.step !== item.step && !(o.relEnd <= item.relStart || o.relStart >= item.relEnd)
+      );
+      positioned.push({
+        step: item.step,
+        index: columns.length - 1,
+        totalCount: Math.max(columns.length, conflicting.length + 1),
+        relStart: item.relStart,
+        relEnd: item.relEnd,
+      });
+    }
+  }
+
+  for (const pos of positioned) {
+    const conflicting = positioned.filter(
+      (o) => o.step !== pos.step && !(o.relEnd <= pos.relStart || o.relStart >= pos.relEnd)
+    );
+    const maxCol = Math.max(pos.index, ...conflicting.map(c => c.index));
+    pos.totalCount = maxCol + 1;
   }
 
   return positioned;

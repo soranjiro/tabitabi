@@ -28,8 +28,52 @@
     onDeleteStep,
   }: Props = $props();
 
-  let currentDate = $state(new Date());
+  function getInitialMonth(stepsArr: Step[]): Date {
+    if (stepsArr.length === 0) return new Date();
+    const sorted = [...stepsArr].sort((a, b) => a.start_at - b.start_at);
+    const firstDate = new Date(sorted[0].start_at);
+    return new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
+  }
+
+  let currentDate = $state(getInitialMonth(steps));
   let selectedStep = $state<Step | null>(null);
+
+  $effect(() => {
+    if (steps.length > 0 && currentDate.getTime() === new Date().setHours(0,0,0,0)) {
+      currentDate = getInitialMonth(steps);
+    }
+  });
+
+  function getEventBackgroundStyle(step: Step): string {
+    // テーマに応じた色を設定
+    let primaryColor = '#8b2e1f';  // default: autumn
+    let accentColor = '#c46b1f';
+    
+    // URLからテーマを判定
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const theme = urlParams.get('theme') || '';
+      
+      if (theme.includes('spring')) {
+        primaryColor = '#4a7c59';
+        accentColor = '#7fb069';
+      } else if (theme.includes('summer')) {
+        primaryColor = '#006494';
+        accentColor = '#52cfe0';
+      } else if (theme.includes('winter')) {
+        primaryColor = '#2b4c6b';
+        accentColor = '#7899c4';
+      }
+    }
+    
+    if (step.is_all_day) {
+      return `background: ${primaryColor} !important; background-color: ${primaryColor} !important; color: #fff !important; opacity: 0.8;`;
+    }
+    if (isTransportType(step.type)) {
+      return `background: ${accentColor} !important; background-color: ${accentColor} !important; color: #fff !important; border-left: 3px dashed rgba(255, 255, 255, 0.6);`;
+    }
+    return `background: ${primaryColor} !important; background-color: ${primaryColor} !important; color: #fff !important;`;
+  }
 
   function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
@@ -269,7 +313,8 @@
                 class:standard-autumn-month-event-transport={isTransportType(
                   seg.step.type,
                 )}
-                style={`position:absolute; left:${seg.leftPercent}%; width:${seg.widthPercent}%; top:${seg.rowIndex * 24}px; margin-bottom: 3px;`}
+                class:standard-autumn-month-event-allday={seg.step.is_all_day}
+                style={`position:absolute; left:calc(${seg.leftPercent}% + 2px); width:calc(${seg.widthPercent}% - 4px); top:${seg.rowIndex * 22 + 2}px; height: 18px; ${getEventBackgroundStyle(seg.step)}`}
                 onclick={() => handleEventClick(seg.step)}
                 title={seg.step.title}
               >

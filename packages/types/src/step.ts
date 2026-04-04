@@ -7,7 +7,8 @@ export type StepType =
   | 'transport:train'
   | 'transport:car'
   | 'transport:plane'
-  | 'transport:bus';
+  | 'transport:bus'
+  | 'transport:ship';
 
 export interface Step {
   id: string;
@@ -18,6 +19,7 @@ export interface Step {
   location?: string | null;
   notes: string;
   type?: StepType;
+  is_all_day?: boolean;
   is_hidden?: boolean;
   created_at: string;
   updated_at: string;
@@ -33,6 +35,7 @@ export interface CreateStepInput {
   location?: string;
   notes?: string;
   type?: StepType;
+  is_all_day?: boolean;
 }
 
 export interface UpdateStepInput {
@@ -44,6 +47,7 @@ export interface UpdateStepInput {
   location?: string | null;
   notes?: string | null;
   type?: StepType;
+  is_all_day?: boolean;
 }
 
 export function getStepDate(step: Step): string {
@@ -66,6 +70,14 @@ export function getStepEndTime(step: Step): string {
   const hh = String(d.getHours()).padStart(2, '0');
   const mm = String(d.getMinutes()).padStart(2, '0');
   return `${hh}:${mm}`;
+}
+
+export function getStepEndDate(step: Step): string {
+  const d = new Date(step.end_at);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 export function createTimestamp(date: string, time: string, timezone?: string): number {

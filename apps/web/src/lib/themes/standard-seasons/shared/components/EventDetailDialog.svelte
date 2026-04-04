@@ -4,6 +4,7 @@
     getStepDate,
     getStepTime,
     getStepEndTime,
+    getStepEndDate,
     createTimestamp,
     createEndTimestamp,
   } from "@tabitabi/types";
@@ -31,6 +32,7 @@
         location?: string;
         notes?: string;
         type?: StepType;
+        is_all_day?: boolean;
       },
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
@@ -63,6 +65,7 @@
     location?: string | null;
     notes?: string;
     type?: StepType;
+    is_all_day?: boolean;
   }>({});
   let editStartHour = $state(getStepTime(step).split(":")[0]);
   let editStartMinute = $state(getStepTime(step).split(":")[1]);
@@ -71,6 +74,7 @@
   let startUserChanged = $state(false);
   let endUserChanged = $state(false);
   let originalDuration = $state(60);
+  let editIsAllDay = $state(step.is_all_day || false);
 
   function formatTime(ms: number): [string, string] {
     const date = new Date(ms);
@@ -98,6 +102,7 @@
       location: step.location,
       notes: getMemoText(step.notes) || "",
       type: step.type || "normal:general",
+      is_all_day: step.is_all_day || false,
     };
     editStartHour = startHour;
     editStartMinute = startMinute;
@@ -183,31 +188,40 @@
     if (
       !editedStep.title?.trim() ||
       !editedStep.startDate ||
-      !editStartHour ||
-      !editStartMinute ||
+      (!editIsAllDay && (!editStartHour || !editStartMinute)) ||
       !editedStep.endDate ||
-      !editEndHour ||
-      !editEndMinute ||
+      (!editIsAllDay && (!editEndHour || !editEndMinute)) ||
       !onUpdateStep
     ) {
-      alert("タイトル、日付、開始時刻、終了時刻は必須です");
+      alert("タイトル、日付は必須です。時刻付きイベントの場合は時刻も必須です");
       return;
     }
 
     const noteText = (editedStep.notes ?? "").trim();
     const notes = updateMemoText(step.notes, noteText);
-    const startAt = createTimestamp(
-      editedStep.startDate,
-      `${editStartHour}:${editStartMinute}`,
-    );
-    const endAt = createTimestamp(
-      editedStep.endDate,
-      `${editEndHour}:${editEndMinute}`,
-    );
+    
+    let startAt: number;
+    let endAt: number;
+    
+    if (editIsAllDay) {
+      // 終日の場合
+      startAt = createTimestamp(editedStep.startDate, "00:00");
+      endAt = createTimestamp(editedStep.endDate || editedStep.startDate, "23:59");
+    } else {
+      // 時刻付きの場合
+      startAt = createTimestamp(
+        editedStep.startDate,
+        `${editStartHour}:${editStartMinute}`,
+      );
+      endAt = createTimestamp(
+        editedStep.endDate,
+        `${editEndHour}:${editEndMinute}`,
+      );
 
-    if (endAt <= startAt) {
-      alert("終了時刻は開始時刻より後にしてください");
-      return;
+      if (endAt <= startAt) {
+        alert("終了時刻は開始時刻より後にしてください");
+        return;
+      }
     }
 
     await onUpdateStep(step.id, {
@@ -217,6 +231,7 @@
       location: editedStep.location?.trim() || undefined,
       notes,
       type: editedStep.type,
+      is_all_day: editIsAllDay,
     });
 
     isEditing = false;
@@ -302,9 +317,21 @@
               class="standard-autumn-input"
             />
           </div>
+          
+          <div class="standard-autumn-checkbox-wrapper">
+            <label>
+              <input
+                type="checkbox"
+                bind:checked={editIsAllDay}
+                class="standard-autumn-checkbox"
+              />
+              終日
+            </label>
+          </div>
+
           <div class="standard-autumn-form-field">
             <label for="start-date-input" class="standard-autumn-form-label"
-              >開始日時</label
+              >開始日{#if !editIsAllDay}時{/if}</label
             >
             <div class="standard-autumn-datetime-group">
               <div class="standard-autumn-date-input-wrapper">
@@ -316,35 +343,37 @@
                   class="standard-autumn-input"
                 />
               </div>
-              <div class="standard-autumn-time-picker">
-                <select
-                  bind:value={editStartHour}
-                  class="standard-autumn-select-time"
-                  title="時間を選択"
-                  onchange={() => (startUserChanged = true)}
-                >
-                  {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
-                    <option value={hour}>{hour}</option>
-                  {/each}
-                </select>
-                <span class="standard-autumn-time-separator">:</span>
-                <select
-                  bind:value={editStartMinute}
-                  class="standard-autumn-select-time"
-                  title="分を選択"
-                  onchange={() => (startUserChanged = true)}
-                >
-                  <option value="00">00</option>
-                  <option value="15">15</option>
-                  <option value="30">30</option>
-                  <option value="45">45</option>
-                </select>
-              </div>
+              {#if !editIsAllDay}
+                <div class="standard-autumn-time-picker">
+                  <select
+                    bind:value={editStartHour}
+                    class="standard-autumn-select-time"
+                    title="時間を選択"
+                    onchange={() => (startUserChanged = true)}
+                  >
+                    {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
+                      <option value={hour}>{hour}</option>
+                    {/each}
+                  </select>
+                  <span class="standard-autumn-time-separator">:</span>
+                  <select
+                    bind:value={editStartMinute}
+                    class="standard-autumn-select-time"
+                    title="分を選択"
+                    onchange={() => (startUserChanged = true)}
+                  >
+                    <option value="00">00</option>
+                    <option value="15">15</option>
+                    <option value="30">30</option>
+                    <option value="45">45</option>
+                  </select>
+                </div>
+              {/if}
             </div>
           </div>
           <div class="standard-autumn-form-field">
             <label for="end-date-input" class="standard-autumn-form-label"
-              >終了日時</label
+              >終了日{#if !editIsAllDay}時{/if}</label
             >
             <div class="standard-autumn-datetime-group">
               <div class="standard-autumn-date-input-wrapper">
@@ -356,30 +385,32 @@
                   class="standard-autumn-input"
                 />
               </div>
-              <div class="standard-autumn-time-picker">
-                <select
-                  bind:value={editEndHour}
-                  class="standard-autumn-select-time"
-                  title="時間を選択"
-                  onchange={() => (endUserChanged = true)}
-                >
-                  {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
-                    <option value={hour}>{hour}</option>
-                  {/each}
-                </select>
-                <span class="standard-autumn-time-separator">:</span>
-                <select
-                  bind:value={editEndMinute}
-                  class="standard-autumn-select-time"
-                  title="分を選択"
-                  onchange={() => (endUserChanged = true)}
-                >
-                  <option value="00">00</option>
-                  <option value="15">15</option>
-                  <option value="30">30</option>
-                  <option value="45">45</option>
-                </select>
-              </div>
+              {#if !editIsAllDay}
+                <div class="standard-autumn-time-picker">
+                  <select
+                    bind:value={editEndHour}
+                    class="standard-autumn-select-time"
+                    title="時間を選択"
+                    onchange={() => (endUserChanged = true)}
+                  >
+                    {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
+                      <option value={hour}>{hour}</option>
+                    {/each}
+                  </select>
+                  <span class="standard-autumn-time-separator">:</span>
+                  <select
+                    bind:value={editEndMinute}
+                    class="standard-autumn-select-time"
+                    title="分を選択"
+                    onchange={() => (endUserChanged = true)}
+                  >
+                    <option value="00">00</option>
+                    <option value="15">15</option>
+                    <option value="30">30</option>
+                    <option value="45">45</option>
+                  </select>
+                </div>
+              {/if}
             </div>
           </div>
           <div class="standard-autumn-form-field">
@@ -438,7 +469,7 @@
               <span class="standard-autumn-event-detail-label">終了日時</span>
               <div class="standard-autumn-event-detail-value">
                 <span class="standard-autumn-event-date"
-                  >{getStepDate(step)}</span
+                  >{getStepEndDate(step)}</span
                 >
                 <span class="standard-autumn-event-time"
                   >{getStepEndTime(step)}</span

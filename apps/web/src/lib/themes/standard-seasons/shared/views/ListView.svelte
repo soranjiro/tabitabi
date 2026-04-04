@@ -86,7 +86,13 @@
 
           {#if isSecretStep(step) && !hasEditPermission}
             <tr>
-              <td class="standard-autumn-list-time">{getStepTime(step)}</td>
+              <td class="standard-autumn-list-time">
+                {#if step.is_all_day}
+                  <span class="standard-autumn-allday-badge">終日</span>
+                {:else}
+                  {getStepTime(step)}
+                {/if}
+              </td>
               <td colspan="3" class="standard-autumn-list-title-cell">
                 <span class="standard-autumn-secret-text">🔒 Secret</span>
               </td>
@@ -103,7 +109,13 @@
                 e.currentTarget?.style.setProperty("cursor", "default")}
               onclick={() => handleRowClick(step)}
             >
-              <td class="standard-autumn-list-time">{getStepTime(step)}</td>
+              <td class="standard-autumn-list-time">
+                {#if step.is_all_day}
+                  <span class="standard-autumn-allday-badge">終日</span>
+                {:else}
+                  {getStepTime(step)}
+                {/if}
+              </td>
               <td class="standard-autumn-list-icon">
                 <IconRenderer type={step.type} size="sm" />
               </td>

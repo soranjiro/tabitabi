@@ -1,14 +1,40 @@
-export type StepType =
-  | 'normal:general'
-  | 'normal:food'
-  | 'normal:hotel'
-  | 'normal:sightseeing'
-  | 'transport:general'
-  | 'transport:train'
-  | 'transport:car'
-  | 'transport:plane'
-  | 'transport:bus'
-  | 'transport:ship';
+export const STEP_TYPE = {
+  NORMAL_GENERAL: 'normal:general',
+  NORMAL_FOOD: 'normal:food',
+  NORMAL_HOTEL: 'normal:hotel',
+  NORMAL_SIGHTSEEING: 'normal:sightseeing',
+  NORMAL_MEAL: 'normal:meal',
+  NORMAL_SHOPPING: 'normal:shopping',
+  TRANSPORT_GENERAL: 'transport:general',
+  TRANSPORT_TRAIN: 'transport:train',
+  TRANSPORT_CAR: 'transport:car',
+  TRANSPORT_PLANE: 'transport:plane',
+  TRANSPORT_BUS: 'transport:bus',
+  TRANSPORT_SHIP: 'transport:ship',
+} as const;
+
+export type StepType = typeof STEP_TYPE[keyof typeof STEP_TYPE];
+
+export const STEP_TYPE_CATEGORIES = {
+  normal: [
+    STEP_TYPE.NORMAL_GENERAL,
+    STEP_TYPE.NORMAL_FOOD,
+    STEP_TYPE.NORMAL_HOTEL,
+    STEP_TYPE.NORMAL_SIGHTSEEING,
+    STEP_TYPE.NORMAL_MEAL,
+    STEP_TYPE.NORMAL_SHOPPING,
+  ] as const,
+  transport: [
+    STEP_TYPE.TRANSPORT_GENERAL,
+    STEP_TYPE.TRANSPORT_TRAIN,
+    STEP_TYPE.TRANSPORT_CAR,
+    STEP_TYPE.TRANSPORT_PLANE,
+    STEP_TYPE.TRANSPORT_BUS,
+    STEP_TYPE.TRANSPORT_SHIP,
+  ] as const,
+} as const;
+
+export const STEP_TYPE_DEFAULT = STEP_TYPE.NORMAL_GENERAL;
 
 export interface Step {
   id: string;

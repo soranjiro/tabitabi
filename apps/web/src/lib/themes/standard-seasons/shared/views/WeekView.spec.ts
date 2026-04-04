@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { STEP_TYPE } from "@tabitabi/types";
 import type { Step } from '@tabitabi/types';
 import { getOverlappingStepsForDay, getEventStyleForDay, getWeekHours, DEFAULT_HOURS } from './weekview-utils';
 
@@ -15,7 +16,7 @@ describe('WeekView utils', () => {
       end_at: endAt,
       location: null,
       notes: '',
-      type: 'normal:general',
+      type: STEP_TYPE.NORMAL_GENERAL,
       is_hidden: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -38,7 +39,7 @@ describe('WeekView utils', () => {
       end_at: new Date(2024, 0, 1, 22, 15).getTime(),
       location: null,
       notes: '',
-      type: 'normal:general',
+      type: STEP_TYPE.NORMAL_GENERAL,
       is_hidden: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

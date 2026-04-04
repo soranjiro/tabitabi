@@ -1,4 +1,5 @@
 import type { Step, CreateStepInput, UpdateStepInput } from '@tabitabi/types';
+import { STEP_TYPE } from '@tabitabi/types';
 import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
 import { validateMemoJson } from '../utils/memo';
@@ -77,7 +78,7 @@ export class StepService {
       end_at: endAt!,
       location: input.location ?? null,
       notes,
-      type: input.type ?? 'normal:general',
+      type: input.type ?? STEP_TYPE.NORMAL_GENERAL,
       is_all_day: input.is_all_day ?? false,
       created_at: now,
       updated_at: now,
@@ -180,7 +181,7 @@ export class StepService {
       end_at: row.end_at as number,
       location: row.location as string | null,
       notes: row.notes as string,
-      type: row.type as any ?? 'normal:general',
+      type: (row.type as any) ?? STEP_TYPE.NORMAL_GENERAL,
       is_all_day: !!(row.is_all_day as number),
       is_hidden: !!row.is_hidden_flag,
       created_at: row.created_at as string,

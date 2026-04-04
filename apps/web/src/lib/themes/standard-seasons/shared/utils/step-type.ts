@@ -1,4 +1,5 @@
 import type { StepType } from "@tabitabi/types";
+import { STEP_TYPE, STEP_TYPE_CATEGORIES } from "@tabitabi/types";
 
 export interface StepTypeConfig {
   label: string;
@@ -8,61 +9,73 @@ export interface StepTypeConfig {
 }
 
 export const STEP_TYPE_CONFIGS: Record<StepType, StepTypeConfig> = {
-  "normal:general": {
+  [STEP_TYPE.NORMAL_GENERAL]: {
     label: "一般的な予定",
     icon: "📋",
     category: "normal",
     description: "その他の予定",
   },
-  "normal:food": {
+  [STEP_TYPE.NORMAL_FOOD]: {
     label: "食事",
     icon: "🍽️",
     category: "normal",
     description: "レストラン、食事場所",
   },
-  "normal:hotel": {
+  [STEP_TYPE.NORMAL_HOTEL]: {
     label: "宿泊",
     icon: "🏨",
     category: "normal",
     description: "ホテル、宿泊施設",
   },
-  "normal:sightseeing": {
+  [STEP_TYPE.NORMAL_SIGHTSEEING]: {
     label: "観光",
     icon: "🎌",
     category: "normal",
     description: "観光地、名所",
   },
-  "transport:general": {
+  [STEP_TYPE.NORMAL_MEAL]: {
+    label: "食事",
+    icon: "🍽️",
+    category: "normal",
+    description: "レストラン、食事場所",
+  },
+  [STEP_TYPE.NORMAL_SHOPPING]: {
+    label: "買い物",
+    icon: "🛍️",
+    category: "normal",
+    description: "お土産やショッピング",
+  },
+  [STEP_TYPE.TRANSPORT_GENERAL]: {
     label: "一般的な移動",
     icon: "🚗",
     category: "transport",
     description: "その他の移動手段",
   },
-  "transport:train": {
+  [STEP_TYPE.TRANSPORT_TRAIN]: {
     label: "電車",
     icon: "🚄",
     category: "transport",
     description: "電車、列車での移動",
   },
-  "transport:car": {
+  [STEP_TYPE.TRANSPORT_CAR]: {
     label: "車",
     icon: "🚙",
     category: "transport",
     description: "車での移動",
   },
-  "transport:plane": {
+  [STEP_TYPE.TRANSPORT_PLANE]: {
     label: "飛行機",
     icon: "✈️",
     category: "transport",
     description: "飛行機での移動",
   },
-  "transport:bus": {
+  [STEP_TYPE.TRANSPORT_BUS]: {
     label: "バス",
     icon: "🚌",
     category: "transport",
     description: "バスでの移動",
   },
-  "transport:ship": {
+  [STEP_TYPE.TRANSPORT_SHIP]: {
     label: "船",
     icon: "🚢",
     category: "transport",
@@ -85,7 +98,4 @@ export function isTransportType(type: StepType | undefined): boolean {
   return STEP_TYPE_CONFIGS[type]?.category === "transport";
 }
 
-export const STEP_TYPES_BY_CATEGORY = {
-  normal: ["normal:general", "normal:food", "normal:hotel", "normal:sightseeing"] as const,
-  transport: ["transport:general", "transport:train", "transport:car", "transport:plane", "transport:bus", "transport:ship"] as const,
-};
+export const STEP_TYPES_BY_CATEGORY = STEP_TYPE_CATEGORIES;

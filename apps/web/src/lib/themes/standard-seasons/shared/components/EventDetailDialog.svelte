@@ -7,6 +7,7 @@
     getStepEndDate,
     createTimestamp,
     createEndTimestamp,
+    STEP_TYPE,
   } from "@tabitabi/types";
   import { renderMarkdown } from "../utils/markdown";
   import { getMemoText, updateMemoText } from "$lib/memo";
@@ -101,7 +102,7 @@
       endTime: `${endHour}:${endMinute}`,
       location: step.location,
       notes: getMemoText(step.notes) || "",
-      type: step.type || "normal:general",
+      type: step.type || STEP_TYPE.NORMAL_GENERAL,
       is_all_day: step.is_all_day || false,
     };
     editStartHour = startHour;

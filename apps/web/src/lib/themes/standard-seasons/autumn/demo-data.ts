@@ -1,4 +1,5 @@
 import { type DemoDataSet, now, getTimestamp, getEndTimestamp } from '../../types';
+import { STEP_TYPE } from "@tabitabi/types";
 
 export function getDemoData(): DemoDataSet {
   return {
@@ -54,7 +55,7 @@ export function getDemoData(): DemoDataSet {
         end_at: getEndTimestamp(getTimestamp(0, '13:30'), 60),
         location: '中禅寺湖周辺',
         notes: '{"text":"バスでの移動を想定"}',
-        type: 'transport:bus',
+        type: STEP_TYPE.TRANSPORT_BUS,
         created_at: now,
         updated_at: now,
       },
@@ -77,7 +78,7 @@ export function getDemoData(): DemoDataSet {
         end_at: getTimestamp(1, '10:00'),
         location: '日光温泉郷',
         notes: '{"text":"2日目の朝まで温泉宿でゆっくり"}',
-        type: 'normal:hotel',
+        type: STEP_TYPE.NORMAL_HOTEL,
         created_at: now,
         updated_at: now,
       },
@@ -111,7 +112,7 @@ export function getDemoData(): DemoDataSet {
         end_at: getEndTimestamp(getTimestamp(1, '08:30'), 45),
         location: '日光温泉郷',
         notes: '{"text":"温泉宿泊時の朝食"}',
-        type: 'normal:meal',
+        type: STEP_TYPE.NORMAL_MEAL,
         created_at: now,
         updated_at: now,
       },
@@ -123,7 +124,7 @@ export function getDemoData(): DemoDataSet {
         end_at: getEndTimestamp(getTimestamp(0, '09:00'), 90),
         location: '奥日光',
         notes: '{"text":"大人向けの自然史展示"}',
-        type: 'normal:sightseeing',
+        type: STEP_TYPE.NORMAL_SIGHTSEEING,
         created_at: now,
         updated_at: now,
       },
@@ -135,7 +136,7 @@ export function getDemoData(): DemoDataSet {
         end_at: getEndTimestamp(getTimestamp(0, '09:00'), 120),
         location: '栃木県日光市',
         notes: '{"text":"別コースのガイド付きツアーオプション"}',
-        type: 'normal:sightseeing',
+        type: STEP_TYPE.NORMAL_SIGHTSEEING,
         created_at: now,
         updated_at: now,
       },
@@ -147,7 +148,7 @@ export function getDemoData(): DemoDataSet {
         end_at: getEndTimestamp(getTimestamp(1, '15:00'), 120),
         location: '日光駅～東京駅',
         notes: '{"text":"電車で帰宅"}',
-        type: 'transport:train',
+        type: STEP_TYPE.TRANSPORT_TRAIN,
         created_at: now,
         updated_at: now,
       },

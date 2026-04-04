@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ItineraryResponse, Step } from "@tabitabi/types";
-  import { createTimestamp, createEndTimestamp } from "@tabitabi/types";
+  import { createTimestamp, createEndTimestamp, STEP_TYPE } from "@tabitabi/types";
   import type { StepType } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
@@ -101,7 +101,7 @@
     time: "",
     location: "",
     notes: "",
-    type: "normal:general" as StepType,
+    type: STEP_TYPE.NORMAL_GENERAL as StepType,
   });
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
@@ -315,7 +315,7 @@
         time: "",
         location: "",
         notes: "",
-        type: "normal:general",
+        type: STEP_TYPE.NORMAL_GENERAL,
       };
       newStepHour = "09";
       newStepMinute = "00";
@@ -330,7 +330,7 @@
       time: "",
       location: "",
       notes: "",
-      type: "normal:general",
+      type: STEP_TYPE.NORMAL_GENERAL,
     };
     newStepHour = "09";
     newStepMinute = "00";

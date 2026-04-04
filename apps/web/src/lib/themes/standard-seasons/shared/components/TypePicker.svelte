@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { StepType } from "@tabitabi/types";
+  import { STEP_TYPE } from "@tabitabi/types";
   import {
     STEP_TYPES_BY_CATEGORY,
     STEP_TYPE_CONFIGS,
@@ -11,7 +12,7 @@
     onSelect?: (type: StepType) => void;
   }
 
-  const { value = "normal:general", onSelect } = $props();
+  const { value = STEP_TYPE.NORMAL_GENERAL, onSelect } = $props();
 
   function handleSelect(type: StepType) {
     onSelect?.(type);

@@ -82,9 +82,9 @@
   }
 </script>
 
-<nav class="standard-autumn-bottom-nav" aria-label="フッターメニュー">
+<nav class="standard-bottom-nav" aria-label="フッターメニュー">
   <button
-    class="standard-autumn-bottom-btn"
+    class="standard-bottom-btn"
     title="ホーム"
     aria-label="ホーム"
     onclick={() => goto("/")}
@@ -95,7 +95,7 @@
 
   {#if walicaId}
     <button
-      class="standard-autumn-bottom-btn"
+      class="standard-bottom-btn"
       title="Walica"
       aria-label="Walica"
       onclick={onWalicaOpen}
@@ -105,9 +105,9 @@
     </button>
   {/if}
 
-  <div class="standard-autumn-btn-wrapper">
+  <div class="standard-btn-wrapper">
     <button
-      class="standard-autumn-bottom-btn"
+      class="standard-bottom-btn"
       title="ビューモード選択"
       aria-label="ビューモード選択"
       onclick={onViewModeClick}
@@ -119,7 +119,7 @@
 
   {#if hasEditPermission}
     <button
-      class="standard-autumn-bottom-btn"
+      class="standard-bottom-btn"
       title="閲覧モードに切り替え"
       aria-label="閲覧モードに切り替え"
       onclick={handleEditModeToggle}
@@ -129,7 +129,7 @@
     </button>
   {:else}
     <button
-      class="standard-autumn-bottom-btn"
+      class="standard-bottom-btn"
       title="編集モードに切り替え"
       aria-label="編集モードに切り替え"
       onclick={handleEditModeToggle}
@@ -140,9 +140,9 @@
   {/if}
 
   {#if hasEditPermission}
-    <div class="standard-autumn-btn-wrapper">
+    <div class="standard-btn-wrapper">
       <button
-        class="standard-autumn-bottom-btn"
+        class="standard-bottom-btn"
         title="設定"
         aria-label="設定"
         onclick={handleSettingsClick}
@@ -151,8 +151,8 @@
         <span>Settings</span>
       </button>
       {#if showThemeSelect}
-        <div class="standard-autumn-theme-select-popup">
-          <label for="theme-select" class="standard-autumn-theme-select-label"
+        <div class="standard-theme-select-popup">
+          <label for="theme-select" class="standard-theme-select-label"
             >テーマを選択</label
           >
           <select
@@ -160,7 +160,7 @@
             value={selectedThemeId}
             onchange={(e) =>
               handleThemeChange((e.target as HTMLSelectElement).value)}
-            class="standard-autumn-theme-select-input"
+            class="standard-theme-select-input"
           >
             {#each themes as theme}
               <option value={theme.id}>{theme.name}</option>

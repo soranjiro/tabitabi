@@ -14,20 +14,20 @@
 
 <Dialog {show} title="リンクを共有" {onClose}>
   {#snippet children()}
-    <p class="standard-autumn-dialog-description">
+    <p class="standard-dialog-description">
       どのリンクをコピーしますか?
     </p>
-    <div class="standard-autumn-share-options">
+    <div class="standard-share-options">
       <button
         onclick={() => onCopyLink(false)}
-        class="standard-autumn-share-option"
+        class="standard-share-option"
       >
-        <div class="standard-autumn-share-option-icon">
+        <div class="standard-share-option-icon">
           {@html ViewIcon}
         </div>
-        <div class="standard-autumn-share-option-content">
-          <div class="standard-autumn-share-option-title">閲覧用リンク</div>
-          <div class="standard-autumn-share-option-desc">
+        <div class="standard-share-option-content">
+          <div class="standard-share-option-title">閲覧用リンク</div>
+          <div class="standard-share-option-desc">
             閲覧のみ可能なリンクをコピー
           </div>
         </div>
@@ -35,14 +35,14 @@
       {#if hasEditPermission}
         <button
           onclick={() => onCopyLink(true)}
-          class="standard-autumn-share-option"
+          class="standard-share-option"
         >
-          <div class="standard-autumn-share-option-icon">
+          <div class="standard-share-option-icon">
             {@html EditIcon}
           </div>
-          <div class="standard-autumn-share-option-content">
-            <div class="standard-autumn-share-option-title">編集用リンク</div>
-            <div class="standard-autumn-share-option-desc">
+          <div class="standard-share-option-content">
+            <div class="standard-share-option-title">編集用リンク</div>
+            <div class="standard-share-option-desc">
               誰でも編集できるリンクをコピー
             </div>
           </div>
@@ -51,7 +51,7 @@
     </div>
     <button
       onclick={onClose}
-      class="standard-autumn-btn standard-autumn-btn-secondary standard-autumn-btn-full"
+      class="standard-btn standard-btn-secondary standard-btn-full"
     >
       キャンセル
     </button>

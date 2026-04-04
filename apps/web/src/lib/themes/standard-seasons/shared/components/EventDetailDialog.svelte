@@ -260,16 +260,16 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div
-  class="standard-autumn-event-dialog-backdrop"
+  class="standard-event-dialog-backdrop"
   onclick={handleBackdropClick}
   role="presentation"
 >
-  <div class="standard-autumn-event-dialog" role="dialog" aria-modal="true">
-    <div class="standard-autumn-event-dialog-header">
-      <h3 class="standard-autumn-event-dialog-title">予定の詳細</h3>
+  <div class="standard-event-dialog" role="dialog" aria-modal="true">
+    <div class="standard-event-dialog-header">
+      <h3 class="standard-event-dialog-title">予定の詳細</h3>
       <button
         type="button"
-        class="standard-autumn-event-dialog-close"
+        class="standard-event-dialog-close"
         onclick={onClose}
         aria-label="閉じる"
       >
@@ -285,28 +285,28 @@
       </button>
     </div>
 
-    <div class="standard-autumn-event-dialog-body">
+    <div class="standard-event-dialog-body">
       {#if isSecretStep(step) && !hasEditPermission}
-        <div class="standard-autumn-event-secret-notice">
+        <div class="standard-event-secret-notice">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="currentColor"
-            class="standard-autumn-secret-icon"
+            class="standard-secret-icon"
           >
             <path
               d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"
             />
           </svg>
           <p>この予定は秘密です</p>
-          <p class="standard-autumn-secret-notice-sub">
+          <p class="standard-secret-notice-sub">
             開始時刻に近づくと詳細が表示されます
           </p>
         </div>
       {:else if isEditing}
-        <div class="standard-autumn-form-grid">
-          <div class="standard-autumn-form-field">
-            <label for="title-input" class="standard-autumn-form-label"
+        <div class="standard-form-grid">
+          <div class="standard-form-field">
+            <label for="title-input" class="standard-form-label"
               >タイトル *</label
             >
             <input
@@ -314,40 +314,40 @@
               type="text"
               bind:value={editedStep.title}
               placeholder="予定のタイトルを入力"
-              class="standard-autumn-input"
+              class="standard-input"
             />
           </div>
 
-          <div class="standard-autumn-checkbox-wrapper">
+          <div class="standard-checkbox-wrapper">
             <label>
               <input
                 type="checkbox"
                 bind:checked={editIsAllDay}
-                class="standard-autumn-checkbox"
+                class="standard-checkbox"
               />
               終日
             </label>
           </div>
 
-          <div class="standard-autumn-form-field">
-            <label for="start-date-input" class="standard-autumn-form-label"
+          <div class="standard-form-field">
+            <label for="start-date-input" class="standard-form-label"
               >開始日{#if !editIsAllDay}時{/if}</label
             >
-            <div class="standard-autumn-datetime-group">
-              <div class="standard-autumn-date-input-wrapper">
+            <div class="standard-datetime-group">
+              <div class="standard-date-input-wrapper">
                 <input
                   id="start-date-input"
                   type="date"
                   bind:value={editedStep.startDate}
                   onchange={() => (startUserChanged = true)}
-                  class="standard-autumn-input"
+                  class="standard-input"
                 />
               </div>
               {#if !editIsAllDay}
-                <div class="standard-autumn-time-picker">
+                <div class="standard-time-picker">
                   <select
                     bind:value={editStartHour}
-                    class="standard-autumn-select-time"
+                    class="standard-select-time"
                     title="時間を選択"
                     onchange={() => (startUserChanged = true)}
                   >
@@ -355,10 +355,10 @@
                       <option value={hour}>{hour}</option>
                     {/each}
                   </select>
-                  <span class="standard-autumn-time-separator">:</span>
+                  <span class="standard-time-separator">:</span>
                   <select
                     bind:value={editStartMinute}
-                    class="standard-autumn-select-time"
+                    class="standard-select-time"
                     title="分を選択"
                     onchange={() => (startUserChanged = true)}
                   >
@@ -371,25 +371,25 @@
               {/if}
             </div>
           </div>
-          <div class="standard-autumn-form-field">
-            <label for="end-date-input" class="standard-autumn-form-label"
+          <div class="standard-form-field">
+            <label for="end-date-input" class="standard-form-label"
               >終了日{#if !editIsAllDay}時{/if}</label
             >
-            <div class="standard-autumn-datetime-group">
-              <div class="standard-autumn-date-input-wrapper">
+            <div class="standard-datetime-group">
+              <div class="standard-date-input-wrapper">
                 <input
                   id="end-date-input"
                   type="date"
                   bind:value={editedStep.endDate}
                   onchange={() => (endUserChanged = true)}
-                  class="standard-autumn-input"
+                  class="standard-input"
                 />
               </div>
               {#if !editIsAllDay}
-                <div class="standard-autumn-time-picker">
+                <div class="standard-time-picker">
                   <select
                     bind:value={editEndHour}
-                    class="standard-autumn-select-time"
+                    class="standard-select-time"
                     title="時間を選択"
                     onchange={() => (endUserChanged = true)}
                   >
@@ -397,10 +397,10 @@
                       <option value={hour}>{hour}</option>
                     {/each}
                   </select>
-                  <span class="standard-autumn-time-separator">:</span>
+                  <span class="standard-time-separator">:</span>
                   <select
                     bind:value={editEndMinute}
-                    class="standard-autumn-select-time"
+                    class="standard-select-time"
                     title="分を選択"
                     onchange={() => (endUserChanged = true)}
                   >
@@ -413,8 +413,8 @@
               {/if}
             </div>
           </div>
-          <div class="standard-autumn-form-field">
-            <label for="location-input" class="standard-autumn-form-label"
+          <div class="standard-form-field">
+            <label for="location-input" class="standard-form-label"
               >場所</label
             >
             <input
@@ -422,11 +422,11 @@
               type="text"
               bind:value={editedStep.location}
               placeholder="場所を入力"
-              class="standard-autumn-input"
+              class="standard-input"
             />
           </div>
-          <div class="standard-autumn-form-field">
-            <div class="standard-autumn-form-label">予定の種類</div>
+          <div class="standard-form-field">
+            <div class="standard-form-label">予定の種類</div>
             <TypePicker
               value={editedStep.type}
               onSelect={(type: StepType) => {
@@ -434,58 +434,58 @@
               }}
             />
           </div>
-          <div class="standard-autumn-form-field">
-            <label for="notes-textarea" class="standard-autumn-form-label"
+          <div class="standard-form-field">
+            <label for="notes-textarea" class="standard-form-label"
               >メモ</label
             >
             <textarea
               id="notes-textarea"
               bind:value={editedStep.notes}
               placeholder="メモを入力"
-              class="standard-autumn-textarea"
+              class="standard-textarea"
               rows="5"
             ></textarea>
           </div>
         </div>
       {:else}
-        <div class="standard-autumn-event-detail-content">
-          <div class="standard-autumn-event-detail-field">
-            <span class="standard-autumn-event-detail-label">タイトル</span>
-            <div class="standard-autumn-event-detail-value">{step.title}</div>
+        <div class="standard-event-detail-content">
+          <div class="standard-event-detail-field">
+            <span class="standard-event-detail-label">タイトル</span>
+            <div class="standard-event-detail-value">{step.title}</div>
           </div>
-          <div class="standard-autumn-event-detail-row">
-            <div class="standard-autumn-event-detail-field">
-              <span class="standard-autumn-event-detail-label">開始日時</span>
-              <div class="standard-autumn-event-detail-value">
-                <span class="standard-autumn-event-date"
+          <div class="standard-event-detail-row">
+            <div class="standard-event-detail-field">
+              <span class="standard-event-detail-label">開始日時</span>
+              <div class="standard-event-detail-value">
+                <span class="standard-event-date"
                   >{getStepDate(step)}</span
                 >
-                <span class="standard-autumn-event-time"
+                <span class="standard-event-time"
                   >{getStepTime(step)}</span
                 >
               </div>
             </div>
-            <div class="standard-autumn-event-detail-field">
-              <span class="standard-autumn-event-detail-label">終了日時</span>
-              <div class="standard-autumn-event-detail-value">
-                <span class="standard-autumn-event-date"
+            <div class="standard-event-detail-field">
+              <span class="standard-event-detail-label">終了日時</span>
+              <div class="standard-event-detail-value">
+                <span class="standard-event-date"
                   >{getStepEndDate(step)}</span
                 >
-                <span class="standard-autumn-event-time"
+                <span class="standard-event-time"
                   >{getStepEndTime(step)}</span
                 >
               </div>
             </div>
           </div>
           {#if step.location}
-            <div class="standard-autumn-event-detail-field">
-              <span class="standard-autumn-event-detail-label">場所</span>
-              <div class="standard-autumn-event-detail-value">
+            <div class="standard-event-detail-field">
+              <span class="standard-event-detail-label">場所</span>
+              <div class="standard-event-detail-value">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="currentColor"
-                  class="standard-autumn-event-detail-icon"
+                  class="standard-event-detail-icon"
                 >
                   <path
                     d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
@@ -496,10 +496,10 @@
             </div>
           {/if}
           {#if step.notes}
-            <div class="standard-autumn-event-detail-field">
-              <span class="standard-autumn-event-detail-label">メモ</span>
+            <div class="standard-event-detail-field">
+              <span class="standard-event-detail-label">メモ</span>
               <div
-                class="standard-autumn-event-detail-value standard-autumn-event-detail-notes"
+                class="standard-event-detail-value standard-event-detail-notes"
               >
                 {@html renderMarkdown(step.notes || "")}
               </div>
@@ -510,35 +510,35 @@
     </div>
 
     {#if isEditing}
-      <div class="standard-autumn-event-dialog-actions-footer">
+      <div class="standard-event-dialog-actions-footer">
         <button
           type="button"
           onclick={handleUpdate}
-          class="standard-autumn-btn standard-autumn-btn-primary"
+          class="standard-btn standard-btn-primary"
         >
           保存
         </button>
         <button
           type="button"
           onclick={cancelEdit}
-          class="standard-autumn-btn standard-autumn-btn-secondary"
+          class="standard-btn standard-btn-secondary"
         >
           キャンセル
         </button>
       </div>
     {:else if hasEditPermission}
-      <div class="standard-autumn-event-dialog-actions-footer">
+      <div class="standard-event-dialog-actions-footer">
         <button
           type="button"
           onclick={startEdit}
-          class="standard-autumn-btn standard-autumn-btn-primary"
+          class="standard-btn standard-btn-primary"
         >
           編集
         </button>
         <button
           type="button"
           onclick={handleDelete}
-          class="standard-autumn-btn standard-autumn-btn-danger"
+          class="standard-btn standard-btn-danger"
         >
           削除
         </button>
@@ -548,7 +548,7 @@
 </div>
 
 <style>
-  .standard-autumn-event-dialog-backdrop {
+  .standard-event-dialog-backdrop {
     position: fixed;
     top: 0;
     left: 0;
@@ -572,7 +572,7 @@
     }
   }
 
-  .standard-autumn-event-dialog {
+  .standard-event-dialog {
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -596,20 +596,20 @@
     }
   }
 
-  .standard-autumn-event-dialog-header {
+  .standard-event-dialog-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem;
     background: linear-gradient(
       135deg,
-      var(--standard-autumn-accent) 0%,
-      var(--standard-autumn-accent-light, rgba(230, 180, 34, 0.8)) 100%
+      var(--standard-accent) 0%,
+      var(--standard-accent-light, rgba(230, 180, 34, 0.8)) 100%
     );
-    border-bottom: 2px solid var(--standard-autumn-border);
+    border-bottom: 2px solid var(--standard-border);
   }
 
-  .standard-autumn-event-dialog-title {
+  .standard-event-dialog-title {
     margin: 0;
     font-size: 1.35rem;
     font-weight: 700;
@@ -617,7 +617,7 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
-  .standard-autumn-event-dialog-close {
+  .standard-event-dialog-close {
     background: none;
     border: none;
     padding: 0.5rem;
@@ -630,179 +630,179 @@
     transition: all 0.2s;
   }
 
-  .standard-autumn-event-dialog-close:hover {
+  .standard-event-dialog-close:hover {
     background: rgba(255, 255, 255, 0.2);
     color: #fff;
   }
 
-  .standard-autumn-event-dialog-close svg {
+  .standard-event-dialog-close svg {
     width: 20px;
     height: 20px;
   }
 
-  .standard-autumn-event-dialog-body {
+  .standard-event-dialog-body {
     padding: 1.5rem;
     overflow-y: auto;
     flex: 1;
   }
 
-  .standard-autumn-event-dialog-actions-footer {
+  .standard-event-dialog-actions-footer {
     padding: 1.5rem;
-    border-top: 1px solid var(--standard-autumn-line-color, #e0dcd8);
+    border-top: 1px solid var(--standard-line-color, #e0dcd8);
     display: flex;
     gap: 0.75rem;
     flex-shrink: 0;
   }
 
-  .standard-autumn-event-detail-content {
+  .standard-event-detail-content {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
   }
 
-  .standard-autumn-event-detail-row {
+  .standard-event-detail-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
   }
 
-  .standard-autumn-event-detail-label {
+  .standard-event-detail-label {
     display: block;
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--standard-autumn-text-light);
+    color: var(--standard-text-light);
     margin-bottom: 0.5rem;
     font-weight: 600;
   }
 
-  .standard-autumn-event-detail-value {
+  .standard-event-detail-value {
     font-size: 0.95rem;
-    color: var(--standard-autumn-text);
+    color: var(--standard-text);
     line-height: 1.6;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
   }
 
-  .standard-autumn-event-date {
+  .standard-event-date {
     font-weight: 500;
-    color: var(--standard-autumn-text);
+    color: var(--standard-text);
   }
 
-  .standard-autumn-event-time {
+  .standard-event-time {
     font-size: 0.9rem;
-    color: var(--standard-autumn-text-light);
+    color: var(--standard-text-light);
     font-weight: 600;
   }
 
-  .standard-autumn-event-detail-icon {
+  .standard-event-detail-icon {
     width: 16px;
     height: 16px;
-    color: var(--standard-autumn-accent);
+    color: var(--standard-accent);
     flex-shrink: 0;
   }
 
-  .standard-autumn-event-detail-notes {
+  .standard-event-detail-notes {
     background: rgba(230, 180, 34, 0.05);
     padding: 1rem;
     border-radius: 8px;
-    border: 1px dashed var(--standard-autumn-line-color);
+    border: 1px dashed var(--standard-line-color);
     display: block;
   }
 
-  .standard-autumn-form-grid {
+  .standard-form-grid {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
   }
 
-  .standard-autumn-form-field {
+  .standard-form-field {
     display: flex;
     flex-direction: column;
     gap: 0.625rem;
   }
 
-  .standard-autumn-form-label {
+  .standard-form-label {
     display: block;
     font-size: 0.875rem;
     font-weight: 600;
-    color: var(--standard-autumn-text);
+    color: var(--standard-text);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
-  .standard-autumn-datetime-group {
+  .standard-datetime-group {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
   }
 
-  .standard-autumn-date-input-wrapper {
+  .standard-date-input-wrapper {
     flex: 1;
   }
 
-  .standard-autumn-input,
-  .standard-autumn-textarea,
-  .standard-autumn-select-time {
+  .standard-input,
+  .standard-textarea,
+  .standard-select-time {
     font-family: inherit;
     font-size: 1rem;
     padding: 0.625rem 0.875rem;
-    border: 1px solid var(--standard-autumn-border);
+    border: 1px solid var(--standard-border);
     border-radius: 8px;
     background: #fff;
-    color: var(--standard-autumn-text);
+    color: var(--standard-text);
     transition: all 0.2s;
   }
 
-  .standard-autumn-input:focus,
-  .standard-autumn-textarea:focus,
-  .standard-autumn-select-time:focus {
+  .standard-input:focus,
+  .standard-textarea:focus,
+  .standard-select-time:focus {
     outline: none;
-    border-color: var(--standard-autumn-accent);
+    border-color: var(--standard-accent);
     box-shadow: 0 0 0 3px rgba(230, 180, 34, 0.1);
     background: #fff;
   }
 
-  .standard-autumn-input[type="date"] {
+  .standard-input[type="date"] {
     flex: 1;
   }
 
-  .standard-autumn-textarea {
+  .standard-textarea {
     resize: vertical;
     min-height: 120px;
     font-family: inherit;
   }
 
-  .standard-autumn-select-time {
+  .standard-select-time {
     flex: 0 1 auto;
     min-width: 60px;
     padding: 0.625rem 0.5rem;
     text-align: center;
   }
 
-  .standard-autumn-time-picker {
+  .standard-time-picker {
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
 
-  .standard-autumn-time-separator {
-    color: var(--standard-autumn-text-light);
+  .standard-time-separator {
+    color: var(--standard-text-light);
     font-weight: 600;
     font-size: 1rem;
   }
 
-  .standard-autumn-btn-danger {
+  .standard-btn-danger {
     background: #dc2626;
     color: white;
   }
 
-  .standard-autumn-btn-danger:hover {
+  .standard-btn-danger:hover {
     background: #b91c1c;
   }
 
-  .standard-autumn-btn {
+  .standard-btn {
     padding: 0.75rem 1.5rem;
     border: none;
     border-radius: 8px;
@@ -816,75 +816,75 @@
     gap: 0.5rem;
   }
 
-  .standard-autumn-btn-primary {
-    background: var(--standard-autumn-accent);
+  .standard-btn-primary {
+    background: var(--standard-accent);
     color: #fff;
   }
 
-  .standard-autumn-btn-primary:hover {
-    background: var(--standard-autumn-accent-dark, #d4a726);
+  .standard-btn-primary:hover {
+    background: var(--standard-accent-dark, #d4a726);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(230, 180, 34, 0.3);
   }
 
-  .standard-autumn-btn-primary:active {
+  .standard-btn-primary:active {
     transform: translateY(0);
   }
 
-  .standard-autumn-btn-secondary {
+  .standard-btn-secondary {
     background: #f5f5f5;
-    color: var(--standard-autumn-text);
-    border: 1px solid var(--standard-autumn-border);
+    color: var(--standard-text);
+    border: 1px solid var(--standard-border);
   }
 
-  .standard-autumn-btn-secondary:hover {
+  .standard-btn-secondary:hover {
     background: #e8e8e8;
-    border-color: var(--standard-autumn-text-light);
+    border-color: var(--standard-text-light);
   }
 
   @media (max-width: 600px) {
-    .standard-autumn-event-dialog {
+    .standard-event-dialog {
       max-width: 100%;
       margin: 0;
       border-radius: 16px 16px 0 0;
       max-height: 90vh;
     }
 
-    .standard-autumn-event-dialog-header {
+    .standard-event-dialog-header {
       padding: 1.25rem 1rem;
     }
 
-    .standard-autumn-event-dialog-title {
+    .standard-event-dialog-title {
       font-size: 1.15rem;
     }
 
-    .standard-autumn-event-dialog-body {
+    .standard-event-dialog-body {
       padding: 1.25rem;
     }
 
-    .standard-autumn-event-detail-row {
+    .standard-event-detail-row {
       grid-template-columns: 1fr;
     }
 
-    .standard-autumn-form-grid {
+    .standard-form-grid {
       gap: 1.25rem;
     }
 
-    .standard-autumn-btn {
+    .standard-btn {
       width: 100%;
     }
 
-    .standard-autumn-time-picker {
+    .standard-time-picker {
       gap: 0.375rem;
     }
 
-    .standard-autumn-select-time {
+    .standard-select-time {
       min-width: 55px;
       padding: 0.5rem 0.375rem;
     }
   }
 
-  .standard-autumn-event-secret-notice {
+  .standard-event-secret-notice {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -898,64 +898,64 @@
       rgba(230, 180, 34, 0.02) 100%
     );
     border-radius: 12px;
-    border: 2px dashed var(--standard-autumn-accent);
+    border: 2px dashed var(--standard-accent);
   }
 
-  .standard-autumn-secret-icon {
+  .standard-secret-icon {
     width: 48px;
     height: 48px;
-    color: var(--standard-autumn-accent);
+    color: var(--standard-accent);
     opacity: 0.8;
   }
 
-  .standard-autumn-event-secret-notice p {
+  .standard-event-secret-notice p {
     margin: 0;
-    color: var(--standard-autumn-text);
+    color: var(--standard-text);
     font-weight: 500;
   }
 
-  .standard-autumn-secret-notice-sub {
+  .standard-secret-notice-sub {
     font-size: 0.85rem;
-    color: var(--standard-autumn-text-light) !important;
+    color: var(--standard-text-light) !important;
     font-weight: 400;
     margin-top: 0.5rem;
   }
 
   @media (max-width: 400px) {
-    .standard-autumn-event-dialog-backdrop {
+    .standard-event-dialog-backdrop {
       padding: 0;
     }
 
-    .standard-autumn-event-dialog {
+    .standard-event-dialog {
       border-radius: 12px 12px 0 0;
     }
 
-    .standard-autumn-event-dialog-header {
+    .standard-event-dialog-header {
       padding: 1rem 0.875rem;
     }
 
-    .standard-autumn-event-dialog-title {
+    .standard-event-dialog-title {
       font-size: 1rem;
     }
 
-    .standard-autumn-event-dialog-body {
+    .standard-event-dialog-body {
       padding: 1rem;
     }
 
-    .standard-autumn-form-grid {
+    .standard-form-grid {
       gap: 1rem;
     }
 
-    .standard-autumn-event-detail-content {
+    .standard-event-detail-content {
       gap: 1rem;
     }
 
-    .standard-autumn-event-secret-notice {
+    .standard-event-secret-notice {
       padding: 1.5rem;
       border-width: 1px;
     }
 
-    .standard-autumn-secret-icon {
+    .standard-secret-icon {
       width: 40px;
       height: 40px;
     }

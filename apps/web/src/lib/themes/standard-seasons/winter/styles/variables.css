@@ -1,7 +1,23 @@
-/* Winter theme variables (delegates to shared variables by default)
-   Add season-specific overrides here when appropriate */
 @import '../../shared/styles/variables.css';
 
 :root {
-  /* Winter-specific overrides can be placed here */
+  --theme-bg: #f0f8ff;
+  --theme-primary: #2563eb;
+  --theme-primary-light: #3b82f6;
+  --theme-secondary: #06b6d4;
+  --theme-accent: #0ea5e9;
+  --theme-text: #1e3a8a;
+  --theme-text-light: #475569;
+  --theme-card-bg: #ffffff;
+  --theme-header-bg: transparent;
+  --theme-border: #dbeafe;
+  --theme-line-color: #e0f2fe;
+  --theme-dot-bg: #2563eb;
+  --theme-shadow: 0 12px 36px -8px rgba(30, 58, 138, 0.12);
+  --theme-shadow-sm: 0 4px 12px -2px rgba(30, 58, 138, 0.08);
+
+  --theme-decoration-primary: #1e40af;
+  --theme-decoration-secondary: #3b82f6;
+  --theme-decoration-accent: #0ea5e9;
+  --theme-decoration-opacity: 0.03;
 }

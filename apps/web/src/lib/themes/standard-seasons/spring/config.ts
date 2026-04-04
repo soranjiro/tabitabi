@@ -4,7 +4,7 @@ export const seasonSpringTheme: ThemeConfig = {
   id: "standard-spring",
   name: "標準（春）",
   version: "1.0.0",
-  description: "春をモチーフにした温かみのあるテーマ",
+  description: "桜をモチーフにした優しい薄ピンクのテーマ",
   author: "Tabitabi Team",
   features: {
     steps: { enabled: true, required: true },
@@ -17,11 +17,11 @@ export const seasonSpringTheme: ThemeConfig = {
     layout: "single",
     colorScheme: "light",
     customColors: {
-      primary: "#d946a6",
-      secondary: "#ec4899",
-      background: "#fdf2f8",
+      primary: "#ec4899",
+      secondary: "#f9a8d4",
+      background: "#fff5f7",
       text: "#831843",
-      accent: "#f472b6",
+      accent: "#fbcfe8",
     },
   },
 };

@@ -243,13 +243,13 @@
   }
 </script>
 
-<div class="standard-autumn-month-view">
-  <div class="standard-autumn-month-header">
-    <h2 class="standard-autumn-month-title">{formatMonthTitle(currentDate)}</h2>
-    <div class="standard-autumn-month-nav">
+<div class="standard-month-view">
+  <div class="standard-month-header">
+    <h2 class="standard-month-title">{formatMonthTitle(currentDate)}</h2>
+    <div class="standard-month-nav">
       <button
         type="button"
-        class="standard-autumn-month-nav-btn"
+        class="standard-month-nav-btn"
         onclick={prevMonth}
         aria-label="前の月"
       >
@@ -259,7 +259,7 @@
       </button>
       <button
         type="button"
-        class="standard-autumn-month-nav-btn"
+        class="standard-month-nav-btn"
         onclick={nextMonth}
         aria-label="次の月"
       >
@@ -270,32 +270,32 @@
     </div>
   </div>
 
-  <div class="standard-autumn-month-container">
-    <div class="standard-autumn-month-weekdays">
-      <div class="standard-autumn-month-weekday">日</div>
-      <div class="standard-autumn-month-weekday">月</div>
-      <div class="standard-autumn-month-weekday">火</div>
-      <div class="standard-autumn-month-weekday">水</div>
-      <div class="standard-autumn-month-weekday">木</div>
-      <div class="standard-autumn-month-weekday">金</div>
-      <div class="standard-autumn-month-weekday">土</div>
+  <div class="standard-month-container">
+    <div class="standard-month-weekdays">
+      <div class="standard-month-weekday">日</div>
+      <div class="standard-month-weekday">月</div>
+      <div class="standard-month-weekday">火</div>
+      <div class="standard-month-weekday">水</div>
+      <div class="standard-month-weekday">木</div>
+      <div class="standard-month-weekday">金</div>
+      <div class="standard-month-weekday">土</div>
     </div>
 
-    <div class="standard-autumn-month-grid">
+    <div class="standard-month-grid">
       {#each weeks() as weekDays, wIdx}
         <div
-          class="standard-autumn-month-week"
+          class="standard-month-week"
           style="position: relative; display: grid; grid-template-columns: repeat(7, 1fr);"
         >
           {#each weekDays as dateStr}
             {@const dayInfo = monthDays.find((d) => d.date === dateStr)}
             <div
-              class="standard-autumn-month-day"
+              class="standard-month-day"
               class:other-month={!dayInfo?.isCurrentMonth}
               class:today={isToday(dateStr)}
             >
-              <div class="standard-autumn-month-day-header">
-                <span class="standard-autumn-month-day-number"
+              <div class="standard-month-day-header">
+                <span class="standard-month-day-number"
                   >{dayInfo?.day}</span
                 >
               </div>
@@ -303,28 +303,28 @@
           {/each}
 
           <div
-            class="standard-autumn-month-week-events"
+            class="standard-month-week-events"
             style="position:absolute; left:0; right:0; top:36px;"
           >
             {#each monthEventSegments()[wIdx] || [] as seg}
               <button
                 type="button"
-                class="standard-autumn-month-event"
-                class:standard-autumn-month-event-transport={isTransportType(
+                class="standard-month-event"
+                class:standard-month-event-transport={isTransportType(
                   seg.step.type,
                 )}
-                class:standard-autumn-month-event-allday={seg.step.is_all_day}
+                class:standard-month-event-allday={seg.step.is_all_day}
                 style={`position:absolute; left:calc(${seg.leftPercent}% + 2px); width:calc(${seg.widthPercent}% - 4px); top:${seg.rowIndex * 22 + 2}px; height: 18px; ${getEventBackgroundStyle(seg.step)}`}
                 onclick={() => handleEventClick(seg.step)}
                 title={seg.step.title}
               >
                 {#if isSecretStep(seg.step) && !hasEditPermission}
-                  <span class="standard-autumn-month-event-time">🔒</span>
+                  <span class="standard-month-event-time">🔒</span>
                 {:else}
-                  <span class="standard-autumn-month-event-icon">
+                  <span class="standard-month-event-icon">
                     <IconRenderer type={seg.step.type} size="sm" />
                   </span>
-                  <span class="standard-autumn-month-event-title"
+                  <span class="standard-month-event-title"
                     >{seg.step.title}</span
                   >
                 {/if}

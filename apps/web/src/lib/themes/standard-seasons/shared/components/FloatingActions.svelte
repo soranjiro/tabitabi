@@ -35,11 +35,11 @@
 </script>
 
 {#if showFloating}
-  <div class="standard-autumn-floating-actions">
+  <div class="standard-floating-actions">
     {#if hasEditPermission}
       <button
         type="button"
-        class="standard-autumn-fab standard-autumn-fab-add"
+        class="standard-fab standard-fab-add"
         onclick={handleAddStep}
         aria-label="予定を追加"
         title="予定を追加"
@@ -55,7 +55,7 @@
     {/if}
     <button
       type="button"
-      class="standard-autumn-fab standard-autumn-fab-top"
+      class="standard-fab standard-fab-top"
       onclick={scrollToTop}
       aria-label="TOPに戻る"
       title="TOPに戻る"

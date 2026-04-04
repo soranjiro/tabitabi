@@ -1,4 +1,4 @@
-.standard-autumn-timeline-item {
+.standard-timeline-item {
   display: flex;
   position: relative;
   margin-bottom: 2.5rem;
@@ -7,21 +7,21 @@
 }
 
 /* Drag and drop visual feedback */
-.standard-autumn-timeline-item[draggable="true"] {
+.standard-timeline-item[draggable="true"] {
   cursor: move;
   touch-action: pan-y;
 }
 
-.standard-autumn-timeline-item.dragging {
+.standard-timeline-item.dragging {
   opacity: 0.5;
 }
 
-.standard-autumn-timeline-item.drag-over {
+.standard-timeline-item.drag-over {
   background: rgba(169, 53, 41, 0.05);
   border-radius: 8px;
 }
 
-.standard-autumn-timeline-item.touch-dragging {
+.standard-timeline-item.touch-dragging {
   opacity: 0.7;
   transform: scale(1.02);
   transition: transform 0.1s ease, opacity 0.1s ease;
@@ -29,25 +29,25 @@
 }
 
 
-.standard-autumn-timeline-line {
+.standard-timeline-line {
   position: absolute;
   left: 48px;
   top: 16px;
   bottom: -45px;
   width: 1px;
-  background: var(--standard-autumn-line-color);
+  background: var(--theme-line-color);
   z-index: 0;
 }
 
-.standard-autumn-timeline-item:last-child .standard-autumn-timeline-line {
+.standard-timeline-item:last-child .standard-timeline-line {
   display: none;
 }
 
-.standard-autumn-step-time {
+.standard-step-time {
   width: 48px;
   text-align: right;
   font-size: 0.95rem;
-  color: var(--standard-autumn-primary);
+  color: var(--theme-primary);
   font-weight: 700;
   padding-right: 14px;
   flex-shrink: 0;
@@ -56,10 +56,10 @@
   letter-spacing: 0.02em;
 }
 
-.standard-autumn-step-dot {
+.standard-step-dot {
   width: 14px;
   height: 14px;
-  background: var(--standard-autumn-primary);
+  background: var(--theme-primary);
   border-radius: 0 50% 0 50%;
   transform: rotate(-45deg);
   flex-shrink: 0;
@@ -70,32 +70,32 @@
   transition: transform 0.3s;
 }
 
-.standard-autumn-timeline-item:hover .standard-autumn-step-dot {
+.standard-timeline-item:hover .standard-step-dot {
   transform: rotate(-45deg) scale(1.2);
 }
 
-.standard-autumn-step-content {
+.standard-step-content {
   flex: 1;
   padding: 1.25rem;
   background: var(--step-bg, #fffcf9);
   border-radius: 4px;
   margin-left: 1.5rem;
   box-shadow: none;
-  border: 1px solid var(--standard-autumn-border);
-  border-left: 4px solid var(--step-border, var(--standard-autumn-primary));
+  border: 1px solid var(--theme-border);
+  border-left: 4px solid var(--step-border, var(--theme-primary));
   position: relative;
 }
 
 /* Transport (移動) style — visual movement feeling */
-.standard-autumn-step-content.standard-autumn-step-transport {
+.standard-step-content.standard-step-transport {
   background: var(--step-bg, linear-gradient(90deg, rgba(13, 110, 253, 0.06), rgba(56, 189, 248, 0.04)));
   border-left-style: dashed;
-  border-left-color: var(--step-border, var(--standard-autumn-primary));
-  color: var(--standard-autumn-text);
+  border-left-color: var(--step-border, var(--theme-primary));
+  color: var(--theme-text);
   overflow: visible;
 }
 
-.standard-autumn-transport-overlay {
+.standard-transport-overlay {
   position: absolute;
   right: 12px;
   top: 50%;
@@ -112,7 +112,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--standard-autumn-primary);
+  color: var(--theme-primary);
   animation: vehicle-move 1.4s linear infinite;
 }
 
@@ -160,9 +160,9 @@
   }
 }
 
-.standard-autumn-step-location {
+.standard-step-location {
   font-size: 0.85rem;
-  color: var(--standard-autumn-text-light);
+  color: var(--theme-text-light);
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -170,98 +170,98 @@
   font-weight: 500;
 }
 
-.standard-autumn-icon-location {
+.standard-icon-location {
   width: 14px;
   height: 14px;
-  color: var(--standard-autumn-accent);
+  color: var(--theme-accent);
 }
 
-.standard-autumn-step-title {
+.standard-step-title {
   font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
   font-size: 1.15rem;
   font-weight: 600;
-  color: var(--standard-autumn-text);
+  color: var(--theme-text);
   margin: 0 0 0.5rem 0;
 }
 
-.standard-autumn-step-header {
+.standard-step-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
 }
 
-.standard-autumn-step-type-icon {
+.standard-step-type-icon {
   flex-shrink: 0;
   width: 20px;
   height: 20px;
-  color: var(--standard-autumn-primary);
+  color: var(--theme-primary);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.standard-autumn-step-notes {
+.standard-step-notes {
   font-size: 0.95rem;
-  color: var(--standard-autumn-text-light);
+  color: var(--theme-text-light);
   line-height: 1.7;
   background: rgba(230, 180, 34, 0.05);
   padding: 1rem;
   border-radius: 4px;
   margin-top: 0.75rem;
-  border: 1px dashed var(--standard-autumn-line-color);
+  border: 1px dashed var(--theme-line-color);
 }
 
-.standard-autumn-step-notes p {
+.standard-step-notes p {
   margin: 0 0 0.75em 0;
 }
 
-.standard-autumn-step-notes p:last-child {
+.standard-step-notes p:last-child {
   margin-bottom: 0;
 }
 
-.standard-autumn-step-notes a {
-  color: var(--standard-autumn-primary);
+.standard-step-notes a {
+  color: var(--theme-primary);
   text-decoration: underline;
   font-weight: 600;
   transition: all 0.2s;
   cursor: pointer;
 }
 
-.standard-autumn-step-notes a:hover {
-  color: var(--standard-autumn-accent);
+.standard-step-notes a:hover {
+  color: var(--theme-accent);
   text-decoration: none;
 }
 
-.standard-autumn-step-notes ul,
-.standard-autumn-step-notes ol {
+.standard-step-notes ul,
+.standard-step-notes ol {
   margin: 0.5em 0;
   padding-left: 1.5em;
 }
 
-.standard-autumn-step-notes ul {
+.standard-step-notes ul {
   list-style-type: disc;
 }
 
-.standard-autumn-step-notes ol {
+.standard-step-notes ol {
   list-style-type: decimal;
 }
 
-.standard-autumn-step-notes li {
+.standard-step-notes li {
   margin: 0.25em 0;
   display: list-item;
 }
 
-.standard-autumn-step-notes strong {
+.standard-step-notes strong {
   font-weight: 700;
-  color: var(--standard-autumn-text);
+  color: var(--theme-text);
 }
 
-.standard-autumn-step-notes em {
+.standard-step-notes em {
   font-style: italic;
 }
 
-.standard-autumn-step-notes code {
+.standard-step-notes code {
   background: rgba(0, 0, 0, 0.05);
   padding: 0.2em 0.4em;
   border-radius: 3px;
@@ -269,7 +269,7 @@
   font-size: 0.9em;
 }
 
-.standard-autumn-step-notes pre {
+.standard-step-notes pre {
   background: rgba(0, 0, 0, 0.05);
   padding: 0.75em;
   border-radius: 4px;
@@ -277,111 +277,111 @@
   margin: 0.5em 0;
 }
 
-.standard-autumn-step-notes pre code {
+.standard-step-notes pre code {
   background: none;
   padding: 0;
 }
 
-.standard-autumn-step-actions {
+.standard-step-actions {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.standard-autumn-btn-icon {
+.standard-btn-icon {
   background: rgba(255, 255, 255, 0.5);
   border: 1px solid transparent;
   border-radius: 50%;
   cursor: pointer;
   padding: 0.5rem;
-  color: var(--standard-autumn-text-light);
+  color: var(--theme-text-light);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
 }
 
-.standard-autumn-btn-icon:hover {
+.standard-btn-icon:hover {
   background: #fff;
-  color: var(--standard-autumn-primary);
-  border-color: var(--standard-autumn-border);
+  color: var(--theme-primary);
+  border-color: var(--theme-border);
   transform: scale(1.1);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.standard-autumn-btn-icon svg {
+.standard-btn-icon svg {
   width: 18px;
   height: 18px;
 }
 
-.standard-autumn-step-editing {
+.standard-step-editing {
   background: #fff;
   padding: 1.5rem;
   border-radius: 16px;
-  border: 2px solid var(--standard-autumn-primary);
+  border: 2px solid var(--theme-primary);
   margin-left: 1rem;
   flex: 1;
-  box-shadow: var(--standard-autumn-shadow);
+  box-shadow: var(--theme-shadow);
 }
 
-.standard-autumn-step-hidden {
+.standard-step-hidden {
   opacity: 0.8;
 }
 
-.standard-autumn-secret-text {
+.standard-secret-text {
   font-style: italic;
-  color: var(--standard-autumn-text-light);
+  color: var(--theme-text-light);
 }
 
-.standard-autumn-lock-icon {
+.standard-lock-icon {
   margin-left: 0.5rem;
-  color: var(--standard-autumn-text-light);
+  color: var(--theme-text-light);
 }
 
-.standard-autumn-secret-blur {
+.standard-secret-blur {
   margin-top: 0.5rem;
 }
 
-.standard-autumn-secret-line {
+.standard-secret-line {
   height: 8px;
-  background: linear-gradient(90deg, var(--standard-autumn-line-color) 0%, transparent 100%);
+  background: linear-gradient(90deg, var(--theme-line-color) 0%, transparent 100%);
   border-radius: 4px;
   margin-bottom: 0.5rem;
 }
 
-.standard-autumn-secret-line.short {
+.standard-secret-line.short {
   width: 60%;
 }
 
 @media (max-width: 600px) {
-  .standard-autumn-step-time {
+  .standard-step-time {
     width: 32px;
     font-size: 0.8rem;
     padding-right: 8px;
   }
 
-  .standard-autumn-timeline-line {
+  .standard-timeline-line {
     left: 32px;
   }
 
-  .standard-autumn-step-content {
+  .standard-step-content {
     margin-left: 1rem;
   }
 }
 
 @media (max-width: 400px) {
-  .standard-autumn-step-time {
+  .standard-step-time {
     width: 28px;
     font-size: 0.75rem;
     padding-right: 6px;
   }
 
-  .standard-autumn-timeline-line {
+  .standard-timeline-line {
     left: 28px;
   }
 
-  .standard-autumn-step-content {
+  .standard-step-content {
     margin-left: 0.75rem;
     padding: 1rem;
   }

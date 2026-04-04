@@ -1,7 +1,23 @@
-/* Autumn theme variables (delegates to shared variables by default)
-   Add season-specific overrides here when appropriate */
 @import '../../shared/styles/variables.css';
 
 :root {
-  /* Autumn-specific overrides can be placed here */
+  --theme-bg: #faf5f0;
+  --theme-primary: #8b2e1f;
+  --theme-primary-light: #b8562f;
+  --theme-secondary: #d89f2e;
+  --theme-accent: #c46b1f;
+  --theme-text: #3a2d25;
+  --theme-text-light: #6b5c52;
+  --theme-card-bg: #fffbf7;
+  --theme-header-bg: transparent;
+  --theme-border: #dcc7b5;
+  --theme-line-color: #d1b599;
+  --theme-dot-bg: #8b2e1f;
+  --theme-shadow: 0 12px 36px -8px rgba(58, 45, 37, 0.12);
+  --theme-shadow-sm: 0 4px 12px -2px rgba(58, 45, 37, 0.08);
+
+  --theme-decoration-primary: #a93529;
+  --theme-decoration-secondary: #e6b422;
+  --theme-decoration-accent: #d4762c;
+  --theme-decoration-opacity: 0.04;
 }

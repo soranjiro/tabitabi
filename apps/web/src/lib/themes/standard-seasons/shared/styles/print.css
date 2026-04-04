@@ -88,14 +88,14 @@
     margin: 0 0 6mm 0 !important;
     text-align: center !important;
     position: relative !important;
-    border-bottom: 2px solid var(--standard-autumn-primary) !important;
+    border-bottom: 2px solid var(--theme-primary) !important;
     page-break-after: avoid !important;
   }
 
   .standard-autumn-title-button,
   .standard-autumn-title-input {
     font-size: 24pt !important;
-    color: var(--standard-autumn-primary) !important;
+    color: var(--theme-primary) !important;
     font-weight: 800 !important;
     padding: 0 !important;
     margin: 0 !important;
@@ -114,7 +114,7 @@
     background: linear-gradient(to bottom, #fff 0%, #fffcf8 100%) !important;
     padding: 5mm 6mm !important;
     border: none !important;
-    border-left: 4px solid var(--standard-autumn-accent) !important;
+    border-left: 4px solid var(--theme-accent) !important;
     border-radius: 0 !important;
     font-size: 9.5pt !important;
     line-height: 1.8 !important;
@@ -204,7 +204,7 @@
   /* Day Header */
   .standard-autumn-card-header {
     display: block !important;
-    background: linear-gradient(135deg, var(--standard-autumn-primary) 0%, #b8453a 100%) !important;
+    background: linear-gradient(135deg, var(--theme-primary) 0%, #b8453a 100%) !important;
     color: white !important;
     font-size: 11pt !important;
     font-weight: 700 !important;
@@ -252,7 +252,7 @@
   /* Time */
   .standard-autumn-step-time {
     font-size: 9pt !important;
-    color: var(--standard-autumn-primary) !important;
+    color: var(--theme-primary) !important;
     font-weight: 700 !important;
     width: 11mm !important;
     min-width: 11mm !important;
@@ -267,7 +267,7 @@
     width: 6px !important;
     height: 6px !important;
     min-width: 6px !important;
-    background: var(--standard-autumn-primary) !important;
+    background: var(--theme-primary) !important;
     border: none !important;
     border-radius: 50% !important;
     margin-top: 5px !important;
@@ -333,7 +333,7 @@
   .standard-autumn-icon-location {
     width: 10px !important;
     height: 10px !important;
-    color: var(--standard-autumn-accent) !important;
+    color: var(--theme-accent) !important;
   }
 
   /* Notes */
@@ -398,7 +398,7 @@
   /* Links - Print friendly */
   .standard-autumn-step-notes a {
     text-decoration: underline !important;
-    color: var(--standard-autumn-primary) !important;
+    color: var(--theme-primary) !important;
   }
 
   /* Don't show URLs after links in print */

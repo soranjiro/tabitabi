@@ -1,7 +1,23 @@
-/* Summer theme variables (delegates to shared variables by default)
-   Add season-specific overrides here when appropriate */
 @import '../../shared/styles/variables.css';
 
 :root {
-  /* Summer-specific overrides can be placed here */
+  --theme-bg: #f0f9ff;
+  --theme-primary: #0369a1;
+  --theme-primary-light: #0284c7;
+  --theme-secondary: #0284c7;
+  --theme-accent: #0ea5e9;
+  --theme-text: #082f49;
+  --theme-text-light: #0c4a6e;
+  --theme-card-bg: #ffffff;
+  --theme-header-bg: transparent;
+  --theme-border: #bae6fd;
+  --theme-line-color: #e0f2fe;
+  --theme-dot-bg: #0369a1;
+  --theme-shadow: 0 12px 36px -8px rgba(8, 47, 73, 0.1);
+  --theme-shadow-sm: 0 4px 12px -2px rgba(8, 47, 73, 0.06);
+
+  --theme-decoration-primary: #0369a1;
+  --theme-decoration-secondary: #0284c7;
+  --theme-decoration-accent: #0ea5e9;
+  --theme-decoration-opacity: 0.03;
 }

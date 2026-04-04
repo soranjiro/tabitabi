@@ -199,10 +199,10 @@
 
     const noteText = (editedStep.notes ?? "").trim();
     const notes = updateMemoText(step.notes, noteText);
-    
+
     let startAt: number;
     let endAt: number;
-    
+
     if (editIsAllDay) {
       // 終日の場合
       startAt = createTimestamp(editedStep.startDate, "00:00");
@@ -317,7 +317,7 @@
               class="standard-autumn-input"
             />
           </div>
-          
+
           <div class="standard-autumn-checkbox-wrapper">
             <label>
               <input
@@ -526,7 +526,7 @@
           キャンセル
         </button>
       </div>
-    {:else if hasEditPermission && !isSecretStep(step)}
+    {:else if hasEditPermission}
       <div class="standard-autumn-event-dialog-actions-footer">
         <button
           type="button"

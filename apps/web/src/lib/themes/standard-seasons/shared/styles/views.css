@@ -162,6 +162,7 @@
   align-items: center;
   margin-bottom: 1.5rem;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .standard-month-header-actions {
@@ -328,18 +329,16 @@
 }
 
 .standard-month-event {
-  background-color: var(--theme-primary) !important;
-  color: white;
-  border: none;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--theme-text);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 4px;
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
   cursor: pointer;
   text-align: left;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
-  transition: background-color 0.15s;
+  transition: background-color 0.15s, border-color 0.15s;
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -347,7 +346,8 @@
 }
 
 .standard-month-event:hover {
-  background-color: var(--theme-primary-light) !important;
+  background-color: rgba(169, 53, 41, 0.08) !important;
+  border-color: var(--theme-primary);
 }
 
 .standard-month-event.secret {
@@ -355,10 +355,10 @@
 }
 
 .standard-month-event-transport {
-  background-color: var(--theme-accent) !important;
-  border-left: 3px dashed rgba(255, 255, 255, 0.6);
+  background-color: rgba(247, 250, 252, 0.98) !important;
+  border: 1px solid var(--theme-accent);
+  color: var(--theme-text);
   font-weight: 600;
-  color: #fff;
 }
 
 .standard-month-event-transport:hover {
@@ -366,8 +366,8 @@
 }
 
 .standard-month-event-allday {
-  background-color: rgba(169, 53, 41, 0.15) !important;
-  color: var(--theme-primary);
+  background-color: var(--theme-primary) !important;
+  color: #fff;
   border: 1px solid var(--theme-primary);
   font-weight: 600;
 }
@@ -415,6 +415,7 @@
   .standard-month-event {
     font-size: 0.7rem;
     padding: 0.2rem 0.4rem;
+    line-height: 1.2;
   }
 
   .standard-month-event-icon {
@@ -428,6 +429,7 @@
   .standard-month-event-title {
     max-width: calc(100% - 4px);
     font-size: 0.65rem;
+    white-space: normal;
   }
 
   .standard-month-weekday {
@@ -449,6 +451,8 @@
   .standard-month-event {
     font-size: 0.6rem;
     padding: 0.15rem 0.3rem;
+    height: auto;
+    white-space: normal;
   }
 
   .standard-month-event-icon {
@@ -462,7 +466,7 @@
   .standard-month-event-title {
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
     max-width: calc(100% - 4px);
     font-size: 0.55rem;
   }
@@ -539,8 +543,8 @@
 }
 
 .standard-week-cell {
-  border-right: 1px solid var(--theme-line-color);
-  border-bottom: 1px solid var(--theme-line-color);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   height: 40px;
   position: relative;
   min-height: 40px;
@@ -552,22 +556,22 @@
 
 .standard-week-event {
   position: absolute;
-  background: var(--theme-primary);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--theme-text);
   border-radius: 4px;
-  padding: 2px 6px;
+  padding: 4px 8px;
   font-size: 0.75rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   z-index: 10;
   cursor: pointer;
-  transition: background 0.15s;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  margin: 1px 2px;
+  transition: background 0.15s, border-color 0.15s;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  margin: 3px 3px;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   min-width: 60px;
 }
 
@@ -587,16 +591,25 @@
   min-width: 0;
 }
 
+.standard-week-event+.standard-week-event {
+  margin-top: 4px;
+}
+
 .standard-week-event:hover {
   z-index: 20;
-  background: var(--theme-primary-light);
+  background: rgba(169, 53, 41, 0.08);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .standard-week-event-transport {
-  background: var(--theme-accent);
-  border-left: 3px dashed rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--standard-accent);
+  color: var(--theme-text);
   font-weight: 600;
+}
+
+.standard-week-event-transport:hover {
+  background: rgba(247, 250, 252, 0.95);
 }
 
 .standard-week-event-transport:hover {
@@ -625,7 +638,33 @@
   }
 
   .standard-week-container {
-    grid-template-columns: 50px repeat(7, minmax(70px, 1fr));
+    grid-template-columns: 50px repeat(7, minmax(60px, 1fr));
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .standard-week-day-header {
+    padding: 0.5rem 0.35rem;
+    font-size: 0.75rem;
+  }
+
+  .standard-week-time-label {
+    font-size: 0.7rem;
+  }
+
+  .standard-week-cell {
+    min-height: 36px;
+  }
+
+  .standard-week-event {
+    min-width: initial;
+  }
+
+  .standard-week-event-title {
+    white-space: normal;
+  }
+
+  .standard-week-event-icon {
+    display: none;
   }
 }
 

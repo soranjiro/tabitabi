@@ -356,13 +356,17 @@
 
 @media (max-width: 600px) {
   .standard-step-time {
-    width: 32px;
-    font-size: 0.8rem;
-    padding-right: 8px;
+    width: 42px;
+    font-size: 0.78rem;
+    padding-right: 10px;
   }
 
   .standard-timeline-line {
-    left: 32px;
+    left: 42px;
+  }
+
+  .standard-step-dot {
+    margin-left: 8px;
   }
 
   .standard-step-content {

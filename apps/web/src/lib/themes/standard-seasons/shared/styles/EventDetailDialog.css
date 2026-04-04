@@ -109,15 +109,19 @@
   min-width: 140px;
 }
 
-.standard-event-dialog-actions-footer .standard-btn.standard-btn-primary {
-  background: rgba(169, 53, 41, 0.12);
+.standard-event-dialog-actions-footer .standard-btn.standard-btn-primary:not(.standard-btn-detail-edit) {
+  /* keep default primary save button style */
+}
+
+.standard-event-dialog-actions-footer .standard-btn.standard-btn-detail-edit {
+  background: color-mix(in srgb, var(--theme-accent) 14%, white 86%);
   color: var(--theme-text);
-  border: 1px solid rgba(169, 53, 41, 0.2);
+  border: 1px solid color-mix(in srgb, var(--theme-accent) 40%, black 10%);
   box-shadow: none;
 }
 
-.standard-event-dialog-actions-footer .standard-btn.standard-btn-primary:hover {
-  background: rgba(169, 53, 41, 0.18);
+.standard-event-dialog-actions-footer .standard-btn.standard-btn-detail-edit:hover {
+  background: color-mix(in srgb, var(--theme-accent) 22%, white 78%);
 }
 
 .standard-event-detail-content {

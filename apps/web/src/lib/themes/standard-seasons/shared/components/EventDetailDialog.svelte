@@ -524,7 +524,7 @@
         <button
           type="button"
           onclick={startEdit}
-          class="standard-btn standard-btn-primary"
+          class="standard-btn standard-btn-primary standard-btn-detail-edit"
         >
           編集
         </button>

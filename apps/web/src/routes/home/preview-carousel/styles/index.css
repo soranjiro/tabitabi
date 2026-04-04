@@ -334,6 +334,7 @@
   letter-spacing: 0.06em;
 }
 
+.month-weekdays,
 .month-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -344,6 +345,8 @@
   font-size: 0.6rem;
   color: var(--secondary);
   text-align: center;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 .month-day {
@@ -424,11 +427,9 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.9),
-    rgba(255, 255, 255, 0.7)
-  );
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.9),
+      rgba(255, 255, 255, 0.7));
   border-radius: 8px;
   padding: 0.4rem 0.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -455,11 +456,9 @@
   align-items: flex-start;
   gap: 0.4rem;
   padding: 0.4rem;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.95),
-    rgba(255, 255, 255, 0.85)
-  );
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.95),
+      rgba(255, 255, 255, 0.85));
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   position: relative;
@@ -469,11 +468,9 @@
   font-size: 0.55rem;
   font-weight: 700;
   color: var(--primary);
-  background: linear-gradient(
-    135deg,
-    rgba(232, 121, 169, 0.15),
-    rgba(168, 85, 247, 0.1)
-  );
+  background: linear-gradient(135deg,
+      rgba(232, 121, 169, 0.15),
+      rgba(168, 85, 247, 0.1));
   padding: 0.25rem 0.4rem;
   border-radius: 12px;
   min-width: 36px;
@@ -532,10 +529,172 @@
   letter-spacing: 0.06em;
 }
 
-.week-grid {
+.week-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(92px, 1fr));
+  gap: 0.28rem;
+}
+
+.week-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  position: relative;
+  padding-left: 0.35rem;
+}
+
+.week-column:not(:first-child) {
+  border-left: 1px solid rgba(145, 84, 67, 0.35);
+}
+
+.week-column-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+}
+
+.week-column-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.15rem 0.25rem;
+  background: rgba(255, 248, 239, 0.94);
+  border-radius: 16px;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.92) 45%,
+      transparent 45%);
+  background-size: 100% 46px;
+  background-repeat: repeat-y;
+}
+
+.week-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.18rem;
+  min-height: 42px;
+  padding: 0.1rem 0rem 0.1rem 0.35rem;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid rgba(219, 185, 148, 0.2);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  align-items: flex-start;
+}
+
+.week-card-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.week-card-time {
+  display: none;
+}
+
+.month-preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.month-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.month-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.month-subtitle {
+  font-size: 0.65rem;
+  color: var(--secondary);
+}
+
+.month-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.month-grid {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.month-week {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 0.25rem;
+}
+
+.month-week-events {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 0.25rem;
+}
+
+.month-event-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+  min-height: 2.2rem;
+}
+
+.month-day {
+  min-height: 3rem;
+  padding: 0.5rem 0.5rem 0.55rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.month-day.has-event {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(59, 130, 246, 0.22);
+}
+
+.month-day-number {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.month-event-bar {
+  border-radius: 14px;
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.26);
+  min-height: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 0.55rem;
+  font-size: 0.65rem;
+  color: var(--text);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.month-event-bar-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .week-day {
@@ -751,13 +910,11 @@
 .pq-player-body {
   width: 12px;
   height: 16px;
-  background: linear-gradient(
-    180deg,
-    #8b4513 0% 20%,
-    #f4c898 20% 45%,
-    #4a90d9 45% 75%,
-    #5b3c11 75% 100%
-  );
+  background: linear-gradient(180deg,
+      #8b4513 0% 20%,
+      #f4c898 20% 45%,
+      #4a90d9 45% 75%,
+      #5b3c11 75% 100%);
   border-radius: 2px 2px 0 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }

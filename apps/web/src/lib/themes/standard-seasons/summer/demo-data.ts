@@ -137,7 +137,7 @@ export function getDemoData(): DemoDataSet {
       {
         id: 'demo-step-breakfast',
         itinerary_id: 'demo',
-        title: 'ホテルの朝食ブッフェ',
+        title: 'ホテルの朝食ビュッフェ',
         start_at: getTimestamp(1, '08:30'),
         end_at: getEndTimestamp(getTimestamp(1, '08:30'), 45),
         location: '恩納村',

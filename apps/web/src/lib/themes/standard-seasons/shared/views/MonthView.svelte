@@ -135,7 +135,13 @@
       () => [],
     );
 
-    for (const step of steps) {
+    const sortedSteps = [...steps].sort((a, b) => {
+      if (a.is_all_day && !b.is_all_day) return -1;
+      if (!a.is_all_day && b.is_all_day) return 1;
+      return a.start_at - b.start_at;
+    });
+
+    for (const step of sortedSteps) {
       const startDate = getStepDate(step);
       const endDate = getStepEndDate(step);
       let startIdx = days.indexOf(startDate);

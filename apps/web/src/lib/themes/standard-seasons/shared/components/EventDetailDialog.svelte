@@ -125,38 +125,58 @@
 
   $effect(() => {
     // when start changes and end hasn't been edited by the user,
-    // auto shift end to maintain original duration
+    // only auto-adjust end if the start would move past the current end
     if (!isEditing) return;
     if (!editedStep.startDate) return;
     if (endUserChanged) return;
-    const startTime = `${editStartHour}:${editStartMinute}`;
-    const startAt = createTimestamp(editedStep.startDate, startTime);
-    const newEndAt = createEndTimestamp(startAt, originalDuration);
-    const d = new Date(newEndAt);
-    const eh = String(d.getHours()).padStart(2, "0");
-    const em = String(d.getMinutes()).padStart(2, "0");
-    editEndHour = eh;
-    editEndMinute = em;
-    editedStep.endDate = d.toISOString().split("T")[0];
-    editedStep.endTime = `${eh}:${em}`;
+    try {
+      const startTime = `${editStartHour}:${editStartMinute}`;
+      const startAt = createTimestamp(editedStep.startDate, startTime);
+      const currentEndAt = createTimestamp(
+        editedStep.endDate || editedStep.startDate,
+        `${editEndHour}:${editEndMinute}`,
+      );
+      if (startAt >= currentEndAt) {
+        const newEndAt = createEndTimestamp(startAt, originalDuration);
+        const d = new Date(newEndAt);
+        const eh = String(d.getHours()).padStart(2, "0");
+        const em = String(d.getMinutes()).padStart(2, "0");
+        editEndHour = eh;
+        editEndMinute = em;
+        editedStep.endDate = d.toISOString().split("T")[0];
+        editedStep.endTime = `${eh}:${em}`;
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
   });
 
   $effect(() => {
     // when end changes and start hasn't been edited by the user,
-    // shift start to preserve duration (or keep 1h default)
+    // only auto-adjust start if the end would move before the current start
     if (!isEditing) return;
     if (!editedStep.endDate) return;
     if (startUserChanged) return;
-    const endTime = `${editEndHour}:${editEndMinute}`;
-    const endAt = createTimestamp(editedStep.endDate, endTime);
-    const newStartAt = endAt - Math.max(1, originalDuration) * 60 * 1000;
-    const d = new Date(newStartAt);
-    const sh = String(d.getHours()).padStart(2, "0");
-    const sm = String(d.getMinutes()).padStart(2, "0");
-    editStartHour = sh;
-    editStartMinute = sm;
-    editedStep.startDate = d.toISOString().split("T")[0];
-    editedStep.startTime = `${sh}:${sm}`;
+    try {
+      const endTime = `${editEndHour}:${editEndMinute}`;
+      const endAt = createTimestamp(editedStep.endDate, endTime);
+      const currentStartAt = createTimestamp(
+        editedStep.startDate || editedStep.endDate,
+        `${editStartHour}:${editStartMinute}`,
+      );
+      if (endAt <= currentStartAt) {
+        const newStartAt = endAt - Math.max(1, originalDuration) * 60 * 1000;
+        const d = new Date(newStartAt);
+        const sh = String(d.getHours()).padStart(2, "0");
+        const sm = String(d.getMinutes()).padStart(2, "0");
+        editStartHour = sh;
+        editStartMinute = sm;
+        editedStep.startDate = d.toISOString().split("T")[0];
+        editedStep.startTime = `${sh}:${sm}`;
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
   });
 
   async function handleUpdate() {

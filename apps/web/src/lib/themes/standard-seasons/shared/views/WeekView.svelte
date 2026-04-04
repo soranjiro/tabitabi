@@ -4,6 +4,12 @@
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
   import IconRenderer from "../icons/IconRenderer.svelte";
   import { isTransportType } from "../utils/step-type";
+  import {
+    getWeekDatesFromSteps,
+    getOverlappingStepsForDay as utilGetOverlappingStepsForDay,
+    getEventStyleForDay as utilGetEventStyleForDay,
+    DEFAULT_HOURS,
+  } from "./weekview-utils";
 
   interface Props {
     steps: Step[];
@@ -37,30 +43,7 @@
     return now < revealTime;
   }
 
-  function getWeekDates(): Date[] {
-    if (steps.length === 0) return [];
-
-    let minDay = Infinity;
-    let maxDay = -Infinity;
-
-    for (const s of steps) {
-      const sd = new Date(s.start_at);
-      sd.setHours(0, 0, 0, 0);
-      const ed = new Date(s.end_at);
-      ed.setHours(0, 0, 0, 0);
-      minDay = Math.min(minDay, sd.getTime());
-      maxDay = Math.max(maxDay, ed.getTime());
-    }
-
-    const weekDates: Date[] = [];
-    const current = new Date(minDay);
-    while (current.getTime() <= maxDay) {
-      weekDates.push(new Date(current));
-      current.setDate(current.getDate() + 1);
-    }
-
-    return weekDates;
-  }
+  // Week/date helpers moved to utils
 
   function formatDateKey(date: Date): string {
     const y = date.getFullYear();
@@ -88,103 +71,11 @@
     return map;
   });
 
-  const weekDates = $derived(getWeekDates());
+  const weekDates = $derived(() => getWeekDatesFromSteps(steps));
 
-  const hours = Array.from({ length: 16 }, (_, i) => i + 6);
+  const hours = DEFAULT_HOURS;
 
-  function getOverlappingStepsForDay(
-    dateStr: string,
-  ): Array<{ step: Step; index: number; totalCount: number }> {
-    const DAY_START = new Date(`${dateStr}T00:00:00`).getTime();
-    const DAY_END = DAY_START + 24 * 60 * 60 * 1000;
-
-    const daySteps = steps.filter(
-      (s) => s.start_at < DAY_END && s.end_at > DAY_START,
-    );
-
-    const enriched = daySteps.map((s) => {
-      const relStart = Math.max(
-        0,
-        Math.floor((Math.max(s.start_at, DAY_START) - DAY_START) / 60000),
-      );
-      const relEnd = Math.min(
-        24 * 60,
-        Math.ceil((Math.min(s.end_at, DAY_END) - DAY_START) / 60000),
-      );
-      return { step: s, relStart, relEnd };
-    });
-
-    enriched.sort((a, b) => a.relStart - b.relStart || a.relEnd - b.relEnd);
-
-    const positioned: {
-      step: Step;
-      index: number;
-      totalCount: number;
-      relStart: number;
-      relEnd: number;
-    }[] = [];
-
-    for (const item of enriched) {
-      const conflicting = enriched.filter(
-        (o) =>
-          o.step !== item.step &&
-          !(o.relEnd <= item.relStart || o.relStart >= item.relEnd),
-      );
-
-      const assignedIndex = conflicting.filter(
-        (o) => o.relStart < item.relStart,
-      ).length;
-      const maxOverlapCount = Math.max(1, conflicting.length + 1);
-
-      positioned.push({
-        step: item.step,
-        index: assignedIndex,
-        totalCount: maxOverlapCount,
-        relStart: item.relStart,
-        relEnd: item.relEnd,
-      });
-    }
-
-    return positioned;
-  }
-
-  function getEventsForCell(
-    dateStr: string,
-    hour: number,
-  ): Array<{ step: Step; index: number; totalCount: number }> {
-    const hourStart = hour * 60;
-    const hourEnd = (hour + 1) * 60;
-    const dayPositions = getOverlappingStepsForDay(dateStr) as Array<{
-      step: Step;
-      index: number;
-      totalCount: number;
-      relStart: number;
-      relEnd: number;
-    }>;
-
-    return dayPositions.filter(({ relStart, relEnd }) => {
-      return relStart < hourEnd && relEnd > hourStart;
-    });
-  }
-
-  function getEventStyle(
-    step: Step,
-    index: number,
-    totalCount: number,
-    relStart: number,
-    relEnd: number,
-  ): string {
-    const topOffset = ((relStart % 60) / 60) * 40;
-    const durationMinutes = Math.max(15, relEnd - relStart);
-    const height = Math.max((durationMinutes / 60) * 40, 38);
-    const width = 100 / totalCount;
-    const left = index * width;
-    return `top: ${topOffset}px; height: ${height}px; left: ${left}%; width: ${width}%;`;
-  }
-
-  function getEventCountForCell(dateStr: string, hour: number): number {
-    return getEventsForCell(dateStr, hour).length;
-  }
+  // helpers moved to weekview-utils.ts
 
   function handleEventClick(step: Step) {
     selectedStep = step;
@@ -210,8 +101,10 @@
         {#each weekDates as date}
           <div
             class="standard-autumn-week-day-header"
-            class:has-events={getOverlappingStepsForDay(formatDateKey(date))
-              .length > 0}
+            class:has-events={utilGetOverlappingStepsForDay(
+              steps,
+              formatDateKey(date),
+            ).length > 0}
           >
             <div class="standard-autumn-week-day-name">{getDayName(date)}</div>
             <div class="standard-autumn-week-day-date">
@@ -221,24 +114,38 @@
         {/each}
       </div>
 
-      <div class="standard-autumn-week-body">
+      <div
+        class="standard-autumn-week-body"
+        style="grid-template-columns: 60px repeat({weekDates.length}, 1fr);"
+      >
         {#each hours as hour}
           <div class="standard-autumn-week-time-label">
             {String(hour).padStart(2, "0")}:00
           </div>
-          {#each weekDates as date}
-            <div class="standard-autumn-week-cell">
-              {#each getEventsForCell(formatDateKey(date), hour) as { step, index, totalCount, relStart, relEnd }}
+        {/each}
+
+        {#each weekDates as date, di}
+          <div
+            class="standard-autumn-week-day-column"
+            style={`grid-column: ${di + 2}; grid-row: 1 / ${hours.length + 1};`}
+          >
+            <div class="standard-autumn-week-day-grid">
+              {#each hours as _}
+                <div class="standard-autumn-week-hour-row"></div>
+              {/each}
+            </div>
+            <div class="standard-autumn-week-events">
+              {#each utilGetOverlappingStepsForDay(steps, formatDateKey(date)) as { step, index, totalCount, relStart, relEnd }}
                 {#if isSecretStep(step) && !hasEditPermission}
                   <button
                     type="button"
                     class="standard-autumn-week-event"
-                    style={getEventStyle(
-                      step,
-                      index,
-                      totalCount,
+                    style={utilGetEventStyleForDay(
+                      hours,
                       relStart,
                       relEnd,
+                      index,
+                      totalCount,
                     )}
                     title="Secret"
                     onclick={() => handleEventClick(step)}
@@ -252,12 +159,12 @@
                     class:standard-autumn-week-event-transport={isTransportType(
                       step.type,
                     )}
-                    style={getEventStyle(
-                      step,
-                      index,
-                      totalCount,
+                    style={utilGetEventStyleForDay(
+                      hours,
                       relStart,
                       relEnd,
+                      index,
+                      totalCount,
                     )}
                     title={step.title}
                     onclick={() => handleEventClick(step)}
@@ -272,7 +179,7 @@
                 {/if}
               {/each}
             </div>
-          {/each}
+          </div>
         {/each}
       </div>
     </div>
@@ -290,3 +197,60 @@
     {onDeleteStep}
   />
 {/if}
+
+<style>
+  .standard-autumn-week-body {
+    display: grid;
+    grid-auto-rows: 40px;
+    position: relative;
+    gap: 0;
+  }
+
+  .standard-autumn-week-day-column {
+    position: relative;
+    overflow: visible;
+  }
+
+  .standard-autumn-week-day-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+  }
+
+  .standard-autumn-week-hour-row {
+    height: 40px;
+    border-top: 1px solid var(--standard-autumn-line-color, #eee);
+    box-sizing: border-box;
+  }
+
+  .standard-autumn-week-events {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  .standard-autumn-week-event {
+    position: absolute;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: var(--standard-autumn-event-bg, #fff);
+    border: 1px solid var(--standard-autumn-border, #e6e0d6);
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .standard-autumn-week-event-icon {
+    display: inline-flex;
+    align-items: center;
+  }
+</style>

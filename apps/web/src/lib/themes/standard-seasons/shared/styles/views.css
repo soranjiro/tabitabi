@@ -321,7 +321,7 @@
 .standard-month-day-content {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.1rem;
   flex: 1;
   position: relative;
   z-index: 2;
@@ -333,7 +333,7 @@
   color: var(--theme-text);
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 4px;
-  padding: 0.25rem 0.45rem;
+  padding: 0.22rem 0.4rem;
   font-size: 0.75rem;
   cursor: pointer;
   text-align: left;
@@ -353,11 +353,11 @@
 }
 
 .standard-month-event-transport {
-  background-color: rgba(247, 250, 252, 0.98) !important;
-  border: 1px solid var(--theme-accent);
+  background-color: rgba(230, 240, 255, 0.96) !important;
+  border: 1px solid rgba(82, 120, 255, 0.24);
   color: var(--theme-text);
   font-weight: 600;
-  box-shadow: inset 0 0 0 1px rgba(127, 207, 153, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(82, 120, 255, 0.08);
 }
 
 .standard-month-event-transport:hover {
@@ -415,9 +415,9 @@
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;
-    padding: 0.12rem 0.2rem;
-    margin: 0 0.15px;
-    gap: 0.15rem;
+    padding: 0.1rem 0.18rem;
+    margin: 0 0.1px;
+    gap: 0.1rem;
   }
 
   .standard-month-event-icon {
@@ -460,13 +460,13 @@
 
   .standard-month-event {
     font-size: 0.68rem;
-    padding: 0.1rem 0.18rem;
+    padding: 0.08rem 0.14rem;
     height: auto;
     white-space: nowrap;
     overflow: hidden;
     min-width: 0;
-    margin: 0 0.12px;
-    gap: 0.12rem;
+    margin: 0 0.08px;
+    gap: 0.08rem;
   }
 
   .standard-month-event-icon {

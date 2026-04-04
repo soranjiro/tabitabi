@@ -10,6 +10,7 @@
   import TrainIcon from "./TrainIcon.svelte";
   import PlaneIcon from "./PlaneIcon.svelte";
   import BusIcon from "./BusIcon.svelte";
+  import ShipIcon from "./ShipIcon.svelte";
 
   interface Props {
     type?: StepType;
@@ -35,6 +36,7 @@
     [STEP_TYPE.TRANSPORT_CAR]: CarIcon,
     [STEP_TYPE.TRANSPORT_PLANE]: PlaneIcon,
     [STEP_TYPE.TRANSPORT_BUS]: BusIcon,
+    [STEP_TYPE.TRANSPORT_SHIP]: ShipIcon,
   };
 
   const sizeClasses: Record<string, string> = {

@@ -310,6 +310,7 @@
                   seg.step.type,
                 )}
                 class:standard-month-event-allday={seg.step.is_all_day}
+                class:standard-month-event-multiday={seg.endIdx > seg.startIdx}
                 style={`position:absolute; left:calc(${seg.leftPercent}% + 2px); top:${seg.rowIndex * MONTH_EVENT_ROW_HEIGHT + 2}px; min-height: 18px; height: 20px; --segment-width: ${seg.widthPercent}%;`}
                 onclick={() => handleEventClick(seg.step)}
                 title={seg.step.title}

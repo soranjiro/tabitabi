@@ -49,34 +49,13 @@
   });
 
   function getEventBackgroundStyle(step: Step): string {
-    // テーマに応じた色を設定
-    let primaryColor = "#8b2e1f"; // default: autumn
-    let accentColor = "#c46b1f";
-
-    // URLからテーマを判定
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const theme = urlParams.get("theme") || "";
-
-      if (theme.includes("spring")) {
-        primaryColor = "#4a7c59";
-        accentColor = "#7fb069";
-      } else if (theme.includes("summer")) {
-        primaryColor = "#006494";
-        accentColor = "#52cfe0";
-      } else if (theme.includes("winter")) {
-        primaryColor = "#2b4c6b";
-        accentColor = "#7899c4";
-      }
-    }
-
     if (step.is_all_day) {
-      return `background: ${primaryColor} !important; background-color: ${primaryColor} !important; color: #fff !important; opacity: 0.8;`;
+      return `background: var(--theme-primary) !important; color: #fff !important; opacity: 0.9;`;
     }
     if (isTransportType(step.type)) {
-      return `background: ${accentColor} !important; background-color: ${accentColor} !important; color: #fff !important; border-left: 3px dashed rgba(255, 255, 255, 0.6);`;
+      return `background: var(--theme-accent) !important; color: #fff !important; border-left: 3px dashed rgba(255, 255, 255, 0.6);`;
     }
-    return `background: ${primaryColor} !important; background-color: ${primaryColor} !important; color: #fff !important;`;
+    return `background: var(--theme-primary) !important; color: #fff !important;`;
   }
 
   function isSecretStep(step: Step): boolean {
@@ -262,7 +241,7 @@
     <h2 class="standard-month-title">{formatMonthTitle(currentDate)}</h2>
     <div class="standard-month-header-actions">
       <label class="standard-month-toggle standard-settings-toggle">
-        <span class="standard-settings-label-text"> 複数予定を省略表示 </span>
+        <span class="standard-settings-label-text">省略表示</span>
         <input
           type="checkbox"
           bind:checked={compactMonthEvents}

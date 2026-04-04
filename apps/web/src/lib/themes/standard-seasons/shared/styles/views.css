@@ -231,6 +231,11 @@
 
 .standard-month-week {
   overflow: hidden;
+  border-bottom: 1px solid var(--theme-line-color);
+}
+
+.standard-month-week:last-child {
+  border-bottom: none;
 }
 
 .standard-month-weekday {
@@ -412,12 +417,16 @@
     padding: 0.2rem 0.4rem;
   }
 
+  .standard-month-event-icon {
+    display: none;
+  }
+
   .standard-month-event-time {
     display: none;
   }
 
   .standard-month-event-title {
-    max-width: 55px;
+    max-width: calc(100% - 4px);
     font-size: 0.65rem;
   }
 
@@ -442,6 +451,10 @@
     padding: 0.15rem 0.3rem;
   }
 
+  .standard-month-event-icon {
+    display: none;
+  }
+
   .standard-month-event-time {
     display: none;
   }
@@ -450,7 +463,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 40px;
+    max-width: calc(100% - 4px);
     font-size: 0.55rem;
   }
 

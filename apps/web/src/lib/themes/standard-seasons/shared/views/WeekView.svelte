@@ -67,34 +67,13 @@
   const timedSteps = $derived(() => steps.filter((s) => !s.is_all_day));
 
   function getEventBackgroundStyle(step: Step): string {
-    // テーマに応じた色を設定
-    let primaryColor = "#8b2e1f"; // default: autumn
-    let accentColor = "#c46b1f";
-
-    // URLからテーマを判定
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const theme = urlParams.get("theme") || "";
-
-      if (theme.includes("spring")) {
-        primaryColor = "#4a7c59";
-        accentColor = "#7fb069";
-      } else if (theme.includes("summer")) {
-        primaryColor = "#006494";
-        accentColor = "#52cfe0";
-      } else if (theme.includes("winter")) {
-        primaryColor = "#2b4c6b";
-        accentColor = "#7899c4";
-      }
-    }
-
     if (step.is_all_day) {
-      return `background: ${primaryColor} !important; background-color: ${primaryColor} !important; color: #fff !important; opacity: 0.8;`;
+      return `background: var(--theme-primary) !important; color: #fff !important; opacity: 0.9;`;
     }
     if (isTransportType(step.type)) {
-      return `background: ${accentColor} !important; background-color: ${accentColor} !important; color: #fff !important; border-left: 3px dashed rgba(255, 255, 255, 0.6); padding-left: 4px;`;
+      return `background: var(--theme-accent) !important; color: #fff !important; border-left: 3px dashed rgba(255, 255, 255, 0.6); padding-left: 4px;`;
     }
-    return `background: ${primaryColor} !important; background-color: ${primaryColor} !important; color: #fff !important;`;
+    return `background: var(--theme-primary) !important; color: #fff !important;`;
   }
 
   function getAllDayStepsForDate(date: Date): Step[] {
@@ -526,7 +505,29 @@
     .standard-week-event {
       font-size: 0.65rem;
       padding: 3px 4px;
-      min-width: 50px;
+      min-width: unset;
+      max-width: calc(100% - 8px);
+      white-space: normal;
+      word-break: break-word;
+      flex-wrap: wrap;
+    }
+
+    .standard-week-event-icon {
+      display: none;
+    }
+
+    .standard-week-event-title {
+      white-space: normal;
+      min-width: 0;
+    }
+
+    .standard-week-allday-event {
+      white-space: normal;
+      min-width: 0;
+    }
+
+    .standard-week-container {
+      min-width: 100%;
     }
   }
 </style>

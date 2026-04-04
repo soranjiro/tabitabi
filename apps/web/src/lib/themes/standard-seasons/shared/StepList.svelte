@@ -61,34 +61,13 @@
   }
 
   function getEventBackgroundStyle(step: Step): string {
-    // テーマに応じた色を設定
-    let primaryColor = '#8b2e1f';  // default: autumn
-    let accentColor = '#c46b1f';
-    
-    // URLからテーマを判定
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const theme = urlParams.get('theme') || '';
-      
-      if (theme.includes('spring')) {
-        primaryColor = '#4a7c59';
-        accentColor = '#7fb069';
-      } else if (theme.includes('summer')) {
-        primaryColor = '#006494';
-        accentColor = '#52cfe0';
-      } else if (theme.includes('winter')) {
-        primaryColor = '#2b4c6b';
-        accentColor = '#7899c4';
-      }
-    }
-    
     if (step.is_all_day) {
-      return `--step-bg: ${primaryColor} !important; --step-border: rgba(255, 255, 255, 0.6) !important; background: ${primaryColor} !important; color: #fff !important; border-left-color: rgba(255, 255, 255, 0.6) !important; opacity: 0.8;`;
+      return `--step-bg: #fff !important; --step-border: var(--theme-primary) !important; background: #fff !important; color: var(--theme-text) !important; border-left-color: var(--theme-primary) !important;`;
     }
     if (isTransportType(step.type)) {
-      return `--step-bg: ${accentColor} !important; --step-border: rgba(255, 255, 255, 0.6) !important; background: ${accentColor} !important; color: #fff !important; border-left: 4px dashed rgba(255, 255, 255, 0.6) !important;`;
+      return `--step-bg: var(--theme-accent) !important; --step-border: rgba(255, 255, 255, 0.6) !important; background: var(--theme-accent) !important; color: #fff !important; border-left: 4px dashed rgba(255, 255, 255, 0.6) !important;`;
     }
-    return `--step-bg: #fffcf9 !important; --step-border: ${primaryColor} !important; background: #fffcf9 !important; border-left-color: ${primaryColor} !important;`;
+    return `--step-bg: #fffcf9 !important; --step-border: var(--theme-primary) !important; background: #fffcf9 !important; border-left-color: var(--theme-primary) !important;`;
   }
 
   let editingStepId = $state<string | null>(null);
@@ -470,11 +449,7 @@
             <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
           </svg>
         </button>
-        <div
-          class="standard-page-dots"
-          role="tablist"
-          aria-label="日選択"
-        >
+        <div class="standard-page-dots" role="tablist" aria-label="日選択">
           {#each Array.from({ length: groupedSteps().length }) as _, i}
             <button
               type="button"
@@ -573,9 +548,7 @@
                         title="詳細を表示"
                       >
                         <div class="standard-step-title">
-                          <span class="standard-secret-text"
-                            >Secret Event</span
-                          >
+                          <span class="standard-secret-text">Secret Event</span>
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
@@ -689,11 +662,7 @@
             <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
           </svg>
         </button>
-        <div
-          class="standard-page-dots"
-          role="tablist"
-          aria-label="日選択"
-        >
+        <div class="standard-page-dots" role="tablist" aria-label="日選択">
           {#each Array.from({ length: groupedSteps().length }) as _, i}
             <button
               type="button"

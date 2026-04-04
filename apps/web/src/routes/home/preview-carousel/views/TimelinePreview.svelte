@@ -7,7 +7,7 @@
   <div class="timeline-title">{preview.title}</div>
   <div class="timeline-day-card">
     <div class="timeline-ribbon"></div>
-    <div class="timeline-date-header">11月25日</div>
+    <div class="timeline-date-header">4月1日</div>
     <div class="timeline-steps">
       {#each preview.steps as step, j}
         <div class="timeline-step {j === 0 ? 'active' : ''}">

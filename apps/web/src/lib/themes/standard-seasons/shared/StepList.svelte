@@ -60,16 +60,6 @@
     return now < revealTime;
   }
 
-  function getEventBackgroundStyle(step: Step): string {
-    if (step.is_all_day) {
-      return `--step-bg: #fff !important; --step-border: var(--theme-primary) !important; background: #fff !important; color: var(--theme-text) !important; border-left-color: var(--theme-primary) !important;`;
-    }
-    if (isTransportType(step.type)) {
-      return `--step-bg: var(--theme-accent) !important; --step-border: rgba(255, 255, 255, 0.6) !important; background: var(--theme-accent) !important; color: #fff !important; border-left: 4px dashed rgba(255, 255, 255, 0.6) !important;`;
-    }
-    return `--step-bg: #fffcf9 !important; --step-border: var(--theme-primary) !important; background: #fffcf9 !important; border-left-color: var(--theme-primary) !important;`;
-  }
-
   let editingStepId = $state<string | null>(null);
   let selectedStepForDialog = $state<Step | null>(null);
 
@@ -573,7 +563,10 @@
                         class:standard-step-transport={isTransportType(
                           step.type,
                         )}
-                        style={getEventBackgroundStyle(step)}
+                        class:standard-step-all-day={step.is_all_day}
+                        class:standard-step-transport-all-day={isTransportType(
+                          step.type,
+                        ) && step.is_all_day}
                         onclick={() => handleStepClick(step.id)}
                         role="button"
                         tabindex="0"

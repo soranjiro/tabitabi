@@ -11,6 +11,11 @@
   let notFound = $state(false);
 
   onMount(async () => {
+    if (!username) {
+      notFound = true;
+      loading = false;
+      return;
+    }
     try {
       const result = await userApi.getPublicBookmarks(username);
       bookmarks = result.bookmarks;

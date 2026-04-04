@@ -111,13 +111,13 @@
 }
 
 .standard-autumn-btn-primary {
-  background: var(--standard-autumn-primary);
-  color: #fff;
+  background: var(--standard-autumn-primary) !important;
+  color: #fff !important;
   box-shadow: 0 2px 4px rgba(169, 53, 41, 0.2);
 }
 
 .standard-autumn-btn-primary:hover {
-  background: var(--standard-autumn-primary-light);
+  background: var(--standard-autumn-primary-light) !important;
   box-shadow: 0 3px 6px rgba(169, 53, 41, 0.25);
 }
 

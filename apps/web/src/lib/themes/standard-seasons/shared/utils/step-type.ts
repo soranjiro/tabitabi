@@ -62,6 +62,12 @@ export const STEP_TYPE_CONFIGS: Record<StepType, StepTypeConfig> = {
     category: "transport",
     description: "バスでの移動",
   },
+  "transport:ship": {
+    label: "船",
+    icon: "🚢",
+    category: "transport",
+    description: "船、フェリーでの移動",
+  },
 };
 
 export function getStepTypeIcon(type: StepType | undefined): string {
@@ -81,5 +87,5 @@ export function isTransportType(type: StepType | undefined): boolean {
 
 export const STEP_TYPES_BY_CATEGORY = {
   normal: ["normal:general", "normal:food", "normal:hotel", "normal:sightseeing"] as const,
-  transport: ["transport:general", "transport:train", "transport:car", "transport:plane", "transport:bus"] as const,
+  transport: ["transport:general", "transport:train", "transport:car", "transport:plane", "transport:bus", "transport:ship"] as const,
 };

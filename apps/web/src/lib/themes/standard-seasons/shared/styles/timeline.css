@@ -77,20 +77,20 @@
 .standard-autumn-step-content {
   flex: 1;
   padding: 1.25rem;
-  background: #fffcf9;
+  background: var(--step-bg, #fffcf9);
   border-radius: 4px;
   margin-left: 1.5rem;
   box-shadow: none;
   border: 1px solid var(--standard-autumn-border);
-  border-left: 4px solid var(--standard-autumn-primary);
+  border-left: 4px solid var(--step-border, var(--standard-autumn-primary));
   position: relative;
 }
 
 /* Transport (移動) style — visual movement feeling */
 .standard-autumn-step-content.standard-autumn-step-transport {
-  background: linear-gradient(90deg, rgba(13, 110, 253, 0.06), rgba(56, 189, 248, 0.04));
+  background: var(--step-bg, linear-gradient(90deg, rgba(13, 110, 253, 0.06), rgba(56, 189, 248, 0.04)));
   border-left-style: dashed;
-  border-left-color: var(--standard-autumn-primary);
+  border-left-color: var(--step-border, var(--standard-autumn-primary));
   color: var(--standard-autumn-text);
   overflow: visible;
 }

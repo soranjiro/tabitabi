@@ -87,21 +87,21 @@
 }
 
 .standard-step-content.standard-step-all-day {
-  background: color-mix(in srgb, var(--theme-accent) 8%, white 92%);
-  border-left-color: color-mix(in srgb, var(--theme-accent) 35%, white 65%);
+  background: var(--step-all-day-bg, color-mix(in srgb, var(--theme-accent) 8%, white 92%));
+  border-left-color: var(--step-all-day-border, color-mix(in srgb, var(--theme-accent) 35%, white 65%));
 }
 
 .standard-step-content.standard-step-transport {
-  background: color-mix(in srgb, var(--theme-accent) 10%, white 90%);
+  background: var(--step-transport-bg, color-mix(in srgb, var(--theme-accent) 10%, white 90%));
   border-left-style: dashed;
-  border-left-color: var(--theme-accent);
+  border-left-color: var(--step-transport-border, var(--theme-accent));
   color: var(--theme-text);
   overflow: visible;
 }
 
 .standard-step-content.standard-step-transport.standard-step-all-day {
-  background: color-mix(in srgb, var(--theme-accent) 12%, white 88%);
-  border-left-color: var(--theme-accent);
+  background: var(--step-transport-all-day-bg, color-mix(in srgb, var(--theme-accent) 12%, white 88%));
+  border-left-color: var(--step-transport-all-day-border, var(--theme-accent));
   border-left-style: dashed;
 }
 

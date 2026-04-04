@@ -8,41 +8,37 @@
   let iframeElement: HTMLIFrameElement;
   let isInitialized = false;
 
+  function handleIframeClick(e: Event) {
+    const target = (e.target as HTMLElement)?.closest(
+      "a",
+    ) as HTMLAnchorElement | null;
+    if (!target || !target.href) return;
+
+    const url = new URL(target.href);
+
+    if (url.origin === window.location.origin) {
+      e.preventDefault();
+      let pathname = url.pathname;
+      if (pathname.endsWith(".html")) {
+        pathname = pathname.slice(0, -5);
+      }
+      goto(pathname);
+    }
+  }
+
   function setupIframeClickListener() {
     if (!iframeElement?.contentWindow) return;
 
     const iframeDoc = iframeElement.contentWindow.document;
-    iframeDoc.addEventListener("click", (e) => {
-      const target = e.target as HTMLElement;
-      const anchor = target.closest("a");
-
-      if (anchor && anchor.href) {
-        const url = new URL(anchor.href);
-
-        // Intercept all internal links (same origin)
-        if (url.origin === window.location.origin) {
-          e.preventDefault();
-          // Remove .html extension if present
-          let pathname = url.pathname;
-          if (pathname.endsWith(".html")) {
-            pathname = pathname.slice(0, -5);
-          }
-          // Navigate the parent window
-          goto(pathname);
-        }
-      }
-    });
+    iframeDoc.removeEventListener("click", handleIframeClick);
+    iframeDoc.addEventListener("click", handleIframeClick);
   }
 
   function updateIframeContent() {
-    if (!iframeElement?.contentWindow) return;
+    if (!iframeElement) return;
 
-    iframeElement.contentWindow.document.open();
-    iframeElement.contentWindow.document.write(data.htmlContent);
-    iframeElement.contentWindow.document.close();
-
-    // Re-setup click listener after content update
-    setupIframeClickListener();
+    iframeElement.onload = setupIframeClickListener;
+    iframeElement.srcdoc = data.htmlContent;
   }
 
   onMount(() => {

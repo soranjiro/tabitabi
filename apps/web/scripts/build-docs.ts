@@ -19,7 +19,7 @@ marked.use({
   renderer: {
     code({ text, lang }) {
       if (lang === 'mermaid') {
-        return `<pre class="mermaid">${text}</pre>`;
+        return `<div class="mermaid">${text}</div>`;
       }
       const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       return `<pre><code class="language-${lang || ''}">${escaped}</code></pre>`;
@@ -419,7 +419,8 @@ const template = (title: string, content: string, nav: string, rootPath: string,
   </button>
   <script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+    mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+    mermaid.init(undefined, document.querySelectorAll('.mermaid'));
   </script>
   <script>
     const searchInput = document.getElementById('search-input');

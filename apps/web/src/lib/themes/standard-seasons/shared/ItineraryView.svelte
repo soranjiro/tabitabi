@@ -1,6 +1,10 @@
 <script lang="ts">
   import type { ItineraryResponse, Step } from "@tabitabi/types";
-  import { createTimestamp, createEndTimestamp, STEP_TYPE } from "@tabitabi/types";
+  import {
+    createTimestamp,
+    createEndTimestamp,
+    STEP_TYPE,
+  } from "@tabitabi/types";
   import type { StepType } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";

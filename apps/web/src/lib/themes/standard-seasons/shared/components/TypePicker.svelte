@@ -24,7 +24,7 @@
     <h4 class="standard-type-picker-title">通常の予定</h4>
     <div class="standard-type-picker-grid">
       {#each STEP_TYPES_BY_CATEGORY.normal as type}
-        {console.log({value}, {type})}
+        {console.log({ value }, { type })}
         <button
           type="button"
           class="standard-type-picker-item"

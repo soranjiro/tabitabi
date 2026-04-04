@@ -178,7 +178,7 @@
 
 .standard-step-title {
   font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
-  font-size: 1.15rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--theme-text);
   margin: 0 0 0.5rem 0;
@@ -202,7 +202,7 @@
 }
 
 .standard-step-notes {
-  font-size: 0.95rem;
+  font-size: 0.75rem;
   color: var(--theme-text-light);
   line-height: 1.7;
   background: rgba(230, 180, 34, 0.05);

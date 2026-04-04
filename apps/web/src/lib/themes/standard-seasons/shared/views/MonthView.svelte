@@ -53,9 +53,9 @@
       return `background: var(--theme-primary) !important; color: #fff !important; opacity: 0.95;`;
     }
     if (isTransportType(step.type)) {
-      return `background: rgba(255, 255, 255, 0.95) !important; color: var(--theme-text) !important; border: 1px solid var(--theme-accent) !important;`;
+      return `background: rgba(255, 255, 255, 0.96) !important; color: var(--theme-text) !important; border: 1px solid var(--theme-accent) !important;`;
     }
-    return `background: rgba(255, 255, 255, 0.95) !important; color: var(--theme-text) !important; border: 1px solid var(--theme-border) !important;`;
+    return `background: rgba(255, 255, 255, 0.96) !important; color: var(--theme-text) !important; border: 1px solid rgba(0, 0, 0, 0.08) !important;`;
   }
 
   function isSecretStep(step: Step): boolean {

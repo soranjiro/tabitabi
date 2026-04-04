@@ -45,7 +45,7 @@ erDiagram
         TEXT notes
         INTEGER start_at
         INTEGER end_at
-        TEXT "type (format: category:type)"
+        TEXT type
         TEXT created_at
         TEXT updated_at
     }

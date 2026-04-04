@@ -77,7 +77,7 @@
 .standard-step-content {
   flex: 1;
   padding: 1.25rem;
-  background: var(--step-bg, #fffcf9);
+  background: var(--step-bg, #fff);
   border-radius: 4px;
   margin-left: 1.5rem;
   box-shadow: none;
@@ -86,13 +86,23 @@
   position: relative;
 }
 
-/* Transport (移動) style — visual movement feeling */
+.standard-step-content.standard-step-all-day {
+  background: color-mix(in srgb, var(--theme-accent) 8%, white 92%);
+  border-left-color: color-mix(in srgb, var(--theme-accent) 35%, white 65%);
+}
+
 .standard-step-content.standard-step-transport {
-  background: var(--step-bg, linear-gradient(90deg, rgba(13, 110, 253, 0.06), rgba(56, 189, 248, 0.04)));
+  background: color-mix(in srgb, var(--theme-accent) 10%, white 90%);
   border-left-style: dashed;
-  border-left-color: var(--step-border, var(--theme-primary));
+  border-left-color: var(--theme-accent);
   color: var(--theme-text);
   overflow: visible;
+}
+
+.standard-step-content.standard-step-transport.standard-step-all-day {
+  background: color-mix(in srgb, var(--theme-accent) 12%, white 88%);
+  border-left-color: var(--theme-accent);
+  border-left-style: dashed;
 }
 
 .standard-transport-overlay {

@@ -60,7 +60,24 @@
   }
 
   const weekDates = $derived(() => getWeekDatesFromSteps(steps));
-  const hours = $derived(() => getWeekHours(steps));
+  const hours = $derived(() =>
+    getWeekHours(steps.filter((s) => !s.is_all_day)),
+  );
+
+  const timedSteps = $derived(() => steps.filter((s) => !s.is_all_day));
+
+  function getAllDayStepsForDate(date: Date): Step[] {
+    const dateStr = formatDateKey(date);
+    const dayStart = new Date(`${dateStr}T00:00:00`).getTime();
+    const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+    return steps.filter(
+      (s) => s.is_all_day && s.start_at < dayEnd && s.end_at > dayStart,
+    );
+  }
+
+  const hasAnyAllDayEvents = $derived(() =>
+    weekDates().some((d) => getAllDayStepsForDate(d).length > 0),
+  );
 
   function handleEventClick(step: Step) {
     selectedStep = step;
@@ -73,56 +90,79 @@
   let numCols = $derived(weekDates().length);
 </script>
 
-<div class="standard-autumn-week-view" style="--week-cols: {numCols};">
+<div class="standard-week-view" style="--week-cols: {numCols};">
   {#if weekDates().length === 0}
-    <div class="standard-autumn-week-no-events">
-      予定がまだ登録されていません
-    </div>
+    <div class="standard-week-no-events">予定がまだ登録されていません</div>
   {:else}
-    <div class="standard-autumn-week-container">
-      <div class="standard-autumn-week-header">
-        <div class="standard-autumn-week-corner"></div>
+    <div class="standard-week-container">
+      <div class="standard-week-header">
+        <div class="standard-week-corner"></div>
         {#each weekDates() as date}
           <div
-            class="standard-autumn-week-day-header"
+            class="standard-week-day-header"
             class:has-events={utilGetOverlappingStepsForDay(
-              steps,
+              timedSteps(),
               formatDateKey(date),
-            ).length > 0}
+            ).length > 0 || getAllDayStepsForDate(date).length > 0}
           >
-            <div class="standard-autumn-week-day-name">{getDayName(date)}</div>
-            <div class="standard-autumn-week-day-date">
+            <div class="standard-week-day-name">{getDayName(date)}</div>
+            <div class="standard-week-day-date">
               {getDateDisplay(date)}
             </div>
           </div>
         {/each}
       </div>
 
-      <div class="standard-autumn-week-body">
+      {#if hasAnyAllDayEvents()}
+        <div class="standard-week-allday-row">
+          <div class="standard-week-allday-label">終日</div>
+          {#each weekDates() as date}
+            <div class="standard-week-allday-cell">
+              {#each getAllDayStepsForDate(date) as step}
+                <button
+                  type="button"
+                  class="standard-week-allday-event"
+                  title={step.title}
+                  onclick={() => handleEventClick(step)}
+                >
+                  <span class="standard-week-event-icon">
+                    <IconRenderer type={step.type} size="sm" />
+                  </span>
+                  <span class="standard-week-event-title">
+                    {step.title}
+                  </span>
+                </button>
+              {/each}
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="standard-week-body">
         {#each hours() as hour}
-          <div class="standard-autumn-week-time-label">
+          <div class="standard-week-time-label">
             {String(hour).padStart(2, "0")}:00
           </div>
           {#each weekDates() as date}
-            <div class="standard-autumn-week-cell"></div>
+            <div class="standard-week-cell"></div>
           {/each}
         {/each}
 
         <div
-          class="standard-autumn-week-events-layer"
+          class="standard-week-events-layer"
           style="--week-hour-rows: {hours().length};"
         >
           {#each weekDates() as date, dayIndex}
             <div
-              class="standard-autumn-week-day-events"
+              class="standard-week-day-events"
               style="grid-column: {dayIndex + 2}; grid-row: 1 / span {hours()
                 .length};"
             >
-              {#each utilGetOverlappingStepsForDay(steps, formatDateKey(date)) as { step, index, totalCount, relStart, relEnd }}
+              {#each utilGetOverlappingStepsForDay(timedSteps(), formatDateKey(date)) as { step, index, totalCount, relStart, relEnd }}
                 {#if isSecretStep(step) && !hasEditPermission}
                   <button
                     type="button"
-                    class="standard-autumn-week-event"
+                    class="standard-week-event"
                     style={utilGetEventStyleForDay(
                       hours(),
                       relStart,
@@ -138,8 +178,8 @@
                 {:else}
                   <button
                     type="button"
-                    class="standard-autumn-week-event"
-                    class:standard-autumn-week-event-transport={isTransportType(
+                    class="standard-week-event"
+                    class:standard-week-event-transport={isTransportType(
                       step.type,
                     )}
                     style={utilGetEventStyleForDay(
@@ -152,10 +192,10 @@
                     title={step.title}
                     onclick={() => handleEventClick(step)}
                   >
-                    <span class="standard-autumn-week-event-icon">
+                    <span class="standard-week-event-icon">
                       <IconRenderer type={step.type} size="sm" />
                     </span>
-                    <span class="standard-autumn-week-event-title">
+                    <span class="standard-week-event-title">
                       {step.title}
                     </span>
                   </button>
@@ -182,372 +222,296 @@
 {/if}
 
 <style>
-  .standard-autumn-week-view {
+  .standard-week-view {
     padding: 1rem;
     padding-bottom: 100px;
     overflow-x: auto;
-    background: var(--standard-autumn-bg);
+    background: var(--standard-bg);
   }
 
-  .standard-autumn-week-no-events {
+  .standard-week-no-events {
     padding: 2rem;
     text-align: center;
-    color: var(--standard-autumn-text-light);
+    color: var(--standard-text-light);
     font-size: 0.95rem;
   }
 
-  .standard-autumn-week-container {
+  .standard-week-container {
     display: grid;
-    grid-template-columns: 70px repeat(var(--week-cols, 7), 1fr);
+    grid-template-columns: 60px repeat(var(--week-cols, 7), minmax(80px, 1fr));
     gap: 0;
-    background: var(--standard-autumn-card-bg);
-    border: 3px solid var(--standard-autumn-primary);
-    border-radius: 12px;
+    background: var(--standard-card-bg);
+    border: 2px solid var(--standard-primary);
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    min-width: min-content;
   }
 
-  .standard-autumn-week-header {
+  .standard-week-header {
     display: contents;
   }
 
-  .standard-autumn-week-corner {
-    background: var(--standard-autumn-header-bg);
-    border-bottom: 1px solid var(--standard-autumn-primary);
-    border-right: 1px solid var(--standard-autumn-border);
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    padding-bottom: 0.5rem;
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: var(--standard-autumn-text-light);
-    letter-spacing: 0.1em;
-    position: relative;
-    overflow: hidden;
+  .standard-week-corner {
+    background: var(--standard-header-bg);
+    border-bottom: 1px solid var(--standard-border);
+    border-right: 1px solid var(--standard-border);
   }
 
-  .standard-autumn-week-corner::before {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--standard-autumn-primary);
-  }
-
-  .standard-autumn-week-day-header {
-    padding: 1.2rem 0.5rem;
+  .standard-week-day-header {
+    padding: 0.75rem 0.5rem;
     text-align: center;
-    border-bottom: 3px solid var(--standard-autumn-primary);
-    border-right: 1px solid var(--standard-autumn-border);
-    background: var(--standard-autumn-header-bg);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--standard-header-bg);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 0.35rem;
-    position: relative;
-    overflow: hidden;
+    gap: 0.25rem;
   }
 
-  .standard-autumn-week-day-header::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--standard-autumn-primary);
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  .standard-autumn-week-day-header::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 10px,
-      rgba(var(--standard-autumn-primary-rgb), 0.03) 10px,
-      rgba(var(--standard-autumn-primary-rgb), 0.03) 11px
-    );
-    pointer-events: none;
-  }
-
-  .standard-autumn-week-day-header.has-events::before {
-    opacity: 1;
-  }
-
-  .standard-autumn-week-day-header:last-child {
+  .standard-week-day-header:last-child {
     border-right: none;
   }
 
-  .standard-autumn-week-day-name {
-    font-weight: 700;
-    color: var(--standard-autumn-primary);
-    font-size: 1rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
-  }
-
-  .standard-autumn-week-day-date {
-    font-size: 0.85rem;
-    color: var(--standard-autumn-text-light);
+  .standard-week-day-name {
     font-weight: 600;
-    letter-spacing: 0.02em;
+    color: var(--standard-primary);
+    font-size: 0.9rem;
   }
 
-  .standard-autumn-week-day-header.has-events .standard-autumn-week-day-date {
-    background: var(--standard-autumn-primary);
+  .standard-week-day-date {
+    font-size: 0.8rem;
+    color: var(--standard-text-light);
+    font-weight: 500;
+  }
+
+  .standard-week-day-header.has-events .standard-week-day-date {
+    background: var(--standard-primary);
     color: #fff;
-    padding: 4px 10px;
-    border-radius: 6px;
-    width: auto;
-    height: auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
   }
 
-  .standard-autumn-week-body {
+  .standard-week-body {
     display: grid;
     grid-column: 1 / -1;
-    grid-template-columns: 70px repeat(var(--week-cols, 7), 1fr);
+    grid-template-columns: 60px repeat(var(--week-cols, 7), minmax(80px, 1fr));
     grid-auto-rows: 56px;
     grid-auto-flow: row;
-    background: var(--standard-autumn-bg);
+    background: var(--standard-bg);
     position: relative;
   }
 
-  .standard-autumn-week-time-label {
-    padding: 0.5rem 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--standard-autumn-text-light);
+  .standard-week-time-label {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--standard-text-light);
     text-align: right;
-    border-right: 1px solid var(--standard-autumn-border);
-    background: var(--standard-autumn-header-bg);
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--standard-header-bg);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: flex-end;
-    letter-spacing: 0.03em;
+  }
+
+  .standard-week-cell {
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     position: relative;
-    overflow: hidden;
-  }
-
-  .standard-autumn-week-time-label::before {
-    content: "";
-    position: absolute;
-    right: 0;
-    top: 50%;
-    width: 20%;
-    height: 1px;
-    background: var(--standard-autumn-border);
-    transform: translateY(-50%);
-  }
-
-  .standard-autumn-week-time-label::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 1px;
-    background: rgba(var(--standard-autumn-primary-rgb), 0.05);
-  }
-
-  .standard-autumn-week-cell {
-    border-right: 1px solid var(--standard-autumn-border);
-    border-bottom: 1px solid var(--standard-autumn-border);
-    position: relative;
-    background: var(--standard-autumn-bg);
+    background: var(--standard-bg);
     overflow: visible;
   }
 
-  .standard-autumn-week-cell:nth-child(2n) {
-    background: rgba(var(--standard-autumn-primary-rgb), 0.02);
-  }
-
-  .standard-autumn-week-cell::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 20px,
-      rgba(var(--standard-autumn-primary-rgb), 0.01) 20px,
-      rgba(var(--standard-autumn-primary-rgb), 0.01) 21px
-    );
-    pointer-events: none;
-  }
-
-  .standard-autumn-week-events-layer {
+  .standard-week-events-layer {
     position: absolute;
     inset: 0;
     display: grid;
-    grid-template-columns: 70px repeat(var(--week-cols, 7), 1fr);
+    grid-template-columns: 60px repeat(var(--week-cols, 7), minmax(80px, 1fr));
     grid-template-rows: repeat(var(--week-hour-rows, 16), 56px);
     pointer-events: none;
     z-index: 8;
   }
 
-  .standard-autumn-week-day-events {
+  .standard-week-day-events {
     position: relative;
     overflow: visible;
     pointer-events: none;
   }
 
-  .standard-autumn-week-event {
+  .standard-week-event {
     position: absolute;
     box-sizing: border-box;
-    padding: 6px 8px;
-    border-radius: 8px;
-    background: var(--standard-autumn-primary);
-    color: #fff;
-    border: 2px solid var(--standard-autumn-primary);
+    padding: 4px 6px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.96);
+    color: var(--standard-text);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     display: flex;
     gap: 4px;
     align-items: center;
     overflow: hidden;
     font-size: 0.7rem;
-    font-weight: 700;
+    font-weight: 600;
     z-index: 10;
     cursor: pointer;
     pointer-events: auto;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow:
-      0 2px 6px rgba(0, 0, 0, 0.12),
-      inset 0 1px 2px rgba(255, 255, 255, 0.15);
+    transition:
+      background-color 0.15s,
+      border-color 0.15s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     margin: 2px;
     white-space: nowrap;
-    position: relative;
+    min-width: 60px;
   }
 
-  .standard-autumn-week-event::before {
-    content: "";
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    right: 2px;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.6);
-    border-radius: 1px;
-  }
-
-  .standard-autumn-week-event::after {
-    content: "";
-    position: absolute;
-    bottom: 2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.4);
-    border-radius: 0.5px;
-  }
-
-  .standard-autumn-week-event:hover {
+  .standard-week-event:hover {
     z-index: 20;
-    transform: translateY(-4px) scale(1.06);
-    box-shadow:
-      0 8px 16px rgba(0, 0, 0, 0.18),
-      inset 0 1px 2px rgba(255, 255, 255, 0.25);
+    background-color: rgba(255, 255, 255, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   }
 
-  .standard-autumn-week-event:active {
-    transform: translateY(-1px) scale(0.98);
-    box-shadow:
-      0 2px 4px rgba(0, 0, 0, 0.12),
-      inset 0 1px 2px rgba(255, 255, 255, 0.15);
+  .standard-week-event-transport {
+    background-color: rgba(246, 250, 255, 0.98) !important;
+    color: var(--standard-text) !important;
+    border: 1px solid rgba(82, 120, 255, 0.22) !important;
+    box-shadow: inset 0 0 0 1px rgba(82, 120, 255, 0.08);
+    border-left: 3px solid rgba(82, 120, 255, 0.8);
+    padding-left: 4px;
   }
 
-  .standard-autumn-week-event-transport {
-    background: repeating-linear-gradient(
-        -45deg,
-        rgba(255, 255, 255, 0.1),
-        rgba(255, 255, 255, 0.1) 6px,
-        rgba(255, 255, 255, 0.02) 6px,
-        rgba(255, 255, 255, 0.02) 12px
-      ),
-      var(--standard-autumn-accent);
-    border-color: var(--standard-autumn-accent);
-    border-left: 4px dashed rgba(255, 255, 255, 0.7);
-    padding-left: 6px;
-    box-shadow:
-      0 2px 6px rgba(0, 0, 0, 0.15),
-      inset 0 0 8px rgba(255, 255, 255, 0.1);
+  .standard-week-event-transport:hover {
+    background-color: rgba(255, 255, 255, 1) !important;
   }
 
-  .standard-autumn-week-event-transport::before {
-    background: rgba(255, 255, 255, 0.7);
-    animation: shimmer-top 3s ease-in-out infinite;
-  }
-
-  .standard-autumn-week-event-transport::after {
-    content: "→";
-    position: absolute !important;
-    right: 4px;
-    top: 50%;
-    bottom: auto;
-    width: auto;
-    height: auto;
-    transform: translateY(-50%);
-    font-size: 0.9rem;
-    opacity: 0.9;
-    animation: pulse-arrow 2s ease-in-out infinite;
-  }
-
-  @keyframes shimmer-top {
-    0%,
-    100% {
-      opacity: 0.6;
-    }
-    50% {
-      opacity: 0.9;
-    }
-  }
-
-  @keyframes pulse-arrow {
-    0%,
-    100% {
-      transform: translateY(-50%) translateX(0);
-      opacity: 0.9;
-    }
-    50% {
-      transform: translateY(-50%) translateX(2px);
-      opacity: 1;
-    }
-  }
-
-  .standard-autumn-week-event-icon {
+  .standard-week-event-icon {
     display: inline-flex;
     align-items: center;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     flex-shrink: 0;
   }
 
-  .standard-autumn-week-event-title {
+  .standard-week-event-title {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     flex: 1;
     min-width: 0;
+    font-weight: 600;
+  }
+
+  .standard-week-allday-row {
+    display: contents;
+  }
+
+  .standard-week-allday-label {
+    padding: 0.6rem 0.25rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    letter-spacing: 0.02em;
+    color: var(--standard-primary);
+    text-align: right;
+    border-right: 1px solid var(--standard-border);
+    border-bottom: 2px solid var(--standard-primary);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.8) 0%,
+      rgba(255, 255, 255, 0.5) 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .standard-week-allday-cell {
+    padding: 6px;
+    border-right: 1px solid var(--standard-border);
+    border-bottom: 2px solid var(--standard-primary);
+    background: linear-gradient(
+      120deg,
+      var(--standard-bg) 0%,
+      rgba(255, 255, 255, 0.6) 100%
+    );
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .standard-week-allday-cell:last-child {
+    border-right: none;
+  }
+
+  .standard-week-allday-event {
+    padding: 5px 10px;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.88);
+    color: var(--standard-primary);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+
+  .standard-week-allday-event:hover {
+    background-color: rgba(255, 255, 255, 0.96);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  @media (max-width: 600px) {
+    .standard-week-container {
+      grid-template-columns: 50px repeat(var(--week-cols, 7), minmax(70px, 1fr));
+    }
+
+    .standard-week-body {
+      grid-template-columns: 50px repeat(var(--week-cols, 7), minmax(70px, 1fr));
+    }
+
+    .standard-week-events-layer {
+      grid-template-columns: 50px repeat(var(--week-cols, 7), minmax(70px, 1fr));
+    }
+
+    .standard-week-event {
+      font-size: 0.65rem;
+      padding: 3px 4px;
+      min-width: unset;
+      max-width: calc(100% - 8px);
+      white-space: normal;
+      word-break: break-word;
+      flex-wrap: wrap;
+    }
+
+    .standard-week-event-icon {
+      display: none;
+    }
+
+    .standard-week-event-title {
+      white-space: normal;
+      min-width: 0;
+    }
+
+    .standard-week-allday-event {
+      white-space: normal;
+      min-width: 0;
+    }
+
+    .standard-week-container {
+      min-width: 100%;
+    }
   }
 </style>

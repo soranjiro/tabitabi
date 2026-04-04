@@ -62,17 +62,17 @@
   }
 </script>
 
-<div class="standard-autumn-settings-menu">
-  <button onclick={handleShowThemeSelect} class="standard-autumn-settings-item">
+<div class="standard-settings-menu">
+  <button onclick={handleShowThemeSelect} class="standard-settings-item">
     {@html PaletteIcon}
     テーマを変更
   </button>
 
-  <div class="standard-autumn-settings-divider"></div>
+  <div class="standard-settings-divider"></div>
 
-  <div class="standard-autumn-settings-group">
-    <label class="standard-autumn-settings-toggle">
-      <span class="standard-autumn-settings-label-text">
+  <div class="standard-settings-group">
+    <label class="standard-settings-toggle">
+      <span class="standard-settings-label-text">
         {@html SecretIcon}
         シークレットモード
       </span>
@@ -80,18 +80,18 @@
         type="checkbox"
         bind:checked={localSecretEnabled}
         onchange={handleSecretToggle}
-        class="standard-autumn-toggle-input"
+        class="standard-toggle-input"
       />
-      <span class="standard-autumn-toggle-slider"></span>
+      <span class="standard-toggle-slider"></span>
     </label>
 
     {#if localSecretEnabled}
-      <div class="standard-autumn-settings-subitem">
-        <span class="standard-autumn-settings-sublabel">表示開始:</span>
+      <div class="standard-settings-subitem">
+        <span class="standard-settings-sublabel">表示開始:</span>
         <select
           bind:value={localSecretOffset}
           onchange={handleSecretOffsetChange}
-          class="standard-autumn-settings-select"
+          class="standard-settings-select"
         >
           <option value={0}>予定時刻</option>
           <option value={15}>15分前</option>
@@ -107,17 +107,17 @@
     {/if}
   </div>
 
-  <div class="standard-autumn-settings-divider"></div>
+  <div class="standard-settings-divider"></div>
 
-  <div class="standard-autumn-settings-group">
-    <label class="standard-autumn-settings-label">
-      <span class="standard-autumn-settings-label-text"> Walica URL </span>
+  <div class="standard-settings-group">
+    <label class="standard-settings-label">
+      <span class="standard-settings-label-text"> Walica URL </span>
       <input
         type="text"
         bind:value={localWalicaUrl}
         onblur={handleWalicaBlur}
         placeholder="https://walica.jp/group/..."
-        class="standard-autumn-input standard-autumn-settings-input"
+        class="standard-input standard-settings-input"
       />
     </label>
   </div>

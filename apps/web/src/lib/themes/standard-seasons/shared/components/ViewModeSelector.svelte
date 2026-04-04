@@ -22,7 +22,7 @@
 </script>
 
 <div
-  class="standard-autumn-viewmode-backdrop"
+  class="standard-viewmode-backdrop"
   onclick={handleBackdropClick}
   onkeydown={(e) => e.key === 'Escape' && onClose()}
   role="dialog"
@@ -30,20 +30,20 @@
   aria-label="ビューモード選択"
   tabindex="-1"
 >
-  <div class="standard-autumn-viewmode-popup">
-    <h3 class="standard-autumn-viewmode-title">ビューモード</h3>
-    <div class="standard-autumn-viewmode-options">
+  <div class="standard-viewmode-popup">
+    <h3 class="standard-viewmode-title">ビューモード</h3>
+    <div class="standard-viewmode-options">
       {#each VIEW_MODE_OPTIONS as option}
         <button
           type="button"
-          class="standard-autumn-viewmode-option"
+          class="standard-viewmode-option"
           class:active={currentMode === option.id}
           onclick={() => handleModeSelect(option.id)}
         >
-          <span class="standard-autumn-viewmode-icon">{option.icon}</span>
-          <span class="standard-autumn-viewmode-label">{option.label}</span>
+          <span class="standard-viewmode-icon">{option.icon}</span>
+          <span class="standard-viewmode-label">{option.label}</span>
           {#if currentMode === option.id}
-            <svg class="standard-autumn-viewmode-check" viewBox="0 0 24 24" fill="currentColor">
+            <svg class="standard-viewmode-check" viewBox="0 0 24 24" fill="currentColor">
               <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
             </svg>
           {/if}
@@ -54,7 +54,7 @@
 </div>
 
 <style>
-  .standard-autumn-viewmode-backdrop {
+  .standard-viewmode-backdrop {
     position: fixed;
     top: 0;
     left: 0;
@@ -69,7 +69,7 @@
     animation: fadeIn 0.2s ease-out;
   }
 
-  .standard-autumn-viewmode-popup {
+  .standard-viewmode-popup {
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.15);
@@ -79,21 +79,21 @@
     animation: slideUp 0.25s ease-out;
   }
 
-  .standard-autumn-viewmode-title {
+  .standard-viewmode-title {
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--standard-autumn-text-light);
+    color: var(--standard-text-light);
     padding: 1rem 1rem 0.5rem;
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
-  .standard-autumn-viewmode-options {
+  .standard-viewmode-options {
     padding: 0.5rem;
   }
 
-  .standard-autumn-viewmode-option {
+  .standard-viewmode-option {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -108,29 +108,29 @@
     text-align: left;
   }
 
-  .standard-autumn-viewmode-option:hover {
+  .standard-viewmode-option:hover {
     background: rgba(0, 0, 0, 0.04);
   }
 
-  .standard-autumn-viewmode-option.active {
+  .standard-viewmode-option.active {
     background: rgba(169, 53, 41, 0.08);
   }
 
-  .standard-autumn-viewmode-icon {
+  .standard-viewmode-icon {
     font-size: 1.25rem;
   }
 
-  .standard-autumn-viewmode-label {
+  .standard-viewmode-label {
     flex: 1;
     font-size: 0.95rem;
     font-weight: 500;
-    color: var(--standard-autumn-text);
+    color: var(--standard-text);
   }
 
-  .standard-autumn-viewmode-check {
+  .standard-viewmode-check {
     width: 20px;
     height: 20px;
-    color: var(--standard-autumn-primary);
+    color: var(--standard-primary);
   }
 
   @keyframes fadeIn {

@@ -35,13 +35,13 @@
         type="password"
         bind:value={password}
         placeholder="パスワードを入力"
-        class="standard-autumn-input"
+        class="standard-input"
         disabled={isAuthenticating}
       />
-      <div class="standard-autumn-dialog-actions">
+      <div class="standard-dialog-actions">
         <button
           type="submit"
-          class="standard-autumn-btn standard-autumn-btn-primary"
+          class="standard-btn standard-btn-primary"
           disabled={isAuthenticating}
         >
           {isAuthenticating ? "認証中..." : "認証"}
@@ -49,7 +49,7 @@
         <button
           type="button"
           onclick={handleClose}
-          class="standard-autumn-btn standard-autumn-btn-secondary"
+          class="standard-btn standard-btn-secondary"
           disabled={isAuthenticating}
         >
           キャンセル

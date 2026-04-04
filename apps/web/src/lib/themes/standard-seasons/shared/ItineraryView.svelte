@@ -1,6 +1,10 @@
 <script lang="ts">
   import type { ItineraryResponse, Step } from "@tabitabi/types";
-  import { createTimestamp, createEndTimestamp } from "@tabitabi/types";
+  import {
+    createTimestamp,
+    createEndTimestamp,
+    STEP_TYPE,
+  } from "@tabitabi/types";
   import type { StepType } from "@tabitabi/types";
   import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
@@ -22,7 +26,6 @@
   import { LinkIcon } from "./components/icons/index.svelte";
   import { renderMarkdown } from "./utils/markdown";
   import { getViewMode, setViewMode, type ViewMode } from "./utils/storage";
-  import "./styles/index.css";
 
   interface Props {
     itinerary: ItineraryResponse;
@@ -102,7 +105,7 @@
     time: "",
     location: "",
     notes: "",
-    type: "normal:general" as StepType,
+    type: STEP_TYPE.NORMAL_GENERAL as StepType,
   });
   let newStepHour = $state("09");
   let newStepMinute = $state("00");
@@ -316,7 +319,7 @@
         time: "",
         location: "",
         notes: "",
-        type: "normal:general",
+        type: STEP_TYPE.NORMAL_GENERAL,
       };
       newStepHour = "09";
       newStepMinute = "00";
@@ -331,7 +334,7 @@
       time: "",
       location: "",
       notes: "",
-      type: "normal:general",
+      type: STEP_TYPE.NORMAL_GENERAL,
     };
     newStepHour = "09";
     newStepMinute = "00";
@@ -394,24 +397,24 @@
       "shadow-sm",
     ];
     return props
-      .map((p) => `--standard-autumn-${p}: var(--standard-${season}-${p})`)
+      .map((p) => `--standard-${p}: var(--standard-${season}-${p})`)
       .join("; ");
   }
 </script>
 
 <div
-  class="standard-autumn-theme"
+  class="standard-theme"
   class:standard-spring-theme={selectedThemeId === "standard-spring"}
   class:standard-summer-theme={selectedThemeId === "standard-summer"}
   class:standard-winter-theme={selectedThemeId === "standard-winter"}
   style={buildThemeOverrideStyle(selectedThemeId)}
 >
-  <div class="standard-autumn-container">
-    <header class="standard-autumn-header">
-      <div class="standard-autumn-share-wrapper">
+  <div class="standard-container">
+    <header class="standard-header">
+      <div class="standard-share-wrapper">
         <button
           type="button"
-          class="standard-autumn-share-icon"
+          class="standard-share-icon"
           onclick={handleShare}
           aria-label="共有メニュー"
           title="共有メニュー"
@@ -429,10 +432,10 @@
           </svg>
         </button>
         {#if showShareMenu}
-          <div class="standard-autumn-share-menu">
+          <div class="standard-share-menu">
             <button
               type="button"
-              class="standard-autumn-share-menu-item"
+              class="standard-share-menu-item"
               onclick={hasEditPermission
                 ? () => (showShareDialog = true)
                 : copyViewOnlyLink}
@@ -450,7 +453,7 @@
             </button>
             <button
               type="button"
-              class="standard-autumn-share-menu-item"
+              class="standard-share-menu-item"
               onclick={handlePrint}
             >
               <svg
@@ -468,7 +471,7 @@
         {/if}
       </div>
       {#if showCopyMessage}
-        <div class="standard-autumn-copy-msg">コピーしました</div>
+        <div class="standard-copy-msg">コピーしました</div>
       {/if}
       {#if isEditingTitle}
         <input
@@ -476,7 +479,7 @@
           bind:value={editedTitle}
           onblur={handleTitleUpdate}
           onkeydown={(e) => e.key === "Enter" && handleTitleUpdate()}
-          class="standard-autumn-title-input"
+          class="standard-title-input"
         />
       {:else}
         <button
@@ -484,16 +487,16 @@
           onclick={() => {
             isEditingTitle = true;
           }}
-          class="standard-autumn-title-button"
+          class="standard-title-button"
           disabled={!hasEditPermission}>{itinerary.title}</button
         >
       {/if}
-      <div class="standard-autumn-controls">
+      <div class="standard-controls">
         {#if itinerary.memo}
           {#if hasEditPermission}
             <button
               type="button"
-              class="standard-autumn-memo-display"
+              class="standard-memo-display"
               onclick={(e) => {
                 if ((e.target as HTMLElement).closest("a")) return;
                 showMemoDialog = true;
@@ -502,7 +505,7 @@
               {@html renderMarkdown(itinerary.memo)}
             </button>
           {:else}
-            <div class="standard-autumn-memo-display">
+            <div class="standard-memo-display">
               {@html renderMarkdown(itinerary.memo)}
             </div>
           {/if}
@@ -511,7 +514,7 @@
             onclick={() => {
               showMemoDialog = true;
             }}
-            class="standard-autumn-btn standard-autumn-btn-edit"
+            class="standard-btn standard-btn-edit"
           >
             📝 メモを追加
           </button>
@@ -520,7 +523,7 @@
     </header>
 
     {#if hasEditPermission}
-      <div class="standard-autumn-add-step">
+      <div class="standard-add-step">
         {#if isAddingStep}
           <AddStepForm
             bind:newStep
@@ -532,7 +535,7 @@
         {:else}
           <button
             onclick={openAddStepForm}
-            class="standard-autumn-btn-add"
+            class="standard-btn-add"
             disabled={!hasEditPermission}>＋ 予定を追加</button
           >
         {/if}

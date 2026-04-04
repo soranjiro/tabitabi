@@ -1,84 +1,23 @@
 :root {
-  --standard-autumn-bg: #faf5f0;
-  --standard-autumn-primary: #8b2e1f;
-  --standard-autumn-primary-light: #b8562f;
-  --standard-autumn-secondary: #d89f2e;
-  --standard-autumn-accent: #c46b1f;
-  --standard-autumn-text: #3a2d25;
-  --standard-autumn-text-light: #6b5c52;
-  --standard-autumn-card-bg: #fffbf7;
-  --standard-autumn-header-bg: transparent;
-  --standard-autumn-border: #dcc7b5;
-  --standard-autumn-line-color: #d1b599;
-  --standard-autumn-dot-bg: #8b2e1f;
-  --standard-autumn-shadow: 0 12px 36px -8px rgba(58, 45, 37, 0.12);
-  --standard-autumn-shadow-sm: 0 4px 12px -2px rgba(58, 45, 37, 0.08);
+  --theme-bg: #ffffff;
+  --theme-primary: #000000;
+  --theme-primary-light: #333333;
+  --theme-secondary: #666666;
+  --theme-accent: #999999;
+  --theme-text: #000000;
+  --theme-text-light: #666666;
+  --theme-card-bg: #ffffff;
+  --theme-header-bg: transparent;
+  --theme-border: #e5e5e5;
+  --theme-line-color: #e5e5e5;
+  --theme-dot-bg: #000000;
+  --theme-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.12);
+  --theme-shadow-sm: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
 
-  /* Spring Theme */
-  --standard-spring-bg: #fdf2f8;
-  --standard-spring-primary: #d946a6;
-  --standard-spring-primary-light: #ec4899;
-  --standard-spring-secondary: #ec4899;
-  --standard-spring-accent: #f472b6;
-  --standard-spring-text: #831843;
-  --standard-spring-text-light: #be185d;
-  --standard-spring-card-bg: #ffffff;
-  --standard-spring-header-bg: transparent;
-  --standard-spring-border: #f2d4e6;
-  --standard-spring-line-color: #fbcfe8;
-  --standard-spring-dot-bg: #d946a6;
-  --standard-spring-shadow: 0 12px 36px -8px rgba(131, 24, 67, 0.12);
-  --standard-spring-shadow-sm: 0 4px 12px -2px rgba(131, 24, 67, 0.08);
+  --theme-decoration-primary: #000000;
+  --theme-decoration-secondary: #666666;
+  --theme-decoration-accent: #999999;
+  --theme-decoration-opacity: 0.08;
 
-  /* Summer Theme */
-  --standard-summer-bg: #f0f9ff;
-  --standard-summer-primary: #0369a1;
-  --standard-summer-primary-light: #0284c7;
-  --standard-summer-secondary: #0284c7;
-  --standard-summer-accent: #0ea5e9;
-  --standard-summer-text: #082f49;
-  --standard-summer-text-light: #0c4a6e;
-  --standard-summer-card-bg: #ffffff;
-  --standard-summer-header-bg: transparent;
-  --standard-summer-border: #bae6fd;
-  --standard-summer-line-color: #e0f2fe;
-  --standard-summer-dot-bg: #0369a1;
-  --standard-summer-shadow: 0 12px 36px -8px rgba(8, 47, 73, 0.12);
-  --standard-summer-shadow-sm: 0 4px 12px -2px rgba(8, 47, 73, 0.08);
-
-  /* Winter Theme */
-  --standard-winter-bg: #f0f8ff;
-  --standard-winter-primary: #2563eb;
-  --standard-winter-primary-light: #3b82f6;
-  --standard-winter-secondary: #06b6d4;
-  --standard-winter-accent: #0ea5e9;
-  --standard-winter-text: #1e3a8a;
-  --standard-winter-text-light: #475569;
-  --standard-winter-card-bg: #ffffff;
-  --standard-winter-header-bg: transparent;
-  --standard-winter-border: #dbeafe;
-  --standard-winter-line-color: #e0f2fe;
-  --standard-winter-dot-bg: #2563eb;
-  --standard-winter-shadow: 0 12px 36px -8px rgba(30, 58, 138, 0.15);
-  --standard-winter-shadow-sm: 0 4px 12px -2px rgba(30, 58, 138, 0.1);
-}
-
-/* Semantic aliases for the active theme (default: autumn).
-   These provide a stable set of variables to use when implementing
-   theme-agnostic components or future refactors. */
-:root {
-  --theme-bg: var(--standard-autumn-bg);
-  --theme-primary: var(--standard-autumn-primary);
-  --theme-primary-light: var(--standard-autumn-primary-light);
-  --theme-secondary: var(--standard-autumn-secondary);
-  --theme-accent: var(--standard-autumn-accent);
-  --theme-text: var(--standard-autumn-text);
-  --theme-text-light: var(--standard-autumn-text-light);
-  --theme-card-bg: var(--standard-autumn-card-bg);
-  --theme-header-bg: var(--standard-autumn-header-bg);
-  --theme-border: var(--standard-autumn-border);
-  --theme-line-color: var(--standard-autumn-line-color);
-  --theme-dot-bg: var(--standard-autumn-dot-bg);
-  --theme-shadow: var(--standard-autumn-shadow);
-  --theme-shadow-sm: var(--standard-autumn-shadow-sm);
+  --theme-font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Times New Roman", serif;
 }

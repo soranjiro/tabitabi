@@ -28,8 +28,27 @@
     onDeleteStep,
   }: Props = $props();
 
-  let currentDate = $state(new Date());
+  function getInitialMonth(stepsArr: Step[]): Date {
+    if (stepsArr.length === 0) return new Date();
+    const sorted = [...stepsArr].sort((a, b) => a.start_at - b.start_at);
+    const firstDate = new Date(sorted[0].start_at);
+    return new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
+  }
+
+  let currentDate = $state(getInitialMonth(steps));
   let selectedStep = $state<Step | null>(null);
+  let compactMonthEvents = $state(false);
+
+  $effect(() => {
+    if (
+      steps.length > 0 &&
+      currentDate.getTime() === new Date().setHours(0, 0, 0, 0)
+    ) {
+      currentDate = getInitialMonth(steps);
+    }
+  });
+
+  const MONTH_EVENT_ROW_HEIGHT = 24;
 
   function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
@@ -160,6 +179,16 @@
     return weeksSegments;
   });
 
+  const weekRowHeights = $derived(() => {
+    return monthEventSegments().map((week) => {
+      const rowCount = week.reduce(
+        (max, segment) => Math.max(max, segment.rowIndex + 1),
+        0,
+      );
+      return Math.max(100, 30 + rowCount * MONTH_EVENT_ROW_HEIGHT);
+    });
+  });
+
   function formatMonthTitle(date: Date): string {
     return `${date.getFullYear()}年${date.getMonth() + 1}月`;
   }
@@ -199,87 +228,99 @@
   }
 </script>
 
-<div class="standard-autumn-month-view">
-  <div class="standard-autumn-month-header">
-    <h2 class="standard-autumn-month-title">{formatMonthTitle(currentDate)}</h2>
-    <div class="standard-autumn-month-nav">
-      <button
-        type="button"
-        class="standard-autumn-month-nav-btn"
-        onclick={prevMonth}
-        aria-label="前の月"
-      >
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        class="standard-autumn-month-nav-btn"
-        onclick={nextMonth}
-        aria-label="次の月"
-      >
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-        </svg>
-      </button>
+<div class="standard-month-view">
+  <div class="standard-month-header">
+    <h2 class="standard-month-title">{formatMonthTitle(currentDate)}</h2>
+    <div class="standard-month-header-actions">
+      <label class="standard-month-toggle standard-settings-toggle">
+        <span class="standard-settings-label-text">省略表示</span>
+        <input
+          type="checkbox"
+          bind:checked={compactMonthEvents}
+          class="standard-toggle-input"
+        />
+        <span class="standard-toggle-slider"></span>
+      </label>
+      <div class="standard-month-nav">
+        <button
+          type="button"
+          class="standard-month-nav-btn"
+          onclick={prevMonth}
+          aria-label="前の月"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="standard-month-nav-btn"
+          onclick={nextMonth}
+          aria-label="次の月"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 
-  <div class="standard-autumn-month-container">
-    <div class="standard-autumn-month-weekdays">
-      <div class="standard-autumn-month-weekday">日</div>
-      <div class="standard-autumn-month-weekday">月</div>
-      <div class="standard-autumn-month-weekday">火</div>
-      <div class="standard-autumn-month-weekday">水</div>
-      <div class="standard-autumn-month-weekday">木</div>
-      <div class="standard-autumn-month-weekday">金</div>
-      <div class="standard-autumn-month-weekday">土</div>
+  <div class="standard-month-container">
+    <div class="standard-month-weekdays">
+      <div class="standard-month-weekday">日</div>
+      <div class="standard-month-weekday">月</div>
+      <div class="standard-month-weekday">火</div>
+      <div class="standard-month-weekday">水</div>
+      <div class="standard-month-weekday">木</div>
+      <div class="standard-month-weekday">金</div>
+      <div class="standard-month-weekday">土</div>
     </div>
 
-    <div class="standard-autumn-month-grid">
+    <div class="standard-month-grid">
       {#each weeks() as weekDays, wIdx}
         <div
-          class="standard-autumn-month-week"
-          style="position: relative; display: grid; grid-template-columns: repeat(7, 1fr);"
+          class="standard-month-week"
+          style="position: relative; display: grid; grid-template-columns: repeat(7, 1fr); min-height: {compactMonthEvents
+            ? 120
+            : (weekRowHeights()[wIdx] ?? 120)}px;"
         >
           {#each weekDays as dateStr}
             {@const dayInfo = monthDays.find((d) => d.date === dateStr)}
             <div
-              class="standard-autumn-month-day"
+              class="standard-month-day"
               class:other-month={!dayInfo?.isCurrentMonth}
               class:today={isToday(dateStr)}
             >
-              <div class="standard-autumn-month-day-header">
-                <span class="standard-autumn-month-day-number"
-                  >{dayInfo?.day}</span
-                >
+              <div class="standard-month-day-header">
+                <span class="standard-month-day-number">{dayInfo?.day}</span>
               </div>
             </div>
           {/each}
 
           <div
-            class="standard-autumn-month-week-events"
-            style="position:absolute; left:0; right:0; top:36px;"
+            class="standard-month-week-events"
+            style="position:absolute; left:0; right:0; top:28px;"
           >
             {#each monthEventSegments()[wIdx] || [] as seg}
               <button
                 type="button"
-                class="standard-autumn-month-event"
-                class:standard-autumn-month-event-transport={isTransportType(
+                class="standard-month-event"
+                class:standard-month-event-transport={isTransportType(
                   seg.step.type,
                 )}
-                style={`position:absolute; left:${seg.leftPercent}%; width:${seg.widthPercent}%; top:${seg.rowIndex * 24}px; margin-bottom: 3px;`}
+                class:standard-month-event-allday={seg.step.is_all_day}
+                style={`position:absolute; left:calc(${seg.leftPercent}% + 2px); width:calc(${seg.widthPercent}% - 4px); top:${seg.rowIndex * MONTH_EVENT_ROW_HEIGHT + 1}px; min-height: 16px; height: auto;`}
                 onclick={() => handleEventClick(seg.step)}
                 title={seg.step.title}
               >
                 {#if isSecretStep(seg.step) && !hasEditPermission}
-                  <span class="standard-autumn-month-event-time">🔒</span>
+                  <span class="standard-month-event-time">🔒</span>
                 {:else}
-                  <span class="standard-autumn-month-event-icon">
+                  <span class="standard-month-event-icon">
                     <IconRenderer type={seg.step.type} size="sm" />
                   </span>
-                  <span class="standard-autumn-month-event-title"
+                  <span class="standard-month-event-title"
                     >{seg.step.title}</span
                   >
                 {/if}

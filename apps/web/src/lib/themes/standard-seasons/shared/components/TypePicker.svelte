@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { StepType } from "@tabitabi/types";
+  import { STEP_TYPE } from "@tabitabi/types";
   import {
     STEP_TYPES_BY_CATEGORY,
     STEP_TYPE_CONFIGS,
@@ -11,32 +12,32 @@
     onSelect?: (type: StepType) => void;
   }
 
-  const { value = "normal:general", onSelect } = $props();
+  const { value = STEP_TYPE.NORMAL_GENERAL, onSelect } = $props();
 
   function handleSelect(type: StepType) {
     onSelect?.(type);
   }
 </script>
 
-<div class="standard-autumn-type-picker">
-  <div class="standard-autumn-type-picker-section">
-    <h4 class="standard-autumn-type-picker-title">通常の予定</h4>
-    <div class="standard-autumn-type-picker-grid">
+<div class="standard-type-picker">
+  <div class="standard-type-picker-section">
+    <h4 class="standard-type-picker-title">通常の予定</h4>
+    <div class="standard-type-picker-grid">
       {#each STEP_TYPES_BY_CATEGORY.normal as type}
-        {console.log({value}, {type})}
+        {console.log({ value }, { type })}
         <button
           type="button"
-          class="standard-autumn-type-picker-item"
-          class:standard-autumn-type-picker-item-active={value === type}
+          class="standard-type-picker-item"
+          class:standard-type-picker-item-active={value === type}
           onclick={() => handleSelect(type)}
         >
-          <div class="standard-autumn-type-picker-icon">
+          <div class="standard-type-picker-icon">
             <IconRenderer {type} size="lg" />
           </div>
-          <div class="standard-autumn-type-picker-label">
+          <div class="standard-type-picker-label">
             {STEP_TYPE_CONFIGS[type as StepType].label}
           </div>
-          <!-- <div class="standard-autumn-type-picker-description">
+          <!-- <div class="standard-type-picker-description">
             {STEP_TYPE_CONFIGS[type as StepType].description}
           </div> -->
         </button>
@@ -44,23 +45,23 @@
     </div>
   </div>
 
-  <div class="standard-autumn-type-picker-section">
-    <h4 class="standard-autumn-type-picker-title">移動</h4>
-    <div class="standard-autumn-type-picker-grid">
+  <div class="standard-type-picker-section">
+    <h4 class="standard-type-picker-title">移動</h4>
+    <div class="standard-type-picker-grid">
       {#each STEP_TYPES_BY_CATEGORY.transport as type}
         <button
           type="button"
-          class="standard-autumn-type-picker-item"
-          class:standard-autumn-type-picker-item-active={value === type}
+          class="standard-type-picker-item"
+          class:standard-type-picker-item-active={value === type}
           onclick={() => handleSelect(type)}
         >
-          <div class="standard-autumn-type-picker-icon">
+          <div class="standard-type-picker-icon">
             <IconRenderer {type} size="lg" />
           </div>
-          <div class="standard-autumn-type-picker-label">
+          <div class="standard-type-picker-label">
             {STEP_TYPE_CONFIGS[type as StepType].label}
           </div>
-          <!-- <div class="standard-autumn-type-picker-description">
+          <!-- <div class="standard-type-picker-description">
             {STEP_TYPE_CONFIGS[type as StepType].description}
           </div> -->
         </button>
@@ -70,19 +71,19 @@
 </div>
 
 <style>
-  .standard-autumn-type-picker {
+  .standard-type-picker {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
   }
 
-  .standard-autumn-type-picker-section {
+  .standard-type-picker-section {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
   }
 
-  .standard-autumn-type-picker-title {
+  .standard-type-picker-title {
     font-size: 0.875rem;
     font-weight: 600;
     margin: 0;
@@ -91,13 +92,13 @@
     letter-spacing: 0.05em;
   }
 
-  .standard-autumn-type-picker-grid {
+  .standard-type-picker-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 1rem;
   }
 
-  .standard-autumn-type-picker-item {
+  .standard-type-picker-item {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -110,27 +111,27 @@
     transition: all 0.2s ease;
   }
 
-  .standard-autumn-type-picker-item:hover {
-    border-color: var(--standard-autumn-secondary);
+  .standard-type-picker-item:hover {
+    border-color: var(--standard-secondary);
   }
 
-  .standard-autumn-type-picker-item-active {
-    border: 2px solid var(--standard-autumn-primary);
+  .standard-type-picker-item-active {
+    border: 2px solid var(--standard-primary);
   }
 
-  .standard-autumn-type-picker-icon {
+  .standard-type-picker-icon {
     width: 2rem;
     height: 2rem;
     color: var(--primary-color);
   }
 
-  .standard-autumn-type-picker-label {
+  .standard-type-picker-label {
     font-size: 0.75rem;
     font-weight: 600;
     text-align: center;
   }
 
-  .standard-autumn-type-picker-description {
+  .standard-type-picker-description {
     font-size: 0.75rem;
     color: var(--text-secondary);
     text-align: center;

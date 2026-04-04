@@ -17,26 +17,26 @@
 </script>
 
 {#if show && walicaId}
-  <div class="standard-autumn-walica-overlay">
-    <div class="standard-autumn-walica-header">
-      <button onclick={onClose} class="standard-autumn-walica-close-btn">
+  <div class="standard-walica-overlay">
+    <div class="standard-walica-header">
+      <button onclick={onClose} class="standard-walica-close-btn">
         {@html CloseIcon}
         閉じる
       </button>
 
-      <span class="standard-autumn-walica-title">
+      <span class="standard-walica-title">
         外部サイト:
         <a
           href="https://walica.jp"
           target="_blank"
           rel="noopener noreferrer"
-          class="standard-autumn-walica-link"
+          class="standard-walica-link"
         >
           walica.jp
         </a>
       </span>
     </div>
-    <iframe src={walicaUrl} title="Walica" class="standard-autumn-walica-frame"
+    <iframe src={walicaUrl} title="Walica" class="standard-walica-frame"
     ></iframe>
   </div>
 {/if}

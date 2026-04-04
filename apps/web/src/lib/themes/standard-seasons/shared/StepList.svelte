@@ -60,6 +60,16 @@
     return now < revealTime;
   }
 
+  function getEventBackgroundStyle(step: Step): string {
+    if (step.is_all_day) {
+      return `--step-bg: #fff !important; --step-border: var(--theme-primary) !important; background: #fff !important; color: var(--theme-text) !important; border-left-color: var(--theme-primary) !important;`;
+    }
+    if (isTransportType(step.type)) {
+      return `--step-bg: var(--theme-accent) !important; --step-border: rgba(255, 255, 255, 0.6) !important; background: var(--theme-accent) !important; color: #fff !important; border-left: 4px dashed rgba(255, 255, 255, 0.6) !important;`;
+    }
+    return `--step-bg: #fffcf9 !important; --step-border: var(--theme-primary) !important; background: #fffcf9 !important; border-left-color: var(--theme-primary) !important;`;
+  }
+
   let editingStepId = $state<string | null>(null);
   let selectedStepForDialog = $state<Step | null>(null);
 
@@ -268,7 +278,7 @@
 
     // Find the element being dragged
     const target = e.target as HTMLElement;
-    const timelineItem = target.closest(".standard-autumn-timeline-item");
+    const timelineItem = target.closest(".standard-timeline-item");
     if (timelineItem && Math.abs(deltaY) > 5) {
       e.preventDefault(); // Prevent scrolling when dragging
     }
@@ -412,13 +422,13 @@
     onStepClick={handleStepClick}
   />
 {:else if steps.length === 0}
-  <div class="standard-autumn-empty">予定がまだ登録されていません</div>
+  <div class="standard-empty">予定がまだ登録されていません</div>
 {:else}
-  <div class="standard-autumn-carousel-wrapper">
+  <div class="standard-carousel-wrapper">
     <!-- Top Carousel Controls -->
     {#if groupedSteps().length > 1}
       <div
-        class="standard-autumn-carousel-controls standard-autumn-carousel-controls-top"
+        class="standard-carousel-controls standard-carousel-controls-top"
         tabindex="0"
         onkeydown={handleKey}
         role="toolbar"
@@ -426,7 +436,7 @@
       >
         <button
           type="button"
-          class="standard-autumn-carousel-btn"
+          class="standard-carousel-btn"
           onclick={prev}
           disabled={activeIndex === 0}
           aria-label="前の日"
@@ -439,11 +449,7 @@
             <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
           </svg>
         </button>
-        <div
-          class="standard-autumn-page-dots"
-          role="tablist"
-          aria-label="日選択"
-        >
+        <div class="standard-page-dots" role="tablist" aria-label="日選択">
           {#each Array.from({ length: groupedSteps().length }) as _, i}
             <button
               type="button"
@@ -458,7 +464,7 @@
         </div>
         <button
           type="button"
-          class="standard-autumn-carousel-btn"
+          class="standard-carousel-btn"
           onclick={next}
           disabled={activeIndex === groupedSteps().length - 1}
           aria-label="次の日"
@@ -475,7 +481,7 @@
     {/if}
 
     <div
-      class="standard-autumn-carousel"
+      class="standard-carousel"
       role="region"
       aria-label="日カルーセル"
       ontouchstart={onTouchStart}
@@ -483,28 +489,28 @@
       ontouchend={onTouchEnd}
     >
       <div
-        class="standard-autumn-carousel-track"
+        class="standard-carousel-track"
         bind:this={trackEl}
         style={`--active:${activeIndex};`}
       >
         {#each groupedSteps() as [date, dateSteps], idx}
           <div
-            class="standard-autumn-carousel-card"
+            class="standard-carousel-card"
             inert={idx !== activeIndex ? true : undefined}
           >
-            <div class="standard-autumn-card">
+            <div class="standard-card">
               <button
                 type="button"
-                class="standard-autumn-card-header"
+                class="standard-card-header"
                 onclick={() => handleCardClick(idx)}
                 tabindex={idx === activeIndex ? 0 : -1}
               >
                 {formatDate(date)}
               </button>
-              <div class="standard-autumn-card-body">
+              <div class="standard-card-body">
                 {#each dateSteps as step}
                   <div
-                    class="standard-autumn-timeline-item"
+                    class="standard-timeline-item"
                     class:dragging={draggedStepId === step.id}
                     class:drag-over={dragOverStepId === step.id}
                     class:touch-dragging={touchDragStepId === step.id}
@@ -517,16 +523,20 @@
                     ondrop={(e) => handleDrop(e, step.id, dateSteps)}
                     use:setupTouchDrag={step.id}
                   >
-                    <div class="standard-autumn-step-time">
-                      {getStepTime(step)}
+                    <div class="standard-step-time">
+                      {#if step.is_all_day}
+                        <span class="all-day-badge">終日</span>
+                      {:else}
+                        {getStepTime(step)}
+                      {/if}
                     </div>
-                    <div class="standard-autumn-timeline-line"></div>
-                    <div class="standard-autumn-step-dot"></div>
+                    <div class="standard-timeline-line"></div>
+                    <div class="standard-step-dot"></div>
 
                     {#if isSecretStep(step) && !hasEditPermission}
                       <div
-                        class="standard-autumn-step-content standard-autumn-step-hidden"
-                        class:standard-autumn-step-transport={isTransportType(
+                        class="standard-step-content standard-step-hidden"
+                        class:standard-step-transport={isTransportType(
                           step.type,
                         )}
                         onclick={() => handleStepClick(step.id)}
@@ -537,34 +547,33 @@
                           handleStepClick(step.id)}
                         title="詳細を表示"
                       >
-                        <div class="standard-autumn-step-title">
-                          <span class="standard-autumn-secret-text"
-                            >Secret Event</span
-                          >
+                        <div class="standard-step-title">
+                          <span class="standard-secret-text">Secret Event</span>
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
                             fill="currentColor"
                             width="18"
                             height="18"
-                            class="standard-autumn-lock-icon"
+                            class="standard-lock-icon"
                           >
                             <path
                               d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"
                             />
                           </svg>
                         </div>
-                        <div class="standard-autumn-secret-blur">
-                          <div class="standard-autumn-secret-line"></div>
-                          <div class="standard-autumn-secret-line short"></div>
+                        <div class="standard-secret-blur">
+                          <div class="standard-secret-line"></div>
+                          <div class="standard-secret-line short"></div>
                         </div>
                       </div>
                     {:else}
                       <div
-                        class="standard-autumn-step-content"
-                        class:standard-autumn-step-transport={isTransportType(
+                        class="standard-step-content"
+                        class:standard-step-transport={isTransportType(
                           step.type,
                         )}
+                        style={getEventBackgroundStyle(step)}
                         onclick={() => handleStepClick(step.id)}
                         role="button"
                         tabindex="0"
@@ -573,17 +582,17 @@
                           handleStepClick(step.id)}
                         title="詳細を表示"
                       >
-                        <div class="standard-autumn-step-header">
-                          <div class="standard-autumn-step-title">
+                        <div class="standard-step-header">
+                          <div class="standard-step-title">
                             {step.title}
                           </div>
-                          <div class="standard-autumn-step-type-icon">
+                          <div class="standard-step-type-icon">
                             <IconRenderer type={step.type} size="sm" />
                           </div>
                         </div>
                         {#if isTransportType(step.type)}
                           <div
-                            class="standard-autumn-transport-overlay"
+                            class="standard-transport-overlay"
                             aria-hidden="true"
                           >
                             <div class="moving-vehicle">
@@ -599,12 +608,12 @@
                           </div>
                         {/if}
                         {#if step.location}
-                          <div class="standard-autumn-step-location">
+                          <div class="standard-step-location">
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
                               viewBox="0 0 24 24"
                               fill="currentColor"
-                              class="standard-autumn-icon-location"
+                              class="standard-icon-location"
                             >
                               <path
                                 d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
@@ -614,7 +623,7 @@
                           </div>
                         {/if}
                         {#if step.notes}
-                          <div class="standard-autumn-step-notes">
+                          <div class="standard-step-notes">
                             {@html renderMarkdown(step.notes)}
                           </div>
                         {/if}
@@ -632,7 +641,7 @@
     <!-- Bottom Carousel Controls -->
     {#if groupedSteps().length > 1}
       <div
-        class="standard-autumn-carousel-controls standard-autumn-carousel-controls-bottom"
+        class="standard-carousel-controls standard-carousel-controls-bottom"
         tabindex="0"
         onkeydown={handleKey}
         role="toolbar"
@@ -640,7 +649,7 @@
       >
         <button
           type="button"
-          class="standard-autumn-carousel-btn"
+          class="standard-carousel-btn"
           onclick={prev}
           disabled={activeIndex === 0}
           aria-label="前の日"
@@ -653,11 +662,7 @@
             <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
           </svg>
         </button>
-        <div
-          class="standard-autumn-page-dots"
-          role="tablist"
-          aria-label="日選択"
-        >
+        <div class="standard-page-dots" role="tablist" aria-label="日選択">
           {#each Array.from({ length: groupedSteps().length }) as _, i}
             <button
               type="button"
@@ -672,7 +677,7 @@
         </div>
         <button
           type="button"
-          class="standard-autumn-carousel-btn"
+          class="standard-carousel-btn"
           onclick={next}
           disabled={activeIndex === groupedSteps().length - 1}
           aria-label="次の日"

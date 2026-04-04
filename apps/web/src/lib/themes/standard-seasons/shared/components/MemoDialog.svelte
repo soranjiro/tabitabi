@@ -30,7 +30,7 @@
     <textarea
       bind:value={editedMemoText}
       placeholder="メモを入力..."
-      class="standard-autumn-textarea"
+      class="standard-textarea"
       rows="6"
       disabled={!hasEditPermission}
     ></textarea>
@@ -40,14 +40,14 @@
     {#if hasEditPermission}
       <button
         onclick={handleSave}
-        class="standard-autumn-btn standard-autumn-btn-primary"
+        class="standard-btn standard-btn-primary"
       >
         保存
       </button>
     {/if}
     <button
       onclick={onClose}
-      class="standard-autumn-btn standard-autumn-btn-secondary"
+      class="standard-btn standard-btn-secondary"
     >
       閉じる
     </button>

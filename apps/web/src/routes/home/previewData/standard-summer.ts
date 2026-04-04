@@ -20,5 +20,5 @@ export const standardSummerPreview: PreviewItinerary = {
     { time: "19:00", label: "屋台グルメ", icon: "🍡" },
     { time: "21:00", label: "花火見物", icon: "🎆" },
   ],
-  features: ["タイムライン", "地図表示", "イベント記録"],
+  features: ["タイムライン", "secret", "複数ビュー"],
 };

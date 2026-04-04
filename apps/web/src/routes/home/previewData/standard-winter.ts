@@ -20,5 +20,5 @@ export const standardWinterPreview: PreviewItinerary = {
     { time: "12:00", label: "支笏湖展望", icon: "❄️" },
     { time: "17:00", label: "温泉でリラックス", icon: "♨️" },
   ],
-  features: ["タイムライン", "温泉ガイド", "撮影スポット"],
+  features: ["タイムライン", "secret", "複数ビュー"],
 };

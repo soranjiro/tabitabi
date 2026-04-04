@@ -1,6 +1,6 @@
 import type { Theme } from "@tabitabi/types";
 import { seasonSpringTheme } from "./config";
-import ItineraryView from "../shared/ItineraryView.svelte";
+import ItineraryView from "./ItineraryView.svelte";
 import StepList from "../shared/StepList.svelte";
 
 const springTheme: Theme = {

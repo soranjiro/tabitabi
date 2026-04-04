@@ -20,5 +20,5 @@ export const standardAutumnPreview: PreviewItinerary = {
     { time: "12:00", label: "祇園ランチ", icon: "🍱" },
     { time: "15:00", label: "★★ Secret ★★", icon: "🔒" },
   ],
-  features: ["日カード", "secret機能", "walica連携"],
+  features: ["タイムライン", "secret", "複数ビュー"],
 };

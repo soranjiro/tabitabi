@@ -64,85 +64,85 @@
 </script>
 
 <Dialog {show} title="設定" onClose={handleCancel}>
-  <div class="standard-autumn-settings-page">
-    <div class="standard-autumn-settings-page-section">
+  <div class="standard-settings-page">
+    <div class="standard-settings-page-section">
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
-        class="standard-autumn-settings-page-section-header standard-autumn-settings-page-section-header-clickable"
+        class="standard-settings-page-section-header standard-settings-page-section-header-clickable"
         onclick={() => (showThemeList = !showThemeList)}
       >
         {@html PaletteIcon}
         <h3>テーマ</h3>
         <span
-          class="standard-autumn-collapse-icon"
+          class="standard-collapse-icon"
           class:expanded={showThemeList}>▼</span
         >
       </div>
-      <p class="standard-autumn-settings-page-description">
+      <p class="standard-settings-page-description">
         しおりの見た目とスタイルを選択できます
       </p>
       {#if showThemeList}
-        <div class="standard-autumn-settings-page-field">
+        <div class="standard-settings-page-field">
           {#each themes as theme}
-            <label class="standard-autumn-settings-page-radio">
+            <label class="standard-settings-page-radio">
               <input
                 type="radio"
                 name="theme"
                 value={theme.id}
                 bind:group={localThemeId}
               />
-              <div class="standard-autumn-settings-page-radio-content">
-                <span class="standard-autumn-settings-page-radio-title"
+              <div class="standard-settings-page-radio-content">
+                <span class="standard-settings-page-radio-title"
                   >{theme.name}</span
                 >
                 {#if theme.description}
-                  <span class="standard-autumn-settings-page-radio-desc"
+                  <span class="standard-settings-page-radio-desc"
                     >{theme.description}</span
                   >
                 {/if}
               </div>
-              <div class="standard-autumn-settings-page-radio-check"></div>
+              <div class="standard-settings-page-radio-check"></div>
             </label>
           {/each}
         </div>
       {/if}
     </div>
 
-    <div class="standard-autumn-settings-page-divider"></div>
+    <div class="standard-settings-page-divider"></div>
 
-    <div class="standard-autumn-settings-page-section">
-      <div class="standard-autumn-settings-page-section-header">
+    <div class="standard-settings-page-section">
+      <div class="standard-settings-page-section-header">
         {@html SecretIcon}
         <h3>シークレットモード</h3>
       </div>
-      <p class="standard-autumn-settings-page-description">
+      <p class="standard-settings-page-description">
         サプライズのために予定を一時的に隠すことができます
       </p>
-      <label class="standard-autumn-settings-page-toggle">
-        <span class="standard-autumn-settings-page-toggle-label">
+      <label class="standard-settings-page-toggle">
+        <span class="standard-settings-page-toggle-label">
           シークレットモードを有効にする
         </span>
         <input
           type="checkbox"
           bind:checked={localSecretEnabled}
-          class="standard-autumn-toggle-input"
+          class="standard-toggle-input"
         />
-        <span class="standard-autumn-toggle-slider"></span>
+        <span class="standard-toggle-slider"></span>
       </label>
 
       {#if localSecretEnabled}
-        <div class="standard-autumn-settings-page-field">
+        <div class="standard-settings-page-field">
           <label
             for="secret-offset-select"
-            class="standard-autumn-settings-page-label"
+            class="standard-settings-page-label"
           >
             予定の表示開始時刻
           </label>
           <select
             id="secret-offset-select"
             bind:value={localSecretOffset}
-            class="standard-autumn-settings-page-select"
+            class="standard-settings-page-select"
           >
             <option value={0}>予定時刻</option>
             <option value={15}>15分前</option>
@@ -158,10 +158,10 @@
       {/if}
     </div>
 
-    <div class="standard-autumn-settings-page-divider"></div>
+    <div class="standard-settings-page-divider"></div>
 
-    <div class="standard-autumn-settings-page-section">
-      <div class="standard-autumn-settings-page-section-header">
+    <div class="standard-settings-page-section">
+      <div class="standard-settings-page-section-header">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
@@ -175,13 +175,13 @@
         </svg>
         <h3>Walica連携</h3>
       </div>
-      <p class="standard-autumn-settings-page-description">
+      <p class="standard-settings-page-description">
         Walicaの割り勘グループと連携できます
       </p>
-      <div class="standard-autumn-settings-page-field">
+      <div class="standard-settings-page-field">
         <label
           for="walica-url-input"
-          class="standard-autumn-settings-page-label"
+          class="standard-settings-page-label"
         >
           Walica グループURL
         </label>
@@ -190,24 +190,24 @@
           type="text"
           bind:value={localWalicaUrl}
           placeholder="https://walica.jp/group/..."
-          class="standard-autumn-settings-page-input"
+          class="standard-settings-page-input"
         />
-        <p class="standard-autumn-settings-page-hint">
+        <p class="standard-settings-page-hint">
           WalicaグループのURLを入力すると、しおりからWalicaにアクセスできます
         </p>
       </div>
     </div>
 
-    <div class="standard-autumn-settings-page-actions">
+    <div class="standard-settings-page-actions">
       <button
         onclick={handleCancel}
-        class="standard-autumn-btn standard-autumn-btn-secondary"
+        class="standard-btn standard-btn-secondary"
       >
         キャンセル
       </button>
       <button
         onclick={handleSave}
-        class="standard-autumn-btn standard-autumn-btn-primary"
+        class="standard-btn standard-btn-primary"
       >
         保存
       </button>

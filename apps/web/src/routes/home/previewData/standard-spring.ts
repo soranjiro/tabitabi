@@ -20,5 +20,5 @@ export const standardSpringPreview: PreviewItinerary = {
     { time: "11:00", label: "淀城址の桜", icon: "🌸" },
     { time: "15:00", label: "伏見稲荷参拝", icon: "⛩️" },
   ],
-  features: ["タイムライン", "秘密スポット", "テーマ自動変更"],
+  features: ["タイムライン", "secret", "複数ビュー"],
 };

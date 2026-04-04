@@ -1,10 +1,10 @@
-.standard-autumn-header {
+.standard-header {
   text-align: center;
   padding: 3.5rem 1.5rem 1.5rem;
   position: relative;
 }
 
-.standard-autumn-header::before {
+.standard-header::before {
   content: "";
   position: absolute;
   top: 20px;
@@ -19,7 +19,7 @@
   z-index: 0;
 }
 
-.standard-autumn-header::after {
+.standard-header::after {
   content: "";
   position: absolute;
   top: 15px;
@@ -35,11 +35,11 @@
   z-index: 0;
 }
 
-.standard-autumn-title-button {
-  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+.standard-title-button {
+  font-family: var(--theme-font-family);
   font-size: 2.2rem;
   font-weight: 600;
-  color: var(--standard-autumn-text);
+  color: var(--theme-text);
   background: none;
   border: none;
   padding: 0.5rem 1rem;
@@ -52,36 +52,36 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.standard-autumn-title-button:hover {
+.standard-title-button:hover {
   opacity: 0.7;
 }
 
-.standard-autumn-title-input {
-  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+.standard-title-input {
+  font-family: var(--theme-font-family);
   font-size: 2.2rem;
   font-weight: 600;
   text-align: center;
   width: 100%;
   border: none;
-  border-bottom: 2px solid var(--standard-autumn-primary);
+  border-bottom: 2px solid var(--theme-primary);
   background: transparent;
-  color: var(--standard-autumn-text);
+  color: var(--theme-text);
   padding: 0.25rem;
   outline: none;
 }
 
-.standard-autumn-controls {
+.standard-controls {
   margin-top: 1.5rem;
   display: flex;
   justify-content: center;
 }
 
-.standard-autumn-memo-display {
+.standard-memo-display {
   font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
   font-size: 0.95rem;
-  color: var(--standard-autumn-text-light);
+  color: var(--theme-text-light);
   background: rgba(255, 255, 255, 0.7);
-  border: 1px solid var(--standard-autumn-border);
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
   padding: 1.2rem 1.5rem;
   line-height: 1.8;
@@ -97,16 +97,16 @@
   text-align: left;
 }
 
-.standard-autumn-memo-display p {
+.standard-memo-display p {
   margin: 0 0 0.5em 0;
 }
 
-.standard-autumn-memo-display p:last-child {
+.standard-memo-display p:last-child {
   margin-bottom: 0;
 }
 
-.standard-autumn-memo-display a {
-  color: var(--standard-autumn-primary);
+.standard-memo-display a {
+  color: var(--theme-primary);
   text-decoration: underline;
   font-weight: 600;
   position: relative;
@@ -114,80 +114,80 @@
   transition: color 0.2s;
 }
 
-.standard-autumn-memo-display a:hover {
-  color: var(--standard-autumn-accent);
+.standard-memo-display a:hover {
+  color: var(--theme-accent);
 }
 
-.standard-autumn-memo-display ul,
-.standard-autumn-memo-display ol {
+.standard-memo-display ul,
+.standard-memo-display ol {
   margin: 0.5em 0;
   padding-left: 1.5em;
 }
 
-.standard-autumn-memo-display ul {
+.standard-memo-display ul {
   list-style-type: disc;
 }
 
-.standard-autumn-memo-display ol {
+.standard-memo-display ol {
   list-style-type: decimal;
 }
 
-.standard-autumn-memo-display li {
+.standard-memo-display li {
   margin: 0.25em 0;
 }
 
-.standard-autumn-memo-display::before {
+.standard-memo-display::before {
   content: '"';
   position: absolute;
   top: -10px;
   left: 10px;
   font-size: 3rem;
-  color: var(--standard-autumn-secondary);
+  color: var(--theme-secondary);
   opacity: 0.3;
   font-family: serif;
 }
 
-.standard-autumn-memo-display:hover {
+.standard-memo-display:hover {
   background: rgba(255, 255, 255, 0.9);
   transform: translateY(-2px);
-  box-shadow: var(--standard-autumn-shadow-sm);
-  border-color: var(--standard-autumn-secondary);
+  box-shadow: var(--theme-shadow-sm);
+  border-color: var(--theme-secondary);
 }
 
-.standard-autumn-share-wrapper {
+.standard-share-wrapper {
   position: absolute;
   top: 1rem;
   right: 1rem;
   z-index: 10;
 }
 
-.standard-autumn-share-icon {
+.standard-share-icon {
   background: rgba(255, 255, 255, 0.6);
   border-radius: 50%;
   width: 44px;
   height: 44px;
   border: 1px solid transparent;
   cursor: pointer;
-  color: var(--standard-autumn-primary);
+  color: var(--theme-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s;
 }
 
-.standard-autumn-share-icon:hover {
+.standard-share-icon:hover {
   background: #fff;
-  border-color: var(--standard-autumn-primary-light);
+  border-color: var(--theme-primary-light);
   transform: rotate(15deg);
-  box-shadow: var(--standard-autumn-shadow-sm);
+  box-shadow: var(--theme-shadow-sm);
 }
 
-.standard-autumn-share-icon svg {
+.standard-share-icon svg {
   width: 24px;
   height: 24px;
 }
 
-.standard-autumn-share-menu {
+.standard-share-menu {
   position: absolute;
   top: 52px;
   right: 0;
@@ -196,7 +196,7 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   min-width: 180px;
-  border: 1px solid var(--standard-autumn-border);
+  border: 1px solid var(--theme-border);
   animation: slideDown 0.2s ease-out;
 }
 
@@ -205,13 +205,14 @@
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-.standard-autumn-share-menu-item {
+.standard-share-menu-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -222,40 +223,40 @@
   cursor: pointer;
   transition: background 0.2s;
   font-size: 0.95rem;
-  color: var(--standard-autumn-text);
+  color: var(--theme-text);
   font-family: inherit;
   text-align: left;
   font-weight: 500;
 }
 
-.standard-autumn-share-menu-item:hover {
+.standard-share-menu-item:hover {
   background: rgba(169, 53, 41, 0.05);
 }
 
-.standard-autumn-share-menu-item svg {
+.standard-share-menu-item svg {
   width: 20px;
   height: 20px;
-  color: var(--standard-autumn-primary);
+  color: var(--theme-primary);
   flex-shrink: 0;
 }
 
-.standard-autumn-share-menu-item + .standard-autumn-share-menu-item {
-  border-top: 1px solid var(--standard-autumn-line-color);
+.standard-share-menu-item+.standard-share-menu-item {
+  border-top: 1px solid var(--theme-line-color);
 }
 
 
-.standard-autumn-copy-msg {
+.standard-copy-msg {
   position: absolute;
   top: 1.5rem;
   right: 4rem;
   font-size: 0.8rem;
   color: #fff;
-  background: var(--standard-autumn-primary);
+  background: var(--theme-primary);
   padding: 6px 16px;
   border-radius: 20px;
   pointer-events: none;
   animation: fadeOut 2s forwards;
-  box-shadow: 0 4px 12px rgba(169, 53, 41, 0.2);
+  box-shadow: var(--theme-shadow-sm);
   font-weight: 600;
 }
 
@@ -280,12 +281,12 @@
 }
 
 @media (max-width: 480px) {
-  .standard-autumn-header {
+  .standard-header {
     padding: 2.5rem 1rem 1rem;
   }
 
-  .standard-autumn-title-button,
-  .standard-autumn-title-input {
+  .standard-title-button,
+  .standard-title-input {
     font-size: 1.8rem;
   }
 }

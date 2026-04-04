@@ -1,105 +1,105 @@
-.standard-autumn-input,
-.standard-autumn-textarea,
-.standard-autumn-select-time {
+.standard-input,
+.standard-textarea,
+.standard-select-time {
   width: 100%;
   padding: 0.8rem;
-  border: 1px solid var(--standard-autumn-border);
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
   margin-bottom: 0.8rem;
   font-family: inherit;
   background: #fff;
   font-size: 1rem;
   transition: all 0.2s;
-  color: var(--standard-autumn-text);
+  color: var(--theme-text);
 }
 
-.standard-autumn-input:focus,
-.standard-autumn-textarea:focus,
-.standard-autumn-select-time:focus {
+.standard-input:focus,
+.standard-textarea:focus,
+.standard-select-time:focus {
   outline: none;
-  border-color: var(--standard-autumn-primary);
+  border-color: var(--theme-primary);
   box-shadow: 0 0 0 3px rgba(169, 53, 41, 0.1);
   background: #fffcf9;
 }
 
-.standard-autumn-form {
+.standard-form {
   background-color: #fff;
   border-radius: 20px;
   padding: 1.5rem;
   margin: 1rem;
-  box-shadow: var(--standard-autumn-shadow);
-  border: 1px solid var(--standard-autumn-border);
+  box-shadow: var(--theme-shadow);
+  border: 1px solid var(--theme-border);
 }
 
-.standard-autumn-form-title {
+.standard-form-title {
   margin-top: 0;
   margin-bottom: 1.5rem;
   font-size: 1.2rem;
-  color: var(--standard-autumn-text);
+  color: var(--theme-text);
   text-align: center;
   font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
   font-weight: 600;
 }
 
-.standard-autumn-form-grid {
+.standard-form-grid {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.standard-autumn-datetime {
+.standard-datetime {
   display: flex;
   gap: 0.5rem;
   align-items: center;
   flex-wrap: wrap;
 }
 
-.standard-autumn-datetime .standard-autumn-input[type="date"] {
+.standard-datetime .standard-input[type="date"] {
   flex: 1 1 auto;
   min-width: 120px;
   max-width: 150px;
 }
 
-.standard-autumn-time-picker {
+.standard-time-picker {
   display: flex;
   align-items: center;
   gap: 0.25rem;
   flex-shrink: 0;
 }
 
-.standard-autumn-select-time {
+.standard-select-time {
   width: auto;
   min-width: 45px;
   padding: 0.8rem 0.4rem;
 }
 
 @media (max-width: 360px) {
-  .standard-autumn-datetime {
+  .standard-datetime {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .standard-autumn-datetime .standard-autumn-input[type="date"] {
+  .standard-datetime .standard-input[type="date"] {
     max-width: none;
   }
 
-  .standard-autumn-time-picker {
+  .standard-time-picker {
     justify-content: center;
   }
 }
 
-.standard-autumn-time-separator {
+.standard-time-separator {
   font-weight: 600;
-  color: var(--standard-autumn-text);
+  color: var(--theme-text);
 }
 
-.standard-autumn-form-actions {
+.standard-form-actions {
   display: flex;
   gap: 0.75rem;
   margin-top: 1rem;
 }
 
-.standard-autumn-btn {
+.standard-btn {
   padding: 0.8rem 1.5rem;
   border-radius: 50px;
   border: none;
@@ -110,72 +110,101 @@
   letter-spacing: 0.02em;
 }
 
-.standard-autumn-btn-primary {
-  background: linear-gradient(135deg, var(--standard-autumn-primary), var(--standard-autumn-accent));
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(169, 53, 41, 0.3);
+.standard-btn-primary {
+  background: var(--theme-primary) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 4px rgba(169, 53, 41, 0.2);
 }
 
-.standard-autumn-btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(169, 53, 41, 0.4);
+.standard-btn-primary:hover {
+  background: var(--theme-primary-light) !important;
+  box-shadow: 0 3px 6px rgba(169, 53, 41, 0.25);
 }
 
-.standard-autumn-btn-secondary {
+.standard-btn-secondary {
   background: #fff;
-  color: var(--standard-autumn-text);
-  border: 1px solid var(--standard-autumn-border);
+  color: var(--theme-text);
+  border: 1px solid var(--theme-border);
 }
 
-.standard-autumn-btn-secondary:hover {
-  background: var(--standard-autumn-bg);
-  border-color: var(--standard-autumn-primary);
-  color: var(--standard-autumn-primary);
+.standard-btn-secondary:hover {
+  background: var(--theme-bg);
+  border-color: var(--theme-primary);
+  color: var(--theme-primary);
 }
 
-.standard-autumn-btn-edit {
+.standard-btn-edit {
   background: rgba(255, 255, 255, 0.8);
-  color: var(--standard-autumn-text-light);
-  border: 1px dashed var(--standard-autumn-border);
+  color: var(--theme-text-light);
+  border: 1px dashed var(--theme-border);
   padding: 0.6rem 1.2rem;
   font-size: 0.9rem;
 }
 
-.standard-autumn-btn-edit:hover {
+.standard-btn-edit:hover {
   background: #fff;
-  border-color: var(--standard-autumn-primary);
-  color: var(--standard-autumn-primary);
+  border-color: var(--theme-primary);
+  color: var(--theme-primary);
 }
 
-.standard-autumn-btn-full {
+.standard-btn-full {
   width: 100%;
   margin-top: 0.5rem;
 }
 
-.standard-autumn-add-step {
+.standard-add-step {
   padding: 1rem;
   text-align: center;
 }
 
-.standard-autumn-btn-add {
+.standard-btn-add {
   background: #fff;
-  color: var(--standard-autumn-primary);
-  border: 2px solid var(--standard-autumn-primary);
+  color: var(--theme-primary);
+  border: 2px solid var(--theme-primary);
   padding: 0.8rem 2.5rem;
   border-radius: 50px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: var(--standard-autumn-shadow-sm);
+  box-shadow: var(--theme-shadow-sm);
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
-.standard-autumn-btn-add:hover {
-  background: var(--standard-autumn-primary);
+.standard-btn-add:hover {
+  background: var(--theme-primary);
   color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(169, 53, 41, 0.25);
+  box-shadow: 0 4px 10px rgba(169, 53, 41, 0.2);
+}
+
+.standard-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--theme-text);
+}
+
+.standard-checkbox-wrapper {
+  margin-bottom: 1rem;
+}
+
+.standard-checkbox-wrapper label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--theme-text);
+  font-weight: 500;
+}
+
+.standard-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--theme-primary);
+  cursor: pointer;
 }

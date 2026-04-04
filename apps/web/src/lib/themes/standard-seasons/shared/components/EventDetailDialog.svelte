@@ -105,7 +105,10 @@
     editEndMinute = endMinute;
     startUserChanged = false;
     endUserChanged = false;
-    originalDuration = Math.max(1, Math.round((step.end_at - step.start_at) / 60000));
+    originalDuration = Math.max(
+      1,
+      Math.round((step.end_at - step.start_at) / 60000),
+    );
   }
 
   function cancelEdit() {
@@ -173,8 +176,14 @@
 
     const noteText = (editedStep.notes ?? "").trim();
     const notes = updateMemoText(step.notes, noteText);
-    const startAt = createTimestamp(editedStep.startDate, `${editStartHour}:${editStartMinute}`);
-    const endAt = createTimestamp(editedStep.endDate, `${editEndHour}:${editEndMinute}`);
+    const startAt = createTimestamp(
+      editedStep.startDate,
+      `${editStartHour}:${editStartMinute}`,
+    );
+    const endAt = createTimestamp(
+      editedStep.endDate,
+      `${editEndHour}:${editEndMinute}`,
+    );
 
     if (endAt <= startAt) {
       alert("終了時刻は開始時刻より後にしてください");
@@ -283,7 +292,7 @@
                   id="start-date-input"
                   type="date"
                   bind:value={editedStep.startDate}
-                  on:change={() => (startUserChanged = true)}
+                  onchange={() => (startUserChanged = true)}
                   class="standard-autumn-input"
                 />
               </div>
@@ -292,7 +301,7 @@
                   bind:value={editStartHour}
                   class="standard-autumn-select-time"
                   title="時間を選択"
-                  on:change={() => (startUserChanged = true)}
+                  onchange={() => (startUserChanged = true)}
                 >
                   {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
                     <option value={hour}>{hour}</option>
@@ -303,7 +312,7 @@
                   bind:value={editStartMinute}
                   class="standard-autumn-select-time"
                   title="分を選択"
-                  on:change={() => (startUserChanged = true)}
+                  onchange={() => (startUserChanged = true)}
                 >
                   <option value="00">00</option>
                   <option value="15">15</option>
@@ -323,7 +332,7 @@
                   id="end-date-input"
                   type="date"
                   bind:value={editedStep.endDate}
-                  on:change={() => (endUserChanged = true)}
+                  onchange={() => (endUserChanged = true)}
                   class="standard-autumn-input"
                 />
               </div>
@@ -332,7 +341,7 @@
                   bind:value={editEndHour}
                   class="standard-autumn-select-time"
                   title="時間を選択"
-                  on:change={() => (endUserChanged = true)}
+                  onchange={() => (endUserChanged = true)}
                 >
                   {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
                     <option value={hour}>{hour}</option>
@@ -343,7 +352,7 @@
                   bind:value={editEndMinute}
                   class="standard-autumn-select-time"
                   title="分を選択"
-                  on:change={() => (endUserChanged = true)}
+                  onchange={() => (endUserChanged = true)}
                 >
                   <option value="00">00</option>
                   <option value="15">15</option>

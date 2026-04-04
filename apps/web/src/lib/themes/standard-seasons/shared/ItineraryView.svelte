@@ -270,7 +270,11 @@
     isEditingTitle = false;
   }
 
-  async function handleAddStep(payload?: { start_at?: number; end_at?: number; type?: StepType }) {
+  async function handleAddStep(payload?: {
+    start_at?: number;
+    end_at?: number;
+    type?: StepType;
+  }) {
     if (!newStep.title.trim()) {
       alert("タイトル、日付は必須です");
       return;
@@ -369,9 +373,10 @@
     }
   }
   function buildThemeOverrideStyle(themeId: string): string {
-    const season = themeId && themeId.startsWith("standard-")
-      ? themeId.replace("standard-", "")
-      : "autumn";
+    const season =
+      themeId && themeId.startsWith("standard-")
+        ? themeId.replace("standard-", "")
+        : "autumn";
     const props = [
       "bg",
       "primary",

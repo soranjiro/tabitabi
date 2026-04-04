@@ -523,10 +523,12 @@
                     <div class="standard-autumn-timeline-line"></div>
                     <div class="standard-autumn-step-dot"></div>
 
-                      {#if isSecretStep(step) && !hasEditPermission}
+                    {#if isSecretStep(step) && !hasEditPermission}
                       <div
                         class="standard-autumn-step-content standard-autumn-step-hidden"
-                        class:standard-autumn-step-transport={isTransportType(step.type)}
+                        class:standard-autumn-step-transport={isTransportType(
+                          step.type,
+                        )}
                         onclick={() => handleStepClick(step.id)}
                         role="button"
                         tabindex="0"
@@ -557,10 +559,12 @@
                           <div class="standard-autumn-secret-line short"></div>
                         </div>
                       </div>
-                      {:else}
+                    {:else}
                       <div
                         class="standard-autumn-step-content"
-                        class:standard-autumn-step-transport={isTransportType(step.type)}
+                        class:standard-autumn-step-transport={isTransportType(
+                          step.type,
+                        )}
                         onclick={() => handleStepClick(step.id)}
                         role="button"
                         tabindex="0"
@@ -577,14 +581,23 @@
                             <IconRenderer type={step.type} size="sm" />
                           </div>
                         </div>
-                          {#if isTransportType(step.type)}
-                            <div class="standard-autumn-transport-overlay" aria-hidden="true">
-                              <div class="moving-vehicle">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 12h18v2H3z"/></svg>
-                              </div>
-                              <div class="moving-trail" />
+                        {#if isTransportType(step.type)}
+                          <div
+                            class="standard-autumn-transport-overlay"
+                            aria-hidden="true"
+                          >
+                            <div class="moving-vehicle">
+                              <svg
+                                viewBox="0 0 24 24"
+                                width="18"
+                                height="18"
+                                fill="currentColor"
+                                ><path d="M3 12h18v2H3z" /></svg
+                              >
                             </div>
-                          {/if}
+                            <div class="moving-trail"></div>
+                          </div>
+                        {/if}
                         {#if step.location}
                           <div class="standard-autumn-step-location">
                             <svg

@@ -116,15 +116,24 @@
 
     enriched.sort((a, b) => a.relStart - b.relStart || a.relEnd - b.relEnd);
 
-    const positioned: { step: Step; index: number; totalCount: number; relStart: number; relEnd: number }[] = [];
+    const positioned: {
+      step: Step;
+      index: number;
+      totalCount: number;
+      relStart: number;
+      relEnd: number;
+    }[] = [];
 
     for (const item of enriched) {
       const conflicting = enriched.filter(
         (o) =>
-          o.step !== item.step && !(o.relEnd <= item.relStart || o.relStart >= item.relEnd),
+          o.step !== item.step &&
+          !(o.relEnd <= item.relStart || o.relStart >= item.relEnd),
       );
 
-      const assignedIndex = conflicting.filter((o) => o.relStart < item.relStart).length;
+      const assignedIndex = conflicting.filter(
+        (o) => o.relStart < item.relStart,
+      ).length;
       const maxOverlapCount = Math.max(1, conflicting.length + 1);
 
       positioned.push({
@@ -201,7 +210,8 @@
         {#each weekDates as date}
           <div
             class="standard-autumn-week-day-header"
-            class:has-events={getOverlappingStepsForDay(formatDateKey(date)).length > 0}
+            class:has-events={getOverlappingStepsForDay(formatDateKey(date))
+              .length > 0}
           >
             <div class="standard-autumn-week-day-name">{getDayName(date)}</div>
             <div class="standard-autumn-week-day-date">
@@ -223,7 +233,13 @@
                   <button
                     type="button"
                     class="standard-autumn-week-event"
-                    style={getEventStyle(step, index, totalCount, relStart, relEnd)}
+                    style={getEventStyle(
+                      step,
+                      index,
+                      totalCount,
+                      relStart,
+                      relEnd,
+                    )}
                     title="Secret"
                     onclick={() => handleEventClick(step)}
                   >
@@ -236,7 +252,13 @@
                     class:standard-autumn-week-event-transport={isTransportType(
                       step.type,
                     )}
-                    style={getEventStyle(step, index, totalCount, relStart, relEnd)}
+                    style={getEventStyle(
+                      step,
+                      index,
+                      totalCount,
+                      relStart,
+                      relEnd,
+                    )}
                     title={step.title}
                     onclick={() => handleEventClick(step)}
                   >

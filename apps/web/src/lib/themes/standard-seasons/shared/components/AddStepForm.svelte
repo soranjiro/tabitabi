@@ -36,7 +36,9 @@
 
   // End time state for the form (allow specifying end time when creating)
   let newStepEndDate = $state(newStep.date || "");
-  let newStepEndHour = $state(String((parseInt(newStepHour || "09", 10) + 1) % 24).padStart(2, "0"));
+  let newStepEndHour = $state(
+    String((parseInt(newStepHour || "09", 10) + 1) % 24).padStart(2, "0"),
+  );
   let newStepEndMinute = $state(newStepMinute || "00");
   let startUserChanged = $state(false);
   let endUserChanged = $state(false);
@@ -53,7 +55,10 @@
     // compute default end from start
     if (!newStep.date || !newStepHour || !newStepMinute) return;
     try {
-      const startAt = createTimestamp(newStep.date, `${newStepHour}:${newStepMinute}`);
+      const startAt = createTimestamp(
+        newStep.date,
+        `${newStepHour}:${newStepMinute}`,
+      );
       const endAt = createEndTimestamp(startAt, DEFAULT_DURATION_MIN);
       const d = new Date(endAt);
       newStepEndDate = d.toISOString().split("T")[0];
@@ -66,13 +71,24 @@
 
   function handleSubmit(e: Event) {
     e.preventDefault();
-    if (!newStep.title.trim() || !newStep.date || !newStepHour || !newStepMinute) {
+    if (
+      !newStep.title.trim() ||
+      !newStep.date ||
+      !newStepHour ||
+      !newStepMinute
+    ) {
       alert("タイトル、日付、時刻は必須です");
       return;
     }
 
-    const startAt = createTimestamp(newStep.date, `${newStepHour}:${newStepMinute}`);
-    const endAt = createTimestamp(newStepEndDate || newStep.date, `${newStepEndHour}:${newStepEndMinute}`);
+    const startAt = createTimestamp(
+      newStep.date,
+      `${newStepHour}:${newStepMinute}`,
+    );
+    const endAt = createTimestamp(
+      newStepEndDate || newStep.date,
+      `${newStepEndHour}:${newStepEndMinute}`,
+    );
 
     if (endAt <= startAt) {
       alert("終了時刻は開始時刻より後にしてください");
@@ -97,14 +113,14 @@
       <input
         type="date"
         bind:value={newStep.date}
-        on:change={() => (startUserChanged = true)}
+        onchange={() => (startUserChanged = true)}
         class="standard-autumn-input"
         required
       />
       <div class="standard-autumn-time-picker">
         <select
           bind:value={newStepHour}
-          on:change={() => (startUserChanged = true)}
+          onchange={() => (startUserChanged = true)}
           class="standard-autumn-select-time"
           required
         >
@@ -115,7 +131,7 @@
         <span class="standard-autumn-time-separator">:</span>
         <select
           bind:value={newStepMinute}
-          on:change={() => (startUserChanged = true)}
+          onchange={() => (startUserChanged = true)}
           class="standard-autumn-select-time"
           required
         >
@@ -138,7 +154,7 @@
           bind:value={newStepEndHour}
           class="standard-autumn-select-time"
           required
-          on:change={() => (endUserChanged = true)}
+          onchange={() => (endUserChanged = true)}
         >
           {#each Array.from( { length: 24 }, (_, i) => String(i).padStart(2, "0"), ) as hour}
             <option value={hour}>{hour}</option>
@@ -149,7 +165,7 @@
           bind:value={newStepEndMinute}
           class="standard-autumn-select-time"
           required
-          on:change={() => (endUserChanged = true)}
+          onchange={() => (endUserChanged = true)}
         >
           <option value="00">00</option>
           <option value="15">15</option>

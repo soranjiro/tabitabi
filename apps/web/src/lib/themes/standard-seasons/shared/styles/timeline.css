@@ -88,7 +88,7 @@
 
 /* Transport (移動) style — visual movement feeling */
 .standard-autumn-step-content.standard-autumn-step-transport {
-  background: linear-gradient(90deg, rgba(13,110,253,0.06), rgba(56,189,248,0.04));
+  background: linear-gradient(90deg, rgba(13, 110, 253, 0.06), rgba(56, 189, 248, 0.04));
   border-left-style: dashed;
   border-left-color: var(--standard-autumn-primary);
   color: var(--standard-autumn-text);
@@ -119,7 +119,7 @@
 .moving-trail {
   width: 60px;
   height: 4px;
-  background: linear-gradient(90deg, rgba(13,110,253,0.2), rgba(13,110,253,0));
+  background: linear-gradient(90deg, rgba(13, 110, 253, 0.2), rgba(13, 110, 253, 0));
   border-radius: 4px;
   opacity: 0.8;
   transform-origin: left center;
@@ -127,15 +127,37 @@
 }
 
 @keyframes vehicle-move {
-  0% { transform: translateX(-6px); opacity: 0.6; }
-  50% { transform: translateX(6px); opacity: 1; }
-  100% { transform: translateX(-6px); opacity: 0.6; }
+  0% {
+    transform: translateX(-6px);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: translateX(6px);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(-6px);
+    opacity: 0.6;
+  }
 }
 
 @keyframes trail-flow {
-  0% { transform: scaleX(0.2); opacity: 0.4; }
-  50% { transform: scaleX(1); opacity: 0.9; }
-  100% { transform: scaleX(0.2); opacity: 0.4; }
+  0% {
+    transform: scaleX(0.2);
+    opacity: 0.4;
+  }
+
+  50% {
+    transform: scaleX(1);
+    opacity: 0.9;
+  }
+
+  100% {
+    transform: scaleX(0.2);
+    opacity: 0.4;
+  }
 }
 
 .standard-autumn-step-location {

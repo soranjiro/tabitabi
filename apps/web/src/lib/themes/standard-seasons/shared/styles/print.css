@@ -204,7 +204,7 @@
   /* Day Header */
   .standard-card-header {
     display: block !important;
-    background: linear-gradient(135deg, var(--theme-primary) 0%, #b8453a 100%) !important;
+    background: var(--theme-primary) !important;
     color: white !important;
     font-size: 11pt !important;
     font-weight: 700 !important;

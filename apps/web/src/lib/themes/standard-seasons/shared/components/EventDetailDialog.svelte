@@ -501,41 +501,41 @@
         </div>
       {/if}
     </div>
-  </div>
 
-  {#if isEditing}
-    <div class="standard-event-dialog-actions-footer">
-      <button
-        type="button"
-        onclick={handleUpdate}
-        class="standard-btn standard-btn-primary"
-      >
-        保存
-      </button>
-      <button
-        type="button"
-        onclick={cancelEdit}
-        class="standard-btn standard-btn-secondary"
-      >
-        キャンセル
-      </button>
-    </div>
-  {:else if hasEditPermission}
-    <div class="standard-event-dialog-actions-footer">
-      <button
-        type="button"
-        onclick={startEdit}
-        class="standard-btn standard-btn-primary"
-      >
-        編集
-      </button>
-      <button
-        type="button"
-        onclick={handleDelete}
-        class="standard-btn standard-btn-danger"
-      >
-        削除
-      </button>
-    </div>
-  {/if}
+    {#if isEditing}
+      <div class="standard-event-dialog-actions-footer">
+        <button
+          type="button"
+          onclick={handleUpdate}
+          class="standard-btn standard-btn-primary"
+        >
+          保存
+        </button>
+        <button
+          type="button"
+          onclick={cancelEdit}
+          class="standard-btn standard-btn-secondary"
+        >
+          キャンセル
+        </button>
+      </div>
+    {:else if hasEditPermission}
+      <div class="standard-event-dialog-actions-footer">
+        <button
+          type="button"
+          onclick={startEdit}
+          class="standard-btn standard-btn-primary"
+        >
+          編集
+        </button>
+        <button
+          type="button"
+          onclick={handleDelete}
+          class="standard-btn standard-btn-danger"
+        >
+          削除
+        </button>
+      </div>
+    {/if}
+  </div>
 </div>

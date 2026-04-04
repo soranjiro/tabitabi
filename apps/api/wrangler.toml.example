@@ -13,6 +13,7 @@ migrations_dir = "./migrations"
 
 [vars]
 ALLOWED_ORIGINS = "*"
+JWT_SECRET = "local-dev-secret"
 
 [env.production]
 name = "tabitabi-api"

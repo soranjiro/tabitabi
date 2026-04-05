@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
-  import { getStepDate } from "@tabitabi/types";
+  import { getStepDate, getStepEndDate } from "@tabitabi/types";
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
   import IconRenderer from "../icons/IconRenderer.svelte";
   import { isTransportType } from "../utils/step-type";
@@ -77,6 +77,10 @@
     );
   }
 
+  function isMultiDayStep(step: Step): boolean {
+    return getStepDate(step) !== getStepEndDate(step);
+  }
+
   const hasAnyAllDayEvents = $derived(() =>
     weekDates().some((d) => getAllDayStepsForDate(d).length > 0),
   );
@@ -124,6 +128,8 @@
                 <button
                   type="button"
                   class="standard-week-allday-event"
+                  class:standard-week-event-multiday={isMultiDayStep(step)}
+                  class:standard-week-event-allday={step.is_all_day}
                   title={step.title}
                   onclick={() => handleEventClick(step)}
                 >
@@ -165,6 +171,8 @@
                   <button
                     type="button"
                     class="standard-week-event"
+                    class:standard-week-event-multiday={isMultiDayStep(step)}
+                    class:standard-week-event-allday={step.is_all_day}
                     style={utilGetEventStyleForDay(
                       hours(),
                       relStart,
@@ -184,6 +192,8 @@
                     class:standard-week-event-transport={isTransportType(
                       step.type,
                     )}
+                    class:standard-week-event-multiday={isMultiDayStep(step)}
+                    class:standard-week-event-allday={step.is_all_day}
                     style={utilGetEventStyleForDay(
                       hours(),
                       relStart,

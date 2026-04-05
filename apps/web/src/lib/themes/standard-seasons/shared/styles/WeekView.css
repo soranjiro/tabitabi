@@ -182,6 +182,27 @@
   background-color: rgba(255, 255, 255, 1) !important;
 }
 
+.standard-week-event-multiday {
+  background-color: var(--week-event-multiday-bg, rgba(255, 250, 240, 0.95));
+  border: 1px dashed var(--week-event-multiday-border, rgba(245, 190, 120, 0.45));
+}
+
+.standard-week-event-transport.standard-week-event-multiday {
+  background-color: var(--week-event-transport-multiday-bg, rgba(210, 225, 255, 1)) !important;
+  border: 1px solid var(--week-event-transport-multiday-border, rgba(58, 122, 255, 0.55)) !important;
+  color: var(--theme-primary) !important;
+}
+
+.standard-week-event-allday {
+  background-color: var(--theme-primary) !important;
+  color: #fff !important;
+  border: 1px solid var(--theme-primary) !important;
+}
+
+.standard-week-event-allday:hover {
+  background-color: rgba(169, 53, 41, 0.25) !important;
+}
+
 .standard-week-event-icon {
   display: inline-flex;
   align-items: center;

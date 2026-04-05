@@ -19,6 +19,7 @@
   let formError = $state<string | null>(null);
   let submitting = $state(false);
   let copiedId = $state<string | null>(null);
+  let copyTimeout: ReturnType<typeof setTimeout> | null = null;
 
   onMount(async () => {
     loggedIn = userAuth.isLoggedIn();
@@ -81,7 +82,8 @@
       const url = window.location.origin + '/' + itineraryId;
       await navigator.clipboard.writeText(url);
       copiedId = itineraryId;
-      setTimeout(() => { copiedId = null; }, 2000);
+      if (copyTimeout) clearTimeout(copyTimeout);
+      copyTimeout = setTimeout(() => { copiedId = null; }, 2000);
     } catch {
       alert('クリップボードへのコピーに失敗しました');
     }

@@ -184,13 +184,14 @@
 
 {#key data.itinerary.theme_id}
   <!-- readOnly は standard-seasons テーマのみ対応。他テーマは issue #159 で対応予定 -->
+  <!-- ログイン済み && 非オーナーのみ readOnly。未ログインは既存動作を維持 -->
   <ItineraryView
     {itinerary}
     {steps}
-    readOnly={!data.isOwner}
-    onUpdateItinerary={!data.isOwner ? undefined : handleUpdateItinerary}
-    onCreateStep={!data.isOwner ? undefined : handleCreateStep}
-    onUpdateStep={!data.isOwner ? undefined : handleUpdateStep}
-    onDeleteStep={!data.isOwner ? undefined : handleDeleteStep}
+    readOnly={data.isLoggedIn && !data.isOwner}
+    onUpdateItinerary={handleUpdateItinerary}
+    onCreateStep={handleCreateStep}
+    onUpdateStep={handleUpdateStep}
+    onDeleteStep={handleDeleteStep}
   />
 {/key}

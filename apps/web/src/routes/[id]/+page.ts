@@ -7,6 +7,8 @@ import { loadTheme } from '$lib/themes';
 import { error } from '@sveltejs/kit';
 
 export const prerender = false;
+// userAuth は localStorage 依存のため SSR では動作しない → CSR のみで実行
+export const ssr = false;
 
 export const load: PageLoad = async ({ params }) => {
   try {
@@ -14,12 +16,13 @@ export const load: PageLoad = async ({ params }) => {
     const theme = await loadTheme(itinerary.theme_id);
     const steps = await stepApi.list(params.id);
 
+    const isLoggedIn = userAuth.isLoggedIn();
     let isOwner = false;
-    if (userAuth.isLoggedIn()) {
+    if (isLoggedIn) {
       try {
         await userApi.checkOwnership(params.id);
         isOwner = true;
-      } catch (e) {
+      } catch {
         // 404 = bookmark not found (not owner)
         // 401 = token expired → isLoggedIn() で事前にチェック済みのため通常発生しない
         isOwner = false;
@@ -30,6 +33,7 @@ export const load: PageLoad = async ({ params }) => {
       itinerary,
       theme,
       steps,
+      isLoggedIn,
       isOwner,
     };
   } catch (e) {

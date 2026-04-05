@@ -20,10 +20,7 @@
   }
 
   function handleAddStep() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    setTimeout(() => {
-      onAddStep();
-    }, 300);
+    onAddStep();
   }
 
   onMount(() => {

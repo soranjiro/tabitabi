@@ -13,7 +13,7 @@
   import { getIsDemoMode } from "$lib/demo";
   import { onMount } from "svelte";
   import StepList from "./StepList.svelte";
-  import AddStepForm from "./components/AddStepForm.svelte";
+  import EventDetailDialog from "./components/EventDetailDialog.svelte";
   import BottomNav from "./components/BottomNav.svelte";
   import FloatingActions from "./components/FloatingActions.svelte";
   import MemoDialog from "./components/MemoDialog.svelte";
@@ -76,7 +76,8 @@
 
   let isEditingTitle = $state(false);
   let editedTitle = $state(itinerary.title);
-  let isAddingStep = $state(false);
+  let isCreatingStep = $state(false);
+  let createStepTemplate = $state<Step | null>(null);
   let showCopyMessage = $state(false);
   let showShareDialog = $state(false);
   let showShareMenu = $state(false);
@@ -99,26 +100,35 @@
   let showThemeSelectorPopup = $state(false);
   let currentViewMode = $state<ViewMode>("dayCard");
 
-  let newStep = $state({
-    title: "",
-    date: "",
-    time: "",
-    location: "",
-    notes: "",
-    type: STEP_TYPE.NORMAL_GENERAL as StepType,
-  });
-  let newStepHour = $state("09");
-  let newStepMinute = $state("00");
   let focusedDate = $state<string | null>(null);
   let stepListRef: any = undefined;
 
+  function getCreateStepTemplate(): Step {
+    const startDate = focusedDate
+      ? new Date(`${focusedDate}T09:00:00`)
+      : new Date();
+    startDate.setSeconds(0, 0);
+    const startAt = startDate.getTime();
+    const endAt = startAt + 60 * 60 * 1000;
+
+    return {
+      id: "",
+      itinerary_id: itinerary.id,
+      title: "",
+      start_at: startAt,
+      end_at: endAt,
+      location: "",
+      notes: "",
+      type: STEP_TYPE.NORMAL_GENERAL,
+      is_all_day: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+  }
+
   function openAddStepForm() {
-    isAddingStep = true;
-    if (focusedDate) {
-      newStep.date = focusedDate;
-    } else {
-      newStep.date = "";
-    }
+    isCreatingStep = true;
+    createStepTemplate = getCreateStepTemplate();
   }
 
   onMount(() => {
@@ -273,72 +283,24 @@
     isEditingTitle = false;
   }
 
-  async function handleAddStep(payload?: {
-    start_at?: number;
-    end_at?: number;
+  async function handleCreateStep(data: {
+    title: string;
+    start_at: number;
+    end_at: number;
+    location?: string;
+    notes?: string;
     type?: StepType;
+    is_all_day?: boolean;
   }) {
-    if (!newStep.title.trim()) {
-      alert("タイトル、日付は必須です");
-      return;
-    }
-
-    let startAt: number | undefined = undefined;
-    let endAt: number | undefined = undefined;
-
-    if (payload && payload.start_at) {
-      startAt = payload.start_at;
-      endAt = payload.end_at ?? createEndTimestamp(startAt, 60);
-    } else {
-      if (!newStep.date || !newStep.time) {
-        alert("日時の指定が正しくありません");
-        return;
-      }
-      startAt = createTimestamp(newStep.date, newStep.time);
-      endAt = createEndTimestamp(startAt, 60);
-    }
-
-    if (endAt <= startAt) {
-      alert("終了時刻は開始時刻より後にしてください");
-      return;
-    }
-
-    if (onCreateStep && startAt) {
-      await onCreateStep({
-        title: newStep.title.trim(),
-        start_at: startAt,
-        end_at: endAt,
-        location: newStep.location.trim() || undefined,
-        notes: newStep.notes.trim() || undefined,
-        type: payload?.type ?? newStep.type,
-      });
-
-      newStep = {
-        title: "",
-        date: "",
-        time: "",
-        location: "",
-        notes: "",
-        type: STEP_TYPE.NORMAL_GENERAL,
-      };
-      newStepHour = "09";
-      newStepMinute = "00";
-      isAddingStep = false;
-    }
+    if (!onCreateStep) return;
+    await onCreateStep(data);
+    isCreatingStep = false;
+    createStepTemplate = null;
   }
 
   function cancelAddStep() {
-    newStep = {
-      title: "",
-      date: "",
-      time: "",
-      location: "",
-      notes: "",
-      type: STEP_TYPE.NORMAL_GENERAL,
-    };
-    newStepHour = "09";
-    newStepMinute = "00";
-    isAddingStep = false;
+    isCreatingStep = false;
+    createStepTemplate = null;
   }
 
   async function handleThemeChange(themeId: string) {
@@ -498,21 +460,11 @@
 
     {#if hasEditPermission}
       <div class="standard-add-step">
-        {#if isAddingStep}
-          <AddStepForm
-            bind:newStep
-            bind:newStepHour
-            bind:newStepMinute
-            onSubmit={handleAddStep}
-            onCancel={cancelAddStep}
-          />
-        {:else}
-          <button
-            onclick={openAddStepForm}
-            class="standard-btn-add"
-            disabled={!hasEditPermission}>＋ 予定を追加</button
-          >
-        {/if}
+        <button
+          onclick={openAddStepForm}
+          class="standard-btn-add"
+          disabled={!hasEditPermission}>＋ 予定を追加</button
+        >
       </div>
     {/if}
 
@@ -574,6 +526,16 @@
     onCopyLink={copyShareLink}
     onClose={() => (showShareDialog = false)}
   />
+
+  {#if isCreatingStep && createStepTemplate}
+    <EventDetailDialog
+      step={createStepTemplate}
+      mode="create"
+      {hasEditPermission}
+      onCreateStep={handleCreateStep}
+      onClose={cancelAddStep}
+    />
+  {/if}
 
   {#if showViewModeSelector}
     <ViewModeSelector

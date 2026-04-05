@@ -33,7 +33,7 @@
 
 .week-board {
   display: grid;
-  grid-template-columns: repeat(3, minmax(92px, 1fr));
+  grid-template-columns: repeat(3, minmax(70px, 1fr));
   gap: 0.28rem;
 }
 
@@ -73,7 +73,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 0.18rem;
-  min-height: 42px;
+  min-height: 30px;
   padding: 0.1rem 0rem 0.1rem 0.35rem;
   border-radius: 12px;
   background: white;
@@ -83,7 +83,7 @@
 }
 
 .week-card-label {
-  font-size: 0.68rem;
+  font-size: 0.6rem;
   font-weight: 700;
   color: var(--text);
   line-height: 1.1;

@@ -136,9 +136,10 @@
     );
 
     const sortedSteps = [...steps].sort((a, b) => {
-      if (a.is_all_day && !b.is_all_day) return -1;
-      if (!a.is_all_day && b.is_all_day) return 1;
-      return a.start_at - b.start_at;
+      if (a.start_at !== b.start_at) return a.start_at - b.start_at;
+      const aDuration = a.end_at - a.start_at;
+      const bDuration = b.end_at - b.start_at;
+      return bDuration - aDuration;
     });
 
     for (const step of sortedSteps) {

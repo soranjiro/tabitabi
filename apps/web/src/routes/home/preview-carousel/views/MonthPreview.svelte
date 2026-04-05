@@ -114,10 +114,10 @@
                   style="grid-column: {segment.start} / span {segment.length};"
                   title={segment.step.label}
                 >
-                  {#if segment.step.icon}
+                  <!-- {#if segment.step.icon}
                     <span class="month-event-bar-icon">{segment.step.icon}</span
                     >
-                  {/if}
+                  {/if} -->
                   <span class="month-event-bar-label">{segment.step.label}</span
                   >
                 </div>

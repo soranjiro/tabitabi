@@ -46,6 +46,13 @@
   let endUserChanged = $state(false);
   const DEFAULT_DURATION_MIN = 60;
 
+  function formatLocalDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
   $effect(() => {
     newStep.time = `${newStepHour}:${newStepMinute}`;
   });
@@ -61,7 +68,7 @@
       );
       const endAt = createEndTimestamp(startAt, DEFAULT_DURATION_MIN);
       const d = new Date(endAt);
-      newStepEndDate = d.toISOString().split("T")[0];
+      newStepEndDate = formatLocalDate(d);
       newStepEndHour = String(d.getHours()).padStart(2, "0");
       newStepEndMinute = String(d.getMinutes()).padStart(2, "0");
     } catch (e) {
@@ -102,7 +109,12 @@
       return;
     }
 
-    onSubmit({ start_at: startAt, end_at: endAt, type: newStep.type, is_all_day: isAllDay });
+    onSubmit({
+      start_at: startAt,
+      end_at: endAt,
+      type: newStep.type,
+      is_all_day: isAllDay,
+    });
   }
 </script>
 
@@ -127,7 +139,9 @@
       </label>
     </div>
     <div class="standard-datetime">
-      <label class="standard-form-label" for="start-date">開始日{#if !isAllDay}時{/if}</label>
+      <label class="standard-form-label" for="start-date"
+        >開始日{#if !isAllDay}時{/if}</label
+      >
       <input
         id="start-date"
         type="date"
@@ -164,7 +178,9 @@
       {/if}
     </div>
     <div class="standard-datetime">
-      <label class="standard-form-label" for="end-date">終了日{#if !isAllDay}時{/if}</label>
+      <label class="standard-form-label" for="end-date"
+        >終了日{#if !isAllDay}時{/if}</label
+      >
       <input
         id="end-date"
         type="date"
@@ -222,15 +238,13 @@
     ></textarea>
   </div>
   <div class="standard-form-actions">
-    <button
-      type="submit"
-      class="standard-btn standard-btn-primary">追加する</button
+    <button type="submit" class="standard-btn standard-btn-primary"
+      >追加する</button
     >
     <button
       type="button"
       onclick={onCancel}
-      class="standard-btn standard-btn-secondary"
-      >キャンセル</button
+      class="standard-btn standard-btn-secondary">キャンセル</button
     >
   </div>
 </form>

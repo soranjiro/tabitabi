@@ -186,9 +186,10 @@
   <ItineraryView
     {itinerary}
     {steps}
-    onUpdateItinerary={handleUpdateItinerary}
-    onCreateStep={handleCreateStep}
-    onUpdateStep={handleUpdateStep}
-    onDeleteStep={handleDeleteStep}
+    readOnly={!data.isOwner}
+    onUpdateItinerary={!data.isOwner ? undefined : handleUpdateItinerary}
+    onCreateStep={!data.isOwner ? undefined : handleCreateStep}
+    onUpdateStep={!data.isOwner ? undefined : handleUpdateStep}
+    onDeleteStep={!data.isOwner ? undefined : handleDeleteStep}
   />
 {/key}

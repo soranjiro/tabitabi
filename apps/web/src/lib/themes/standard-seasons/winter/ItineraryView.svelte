@@ -4,6 +4,7 @@
 
   export let itinerary;
   export let steps;
+  export let readOnly = false;
   export let onUpdateItinerary = undefined;
   export let onCreateStep = undefined;
   export let onUpdateStep = undefined;
@@ -14,6 +15,7 @@
 <SharedItineraryView
   {itinerary}
   {steps}
+  {readOnly}
   {onUpdateItinerary}
   {onCreateStep}
   {onUpdateStep}

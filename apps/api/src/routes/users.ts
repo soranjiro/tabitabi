@@ -76,6 +76,20 @@ users.get('/me/bookmarks', userAuthMiddleware, async (c) => {
   return c.json({ success: true, data: { bookmarks } });
 });
 
+// GET /users/me/bookmarks/:itineraryId (認証必須 - オーナー確認)
+users.get('/me/bookmarks/:itineraryId', userAuthMiddleware, async (c) => {
+  const userId = c.get('userId')!;
+  const itineraryId = c.req.param('itineraryId');
+  const service = new UserService(c.env.DB);
+  const bookmark = await service.getBookmark(userId, itineraryId);
+
+  if (!bookmark) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Bookmark not found' } }, 404);
+  }
+
+  return c.json({ success: true, data: bookmark });
+});
+
 // PATCH /users/me/bookmarks/:itineraryId/visibility (認証必須)
 users.patch('/me/bookmarks/:itineraryId/visibility', userAuthMiddleware, async (c) => {
   const userId = c.get('userId')!;

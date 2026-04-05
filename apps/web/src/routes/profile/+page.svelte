@@ -18,6 +18,7 @@
   let usernameInput = $state("");
   let formError = $state<string | null>(null);
   let submitting = $state(false);
+  let copiedId = $state<string | null>(null);
 
   onMount(async () => {
     loggedIn = userAuth.isLoggedIn();
@@ -73,6 +74,17 @@
     email = "";
     password = "";
     goto("/");
+  }
+
+  async function copyPublicLink(itineraryId: string) {
+    try {
+      const url = window.location.origin + '/' + itineraryId;
+      await navigator.clipboard.writeText(url);
+      copiedId = itineraryId;
+      setTimeout(() => { copiedId = null; }, 2000);
+    } catch {
+      alert('クリップボードへのコピーに失敗しました');
+    }
   }
 
   async function toggleVisibility(itineraryId: string, current: boolean) {
@@ -219,6 +231,15 @@
                     </svg>
                     鍵あり
                   </span>
+                {/if}
+
+                {#if bookmark.is_visible && !bookmark.is_password_protected}
+                  <button
+                    onclick={() => copyPublicLink(bookmark.itinerary_id)}
+                    class="text-xs px-2 py-1 rounded border transition-colors border-indigo-300 text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
+                  >
+                    {copiedId === bookmark.itinerary_id ? "コピー完了!" : "リンクをコピー"}
+                  </button>
                 {/if}
 
                 <button

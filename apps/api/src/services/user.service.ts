@@ -152,6 +152,23 @@ export class UserService {
     };
   }
 
+  async getBookmark(userId: string, itineraryId: string): Promise<UserBookmark | null> {
+    const result = await this.db
+      .prepare('SELECT * FROM user_bookmarks WHERE user_id = ? AND itinerary_id = ?')
+      .bind(userId, itineraryId)
+      .first<Record<string, unknown>>();
+
+    if (!result) return null;
+
+    return {
+      user_id: result.user_id as string,
+      itinerary_id: result.itinerary_id as string,
+      is_visible: result.is_visible === 1,
+      created_at: result.created_at as string,
+      updated_at: result.updated_at as string,
+    };
+  }
+
   async addBookmark(userId: string, itineraryId: string): Promise<UserBookmark> {
     const now = getCurrentTimestamp();
     await this.db

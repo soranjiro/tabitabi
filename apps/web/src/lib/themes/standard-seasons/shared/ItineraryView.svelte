@@ -30,6 +30,7 @@
   interface Props {
     itinerary: ItineraryResponse;
     steps: Step[];
+    readOnly?: boolean;
     onUpdateItinerary?: (data: {
       title?: string;
       theme_id?: string;
@@ -66,6 +67,7 @@
   let {
     itinerary,
     steps,
+    readOnly = false,
     onUpdateItinerary,
     onCreateStep,
     onUpdateStep,
@@ -124,6 +126,11 @@
   onMount(() => {
     currentViewMode = getViewMode(itinerary.id);
 
+    if (readOnly) {
+      auth.updateAccessTime(itinerary.id, itinerary.title);
+      return;
+    }
+
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -164,6 +171,7 @@
   }
 
   function handleEditModeToggle() {
+    if (readOnly) return;
     if (hasEditPermission) {
       // Check if currently editing
       if (stepListRef?.isCurrentlyEditing?.()) {
@@ -183,6 +191,7 @@
   }
 
   async function attemptEditModeActivation() {
+    if (readOnly) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;

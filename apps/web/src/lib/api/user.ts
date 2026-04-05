@@ -53,4 +53,7 @@ export const userApi = {
       `/users/me/bookmarks/${itineraryId}/visibility`,
       { method: 'PATCH', body: JSON.stringify(data) }
     ),
+
+  checkOwnership: (itineraryId: string) =>
+    request<{ itinerary_id: string }>(`/users/me/bookmarks/${itineraryId}`),
 };

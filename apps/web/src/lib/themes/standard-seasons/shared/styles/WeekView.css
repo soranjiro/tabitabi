@@ -37,7 +37,7 @@
   background: var(--theme-card-bg);
   border: 2px solid var(--theme-primary);
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   min-width: max-content;
   width: 100%;
@@ -48,6 +48,10 @@
 }
 
 .standard-week-corner {
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 15;
   background: var(--theme-header-bg);
   border-bottom: 1px solid var(--theme-border);
   border-right: 1px solid var(--theme-border);
@@ -101,6 +105,9 @@
 }
 
 .standard-week-time-label {
+  position: sticky;
+  left: 0;
+  z-index: 16;
   padding: 0.25rem 0.5rem;
   font-size: 0.7rem;
   font-weight: 600;
@@ -111,6 +118,13 @@
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
+}
+
+.standard-week-allday-label {
+  position: sticky;
+  left: 0;
+  z-index: 14;
+  background: var(--theme-header-bg);
 }
 
 .standard-week-cell {

@@ -5,6 +5,7 @@
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
   import IconRenderer from "../icons/IconRenderer.svelte";
   import { isTransportType } from "../utils/step-type";
+  import "../styles/ListView.css";
 
   interface Props {
     steps: Step[];
@@ -100,9 +101,7 @@
           {:else}
             <tr
               class="standard-list-row"
-              class:standard-list-row-transport={isTransportType(
-                step.type,
-              )}
+              class:standard-list-row-transport={isTransportType(step.type)}
               onmouseenter={(e) =>
                 e.currentTarget?.style.setProperty("cursor", "pointer")}
               onmouseleave={(e) =>

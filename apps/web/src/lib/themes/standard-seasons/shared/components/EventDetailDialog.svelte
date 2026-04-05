@@ -20,11 +20,21 @@
   import "../styles/EventDetailDialog.css";
 
   interface Props {
-    step: Step;
+    step?: Step | null;
+    mode?: "view" | "edit" | "create";
     hasEditPermission?: boolean;
     secretModeEnabled?: boolean;
     secretModeOffset?: number;
     onClose: () => void;
+    onCreateStep?: (data: {
+      title: string;
+      start_at: number;
+      end_at: number;
+      location?: string;
+      notes?: string;
+      type?: StepType;
+      is_all_day?: boolean;
+    }) => Promise<void>;
     onUpdateStep?: (
       stepId: string,
       data: {
@@ -41,11 +51,13 @@
   }
 
   let {
-    step,
+    step = null,
+    mode = "view",
     hasEditPermission = false,
     secretModeEnabled = false,
     secretModeOffset = 60,
     onClose,
+    onCreateStep,
     onUpdateStep,
     onDeleteStep,
   }: Props = $props();
@@ -57,7 +69,8 @@
     return now < revealTime;
   }
 
-  let isEditing = $state(false);
+  const isCreateMode = mode === "create";
+  let isEditing = $state(isCreateMode);
   let editedStep = $state<{
     title?: string;
     startDate?: string;
@@ -69,14 +82,50 @@
     type?: StepType;
     is_all_day?: boolean;
   }>({});
-  let editStartHour = $state(getStepTime(step).split(":")[0]);
-  let editStartMinute = $state(getStepTime(step).split(":")[1]);
+  let editStartHour = $state(step ? getStepTime(step).split(":")[0] : "09");
+  let editStartMinute = $state(step ? getStepTime(step).split(":")[1] : "00");
   let editEndHour = $state("10");
   let editEndMinute = $state("00");
   let startUserChanged = $state(false);
   let endUserChanged = $state(false);
   let originalDuration = $state(60);
-  let editIsAllDay = $state(step.is_all_day || false);
+  let editIsAllDay = $state(step?.is_all_day || false);
+
+  function initializeEditedStep() {
+    const referenceStartAt = step?.start_at ?? new Date().setHours(9, 0, 0, 0);
+    const referenceEndAt = step?.end_at ?? referenceStartAt + 60 * 60 * 1000;
+    const [startHour, startMinute] = formatTime(referenceStartAt);
+    const [endHour, endMinute] = formatTime(referenceEndAt);
+
+    editedStep = {
+      title: step?.title ?? "",
+      startDate: formatLocalDate(referenceStartAt),
+      startTime: `${startHour}:${startMinute}`,
+      endDate: formatLocalDate(referenceEndAt),
+      endTime: `${endHour}:${endMinute}`,
+      location: step?.location ?? "",
+      notes: getMemoText(step?.notes ?? "") || "",
+      type: step?.type ?? STEP_TYPE.NORMAL_GENERAL,
+      is_all_day: step?.is_all_day ?? false,
+    };
+    editStartHour = startHour;
+    editStartMinute = startMinute;
+    editEndHour = endHour;
+    editEndMinute = endMinute;
+    startUserChanged = false;
+    endUserChanged = false;
+    originalDuration = Math.max(
+      1,
+      Math.round((referenceEndAt - referenceStartAt) / 60000),
+    );
+    editIsAllDay = step?.is_all_day ?? false;
+  }
+
+  $effect(() => {
+    if (isCreateMode) {
+      initializeEditedStep();
+    }
+  });
 
   function formatTime(ms: number): [string, string] {
     const date = new Date(ms);
@@ -105,36 +154,19 @@
   }
 
   function startEdit() {
+    if (!step) return;
     isEditing = true;
-    const [startHour, startMinute] = formatTime(step.start_at);
-    const [endHour, endMinute] = formatTime(step.end_at);
-
-    editedStep = {
-      title: step.title,
-      startDate: formatLocalDate(step.start_at),
-      startTime: `${startHour}:${startMinute}`,
-      endDate: formatLocalDate(step.end_at),
-      endTime: `${endHour}:${endMinute}`,
-      location: step.location,
-      notes: getMemoText(step.notes) || "",
-      type: step.type || STEP_TYPE.NORMAL_GENERAL,
-      is_all_day: step.is_all_day || false,
-    };
-    editStartHour = startHour;
-    editStartMinute = startMinute;
-    editEndHour = endHour;
-    editEndMinute = endMinute;
-    startUserChanged = false;
-    endUserChanged = false;
-    originalDuration = Math.max(
-      1,
-      Math.round((step.end_at - step.start_at) / 60000),
-    );
+    initializeEditedStep();
   }
 
   function cancelEdit() {
+    if (isCreateMode) {
+      onClose();
+      return;
+    }
     isEditing = false;
     editedStep = {};
+    if (!step) return;
     const [startHour, startMinute] = formatTime(step.start_at);
     editStartHour = startHour;
     editStartMinute = startMinute;
@@ -213,27 +245,27 @@
       (!editIsAllDay && (!editStartHour || !editStartMinute)) ||
       !editedStep.endDate ||
       (!editIsAllDay && (!editEndHour || !editEndMinute)) ||
-      !onUpdateStep
+      (!onUpdateStep && !onCreateStep)
     ) {
       alert("タイトル、日付は必須です。時刻付きイベントの場合は時刻も必須です");
       return;
     }
 
     const noteText = (editedStep.notes ?? "").trim();
-    const notes = updateMemoText(step.notes, noteText);
+    const notes = step
+      ? updateMemoText(step.notes, noteText)
+      : noteText || undefined;
 
     let startAt: number;
     let endAt: number;
 
     if (editIsAllDay) {
-      // 終日の場合
       startAt = createTimestamp(editedStep.startDate, "00:00");
       endAt = createTimestamp(
         editedStep.endDate || editedStep.startDate,
         "23:59",
       );
     } else {
-      // 時刻付きの場合
       startAt = createTimestamp(
         editedStep.startDate,
         `${editStartHour}:${editStartMinute}`,
@@ -249,22 +281,34 @@
       }
     }
 
-    await onUpdateStep(step.id, {
-      title: editedStep.title.trim(),
-      start_at: startAt,
-      end_at: endAt,
-      location: editedStep.location?.trim() || undefined,
-      notes,
-      type: editedStep.type,
-      is_all_day: editIsAllDay,
-    });
+    if (isCreateMode) {
+      await onCreateStep?.({
+        title: editedStep.title.trim(),
+        start_at: startAt,
+        end_at: endAt,
+        location: editedStep.location?.trim() || undefined,
+        notes,
+        type: editedStep.type,
+        is_all_day: editIsAllDay,
+      });
+    } else {
+      await onUpdateStep?.(step!.id, {
+        title: editedStep.title.trim(),
+        start_at: startAt,
+        end_at: endAt,
+        location: editedStep.location?.trim() || undefined,
+        notes,
+        type: editedStep.type,
+        is_all_day: editIsAllDay,
+      });
+    }
 
     isEditing = false;
     onClose();
   }
 
   async function handleDelete() {
-    if (!confirm("この予定を削除しますか?") || !onDeleteStep) return;
+    if (!step || !confirm("この予定を削除しますか?") || !onDeleteStep) return;
     await onDeleteStep(step.id);
     onClose();
   }
@@ -291,7 +335,9 @@
 >
   <div class="standard-event-dialog" role="dialog" aria-modal="true">
     <div class="standard-event-dialog-header">
-      <h3 class="standard-event-dialog-title">予定の詳細</h3>
+      <h3 class="standard-event-dialog-title">
+        {isCreateMode ? "新しい予定を追加" : "予定の詳細"}
+      </h3>
       <button
         type="button"
         class="standard-event-dialog-close"
@@ -311,7 +357,7 @@
     </div>
 
     <div class="standard-event-dialog-body">
-      {#if isSecretStep(step) && !hasEditPermission}
+      {#if step && isSecretStep(step) && !hasEditPermission}
         <div class="standard-event-secret-notice">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -468,7 +514,7 @@
             ></textarea>
           </div>
         </div>
-      {:else}
+      {:else if step}
         <div class="standard-event-detail-content">
           <div class="standard-event-detail-field">
             <span class="standard-event-detail-label">タイトル</span>

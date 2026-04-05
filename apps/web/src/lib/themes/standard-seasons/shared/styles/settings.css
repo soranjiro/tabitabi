@@ -225,15 +225,24 @@
 
 /* Actions */
 .standard-settings-page-actions {
+  position: sticky;
+  bottom: 0;
   display: flex;
-  gap: 1rem;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
   margin-top: 2rem;
-  padding-top: 1.5rem;
+  padding: 1rem 0 0.75rem;
   border-top: 1px solid var(--theme-line-color);
+  background: #fff;
+  overflow-x: auto;
+  z-index: 1;
 }
 
 .standard-settings-page-actions button {
-  flex: 1;
+  flex: 0 1 auto;
+  min-width: 120px;
   padding: 1rem;
   font-size: 1rem;
   font-weight: 600;
@@ -255,14 +264,8 @@
 
   .standard-settings-page-input,
   .standard-settings-page-select {
-    font-size: 16px; /* Prevent zoom on iOS */
+    font-size: 16px;
+    /* Prevent zoom on iOS */
   }
 
-  .standard-settings-page-actions {
-    flex-direction: column-reverse;
-  }
-
-  .standard-settings-page-actions button {
-    width: 100%;
-  }
 }

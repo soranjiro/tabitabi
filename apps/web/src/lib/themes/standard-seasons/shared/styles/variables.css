@@ -4,6 +4,8 @@
   --theme-primary-light: #333333;
   --theme-secondary: #666666;
   --theme-accent: #999999;
+  --theme-accent-light: rgba(230, 180, 34, 0.8);
+  --theme-accent-dark: #d4a726;
   --theme-text: #000000;
   --theme-text-light: #666666;
   --theme-card-bg: #ffffff;
@@ -13,6 +15,9 @@
   --theme-dot-bg: #000000;
   --theme-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.12);
   --theme-shadow-sm: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+
+  --theme-accent-light: rgba(230, 180, 34, 0.8);
+  --theme-accent-dark: #d4a726;
 
   --theme-decoration-primary: #000000;
   --theme-decoration-secondary: #666666;

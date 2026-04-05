@@ -1,22 +1,22 @@
-/* Print styles for standard-autumn theme - Premium Brochure Style */
+/* Print styles for standard-seasons theme - Premium Brochure Style */
 @media print {
 
   /* Hide non-essential UI elements */
-  .standard-autumn-bottom-nav,
-  .standard-autumn-carousel-controls,
-  .standard-autumn-share-wrapper,
-  .standard-autumn-copy-msg,
-  .standard-autumn-btn-add,
-  .standard-autumn-add-step,
-  .standard-autumn-step-actions,
-  .standard-autumn-floating-actions,
-  .standard-autumn-header::before,
-  .standard-autumn-header::after,
-  .standard-autumn-controls,
-  .standard-autumn-container::before,
-  .standard-autumn-container::after,
-  .standard-autumn-carousel-wrapper::before,
-  .standard-autumn-carousel-wrapper::after,
+  .standard-bottom-nav,
+  .standard-carousel-controls,
+  .standard-share-wrapper,
+  .standard-copy-msg,
+  .standard-btn-add,
+  .standard-add-step,
+  .standard-step-actions,
+  .standard-floating-actions,
+  .standard-header::before,
+  .standard-header::after,
+  .standard-controls,
+  .standard-container::before,
+  .standard-container::after,
+  .standard-carousel-wrapper::before,
+  .standard-carousel-wrapper::after,
   .demo-banner {
     display: none !important;
   }
@@ -59,7 +59,7 @@
   }
 
   /* Main Container - Simple vertical layout for stability */
-  .standard-autumn-theme {
+  .standard-theme {
     background: transparent !important;
     min-height: auto !important;
     height: auto !important;
@@ -69,7 +69,7 @@
     overflow: visible !important;
   }
 
-  .standard-autumn-container {
+  .standard-container {
     display: block !important;
     width: 100% !important;
     max-width: none !important;
@@ -80,7 +80,7 @@
   }
 
   /* Header Section */
-  .standard-autumn-header {
+  .standard-header {
     display: block !important;
     background: transparent !important;
     box-shadow: none !important;
@@ -92,8 +92,8 @@
     page-break-after: avoid !important;
   }
 
-  .standard-autumn-title-button,
-  .standard-autumn-title-input {
+  .standard-title-button,
+  .standard-title-input {
     font-size: 24pt !important;
     color: var(--theme-primary) !important;
     font-weight: 800 !important;
@@ -109,7 +109,7 @@
   }
 
   /* Memo Section */
-  .standard-autumn-memo-display {
+  .standard-memo-display {
     display: block !important;
     background: linear-gradient(to bottom, #fff 0%, #fffcf8 100%) !important;
     padding: 5mm 6mm !important;
@@ -125,12 +125,12 @@
     page-break-after: avoid !important;
   }
 
-  .standard-autumn-memo-display::before {
+  .standard-memo-display::before {
     display: none !important;
   }
 
   /* Carousel Wrapper - Reset to vertical flow */
-  .standard-autumn-carousel-wrapper {
+  .standard-carousel-wrapper {
     display: block !important;
     width: 100% !important;
     padding: 0 !important;
@@ -139,7 +139,7 @@
     position: static !important;
   }
 
-  .standard-autumn-carousel {
+  .standard-carousel {
     display: block !important;
     width: 100% !important;
     overflow: visible !important;
@@ -147,7 +147,7 @@
     margin: 0 !important;
   }
 
-  .standard-autumn-carousel-track {
+  .standard-carousel-track {
     display: block !important;
     width: 100% !important;
     transform: none !important;
@@ -157,9 +157,9 @@
   }
 
   /* Day Cards - All visible, vertical layout */
-  .standard-autumn-carousel-card,
-  .standard-autumn-carousel-card[inert],
-  .standard-autumn-carousel-card[inert="true"] {
+  .standard-carousel-card,
+  .standard-carousel-card[inert],
+  .standard-carousel-card[inert="true"] {
     display: block !important;
     width: 100% !important;
     margin: 0 0 6mm 0 !important;
@@ -180,17 +180,17 @@
   }
 
   /* Force first card to not break before */
-  .standard-autumn-carousel-card:first-child {
+  .standard-carousel-card:first-child {
     page-break-before: avoid !important;
   }
 
   /* Remove decorative pseudo-elements from cards */
-  .standard-autumn-carousel-card::before,
-  .standard-autumn-carousel-card::after {
+  .standard-carousel-card::before,
+  .standard-carousel-card::after {
     display: none !important;
   }
 
-  .standard-autumn-card {
+  .standard-card {
     display: block !important;
     background: #fff !important;
     box-shadow: none !important;
@@ -202,9 +202,9 @@
   }
 
   /* Day Header */
-  .standard-autumn-card-header {
+  .standard-card-header {
     display: block !important;
-    background: linear-gradient(135deg, var(--theme-primary) 0%, #b8453a 100%) !important;
+    background: var(--theme-primary) !important;
     color: white !important;
     font-size: 11pt !important;
     font-weight: 700 !important;
@@ -221,12 +221,12 @@
     box-shadow: none !important;
   }
 
-  .standard-autumn-card-header::before,
-  .standard-autumn-card-header::after {
+  .standard-card-header::before,
+  .standard-card-header::after {
     display: none !important;
   }
 
-  .standard-autumn-card-body {
+  .standard-card-body {
     display: block !important;
     padding: 4mm !important;
     width: 100% !important;
@@ -234,7 +234,7 @@
   }
 
   /* Timeline Items */
-  .standard-autumn-timeline-item {
+  .standard-timeline-item {
     display: flex !important;
     flex-direction: row !important;
     gap: 3mm !important;
@@ -245,12 +245,12 @@
     break-inside: avoid !important;
   }
 
-  .standard-autumn-timeline-item:last-child {
+  .standard-timeline-item:last-child {
     margin-bottom: 0 !important;
   }
 
   /* Time */
-  .standard-autumn-step-time {
+  .standard-step-time {
     font-size: 9pt !important;
     color: var(--theme-primary) !important;
     font-weight: 700 !important;
@@ -263,7 +263,7 @@
   }
 
   /* Timeline Dot & Line */
-  .standard-autumn-step-dot {
+  .standard-step-dot {
     width: 6px !important;
     height: 6px !important;
     min-width: 6px !important;
@@ -278,7 +278,7 @@
     box-shadow: none !important;
   }
 
-  .standard-autumn-timeline-line {
+  .standard-timeline-line {
     position: absolute !important;
     left: 14mm !important;
     top: 12px !important;
@@ -288,12 +288,12 @@
     z-index: 1 !important;
   }
 
-  .standard-autumn-timeline-item:last-child .standard-autumn-timeline-line {
+  .standard-timeline-item:last-child .standard-timeline-line {
     display: none !important;
   }
 
   /* Step Content */
-  .standard-autumn-step-content {
+  .standard-step-content {
     flex: 1 !important;
     background: transparent !important;
     border: none !important;
@@ -306,12 +306,12 @@
     border-bottom: 1px dashed rgba(169, 53, 41, 0.12) !important;
   }
 
-  .standard-autumn-timeline-item:last-child .standard-autumn-step-content {
+  .standard-timeline-item:last-child .standard-step-content {
     border-bottom: none !important;
     padding-bottom: 0 !important;
   }
 
-  .standard-autumn-step-title {
+  .standard-step-title {
     font-size: 10pt !important;
     color: #333 !important;
     font-weight: 600 !important;
@@ -321,7 +321,7 @@
     display: block !important;
   }
 
-  .standard-autumn-step-location {
+  .standard-step-location {
     font-size: 8.5pt !important;
     color: #666 !important;
     margin-bottom: 1mm !important;
@@ -330,14 +330,14 @@
     gap: 2px !important;
   }
 
-  .standard-autumn-icon-location {
+  .standard-icon-location {
     width: 10px !important;
     height: 10px !important;
     color: var(--theme-accent) !important;
   }
 
   /* Notes */
-  .standard-autumn-step-notes {
+  .standard-step-notes {
     font-size: 8.5pt !important;
     color: #555 !important;
     background: transparent !important;
@@ -347,41 +347,41 @@
     margin-top: 1mm !important;
   }
 
-  .standard-autumn-step-notes p {
+  .standard-step-notes p {
     margin: 0 0 1mm 0 !important;
   }
 
-  .standard-autumn-step-notes p:last-child {
+  .standard-step-notes p:last-child {
     margin-bottom: 0 !important;
   }
 
-  .standard-autumn-step-notes ul,
-  .standard-autumn-step-notes ol {
+  .standard-step-notes ul,
+  .standard-step-notes ol {
     margin: 1mm 0 !important;
     padding-left: 4mm !important;
   }
 
-  .standard-autumn-step-notes li {
+  .standard-step-notes li {
     margin: 0.5mm 0 !important;
   }
 
   /* Secret Steps */
-  .standard-autumn-step-hidden {
+  .standard-step-hidden {
     opacity: 1 !important;
     background: rgba(0, 0, 0, 0.02) !important;
     border-radius: 2mm !important;
     padding: 2mm !important;
   }
 
-  .standard-autumn-step-hidden .standard-autumn-step-title {
+  .standard-step-hidden .standard-step-title {
     color: #888 !important;
   }
 
-  .standard-autumn-secret-blur {
+  .standard-secret-blur {
     display: none !important;
   }
 
-  .standard-autumn-step-hidden::after {
+  .standard-step-hidden::after {
     content: "Secret Event";
     display: block;
     font-size: 7pt;
@@ -391,23 +391,23 @@
     text-align: right;
   }
 
-  .standard-autumn-lock-icon {
+  .standard-lock-icon {
     display: none !important;
   }
 
   /* Links - Print friendly */
-  .standard-autumn-step-notes a {
+  .standard-step-notes a {
     text-decoration: underline !important;
     color: var(--theme-primary) !important;
   }
 
   /* Don't show URLs after links in print */
-  .standard-autumn-step-notes a[href]::after {
+  .standard-step-notes a[href]::after {
     display: none !important;
   }
 
   /* Empty state */
-  .standard-autumn-empty {
+  .standard-empty {
     text-align: center !important;
     padding: 10mm !important;
     color: #999 !important;
@@ -416,7 +416,7 @@
   /* Ensure orphan/widow control */
   p,
   li,
-  .standard-autumn-step-title {
+  .standard-step-title {
     orphans: 2 !important;
     widows: 2 !important;
   }

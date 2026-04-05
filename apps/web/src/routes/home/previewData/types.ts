@@ -3,6 +3,9 @@ export interface PreviewStep {
   label: string;
   icon: string;
   location?: string;
+  dayOffset?: number;
+  durationDays?: number;
+  durationHours?: number;
 }
 
 export interface ThemeColors {
@@ -20,7 +23,7 @@ export interface PreviewItinerary {
   themeName: string;
   description: string;
   phrase: string;
-  layout: "list" | "timeline" | "card";
+  layout: "list" | "timeline" | "card" | "week" | "month";
   colors: ThemeColors;
   steps: PreviewStep[];
   features: string[];

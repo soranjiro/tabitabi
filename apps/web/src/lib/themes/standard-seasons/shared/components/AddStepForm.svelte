@@ -127,8 +127,9 @@
       </label>
     </div>
     <div class="standard-datetime">
-      <label class="standard-form-label">開始日{#if !isAllDay}時{/if}</label>
+      <label class="standard-form-label" for="start-date">開始日{#if !isAllDay}時{/if}</label>
       <input
+        id="start-date"
         type="date"
         bind:value={newStep.date}
         onchange={() => (startUserChanged = true)}
@@ -163,8 +164,9 @@
       {/if}
     </div>
     <div class="standard-datetime">
-      <label class="standard-form-label">終了日{#if !isAllDay}時{/if}</label>
+      <label class="standard-form-label" for="end-date">終了日{#if !isAllDay}時{/if}</label>
       <input
+        id="end-date"
         type="date"
         bind:value={newStepEndDate}
         onchange={() => (endUserChanged = true)}

@@ -641,7 +641,7 @@
 
 .standard-week-event-transport {
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid var(--standard-accent);
+  border: 1px solid var(--theme-accent);
   color: var(--theme-text);
   font-weight: 600;
   box-shadow: inset 0 0 0 1px rgba(82, 207, 224, 0.12);
@@ -677,7 +677,7 @@
   }
 
   .standard-week-container {
-    grid-template-columns: 50px repeat(var(--week-cols, 7), minmax(60px, 1fr));
+    grid-template-columns: 50px repeat(var(--week-cols, 7), minmax(calc((100vw - 50px) / 3.5), 1fr));
     min-width: max-content;
     width: 100%;
     border: 1px solid rgba(0, 0, 0, 0.08);

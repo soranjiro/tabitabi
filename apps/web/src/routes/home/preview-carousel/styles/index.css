@@ -1,0 +1,226 @@
+.hero-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 280px;
+  position: relative;
+}
+
+@media (max-width: 480px) {
+  .hero-visual {
+    width: 100%;
+    max-width: 280px;
+  }
+}
+
+.preview-carousel {
+  position: relative;
+  width: 100%;
+  height: 280px;
+}
+
+@media (max-width: 480px) or (max-height: 700px) {
+  .preview-carousel {
+    height: 250px;
+    margin-top: 0.5rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .hero-visual {
+    margin-right: 2rem;
+  }
+}
+
+.preview-card {
+  position: absolute;
+  top: 0.5rem;
+  left: 0;
+  background: var(--bg, white);
+  border-radius: 12px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  width: 260px;
+  opacity: 0;
+  transform: translateX(40px) scale(0.9);
+  transition:
+    opacity 0.4s ease-out,
+    transform 0.4s ease-out;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  contain: layout style paint;
+  content-visibility: auto;
+}
+
+@media (max-width: 480px) {
+  .preview-card {
+    width: 100%;
+    max-width: 240px;
+  }
+}
+
+.preview-card.card {
+  background: linear-gradient(135deg, #fdf2f8 0%, #faf5ff 50%, #f5f3ff 100%);
+}
+
+.preview-card.active {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  pointer-events: auto;
+  z-index: 3;
+}
+
+.preview-card.next {
+  opacity: 0.5;
+  transform: translateX(30px) translateY(20px) scale(0.92);
+  z-index: 2;
+}
+
+.preview-card.prev {
+  opacity: 0;
+  transform: translateX(-40px) scale(0.9);
+  z-index: 1;
+}
+
+.preview-header {
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: white;
+}
+
+.preview-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.preview-theme-name {
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.preview-theme-phrase {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.6rem;
+  font-style: italic;
+}
+
+.preview-content {
+  flex: 1;
+  padding: 0.75rem;
+  overflow: hidden;
+}
+
+.preview-features {
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.feature-tag {
+  font-size: 0.55rem;
+  padding: 0.15rem 0.4rem;
+  background: var(--primary);
+  color: white;
+  border-radius: 4px;
+  opacity: 0.9;
+}
+
+.feature-more {
+  font-size: 0.55rem;
+  padding: 0.15rem 0.35rem;
+  background: var(--secondary);
+  color: white;
+  border-radius: 4px;
+}
+
+.preview-dots {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: white;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  box-sizing: content-box;
+  opacity: 0.4;
+  transform: scale(1);
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out;
+}
+
+.dot.active {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+.try-demo-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.75rem;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  gap: 0.4rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 16px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #5dc4f7 0%, #40b5ef 80%, #50b0f5 100%);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.try-demo-link:hover {
+  transform: scale(1.05);
+}
+
+.try-demo-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.try-demo-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: #80d5ff 2px solid;
+  background: #5dbff0;
+  color: white;
+  border-radius: 50%;
+  font-size: 1rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.try-demo-link:hover .try-demo-icon {
+  transform: scale(1.1);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+}

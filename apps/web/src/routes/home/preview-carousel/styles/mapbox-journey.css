@@ -1,0 +1,54 @@
+.preview-card.theme-mapbox-journey .preview-content {
+  padding: 0;
+}
+
+.journey-preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
+}
+
+.journey-globe {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.journey-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.journey-info {
+  padding: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(30, 41, 59, 0.5);
+  border-top: 1px solid #334155;
+}
+
+.journey-route {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #e2e8f0;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+.journey-arrow {
+  color: #38bdf8;
+  font-size: 0.6rem;
+}
+
+.journey-status {
+  color: #34d399;
+  font-size: 0.55rem;
+  font-weight: 600;
+  background: rgba(52, 211, 153, 0.1);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}

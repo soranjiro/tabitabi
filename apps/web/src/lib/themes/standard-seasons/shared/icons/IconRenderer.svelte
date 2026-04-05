@@ -24,31 +24,35 @@
     class: className = "",
   } = $props();
 
-  const iconMap: Record<StepType, any> = {
-    [STEP_TYPE.NORMAL_GENERAL]: GeneralIcon,
-    [STEP_TYPE.NORMAL_FOOD]: FoodIcon,
-    [STEP_TYPE.NORMAL_HOTEL]: HotelIcon,
-    [STEP_TYPE.NORMAL_SIGHTSEEING]: SightseeingIcon,
-    [STEP_TYPE.NORMAL_MEAL]: FoodIcon,
-    [STEP_TYPE.NORMAL_SHOPPING]: ShoppingIcon,
-    [STEP_TYPE.TRANSPORT_GENERAL]: CarIcon,
-    [STEP_TYPE.TRANSPORT_TRAIN]: TrainIcon,
-    [STEP_TYPE.TRANSPORT_CAR]: CarIcon,
-    [STEP_TYPE.TRANSPORT_PLANE]: PlaneIcon,
-    [STEP_TYPE.TRANSPORT_BUS]: BusIcon,
-    [STEP_TYPE.TRANSPORT_SHIP]: ShipIcon,
-  };
-
   const sizeClasses: Record<string, string> = {
     sm: "w-4 h-4",
     md: "w-6 h-6",
     lg: "w-8 h-8",
   };
 
-  const IconComponent = iconMap[type as StepType] || GeneralIcon;
-  const sizeClass = sizeClasses[size];
+  const sizeClass = $derived(() => sizeClasses[size]);
 </script>
 
-<div class={`${sizeClass} ${className}`}>
-  <IconComponent />
+<div class={`${sizeClass()} ${className}`}>
+  {#if type === STEP_TYPE.NORMAL_FOOD || type === STEP_TYPE.NORMAL_MEAL}
+    <FoodIcon />
+  {:else if type === STEP_TYPE.NORMAL_HOTEL}
+    <HotelIcon />
+  {:else if type === STEP_TYPE.NORMAL_SIGHTSEEING}
+    <SightseeingIcon />
+  {:else if type === STEP_TYPE.NORMAL_SHOPPING}
+    <ShoppingIcon />
+  {:else if type === STEP_TYPE.TRANSPORT_TRAIN}
+    <TrainIcon />
+  {:else if type === STEP_TYPE.TRANSPORT_CAR}
+    <CarIcon />
+  {:else if type === STEP_TYPE.TRANSPORT_PLANE}
+    <PlaneIcon />
+  {:else if type === STEP_TYPE.TRANSPORT_BUS}
+    <BusIcon />
+  {:else if type === STEP_TYPE.TRANSPORT_SHIP}
+    <ShipIcon />
+  {:else}
+    <GeneralIcon />
+  {/if}
 </div>

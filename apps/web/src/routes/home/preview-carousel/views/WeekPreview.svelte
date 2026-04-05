@@ -33,7 +33,7 @@
         const bHour = Number(b.time.split(":")[0]) || 0;
         return aHour - bHour;
       })
-      .slice(0, 2);
+      .slice(0, 3);
   }
 </script>
 
@@ -41,7 +41,6 @@
   <div class="week-header">
     <div>
       <div class="week-title">{preview.title}</div>
-      <div class="week-subtitle">秋の紅葉狩り旅</div>
     </div>
     <span class="week-badge">WEEK</span>
   </div>

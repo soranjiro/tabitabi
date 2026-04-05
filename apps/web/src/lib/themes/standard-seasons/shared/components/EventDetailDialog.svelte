@@ -85,9 +85,23 @@
     return [hours, minutes];
   }
 
-  function formatDate(ms: number): string {
+  function formatLocalDate(ms: number): string {
     const date = new Date(ms);
-    return date.toISOString().split("T")[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function normalizeMinute(value: string): string {
+    const valid = ["00", "15", "30", "45"];
+    if (valid.includes(value)) return value;
+    const minutes = Number(value);
+    if (Number.isNaN(minutes) || minutes < 0) return "00";
+    if (minutes >= 52) return "45";
+    if (minutes >= 37) return "30";
+    if (minutes >= 22) return "15";
+    return "00";
   }
 
   function startEdit() {
@@ -97,9 +111,9 @@
 
     editedStep = {
       title: step.title,
-      startDate: formatDate(step.start_at),
+      startDate: formatLocalDate(step.start_at),
       startTime: `${startHour}:${startMinute}`,
-      endDate: formatDate(step.end_at),
+      endDate: formatLocalDate(step.end_at),
       endTime: `${endHour}:${endMinute}`,
       location: step.location,
       notes: getMemoText(step.notes) || "",
@@ -150,7 +164,7 @@
         const em = String(d.getMinutes()).padStart(2, "0");
         editEndHour = eh;
         editEndMinute = em;
-        editedStep.endDate = d.toISOString().split("T")[0];
+        editedStep.endDate = formatLocalDate(d.getTime());
         editedStep.endTime = `${eh}:${em}`;
       }
     } catch (e) {
@@ -178,12 +192,18 @@
         const sm = String(d.getMinutes()).padStart(2, "0");
         editStartHour = sh;
         editStartMinute = sm;
-        editedStep.startDate = d.toISOString().split("T")[0];
+        editedStep.startDate = formatLocalDate(d.getTime());
         editedStep.startTime = `${sh}:${sm}`;
       }
     } catch (e) {
       // ignore parse errors
     }
+  });
+
+  $effect(() => {
+    if (!isEditing || editIsAllDay) return;
+    editStartMinute = normalizeMinute(editStartMinute);
+    editEndMinute = normalizeMinute(editEndMinute);
   });
 
   async function handleUpdate() {

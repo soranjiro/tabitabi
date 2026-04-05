@@ -154,7 +154,7 @@ export class UserService {
 
   async getBookmark(userId: string, itineraryId: string): Promise<UserBookmark | null> {
     const result = await this.db
-      .prepare('SELECT * FROM user_bookmarks WHERE user_id = ? AND itinerary_id = ?')
+      .prepare('SELECT user_id, itinerary_id, is_visible, created_at, updated_at FROM user_bookmarks WHERE user_id = ? AND itinerary_id = ?')
       .bind(userId, itineraryId)
       .first<Record<string, unknown>>();
 

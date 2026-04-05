@@ -3,6 +3,7 @@ import type {
   LoginInput,
   LoginResponse,
   RegisterResponse,
+  UserBookmark,
   UserBookmarkWithItinerary,
   PublicBookmark,
   UpdateVisibilityInput,
@@ -55,5 +56,5 @@ export const userApi = {
     ),
 
   checkOwnership: (itineraryId: string) =>
-    request<{ itinerary_id: string }>(`/users/me/bookmarks/${itineraryId}`),
+    request<UserBookmark>(`/users/me/bookmarks/${itineraryId}`),
 };

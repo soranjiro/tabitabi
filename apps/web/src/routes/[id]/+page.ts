@@ -19,7 +19,9 @@ export const load: PageLoad = async ({ params }) => {
       try {
         await userApi.checkOwnership(params.id);
         isOwner = true;
-      } catch {
+      } catch (e) {
+        // 404 = bookmark not found (not owner)
+        // 401 = token expired → isLoggedIn() で事前にチェック済みのため通常発生しない
         isOwner = false;
       }
     }

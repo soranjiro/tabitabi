@@ -183,6 +183,7 @@
 </svelte:head>
 
 {#key data.itinerary.theme_id}
+  <!-- readOnly は standard-seasons テーマのみ対応。他テーマは issue #159 で対応予定 -->
   <ItineraryView
     {itinerary}
     {steps}

@@ -3,9 +3,6 @@
   import "../styles/month.css";
   export let preview: PreviewItinerary;
 
-  const visibleDays = 14;
-  const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
-
   type MonthSegment = {
     step: PreviewStep;
     start: number;
@@ -95,15 +92,8 @@
   <div class="month-header">
     <div>
       <div class="month-title">{preview.title}</div>
-      <div class="month-subtitle">2週間のカレンダー</div>
     </div>
     <div class="month-label">MONTH</div>
-  </div>
-
-  <div class="month-weekdays">
-    {#each weekdays as weekday}
-      <div class="month-weekday">{weekday}</div>
-    {/each}
   </div>
 
   <div class="month-grid">
@@ -124,6 +114,10 @@
                   style="grid-column: {segment.start} / span {segment.length};"
                   title={segment.step.label}
                 >
+                  {#if segment.step.icon}
+                    <span class="month-event-bar-icon">{segment.step.icon}</span
+                    >
+                  {/if}
                   <span class="month-event-bar-label">{segment.step.label}</span
                   >
                 </div>

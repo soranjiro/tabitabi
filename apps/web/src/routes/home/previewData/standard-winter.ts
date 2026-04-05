@@ -16,13 +16,11 @@ export const standardWinterPreview: PreviewItinerary = {
     border: "#bfdbfe",
   },
   steps: [
-    { time: "08:30", label: "東京駅から長野駅へ移動", icon: "🚄", dayOffset: 0, durationDays: 1 },
-    { time: "11:30", label: "長野駅から白馬へバス移動", icon: "🚌", dayOffset: 0, durationDays: 1 },
-    { time: "13:30", label: "スキー用具レンタル", icon: "🎿", dayOffset: 1, durationDays: 1 },
-    { time: "14:45", label: "スキー初心者レッスン", icon: "⛷️", dayOffset: 1, durationDays: 1 },
-    { time: "19:30", label: "地元居酒屋で夕食", icon: "🍶", dayOffset: 1, durationDays: 1 },
-    { time: "21:00", label: "温泉宿にチェックイン", icon: "♨️", dayOffset: 1, durationDays: 2 },
-    { time: "09:30", label: "雪見カフェで休憩", icon: "☕", dayOffset: 3, durationDays: 1 },
+    { time: "08:30", label: "東京駅から長野駅へ移動", icon: "🚄", dayOffset: 0, durationDays: 2 },
+    { time: "09:00", label: "雪山リゾート滞在", icon: "🏔️", dayOffset: 1, durationDays: 4 },
+    { time: "15:00", label: "4日間スキー合宿", icon: "🎿", dayOffset: 2, durationDays: 4 },
+    { time: "21:00", label: "温泉宿にチェックイン", icon: "♨️", dayOffset: 6, durationDays: 3 },
+    // { time: "09:30", label: "雪見カフェで休憩", icon: "☕", dayOffset: 7, durationDays: 1 },
   ],
   features: ["月ビュー", "雪景色", "複数日イベント"],
 };

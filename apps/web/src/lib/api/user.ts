@@ -8,6 +8,9 @@ import type {
   UpdateVisibilityInput,
   UserPublicProfile,
   SyncBookmarksResponse,
+  UpdateProfileInput,
+  UpdatePasswordInput,
+  UpdateProfileResponse,
   ApiResult,
 } from '@tabitabi/types';
 import { userAuth } from '../user-auth';
@@ -59,5 +62,17 @@ export const userApi = {
     request<SyncBookmarksResponse>('/users/me/sync-bookmarks', {
       method: 'POST',
       body: JSON.stringify({ itinerary_ids: itineraryIds }),
+    }),
+
+  updateProfile: (data: UpdateProfileInput) =>
+    request<UpdateProfileResponse>('/users/me/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  updatePassword: (data: UpdatePasswordInput) =>
+    request<null>('/users/me/password', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     }),
 };

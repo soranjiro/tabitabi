@@ -6,6 +6,9 @@ import type {
   PublicBookmark,
   RegisterInput,
   SyncBookmarksResponse,
+  UpdateProfileInput,
+  UpdatePasswordInput,
+  UpdateProfileResponse,
 } from '@tabitabi/types';
 import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
@@ -184,6 +187,90 @@ export class UserService {
     const synced = results.filter(r => r.meta?.changes && r.meta.changes > 0).length;
 
     return { synced, skipped: skipped + (validIds.length - synced) };
+  }
+
+  async updateProfile(userId: string, input: UpdateProfileInput): Promise<UpdateProfileResponse> {
+    if (typeof input.username === 'string') {
+      if (input.username.length < 3 || input.username.length > 20) {
+        throw new Error('USERNAME_INVALID_LENGTH');
+      }
+      const conflict = await this.db
+        .prepare('SELECT id FROM users WHERE username = ? AND id != ?')
+        .bind(input.username, userId)
+        .first();
+      if (conflict) throw new Error('USERNAME_ALREADY_EXISTS');
+    }
+
+    if (typeof input.email === 'string') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(input.email)) {
+        throw new Error('EMAIL_INVALID_FORMAT');
+      }
+      const conflict = await this.db
+        .prepare('SELECT id FROM users WHERE email = ? AND id != ?')
+        .bind(input.email, userId)
+        .first();
+      if (conflict) throw new Error('EMAIL_ALREADY_EXISTS');
+    }
+
+    const now = getCurrentTimestamp();
+    const fields: string[] = [];
+    const values: unknown[] = [];
+
+    if (typeof input.username === 'string') {
+      fields.push('username = ?');
+      values.push(input.username);
+    }
+    if (typeof input.email === 'string') {
+      fields.push('email = ?');
+      values.push(input.email);
+    }
+    fields.push('updated_at = ?');
+    values.push(now);
+    values.push(userId);
+
+    try {
+      await this.db
+        .prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`)
+        .bind(...values)
+        .run();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('UNIQUE constraint failed: users.username')) throw new Error('USERNAME_ALREADY_EXISTS');
+      if (msg.includes('UNIQUE constraint failed: users.email')) throw new Error('EMAIL_ALREADY_EXISTS');
+      throw err;
+    }
+
+    const updated = await this.db
+      .prepare('SELECT username, email, created_at FROM users WHERE id = ?')
+      .bind(userId)
+      .first<{ username: string; email: string; created_at: string }>();
+
+    if (!updated) throw new Error('USER_NOT_FOUND');
+    return { username: updated.username, email: updated.email, created_at: updated.created_at };
+  }
+
+  async updatePassword(userId: string, input: UpdatePasswordInput): Promise<void> {
+    const user = await this.db
+      .prepare('SELECT password_hash FROM users WHERE id = ?')
+      .bind(userId)
+      .first<{ password_hash: string }>();
+
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    const valid = await verifyPassword(input.current_password, user.password_hash);
+    if (!valid) throw new Error('INVALID_CURRENT_PASSWORD');
+
+    if (input.new_password.length < 8) {
+      throw new Error('PASSWORD_TOO_SHORT');
+    }
+
+    const now = getCurrentTimestamp();
+    const newHash = await hashPassword(input.new_password);
+    await this.db
+      .prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
+      .bind(newHash, now, userId)
+      .run();
   }
 
   async addBookmark(userId: string, itineraryId: string): Promise<UserBookmark> {

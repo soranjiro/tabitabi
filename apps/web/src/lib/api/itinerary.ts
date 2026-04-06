@@ -22,6 +22,7 @@ export const itineraryApi = {
 
   fork: (id: string) => {
     const userToken = userAuth.getToken();
-    return apiClient.postWithUserToken<ForkItineraryResponse>(`/itineraries/${id}/fork`, {}, userToken!);
+    if (!userToken) throw new Error('Not logged in');
+    return apiClient.postWithUserToken<ForkItineraryResponse>(`/itineraries/${id}/fork`, {}, userToken);
   },
 };

@@ -44,6 +44,24 @@ async function applyMigrations(db: D1Database) {
       updated_at TEXT NOT NULL,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
+    `CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      username TEXT UNIQUE NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );`,
+    `CREATE TABLE IF NOT EXISTS user_bookmarks (
+      user_id TEXT NOT NULL,
+      itinerary_id TEXT NOT NULL,
+      is_visible BOOLEAN NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, itinerary_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+    );`,
   ];
 
   for (const sql of migrations) {
@@ -241,72 +259,6 @@ describe('Itineraries API', () => {
 });
 
 describe('POST /api/v1/itineraries/:id/fork', () => {
-  async function applyForkMigrations(db: D1Database) {
-    const migrations = [
-      `CREATE TABLE IF NOT EXISTS itineraries (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        theme_id TEXT NOT NULL DEFAULT 'standard-autumn',
-        memo TEXT,
-        password TEXT,
-        fork_count INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );`,
-      `CREATE TABLE IF NOT EXISTS steps (
-        id TEXT PRIMARY KEY,
-        itinerary_id TEXT NOT NULL,
-        title TEXT NOT NULL,
-        start_at INTEGER NOT NULL,
-        end_at INTEGER NOT NULL,
-        location TEXT,
-        notes TEXT,
-        type TEXT NOT NULL DEFAULT 'normal:general',
-        is_all_day INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
-      );`,
-      `CREATE INDEX IF NOT EXISTS idx_steps_itinerary ON steps(itinerary_id);`,
-      `CREATE TABLE IF NOT EXISTS itinerary_secrets (
-        itinerary_id TEXT PRIMARY KEY,
-        enabled BOOLEAN DEFAULT FALSE,
-        offset_minutes INTEGER DEFAULT 60,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
-      );`,
-      `CREATE TABLE IF NOT EXISTS itinerary_walica_settings (
-        itinerary_id TEXT PRIMARY KEY,
-        walica_id TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
-      );`,
-      `CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      );`,
-      `CREATE TABLE IF NOT EXISTS user_bookmarks (
-        user_id TEXT NOT NULL,
-        itinerary_id TEXT NOT NULL,
-        is_visible BOOLEAN NOT NULL DEFAULT 1,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        PRIMARY KEY (user_id, itinerary_id),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
-      );`,
-    ];
-    for (const sql of migrations) {
-      await db.prepare(sql).run();
-    }
-  }
-
   async function registerAndGetToken(username: string, email: string): Promise<string> {
     const res = await app.request('/api/v1/users/register', {
       method: 'POST',
@@ -318,7 +270,7 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
   }
 
   beforeEach(async () => {
-    await applyForkMigrations(env.DB);
+    await applyMigrations(env.DB);
     await env.DB.prepare('DELETE FROM user_bookmarks').run();
     await env.DB.prepare('DELETE FROM steps').run();
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();

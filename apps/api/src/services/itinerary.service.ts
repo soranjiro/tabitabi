@@ -65,6 +65,7 @@ export class ItineraryService {
         enabled: input.secret_settings.enabled,
         offset_minutes: input.secret_settings.offset_minutes
       } : null,
+      fork_count: 0,
       created_at: now,
       updated_at: now,
     };
@@ -202,29 +203,31 @@ export class ItineraryService {
     const newId = generateId();
     const now = getCurrentTimestamp();
 
-    await this.db
-      .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, fork_count, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, 0, ?, ?)')
-      .bind(newId, `${source.title}（コピー）`, source.theme_id, source.memo, now, now)
-      .run();
-
+    // Fetch source steps before batch to generate new IDs
+    // secret_settings and walica_id are intentionally excluded from forks (personal configuration)
     const sourceSteps = await this.db
-      .prepare('SELECT * FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
+      .prepare('SELECT id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
       .bind(sourceId)
       .all();
 
     const rows = sourceSteps.results ?? [];
-    for (const row of rows) {
-      const stepId = generateId();
-      await this.db
-        .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .bind(stepId, newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.type, row.is_all_day, now, now)
-        .run();
-    }
 
-    await this.db
-      .prepare('UPDATE itineraries SET fork_count = fork_count + 1, updated_at = ? WHERE id = ?')
-      .bind(now, sourceId)
-      .run();
+    // Use batch() for atomic execution: all inserts + fork_count increment succeed or fail together
+    const stepStatements = rows.map(row =>
+      this.db
+        .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.type, row.is_all_day, now, now)
+    );
+
+    await this.db.batch([
+      this.db
+        .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, fork_count, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, 0, ?, ?)')
+        .bind(newId, `${source.title}（コピー）`, source.theme_id, source.memo, now, now),
+      ...stepStatements,
+      this.db
+        .prepare('UPDATE itineraries SET fork_count = fork_count + 1, updated_at = ? WHERE id = ?')
+        .bind(now, sourceId),
+    ]);
 
     const forked = await this.get(newId);
     return { itinerary: forked!, steps: rows.length };

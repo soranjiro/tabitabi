@@ -11,7 +11,7 @@ export interface Itinerary {
   walica_id?: string | null;
   password?: string | null;
   secret_settings?: ItinerarySecretSettings | null;
-  fork_count?: number;
+  fork_count: number;
   created_at: string;
   updated_at: string;
 }

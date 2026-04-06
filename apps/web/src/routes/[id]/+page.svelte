@@ -89,6 +89,7 @@
       }
     };
 
+    isLoggedIn = userAuth.isLoggedIn();
     init();
 
     return () => {
@@ -180,11 +181,9 @@
   let isLoggedIn = $state(false);
   let forking = $state(false);
 
-  onMount(() => {
-    isLoggedIn = !!userAuth.getToken();
-  });
-
   async function handleFork() {
+    const userToken = userAuth.getToken();
+    if (!userToken) return;
     forking = true;
     try {
       const result = await itineraryApi.fork(data.itinerary.id);

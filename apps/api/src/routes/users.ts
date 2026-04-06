@@ -87,6 +87,13 @@ users.post('/me/sync-bookmarks', userAuthMiddleware, async (c) => {
     }, 400);
   }
 
+  if (!input.itinerary_ids.every((id) => typeof id === 'string' && id.length > 0)) {
+    return c.json({
+      success: false,
+      error: { code: 'INVALID_INPUT', message: 'itinerary_ids must contain only non-empty strings' }
+    }, 400);
+  }
+
   const service = new UserService(c.env.DB);
   const result = await service.syncBookmarks(userId, input.itinerary_ids);
   return c.json({ success: true, data: result });

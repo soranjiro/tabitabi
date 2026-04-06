@@ -26,8 +26,11 @@
       .filter((h) => h.shioriId !== "demo" && h.token !== null)
       .map((h) => h.shioriId);
     if (ids.length === 0) return;
+    const chunkSize = 50;
     try {
-      await userApi.syncBookmarks(ids);
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        await userApi.syncBookmarks(ids.slice(i, i + chunkSize));
+      }
     } catch {
       // sync 失敗はサイレントに無視（shiori_history は保持したまま）
     }

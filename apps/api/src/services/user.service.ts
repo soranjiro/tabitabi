@@ -158,15 +158,17 @@ export class UserService {
   async syncBookmarks(userId: string, itineraryIds: string[]): Promise<SyncBookmarksResponse> {
     if (itineraryIds.length === 0) return { synced: 0, skipped: 0 };
 
+    const uniqueItineraryIds = Array.from(new Set(itineraryIds));
+
     // 1. 存在する itinerary を一括確認
-    const placeholders = itineraryIds.map(() => '?').join(', ');
+    const placeholders = uniqueItineraryIds.map(() => '?').join(', ');
     const existing = await this.db
       .prepare(`SELECT id FROM itineraries WHERE id IN (${placeholders})`)
-      .bind(...itineraryIds)
+      .bind(...uniqueItineraryIds)
       .all<{ id: string }>();
 
     const validIds = (existing.results ?? []).map(r => r.id);
-    const skipped = itineraryIds.length - validIds.length;
+    const skipped = uniqueItineraryIds.length - validIds.length;
 
     if (validIds.length === 0) return { synced: 0, skipped };
 

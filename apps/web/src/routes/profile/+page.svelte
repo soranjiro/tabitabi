@@ -170,12 +170,12 @@
       editSuccess = "プロフィールを更新しました";
       editSection = "none";
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "エラーが発生しました";
-      if (msg === "USERNAME_ALREADY_EXISTS") editError = "このユーザー名はすでに使われています";
-      else if (msg === "EMAIL_ALREADY_EXISTS") editError = "このメールアドレスはすでに登録されています";
-      else if (msg.includes("3 and 20")) editError = "ユーザー名は3〜20文字で入力してください";
-      else if (msg.includes("email")) editError = "メールアドレスの形式が正しくありません";
-      else editError = msg;
+      const code = e instanceof Error ? e.message : "UNKNOWN_ERROR";
+      if (code === "USERNAME_ALREADY_EXISTS") editError = "このユーザー名はすでに使われています";
+      else if (code === "EMAIL_ALREADY_EXISTS") editError = "このメールアドレスはすでに登録されています";
+      else if (code === "USERNAME_INVALID_LENGTH") editError = "ユーザー名は3〜20文字で入力してください";
+      else if (code === "EMAIL_INVALID_FORMAT") editError = "メールアドレスの形式が正しくありません";
+      else editError = "エラーが発生しました";
     } finally {
       editSubmitting = false;
     }
@@ -204,9 +204,10 @@
       editSuccess = "パスワードを変更しました";
       editSection = "none";
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "エラーが発生しました";
-      if (msg.includes("incorrect")) editError = "現在のパスワードが正しくありません";
-      else editError = msg;
+      const code = e instanceof Error ? e.message : "UNKNOWN_ERROR";
+      if (code === "INVALID_CURRENT_PASSWORD") editError = "現在のパスワードが正しくありません";
+      else if (code === "PASSWORD_TOO_SHORT") editError = "新しいパスワードは8文字以上で入力してください";
+      else editError = "エラーが発生しました";
     } finally {
       editSubmitting = false;
     }

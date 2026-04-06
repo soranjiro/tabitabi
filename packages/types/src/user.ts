@@ -79,5 +79,6 @@ export interface UpdatePasswordInput {
 
 export interface UpdateProfileResponse {
   username: string;
+  email: string;
   created_at: string;
 }

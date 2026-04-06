@@ -229,18 +229,25 @@ export class UserService {
     values.push(now);
     values.push(userId);
 
-    await this.db
-      .prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`)
-      .bind(...values)
-      .run();
+    try {
+      await this.db
+        .prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`)
+        .bind(...values)
+        .run();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('UNIQUE constraint failed: users.username')) throw new Error('USERNAME_ALREADY_EXISTS');
+      if (msg.includes('UNIQUE constraint failed: users.email')) throw new Error('EMAIL_ALREADY_EXISTS');
+      throw err;
+    }
 
     const updated = await this.db
-      .prepare('SELECT username, created_at FROM users WHERE id = ?')
+      .prepare('SELECT username, email, created_at FROM users WHERE id = ?')
       .bind(userId)
-      .first<{ username: string; created_at: string }>();
+      .first<{ username: string; email: string; created_at: string }>();
 
     if (!updated) throw new Error('USER_NOT_FOUND');
-    return { username: updated.username, created_at: updated.created_at };
+    return { username: updated.username, email: updated.email, created_at: updated.created_at };
   }
 
   async updatePassword(userId: string, input: UpdatePasswordInput): Promise<void> {

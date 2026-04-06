@@ -87,14 +87,9 @@ users.patch('/me/profile', userAuthMiddleware, async (c) => {
     return c.json({ success: true, data: updated });
   } catch (err) {
     const code = err instanceof Error ? err.message : 'UNKNOWN_ERROR';
-    if (code === 'USERNAME_INVALID_LENGTH') {
-      return c.json({ success: false, error: { code, message: 'Username must be between 3 and 20 characters' } }, 400);
-    }
-    if (code === 'EMAIL_INVALID_FORMAT') {
-      return c.json({ success: false, error: { code, message: 'Invalid email format' } }, 400);
-    }
-    if (code === 'USERNAME_ALREADY_EXISTS' || code === 'EMAIL_ALREADY_EXISTS') {
-      return c.json({ success: false, error: { code, message: code } }, 409);
+    if (code === 'USERNAME_INVALID_LENGTH' || code === 'EMAIL_INVALID_FORMAT' || code === 'USERNAME_ALREADY_EXISTS' || code === 'EMAIL_ALREADY_EXISTS') {
+      const status = (code === 'USERNAME_ALREADY_EXISTS' || code === 'EMAIL_ALREADY_EXISTS') ? 409 : 400;
+      return c.json({ success: false, error: { code, message: code } }, status);
     }
     throw err;
   }
@@ -119,11 +114,8 @@ users.patch('/me/password', userAuthMiddleware, async (c) => {
     return c.json({ success: true, data: null });
   } catch (err) {
     const code = err instanceof Error ? err.message : 'UNKNOWN_ERROR';
-    if (code === 'INVALID_CURRENT_PASSWORD') {
-      return c.json({ success: false, error: { code, message: 'Current password is incorrect' } }, 401);
-    }
-    if (code === 'PASSWORD_TOO_SHORT') {
-      return c.json({ success: false, error: { code, message: 'New password must be at least 8 characters' } }, 400);
+    if (code === 'INVALID_CURRENT_PASSWORD' || code === 'PASSWORD_TOO_SHORT') {
+      return c.json({ success: false, error: { code, message: code } }, 400);
     }
     throw err;
   }

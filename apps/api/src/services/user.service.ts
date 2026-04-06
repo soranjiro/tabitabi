@@ -5,6 +5,7 @@ import type {
   UserBookmarkWithItinerary,
   PublicBookmark,
   RegisterInput,
+  SyncBookmarksResponse,
 } from '@tabitabi/types';
 import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
@@ -150,6 +151,49 @@ export class UserService {
       created_at: result.created_at as string,
       updated_at: result.updated_at as string,
     };
+  }
+
+  // ログイン時の localStorage→server 同期
+  // 存在する itinerary_id のみ user_bookmarks に追加、既存はスキップ
+  async syncBookmarks(userId: string, itineraryIds: string[]): Promise<SyncBookmarksResponse> {
+    let synced = 0;
+    let skipped = 0;
+
+    for (const itineraryId of itineraryIds) {
+      // itinerary が存在するか確認
+      const itinerary = await this.db
+        .prepare('SELECT id FROM itineraries WHERE id = ?')
+        .bind(itineraryId)
+        .first();
+
+      if (!itinerary) {
+        skipped++;
+        continue;
+      }
+
+      // 既に紐付け済みか確認
+      const existing = await this.db
+        .prepare('SELECT user_id FROM user_bookmarks WHERE user_id = ? AND itinerary_id = ?')
+        .bind(userId, itineraryId)
+        .first();
+
+      if (existing) {
+        skipped++;
+        continue;
+      }
+
+      const now = getCurrentTimestamp();
+      await this.db
+        .prepare(
+          'INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at) VALUES (?, ?, 1, ?, ?)'
+        )
+        .bind(userId, itineraryId, now, now)
+        .run();
+
+      synced++;
+    }
+
+    return { synced, skipped };
   }
 
   async addBookmark(userId: string, itineraryId: string): Promise<UserBookmark> {

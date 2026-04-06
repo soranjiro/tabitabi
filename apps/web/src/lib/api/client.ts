@@ -1,5 +1,6 @@
 import type { ApiResult } from '@tabitabi/types';
 import { auth } from '../auth';
+import { userAuth } from '../user-auth';
 import { getIsDemoMode } from '../demo';
 
 // Prefer PUBLIC_ for Cloudflare Pages, fallback to VITE_
@@ -24,7 +25,14 @@ export class ApiClient {
       const token = auth.getToken(shioriId);
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+        return headers;
       }
+    }
+
+    // shiori トークンがない場合はユーザートークンを使用（ログイン済み時のしおり作成など）
+    const userToken = userAuth.getToken();
+    if (userToken) {
+      headers['Authorization'] = `Bearer ${userToken}`;
     }
 
     return headers;

@@ -3,7 +3,7 @@ import { Env, Variables } from '../utils';
 import { UserService } from '../services/user.service';
 import { userAuthMiddleware } from '../middleware/auth';
 import { generateUserToken } from '../utils/jwt';
-import type { RegisterInput, LoginInput, UpdateVisibilityInput } from '@tabitabi/types';
+import type { RegisterInput, LoginInput, UpdateVisibilityInput, SyncBookmarksInput } from '@tabitabi/types';
 
 const users = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -68,6 +68,23 @@ users.post('/login', async (c) => {
 });
 
 // ※ 静的ルート (/me/...) は動的ルート (/:username/...) より先に登録すること
+// POST /users/me/sync-bookmarks (認証必須 - ログイン時の localStorage→server 同期)
+users.post('/me/sync-bookmarks', userAuthMiddleware, async (c) => {
+  const userId = c.get('userId')!;
+  const input: SyncBookmarksInput = await c.req.json();
+
+  if (!Array.isArray(input.itinerary_ids)) {
+    return c.json({
+      success: false,
+      error: { code: 'INVALID_INPUT', message: 'itinerary_ids must be an array' }
+    }, 400);
+  }
+
+  const service = new UserService(c.env.DB);
+  const result = await service.syncBookmarks(userId, input.itinerary_ids);
+  return c.json({ success: true, data: result });
+});
+
 // GET /users/me/bookmarks (認証必須 - 全しおり)
 users.get('/me/bookmarks', userAuthMiddleware, async (c) => {
   const userId = c.get('userId')!;

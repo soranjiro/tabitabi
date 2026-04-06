@@ -66,3 +66,18 @@ export interface SyncBookmarksResponse {
   synced: number;
   skipped: number;
 }
+
+export interface UpdateProfileInput {
+  username?: string;
+  email?: string;
+}
+
+export interface UpdatePasswordInput {
+  current_password: string;
+  new_password: string;
+}
+
+export interface UpdateProfileResponse {
+  username: string;
+  created_at: string;
+}

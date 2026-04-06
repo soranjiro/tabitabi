@@ -20,6 +20,19 @@
   let formError = $state<string | null>(null);
   let submitting = $state(false);
 
+  // プロフィール編集の状態
+  let editSection = $state<"none" | "profile" | "password">("none");
+  let editUsername = $state("");
+  let editEmail = $state("");
+  let editError = $state<string | null>(null);
+  let editSuccess = $state<string | null>(null);
+  let editSubmitting = $state(false);
+
+  // パスワード変更の状態
+  let currentPassword = $state("");
+  let newPassword = $state("");
+  let confirmPassword = $state("");
+
   async function syncLocalBookmarks() {
     const history = auth.getHistory();
     const ids = history
@@ -45,6 +58,7 @@
 
     const user = userAuth.getUser();
     username = user?.username ?? null;
+    editUsername = username ?? "";
 
     await loadBookmarks();
   });
@@ -110,6 +124,92 @@
 
   function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString("ja-JP");
+  }
+
+  function openProfileEdit() {
+    editUsername = username ?? "";
+    editEmail = "";
+    editError = null;
+    editSuccess = null;
+    editSection = "profile";
+  }
+
+  function openPasswordEdit() {
+    currentPassword = "";
+    newPassword = "";
+    confirmPassword = "";
+    editError = null;
+    editSuccess = null;
+    editSection = "password";
+  }
+
+  function closeEdit() {
+    editSection = "none";
+    editError = null;
+    editSuccess = null;
+  }
+
+  async function handleProfileUpdate() {
+    editError = null;
+    editSuccess = null;
+
+    const updates: { username?: string; email?: string } = {};
+    if (editUsername && editUsername !== username) updates.username = editUsername;
+    if (editEmail) updates.email = editEmail;
+
+    if (!updates.username && !updates.email) {
+      editError = "変更する項目を入力してください";
+      return;
+    }
+
+    editSubmitting = true;
+    try {
+      const result = await userApi.updateProfile(updates);
+      userAuth.updateUser({ username: result.username });
+      username = result.username;
+      editSuccess = "プロフィールを更新しました";
+      editSection = "none";
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "エラーが発生しました";
+      if (msg === "USERNAME_ALREADY_EXISTS") editError = "このユーザー名はすでに使われています";
+      else if (msg === "EMAIL_ALREADY_EXISTS") editError = "このメールアドレスはすでに登録されています";
+      else if (msg.includes("3 and 20")) editError = "ユーザー名は3〜20文字で入力してください";
+      else if (msg.includes("email")) editError = "メールアドレスの形式が正しくありません";
+      else editError = msg;
+    } finally {
+      editSubmitting = false;
+    }
+  }
+
+  async function handlePasswordUpdate() {
+    editError = null;
+    editSuccess = null;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      editError = "すべての項目を入力してください";
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      editError = "新しいパスワードが一致しません";
+      return;
+    }
+    if (newPassword.length < 8) {
+      editError = "新しいパスワードは8文字以上で入力してください";
+      return;
+    }
+
+    editSubmitting = true;
+    try {
+      await userApi.updatePassword({ current_password: currentPassword, new_password: newPassword });
+      editSuccess = "パスワードを変更しました";
+      editSection = "none";
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "エラーが発生しました";
+      if (msg.includes("incorrect")) editError = "現在のパスワードが正しくありません";
+      else editError = msg;
+    } finally {
+      editSubmitting = false;
+    }
   }
 </script>
 
@@ -205,6 +305,141 @@
           ログアウト
         </button>
       </div>
+
+      <!-- 成功メッセージ -->
+      {#if editSuccess}
+        <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm">
+          {editSuccess}
+        </div>
+      {/if}
+
+      <!-- プロフィール編集セクション -->
+      {#if editSection === "none"}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6 flex items-center justify-between">
+          <div class="text-sm text-gray-700">
+            <p class="font-medium">アカウント設定</p>
+            <p class="text-gray-400 text-xs mt-0.5">ユーザー名・メール・パスワードを変更できます</p>
+          </div>
+          <div class="flex gap-2">
+            <button
+              onclick={openProfileEdit}
+              class="text-xs px-3 py-1.5 rounded-md border border-indigo-300 text-indigo-600 hover:bg-indigo-50 transition-colors"
+            >
+              プロフィール編集
+            </button>
+            <button
+              onclick={openPasswordEdit}
+              class="text-xs px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              パスワード変更
+            </button>
+          </div>
+        </div>
+
+      {:else if editSection === "profile"}
+        <!-- プロフィール編集フォーム -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-6">
+          <h2 class="text-base font-semibold text-gray-900 mb-4">プロフィール編集</h2>
+          <form onsubmit={(e) => { e.preventDefault(); handleProfileUpdate(); }} class="space-y-4">
+            <div>
+              <label for="edit-username" class="block text-sm font-medium text-gray-700 mb-1">ユーザー名 <span class="text-gray-400 font-normal">(3〜20文字)</span></label>
+              <input
+                id="edit-username"
+                type="text"
+                bind:value={editUsername}
+                minlength={3}
+                maxlength={20}
+                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label for="edit-email" class="block text-sm font-medium text-gray-700 mb-1">新しいメールアドレス <span class="text-gray-400 font-normal">(変更する場合のみ)</span></label>
+              <input
+                id="edit-email"
+                type="email"
+                bind:value={editEmail}
+                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            {#if editError}
+              <p class="text-red-500 text-sm">{editError}</p>
+            {/if}
+            <div class="flex gap-2 justify-end">
+              <button
+                type="button"
+                onclick={closeEdit}
+                class="text-sm px-4 py-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50"
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                disabled={editSubmitting}
+                class="text-sm px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold transition-colors"
+              >
+                {editSubmitting ? "更新中..." : "更新する"}
+              </button>
+            </div>
+          </form>
+        </div>
+
+      {:else if editSection === "password"}
+        <!-- パスワード変更フォーム -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-6">
+          <h2 class="text-base font-semibold text-gray-900 mb-4">パスワード変更</h2>
+          <form onsubmit={(e) => { e.preventDefault(); handlePasswordUpdate(); }} class="space-y-4">
+            <div>
+              <label for="current-password" class="block text-sm font-medium text-gray-700 mb-1">現在のパスワード</label>
+              <input
+                id="current-password"
+                type="password"
+                bind:value={currentPassword}
+                required
+                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">新しいパスワード <span class="text-gray-400 font-normal">(8文字以上)</span></label>
+              <input
+                id="new-password"
+                type="password"
+                bind:value={newPassword}
+                required
+                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">新しいパスワード（確認）</label>
+              <input
+                id="confirm-password"
+                type="password"
+                bind:value={confirmPassword}
+                required
+                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            {#if editError}
+              <p class="text-red-500 text-sm">{editError}</p>
+            {/if}
+            <div class="flex gap-2 justify-end">
+              <button
+                type="button"
+                onclick={closeEdit}
+                class="text-sm px-4 py-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50"
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                disabled={editSubmitting}
+                class="text-sm px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold transition-colors"
+              >
+                {editSubmitting ? "変更中..." : "変更する"}
+              </button>
+            </div>
+          </form>
+        </div>
+      {/if}
 
       {#if loading}
         <p class="text-gray-500 text-center py-12">読み込み中...</p>

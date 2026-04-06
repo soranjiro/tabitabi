@@ -34,6 +34,12 @@ export const userAuth = {
     localStorage.removeItem(USER_KEY);
   },
 
+  updateUser(updates: Partial<UserInfo>): void {
+    const current = this.getUser();
+    if (!current) return;
+    localStorage.setItem(USER_KEY, JSON.stringify({ ...current, ...updates }));
+  },
+
   isLoggedIn(): boolean {
     const token = this.getToken();
     if (!token) return false;

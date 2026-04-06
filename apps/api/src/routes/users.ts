@@ -73,7 +73,10 @@ users.patch('/me/profile', userAuthMiddleware, async (c) => {
   const userId = c.get('userId')!;
   const input: UpdateProfileInput = await c.req.json();
 
-  if (input.username === undefined && input.email === undefined) {
+  const usernameProvided = typeof input.username === 'string';
+  const emailProvided = typeof input.email === 'string';
+
+  if (!usernameProvided && !emailProvided) {
     return c.json({
       success: false,
       error: { code: 'INVALID_INPUT', message: 'username or email is required' }
@@ -100,7 +103,7 @@ users.patch('/me/password', userAuthMiddleware, async (c) => {
   const userId = c.get('userId')!;
   const input: UpdatePasswordInput = await c.req.json();
 
-  if (!input.current_password || !input.new_password) {
+  if (typeof input.current_password !== 'string' || typeof input.new_password !== 'string' || !input.current_password || !input.new_password) {
     return c.json({
       success: false,
       error: { code: 'INVALID_INPUT', message: 'current_password and new_password are required' }

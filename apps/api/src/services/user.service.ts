@@ -190,7 +190,7 @@ export class UserService {
   }
 
   async updateProfile(userId: string, input: UpdateProfileInput): Promise<UpdateProfileResponse> {
-    if (input.username !== undefined) {
+    if (typeof input.username === 'string') {
       if (input.username.length < 3 || input.username.length > 20) {
         throw new Error('USERNAME_INVALID_LENGTH');
       }
@@ -201,7 +201,7 @@ export class UserService {
       if (conflict) throw new Error('USERNAME_ALREADY_EXISTS');
     }
 
-    if (input.email !== undefined) {
+    if (typeof input.email === 'string') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(input.email)) {
         throw new Error('EMAIL_INVALID_FORMAT');
@@ -217,11 +217,11 @@ export class UserService {
     const fields: string[] = [];
     const values: unknown[] = [];
 
-    if (input.username !== undefined) {
+    if (typeof input.username === 'string') {
       fields.push('username = ?');
       values.push(input.username);
     }
-    if (input.email !== undefined) {
+    if (typeof input.email === 'string') {
       fields.push('email = ?');
       values.push(input.email);
     }
@@ -266,10 +266,10 @@ export class UserService {
     }
 
     const now = getCurrentTimestamp();
-    const new_hash = await hashPassword(input.new_password);
+    const newHash = await hashPassword(input.new_password);
     await this.db
       .prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
-      .bind(new_hash, now, userId)
+      .bind(newHash, now, userId)
       .run();
   }
 

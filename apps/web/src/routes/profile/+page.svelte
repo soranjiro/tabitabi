@@ -201,6 +201,9 @@
     editSubmitting = true;
     try {
       await userApi.updatePassword({ current_password: currentPassword, new_password: newPassword });
+      currentPassword = "";
+      newPassword = "";
+      confirmPassword = "";
       editSuccess = "パスワードを変更しました";
       editSection = "none";
     } catch (e) {

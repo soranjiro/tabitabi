@@ -35,7 +35,7 @@ export const userAuth = {
   },
 
   updateUser(updates: Partial<UserInfo>): void {
-    const current = this.getUser();
+    const current = userAuth.getUser();
     if (!current) return;
     localStorage.setItem(USER_KEY, JSON.stringify({ ...current, ...updates }));
   },

@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { goto, invalidateAll } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
   import { stepApi } from "$lib/api/step";
   import { auth } from "$lib/auth";
+  import { userAuth } from "$lib/user-auth";
   import { onMount } from "svelte";
   import type { Theme } from "@tabitabi/types";
 
@@ -175,6 +176,27 @@
       alert("予定の削除に失敗しました");
     }
   }
+
+  let isLoggedIn = $state(false);
+  let forking = $state(false);
+
+  onMount(() => {
+    isLoggedIn = !!userAuth.getToken();
+  });
+
+  async function handleFork() {
+    forking = true;
+    try {
+      const result = await itineraryApi.fork(data.itinerary.id);
+      auth.setToken(result.id, result.token);
+      await goto(`/${result.id}`);
+    } catch (error) {
+      console.error("Failed to fork itinerary:", error);
+      alert("コピーに失敗しました");
+    } finally {
+      forking = false;
+    }
+  }
 </script>
 
 <svelte:head>
@@ -192,3 +214,15 @@
     onDeleteStep={handleDeleteStep}
   />
 {/key}
+
+{#if isLoggedIn && !data.itinerary.is_password_protected}
+  <div class="fixed bottom-6 right-6 z-50">
+    <button
+      onclick={handleFork}
+      disabled={forking}
+      class="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-300 shadow-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-all"
+    >
+      {forking ? "コピー中..." : "コピーして使う"}
+    </button>
+  </div>
+{/if}

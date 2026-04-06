@@ -194,6 +194,42 @@ export class ItineraryService {
     return await this.get(id);
   }
 
+  async fork(sourceId: string): Promise<{ itinerary: Itinerary; steps: number }> {
+    const source = await this.get(sourceId);
+    if (!source) throw new Error('NOT_FOUND');
+    if (source.password) throw new Error('FORBIDDEN');
+
+    const newId = generateId();
+    const now = getCurrentTimestamp();
+
+    await this.db
+      .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, fork_count, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, 0, ?, ?)')
+      .bind(newId, `${source.title}（コピー）`, source.theme_id, source.memo, now, now)
+      .run();
+
+    const sourceSteps = await this.db
+      .prepare('SELECT * FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
+      .bind(sourceId)
+      .all();
+
+    const rows = sourceSteps.results ?? [];
+    for (const row of rows) {
+      const stepId = generateId();
+      await this.db
+        .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(stepId, newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.type, row.is_all_day, now, now)
+        .run();
+    }
+
+    await this.db
+      .prepare('UPDATE itineraries SET fork_count = fork_count + 1, updated_at = ? WHERE id = ?')
+      .bind(now, sourceId)
+      .run();
+
+    const forked = await this.get(newId);
+    return { itinerary: forked!, steps: rows.length };
+  }
+
   async delete(id: string): Promise<boolean> {
     // Foreign key cascade should handle the secrets and walica tables
     const result = await this.db
@@ -212,6 +248,7 @@ export class ItineraryService {
       memo: row.memo as string,
       walica_id: row.walica_id as string | null | undefined,
       password: row.password as string | null | undefined,
+      fork_count: (row.fork_count as number) ?? 0,
       created_at: row.created_at as string,
       updated_at: row.updated_at as string,
     };

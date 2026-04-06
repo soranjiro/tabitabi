@@ -1,4 +1,4 @@
-import type { Itinerary, CreateItineraryInput, UpdateItineraryInput, ItineraryResponse } from '@tabitabi/types';
+import type { Itinerary, CreateItineraryInput, UpdateItineraryInput, ItineraryResponse, ForkItineraryResponse } from '@tabitabi/types';
 import { apiClient } from './client';
 import { userAuth } from '../user-auth';
 
@@ -19,4 +19,9 @@ export const itineraryApi = {
     apiClient.put<ItineraryResponse>(`/itineraries/${id}`, data, id),
 
   delete: (id: string) => apiClient.delete(`/itineraries/${id}`, id),
+
+  fork: (id: string) => {
+    const userToken = userAuth.getToken();
+    return apiClient.postWithUserToken<ForkItineraryResponse>(`/itineraries/${id}/fork`, {}, userToken!);
+  },
 };

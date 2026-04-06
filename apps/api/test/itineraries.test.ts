@@ -10,6 +10,7 @@ async function applyMigrations(db: D1Database) {
       theme_id TEXT NOT NULL DEFAULT 'standard-autumn',
       memo TEXT,
       password TEXT,
+      fork_count INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,
@@ -236,5 +237,209 @@ describe('Itineraries API', () => {
 
       expect(response.status).toBe(404);
     });
+  });
+});
+
+describe('POST /api/v1/itineraries/:id/fork', () => {
+  async function applyForkMigrations(db: D1Database) {
+    const migrations = [
+      `CREATE TABLE IF NOT EXISTS itineraries (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        theme_id TEXT NOT NULL DEFAULT 'standard-autumn',
+        memo TEXT,
+        password TEXT,
+        fork_count INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );`,
+      `CREATE TABLE IF NOT EXISTS steps (
+        id TEXT PRIMARY KEY,
+        itinerary_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        start_at INTEGER NOT NULL,
+        end_at INTEGER NOT NULL,
+        location TEXT,
+        notes TEXT,
+        type TEXT NOT NULL DEFAULT 'normal:general',
+        is_all_day INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+      );`,
+      `CREATE INDEX IF NOT EXISTS idx_steps_itinerary ON steps(itinerary_id);`,
+      `CREATE TABLE IF NOT EXISTS itinerary_secrets (
+        itinerary_id TEXT PRIMARY KEY,
+        enabled BOOLEAN DEFAULT FALSE,
+        offset_minutes INTEGER DEFAULT 60,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+      );`,
+      `CREATE TABLE IF NOT EXISTS itinerary_walica_settings (
+        itinerary_id TEXT PRIMARY KEY,
+        walica_id TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+      );`,
+      `CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+      `CREATE TABLE IF NOT EXISTS user_bookmarks (
+        user_id TEXT NOT NULL,
+        itinerary_id TEXT NOT NULL,
+        is_visible BOOLEAN NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (user_id, itinerary_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+      );`,
+    ];
+    for (const sql of migrations) {
+      await db.prepare(sql).run();
+    }
+  }
+
+  async function registerAndGetToken(username: string, email: string): Promise<string> {
+    const res = await app.request('/api/v1/users/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password: 'password123' }),
+    }, env);
+    const json = await res.json() as { data: { token: string } };
+    return json.data.token;
+  }
+
+  beforeEach(async () => {
+    await applyForkMigrations(env.DB);
+    await env.DB.prepare('DELETE FROM user_bookmarks').run();
+    await env.DB.prepare('DELETE FROM steps').run();
+    await env.DB.prepare('DELETE FROM itinerary_secrets').run();
+    await env.DB.prepare('DELETE FROM itinerary_walica_settings').run();
+    await env.DB.prepare('DELETE FROM itineraries').run();
+    await env.DB.prepare('DELETE FROM users').run();
+  });
+
+  it('returns 401 without user auth token', async () => {
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Original' }),
+    }, env);
+    const { data: created } = await createRes.json() as any;
+
+    const res = await app.request(`/api/v1/itineraries/${created.id}/fork`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, env);
+    expect(res.status).toBe(401);
+  });
+
+  it('forks a public itinerary and returns new itinerary with token', async () => {
+    const token = await registerAndGetToken('forkuser', 'forkuser@example.com');
+
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '旅のしおり', theme_id: 'standard-autumn' }),
+    }, env);
+    const { data: source } = await createRes.json() as any;
+
+    const res = await app.request(`/api/v1/itineraries/${source.id}/fork`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    }, env);
+
+    expect(res.status).toBe(201);
+    const json = await res.json() as { success: boolean; data: { id: string; title: string; theme_id: string; token: string } };
+    expect(json.success).toBe(true);
+    expect(json.data.title).toBe('旅のしおり（コピー）');
+    expect(json.data.theme_id).toBe('standard-autumn');
+    expect(json.data.token).toBeTruthy();
+    expect(json.data.id).not.toBe(source.id);
+  });
+
+  it('increments fork_count on the source itinerary', async () => {
+    const token = await registerAndGetToken('forkuser2', 'forkuser2@example.com');
+
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'カウントテスト' }),
+    }, env);
+    const { data: source } = await createRes.json() as any;
+
+    await app.request(`/api/v1/itineraries/${source.id}/fork`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    }, env);
+
+    const row = await env.DB.prepare('SELECT fork_count FROM itineraries WHERE id = ?').bind(source.id).first() as any;
+    expect(row.fork_count).toBe(1);
+  });
+
+  it('copies steps from the source itinerary', async () => {
+    const token = await registerAndGetToken('forkuser3', 'forkuser3@example.com');
+
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'ステップ付き' }),
+    }, env);
+    const { data: source } = await createRes.json() as any;
+
+    await app.request('/api/v1/steps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itinerary_id: source.id, title: 'ステップ1', start_at: 1700000000000, end_at: 1700003600000 }),
+    }, env);
+
+    const forkRes = await app.request(`/api/v1/itineraries/${source.id}/fork`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    }, env);
+    const { data: forked } = await forkRes.json() as any;
+
+    const stepsRes = await app.request(`/api/v1/steps?itinerary_id=${forked.id}`, {}, env);
+    const stepsJson = await stepsRes.json() as any;
+    expect(stepsJson.data).toHaveLength(1);
+    expect(stepsJson.data[0].title).toBe('ステップ1');
+    expect(stepsJson.data[0].itinerary_id).toBe(forked.id);
+  });
+
+  it('returns 403 for password-protected itinerary', async () => {
+    const token = await registerAndGetToken('forkuser4', 'forkuser4@example.com');
+
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '秘密のしおり', password: 'secret123' }),
+    }, env);
+    const { data: source } = await createRes.json() as any;
+
+    const res = await app.request(`/api/v1/itineraries/${source.id}/fork`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    }, env);
+    expect(res.status).toBe(403);
+    const json = await res.json() as { error: { code: string } };
+    expect(json.error.code).toBe('FORBIDDEN');
+  });
+
+  it('returns 404 for non-existent itinerary', async () => {
+    const token = await registerAndGetToken('forkuser5', 'forkuser5@example.com');
+
+    const res = await app.request('/api/v1/itineraries/nonexistent-id/fork', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    }, env);
+    expect(res.status).toBe(404);
   });
 });

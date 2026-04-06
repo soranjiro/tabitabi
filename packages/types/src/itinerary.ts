@@ -11,8 +11,16 @@ export interface Itinerary {
   walica_id?: string | null;
   password?: string | null;
   secret_settings?: ItinerarySecretSettings | null;
+  fork_count?: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ForkItineraryResponse {
+  id: string;
+  title: string;
+  theme_id: string;
+  token: string;
 }
 
 // フロントエンドに返すItinerary（パスワード情報は除外、保護フラグを追加）

@@ -345,10 +345,9 @@ describe('GET /api/v1/users (public feed)', () => {
     expect(json.data.items).toHaveLength(0);
   });
 
-  it('supports offset pagination via hasMore', async () => {
+  it('returns hasMore=false when items fit in one page', async () => {
     const token = await registerAndGetToken('feeduser3', 'feed3@example.com');
 
-    // Create 2 itineraries (limit will be 1 to test hasMore)
     for (let i = 0; i < 2; i++) {
       await app.request('/api/v1/itineraries', {
         method: 'POST',
@@ -357,10 +356,33 @@ describe('GET /api/v1/users (public feed)', () => {
       }, env);
     }
 
-    // Fetch with offset=1 — should get 1 item and hasMore=false
-    const res = await app.request('/api/v1/users?offset=1', {}, env);
+    const res = await app.request('/api/v1/users', {}, env);
     const json = await res.json() as { data: { items: unknown[]; hasMore: boolean } };
-    expect(json.data.items).toHaveLength(1);
+    expect(json.data.items).toHaveLength(2);
     expect(json.data.hasMore).toBe(false);
+  });
+
+  it('returns hasMore=true and correct items when there are more than 30', async () => {
+    const token = await registerAndGetToken('feeduser4', 'feed4@example.com');
+
+    // Create 31 itineraries to exceed the default limit of 30
+    for (let i = 0; i < 31; i++) {
+      await app.request('/api/v1/itineraries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title: `しおり${i}` }),
+      }, env);
+    }
+
+    const res = await app.request('/api/v1/users', {}, env);
+    const json = await res.json() as { data: { items: unknown[]; hasMore: boolean } };
+    expect(json.data.items).toHaveLength(30);
+    expect(json.data.hasMore).toBe(true);
+
+    // Fetch next page
+    const res2 = await app.request('/api/v1/users?offset=30', {}, env);
+    const json2 = await res2.json() as { data: { items: unknown[]; hasMore: boolean } };
+    expect(json2.data.items).toHaveLength(1);
+    expect(json2.data.hasMore).toBe(false);
   });
 });

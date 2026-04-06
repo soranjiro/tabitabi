@@ -3,22 +3,15 @@
   import { userApi } from "$lib/api/user";
   import type { PublicFeedItem } from "@tabitabi/types";
 
-  const LIMIT = 30;
-
   let items: PublicFeedItem[] = $state([]);
   let loading = $state(true);
   let loadingMore = $state(false);
   let hasMore = $state(false);
   let error = $state<string | null>(null);
 
-  async function fetchFeed(offset: number) {
-    const result = await userApi.getPublicFeed(offset);
-    return result;
-  }
-
   onMount(async () => {
     try {
-      const result = await fetchFeed(0);
+      const result = await userApi.getPublicFeed(0);
       items = result.items;
       hasMore = result.hasMore;
     } catch {
@@ -31,7 +24,7 @@
   async function loadMore() {
     loadingMore = true;
     try {
-      const result = await fetchFeed(items.length);
+      const result = await userApi.getPublicFeed(items.length);
       items = [...items, ...result.items];
       hasMore = result.hasMore;
     } catch {

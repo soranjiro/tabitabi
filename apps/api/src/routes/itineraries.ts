@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { Env, Variables } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
-import { authMiddleware, optionalAuthMiddleware, optionalUserAuthMiddleware } from '../middleware/auth';
+import { authMiddleware, optionalAuthMiddleware, optionalUserAuthMiddleware, userAuthMiddleware } from '../middleware/auth';
 import { generateToken } from '../utils/jwt';
 import { UserService } from '../services/user.service';
 
@@ -75,6 +75,47 @@ itineraries.put('/:id', optionalAuthMiddleware, async (c) => {
   }
 
   return c.json({ success: true, data: service.toResponseItinerary(data) });
+});
+
+itineraries.post('/:id/fork', userAuthMiddleware, async (c) => {
+  const sourceId = c.req.param('id');
+  const userId = c.get('userId');
+  const service = new ItineraryService(c.env.DB);
+
+  let result: Awaited<ReturnType<typeof service.fork>>;
+  try {
+    result = await service.fork(sourceId);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : '';
+    if (msg === 'NOT_FOUND') {
+      return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+    }
+    if (msg === 'FORBIDDEN') {
+      return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot fork a password-protected itinerary' } }, 403);
+    }
+    throw e;
+  }
+
+  const token = await generateToken(result.itinerary.id, c.env.JWT_SECRET);
+
+  if (userId) {
+    try {
+      const userService = new UserService(c.env.DB);
+      await userService.addBookmark(userId, result.itinerary.id);
+    } catch {
+      // 非致命的
+    }
+  }
+
+  return c.json({
+    success: true,
+    data: {
+      id: result.itinerary.id,
+      title: result.itinerary.title,
+      theme_id: result.itinerary.theme_id,
+      token,
+    }
+  }, 201);
 });
 
 itineraries.delete('/:id', optionalAuthMiddleware, async (c) => {

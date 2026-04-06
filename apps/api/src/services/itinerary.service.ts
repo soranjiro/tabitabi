@@ -14,10 +14,12 @@ export class ItineraryService {
       .prepare(`
         SELECT i.*,
                s.enabled as secret_enabled, s.offset_minutes as secret_offset,
-               w.walica_id as walica_id
+               w.walica_id as walica_id,
+               COALESCE(f.fork_count, 0) as fork_count
         FROM itineraries i
         LEFT JOIN itinerary_secrets s ON i.id = s.itinerary_id
         LEFT JOIN itinerary_walica_settings w ON i.id = w.itinerary_id
+        LEFT JOIN itinerary_fork_stats f ON i.id = f.itinerary_id
         ORDER BY i.created_at DESC
       `)
       .all();
@@ -30,10 +32,12 @@ export class ItineraryService {
       .prepare(`
         SELECT i.*,
                s.enabled as secret_enabled, s.offset_minutes as secret_offset,
-               w.walica_id as walica_id
+               w.walica_id as walica_id,
+               COALESCE(f.fork_count, 0) as fork_count
         FROM itineraries i
         LEFT JOIN itinerary_secrets s ON i.id = s.itinerary_id
         LEFT JOIN itinerary_walica_settings w ON i.id = w.itinerary_id
+        LEFT JOIN itinerary_fork_stats f ON i.id = f.itinerary_id
         WHERE i.id = ?
       `)
       .bind(id)
@@ -65,6 +69,7 @@ export class ItineraryService {
         enabled: input.secret_settings.enabled,
         offset_minutes: input.secret_settings.offset_minutes
       } : null,
+      fork_count: 0,
       created_at: now,
       updated_at: now,
     };
@@ -194,8 +199,51 @@ export class ItineraryService {
     return await this.get(id);
   }
 
+  async fork(sourceId: string): Promise<{ itinerary: Itinerary; steps: number }> {
+    const source = await this.get(sourceId);
+    if (!source) throw new Error('NOT_FOUND');
+    if (source.password) throw new Error('FORBIDDEN');
+
+    const newId = generateId();
+    const now = getCurrentTimestamp();
+
+    // Fetch source steps before batch to generate new IDs
+    // secret_settings and walica_id are intentionally excluded from forks (personal configuration)
+    const sourceSteps = await this.db
+      .prepare('SELECT id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
+      .bind(sourceId)
+      .all();
+
+    const rows = sourceSteps.results ?? [];
+
+    // Use batch() for atomic execution: all inserts + fork_count upsert succeed or fail together
+    const stepStatements = rows.map(row =>
+      this.db
+        .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.type, row.is_all_day, now, now)
+    );
+
+    await this.db.batch([
+      this.db
+        .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?)')
+        .bind(newId, `${source.title}（コピー）`, source.theme_id, source.memo, now, now),
+      ...stepStatements,
+      // Upsert fork_count in the dedicated stats table
+      this.db
+        .prepare(`
+          INSERT INTO itinerary_fork_stats (itinerary_id, fork_count)
+          VALUES (?, 1)
+          ON CONFLICT(itinerary_id) DO UPDATE SET fork_count = fork_count + 1
+        `)
+        .bind(sourceId),
+    ]);
+
+    const forked = await this.get(newId);
+    return { itinerary: forked!, steps: rows.length };
+  }
+
   async delete(id: string): Promise<boolean> {
-    // Foreign key cascade should handle the secrets and walica tables
+    // Foreign key cascade handles secrets, walica, and fork_stats tables
     const result = await this.db
       .prepare('DELETE FROM itineraries WHERE id = ?')
       .bind(id)
@@ -212,6 +260,7 @@ export class ItineraryService {
       memo: row.memo as string,
       walica_id: row.walica_id as string | null | undefined,
       password: row.password as string | null | undefined,
+      fork_count: (row.fork_count as number) ?? 0,
       created_at: row.created_at as string,
       updated_at: row.updated_at as string,
     };

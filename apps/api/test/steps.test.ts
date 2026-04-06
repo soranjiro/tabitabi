@@ -51,6 +51,11 @@ async function applyMigrations(db: D1Database) {
       updated_at TEXT NOT NULL,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
+    `CREATE TABLE IF NOT EXISTS itinerary_fork_stats (
+      itinerary_id TEXT PRIMARY KEY,
+      fork_count INTEGER NOT NULL DEFAULT 0,
+      FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+    );`,
   ];
 
   for (const sql of migrations) {

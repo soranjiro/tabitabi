@@ -282,3 +282,85 @@ describe('PATCH /api/v1/users/me/password', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('GET /api/v1/users (public feed)', () => {
+  beforeEach(async () => {
+    await applyMigrations(env.DB);
+    await env.DB.prepare('DELETE FROM user_bookmarks').run();
+    await env.DB.prepare('DELETE FROM users').run();
+    await env.DB.prepare('DELETE FROM itineraries').run();
+  });
+
+  it('returns empty feed when no public bookmarks', async () => {
+    const res = await app.request('/api/v1/users', {}, env);
+    expect(res.status).toBe(200);
+    const json = await res.json() as { success: boolean; data: { items: unknown[]; hasMore: boolean } };
+    expect(json.success).toBe(true);
+    expect(json.data.items).toHaveLength(0);
+    expect(json.data.hasMore).toBe(false);
+  });
+
+  it('returns public bookmarks with username', async () => {
+    const token = await registerAndGetToken('feeduser', 'feed@example.com');
+
+    // Create itinerary and bookmark it
+    const itinRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ title: '公開しおり' }),
+    }, env);
+    const itinJson = await itinRes.json() as { data: { id: string } };
+    const itineraryId = itinJson.data.id;
+
+    // Make bookmark visible (it's visible by default)
+    const res = await app.request('/api/v1/users', {}, env);
+    expect(res.status).toBe(200);
+    const json = await res.json() as { success: boolean; data: { items: { username: string; title: string; itinerary_id: string }[]; hasMore: boolean } };
+    expect(json.data.items).toHaveLength(1);
+    expect(json.data.items[0].username).toBe('feeduser');
+    expect(json.data.items[0].title).toBe('公開しおり');
+    expect(json.data.items[0].itinerary_id).toBe(itineraryId);
+  });
+
+  it('excludes non-visible bookmarks', async () => {
+    const token = await registerAndGetToken('feeduser2', 'feed2@example.com');
+
+    const itinRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ title: '非公開しおり' }),
+    }, env);
+    const itinJson = await itinRes.json() as { data: { id: string } };
+    const itineraryId = itinJson.data.id;
+
+    // Hide the bookmark
+    await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/visibility`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ is_visible: false }),
+    }, env);
+
+    const res = await app.request('/api/v1/users', {}, env);
+    const json = await res.json() as { data: { items: unknown[] } };
+    expect(json.data.items).toHaveLength(0);
+  });
+
+  it('supports offset pagination via hasMore', async () => {
+    const token = await registerAndGetToken('feeduser3', 'feed3@example.com');
+
+    // Create 2 itineraries (limit will be 1 to test hasMore)
+    for (let i = 0; i < 2; i++) {
+      await app.request('/api/v1/itineraries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title: `しおり${i}` }),
+      }, env);
+    }
+
+    // Fetch with offset=1 — should get 1 item and hasMore=false
+    const res = await app.request('/api/v1/users?offset=1', {}, env);
+    const json = await res.json() as { data: { items: unknown[]; hasMore: boolean } };
+    expect(json.data.items).toHaveLength(1);
+    expect(json.data.hasMore).toBe(false);
+  });
+});

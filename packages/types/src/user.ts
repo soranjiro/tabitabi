@@ -33,6 +33,15 @@ export interface PublicBookmark {
   created_at: string;
 }
 
+export interface PublicFeedItem extends PublicBookmark {
+  username: string;
+}
+
+export interface PublicFeedResponse {
+  items: PublicFeedItem[];
+  hasMore: boolean;
+}
+
 export interface RegisterInput {
   username: string;
   email: string;

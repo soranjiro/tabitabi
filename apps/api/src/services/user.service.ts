@@ -4,6 +4,8 @@ import type {
   UserBookmark,
   UserBookmarkWithItinerary,
   PublicBookmark,
+  PublicFeedItem,
+  PublicFeedResponse,
   RegisterInput,
   SyncBookmarksResponse,
   UpdateProfileInput,
@@ -131,6 +133,29 @@ export class UserService {
       .all<PublicBookmark>();
 
     return results.results ?? [];
+  }
+
+  // 全ユーザーの公開しおりフィード（is_visible:true かつ鍵なし、最新順）
+  async getPublicFeed(offset: number, limit: number): Promise<PublicFeedResponse> {
+    const fetchLimit = limit + 1; // hasMore 判定用に1件多く取得
+    const results = await this.db
+      .prepare(`
+        SELECT
+          ub.itinerary_id, i.title, i.theme_id, i.created_at, u.username
+        FROM user_bookmarks ub
+        JOIN itineraries i ON ub.itinerary_id = i.id
+        JOIN users u ON ub.user_id = u.id
+        WHERE ub.is_visible = 1
+          AND i.password IS NULL
+        ORDER BY i.created_at DESC
+        LIMIT ? OFFSET ?
+      `)
+      .bind(fetchLimit, offset)
+      .all<PublicFeedItem>();
+
+    const rows = results.results ?? [];
+    const hasMore = rows.length > limit;
+    return { items: hasMore ? rows.slice(0, limit) : rows, hasMore };
   }
 
   async updateBookmarkVisibility(userId: string, itineraryId: string, isVisible: boolean): Promise<UserBookmark | null> {

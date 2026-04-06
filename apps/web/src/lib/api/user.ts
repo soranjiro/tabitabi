@@ -5,6 +5,7 @@ import type {
   RegisterResponse,
   UserBookmarkWithItinerary,
   PublicBookmark,
+  PublicFeedResponse,
   UpdateVisibilityInput,
   UserPublicProfile,
   SyncBookmarksResponse,
@@ -75,4 +76,7 @@ export const userApi = {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+
+  getPublicFeed: (offset: number) =>
+    request<PublicFeedResponse>(`/users?offset=${offset}`),
 };

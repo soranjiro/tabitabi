@@ -67,6 +67,17 @@ users.post('/login', async (c) => {
   }
 });
 
+// GET /users (認証不要 - 全ユーザーの公開しおりフィード)
+users.get('/', async (c) => {
+  const offsetParam = c.req.query('offset') ?? '0';
+  const offset = Math.max(0, parseInt(offsetParam, 10) || 0);
+  const LIMIT = 30;
+
+  const service = new UserService(c.env.DB);
+  const result = await service.getPublicFeed(offset, LIMIT);
+  return c.json({ success: true, data: result });
+});
+
 // ※ 静的ルート (/me/...) は動的ルート (/:username/...) より先に登録すること
 // PATCH /users/me/profile (認証必須 - プロフィール更新)
 users.patch('/me/profile', userAuthMiddleware, async (c) => {

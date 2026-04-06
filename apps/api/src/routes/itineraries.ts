@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
 import { Env, Variables } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
-import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth';
+import { authMiddleware, optionalAuthMiddleware, optionalUserAuthMiddleware } from '../middleware/auth';
 import { generateToken } from '../utils/jwt';
+import { UserService } from '../services/user.service';
 
 const itineraries = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -25,13 +26,23 @@ itineraries.get('/:id', async (c) => {
   return c.json({ success: true, data: service.toResponseItinerary(data) });
 });
 
-itineraries.post('/', async (c) => {
+itineraries.post('/', optionalUserAuthMiddleware, async (c) => {
   const input = await c.req.json();
   const service = new ItineraryService(c.env.DB);
   const data = await service.create(input);
 
   const token = await generateToken(data.id, c.env.JWT_SECRET);
   const response = service.toResponseItinerary(data);
+
+  const userId = c.get('userId');
+  if (userId) {
+    try {
+      const userService = new UserService(c.env.DB);
+      await userService.addBookmark(userId, data.id);
+    } catch {
+      // 非致命的: しおりは作成済み、/me/sync-bookmarks で後から同期可能
+    }
+  }
 
   return c.json({ success: true, data: { ...response, token } }, 201);
 });

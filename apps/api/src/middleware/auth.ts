@@ -40,6 +40,20 @@ export async function optionalAuthMiddleware(c: Context<{ Bindings: Env; Variabl
   await next();
 }
 
+export async function optionalUserAuthMiddleware(c: Context<{ Bindings: Env; Variables: Variables }>, next: Next) {
+  const authHeader = c.req.header('Authorization');
+  const token = extractBearerToken(authHeader);
+
+  if (token) {
+    const payload = await verifyUserToken(token, c.env.JWT_SECRET);
+    if (payload) {
+      c.set('userId', payload.userId);
+    }
+  }
+
+  await next();
+}
+
 export async function userAuthMiddleware(c: Context<{ Bindings: Env; Variables: Variables }>, next: Next) {
   const authHeader = c.req.header('Authorization');
   const token = extractBearerToken(authHeader);

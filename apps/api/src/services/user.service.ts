@@ -5,6 +5,7 @@ import type {
   UserBookmarkWithItinerary,
   PublicBookmark,
   RegisterInput,
+  SyncBookmarksResponse,
 } from '@tabitabi/types';
 import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
@@ -150,6 +151,39 @@ export class UserService {
       created_at: result.created_at as string,
       updated_at: result.updated_at as string,
     };
+  }
+
+  // ログイン時の localStorage→server 同期
+  // 存在する itinerary_id のみ user_bookmarks に追加、既存はスキップ（INSERT OR IGNORE で重複排除）
+  async syncBookmarks(userId: string, itineraryIds: string[]): Promise<SyncBookmarksResponse> {
+    if (itineraryIds.length === 0) return { synced: 0, skipped: 0 };
+
+    const uniqueItineraryIds = Array.from(new Set(itineraryIds));
+
+    // 1. 存在する itinerary を一括確認
+    const placeholders = uniqueItineraryIds.map(() => '?').join(', ');
+    const existing = await this.db
+      .prepare(`SELECT id FROM itineraries WHERE id IN (${placeholders})`)
+      .bind(...uniqueItineraryIds)
+      .all<{ id: string }>();
+
+    const validIds = (existing.results ?? []).map(r => r.id);
+    const skipped = uniqueItineraryIds.length - validIds.length;
+
+    if (validIds.length === 0) return { synced: 0, skipped };
+
+    // 2. INSERT OR IGNORE で一括追加（複合主キーの重複は自動スキップ）
+    const now = getCurrentTimestamp();
+    const stmts = validIds.map(id =>
+      this.db
+        .prepare('INSERT OR IGNORE INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at) VALUES (?, ?, 1, ?, ?)')
+        .bind(userId, id, now, now)
+    );
+    const results = await this.db.batch(stmts);
+
+    const synced = results.filter(r => r.meta?.changes && r.meta.changes > 0).length;
+
+    return { synced, skipped: skipped + (validIds.length - synced) };
   }
 
   async addBookmark(userId: string, itineraryId: string): Promise<UserBookmark> {

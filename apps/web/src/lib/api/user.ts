@@ -7,6 +7,7 @@ import type {
   PublicBookmark,
   UpdateVisibilityInput,
   UserPublicProfile,
+  SyncBookmarksResponse,
   ApiResult,
 } from '@tabitabi/types';
 import { userAuth } from '../user-auth';
@@ -53,4 +54,10 @@ export const userApi = {
       `/users/me/bookmarks/${itineraryId}/visibility`,
       { method: 'PATCH', body: JSON.stringify(data) }
     ),
+
+  syncBookmarks: (itineraryIds: string[]) =>
+    request<SyncBookmarksResponse>('/users/me/sync-bookmarks', {
+      method: 'POST',
+      body: JSON.stringify({ itinerary_ids: itineraryIds }),
+    }),
 };

@@ -57,3 +57,12 @@ export interface RegisterResponse {
 export interface UpdateVisibilityInput {
   is_visible: boolean;
 }
+
+export interface SyncBookmarksInput {
+  itinerary_ids: string[];
+}
+
+export interface SyncBookmarksResponse {
+  synced: number;
+  skipped: number;
+}

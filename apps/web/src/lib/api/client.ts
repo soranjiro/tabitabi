@@ -70,6 +70,15 @@ export class ApiClient {
     }, shioriId);
   }
 
+  // ユーザートークンを明示的に使用する POST（しおり作成時のユーザー紐付けなど）
+  async postWithUserToken<T>(endpoint: string, data: unknown, userToken: string): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: { Authorization: `Bearer ${userToken}` },
+    });
+  }
+
   async put<T>(endpoint: string, data: unknown, shioriId?: string): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PUT',

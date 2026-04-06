@@ -3,6 +3,7 @@
   import { goto } from "$app/navigation";
   import { userApi } from "$lib/api/user";
   import { userAuth } from "$lib/user-auth";
+  import { auth } from "$lib/auth";
   import type { UserBookmarkWithItinerary } from "@tabitabi/types";
 
   let loggedIn = $state(false);
@@ -18,6 +19,22 @@
   let usernameInput = $state("");
   let formError = $state<string | null>(null);
   let submitting = $state(false);
+
+  async function syncLocalBookmarks() {
+    const history = auth.getHistory();
+    const ids = history
+      .filter((h) => h.shioriId !== "demo" && h.token !== null)
+      .map((h) => h.shioriId);
+    if (ids.length === 0) return;
+    const chunkSize = 50;
+    try {
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        await userApi.syncBookmarks(ids.slice(i, i + chunkSize));
+      }
+    } catch {
+      // sync 失敗はサイレントに無視（shiori_history は保持したまま）
+    }
+  }
 
   onMount(async () => {
     loggedIn = userAuth.isLoggedIn();
@@ -57,6 +74,7 @@
       }
       username = userAuth.getUser()?.username ?? null;
       loggedIn = userAuth.isLoggedIn();
+      await syncLocalBookmarks();
       await loadBookmarks();
     } catch (e) {
       formError = e instanceof Error ? e.message : "エラーが発生しました";

@@ -154,46 +154,34 @@ export class UserService {
   }
 
   // ログイン時の localStorage→server 同期
-  // 存在する itinerary_id のみ user_bookmarks に追加、既存はスキップ
+  // 存在する itinerary_id のみ user_bookmarks に追加、既存はスキップ（INSERT OR IGNORE で重複排除）
   async syncBookmarks(userId: string, itineraryIds: string[]): Promise<SyncBookmarksResponse> {
-    let synced = 0;
-    let skipped = 0;
+    if (itineraryIds.length === 0) return { synced: 0, skipped: 0 };
 
-    for (const itineraryId of itineraryIds) {
-      // itinerary が存在するか確認
-      const itinerary = await this.db
-        .prepare('SELECT id FROM itineraries WHERE id = ?')
-        .bind(itineraryId)
-        .first();
+    // 1. 存在する itinerary を一括確認
+    const placeholders = itineraryIds.map(() => '?').join(', ');
+    const existing = await this.db
+      .prepare(`SELECT id FROM itineraries WHERE id IN (${placeholders})`)
+      .bind(...itineraryIds)
+      .all<{ id: string }>();
 
-      if (!itinerary) {
-        skipped++;
-        continue;
-      }
+    const validIds = (existing.results ?? []).map(r => r.id);
+    const skipped = itineraryIds.length - validIds.length;
 
-      // 既に紐付け済みか確認
-      const existing = await this.db
-        .prepare('SELECT user_id FROM user_bookmarks WHERE user_id = ? AND itinerary_id = ?')
-        .bind(userId, itineraryId)
-        .first();
+    if (validIds.length === 0) return { synced: 0, skipped };
 
-      if (existing) {
-        skipped++;
-        continue;
-      }
+    // 2. INSERT OR IGNORE で一括追加（複合主キーの重複は自動スキップ）
+    const now = getCurrentTimestamp();
+    const stmts = validIds.map(id =>
+      this.db
+        .prepare('INSERT OR IGNORE INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at) VALUES (?, ?, 1, ?, ?)')
+        .bind(userId, id, now, now)
+    );
+    const results = await this.db.batch(stmts);
 
-      const now = getCurrentTimestamp();
-      await this.db
-        .prepare(
-          'INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at) VALUES (?, ?, 1, ?, ?)'
-        )
-        .bind(userId, itineraryId, now, now)
-        .run();
+    const synced = results.filter(r => r.meta?.changes && r.meta.changes > 0).length;
 
-      synced++;
-    }
-
-    return { synced, skipped };
+    return { synced, skipped: skipped + (validIds.length - synced) };
   }
 
   async addBookmark(userId: string, itineraryId: string): Promise<UserBookmark> {

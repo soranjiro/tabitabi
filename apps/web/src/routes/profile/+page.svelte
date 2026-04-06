@@ -23,7 +23,7 @@
   async function syncLocalBookmarks() {
     const history = auth.getHistory();
     const ids = history
-      .filter((h) => h.shioriId !== "demo")
+      .filter((h) => h.shioriId !== "demo" && h.token !== null)
       .map((h) => h.shioriId);
     if (ids.length === 0) return;
     try {

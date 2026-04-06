@@ -80,6 +80,13 @@ users.post('/me/sync-bookmarks', userAuthMiddleware, async (c) => {
     }, 400);
   }
 
+  if (input.itinerary_ids.length > 50) {
+    return c.json({
+      success: false,
+      error: { code: 'INVALID_INPUT', message: 'Too many itinerary_ids (max 50)' }
+    }, 400);
+  }
+
   const service = new UserService(c.env.DB);
   const result = await service.syncBookmarks(userId, input.itinerary_ids);
   return c.json({ success: true, data: result });

@@ -36,8 +36,12 @@ itineraries.post('/', optionalUserAuthMiddleware, async (c) => {
 
   const userId = c.get('userId');
   if (userId) {
-    const userService = new UserService(c.env.DB);
-    await userService.addBookmark(userId, data.id);
+    try {
+      const userService = new UserService(c.env.DB);
+      await userService.addBookmark(userId, data.id);
+    } catch {
+      // 非致命的: しおりは作成済み、/me/sync-bookmarks で後から同期可能
+    }
   }
 
   return c.json({ success: true, data: { ...response, token } }, 201);

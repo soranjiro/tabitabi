@@ -8,6 +8,7 @@
   let loadingMore = $state(false);
   let hasMore = $state(false);
   let error = $state<string | null>(null);
+  let loadMoreError = $state<string | null>(null);
 
   onMount(async () => {
     try {
@@ -23,12 +24,13 @@
 
   async function loadMore() {
     loadingMore = true;
+    loadMoreError = null;
     try {
       const result = await userApi.getPublicFeed(items.length);
       items = [...items, ...result.items];
       hasMore = result.hasMore;
     } catch {
-      error = "読み込みに失敗しました";
+      loadMoreError = "追加の読み込みに失敗しました";
     } finally {
       loadingMore = false;
     }
@@ -73,6 +75,10 @@
           </div>
         {/each}
       </div>
+
+      {#if loadMoreError}
+        <p class="text-red-500 text-center mt-4 text-sm">{loadMoreError}</p>
+      {/if}
 
       {#if hasMore}
         <div class="mt-8 text-center">

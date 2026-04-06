@@ -385,4 +385,19 @@ describe('GET /api/v1/users (public feed)', () => {
     expect(json2.data.items).toHaveLength(1);
     expect(json2.data.hasMore).toBe(false);
   });
+
+  it('excludes password-protected itineraries from public feed', async () => {
+    const token = await registerAndGetToken('feeduser5', 'feed5@example.com');
+
+    // Create a password-protected itinerary
+    await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ title: 'パスワード付きしおり', password: 'secret123' }),
+    }, env);
+
+    const res = await app.request('/api/v1/users', {}, env);
+    const json = await res.json() as { data: { items: unknown[] } };
+    expect(json.data.items).toHaveLength(0);
+  });
 });

@@ -234,8 +234,9 @@
         <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
           {#if mode === "register"}
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">ユーザー名</label>
+              <label for="auth-username" class="block text-sm font-medium text-gray-700 mb-1">ユーザー名</label>
               <input
+                id="auth-username"
                 type="text"
                 bind:value={usernameInput}
                 required
@@ -244,8 +245,9 @@
             </div>
           {/if}
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+            <label for="auth-email" class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
             <input
+              id="auth-email"
               type="email"
               bind:value={email}
               required
@@ -253,8 +255,9 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+            <label for="auth-password" class="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
             <input
+              id="auth-password"
               type="password"
               bind:value={password}
               required

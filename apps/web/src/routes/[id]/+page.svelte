@@ -182,12 +182,17 @@
   let forking = $state(false);
 
   async function handleFork() {
+    if (forking) return;
     const userToken = userAuth.getToken();
-    if (!userToken) return;
+    isLoggedIn = !!userToken;
+    if (!userToken) {
+      alert("コピーするにはログインが必要です");
+      return;
+    }
     forking = true;
     try {
       const result = await itineraryApi.fork(data.itinerary.id);
-      auth.setToken(result.id, result.token);
+      auth.setToken(result.id, result.title, result.token);
       await goto(`/${result.id}`);
     } catch (error) {
       console.error("Failed to fork itinerary:", error);

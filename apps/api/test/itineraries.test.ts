@@ -10,7 +10,6 @@ async function applyMigrations(db: D1Database) {
       theme_id TEXT NOT NULL DEFAULT 'standard-autumn',
       memo TEXT,
       password TEXT,
-      fork_count INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,
@@ -42,6 +41,11 @@ async function applyMigrations(db: D1Database) {
       walica_id TEXT NOT NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
+      FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+    );`,
+    `CREATE TABLE IF NOT EXISTS itinerary_fork_stats (
+      itinerary_id TEXT PRIMARY KEY,
+      fork_count INTEGER NOT NULL DEFAULT 0,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
     `CREATE TABLE IF NOT EXISTS users (
@@ -333,7 +337,7 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     }, env);
 
-    const row = await env.DB.prepare('SELECT fork_count FROM itineraries WHERE id = ?').bind(source.id).first() as any;
+    const row = await env.DB.prepare('SELECT fork_count FROM itinerary_fork_stats WHERE itinerary_id = ?').bind(source.id).first() as any;
     expect(row.fork_count).toBe(1);
   });
 

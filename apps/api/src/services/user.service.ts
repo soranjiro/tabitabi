@@ -299,10 +299,15 @@ export class UserService {
       .run();
   }
 
+  private escapeLikePattern(value: string): string {
+    return value.replace(/[\\%_]/g, '\\$&');
+  }
+
   async searchUsers(query: string, limit: number = 20): Promise<UserSearchResult[]> {
+    const escapedQuery = this.escapeLikePattern(query);
     const results = await this.db
-      .prepare('SELECT username, created_at FROM users WHERE username LIKE ? LIMIT ?')
-      .bind(`%${query}%`, limit)
+      .prepare("SELECT username, created_at FROM users WHERE username LIKE ? ESCAPE '\\' LIMIT ?")
+      .bind(`%${escapedQuery}%`, limit)
       .all<UserSearchResult>();
     return results.results ?? [];
   }

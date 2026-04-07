@@ -69,16 +69,16 @@ users.post('/login', async (c) => {
 
 // GET /users/search?q=:query (認証不要 - username 部分一致検索)
 users.get('/search', async (c) => {
-  const q = c.req.query('q') ?? '';
-  if (!q.trim()) {
+  const trimmedQ = (c.req.query('q') ?? '').trim();
+  if (!trimmedQ) {
     return c.json({ success: true, data: { users: [] } });
   }
-  if (q.length > 50) {
+  if (trimmedQ.length > 50) {
     return c.json({ success: false, error: { code: 'INVALID_INPUT', message: 'q must be 50 characters or less' } }, 400);
   }
 
   const service = new UserService(c.env.DB);
-  const results = await service.searchUsers(q.trim());
+  const results = await service.searchUsers(trimmedQ);
   return c.json({ success: true, data: { users: results } });
 });
 

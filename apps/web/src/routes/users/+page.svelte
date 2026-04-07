@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { userApi } from "$lib/api/user";
   import type { PublicFeedItem, UserSearchResult } from "@tabitabi/types";
 
@@ -43,6 +43,10 @@
       loadingMore = false;
     }
   }
+
+  onDestroy(() => {
+    if (searchTimer) clearTimeout(searchTimer);
+  });
 
   function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString("ja-JP");
@@ -91,6 +95,7 @@
     <div class="mb-6">
       <input
         type="search"
+        aria-label="ユーザー名で検索"
         placeholder="ユーザー名で検索..."
         bind:value={searchQuery}
         oninput={handleSearchInput}
@@ -102,9 +107,11 @@
             <p class="text-gray-400 text-sm px-4 py-3">検索中...</p>
           {:else if searchError}
             <p class="text-red-500 text-sm px-4 py-3">{searchError}</p>
-          {:else if searchResults !== null && searchResults.length === 0}
+          {:else if searchResults === null}
+            <p class="text-gray-400 text-sm px-4 py-3">入力中...</p>
+          {:else if searchResults.length === 0}
             <p class="text-gray-400 text-sm px-4 py-3">見つかりませんでした</p>
-          {:else if searchResults !== null}
+          {:else}
             {#each searchResults as user}
               <a
                 href="/users/{user.username}"

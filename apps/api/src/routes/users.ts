@@ -73,6 +73,9 @@ users.get('/search', async (c) => {
   if (!q.trim()) {
     return c.json({ success: true, data: { users: [] } });
   }
+  if (q.length > 50) {
+    return c.json({ success: false, error: { code: 'INVALID_INPUT', message: 'q must be 50 characters or less' } }, 400);
+  }
 
   const service = new UserService(c.env.DB);
   const results = await service.searchUsers(q.trim());

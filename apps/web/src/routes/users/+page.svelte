@@ -14,7 +14,9 @@
   let searchQuery = $state("");
   let searchResults = $state<UserSearchResult[] | null>(null);
   let searchLoading = $state(false);
+  let searchError = $state<string | null>(null);
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
+  let searchRequestId = 0;
 
   onMount(async () => {
     try {
@@ -48,17 +50,27 @@
 
   function handleSearchInput() {
     if (searchTimer) clearTimeout(searchTimer);
+    searchError = null;
     if (!searchQuery.trim()) {
       searchResults = null;
       return;
     }
     searchTimer = setTimeout(async () => {
+      const requestId = ++searchRequestId;
       searchLoading = true;
       try {
         const result = await userApi.searchUsers(searchQuery.trim());
-        searchResults = result.users;
+        if (requestId === searchRequestId) {
+          searchResults = result.users;
+        }
+      } catch {
+        if (requestId === searchRequestId) {
+          searchError = "検索に失敗しました";
+        }
       } finally {
-        searchLoading = false;
+        if (requestId === searchRequestId) {
+          searchLoading = false;
+        }
       }
     }, 300);
   }
@@ -88,6 +100,8 @@
         <div class="mt-2 bg-white border border-gray-200 rounded-lg shadow-sm">
           {#if searchLoading}
             <p class="text-gray-400 text-sm px-4 py-3">検索中...</p>
+          {:else if searchError}
+            <p class="text-red-500 text-sm px-4 py-3">{searchError}</p>
           {:else if searchResults !== null && searchResults.length === 0}
             <p class="text-gray-400 text-sm px-4 py-3">見つかりませんでした</p>
           {:else if searchResults !== null}

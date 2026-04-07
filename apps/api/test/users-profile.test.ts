@@ -422,6 +422,20 @@ describe('GET /api/v1/users/search', () => {
     expect(json.data.users).toHaveLength(0);
   });
 
+  it('returns empty array when q param is omitted', async () => {
+    const res = await app.request('/api/v1/users/search', {}, env);
+    expect(res.status).toBe(200);
+    const json = await res.json() as { success: boolean; data: { users: unknown[] } };
+    expect(json.success).toBe(true);
+    expect(json.data.users).toHaveLength(0);
+  });
+
+  it('returns 400 for query longer than 50 characters', async () => {
+    const q = 'a'.repeat(51);
+    const res = await app.request(`/api/v1/users/search?q=${q}`, {}, env);
+    expect(res.status).toBe(400);
+  });
+
   it('returns matching users by partial username', async () => {
     await registerAndGetToken('alice', 'alice@example.com');
     await registerAndGetToken('alicia', 'alicia@example.com');

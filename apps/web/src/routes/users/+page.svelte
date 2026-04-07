@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { userApi } from "$lib/api/user";
-  import type { PublicFeedItem } from "@tabitabi/types";
+  import type { PublicFeedItem, UserSearchResult } from "@tabitabi/types";
 
   let items: PublicFeedItem[] = $state([]);
   let loading = $state(true);
@@ -9,6 +9,14 @@
   let hasMore = $state(false);
   let error = $state<string | null>(null);
   let loadMoreError = $state<string | null>(null);
+
+  // Search
+  let searchQuery = $state("");
+  let searchResults = $state<UserSearchResult[] | null>(null);
+  let searchLoading = $state(false);
+  let searchError = $state<string | null>(null);
+  let searchTimer: ReturnType<typeof setTimeout> | null = null;
+  let searchRequestId = 0;
 
   onMount(async () => {
     try {
@@ -36,8 +44,39 @@
     }
   }
 
+  onDestroy(() => {
+    if (searchTimer) clearTimeout(searchTimer);
+  });
+
   function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString("ja-JP");
+  }
+
+  function handleSearchInput() {
+    if (searchTimer) clearTimeout(searchTimer);
+    searchError = null;
+    if (!searchQuery.trim()) {
+      searchResults = null;
+      return;
+    }
+    searchTimer = setTimeout(async () => {
+      const requestId = ++searchRequestId;
+      searchLoading = true;
+      try {
+        const result = await userApi.searchUsers(searchQuery.trim());
+        if (requestId === searchRequestId) {
+          searchResults = result.users;
+        }
+      } catch {
+        if (requestId === searchRequestId) {
+          searchError = "検索に失敗しました";
+        }
+      } finally {
+        if (requestId === searchRequestId) {
+          searchLoading = false;
+        }
+      }
+    }, 300);
   }
 </script>
 
@@ -51,6 +90,39 @@
     <div class="mb-6">
       <h1 class="text-2xl font-bold text-gray-900">みんなのしおり</h1>
       <p class="text-sm text-gray-500 mt-1">公開されているしおりの一覧</p>
+    </div>
+
+    <div class="mb-6">
+      <input
+        type="search"
+        aria-label="ユーザー名で検索"
+        placeholder="ユーザー名で検索..."
+        bind:value={searchQuery}
+        oninput={handleSearchInput}
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+      />
+      {#if searchQuery.trim()}
+        <div class="mt-2 bg-white border border-gray-200 rounded-lg shadow-sm">
+          {#if searchLoading}
+            <p class="text-gray-400 text-sm px-4 py-3">検索中...</p>
+          {:else if searchError}
+            <p class="text-red-500 text-sm px-4 py-3">{searchError}</p>
+          {:else if searchResults === null}
+            <p class="text-gray-400 text-sm px-4 py-3">入力中...</p>
+          {:else if searchResults.length === 0}
+            <p class="text-gray-400 text-sm px-4 py-3">見つかりませんでした</p>
+          {:else}
+            {#each searchResults as user}
+              <a
+                href="/users/{user.username}"
+                class="flex items-center px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+              >
+                <span class="text-sm font-medium text-indigo-600">@{user.username}</span>
+              </a>
+            {/each}
+          {/if}
+        </div>
+      {/if}
     </div>
 
     {#if loading}

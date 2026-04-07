@@ -91,3 +91,8 @@ export interface UpdateProfileResponse {
   email: string;
   created_at: string;
 }
+
+export interface UserSearchResult {
+  username: string;
+  created_at: string;
+}

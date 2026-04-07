@@ -11,6 +11,7 @@ import type {
   UpdateProfileInput,
   UpdatePasswordInput,
   UpdateProfileResponse,
+  UserSearchResult,
 } from '@tabitabi/types';
 import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
@@ -296,6 +297,19 @@ export class UserService {
       .prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
       .bind(newHash, now, userId)
       .run();
+  }
+
+  private escapeLikePattern(value: string): string {
+    return value.replace(/[\\%_]/g, '\\$&');
+  }
+
+  async searchUsers(query: string, limit: number = 20): Promise<UserSearchResult[]> {
+    const escapedQuery = this.escapeLikePattern(query);
+    const results = await this.db
+      .prepare("SELECT username, created_at FROM users WHERE username LIKE ? ESCAPE '\\' LIMIT ?")
+      .bind(`%${escapedQuery}%`, limit)
+      .all<UserSearchResult>();
+    return results.results ?? [];
   }
 
   async addBookmark(userId: string, itineraryId: string): Promise<UserBookmark> {

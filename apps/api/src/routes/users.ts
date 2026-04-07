@@ -67,6 +67,21 @@ users.post('/login', async (c) => {
   }
 });
 
+// GET /users/search?q=:query (認証不要 - username 部分一致検索)
+users.get('/search', async (c) => {
+  const trimmedQ = (c.req.query('q') ?? '').trim();
+  if (!trimmedQ) {
+    return c.json({ success: true, data: { users: [] } });
+  }
+  if (trimmedQ.length > 50) {
+    return c.json({ success: false, error: { code: 'INVALID_INPUT', message: 'q must be 50 characters or less' } }, 400);
+  }
+
+  const service = new UserService(c.env.DB);
+  const results = await service.searchUsers(trimmedQ);
+  return c.json({ success: true, data: { users: results } });
+});
+
 // GET /users (認証不要 - 全ユーザーの公開しおりフィード)
 users.get('/', async (c) => {
   const offsetParam = c.req.query('offset') ?? '0';

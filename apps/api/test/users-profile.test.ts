@@ -406,3 +406,43 @@ describe('GET /api/v1/users (public feed)', () => {
     expect(json.data.items).toHaveLength(0);
   });
 });
+
+describe('GET /api/v1/users/search', () => {
+  beforeEach(async () => {
+    await applyMigrations(env.DB);
+    await env.DB.prepare('DELETE FROM user_bookmarks').run();
+    await env.DB.prepare('DELETE FROM users').run();
+  });
+
+  it('returns empty array for blank query', async () => {
+    const res = await app.request('/api/v1/users/search?q=', {}, env);
+    expect(res.status).toBe(200);
+    const json = await res.json() as { success: boolean; data: { users: unknown[] } };
+    expect(json.success).toBe(true);
+    expect(json.data.users).toHaveLength(0);
+  });
+
+  it('returns matching users by partial username', async () => {
+    await registerAndGetToken('alice', 'alice@example.com');
+    await registerAndGetToken('alicia', 'alicia@example.com');
+    await registerAndGetToken('bob', 'bob@example.com');
+
+    const res = await app.request('/api/v1/users/search?q=ali', {}, env);
+    expect(res.status).toBe(200);
+    const json = await res.json() as { success: boolean; data: { users: { username: string }[] } };
+    expect(json.success).toBe(true);
+    const usernames = json.data.users.map(u => u.username);
+    expect(usernames).toContain('alice');
+    expect(usernames).toContain('alicia');
+    expect(usernames).not.toContain('bob');
+  });
+
+  it('returns empty array when no users match', async () => {
+    await registerAndGetToken('charlie', 'charlie@example.com');
+
+    const res = await app.request('/api/v1/users/search?q=xyz', {}, env);
+    expect(res.status).toBe(200);
+    const json = await res.json() as { success: boolean; data: { users: unknown[] } };
+    expect(json.data.users).toHaveLength(0);
+  });
+});

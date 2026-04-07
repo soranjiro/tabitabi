@@ -12,6 +12,7 @@ import type {
   UpdateProfileInput,
   UpdatePasswordInput,
   UpdateProfileResponse,
+  UserSearchResult,
   ApiResult,
 } from '@tabitabi/types';
 import { userAuth } from '../user-auth';
@@ -79,4 +80,7 @@ export const userApi = {
 
   getPublicFeed: (offset: number) =>
     request<PublicFeedResponse>(`/users?offset=${offset}`),
+
+  searchUsers: (query: string) =>
+    request<{ users: UserSearchResult[] }>(`/users/search?q=${encodeURIComponent(query)}`),
 };

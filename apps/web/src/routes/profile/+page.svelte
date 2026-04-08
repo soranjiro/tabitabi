@@ -3,6 +3,7 @@
   import { goto } from "$app/navigation";
   import { userApi } from "$lib/api/user";
   import { userAuth } from "$lib/user-auth";
+  import PageShell from "$lib/PageShell.svelte";
   import { auth } from "$lib/auth";
   import type { UserBookmarkWithItinerary } from "@tabitabi/types";
 
@@ -221,17 +222,8 @@
   <title>マイページ - たびたび</title>
 </svelte:head>
 
-<div class="page-wrapper">
-  <header class="page-header">
-    <div class="header-inner">
-      <a href="/" class="back-link">← たびたび</a>
-      <h1 class="page-title">マイページ</h1>
-    </div>
-  </header>
-
-  <div class="page-content">
-    <div class="content-inner">
-
+<PageShell title="マイページ">
+  {#snippet children()}
       {#if !loggedIn}
         <!-- ログイン / 新規登録フォーム -->
         <div class="bg-white rounded-xl shadow-md p-6 max-w-md mx-auto">
@@ -502,58 +494,5 @@
           </div>
         {/if}
       {/if}
-
-    </div>
-  </div>
-</div>
-
-<style>
-  .page-wrapper {
-    min-height: 100vh;
-    background: linear-gradient(145deg, #84c6ff 0%, #a6b3ff 40%, #b5daf8 100%);
-  }
-
-  .page-header {
-    padding: 1.5rem 1rem 3rem;
-  }
-
-  .header-inner {
-    max-width: 768px;
-    margin: 0 auto;
-  }
-
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-decoration: none;
-    margin-bottom: 1rem;
-    transition: color 0.15s;
-  }
-
-  .back-link:hover {
-    color: white;
-  }
-
-  .page-title {
-    font-size: 2rem;
-    font-weight: 900;
-    color: white;
-    margin: 0;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  }
-
-  .page-content {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.93) 0%, #f7fbff 100%);
-    border-radius: 1.5rem 1.5rem 0 0;
-    min-height: calc(100vh - 10rem);
-    padding: 2rem 1rem 3rem;
-  }
-
-  .content-inner {
-    max-width: 768px;
-    margin: 0 auto;
-  }
-</style>
+  {/snippet}
+</PageShell>

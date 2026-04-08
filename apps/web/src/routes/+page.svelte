@@ -29,6 +29,10 @@
 
   let loggedIn = $state(false);
 
+  function refreshLoggedIn() {
+    loggedIn = userAuth.isLoggedIn();
+  }
+
   let recentItineraries = $state<
     Array<{ id: string; title: string; visitedAt: number }>
   >([]);
@@ -68,13 +72,11 @@
     };
   }
 
-  afterNavigate(() => {
-    loggedIn = userAuth.isLoggedIn();
-  });
+  afterNavigate(refreshLoggedIn);
 
   onMount(() => {
     resetDemoMode();
-    loggedIn = userAuth.isLoggedIn();
+    refreshLoggedIn();
 
     recentItineraries = auth.getRecentItineraries();
     showRecent = true;

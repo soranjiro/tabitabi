@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { afterNavigate } from "$app/navigation";
   import { auth } from "$lib/auth";
   import { userAuth } from "$lib/user-auth";
   import { resetDemoMode } from "$lib/demo";
@@ -66,6 +67,10 @@
       y: ((rect.top + rect.height / 2) / window.innerHeight) * 100,
     };
   }
+
+  afterNavigate(() => {
+    loggedIn = userAuth.isLoggedIn();
+  });
 
   onMount(() => {
     resetDemoMode();
@@ -138,7 +143,7 @@
   {/each}
 
   <section class="hero" class:hero-hidden={heroHidden}>
-    <nav class="hero-nav">
+    <nav class="hero-nav" aria-label="サイトナビゲーション">
       <a href="/users" class="nav-users-btn">みんなのしおり</a>
       <a href="/profile" class="nav-profile-btn">
         {loggedIn ? "マイページ" : "ログイン"}
@@ -823,6 +828,24 @@
   .nav-profile-btn:hover {
     background: white;
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18);
+  }
+
+  @media (max-width: 480px) {
+    .hero-nav {
+      top: 0.75rem;
+      right: 0.75rem;
+      gap: 0.25rem;
+    }
+
+    .nav-users-btn {
+      font-size: 0.78rem;
+      padding: 0.35rem 0.6rem;
+    }
+
+    .nav-profile-btn {
+      font-size: 0.78rem;
+      padding: 0.35rem 0.75rem;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

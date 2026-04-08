@@ -3,6 +3,7 @@
   import { goto } from "$app/navigation";
   import { userApi } from "$lib/api/user";
   import { userAuth } from "$lib/user-auth";
+  import PageShell from "$lib/PageShell.svelte";
   import { auth } from "$lib/auth";
   import type { UserBookmarkWithItinerary } from "@tabitabi/types";
 
@@ -218,282 +219,280 @@
 </script>
 
 <svelte:head>
-  <title>マイページ - Tabitabi</title>
+  <title>マイページ - たびたび</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50">
-  <div class="max-w-3xl mx-auto px-4 py-8">
+<PageShell title="マイページ">
+  {#snippet children()}
+      {#if !loggedIn}
+        <!-- ログイン / 新規登録フォーム -->
+        <div class="bg-white rounded-xl shadow-md p-6 max-w-md mx-auto">
+          <h2 class="text-xl font-bold text-gray-900 mb-6">
+            {mode === "login" ? "ログイン" : "新規登録"}
+          </h2>
 
-    {#if !loggedIn}
-      <!-- ログイン / 新規登録フォーム -->
-      <div class="bg-white rounded-lg shadow-md p-6 max-w-md mx-auto">
-        <h1 class="text-2xl font-bold text-gray-900 mb-6">
-          {mode === "login" ? "ログイン" : "新規登録"}
-        </h1>
-
-        <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
-          {#if mode === "register"}
-            <div>
-              <label for="auth-username" class="block text-sm font-medium text-gray-700 mb-1">ユーザー名</label>
-              <input
-                id="auth-username"
-                type="text"
-                bind:value={usernameInput}
-                required
-                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-          {/if}
-          <div>
-            <label for="auth-email" class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
-            <input
-              id="auth-email"
-              type="email"
-              bind:value={email}
-              required
-              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label for="auth-password" class="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
-            <input
-              id="auth-password"
-              type="password"
-              bind:value={password}
-              required
-              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-
-          {#if formError}
-            <p class="text-red-500 text-sm">{formError}</p>
-          {/if}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-md transition-colors"
-          >
-            {submitting ? "処理中..." : mode === "login" ? "ログイン" : "登録"}
-          </button>
-        </form>
-
-        <p class="mt-4 text-sm text-center text-gray-600">
-          {#if mode === "login"}
-            アカウントをお持ちでない方は
-            <button onclick={() => { mode = "register"; formError = null; }} class="text-indigo-600 hover:underline">
-              新規登録
-            </button>
-          {:else}
-            すでにアカウントをお持ちの方は
-            <button onclick={() => { mode = "login"; formError = null; }} class="text-indigo-600 hover:underline">
-              ログイン
-            </button>
-          {/if}
-        </p>
-      </div>
-
-    {:else}
-      <!-- マイページ本体 -->
-      <div class="flex justify-between items-center mb-6">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">マイページ</h1>
-          {#if username}
-            <p class="text-sm text-gray-500 mt-1">
-              <a href="/users/{username}" class="text-indigo-600 hover:underline">@{username}</a>
-              のパブリックプロフィール
-            </p>
-          {/if}
-        </div>
-        <button
-          onclick={handleLogout}
-          class="text-sm text-gray-500 hover:text-gray-700 border border-gray-300 rounded-md px-3 py-1"
-        >
-          ログアウト
-        </button>
-      </div>
-
-      <!-- 成功メッセージ -->
-      {#if editSuccess}
-        <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm">
-          {editSuccess}
-        </div>
-      {/if}
-
-      <!-- プロフィール編集セクション -->
-      {#if editSection === "none"}
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6 flex items-center justify-between">
-          <div class="text-sm text-gray-700">
-            <p class="font-medium">アカウント設定</p>
-            <p class="text-gray-400 text-xs mt-0.5">ユーザー名・メール・パスワードを変更できます</p>
-          </div>
-          <div class="flex gap-2">
-            <button
-              onclick={openProfileEdit}
-              class="text-xs px-3 py-1.5 rounded-md border border-indigo-300 text-indigo-600 hover:bg-indigo-50 transition-colors"
-            >
-              プロフィール編集
-            </button>
-            <button
-              onclick={openPasswordEdit}
-              class="text-xs px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              パスワード変更
-            </button>
-          </div>
-        </div>
-
-      {:else if editSection === "profile"}
-        <!-- プロフィール編集フォーム -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-6">
-          <h2 class="text-base font-semibold text-gray-900 mb-4">プロフィール編集</h2>
-          <form onsubmit={(e) => { e.preventDefault(); handleProfileUpdate(); }} class="space-y-4">
-            <div>
-              <label for="edit-username" class="block text-sm font-medium text-gray-700 mb-1">ユーザー名 <span class="text-gray-400 font-normal">(3〜20文字)</span></label>
-              <input
-                id="edit-username"
-                type="text"
-                bind:value={editUsername}
-                minlength={3}
-                maxlength={20}
-                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label for="edit-email" class="block text-sm font-medium text-gray-700 mb-1">新しいメールアドレス <span class="text-gray-400 font-normal">(変更する場合のみ)</span></label>
-              <input
-                id="edit-email"
-                type="email"
-                bind:value={editEmail}
-                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            {#if editError}
-              <p class="text-red-500 text-sm">{editError}</p>
-            {/if}
-            <div class="flex gap-2 justify-end">
-              <button
-                type="button"
-                onclick={closeEdit}
-                class="text-sm px-4 py-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50"
-              >
-                キャンセル
-              </button>
-              <button
-                type="submit"
-                disabled={editSubmitting}
-                class="text-sm px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold transition-colors"
-              >
-                {editSubmitting ? "更新中..." : "更新する"}
-              </button>
-            </div>
-          </form>
-        </div>
-
-      {:else if editSection === "password"}
-        <!-- パスワード変更フォーム -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-6">
-          <h2 class="text-base font-semibold text-gray-900 mb-4">パスワード変更</h2>
-          <form onsubmit={(e) => { e.preventDefault(); handlePasswordUpdate(); }} class="space-y-4">
-            <div>
-              <label for="current-password" class="block text-sm font-medium text-gray-700 mb-1">現在のパスワード</label>
-              <input
-                id="current-password"
-                type="password"
-                bind:value={currentPassword}
-                required
-                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">新しいパスワード <span class="text-gray-400 font-normal">(8文字以上)</span></label>
-              <input
-                id="new-password"
-                type="password"
-                bind:value={newPassword}
-                required
-                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">新しいパスワード（確認）</label>
-              <input
-                id="confirm-password"
-                type="password"
-                bind:value={confirmPassword}
-                required
-                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            {#if editError}
-              <p class="text-red-500 text-sm">{editError}</p>
-            {/if}
-            <div class="flex gap-2 justify-end">
-              <button
-                type="button"
-                onclick={closeEdit}
-                class="text-sm px-4 py-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50"
-              >
-                キャンセル
-              </button>
-              <button
-                type="submit"
-                disabled={editSubmitting}
-                class="text-sm px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold transition-colors"
-              >
-                {editSubmitting ? "変更中..." : "変更する"}
-              </button>
-            </div>
-          </form>
-        </div>
-      {/if}
-
-      {#if loading}
-        <p class="text-gray-500 text-center py-12">読み込み中...</p>
-      {:else if error}
-        <p class="text-red-500 text-center py-12">{error}</p>
-      {:else if bookmarks.length === 0}
-        <div class="text-center py-12">
-          <p class="text-gray-500 mb-2">まだしおりがありません</p>
-          <a href="/" class="text-indigo-600 hover:underline text-sm">しおりを作成する</a>
-        </div>
-      {:else}
-        <div class="space-y-3">
-          {#each bookmarks as bookmark}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex items-center justify-between">
-              <div class="flex-1 min-w-0">
-                <a
-                  href="/{bookmark.itinerary_id}"
-                  class="font-medium text-gray-900 hover:text-indigo-600 truncate block"
-                >
-                  {bookmark.title}
-                </a>
-                <p class="text-xs text-gray-400 mt-0.5">{formatDate(bookmark.created_at)}</p>
+          <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
+            {#if mode === "register"}
+              <div>
+                <label for="auth-username" class="block text-sm font-medium text-gray-700 mb-1">ユーザー名</label>
+                <input
+                  id="auth-username"
+                  type="text"
+                  bind:value={usernameInput}
+                  required
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
               </div>
+            {/if}
+            <div>
+              <label for="auth-email" class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+              <input
+                id="auth-email"
+                type="email"
+                bind:value={email}
+                required
+                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label for="auth-password" class="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+              <input
+                id="auth-password"
+                type="password"
+                bind:value={password}
+                required
+                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
 
-              <div class="flex items-center gap-3 ml-4 flex-shrink-0">
-                {#if bookmark.is_password_protected}
-                  <span class="text-xs text-gray-400 flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-                    </svg>
-                    鍵あり
-                  </span>
-                {/if}
+            {#if formError}
+              <p class="text-red-500 text-sm">{formError}</p>
+            {/if}
 
+            <button
+              type="submit"
+              disabled={submitting}
+              class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-md transition-colors"
+            >
+              {submitting ? "処理中..." : mode === "login" ? "ログイン" : "登録"}
+            </button>
+          </form>
+
+          <p class="mt-4 text-sm text-center text-gray-600">
+            {#if mode === "login"}
+              アカウントをお持ちでない方は
+              <button onclick={() => { mode = "register"; formError = null; }} class="text-indigo-600 hover:underline">
+                新規登録
+              </button>
+            {:else}
+              すでにアカウントをお持ちの方は
+              <button onclick={() => { mode = "login"; formError = null; }} class="text-indigo-600 hover:underline">
+                ログイン
+              </button>
+            {/if}
+          </p>
+        </div>
+
+      {:else}
+        <!-- マイページ本体 -->
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            {#if username}
+              <p class="text-sm text-gray-500">
+                <a href="/users/{username}" class="text-indigo-600 hover:underline">@{username}</a>
+                のパブリックプロフィール
+              </p>
+            {/if}
+          </div>
+          <button
+            onclick={handleLogout}
+            class="text-sm text-gray-500 hover:text-gray-700 border border-gray-300 rounded-md px-3 py-1"
+          >
+            ログアウト
+          </button>
+        </div>
+
+        <!-- 成功メッセージ -->
+        {#if editSuccess}
+          <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm">
+            {editSuccess}
+          </div>
+        {/if}
+
+        <!-- プロフィール編集セクション -->
+        {#if editSection === "none"}
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6 flex items-center justify-between">
+            <div class="text-sm text-gray-700">
+              <p class="font-medium">アカウント設定</p>
+              <p class="text-gray-400 text-xs mt-0.5">ユーザー名・メール・パスワードを変更できます</p>
+            </div>
+            <div class="flex gap-2">
+              <button
+                onclick={openProfileEdit}
+                class="text-xs px-3 py-1.5 rounded-md border border-indigo-300 text-indigo-600 hover:bg-indigo-50 transition-colors"
+              >
+                プロフィール編集
+              </button>
+              <button
+                onclick={openPasswordEdit}
+                class="text-xs px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                パスワード変更
+              </button>
+            </div>
+          </div>
+
+        {:else if editSection === "profile"}
+          <!-- プロフィール編集フォーム -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6">
+            <h2 class="text-base font-semibold text-gray-900 mb-4">プロフィール編集</h2>
+            <form onsubmit={(e) => { e.preventDefault(); handleProfileUpdate(); }} class="space-y-4">
+              <div>
+                <label for="edit-username" class="block text-sm font-medium text-gray-700 mb-1">ユーザー名 <span class="text-gray-400 font-normal">(3〜20文字)</span></label>
+                <input
+                  id="edit-username"
+                  type="text"
+                  bind:value={editUsername}
+                  minlength={3}
+                  maxlength={20}
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label for="edit-email" class="block text-sm font-medium text-gray-700 mb-1">新しいメールアドレス <span class="text-gray-400 font-normal">(変更する場合のみ)</span></label>
+                <input
+                  id="edit-email"
+                  type="email"
+                  bind:value={editEmail}
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              {#if editError}
+                <p class="text-red-500 text-sm">{editError}</p>
+              {/if}
+              <div class="flex gap-2 justify-end">
                 <button
-                  onclick={() => toggleVisibility(bookmark.itinerary_id, bookmark.is_visible)}
-                  class="text-xs px-2 py-1 rounded border transition-colors {bookmark.is_visible
-                    ? 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100'
-                    : 'border-gray-300 text-gray-500 bg-gray-50 hover:bg-gray-100'}"
+                  type="button"
+                  onclick={closeEdit}
+                  class="text-sm px-4 py-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50"
                 >
-                  {bookmark.is_visible ? "公開" : "非公開"}
+                  キャンセル
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSubmitting}
+                  class="text-sm px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold transition-colors"
+                >
+                  {editSubmitting ? "更新中..." : "更新する"}
                 </button>
               </div>
-            </div>
-          {/each}
-        </div>
+            </form>
+          </div>
+
+        {:else if editSection === "password"}
+          <!-- パスワード変更フォーム -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6">
+            <h2 class="text-base font-semibold text-gray-900 mb-4">パスワード変更</h2>
+            <form onsubmit={(e) => { e.preventDefault(); handlePasswordUpdate(); }} class="space-y-4">
+              <div>
+                <label for="current-password" class="block text-sm font-medium text-gray-700 mb-1">現在のパスワード</label>
+                <input
+                  id="current-password"
+                  type="password"
+                  bind:value={currentPassword}
+                  required
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">新しいパスワード <span class="text-gray-400 font-normal">(8文字以上)</span></label>
+                <input
+                  id="new-password"
+                  type="password"
+                  bind:value={newPassword}
+                  required
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">新しいパスワード（確認）</label>
+                <input
+                  id="confirm-password"
+                  type="password"
+                  bind:value={confirmPassword}
+                  required
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              {#if editError}
+                <p class="text-red-500 text-sm">{editError}</p>
+              {/if}
+              <div class="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onclick={closeEdit}
+                  class="text-sm px-4 py-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSubmitting}
+                  class="text-sm px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold transition-colors"
+                >
+                  {editSubmitting ? "変更中..." : "変更する"}
+                </button>
+              </div>
+            </form>
+          </div>
+        {/if}
+
+        {#if loading}
+          <p class="text-gray-500 text-center py-12">読み込み中...</p>
+        {:else if error}
+          <p class="text-red-500 text-center py-12">{error}</p>
+        {:else if bookmarks.length === 0}
+          <div class="text-center py-12">
+            <p class="text-gray-500 mb-2">まだしおりがありません</p>
+            <a href="/" class="text-indigo-600 hover:underline text-sm">しおりを作成する</a>
+          </div>
+        {:else}
+          <div class="space-y-3">
+            {#each bookmarks as bookmark}
+              <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                  <a
+                    href="/{bookmark.itinerary_id}"
+                    class="font-medium text-gray-900 hover:text-indigo-600 truncate block"
+                  >
+                    {bookmark.title}
+                  </a>
+                  <p class="text-xs text-gray-400 mt-0.5">{formatDate(bookmark.created_at)}</p>
+                </div>
+
+                <div class="flex items-center gap-3 ml-4 flex-shrink-0">
+                  {#if bookmark.is_password_protected}
+                    <span class="text-xs text-gray-400 flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                      </svg>
+                      鍵あり
+                    </span>
+                  {/if}
+
+                  <button
+                    onclick={() => toggleVisibility(bookmark.itinerary_id, bookmark.is_visible)}
+                    class="text-xs px-2 py-1 rounded border transition-colors {bookmark.is_visible
+                      ? 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100'
+                      : 'border-gray-300 text-gray-500 bg-gray-50 hover:bg-gray-100'}"
+                  >
+                    {bookmark.is_visible ? "公開" : "非公開"}
+                  </button>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/if}
       {/if}
-    {/if}
-  </div>
-</div>
+  {/snippet}
+</PageShell>

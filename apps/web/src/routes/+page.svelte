@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { afterNavigate } from "$app/navigation";
   import { auth } from "$lib/auth";
+  import { userAuth } from "$lib/user-auth";
   import { resetDemoMode } from "$lib/demo";
   import {
     PreviewCarousel,
@@ -24,6 +26,12 @@
     IconBook,
     IconExternalLink,
   } from "./home/icons";
+
+  let loggedIn = $state(false);
+
+  function refreshLoggedIn() {
+    loggedIn = userAuth.isLoggedIn();
+  }
 
   let recentItineraries = $state<
     Array<{ id: string; title: string; visitedAt: number }>
@@ -64,8 +72,11 @@
     };
   }
 
+  afterNavigate(refreshLoggedIn);
+
   onMount(() => {
     resetDemoMode();
+    refreshLoggedIn();
 
     recentItineraries = auth.getRecentItineraries();
     showRecent = true;
@@ -134,6 +145,13 @@
   {/each}
 
   <section class="hero" class:hero-hidden={heroHidden}>
+    <nav class="hero-nav" aria-label="サイトナビゲーション">
+      <a href="/users" class="nav-users-btn">みんなのしおり</a>
+      <a href="/profile" class="nav-profile-btn">
+        {loggedIn ? "マイページ" : "ログイン"}
+      </a>
+    </nav>
+
     <div class="hero-bg-decoration">
       <div class="bg-circle bg-circle-1"></div>
       <div class="bg-circle bg-circle-2"></div>
@@ -768,6 +786,67 @@
     .section-visible .recent-wrapper {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  .hero-nav {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.5rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    z-index: 10;
+  }
+
+  .nav-users-btn {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.4rem 0.75rem;
+    border-radius: 9999px;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+
+  .nav-users-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .nav-profile-btn {
+    background: rgba(255, 255, 255, 0.95);
+    color: #3d5a99;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.4rem 1rem;
+    border-radius: 9999px;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    transition:
+      background 0.15s,
+      box-shadow 0.15s;
+  }
+
+  .nav-profile-btn:hover {
+    background: white;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18);
+  }
+
+  @media (max-width: 480px) {
+    .hero-nav {
+      top: 0.75rem;
+      right: 0.75rem;
+      gap: 0.25rem;
+    }
+
+    .nav-users-btn {
+      font-size: 0.78rem;
+      padding: 0.35rem 0.6rem;
+    }
+
+    .nav-profile-btn {
+      font-size: 0.78rem;
+      padding: 0.35rem 0.75rem;
     }
   }
 

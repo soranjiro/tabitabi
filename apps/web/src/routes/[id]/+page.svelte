@@ -178,6 +178,8 @@
     }
   }
 
+  let isViewOnly = $derived(!!data.itinerary.source_itinerary_id);
+
   let isLoggedIn = $state(false);
   let forking = $state(false);
 
@@ -212,14 +214,14 @@
   <ItineraryView
     {itinerary}
     {steps}
-    onUpdateItinerary={handleUpdateItinerary}
-    onCreateStep={handleCreateStep}
-    onUpdateStep={handleUpdateStep}
-    onDeleteStep={handleDeleteStep}
+    onUpdateItinerary={isViewOnly ? undefined : handleUpdateItinerary}
+    onCreateStep={isViewOnly ? undefined : handleCreateStep}
+    onUpdateStep={isViewOnly ? undefined : handleUpdateStep}
+    onDeleteStep={isViewOnly ? undefined : handleDeleteStep}
   />
 {/key}
 
-{#if isLoggedIn && !data.itinerary.is_password_protected}
+{#if isViewOnly || (isLoggedIn && !data.itinerary.is_password_protected)}
   <div class="fixed bottom-6 right-6 z-50">
     <button
       onclick={handleFork}

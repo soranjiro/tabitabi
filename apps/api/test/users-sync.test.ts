@@ -10,6 +10,7 @@ async function applyMigrations(db: D1Database) {
       theme_id TEXT NOT NULL DEFAULT 'standard-autumn',
       memo TEXT,
       password TEXT,
+      source_itinerary_id TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,

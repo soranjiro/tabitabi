@@ -114,7 +114,7 @@
     }
     hasEditPermission = auth.hasEditPermission(itinerary.id);
 
-    if (!hasEditPermission && !itinerary.is_password_protected) {
+    if (!hasEditPermission && !itinerary.is_password_protected && !itinerary.source_itinerary_id) {
       attemptEditModeActivation();
     }
 
@@ -160,8 +160,8 @@
       }
     }
 
-    // パスワード未設定なら即座に編集可能、設定ありなら入力ダイアログ
-    if (!itinerary.is_password_protected) {
+    // パスワード未設定かつ共有スナップショットでなければ即座に編集可能、設定ありなら入力ダイアログ
+    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
     } else {

@@ -242,6 +242,62 @@ export class ItineraryService {
     return { itinerary: forked!, steps: rows.length };
   }
 
+  async publish(sourceId: string): Promise<Itinerary> {
+    const source = await this.get(sourceId);
+    if (!source) throw new Error('NOT_FOUND');
+    if (source.source_itinerary_id) throw new Error('CANNOT_PUBLISH_SNAPSHOT');
+
+    const now = getCurrentTimestamp();
+
+    const sourceSteps = await this.db
+      .prepare('SELECT title, start_at, end_at, location, notes, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
+      .bind(sourceId)
+      .all();
+    const rows = sourceSteps.results ?? [];
+
+    const existing = await this.db
+      .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
+      .bind(sourceId)
+      .first<{ id: string }>();
+
+    if (!existing) {
+      const newId = generateId();
+      const stepStatements = rows.map(row =>
+        this.db
+          .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.type, row.is_all_day, now, now)
+      );
+
+      await this.db.batch([
+        this.db
+          .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?, ?)')
+          .bind(newId, source.title, source.theme_id, source.memo, sourceId, now, now),
+        ...stepStatements,
+      ]);
+
+      return (await this.get(newId))!;
+    } else {
+      const sharedId = existing.id;
+      const stepStatements = rows.map(row =>
+        this.db
+          .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .bind(generateId(), sharedId, row.title, row.start_at, row.end_at, row.location, row.notes, row.type, row.is_all_day, now, now)
+      );
+
+      await this.db.batch([
+        this.db
+          .prepare('UPDATE itineraries SET title = ?, theme_id = ?, memo = ?, updated_at = ? WHERE id = ?')
+          .bind(source.title, source.theme_id, source.memo, now, sharedId),
+        this.db
+          .prepare('DELETE FROM steps WHERE itinerary_id = ?')
+          .bind(sharedId),
+        ...stepStatements,
+      ]);
+
+      return (await this.get(sharedId))!;
+    }
+  }
+
   async delete(id: string): Promise<boolean> {
     // Foreign key cascade handles secrets, walica, and fork_stats tables
     const result = await this.db
@@ -270,6 +326,10 @@ export class ItineraryService {
         enabled: row.secret_enabled === 1,
         offset_minutes: row.secret_offset as number,
       };
+    }
+
+    if (row.source_itinerary_id) {
+      itinerary.source_itinerary_id = row.source_itinerary_id as string;
     }
 
     return itinerary;

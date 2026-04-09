@@ -234,8 +234,8 @@
       }
     }
 
-    // パスワード未設定ならそのまま編集可能、設定ありならダイアログを表示
-    if (!itinerary.is_password_protected) {
+    // パスワード未設定かつ共有スナップショットでなければ編集可能、設定ありならダイアログを表示
+    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
     } else {

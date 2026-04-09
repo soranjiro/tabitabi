@@ -77,6 +77,40 @@ itineraries.put('/:id', optionalAuthMiddleware, async (c) => {
   return c.json({ success: true, data: service.toResponseItinerary(data) });
 });
 
+itineraries.post('/:id/publish', optionalAuthMiddleware, async (c) => {
+  const id = c.req.param('id');
+  const service = new ItineraryService(c.env.DB);
+  const existing = await service.get(id);
+
+  if (!existing) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+  }
+
+  if (existing.source_itinerary_id) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot publish a shared snapshot' } }, 403);
+  }
+
+  if (existing.password) {
+    const shioriId = c.get('shioriId');
+    if (id !== shioriId) {
+      return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'You can only publish your own itinerary' } }, 403);
+    }
+  }
+
+  let snapshot: Awaited<ReturnType<typeof service.publish>>;
+  try {
+    snapshot = await service.publish(id);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : '';
+    if (msg === 'NOT_FOUND') {
+      return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+    }
+    throw e;
+  }
+
+  return c.json({ success: true, data: { id: snapshot.id } });
+});
+
 itineraries.post('/:id/fork', userAuthMiddleware, async (c) => {
   const sourceId = c.req.param('id');
   const userId = c.get('userId');

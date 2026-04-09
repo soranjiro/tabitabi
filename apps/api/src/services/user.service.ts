@@ -95,7 +95,9 @@ export class UserService {
         SELECT
           ub.user_id, ub.itinerary_id, ub.is_visible, ub.created_at, ub.updated_at,
           i.title, i.theme_id,
-          CASE WHEN i.password IS NOT NULL THEN 1 ELSE 0 END as is_password_protected
+          CASE WHEN i.password IS NOT NULL THEN 1 ELSE 0 END as is_password_protected,
+          i.source_itinerary_id,
+          (SELECT id FROM itineraries WHERE source_itinerary_id = ub.itinerary_id LIMIT 1) as shared_itinerary_id
         FROM user_bookmarks ub
         JOIN itineraries i ON ub.itinerary_id = i.id
         WHERE ub.user_id = ?
@@ -113,6 +115,8 @@ export class UserService {
       title: row.title as string,
       theme_id: row.theme_id as string,
       is_password_protected: row.is_password_protected === 1,
+      source_itinerary_id: (row.source_itinerary_id as string | null) ?? null,
+      shared_itinerary_id: (row.shared_itinerary_id as string | null) ?? null,
     }));
   }
 

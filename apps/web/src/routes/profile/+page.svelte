@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { userApi } from "$lib/api/user";
+  import { itineraryApi } from "$lib/api/itinerary";
   import { userAuth } from "$lib/user-auth";
   import PageShell from "$lib/PageShell.svelte";
   import { auth } from "$lib/auth";
@@ -106,6 +107,33 @@
     email = "";
     password = "";
     goto("/");
+  }
+
+  let publishingId = $state<string | null>(null);
+
+  async function handlePublish(itineraryId: string) {
+    if (publishingId) return;
+    publishingId = itineraryId;
+    try {
+      const result = await itineraryApi.publish(itineraryId);
+      bookmarks = bookmarks.map((b) =>
+        b.itinerary_id === itineraryId ? { ...b, shared_itinerary_id: result.id } : b
+      );
+    } catch {
+      alert("共有URLの発行に失敗しました");
+    } finally {
+      publishingId = null;
+    }
+  }
+
+  async function copySharedUrl(sharedId: string) {
+    const url = `${window.location.origin}/${sharedId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      alert("共有URLをコピーしました");
+    } catch {
+      alert(`共有URL: ${url}`);
+    }
   }
 
   async function toggleVisibility(itineraryId: string, current: boolean) {
@@ -470,7 +498,7 @@
                   <p class="text-xs text-gray-400 mt-0.5">{formatDate(bookmark.created_at)}</p>
                 </div>
 
-                <div class="flex items-center gap-3 ml-4 flex-shrink-0">
+                <div class="flex items-center gap-2 ml-4 flex-shrink-0 flex-wrap justify-end">
                   {#if bookmark.is_password_protected}
                     <span class="text-xs text-gray-400 flex items-center gap-1">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
@@ -478,6 +506,32 @@
                       </svg>
                       鍵あり
                     </span>
+                  {/if}
+
+                  {#if !bookmark.source_itinerary_id}
+                    {#if bookmark.shared_itinerary_id}
+                      <button
+                        onclick={() => copySharedUrl(bookmark.shared_itinerary_id!)}
+                        class="text-xs px-2 py-1 rounded border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                      >
+                        共有URLをコピー
+                      </button>
+                      <button
+                        onclick={() => handlePublish(bookmark.itinerary_id)}
+                        disabled={publishingId === bookmark.itinerary_id}
+                        class="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                      >
+                        {publishingId === bookmark.itinerary_id ? "更新中..." : "更新"}
+                      </button>
+                    {:else}
+                      <button
+                        onclick={() => handlePublish(bookmark.itinerary_id)}
+                        disabled={publishingId === bookmark.itinerary_id}
+                        class="text-xs px-2 py-1 rounded border border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+                      >
+                        {publishingId === bookmark.itinerary_id ? "公開中..." : "共有URLを発行"}
+                      </button>
+                    {/if}
                   {/if}
 
                   <button

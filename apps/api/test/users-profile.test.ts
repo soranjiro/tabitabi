@@ -82,6 +82,15 @@ async function registerAndGetToken(username: string, email: string, password = '
   return json.data.token;
 }
 
+async function makeVisible(token: string, itineraryId: string): Promise<void> {
+  const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/visibility`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ is_visible: true }),
+  }, env);
+  expect(res.status).toBe(200);
+}
+
 describe('PATCH /api/v1/users/me/profile', () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
@@ -305,6 +314,31 @@ describe('GET /api/v1/users (public feed)', () => {
     expect(json.data.hasMore).toBe(false);
   });
 
+  it('new itinerary is private by default (not visible in public feed)', async () => {
+    const token = await registerAndGetToken('defaultprivateuser', 'defaultprivate@example.com');
+
+    const itinRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ title: 'デフォルト非公開しおり' }),
+    }, env);
+    expect(itinRes.status).toBe(201);
+    const itinJson = await itinRes.json() as { data: { id: string } };
+    const itineraryId = itinJson.data.id;
+
+    const bookmarks = await app.request('/api/v1/users/me/bookmarks', {
+      headers: { Authorization: `Bearer ${token}` },
+    }, env);
+    const bJson = await bookmarks.json() as { data: { bookmarks: { itinerary_id: string; is_visible: boolean }[] } };
+    const bookmark = bJson.data.bookmarks.find(b => b.itinerary_id === itineraryId);
+    expect(bookmark).toBeDefined();
+    expect(bookmark?.is_visible).toBe(false);
+
+    const res = await app.request('/api/v1/users', {}, env);
+    const json = await res.json() as { data: { items: unknown[] } };
+    expect(json.data.items).toHaveLength(0);
+  });
+
   it('returns public bookmarks with username', async () => {
     const token = await registerAndGetToken('feeduser', 'feed@example.com');
 
@@ -317,7 +351,9 @@ describe('GET /api/v1/users (public feed)', () => {
     const itinJson = await itinRes.json() as { data: { id: string } };
     const itineraryId = itinJson.data.id;
 
-    // Make bookmark visible (it's visible by default)
+    // Make bookmark visible (default is now private)
+    await makeVisible(token, itineraryId);
+
     const res = await app.request('/api/v1/users', {}, env);
     expect(res.status).toBe(200);
     const json = await res.json() as { success: boolean; data: { items: { username: string; title: string; itinerary_id: string }[]; hasMore: boolean } };
@@ -354,11 +390,13 @@ describe('GET /api/v1/users (public feed)', () => {
     const token = await registerAndGetToken('feeduser3', 'feed3@example.com');
 
     for (let i = 0; i < 2; i++) {
-      await app.request('/api/v1/itineraries', {
+      const r = await app.request('/api/v1/itineraries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ title: `しおり${i}` }),
       }, env);
+      const rJson = await r.json() as { data: { id: string } };
+      await makeVisible(token, rJson.data.id);
     }
 
     const res = await app.request('/api/v1/users', {}, env);
@@ -372,11 +410,13 @@ describe('GET /api/v1/users (public feed)', () => {
 
     // Create 31 itineraries to exceed the default limit of 30
     for (let i = 0; i < 31; i++) {
-      await app.request('/api/v1/itineraries', {
+      const r = await app.request('/api/v1/itineraries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ title: `しおり${i}` }),
       }, env);
+      const rJson = await r.json() as { data: { id: string } };
+      await makeVisible(token, rJson.data.id);
     }
 
     const res = await app.request('/api/v1/users', {}, env);

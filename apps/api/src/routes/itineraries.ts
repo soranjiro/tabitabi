@@ -57,6 +57,10 @@ itineraries.put('/:id', optionalAuthMiddleware, async (c) => {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   }
 
+  if (existing.source_itinerary_id) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot edit a shared snapshot' } }, 403);
+  }
+
   if (existing.password) {
     const shioriId = c.get('shioriId');
 
@@ -75,6 +79,34 @@ itineraries.put('/:id', optionalAuthMiddleware, async (c) => {
   }
 
   return c.json({ success: true, data: service.toResponseItinerary(data) });
+});
+
+itineraries.post('/:id/publish', optionalAuthMiddleware, async (c) => {
+  const id = c.req.param('id');
+  const service = new ItineraryService(c.env.DB);
+  const existing = await service.get(id);
+
+  if (!existing) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+  }
+
+  if (existing.source_itinerary_id) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot publish a shared snapshot' } }, 403);
+  }
+
+  // For password-protected itineraries, verify the itinerary token.
+  // Note: public (no-password) itineraries have no server-side ownership concept;
+  // anyone who knows the ID can publish. This is consistent with the current edit model.
+  if (existing.password) {
+    const shioriId = c.get('shioriId');
+    if (id !== shioriId) {
+      return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'You can only publish your own itinerary' } }, 403);
+    }
+  }
+
+  const snapshot = await service.publish(id);
+
+  return c.json({ success: true, data: { id: snapshot.id } });
 });
 
 itineraries.post('/:id/fork', userAuthMiddleware, async (c) => {
@@ -125,6 +157,10 @@ itineraries.delete('/:id', optionalAuthMiddleware, async (c) => {
 
   if (!existing) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+  }
+
+  if (existing.source_itinerary_id) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot delete a shared snapshot' } }, 403);
   }
 
   if (existing.password) {

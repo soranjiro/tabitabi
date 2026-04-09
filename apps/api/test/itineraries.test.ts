@@ -10,9 +10,11 @@ async function applyMigrations(db: D1Database) {
       theme_id TEXT NOT NULL DEFAULT 'standard-autumn',
       memo TEXT,
       password TEXT,
+      source_itinerary_id TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_itineraries_source_id ON itineraries(source_itinerary_id) WHERE source_itinerary_id IS NOT NULL;`,
     `CREATE TABLE IF NOT EXISTS steps (
       id TEXT PRIMARY KEY,
       itinerary_id TEXT NOT NULL,
@@ -227,6 +229,29 @@ describe('Itineraries API', () => {
 
       expect(response.status).toBe(404);
     });
+
+    it('returns 403 when trying to edit a shared snapshot', async () => {
+      const createRes = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'オリジナル' }),
+      }), env);
+      const { data: original } = await createRes.json() as any;
+
+      const publishRes = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${original.id}/publish`, {
+        method: 'POST',
+      }), env);
+      const { data: snapshot } = await publishRes.json() as any;
+
+      const updateRes = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${snapshot.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: '改ざん' }),
+      }), env);
+      expect(updateRes.status).toBe(403);
+      const { error } = await updateRes.json() as any;
+      expect(error.code).toBe('FORBIDDEN');
+    });
   });
 
   describe('DELETE /api/v1/itineraries/:id', () => {
@@ -258,6 +283,27 @@ describe('Itineraries API', () => {
       const response = await app.fetch(deleteRequest, env);
 
       expect(response.status).toBe(404);
+    });
+
+    it('returns 403 when trying to delete a shared snapshot', async () => {
+      const createRes = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'オリジナル' }),
+      }), env);
+      const { data: original } = await createRes.json() as any;
+
+      const publishRes = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${original.id}/publish`, {
+        method: 'POST',
+      }), env);
+      const { data: snapshot } = await publishRes.json() as any;
+
+      const deleteRes = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${snapshot.id}`, {
+        method: 'DELETE',
+      }), env);
+      expect(deleteRes.status).toBe(403);
+      const { error } = await deleteRes.json() as any;
+      expect(error.code).toBe('FORBIDDEN');
     });
   });
 });
@@ -397,5 +443,169 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     }, env);
     expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /api/v1/itineraries/:id/publish', () => {
+  beforeEach(async () => {
+    await applyMigrations(env.DB);
+    await env.DB.prepare('DELETE FROM steps').run();
+    await env.DB.prepare('DELETE FROM itinerary_secrets').run();
+    await env.DB.prepare('DELETE FROM itinerary_walica_settings').run();
+    await env.DB.prepare('DELETE FROM itineraries').run();
+    await env.DB.prepare('DELETE FROM users').run();
+  });
+
+  it('creates a shared snapshot from a public itinerary', async () => {
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '旅のしおり', memo: '{"text":"メモ"}' }),
+    }, env);
+    const { data: original } = await createRes.json() as any;
+
+    const publishRes = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, env);
+    expect(publishRes.status).toBe(200);
+
+    const { success, data } = await publishRes.json() as any;
+    expect(success).toBe(true);
+    expect(data.id).toBeDefined();
+    expect(data.id).not.toBe(original.id);
+
+    const snapshotRes = await app.request(`/api/v1/itineraries/${data.id}`, {}, env);
+    const { data: snapshot } = await snapshotRes.json() as any;
+    expect(snapshot.title).toBe('旅のしおり');
+    expect(snapshot.source_itinerary_id).toBe(original.id);
+  });
+
+  it('is idempotent — calling publish again updates the snapshot', async () => {
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '初期タイトル' }),
+    }, env);
+    const { data: original } = await createRes.json() as any;
+
+    const firstPublish = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, env);
+    const { data: first } = await firstPublish.json() as any;
+
+    await app.request(`/api/v1/itineraries/${original.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${original.token}` },
+      body: JSON.stringify({ title: '更新後タイトル' }),
+    }, env);
+
+    const secondPublish = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${original.token}` },
+    }, env);
+    expect(secondPublish.status).toBe(200);
+    const { data: second } = await secondPublish.json() as any;
+
+    expect(second.id).toBe(first.id);
+
+    const snapshotRes = await app.request(`/api/v1/itineraries/${second.id}`, {}, env);
+    const { data: snapshot } = await snapshotRes.json() as any;
+    expect(snapshot.title).toBe('更新後タイトル');
+  });
+
+  it('copies steps to the shared snapshot', async () => {
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'ステップ付きしおり' }),
+    }, env);
+    const { data: original } = await createRes.json() as any;
+
+    await app.request('/api/v1/steps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itinerary_id: original.id, title: '観光スポット', start_at: 1700000000000, end_at: 1700003600000 }),
+    }, env);
+
+    const publishRes = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, env);
+    const { data: pub } = await publishRes.json() as any;
+
+    const stepsRes = await app.request(`/api/v1/steps?itinerary_id=${pub.id}`, {}, env);
+    const { data: steps } = await stepsRes.json() as any;
+    expect(steps).toHaveLength(1);
+    expect(steps[0].title).toBe('観光スポット');
+    expect(steps[0].itinerary_id).toBe(pub.id);
+  });
+
+  it('returns 403 when publishing a shared snapshot', async () => {
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'オリジナル' }),
+    }, env);
+    const { data: original } = await createRes.json() as any;
+
+    const publishRes = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, env);
+    const { data: snapshot } = await publishRes.json() as any;
+
+    const rePub = await app.request(`/api/v1/itineraries/${snapshot.id}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, env);
+    expect(rePub.status).toBe(403);
+    const json = await rePub.json() as { error: { code: string } };
+    expect(json.error.code).toBe('FORBIDDEN');
+  });
+
+  it('returns 404 for non-existent itinerary', async () => {
+    const res = await app.request('/api/v1/itineraries/nonexistent-id/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, env);
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 403 for password-protected itinerary without valid token', async () => {
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '秘密のしおり', password: 'secret123' }),
+    }, env);
+    const { data: original } = await createRes.json() as any;
+
+    const res = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, env);
+    expect(res.status).toBe(403);
+    const json = await res.json() as { error: { code: string } };
+    expect(json.error.code).toBe('FORBIDDEN');
+  });
+
+  it('publishes a password-protected itinerary with valid shiori token', async () => {
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '秘密のしおり', password: 'secret123' }),
+    }, env);
+    const { data: original } = await createRes.json() as any;
+
+    const res = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${original.token}` },
+    }, env);
+    expect(res.status).toBe(200);
+
+    const { success, data } = await res.json() as any;
+    expect(success).toBe(true);
+    expect(data.id).toBeDefined();
   });
 });

@@ -470,7 +470,7 @@
                   <p class="text-xs text-gray-400 mt-0.5">{formatDate(bookmark.created_at)}</p>
                 </div>
 
-                <div class="flex items-center gap-3 ml-4 flex-shrink-0">
+                <div class="flex items-center gap-2 ml-4 flex-shrink-0 flex-wrap justify-end">
                   {#if bookmark.is_password_protected}
                     <span class="text-xs text-gray-400 flex items-center gap-1">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">

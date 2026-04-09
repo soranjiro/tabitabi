@@ -139,7 +139,7 @@
       }
     }
 
-    if (!itinerary.is_password_protected) {
+    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
     } else {

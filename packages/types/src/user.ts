@@ -24,6 +24,10 @@ export interface UserBookmarkWithItinerary extends UserBookmark {
   title: string;
   theme_id: string;
   is_password_protected: boolean;
+  itinerary_updated_at: string;
+  source_itinerary_id?: string | null;
+  shared_itinerary_id?: string | null;
+  shared_updated_at?: string | null;
 }
 
 export interface PublicBookmark {

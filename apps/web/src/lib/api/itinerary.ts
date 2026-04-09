@@ -1,4 +1,4 @@
-import type { Itinerary, CreateItineraryInput, UpdateItineraryInput, ItineraryResponse, ForkItineraryResponse } from '@tabitabi/types';
+import type { Itinerary, CreateItineraryInput, UpdateItineraryInput, ItineraryResponse, ForkItineraryResponse, PublishItineraryResponse } from '@tabitabi/types';
 import { apiClient } from './client';
 import { userAuth } from '../user-auth';
 
@@ -25,4 +25,7 @@ export const itineraryApi = {
     if (!userToken) throw new Error('Not logged in');
     return apiClient.postWithUserToken<ForkItineraryResponse>(`/itineraries/${id}/fork`, {}, userToken);
   },
+
+  publish: (id: string) =>
+    apiClient.post<PublishItineraryResponse>(`/itineraries/${id}/publish`, {}, id),
 };

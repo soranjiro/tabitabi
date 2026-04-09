@@ -12,6 +12,7 @@ export interface Itinerary {
   password?: string | null;
   secret_settings?: ItinerarySecretSettings | null;
   fork_count?: number;
+  source_itinerary_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -21,6 +22,10 @@ export interface ForkItineraryResponse {
   title: string;
   theme_id: string;
   token: string;
+}
+
+export interface PublishItineraryResponse {
+  id: string;
 }
 
 // フロントエンドに返すItinerary（パスワード情報は除外、保護フラグを追加）

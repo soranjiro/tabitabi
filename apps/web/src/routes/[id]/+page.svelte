@@ -221,7 +221,7 @@
   />
 {/key}
 
-{#if isViewOnly || (isLoggedIn && !data.itinerary.is_password_protected)}
+{#if isViewOnly}
   <div class="fixed bottom-6 right-6 z-50">
     <button
       onclick={handleFork}

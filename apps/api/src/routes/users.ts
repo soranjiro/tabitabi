@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { Env, Variables } from '../utils';
 import { UserService } from '../services/user.service';
+import { ItineraryService } from '../services/itinerary.service';
 import { userAuthMiddleware } from '../middleware/auth';
 import { generateUserToken } from '../utils/jwt';
 import type { RegisterInput, LoginInput, UpdateVisibilityInput, SyncBookmarksInput, UpdateProfileInput, UpdatePasswordInput } from '@tabitabi/types';
@@ -207,6 +208,18 @@ users.patch('/me/bookmarks/:itineraryId/visibility', userAuthMiddleware, async (
 
   if (!result) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Bookmark not found' } }, 404);
+  }
+
+  // 公開にした場合、共有スナップショットを自動生成してブックマークに追加する
+  if (input.is_visible) {
+    try {
+      const itineraryService = new ItineraryService(c.env.DB);
+      const snapshot = await itineraryService.publish(itineraryId);
+      await service.syncBookmarks(userId, [snapshot.id]);
+      await service.updateBookmarkVisibility(userId, snapshot.id, true);
+    } catch {
+      // 非致命的: 元しおりの公開状態は変更済み、スナップショット生成は後から同期可能
+    }
   }
 
   return c.json({ success: true, data: result });

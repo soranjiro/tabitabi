@@ -255,7 +255,7 @@ export class ItineraryService {
       .all();
     const rows = sourceSteps.results ?? [];
 
-    const existing = await this.db
+    let existing = await this.db
       .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
       .bind(sourceId)
       .first<{ id: string }>();
@@ -268,15 +268,28 @@ export class ItineraryService {
           .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.type, row.is_all_day, now, now)
       );
 
-      await this.db.batch([
-        this.db
-          .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?, ?)')
-          .bind(newId, source.title, source.theme_id, source.memo, sourceId, now, now),
-        ...stepStatements,
-      ]);
+      try {
+        await this.db.batch([
+          this.db
+            .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?, ?)')
+            .bind(newId, source.title, source.theme_id, source.memo, sourceId, now, now),
+          ...stepStatements,
+        ]);
+        return (await this.get(newId))!;
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : '';
+        if (!msg.includes('UNIQUE constraint failed')) throw e;
+        // Concurrent publish race: fall through to update the snapshot created by the other request
+        const concurrent = await this.db
+          .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
+          .bind(sourceId)
+          .first<{ id: string }>();
+        if (!concurrent) throw e;
+        existing = concurrent;
+      }
+    }
 
-      return (await this.get(newId))!;
-    } else {
+    {
       const sharedId = existing.id;
       const stepStatements = rows.map(row =>
         this.db

@@ -14,6 +14,7 @@ async function applyMigrations(db: D1Database) {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_itineraries_source_id ON itineraries(source_itinerary_id) WHERE source_itinerary_id IS NOT NULL;`,
     `CREATE TABLE IF NOT EXISTS steps (
       id TEXT PRIMARY KEY,
       itinerary_id TEXT NOT NULL,

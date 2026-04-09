@@ -14,6 +14,7 @@ async function applyMigrations(db: D1Database) {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_itineraries_source_id ON itineraries(source_itinerary_id) WHERE source_itinerary_id IS NOT NULL;`,
     `CREATE TABLE IF NOT EXISTS steps (
       id TEXT PRIMARY KEY,
       itinerary_id TEXT NOT NULL,
@@ -526,5 +527,41 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
       headers: { 'Content-Type': 'application/json' },
     }, env);
     expect(res.status).toBe(404);
+  });
+
+  it('returns 403 for password-protected itinerary without valid token', async () => {
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '秘密のしおり', password: 'secret123' }),
+    }, env);
+    const { data: original } = await createRes.json() as any;
+
+    const res = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, env);
+    expect(res.status).toBe(403);
+    const json = await res.json() as { error: { code: string } };
+    expect(json.error.code).toBe('FORBIDDEN');
+  });
+
+  it('publishes a password-protected itinerary with valid shiori token', async () => {
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '秘密のしおり', password: 'secret123' }),
+    }, env);
+    const { data: original } = await createRes.json() as any;
+
+    const res = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${original.token}` },
+    }, env);
+    expect(res.status).toBe(200);
+
+    const { success, data } = await res.json() as any;
+    expect(success).toBe(true);
+    expect(data.id).toBeDefined();
   });
 });

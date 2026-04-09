@@ -90,6 +90,9 @@ itineraries.post('/:id/publish', optionalAuthMiddleware, async (c) => {
     return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot publish a shared snapshot' } }, 403);
   }
 
+  // For password-protected itineraries, verify the itinerary token.
+  // Note: public (no-password) itineraries have no server-side ownership concept;
+  // anyone who knows the ID can publish. This is consistent with the current edit model.
   if (existing.password) {
     const shioriId = c.get('shioriId');
     if (id !== shioriId) {
@@ -97,16 +100,7 @@ itineraries.post('/:id/publish', optionalAuthMiddleware, async (c) => {
     }
   }
 
-  let snapshot: Awaited<ReturnType<typeof service.publish>>;
-  try {
-    snapshot = await service.publish(id);
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : '';
-    if (msg === 'NOT_FOUND') {
-      return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
-    }
-    throw e;
-  }
+  const snapshot = await service.publish(id);
 
   return c.json({ success: true, data: { id: snapshot.id } });
 });

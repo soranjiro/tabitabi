@@ -83,11 +83,12 @@ async function registerAndGetToken(username: string, email: string, password = '
 }
 
 async function makeVisible(token: string, itineraryId: string): Promise<void> {
-  await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/visibility`, {
+  const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/visibility`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ is_visible: true }),
   }, env);
+  expect(res.status).toBe(200);
 }
 
 describe('PATCH /api/v1/users/me/profile', () => {
@@ -311,6 +312,20 @@ describe('GET /api/v1/users (public feed)', () => {
     expect(json.success).toBe(true);
     expect(json.data.items).toHaveLength(0);
     expect(json.data.hasMore).toBe(false);
+  });
+
+  it('new itinerary is private by default (not visible in public feed)', async () => {
+    const token = await registerAndGetToken('defaultprivateuser', 'defaultprivate@example.com');
+
+    await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ title: 'デフォルト非公開しおり' }),
+    }, env);
+
+    const res = await app.request('/api/v1/users', {}, env);
+    const json = await res.json() as { data: { items: unknown[] } };
+    expect(json.data.items).toHaveLength(0);
   });
 
   it('returns public bookmarks with username', async () => {

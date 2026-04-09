@@ -116,9 +116,11 @@
     publishingId = itineraryId;
     try {
       const result = await itineraryApi.publish(itineraryId);
-      bookmarks = bookmarks.map((b) =>
-        b.itinerary_id === itineraryId ? { ...b, shared_itinerary_id: result.id } : b
-      );
+      // ブックマークに追加して公開状態にする（/users に表示されるようにする）
+      await userApi.syncBookmarks([result.id]);
+      await userApi.updateVisibility(result.id, { is_visible: true });
+      // ブックマーク一覧を再取得して反映
+      await loadBookmarks();
     } catch {
       alert("共有URLの発行に失敗しました");
     } finally {

@@ -316,7 +316,7 @@ export class UserService {
     const now = getCurrentTimestamp();
     await this.db
       .prepare(
-        'INSERT OR IGNORE INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at) VALUES (?, ?, 1, ?, ?)'
+        'INSERT OR IGNORE INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at) VALUES (?, ?, 0, ?, ?)'
       )
       .bind(userId, itineraryId, now, now)
       .run();

@@ -480,17 +480,6 @@
                     </span>
                   {/if}
 
-                  {#if bookmark.is_visible && bookmark.shared_itinerary_id}
-                    <a
-                      href="/{bookmark.shared_itinerary_id}"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="text-xs px-2 py-1 rounded border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
-                    >
-                      共有URLを見る
-                    </a>
-                  {/if}
-
                   <button
                     onclick={() => toggleVisibility(bookmark.itinerary_id, bookmark.is_visible)}
                     class="text-xs px-2 py-1 rounded border transition-colors {bookmark.is_visible

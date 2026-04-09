@@ -88,7 +88,7 @@ export class UserService {
     return result ?? null;
   }
 
-  // 自分の全しおり一覧（公開/非公開含む）
+  // 自分の全しおり一覧（公開/非公開含む、元のしおりのみ）
   async getMyBookmarks(userId: string): Promise<UserBookmarkWithItinerary[]> {
     const results = await this.db
       .prepare(`
@@ -96,11 +96,14 @@ export class UserService {
           ub.user_id, ub.itinerary_id, ub.is_visible, ub.created_at, ub.updated_at,
           i.title, i.theme_id,
           CASE WHEN i.password IS NOT NULL THEN 1 ELSE 0 END as is_password_protected,
+          i.updated_at as itinerary_updated_at,
           i.source_itinerary_id,
-          (SELECT id FROM itineraries WHERE source_itinerary_id = ub.itinerary_id LIMIT 1) as shared_itinerary_id
+          (SELECT id FROM itineraries WHERE source_itinerary_id = ub.itinerary_id LIMIT 1) as shared_itinerary_id,
+          (SELECT updated_at FROM itineraries WHERE source_itinerary_id = ub.itinerary_id LIMIT 1) as shared_updated_at
         FROM user_bookmarks ub
         JOIN itineraries i ON ub.itinerary_id = i.id
         WHERE ub.user_id = ?
+          AND i.source_itinerary_id IS NULL
         ORDER BY ub.created_at DESC
       `)
       .bind(userId)
@@ -115,8 +118,10 @@ export class UserService {
       title: row.title as string,
       theme_id: row.theme_id as string,
       is_password_protected: row.is_password_protected === 1,
+      itinerary_updated_at: row.itinerary_updated_at as string,
       source_itinerary_id: (row.source_itinerary_id as string | null) ?? null,
       shared_itinerary_id: (row.shared_itinerary_id as string | null) ?? null,
+      shared_updated_at: (row.shared_updated_at as string | null) ?? null,
     }));
   }
 
@@ -132,6 +137,7 @@ export class UserService {
         WHERE u.username = ?
           AND ub.is_visible = 1
           AND i.password IS NULL
+          AND i.source_itinerary_id IS NOT NULL
         ORDER BY i.created_at DESC
       `)
       .bind(username)
@@ -152,6 +158,7 @@ export class UserService {
         JOIN users u ON ub.user_id = u.id
         WHERE ub.is_visible = 1
           AND i.password IS NULL
+          AND i.source_itinerary_id IS NOT NULL
         ORDER BY i.created_at DESC
         LIMIT ? OFFSET ?
       `)

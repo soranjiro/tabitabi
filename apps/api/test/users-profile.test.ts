@@ -93,6 +93,26 @@ async function makeVisible(token: string, itineraryId: string): Promise<void> {
   expect(res.status).toBe(200);
 }
 
+// Publish itinerary → sync shared snapshot to bookmarks → make it visible
+// Returns the shared snapshot ID
+async function publishAndMakeVisible(token: string, itineraryId: string): Promise<string> {
+  const publishRes = await app.request(`/api/v1/itineraries/${itineraryId}/publish`, {
+    method: 'POST',
+  }, env);
+  expect(publishRes.status).toBe(200);
+  const publishJson = await publishRes.json() as { data: { id: string } };
+  const sharedId = publishJson.data.id;
+
+  await app.request('/api/v1/users/me/sync-bookmarks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ itinerary_ids: [sharedId] }),
+  }, env);
+
+  await makeVisible(token, sharedId);
+  return sharedId;
+}
+
 describe('PATCH /api/v1/users/me/profile', () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
@@ -344,7 +364,7 @@ describe('GET /api/v1/users (public feed)', () => {
   it('returns public bookmarks with username', async () => {
     const token = await registerAndGetToken('feeduser', 'feed@example.com');
 
-    // Create itinerary and bookmark it
+    // Create itinerary
     const itinRes = await app.request('/api/v1/itineraries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -353,8 +373,8 @@ describe('GET /api/v1/users (public feed)', () => {
     const itinJson = await itinRes.json() as { data: { id: string } };
     const itineraryId = itinJson.data.id;
 
-    // Make bookmark visible (default is now private)
-    await makeVisible(token, itineraryId);
+    // Publish → creates shared snapshot; make it visible so it appears in the feed
+    const sharedId = await publishAndMakeVisible(token, itineraryId);
 
     const res = await app.request('/api/v1/users', {}, env);
     expect(res.status).toBe(200);
@@ -362,7 +382,7 @@ describe('GET /api/v1/users (public feed)', () => {
     expect(json.data.items).toHaveLength(1);
     expect(json.data.items[0].username).toBe('feeduser');
     expect(json.data.items[0].title).toBe('公開しおり');
-    expect(json.data.items[0].itinerary_id).toBe(itineraryId);
+    expect(json.data.items[0].itinerary_id).toBe(sharedId);
   });
 
   it('excludes non-visible bookmarks', async () => {
@@ -398,7 +418,7 @@ describe('GET /api/v1/users (public feed)', () => {
         body: JSON.stringify({ title: `しおり${i}` }),
       }, env);
       const rJson = await r.json() as { data: { id: string } };
-      await makeVisible(token, rJson.data.id);
+      await publishAndMakeVisible(token, rJson.data.id);
     }
 
     const res = await app.request('/api/v1/users', {}, env);
@@ -418,7 +438,7 @@ describe('GET /api/v1/users (public feed)', () => {
         body: JSON.stringify({ title: `しおり${i}` }),
       }, env);
       const rJson = await r.json() as { data: { id: string } };
-      await makeVisible(token, rJson.data.id);
+      await publishAndMakeVisible(token, rJson.data.id);
     }
 
     const res = await app.request('/api/v1/users', {}, env);

@@ -518,12 +518,17 @@
                       >
                         共有URLをコピー
                       </button>
+                      {#if bookmark.shared_updated_at && bookmark.itinerary_updated_at > bookmark.shared_updated_at}
+                        <span class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-700 border border-amber-300">
+                          更新あり
+                        </span>
+                      {/if}
                       <button
                         onclick={() => handlePublish(bookmark.itinerary_id)}
                         disabled={publishingId === bookmark.itinerary_id}
                         class="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 transition-colors"
                       >
-                        {publishingId === bookmark.itinerary_id ? "更新中..." : "更新"}
+                        {publishingId === bookmark.itinerary_id ? "公開中..." : "最新版を公開"}
                       </button>
                     {:else}
                       <button

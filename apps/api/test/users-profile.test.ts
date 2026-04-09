@@ -317,11 +317,22 @@ describe('GET /api/v1/users (public feed)', () => {
   it('new itinerary is private by default (not visible in public feed)', async () => {
     const token = await registerAndGetToken('defaultprivateuser', 'defaultprivate@example.com');
 
-    await app.request('/api/v1/itineraries', {
+    const itinRes = await app.request('/api/v1/itineraries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ title: 'デフォルト非公開しおり' }),
     }, env);
+    expect(itinRes.status).toBe(201);
+    const itinJson = await itinRes.json() as { data: { id: string } };
+    const itineraryId = itinJson.data.id;
+
+    const bookmarks = await app.request('/api/v1/users/me/bookmarks', {
+      headers: { Authorization: `Bearer ${token}` },
+    }, env);
+    const bJson = await bookmarks.json() as { data: { bookmarks: { itinerary_id: string; is_visible: boolean }[] } };
+    const bookmark = bJson.data.bookmarks.find(b => b.itinerary_id === itineraryId);
+    expect(bookmark).toBeDefined();
+    expect(bookmark?.is_visible).toBe(false);
 
     const res = await app.request('/api/v1/users', {}, env);
     const json = await res.json() as { data: { items: unknown[] } };

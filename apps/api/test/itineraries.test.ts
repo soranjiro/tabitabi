@@ -229,6 +229,29 @@ describe('Itineraries API', () => {
 
       expect(response.status).toBe(404);
     });
+
+    it('returns 403 when trying to edit a shared snapshot', async () => {
+      const createRes = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'オリジナル' }),
+      }), env);
+      const { data: original } = await createRes.json() as any;
+
+      const publishRes = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${original.id}/publish`, {
+        method: 'POST',
+      }), env);
+      const { data: snapshot } = await publishRes.json() as any;
+
+      const updateRes = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${snapshot.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: '改ざん' }),
+      }), env);
+      expect(updateRes.status).toBe(403);
+      const { error } = await updateRes.json() as any;
+      expect(error.code).toBe('FORBIDDEN');
+    });
   });
 
   describe('DELETE /api/v1/itineraries/:id', () => {
@@ -260,6 +283,27 @@ describe('Itineraries API', () => {
       const response = await app.fetch(deleteRequest, env);
 
       expect(response.status).toBe(404);
+    });
+
+    it('returns 403 when trying to delete a shared snapshot', async () => {
+      const createRes = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'オリジナル' }),
+      }), env);
+      const { data: original } = await createRes.json() as any;
+
+      const publishRes = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${original.id}/publish`, {
+        method: 'POST',
+      }), env);
+      const { data: snapshot } = await publishRes.json() as any;
+
+      const deleteRes = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${snapshot.id}`, {
+        method: 'DELETE',
+      }), env);
+      expect(deleteRes.status).toBe(403);
+      const { error } = await deleteRes.json() as any;
+      expect(error.code).toBe('FORBIDDEN');
     });
   });
 });

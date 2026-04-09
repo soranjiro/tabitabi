@@ -57,6 +57,10 @@ itineraries.put('/:id', optionalAuthMiddleware, async (c) => {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   }
 
+  if (existing.source_itinerary_id) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot edit a shared snapshot' } }, 403);
+  }
+
   if (existing.password) {
     const shioriId = c.get('shioriId');
 
@@ -153,6 +157,10 @@ itineraries.delete('/:id', optionalAuthMiddleware, async (c) => {
 
   if (!existing) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+  }
+
+  if (existing.source_itinerary_id) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot delete a shared snapshot' } }, 403);
   }
 
   if (existing.password) {

@@ -111,14 +111,16 @@
 
   let publishingId = $state<string | null>(null);
 
-  async function handlePublish(itineraryId: string) {
+  async function handlePublish(itineraryId: string, isFirstPublish: boolean) {
     if (publishingId) return;
     publishingId = itineraryId;
     try {
       const result = await itineraryApi.publish(itineraryId);
-      // ブックマークに追加して公開状態にする（/users に表示されるようにする）
-      await userApi.syncBookmarks([result.id]);
-      await userApi.updateVisibility(result.id, { is_visible: true });
+      if (isFirstPublish) {
+        // 初回公開のみ: ブックマークに追加して公開状態にする（/users に表示されるようにする）
+        await userApi.syncBookmarks([result.id]);
+        await userApi.updateVisibility(result.id, { is_visible: true });
+      }
       // ブックマーク一覧を再取得して反映
       await loadBookmarks();
     } catch {
@@ -524,7 +526,7 @@
                         </span>
                       {/if}
                       <button
-                        onclick={() => handlePublish(bookmark.itinerary_id)}
+                        onclick={() => handlePublish(bookmark.itinerary_id, false)}
                         disabled={publishingId === bookmark.itinerary_id}
                         class="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 transition-colors"
                       >
@@ -532,7 +534,7 @@
                       </button>
                     {:else}
                       <button
-                        onclick={() => handlePublish(bookmark.itinerary_id)}
+                        onclick={() => handlePublish(bookmark.itinerary_id, true)}
                         disabled={publishingId === bookmark.itinerary_id}
                         class="text-xs px-2 py-1 rounded border border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
                       >

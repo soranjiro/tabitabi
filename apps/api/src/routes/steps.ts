@@ -93,6 +93,10 @@ steps.post('/', async (c) => {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   }
 
+  if (itinerary.source_itinerary_id) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot modify steps of a shared snapshot' } }, 403);
+  }
+
   if (itinerary.password) {
     const token = extractBearerToken(c.req.header('Authorization'));
     const payload = token ? await verifyToken(token, c.env.JWT_SECRET) : null;
@@ -131,6 +135,9 @@ steps.put('/:stepId', async (c) => {
   const itinerary = await itineraryService.get(existingStep.itinerary_id);
   if (!itinerary) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+  }
+  if (itinerary.source_itinerary_id) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot modify steps of a shared snapshot' } }, 403);
   }
   if (itinerary.password) {
     const token = extractBearerToken(c.req.header('Authorization'));
@@ -179,6 +186,9 @@ steps.delete('/:stepId', async (c) => {
   const itinerary = await itineraryService.get(existingStep.itinerary_id);
   if (!itinerary) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+  }
+  if (itinerary.source_itinerary_id) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot modify steps of a shared snapshot' } }, 403);
   }
   if (itinerary.password) {
     const token = extractBearerToken(c.req.header('Authorization'));

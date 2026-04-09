@@ -210,13 +210,17 @@ users.patch('/me/bookmarks/:itineraryId/visibility', userAuthMiddleware, async (
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Bookmark not found' } }, 404);
   }
 
-  // 公開にした場合、共有スナップショットを自動生成してブックマークに追加する
+  // 公開にした場合、パスワードなしのしおりのみ共有スナップショットを自動生成する
+  // パスワード付きしおりはしおりトークンが必要なため、ここでは自動生成しない
   if (input.is_visible) {
     try {
       const itineraryService = new ItineraryService(c.env.DB);
-      const snapshot = await itineraryService.publish(itineraryId);
-      await service.syncBookmarks(userId, [snapshot.id]);
-      await service.updateBookmarkVisibility(userId, snapshot.id, true);
+      const itinerary = await itineraryService.get(itineraryId);
+      if (itinerary && !itinerary.password) {
+        const snapshot = await itineraryService.publish(itineraryId);
+        await service.syncBookmarks(userId, [snapshot.id]);
+        await service.updateBookmarkVisibility(userId, snapshot.id, true);
+      }
     } catch {
       // 非致命的: 元しおりの公開状態は変更済み、スナップショット生成は後から同期可能
     }

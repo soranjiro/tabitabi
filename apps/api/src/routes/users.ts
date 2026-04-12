@@ -210,20 +210,30 @@ users.patch('/me/bookmarks/:itineraryId/visibility', userAuthMiddleware, async (
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Bookmark not found' } }, 404);
   }
 
-  // 公開にした場合、パスワードなしのしおりのみ共有スナップショットを自動生成する
-  // パスワード付きしおりはしおりトークンが必要なため、ここでは自動生成しない
-  if (input.is_visible) {
-    try {
-      const itineraryService = new ItineraryService(c.env.DB);
-      const itinerary = await itineraryService.get(itineraryId);
-      if (itinerary && !itinerary.password) {
+  // スナップショットの公開状態を元しおりと連動させる
+  try {
+    const itineraryService = new ItineraryService(c.env.DB);
+    const itinerary = await itineraryService.get(itineraryId);
+    if (itinerary) {
+      if (input.is_visible) {
+        // 公開にした場合、共有スナップショットを自動生成する
+        // スナップショットの password は常に NULL なので鍵付きしおりでも安全
         const snapshot = await itineraryService.publish(itineraryId);
         await service.syncBookmarks(userId, [snapshot.id]);
         await service.updateBookmarkVisibility(userId, snapshot.id, true);
+      } else {
+        // 非公開にした場合、スナップショットのブックマークも非公開にする
+        const snapshotRow = await c.env.DB
+          .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
+          .bind(itineraryId)
+          .first<{ id: string }>();
+        if (snapshotRow) {
+          await service.updateBookmarkVisibility(userId, snapshotRow.id, false);
+        }
       }
-    } catch {
-      // 非致命的: 元しおりの公開状態は変更済み、スナップショット生成は後から同期可能
     }
+  } catch {
+    // 非致命的: 元しおりの公開状態は変更済み、スナップショット連動は後から同期可能
   }
 
   return c.json({ success: true, data: result });

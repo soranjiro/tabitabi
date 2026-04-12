@@ -226,3 +226,116 @@ describe('POST /api/v1/itineraries with user token', () => {
     expect(res.status).toBe(201);
   });
 });
+
+describe('PATCH /api/v1/users/me/bookmarks/:itineraryId/visibility — snapshot sync', () => {
+  beforeEach(async () => {
+    await applyMigrations(env.DB);
+    await env.DB.prepare('DELETE FROM user_bookmarks').run();
+    await env.DB.prepare('DELETE FROM users').run();
+    await env.DB.prepare('DELETE FROM steps').run();
+    await env.DB.prepare('DELETE FROM itineraries').run();
+  });
+
+  it('creates snapshot and marks it visible when toggling visibility to true', async () => {
+    const token = await registerAndGetToken('visuser', 'vis@example.com');
+    const itineraryId = await createItinerary();
+
+    // sync bookmark first
+    await app.request('/api/v1/users/me/sync-bookmarks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ itinerary_ids: [itineraryId] }),
+    }, env);
+
+    // toggle visibility to true
+    const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/visibility`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ is_visible: true }),
+    }, env);
+    expect(res.status).toBe(200);
+
+    // verify snapshot was created
+    const snapshot = await env.DB
+      .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
+      .bind(itineraryId)
+      .first<{ id: string }>();
+    expect(snapshot).not.toBeNull();
+
+    // verify snapshot bookmark is visible
+    const snapshotBookmark = await env.DB
+      .prepare('SELECT is_visible FROM user_bookmarks WHERE itinerary_id = ?')
+      .bind(snapshot!.id)
+      .first<{ is_visible: number }>();
+    expect(snapshotBookmark).not.toBeNull();
+    expect(snapshotBookmark!.is_visible).toBe(1);
+  });
+
+  it('hides snapshot bookmark when toggling visibility to false', async () => {
+    const token = await registerAndGetToken('hideuser', 'hide@example.com');
+    const itineraryId = await createItinerary();
+
+    // sync and publish
+    await app.request('/api/v1/users/me/sync-bookmarks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ itinerary_ids: [itineraryId] }),
+    }, env);
+    await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/visibility`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ is_visible: true }),
+    }, env);
+
+    // toggle visibility to false
+    const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/visibility`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ is_visible: false }),
+    }, env);
+    expect(res.status).toBe(200);
+
+    // verify snapshot bookmark is now hidden
+    const snapshot = await env.DB
+      .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
+      .bind(itineraryId)
+      .first<{ id: string }>();
+    expect(snapshot).not.toBeNull();
+
+    const snapshotBookmark = await env.DB
+      .prepare('SELECT is_visible FROM user_bookmarks WHERE itinerary_id = ?')
+      .bind(snapshot!.id)
+      .first<{ is_visible: number }>();
+    expect(snapshotBookmark).not.toBeNull();
+    expect(snapshotBookmark!.is_visible).toBe(0);
+  });
+
+  it('creates snapshot for password-protected itinerary when toggling visibility to true', async () => {
+    const token = await registerAndGetToken('pwuser', 'pw@example.com');
+
+    // create password-protected itinerary
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ title: '鍵付きしおり', password: 'secret123' }),
+    }, env);
+    const createJson = await createRes.json() as { data: { id: string } };
+    const itineraryId = createJson.data.id;
+
+    // toggle visibility to true
+    const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/visibility`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ is_visible: true }),
+    }, env);
+    expect(res.status).toBe(200);
+
+    // verify snapshot was created (even for password-protected itinerary)
+    const snapshot = await env.DB
+      .prepare('SELECT id, password FROM itineraries WHERE source_itinerary_id = ?')
+      .bind(itineraryId)
+      .first<{ id: string; password: string | null }>();
+    expect(snapshot).not.toBeNull();
+    expect(snapshot!.password).toBeNull(); // snapshot has no password
+  });
+});

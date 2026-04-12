@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { userApi } from "$lib/api/user";
+  import { itineraryApi } from "$lib/api/itinerary";
   import { userAuth } from "$lib/user-auth";
   import PageShell from "$lib/PageShell.svelte";
   import { auth } from "$lib/auth";
@@ -106,6 +107,21 @@
     email = "";
     password = "";
     goto("/");
+  }
+
+  let publishingIds = $state(new Set<string>());
+
+  async function handleRepublish(itineraryId: string) {
+    if (publishingIds.has(itineraryId)) return;
+    publishingIds = new Set([...publishingIds, itineraryId]);
+    try {
+      await itineraryApi.publish(itineraryId);
+      await loadBookmarks();
+    } catch {
+      alert("最新版の公開に失敗しました");
+    } finally {
+      publishingIds = new Set([...publishingIds].filter(id => id !== itineraryId));
+    }
   }
 
   async function toggleVisibility(itineraryId: string, current: boolean) {
@@ -478,6 +494,19 @@
                       </svg>
                       鍵あり
                     </span>
+                  {/if}
+
+                  {#if bookmark.is_visible && !bookmark.source_itinerary_id && bookmark.shared_itinerary_id && bookmark.shared_updated_at && bookmark.itinerary_updated_at > bookmark.shared_updated_at}
+                    <span class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-700 border border-amber-300">
+                      更新あり
+                    </span>
+                    <button
+                      onclick={() => handleRepublish(bookmark.itinerary_id)}
+                      disabled={publishingIds.has(bookmark.itinerary_id)}
+                      class="text-xs px-2 py-1 rounded border border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+                    >
+                      {publishingIds.has(bookmark.itinerary_id) ? "公開中..." : "最新版を公開"}
+                    </button>
                   {/if}
 
                   <button

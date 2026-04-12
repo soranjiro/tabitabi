@@ -109,18 +109,18 @@
     goto("/");
   }
 
-  let publishingId = $state<string | null>(null);
+  let publishingIds = $state(new Set<string>());
 
   async function handleRepublish(itineraryId: string) {
-    if (publishingId === itineraryId) return;
-    publishingId = itineraryId;
+    if (publishingIds.has(itineraryId)) return;
+    publishingIds = new Set([...publishingIds, itineraryId]);
     try {
       await itineraryApi.publish(itineraryId);
       await loadBookmarks();
     } catch {
       alert("最新版の公開に失敗しました");
     } finally {
-      publishingId = null;
+      publishingIds = new Set([...publishingIds].filter(id => id !== itineraryId));
     }
   }
 
@@ -496,16 +496,16 @@
                     </span>
                   {/if}
 
-                  {#if !bookmark.source_itinerary_id && bookmark.shared_itinerary_id && bookmark.shared_updated_at && bookmark.itinerary_updated_at > bookmark.shared_updated_at}
+                  {#if bookmark.is_visible && !bookmark.source_itinerary_id && bookmark.shared_itinerary_id && bookmark.shared_updated_at && bookmark.itinerary_updated_at > bookmark.shared_updated_at}
                     <span class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-700 border border-amber-300">
                       更新あり
                     </span>
                     <button
                       onclick={() => handleRepublish(bookmark.itinerary_id)}
-                      disabled={publishingId === bookmark.itinerary_id}
+                      disabled={publishingIds.has(bookmark.itinerary_id)}
                       class="text-xs px-2 py-1 rounded border border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
                     >
-                      {publishingId === bookmark.itinerary_id ? "公開中..." : "最新版を公開"}
+                      {publishingIds.has(bookmark.itinerary_id) ? "公開中..." : "最新版を公開"}
                     </button>
                   {/if}
 

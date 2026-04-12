@@ -111,30 +111,16 @@
 
   let publishingId = $state<string | null>(null);
 
-  async function handlePublish(itineraryId: string) {
+  async function handleRepublish(itineraryId: string) {
     if (publishingId === itineraryId) return;
     publishingId = itineraryId;
     try {
-      const result = await itineraryApi.publish(itineraryId);
-      // ブックマークに追加して公開状態にする（/users に表示されるようにする）
-      await userApi.syncBookmarks([result.id]);
-      await userApi.updateVisibility(result.id, { is_visible: true });
-      // ブックマーク一覧を再取得して反映
+      await itineraryApi.publish(itineraryId);
       await loadBookmarks();
     } catch {
-      alert("共有URLの発行に失敗しました");
+      alert("最新版の公開に失敗しました");
     } finally {
       publishingId = null;
-    }
-  }
-
-  async function copySharedUrl(sharedId: string) {
-    const url = `${window.location.origin}/${sharedId}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      alert("共有URLをコピーしました");
-    } catch {
-      alert(`共有URL: ${url}`);
     }
   }
 
@@ -510,35 +496,17 @@
                     </span>
                   {/if}
 
-                  {#if !bookmark.source_itinerary_id}
-                    {#if bookmark.shared_itinerary_id}
-                      <button
-                        onclick={() => copySharedUrl(bookmark.shared_itinerary_id!)}
-                        class="text-xs px-2 py-1 rounded border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
-                      >
-                        共有URLをコピー
-                      </button>
-                      {#if bookmark.shared_updated_at && bookmark.itinerary_updated_at > bookmark.shared_updated_at}
-                        <span class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-700 border border-amber-300">
-                          更新あり
-                        </span>
-                      {/if}
-                      <button
-                        onclick={() => handlePublish(bookmark.itinerary_id)}
-                        disabled={publishingId === bookmark.itinerary_id}
-                        class="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 transition-colors"
-                      >
-                        {publishingId === bookmark.itinerary_id ? "公開中..." : "最新版を公開"}
-                      </button>
-                    {:else}
-                      <button
-                        onclick={() => handlePublish(bookmark.itinerary_id)}
-                        disabled={publishingId === bookmark.itinerary_id}
-                        class="text-xs px-2 py-1 rounded border border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
-                      >
-                        {publishingId === bookmark.itinerary_id ? "公開中..." : "共有URLを発行"}
-                      </button>
-                    {/if}
+                  {#if !bookmark.source_itinerary_id && bookmark.shared_itinerary_id && bookmark.shared_updated_at && bookmark.itinerary_updated_at > bookmark.shared_updated_at}
+                    <span class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-700 border border-amber-300">
+                      更新あり
+                    </span>
+                    <button
+                      onclick={() => handleRepublish(bookmark.itinerary_id)}
+                      disabled={publishingId === bookmark.itinerary_id}
+                      class="text-xs px-2 py-1 rounded border border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+                    >
+                      {publishingId === bookmark.itinerary_id ? "公開中..." : "最新版を公開"}
+                    </button>
                   {/if}
 
                   <button

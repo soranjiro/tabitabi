@@ -312,11 +312,25 @@ describe('GET /api/v1/users/me/bookmarks', () => {
       body: JSON.stringify({ is_visible: true }),
     }, env);
 
+    // Verify snapshot was actually created in the DB
+    const snapshot = await env.DB
+      .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
+      .bind(itineraryId)
+      .first<{ id: string }>();
+    expect(snapshot).not.toBeNull();
+
+    // Verify snapshot bookmark exists in DB
+    const snapshotBookmark = await env.DB
+      .prepare('SELECT * FROM user_bookmarks WHERE itinerary_id = ?')
+      .bind(snapshot!.id)
+      .first();
+    expect(snapshotBookmark).not.toBeNull();
+
+    // GET /me/bookmarks should only return the original, not the snapshot
     const res = await app.request('/api/v1/users/me/bookmarks', {
       headers: { Authorization: `Bearer ${token}` },
     }, env);
     const json = await res.json() as any;
-    // Only the original should appear, not the snapshot
     expect(json.data.bookmarks).toHaveLength(1);
     expect(json.data.bookmarks[0].itinerary_id).toBe(itineraryId);
   });
@@ -421,7 +435,7 @@ describe('GET /api/v1/users/:username/bookmarks', () => {
     const res = await app.request('/api/v1/users/pubuser/bookmarks', {}, env);
     expect(res.status).toBe(200);
     const json = await res.json() as any;
-    // Only the published snapshot of id1 should appear
-    expect(json.data.bookmarks.length).toBeGreaterThanOrEqual(1);
+    // Only the published snapshot of id1 should appear (id2 is not visible)
+    expect(json.data.bookmarks).toHaveLength(1);
   });
 });

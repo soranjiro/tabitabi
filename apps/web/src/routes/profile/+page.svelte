@@ -112,7 +112,7 @@
   let publishingId = $state<string | null>(null);
 
   async function handlePublish(itineraryId: string) {
-    if (publishingId) return;
+    if (publishingId === itineraryId) return;
     publishingId = itineraryId;
     try {
       const result = await itineraryApi.publish(itineraryId);

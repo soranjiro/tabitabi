@@ -1,9 +1,12 @@
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
 import { Env, Variables } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
 import { authMiddleware, optionalAuthMiddleware, optionalUserAuthMiddleware, userAuthMiddleware } from '../middleware/auth';
 import { generateToken } from '../utils/jwt';
 import { UserService } from '../services/user.service';
+import { createItinerarySchema, updateItinerarySchema } from '../validators';
+import { validationHook } from '../validators/hook';
 
 const itineraries = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -26,8 +29,8 @@ itineraries.get('/:id', async (c) => {
   return c.json({ success: true, data: service.toResponseItinerary(data) });
 });
 
-itineraries.post('/', optionalUserAuthMiddleware, async (c) => {
-  const input = await c.req.json();
+itineraries.post('/', optionalUserAuthMiddleware, zValidator('json', createItinerarySchema, validationHook), async (c) => {
+  const input = c.req.valid('json');
   const service = new ItineraryService(c.env.DB);
   const data = await service.create(input);
 
@@ -47,9 +50,9 @@ itineraries.post('/', optionalUserAuthMiddleware, async (c) => {
   return c.json({ success: true, data: { ...response, token } }, 201);
 });
 
-itineraries.put('/:id', optionalAuthMiddleware, async (c) => {
+itineraries.put('/:id', optionalAuthMiddleware, zValidator('json', updateItinerarySchema, validationHook), async (c) => {
   const id = c.req.param('id');
-  const input = await c.req.json();
+  const input = c.req.valid('json');
   const service = new ItineraryService(c.env.DB);
   const existing = await service.get(id);
 

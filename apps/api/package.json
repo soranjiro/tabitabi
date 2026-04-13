@@ -20,9 +20,9 @@
     "@cloudflare/workers-types": "^4.20250110.0",
     "@tabitabi/types": "workspace:*",
     "@types/bcryptjs": "^3.0.0",
-    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/coverage-v8": "~3.2.4",
     "typescript": "^5.6.3",
-    "vitest": "^3.2.0",
+    "vitest": "~3.2.4",
     "wrangler": "^4.81.0"
   }
 }

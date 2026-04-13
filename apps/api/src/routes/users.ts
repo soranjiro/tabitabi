@@ -5,9 +5,8 @@ import { UserService } from '../services/user.service';
 import { ItineraryService } from '../services/itinerary.service';
 import { userAuthMiddleware } from '../middleware/auth';
 import { generateUserToken } from '../utils/jwt';
-import { registerSchema, loginSchema, syncBookmarksSchema } from '../validators';
+import { registerSchema, loginSchema, syncBookmarksSchema, updateProfileSchema, updatePasswordSchema, updateVisibilitySchema } from '../validators';
 import { validationHook } from '../validators/hook';
-import type { UpdateVisibilityInput, UpdateProfileInput, UpdatePasswordInput } from '@tabitabi/types';
 
 const users = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -62,7 +61,7 @@ users.get('/search', async (c) => {
     return c.json({ success: true, data: { users: [] } });
   }
   if (trimmedQ.length > 50) {
-    return c.json({ success: false, error: { code: 'INVALID_INPUT', message: 'q must be 50 characters or less' } }, 400);
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'q must be 50 characters or less' } }, 400);
   }
 
   const service = new UserService(c.env.DB);
@@ -83,20 +82,9 @@ users.get('/', async (c) => {
 
 // ※ 静的ルート (/me/...) は動的ルート (/:username/...) より先に登録すること
 // PATCH /users/me/profile (認証必須 - プロフィール更新)
-users.patch('/me/profile', userAuthMiddleware, async (c) => {
+users.patch('/me/profile', userAuthMiddleware, zValidator('json', updateProfileSchema, validationHook), async (c) => {
   const userId = c.get('userId')!;
-  const input: UpdateProfileInput = await c.req.json();
-
-  const usernameProvided = typeof input.username === 'string';
-  const emailProvided = typeof input.email === 'string';
-
-  if (!usernameProvided && !emailProvided) {
-    return c.json({
-      success: false,
-      error: { code: 'INVALID_INPUT', message: 'username or email is required' }
-    }, 400);
-  }
-
+  const input = c.req.valid('json');
   const service = new UserService(c.env.DB);
 
   try {
@@ -113,17 +101,9 @@ users.patch('/me/profile', userAuthMiddleware, async (c) => {
 });
 
 // PATCH /users/me/password (認証必須 - パスワード変更)
-users.patch('/me/password', userAuthMiddleware, async (c) => {
+users.patch('/me/password', userAuthMiddleware, zValidator('json', updatePasswordSchema, validationHook), async (c) => {
   const userId = c.get('userId')!;
-  const input: UpdatePasswordInput = await c.req.json();
-
-  if (typeof input.current_password !== 'string' || typeof input.new_password !== 'string' || !input.current_password || !input.new_password) {
-    return c.json({
-      success: false,
-      error: { code: 'INVALID_INPUT', message: 'current_password and new_password are required' }
-    }, 400);
-  }
-
+  const input = c.req.valid('json');
   const service = new UserService(c.env.DB);
 
   try {
@@ -157,18 +137,10 @@ users.get('/me/bookmarks', userAuthMiddleware, async (c) => {
 });
 
 // PATCH /users/me/bookmarks/:itineraryId/visibility (認証必須)
-users.patch('/me/bookmarks/:itineraryId/visibility', userAuthMiddleware, async (c) => {
+users.patch('/me/bookmarks/:itineraryId/visibility', userAuthMiddleware, zValidator('json', updateVisibilitySchema, validationHook), async (c) => {
   const userId = c.get('userId')!;
   const itineraryId = c.req.param('itineraryId');
-  const input: UpdateVisibilityInput = await c.req.json();
-
-  if (typeof input.is_visible !== 'boolean') {
-    return c.json({
-      success: false,
-      error: { code: 'INVALID_INPUT', message: 'is_visible must be a boolean' }
-    }, 400);
-  }
-
+  const input = c.req.valid('json');
   const service = new UserService(c.env.DB);
   const result = await service.updateBookmarkVisibility(userId, itineraryId, input.is_visible);
 

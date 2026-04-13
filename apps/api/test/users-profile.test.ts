@@ -182,7 +182,7 @@ describe('PATCH /api/v1/users/me/profile', () => {
 
     expect(res.status).toBe(400);
     const json = await res.json() as { success: boolean; error: { code: string } };
-    expect(json.error.code).toBe('USERNAME_INVALID_LENGTH');
+    expect(json.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('returns 400 for invalid email format', async () => {
@@ -196,7 +196,7 @@ describe('PATCH /api/v1/users/me/profile', () => {
 
     expect(res.status).toBe(400);
     const json = await res.json() as { success: boolean; error: { code: string } };
-    expect(json.error.code).toBe('EMAIL_INVALID_FORMAT');
+    expect(json.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('returns 409 for duplicate username', async () => {
@@ -303,7 +303,7 @@ describe('PATCH /api/v1/users/me/password', () => {
 
     expect(res.status).toBe(400);
     const json = await res.json() as { success: boolean; error: { code: string } };
-    expect(json.error.code).toBe('PASSWORD_TOO_SHORT');
+    expect(json.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('returns 400 when fields are missing', async () => {

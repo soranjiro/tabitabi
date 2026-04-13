@@ -1,24 +1,19 @@
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
 import { Env, Variables } from '../utils';
 import { UserService } from '../services/user.service';
 import { ItineraryService } from '../services/itinerary.service';
 import { userAuthMiddleware } from '../middleware/auth';
 import { generateUserToken } from '../utils/jwt';
-import type { RegisterInput, LoginInput, UpdateVisibilityInput, SyncBookmarksInput, UpdateProfileInput, UpdatePasswordInput } from '@tabitabi/types';
+import { registerSchema, loginSchema, syncBookmarksSchema } from '../validators';
+import { validationHook } from '../validators/hook';
+import type { UpdateVisibilityInput, UpdateProfileInput, UpdatePasswordInput } from '@tabitabi/types';
 
 const users = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // POST /users/register
-users.post('/register', async (c) => {
-  const input: RegisterInput = await c.req.json();
-
-  if (!input.username || !input.email || !input.password) {
-    return c.json({
-      success: false,
-      error: { code: 'INVALID_INPUT', message: 'username, email, password are required' }
-    }, 400);
-  }
-
+users.post('/register', zValidator('json', registerSchema, validationHook), async (c) => {
+  const input = c.req.valid('json');
   const service = new UserService(c.env.DB);
 
   try {
@@ -39,16 +34,8 @@ users.post('/register', async (c) => {
 });
 
 // POST /users/login
-users.post('/login', async (c) => {
-  const input: LoginInput = await c.req.json();
-
-  if (!input.email || !input.password) {
-    return c.json({
-      success: false,
-      error: { code: 'INVALID_INPUT', message: 'email and password are required' }
-    }, 400);
-  }
-
+users.post('/login', zValidator('json', loginSchema, validationHook), async (c) => {
+  const input = c.req.valid('json');
   const service = new UserService(c.env.DB);
 
   try {
@@ -152,30 +139,9 @@ users.patch('/me/password', userAuthMiddleware, async (c) => {
 });
 
 // POST /users/me/sync-bookmarks (認証必須 - ログイン時の localStorage→server 同期)
-users.post('/me/sync-bookmarks', userAuthMiddleware, async (c) => {
+users.post('/me/sync-bookmarks', userAuthMiddleware, zValidator('json', syncBookmarksSchema, validationHook), async (c) => {
   const userId = c.get('userId')!;
-  const input: SyncBookmarksInput = await c.req.json();
-
-  if (!Array.isArray(input.itinerary_ids)) {
-    return c.json({
-      success: false,
-      error: { code: 'INVALID_INPUT', message: 'itinerary_ids must be an array' }
-    }, 400);
-  }
-
-  if (input.itinerary_ids.length > 50) {
-    return c.json({
-      success: false,
-      error: { code: 'INVALID_INPUT', message: 'Too many itinerary_ids (max 50)' }
-    }, 400);
-  }
-
-  if (!input.itinerary_ids.every((id) => typeof id === 'string' && id.length > 0)) {
-    return c.json({
-      success: false,
-      error: { code: 'INVALID_INPUT', message: 'itinerary_ids must contain only non-empty strings' }
-    }, 400);
-  }
+  const input = c.req.valid('json');
 
   const service = new UserService(c.env.DB);
   const result = await service.syncBookmarks(userId, input.itinerary_ids);

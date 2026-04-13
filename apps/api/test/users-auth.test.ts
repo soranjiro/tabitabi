@@ -102,7 +102,7 @@ describe('POST /api/v1/users/register', () => {
     }, env);
     expect(res.status).toBe(400);
     const json = await res.json() as any;
-    expect(json.error.code).toBe('INVALID_INPUT');
+    expect(json.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('returns 400 when email is missing', async () => {
@@ -218,7 +218,7 @@ describe('POST /api/v1/users/login', () => {
     }, env);
     expect(res.status).toBe(400);
     const json = await res.json() as any;
-    expect(json.error.code).toBe('INVALID_INPUT');
+    expect(json.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('returns 400 when password is missing', async () => {

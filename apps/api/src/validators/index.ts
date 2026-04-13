@@ -51,7 +51,7 @@ export const updateItinerarySchema = z.object({
   theme_id: z.string().optional(),
   memo: z.string().optional(),
   walica_id: z.string().nullable().optional(),
-  password: z.string().min(1, 'password must not be empty').optional(),
+  password: z.string().optional(),
   secret_settings: z.object({
     enabled: z.boolean(),
     offset_minutes: z.number(),

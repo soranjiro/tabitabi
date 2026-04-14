@@ -106,9 +106,6 @@ importers:
       '@testing-library/svelte':
         specifier: ^5.2.9
         version: 5.2.9(svelte@5.38.10)(vite@6.4.1(@types/node@24.10.1)(jiti@1.21.7)(lightningcss@1.30.1)(tsx@4.21.0))(vitest@3.2.4(@types/node@24.10.1)(jiti@1.21.7)(jsdom@27.2.0)(lightningcss@1.30.1)(tsx@4.21.0))
-      '@types/dompurify':
-        specifier: ^3.2.0
-        version: 3.2.0
       '@types/google.maps':
         specifier: ^3.58.1
         version: 3.58.1
@@ -1806,10 +1803,6 @@ packages:
 
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
-
-  '@types/dompurify@3.2.0':
-    resolution: {integrity: sha512-Fgg31wv9QbLDA0SpTOXO3MaxySc4DKGLi8sna4/Utjo4r3ZRPdCt4UQee8BWr+Q5z21yifghREPJGYaEOEIACg==}
-    deprecated: This is a stub types definition. dompurify provides its own type definitions, so you do not need this installed.
 
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
@@ -5063,10 +5056,6 @@ snapshots:
   '@types/cookie@0.6.0': {}
 
   '@types/deep-eql@4.0.2': {}
-
-  '@types/dompurify@3.2.0':
-    dependencies:
-      dompurify: 3.3.3
 
   '@types/estree@1.0.8': {}
 

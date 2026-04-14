@@ -30,7 +30,6 @@
     "@sveltejs/vite-plugin-svelte": "^5.0.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/svelte": "^5.2.9",
-    "@types/dompurify": "^3.2.0",
     "@types/google.maps": "^3.58.1",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^24.10.1",

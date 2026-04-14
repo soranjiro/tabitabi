@@ -18,17 +18,19 @@
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
     "@tabitabi/types": "workspace:*",
+    "isomorphic-dompurify": "^3.8.0",
     "mapbox-gl": "^3.17.0"
   },
   "devDependencies": {
-    "@qwik.dev/partytown": "^0.11.2",
     "@cloudflare/workers-types": "^4.20250110.0",
     "@playwright/test": "^1.57.0",
+    "@qwik.dev/partytown": "^0.11.2",
     "@sveltejs/adapter-cloudflare": "^4.7.4",
     "@sveltejs/kit": "^2.15.2",
     "@sveltejs/vite-plugin-svelte": "^5.0.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/svelte": "^5.2.9",
+    "@types/dompurify": "^3.2.0",
     "@types/google.maps": "^3.58.1",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^24.10.1",

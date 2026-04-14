@@ -18,8 +18,8 @@
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
     "@tabitabi/types": "workspace:*",
-    "isomorphic-dompurify": "^3.8.0",
-    "mapbox-gl": "^3.17.0"
+    "mapbox-gl": "^3.17.0",
+    "sanitize-html": "^2.17.2"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250110.0",

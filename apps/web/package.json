@@ -18,12 +18,13 @@
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
     "@tabitabi/types": "workspace:*",
-    "mapbox-gl": "^3.17.0"
+    "mapbox-gl": "^3.17.0",
+    "sanitize-html": "^2.17.2"
   },
   "devDependencies": {
-    "@qwik.dev/partytown": "^0.11.2",
     "@cloudflare/workers-types": "^4.20250110.0",
     "@playwright/test": "^1.57.0",
+    "@qwik.dev/partytown": "^0.11.2",
     "@sveltejs/adapter-cloudflare": "^4.7.4",
     "@sveltejs/kit": "^2.15.2",
     "@sveltejs/vite-plugin-svelte": "^5.0.4",

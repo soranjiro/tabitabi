@@ -67,4 +67,4 @@ jobs:
 
       - name: Deploy Web (Pages)
         working-directory: apps/web
-        run: pnpm wrangler pages deploy .svelte-kit/cloudflare --project-name=tabitabi --branch=main
+        run: pnpm wrangler pages deploy .svelte-kit/cloudflare --project-name=tabitabi --branch=main --commit-message="$(git log -1 --format=%H)"

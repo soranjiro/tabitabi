@@ -22,14 +22,13 @@ describe('validateOrigin', () => {
   });
 
   it('rejects requests with no Origin or Referer', () => {
-    const req = createRequest({ host: 'example.com' });
+    const req = createRequest();
     expect(() => validateOrigin(req)).toThrow();
   });
 
   it('allows requests with matching Origin (self-origin fallback)', () => {
     const req = createRequest({
       origin: 'https://example.com',
-      host: 'example.com',
     });
     expect(() => validateOrigin(req)).not.toThrow();
   });
@@ -37,7 +36,6 @@ describe('validateOrigin', () => {
   it('rejects requests with mismatched Origin (self-origin fallback)', () => {
     const req = createRequest({
       origin: 'https://evil.com',
-      host: 'example.com',
     });
     expect(() => validateOrigin(req)).toThrow();
   });
@@ -45,7 +43,6 @@ describe('validateOrigin', () => {
   it('allows requests with matching Referer when no Origin', () => {
     const req = createRequest({
       referer: 'https://example.com/page',
-      host: 'example.com',
     });
     expect(() => validateOrigin(req)).not.toThrow();
   });
@@ -53,9 +50,15 @@ describe('validateOrigin', () => {
   it('rejects requests with mismatched Referer', () => {
     const req = createRequest({
       referer: 'https://evil.com/page',
-      host: 'example.com',
     });
     expect(() => validateOrigin(req)).toThrow();
+  });
+
+  it('rejects requests with malformed Referer', () => {
+    for (const referer of ['not-a-url', '/relative/path']) {
+      const req = createRequest({ referer });
+      expect(() => validateOrigin(req)).toThrow();
+    }
   });
 
   describe('ALLOWED_ORIGINS', () => {
@@ -63,7 +66,6 @@ describe('validateOrigin', () => {
       mockEnv.ALLOWED_ORIGINS = 'https://app.example.com, https://staging.example.com';
       const req = createRequest({
         origin: 'https://app.example.com',
-        host: 'example.com',
       });
       expect(() => validateOrigin(req)).not.toThrow();
     });
@@ -72,25 +74,8 @@ describe('validateOrigin', () => {
       mockEnv.ALLOWED_ORIGINS = 'https://app.example.com';
       const req = createRequest({
         origin: 'https://evil.com',
-        host: 'example.com',
       });
       expect(() => validateOrigin(req)).toThrow();
     });
-  });
-
-  it('uses x-forwarded-proto for self-origin comparison', () => {
-    const req = createRequest({
-      origin: 'http://example.com',
-      host: 'example.com',
-      'x-forwarded-proto': 'http',
-    });
-    expect(() => validateOrigin(req)).not.toThrow();
-  });
-
-  it('rejects when host header is missing and no ALLOWED_ORIGINS', () => {
-    const req = createRequest({
-      origin: 'https://example.com',
-    });
-    expect(() => validateOrigin(req)).toThrow();
   });
 });

@@ -13,7 +13,14 @@ export function validateOrigin(request: Request): void {
   const origin = request.headers.get('origin');
   const referer = request.headers.get('referer');
 
-  const requestOrigin = origin ?? (referer ? new URL(referer).origin : null);
+  let requestOrigin = origin;
+  if (!requestOrigin && referer) {
+    try {
+      requestOrigin = new URL(referer).origin;
+    } catch {
+      requestOrigin = null;
+    }
+  }
 
   if (!requestOrigin) {
     throw error(403, 'Forbidden');
@@ -27,13 +34,7 @@ export function validateOrigin(request: Request): void {
   }
 
   // Fallback: 自オリジンとの比較
-  const host = request.headers.get('host');
-  if (!host) {
-    throw error(403, 'Forbidden');
-  }
-
-  const protocol = request.headers.get('x-forwarded-proto') ?? 'https';
-  const selfOrigin = `${protocol}://${host}`;
+  const selfOrigin = new URL(request.url).origin;
 
   if (requestOrigin !== selfOrigin) {
     throw error(403, 'Forbidden');

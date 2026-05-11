@@ -69,7 +69,7 @@ def create_svg(source_path, output_path):
     print(f"Created {output_path}")
 
 def main():
-    base_path = '/Users/user/Documents/03_app/tabitabi/apps/web/static'
+    base_path = './apps/web/static'
     source = f'{base_path}/favicon.png'
 
     # Create trimmed favicon.svg

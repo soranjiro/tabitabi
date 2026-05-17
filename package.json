@@ -14,7 +14,8 @@
     "test": "turbo test:run",
     "test:api": "pnpm --filter api test:run",
     "test:web": "pnpm --filter web test:run",
-    "prepare": "husky"
+    "prepare": "husky",
+    "dev:google-places-mock": "node tools/google-places-mock/server.js"
   },
   "devDependencies": {
     "chrome-launcher": "^1.2.1",

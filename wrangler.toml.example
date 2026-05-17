@@ -17,3 +17,7 @@ database_id = "PLACEHOLDER_DATABASE_ID"
 
 [env.production]
 VITE_API_URL = "https://tabitabi-api.youraccount.workers.dev/api/v1"
+
+# Google Places server-side proxy. For real Google, set GOOGLE_PLACES_API_KEY
+# (or reuse GOOGLE_MAPS_API_KEY). For local mock testing, set:
+# GOOGLE_PLACES_API_BASE_URL = "http://localhost:8789/v1"

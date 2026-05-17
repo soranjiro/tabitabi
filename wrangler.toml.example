@@ -23,6 +23,10 @@ VITE_API_URL = "https://tabitabi-api.youraccount.workers.dev/api/v1"
 APP_GITHUB_ISSUES_TOKEN = "PLACEHOLDER_GITHUB_ISSUES_TOKEN"
 APP_GITHUB_ISSUES_REPOSITORY = "soranjiro/tabitabi"
 
+# Google Places server-side proxy. For real Google, set GOOGLE_PLACES_API_KEY
+# (or reuse GOOGLE_MAPS_API_KEY). For local mock testing, set:
+# GOOGLE_PLACES_API_BASE_URL = "http://localhost:8789/v1"
+
 [[env.preview.d1_databases]]
 binding = "DB"
 database_name = "tabitabi"

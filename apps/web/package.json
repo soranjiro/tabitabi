@@ -23,7 +23,6 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250110.0",
     "@playwright/test": "^1.57.0",
-    "@qwik.dev/partytown": "^0.11.2",
     "@sveltejs/adapter-cloudflare": "^4.7.4",
     "@sveltejs/kit": "^2.57.1",
     "@sveltejs/vite-plugin-svelte": "^5.0.4",

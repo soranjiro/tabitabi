@@ -142,24 +142,55 @@
     el.className = isPixelMode
       ? "mapbox-custom-marker pixel"
       : "mapbox-custom-marker";
-    el.innerHTML = isPixelMode
-      ? `
-        <div class="pixel-marker">
-          <div class="pixel-top" style="background:${color}"></div>
-          <div class="pixel-body" style="background:${color}">
-            <span class="marker-number">${number}</span>
-          </div>
-          <div class="pixel-shadow" style="background:${color}99"></div>
-        </div>
-      `
-      : `
-        <div class="marker-pulse" style="background: ${color}50"></div>
-        <div class="marker-ring" style="border-color: ${color}"></div>
-        <div class="marker-outer" style="background: linear-gradient(145deg, ${color}, ${color}dd)">
-          <span class="marker-number">${number}</span>
-        </div>
-        ${isActive ? '<div class="marker-glow" style="background: ' + color + '"></div>' : ""}
-      `;
+
+    const markerNumber = document.createElement("span");
+    markerNumber.className = "marker-number";
+    markerNumber.textContent = String(number);
+
+    if (isPixelMode) {
+      const pixelMarker = document.createElement("div");
+      pixelMarker.className = "pixel-marker";
+
+      const pixelTop = document.createElement("div");
+      pixelTop.className = "pixel-top";
+      pixelTop.style.background = color;
+
+      const pixelBody = document.createElement("div");
+      pixelBody.className = "pixel-body";
+      pixelBody.style.background = color;
+      pixelBody.append(markerNumber);
+
+      const pixelShadow = document.createElement("div");
+      pixelShadow.className = "pixel-shadow";
+      pixelShadow.style.background = `${color}99`;
+
+      pixelMarker.append(pixelTop, pixelBody, pixelShadow);
+      el.append(pixelMarker);
+      return el;
+    }
+
+    const markerPulse = document.createElement("div");
+    markerPulse.className = "marker-pulse";
+    markerPulse.style.background = `${color}50`;
+
+    const markerRing = document.createElement("div");
+    markerRing.className = "marker-ring";
+    markerRing.style.borderColor = color;
+
+    const markerOuter = document.createElement("div");
+    markerOuter.className = "marker-outer";
+    markerOuter.style.background = `linear-gradient(145deg, ${color}, ${color}dd)`;
+    markerOuter.append(markerNumber);
+
+    el.append(markerPulse, markerRing, markerOuter);
+
+    if (isActive) {
+      const markerGlow = document.createElement("div");
+      markerGlow.className = "marker-glow";
+      markerGlow.style.background = color;
+      el.append(markerGlow);
+    }
+
     return el;
   }
 

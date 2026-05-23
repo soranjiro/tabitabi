@@ -15,14 +15,26 @@ if (!fs.existsSync(DOCS_DEST)) {
   fs.mkdirSync(DOCS_DEST, { recursive: true });
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function normalizeCodeLanguage(lang: string | undefined): string {
+  return (lang || '').replace(/[^\w-]/g, '');
+}
+
 marked.use({
   renderer: {
     code({ text, lang }) {
       if (lang === 'mermaid') {
-        return `<div class="mermaid">${text}</div>`;
+        return `<div class="mermaid">${escapeHtml(text)}</div>`;
       }
-      const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      return `<pre><code class="language-${lang || ''}">${escaped}</code></pre>`;
+      return `<pre><code class="language-${normalizeCodeLanguage(lang)}">${escapeHtml(text)}</code></pre>`;
     }
   }
 });
@@ -443,15 +455,30 @@ const template = (title: string, content: string, nav: string, rootPath: string,
       ).slice(0, 8);
 
       if (results.length > 0) {
-        resultsContainer.innerHTML = results.map(item => \`
-          <a href="/docs/\${item.id}" class="search-result-item">
-            <div class="search-result-title">\${item.title}</div>
-            <div class="search-result-preview">\${item.content.substring(0, 50)}...</div>
-          </a>
-        \`).join('');
+        resultsContainer.replaceChildren(...results.map(item => {
+          const link = document.createElement('a');
+          link.href = '/docs/' + encodeURI(item.id);
+          link.className = 'search-result-item';
+
+          const title = document.createElement('div');
+          title.className = 'search-result-title';
+          title.textContent = item.title;
+
+          const preview = document.createElement('div');
+          preview.className = 'search-result-preview';
+          preview.textContent = item.content.substring(0, 50) + '...';
+
+          link.append(title, preview);
+          return link;
+        }));
         resultsContainer.style.display = 'block';
       } else {
-        resultsContainer.innerHTML = '<div style="padding:12px;color:#6b7280;font-size:0.85rem">見つかりませんでした</div>';
+        const empty = document.createElement('div');
+        empty.style.padding = '12px';
+        empty.style.color = '#6b7280';
+        empty.style.fontSize = '0.85rem';
+        empty.textContent = '見つかりませんでした';
+        resultsContainer.replaceChildren(empty);
         resultsContainer.style.display = 'block';
       }
     });

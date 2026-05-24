@@ -1,15 +1,15 @@
-import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
+import { fileURLToPath } from 'node:url';
+import { defineConfig } from 'vitest/config';
 
-export default defineWorkersConfig({
+export default defineConfig({
   test: {
     globals: true,
-    poolOptions: {
-      workers: {
-        wrangler: { configPath: './wrangler.test.toml' },
-        miniflare: {
-          d1Databases: ['DB'],
-        },
-      },
+    environment: 'node',
+    fileParallelism: false,
+  },
+  resolve: {
+    alias: {
+      'cloudflare:test': fileURLToPath(new URL('./test/cloudflare-test.ts', import.meta.url)),
     },
   },
 });

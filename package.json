@@ -19,8 +19,19 @@
   "devDependencies": {
     "chrome-launcher": "^1.2.1",
     "husky": "^9.1.7",
-    "lighthouse": "^13.0.3",
+    "lighthouse": "^13.3.0",
     "turbo": "^2.9.14",
-    "wrangler": "^4.83.0"
+    "wrangler": "4.83.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "brace-expansion": "5.0.6",
+      "cookie": "1.1.1",
+      "esbuild@<0.25.0": "0.25.12",
+      "miniflare": "4.20260415.0",
+      "undici": "7.25.0",
+      "vite": "6.4.2",
+      "wrangler": "4.83.0"
+    }
   }
 }

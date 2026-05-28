@@ -29,8 +29,8 @@ jobs:
     env:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_DATABASE_ID: ${{ secrets.CLOUDFLARE_DATABASE_ID }}
       PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.issue.number }}
+      PREVIEW_DB_NAME: tabitabi-preview-pr-${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.issue.number }}
     steps:
       - name: Add reaction to comment
         if: github.event_name == 'issue_comment'
@@ -74,16 +74,45 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Delete existing preview D1 database
+        run: |
+          pnpm wrangler d1 delete "${PREVIEW_DB_NAME}" --skip-confirmation || echo "Preview database may not exist"
+
+      - name: Create preview D1 database
+        id: preview-db
+        run: |
+          set -euo pipefail
+          OUTPUT=$(pnpm wrangler d1 create "${PREVIEW_DB_NAME}" 2>&1)
+          echo "$OUTPUT"
+
+          DATABASE_ID=$(printf '%s\n' "$OUTPUT" | sed -nE 's/.*database_id = "([^"]+)".*/\1/p' | head -1)
+          if [ -z "$DATABASE_ID" ]; then
+            DATABASE_ID=$(printf '%s\n' "$OUTPUT" | grep -Eo '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}' | head -1)
+          fi
+
+          if [ -z "$DATABASE_ID" ]; then
+            echo "Failed to parse preview D1 database ID from wrangler output" >&2
+            exit 1
+          fi
+
+          echo "database_id=${DATABASE_ID}" >> "$GITHUB_OUTPUT"
+
       - name: Generate wrangler.toml from example
         run: |
           cp wrangler.toml.example wrangler.toml
-          sed -i "s/PLACEHOLDER_DATABASE_ID/${CLOUDFLARE_DATABASE_ID}/g" wrangler.toml
+          sed -i "s/PLACEHOLDER_DATABASE_ID/${{ steps.preview-db.outputs.database_id }}/g" wrangler.toml
+          sed -i "s/database_name = \"tabitabi\"/database_name = \"${PREVIEW_DB_NAME}\"/g" wrangler.toml
 
       - name: Generate API wrangler.toml from example
         working-directory: apps/api
         run: |
           cp wrangler.toml.example wrangler.toml
-          sed -i "s/PLACEHOLDER_DATABASE_ID/${CLOUDFLARE_DATABASE_ID}/g" wrangler.toml
+          sed -i "s/PLACEHOLDER_DATABASE_ID/${{ steps.preview-db.outputs.database_id }}/g" wrangler.toml
+          sed -i "s/database_name = \"tabitabi\"/database_name = \"${PREVIEW_DB_NAME}\"/g" wrangler.toml
+
+      - name: Apply D1 migrations to preview database
+        working-directory: apps/api
+        run: pnpm wrangler d1 migrations apply DB --remote --env preview
 
       - name: Deploy API to preview environment
         working-directory: apps/api
@@ -124,11 +153,11 @@ jobs:
 
             - **Web App**: ${webUrl}
             - **API**: ${apiUrl}
+            - **D1 Database**: \`${process.env.PREVIEW_DB_NAME}\`
 
             The Web app is configured to access the preview API automatically.
             To update this preview, comment \`/deploy-preview\` again.
-
-            > **Note**: Preview environments share the same database as production.`;
+            `;
 
             github.rest.issues.createComment({
               issue_number: process.env.PR_NUMBER,

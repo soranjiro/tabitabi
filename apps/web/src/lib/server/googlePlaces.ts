@@ -68,22 +68,26 @@ function getPlaceId(placeNameOrId: string | undefined): string | undefined {
 
 export function mapAutocompleteResponse(data: GooglePlacesAutocompleteResponse): PlaceSuggestion[] {
   return (data.suggestions ?? [])
-    .map((suggestion) => {
+    .flatMap((suggestion) => {
       const prediction = suggestion.placePrediction;
       const placeId = getPlaceId(prediction?.placeId || prediction?.place);
       const text = prediction?.text?.text;
 
-      if (!prediction || !placeId || !text) return null;
+      if (!prediction || !placeId || !text) return [];
 
-      return {
+      const mapped: PlaceSuggestion = {
         placeId,
         text,
-        mainText: prediction.structuredFormat?.mainText?.text,
-        secondaryText: prediction.structuredFormat?.secondaryText?.text,
-        types: prediction.types,
-      } satisfies PlaceSuggestion;
-    })
-    .filter((suggestion): suggestion is PlaceSuggestion => suggestion !== null);
+      };
+
+      const mainText = prediction.structuredFormat?.mainText?.text;
+      const secondaryText = prediction.structuredFormat?.secondaryText?.text;
+      if (mainText) mapped.mainText = mainText;
+      if (secondaryText) mapped.secondaryText = secondaryText;
+      if (prediction.types) mapped.types = prediction.types;
+
+      return [mapped];
+    });
 }
 
 export function mapPlaceDetails(data: GooglePlaceDetailsResponse): PlaceStructuredData {

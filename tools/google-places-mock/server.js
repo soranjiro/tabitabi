@@ -2,6 +2,7 @@
 import http from 'node:http';
 
 const port = Number(process.env.PORT || 8789);
+const host = process.env.HOST || '127.0.0.1';
 
 const places = [
   {
@@ -120,6 +121,6 @@ const server = http.createServer(async (request, response) => {
   sendJson(response, 404, { error: { message: 'Not found' } });
 });
 
-server.listen(port, () => {
-  console.log(`Google Places mock server listening on http://localhost:${port}`);
+server.listen(port, host, () => {
+  console.log(`Google Places mock server listening on http://${host}:${port}`);
 });

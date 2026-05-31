@@ -144,6 +144,7 @@
           type="button"
           class="place-input-suggestion"
           role="option"
+          aria-selected="false"
           onclick={() => selectSuggestion(suggestion)}
         >
           <span class="place-input-suggestion-main">

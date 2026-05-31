@@ -6,7 +6,7 @@
   "description": "旅のしおり管理アプリ",
   "license": "MIT",
   "scripts": {
-    "dev": "turbo dev",
+    "dev": "GOOGLE_PLACES_API_BASE_URL=${GOOGLE_PLACES_API_BASE_URL:-http://localhost:8789/v1} turbo dev",
     "build": "turbo build",
     "deploy": "turbo deploy",
     "deploy:api": "pnpm --filter api deploy",
@@ -14,7 +14,8 @@
     "test": "turbo test:run",
     "test:api": "pnpm --filter api test:run",
     "test:web": "pnpm --filter web test:run",
-    "prepare": "husky"
+    "prepare": "husky",
+    "dev:google-places-mock": "pnpm --filter google-places-mock dev"
   },
   "devDependencies": {
     "chrome-launcher": "^1.2.1",

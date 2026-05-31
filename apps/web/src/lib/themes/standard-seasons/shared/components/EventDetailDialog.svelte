@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Step, StepType } from "@tabitabi/types";
+  import type { PlaceStructuredData, Step, StepType } from "@tabitabi/types";
   import {
     getStepDate,
     getStepTime,
@@ -10,12 +10,19 @@
     STEP_TYPE,
   } from "@tabitabi/types";
   import { renderMarkdown } from "../utils/markdown";
-  import { getMemoText, updateMemoText } from "$lib/memo";
+  import {
+    getMemoText,
+    mergeMemoData,
+    parseMemoData,
+    removeMemoFields,
+    updateMemoText,
+  } from "$lib/memo";
   import {
     STEP_TYPES_BY_CATEGORY,
     STEP_TYPE_CONFIGS,
   } from "../utils/step-type";
   import TypePicker from "./TypePicker.svelte";
+  import PlaceInput from "$lib/components/PlaceInput.svelte";
   import IconRenderer from "../icons/IconRenderer.svelte";
   import "../styles/EventDetailDialog.css";
 
@@ -82,6 +89,7 @@
     type?: StepType;
     is_all_day?: boolean;
   }>({});
+  let selectedGooglePlace = $state<PlaceStructuredData | null>(null);
   let editStartHour = $state(step ? getStepTime(step).split(":")[0] : "09");
   let editStartMinute = $state(step ? getStepTime(step).split(":")[1] : "00");
   let editEndHour = $state("10");
@@ -90,6 +98,14 @@
   let endUserChanged = $state(false);
   let originalDuration = $state(60);
   let editIsAllDay = $state(step?.is_all_day || false);
+
+  function getSavedGooglePlace(notes: string | null | undefined): PlaceStructuredData | null {
+    const place = parseMemoData(notes).google_place;
+    if (place && typeof place === "object" && "placeId" in place) {
+      return place as PlaceStructuredData;
+    }
+    return null;
+  }
 
   function initializeEditedStep() {
     const referenceStartAt = step?.start_at ?? new Date().setHours(9, 0, 0, 0);
@@ -119,6 +135,7 @@
       Math.round((referenceEndAt - referenceStartAt) / 60000),
     );
     editIsAllDay = step?.is_all_day ?? false;
+    selectedGooglePlace = getSavedGooglePlace(step?.notes);
   }
 
   $effect(() => {
@@ -174,6 +191,7 @@
     editEndMinute = "00";
     startUserChanged = false;
     endUserChanged = false;
+    selectedGooglePlace = getSavedGooglePlace(step.notes);
   }
 
   $effect(() => {
@@ -252,9 +270,16 @@
     }
 
     const noteText = (editedStep.notes ?? "").trim();
-    const notes = step
+    const baseNotes = step
       ? updateMemoText(step.notes, noteText)
-      : noteText || undefined;
+      : noteText
+        ? updateMemoText(undefined, noteText)
+        : undefined;
+    const notes = selectedGooglePlace
+      ? mergeMemoData(baseNotes, { google_place: selectedGooglePlace })
+      : baseNotes
+        ? removeMemoFields(baseNotes, ["google_place"])
+        : undefined;
 
     let startAt: number;
     let endAt: number;
@@ -486,12 +511,16 @@
           </div>
           <div class="standard-form-field">
             <label for="location-input" class="standard-form-label">場所</label>
-            <input
+            <PlaceInput
               id="location-input"
-              type="text"
-              bind:value={editedStep.location}
-              placeholder="場所を入力"
-              class="standard-input"
+              value={editedStep.location}
+              selectedPlace={selectedGooglePlace}
+              onValueChange={(location) => {
+                editedStep.location = location;
+              }}
+              onPlaceSelect={(place) => {
+                selectedGooglePlace = place;
+              }}
             />
           </div>
           <div class="standard-form-field">
@@ -550,7 +579,17 @@
                     d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
                   />
                 </svg>
-                {step.location}
+                <span>{step.location}</span>
+                {#if getSavedGooglePlace(step.notes)?.googleMapsUri}
+                  <a
+                    class="standard-event-map-link"
+                    href={getSavedGooglePlace(step.notes)?.googleMapsUri}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Google Maps で開く
+                  </a>
+                {/if}
               </div>
             </div>
           {/if}
@@ -560,7 +599,7 @@
               <div
                 class="standard-event-detail-value standard-event-detail-notes"
               >
-                {@html renderMarkdown(step.notes || "")}
+                {@html renderMarkdown(getMemoText(step.notes) || "")}
               </div>
             </div>
           {/if}

@@ -37,6 +37,7 @@ pnpm dev
 | [機能開発](feature-development.md) | 新機能の追加方法・API連携 |
 | [テーマ開発](theme-development.md) | 新しいテーマの作り方 |
 | [テスト](testing.md) | テストの書き方・実行方法 |
+| [Google POI サジェスト計画](google-poi-place-data-plan.md) | Google Places を使った場所入力・構造化データ保存の実装計画 |
 
 ### 効率よく開発したい
 

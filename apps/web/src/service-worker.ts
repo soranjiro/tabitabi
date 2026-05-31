@@ -42,6 +42,11 @@ worker.addEventListener("fetch", (event: FetchEvent) => {
     const url = new URL(event.request.url);
     const cache = await caches.open(CACHE_NAME);
 
+    // Ignore non-http(s) schemes (extensions, chrome-extension://, etc.)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return fetch(event.request);
+    }
+
     // ASSETS: Cache-First
     // If the request is for an asset (build files or static files), serve from cache
     if (ASSETS.includes(url.pathname)) {
@@ -56,7 +61,13 @@ worker.addEventListener("fetch", (event: FetchEvent) => {
 
       // If successful, clone and cache for offline use later
       if (response.status === 200) {
-        cache.put(event.request, response.clone());
+        try {
+          await cache.put(event.request, response.clone());
+        } catch (e) {
+          // Some requests (e.g. chrome-extension://) may be unsupported by Cache API
+          // or otherwise fail to be stored. Ignore caching failures.
+          console.warn('Failed to cache request:', event.request.url, e);
+        }
       }
 
       return response;

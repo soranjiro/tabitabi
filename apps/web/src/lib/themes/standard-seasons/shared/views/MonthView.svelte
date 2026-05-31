@@ -41,11 +41,16 @@
   let compactMonthEvents = $state(false);
 
   $effect(() => {
-    if (
-      steps.length > 0 &&
-      currentDate.getTime() === new Date().setHours(0, 0, 0, 0)
-    ) {
-      currentDate = getInitialMonth(steps);
+    if (steps.length > 0) {
+      const initial = getInitialMonth(steps);
+      // Only update currentDate if it was left as the default (today at 00:00)
+      // and the computed initial month differs. This avoids reassigning the
+      // same value repeatedly which can cause an update loop.
+      const isDefaultToday =
+        currentDate.getTime() === new Date().setHours(0, 0, 0, 0);
+      if (isDefaultToday && currentDate.getTime() !== initial.getTime()) {
+        currentDate = initial;
+      }
     }
   });
 

@@ -81,7 +81,7 @@ export function getDemoData(): DemoDataSet {
         start_at: getTimestamp(0, '20:00'),
         end_at: getTimestamp(1, '09:00'),
         location: '京都駅前',
-        notes: '{"text":"2日目の朝まで宿泊。朝食バイキング付き"}',
+        notes: '{"text":"2日目の朝まで宿泊。朝食バイキング付き", "booking_url":"https://www.jalan.net/yad362380"}',
         type: STEP_TYPE.NORMAL_HOTEL,
         created_at: now,
         updated_at: now,

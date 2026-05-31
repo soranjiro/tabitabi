@@ -21,7 +21,6 @@ export const STEP_TYPE_CATEGORIES = {
     STEP_TYPE.NORMAL_FOOD,
     STEP_TYPE.NORMAL_HOTEL,
     STEP_TYPE.NORMAL_SIGHTSEEING,
-    STEP_TYPE.NORMAL_MEAL,
     STEP_TYPE.NORMAL_SHOPPING,
   ] as const,
   transport: [
@@ -44,6 +43,7 @@ export interface Step {
   end_at: number;
   location?: string | null;
   notes: string;
+  link?: string | null;
   type?: StepType;
   is_all_day?: boolean;
   is_hidden?: boolean;
@@ -60,6 +60,7 @@ export interface CreateStepInput {
   end_at?: number;
   location?: string;
   notes?: string;
+  link?: string | null;
   type?: StepType;
   is_all_day?: boolean;
 }
@@ -72,6 +73,7 @@ export interface UpdateStepInput {
   end_at?: number;
   location?: string | null;
   notes?: string | null;
+  link?: string | null;
   type?: StepType;
   is_all_day?: boolean;
 }

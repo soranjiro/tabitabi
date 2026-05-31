@@ -133,6 +133,7 @@
     end_at: number;
     location?: string;
     notes?: string;
+    link?: string | null;
     type?: import("@tabitabi/types").StepType;
     is_all_day?: boolean;
   }) {
@@ -159,6 +160,7 @@
       end_at?: number;
       location?: string;
       notes?: string;
+      link?: string | null;
       type?: import("@tabitabi/types").StepType;
       is_all_day?: boolean;
     },

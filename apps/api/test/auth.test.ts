@@ -21,6 +21,7 @@ async function applyMigrations(db: D1Database) {
       end_at INTEGER NOT NULL,
       location TEXT,
       notes TEXT,
+      link TEXT,
       type TEXT NOT NULL DEFAULT 'normal:general',
       is_all_day INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,

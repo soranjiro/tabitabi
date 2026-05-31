@@ -23,6 +23,7 @@ async function applyMigrations(db: D1Database) {
       end_at INTEGER NOT NULL,
       location TEXT,
       notes TEXT,
+      link TEXT,
       type TEXT NOT NULL DEFAULT 'normal:general',
       is_all_day INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -542,13 +543,13 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     expect(steps[0].itinerary_id).toBe(pub.id);
   });
 
-  it('publishes sanitized hotel cards with affiliate-ready links', async () => {
+  it('publishes sanitized step links with affiliate-ready links', async () => {
     const createRes = await app.request('/api/v1/itineraries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: 'ホテル付きしおり',
-        memo: '{"text":"連絡先 test@example.com","public_text":"京都の週末旅"}',
+        memo: '{"text":"連絡先 test@example.com"}',
       }),
     }, env);
     const { data: original } = await createRes.json() as any;
@@ -563,12 +564,9 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
         end_at: 1700003600000,
         location: '京都駅 090-1234-5678',
         type: 'normal:hotel',
+        link: 'https://www.jalan.net/yad123/?foo=bar',
         notes: JSON.stringify({
           text: '部屋番号 1002。予約番号 ABCD1234',
-          public_title: '京都駅近くのホテル',
-          public_location: '京都駅周辺',
-          public_text: '駅から歩きやすい宿',
-          booking_url: 'https://www.jalan.net/yad123/?foo=bar',
         }),
       }),
     }, env);
@@ -584,16 +582,18 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
 
     const snapshotRes = await app.request(`/api/v1/itineraries/${pub.id}`, {}, env);
     const { data: snapshot } = await snapshotRes.json() as any;
-    expect(snapshot.memo).toContain('京都の週末旅');
     expect(snapshot.memo).not.toContain('test@example.com');
 
     const stepsRes = await app.request(`/api/v1/steps?itinerary_id=${pub.id}`, {}, env);
     const { data: steps } = await stepsRes.json() as any;
-    expect(steps[0].title).toBe('京都駅近くのホテル');
-    expect(steps[0].location).toBe('京都駅周辺');
+    expect(steps[0].title).toContain('京都ホテル');
+    expect(steps[0].title).not.toContain('ABCD1234');
+    expect(steps[0].location).not.toContain('090-1234-5678');
+    expect(steps[0].link).toBe('https://www.jalan.net/yad123/?foo=bar');
 
     const notes = JSON.parse(steps[0].notes);
-    expect(notes.text).toBe('駅から歩きやすい宿');
+    expect(notes.text).not.toContain('1002');
+    expect(notes.text).not.toContain('ABCD1234');
     expect(notes.affiliate_provider).toBe('jalan');
     expect(notes.affiliate_url).toContain('https://affiliate.example/click');
     expect(notes.affiliate_url).toContain(encodeURIComponent('https://www.jalan.net/yad123/?foo=bar'));

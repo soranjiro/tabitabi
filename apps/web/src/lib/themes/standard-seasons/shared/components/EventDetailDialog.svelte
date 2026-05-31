@@ -16,12 +16,7 @@
     stringifyMemoData,
     updateMemoText,
   } from "$lib/memo";
-  import {
-    STEP_TYPES_BY_CATEGORY,
-    STEP_TYPE_CONFIGS,
-  } from "../utils/step-type";
   import TypePicker from "./TypePicker.svelte";
-  import IconRenderer from "../icons/IconRenderer.svelte";
   import { getBookingCard } from "../utils/booking-card";
   import "../styles/EventDetailDialog.css";
 
@@ -38,6 +33,7 @@
       end_at: number;
       location?: string;
       notes?: string;
+      link?: string | null;
       type?: StepType;
       is_all_day?: boolean;
     }) => Promise<void>;
@@ -49,6 +45,7 @@
         end_at?: number;
         location?: string;
         notes?: string;
+        link?: string | null;
         type?: StepType;
         is_all_day?: boolean;
       },
@@ -85,10 +82,7 @@
     endTime?: string;
     location?: string | null;
     notes?: string;
-    publicTitle?: string;
-    publicLocation?: string;
-    publicNotes?: string;
-    bookingUrl?: string;
+    link?: string;
     type?: StepType;
     is_all_day?: boolean;
   }>({});
@@ -100,7 +94,74 @@
   let endUserChanged = $state(false);
   let originalDuration = $state(60);
   let editIsAllDay = $state(step?.is_all_day || false);
-  let bookingCard = $derived(step ? getBookingCard(step.notes) : null);
+  let linkHelperOpen = $state(false);
+  let linkBrowserUrl = $state("");
+  let bookingCard = $derived(step ? getBookingCard(step) : null);
+
+  const LINK_TYPES = new Set<StepType>([
+    STEP_TYPE.NORMAL_HOTEL,
+    STEP_TYPE.NORMAL_FOOD,
+    STEP_TYPE.NORMAL_MEAL,
+    STEP_TYPE.NORMAL_SIGHTSEEING,
+    STEP_TYPE.NORMAL_SHOPPING,
+  ]);
+
+  const LINK_PROVIDER_PRESETS: Partial<Record<StepType, { label: string; url: string }[]>> = {
+    [STEP_TYPE.NORMAL_HOTEL]: [
+      { label: "じゃらん", url: "https://www.jalan.net/" },
+      { label: "楽天トラベル", url: "https://travel.rakuten.co.jp/" },
+      { label: "一休", url: "https://www.ikyu.com/" },
+      { label: "Booking.com", url: "https://www.booking.com/" },
+    ],
+    [STEP_TYPE.NORMAL_FOOD]: [
+      { label: "食べログ", url: "https://tabelog.com/" },
+      { label: "ぐるなび", url: "https://www.gnavi.co.jp/" },
+      { label: "ホットペッパー", url: "https://www.hotpepper.jp/" },
+    ],
+    [STEP_TYPE.NORMAL_MEAL]: [
+      { label: "食べログ", url: "https://tabelog.com/" },
+      { label: "ぐるなび", url: "https://www.gnavi.co.jp/" },
+      { label: "ホットペッパー", url: "https://www.hotpepper.jp/" },
+    ],
+    [STEP_TYPE.NORMAL_SIGHTSEEING]: [
+      { label: "じゃらん遊び体験", url: "https://www.jalan.net/activity/" },
+      { label: "アソビュー", url: "https://www.asoview.com/" },
+      { label: "Klook", url: "https://www.klook.com/ja/" },
+    ],
+    [STEP_TYPE.NORMAL_SHOPPING]: [
+      { label: "楽天市場", url: "https://www.rakuten.co.jp/" },
+      { label: "Yahoo!ショッピング", url: "https://shopping.yahoo.co.jp/" },
+    ],
+  };
+
+  function shouldShowLinkHelper(type: StepType | undefined): boolean {
+    return !!type && LINK_TYPES.has(type);
+  }
+
+  function getLinkFieldLabel(type: StepType | undefined): string {
+    if (type === STEP_TYPE.NORMAL_HOTEL) return "宿泊・予約リンク";
+    if (type === STEP_TYPE.NORMAL_FOOD || type === STEP_TYPE.NORMAL_MEAL) return "店舗・予約リンク";
+    if (type === STEP_TYPE.NORMAL_SIGHTSEEING) return "観光・体験リンク";
+    if (type === STEP_TYPE.NORMAL_SHOPPING) return "買い物リンク";
+    return "関連リンク";
+  }
+
+  function getLinkPlaceholder(type: StepType | undefined): string {
+    if (type === STEP_TYPE.NORMAL_HOTEL) return "https://www.jalan.net/...";
+    if (type === STEP_TYPE.NORMAL_FOOD || type === STEP_TYPE.NORMAL_MEAL) return "https://tabelog.com/...";
+    if (type === STEP_TYPE.NORMAL_SIGHTSEEING) return "https://www.asoview.com/...";
+    return "https://...";
+  }
+
+  function openLinkProvider(url: string) {
+    linkBrowserUrl = url;
+    linkHelperOpen = true;
+  }
+
+  function insertLinkFromBrowser() {
+    editedStep.link = linkBrowserUrl.trim();
+    linkHelperOpen = false;
+  }
 
   function initializeEditedStep() {
     const referenceStartAt = step?.start_at ?? new Date().setHours(9, 0, 0, 0);
@@ -116,10 +177,7 @@
       endTime: `${endHour}:${endMinute}`,
       location: step?.location ?? "",
       notes: getMemoText(step?.notes ?? "") || "",
-      publicTitle: (parseMemoData(step?.notes).public_title as string | undefined) ?? "",
-      publicLocation: (parseMemoData(step?.notes).public_location as string | undefined) ?? "",
-      publicNotes: (parseMemoData(step?.notes).public_text as string | undefined) ?? "",
-      bookingUrl: (parseMemoData(step?.notes).booking_url as string | undefined) ?? "",
+      link: step?.link ?? (parseMemoData(step?.notes).booking_url as string | undefined) ?? "",
       type: step?.type ?? STEP_TYPE.NORMAL_GENERAL,
       is_all_day: step?.is_all_day ?? false,
     };
@@ -269,11 +327,12 @@
     const noteText = (editedStep.notes ?? "").trim();
     const baseNotes = step ? updateMemoText(step.notes, noteText) : stringifyMemoData({ text: noteText });
     const noteData = parseMemoData(baseNotes);
-    noteData.public_title = editedStep.publicTitle?.trim() || undefined;
-    noteData.public_location = editedStep.publicLocation?.trim() || undefined;
-    noteData.public_text = editedStep.publicNotes?.trim() || undefined;
-    noteData.booking_url = editedStep.bookingUrl?.trim() || undefined;
+    delete noteData.public_title;
+    delete noteData.public_location;
+    delete noteData.public_text;
+    delete noteData.booking_url;
     const notes = stringifyMemoData(noteData);
+    const link = editedStep.link?.trim() || null;
 
     let startAt: number;
     let endAt: number;
@@ -307,6 +366,7 @@
         end_at: endAt,
         location: editedStep.location?.trim() || undefined,
         notes,
+        link,
         type: editedStep.type,
         is_all_day: editIsAllDay,
       });
@@ -317,6 +377,7 @@
         end_at: endAt,
         location: editedStep.location?.trim() || undefined,
         notes,
+        link,
         type: editedStep.type,
         is_all_day: editIsAllDay,
       });
@@ -522,6 +583,76 @@
               }}
             />
           </div>
+          {#if shouldShowLinkHelper(editedStep.type)}
+            <div class="standard-public-fields">
+              <div class="standard-form-field">
+                <label for="booking-url-input" class="standard-form-label"
+                  >{getLinkFieldLabel(editedStep.type)}</label
+                >
+                <input
+                  id="booking-url-input"
+                  type="url"
+                  bind:value={editedStep.link}
+                  placeholder={getLinkPlaceholder(editedStep.type)}
+                  class="standard-input"
+                />
+              </div>
+              <div class="standard-link-provider-tools">
+                {#each LINK_PROVIDER_PRESETS[editedStep.type ?? STEP_TYPE.NORMAL_HOTEL] ?? [] as provider}
+                  <button
+                    type="button"
+                    class="standard-link-provider-btn"
+                    onclick={() => openLinkProvider(provider.url)}
+                  >
+                    {provider.label}を探す
+                  </button>
+                {/each}
+                <button
+                  type="button"
+                  class="standard-link-provider-btn standard-link-provider-btn-secondary"
+                  onclick={() => {
+                    linkBrowserUrl = editedStep.link || getLinkPlaceholder(editedStep.type).replace("...", "");
+                    linkHelperOpen = true;
+                  }}
+                >
+                  サイト内で開く
+                </button>
+              </div>
+              {#if linkHelperOpen}
+                <div class="standard-link-browser">
+                  <div class="standard-link-browser-bar">
+                    <input
+                      type="url"
+                      bind:value={linkBrowserUrl}
+                      placeholder="開きたいページのURL"
+                      class="standard-input"
+                    />
+                    <button
+                      type="button"
+                      class="standard-btn standard-btn-primary"
+                      onclick={insertLinkFromBrowser}
+                    >
+                      リンクを挿入
+                    </button>
+                    <button
+                      type="button"
+                      class="standard-btn standard-btn-secondary"
+                      onclick={() => (linkHelperOpen = false)}
+                    >
+                      閉じる
+                    </button>
+                  </div>
+                  {#if linkBrowserUrl}
+                    <iframe
+                      src={linkBrowserUrl}
+                      title="リンク先サイト"
+                      class="standard-link-browser-frame"
+                    ></iframe>
+                  {/if}
+                </div>
+              {/if}
+            </div>
+          {/if}
           <div class="standard-form-field">
             <label for="notes-textarea" class="standard-form-label">メモ</label>
             <textarea
@@ -532,60 +663,6 @@
               rows="5"
             ></textarea>
           </div>
-          {#if editedStep.type === STEP_TYPE.NORMAL_HOTEL}
-            <div class="standard-public-fields">
-              <div class="standard-form-field">
-                <label for="booking-url-input" class="standard-form-label"
-                  >予約・紹介リンク</label
-                >
-                <input
-                  id="booking-url-input"
-                  type="url"
-                  bind:value={editedStep.bookingUrl}
-                  placeholder="https://www.jalan.net/..."
-                  class="standard-input"
-                />
-              </div>
-              <div class="standard-event-detail-row">
-                <div class="standard-form-field">
-                  <label for="public-title-input" class="standard-form-label"
-                    >公開用タイトル</label
-                  >
-                  <input
-                    id="public-title-input"
-                    type="text"
-                    bind:value={editedStep.publicTitle}
-                    placeholder={editedStep.title || "ホテル名"}
-                    class="standard-input"
-                  />
-                </div>
-                <div class="standard-form-field">
-                  <label for="public-location-input" class="standard-form-label"
-                    >公開用場所</label
-                  >
-                  <input
-                    id="public-location-input"
-                    type="text"
-                    bind:value={editedStep.publicLocation}
-                    placeholder={editedStep.location || "エリア"}
-                    class="standard-input"
-                  />
-                </div>
-              </div>
-              <div class="standard-form-field">
-                <label for="public-notes-textarea" class="standard-form-label"
-                  >公開用メモ</label
-                >
-                <textarea
-                  id="public-notes-textarea"
-                  bind:value={editedStep.publicNotes}
-                  placeholder="公開しおりに残すメモ"
-                  class="standard-textarea standard-textarea-compact"
-                  rows="3"
-                ></textarea>
-              </div>
-            </div>
-          {/if}
         </div>
       {:else if step}
         <div class="standard-event-detail-content">
@@ -627,7 +704,7 @@
               </div>
             </div>
           {/if}
-          {#if step.notes}
+          {#if renderMarkdown(step.notes || "")}
             <div class="standard-event-detail-field">
               <span class="standard-event-detail-label">メモ</span>
               <div
@@ -640,7 +717,7 @@
           {#if bookingCard}
             <div class="standard-booking-card standard-booking-card-dialog">
               <div class="standard-booking-card-main">
-                <span class="standard-booking-card-label">宿泊リンク</span>
+                <span class="standard-booking-card-label">{bookingCard.label}</span>
                 <span class="standard-booking-card-provider">
                   {bookingCard.providerLabel}
                 </span>

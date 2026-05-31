@@ -38,6 +38,9 @@
         end_at?: number;
         location?: string;
         notes?: string;
+        link?: string | null;
+        type?: Step["type"];
+        is_all_day?: boolean;
       },
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
@@ -183,15 +186,19 @@
   }
 
   function getStepBookingCard(step: Step) {
-    return getBookingCard(step.notes);
+    return getBookingCard(step);
   }
 
   function getStepBookingLabel(step: Step): string {
-    return getBookingCard(step.notes)?.providerLabel ?? "予約サイトで見る";
+    return getBookingCard(step)?.providerLabel ?? "リンクを見る";
   }
 
   function getStepBookingUrl(step: Step): string {
-    return getBookingCard(step.notes)?.actionUrl ?? "#";
+    return getBookingCard(step)?.actionUrl ?? "#";
+  }
+
+  function getStepBookingCardLabel(step: Step): string {
+    return getBookingCard(step)?.label ?? "リンク";
   }
 
   function handleDragStart(e: DragEvent, stepId: string) {
@@ -628,7 +635,7 @@
                             {step.location}
                           </div>
                         {/if}
-                        {#if step.notes}
+                        {#if renderMarkdown(step.notes)}
                           <div class="standard-step-notes">
                             {@html renderMarkdown(step.notes)}
                           </div>
@@ -637,7 +644,7 @@
                           <div class="standard-booking-card">
                             <div class="standard-booking-card-main">
                               <span class="standard-booking-card-label"
-                                >宿泊リンク</span
+                                >{getStepBookingCardLabel(step)}</span
                               >
                               <span class="standard-booking-card-provider">
                                 {getStepBookingLabel(step)}

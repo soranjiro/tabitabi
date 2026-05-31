@@ -27,6 +27,7 @@ async function applyMigrations(db: D1Database) {
       end_at INTEGER NOT NULL,
       location TEXT,
       notes TEXT,
+      link TEXT,
       type TEXT NOT NULL DEFAULT 'normal:general',
       is_all_day INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -133,6 +134,30 @@ describe('Steps API', () => {
       expect(data.end_at).toBeDefined();
       expect(typeof data.end_at).toBe('number');
       expect(data.id).toBeDefined();
+    });
+
+    it('creates a new step with a normalized link', async () => {
+      const { id, token } = await createItinerary();
+
+      const request = new Request('http://localhost/api/v1/steps', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          itinerary_id: id,
+          title: 'Dinner',
+          start_at: Date.now(),
+          link: 'https://tabelog.com/tokyo/',
+        }),
+      });
+
+      const response = await app.fetch(request, env);
+      expect(response.status).toBe(201);
+
+      const { data } = await response.json() as any;
+      expect(data.link).toBe('https://tabelog.com/tokyo/');
     });
 
     it('returns 400 if required fields are missing', async () => {

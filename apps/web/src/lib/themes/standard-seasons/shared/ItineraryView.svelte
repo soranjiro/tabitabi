@@ -48,7 +48,9 @@
       end_at: number;
       location?: string;
       notes?: string;
+      link?: string | null;
       type?: StepType;
+      is_all_day?: boolean;
     }) => Promise<void>;
     onUpdateStep?: (
       stepId: string,
@@ -58,7 +60,9 @@
         end_at?: number;
         location?: string;
         notes?: string;
+        link?: string | null;
         type?: StepType;
+        is_all_day?: boolean;
       },
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
@@ -129,6 +133,7 @@
       end_at: endAt,
       location: "",
       notes: "",
+      link: null,
       type: STEP_TYPE.NORMAL_GENERAL,
       is_all_day: false,
       created_at: new Date().toISOString(),

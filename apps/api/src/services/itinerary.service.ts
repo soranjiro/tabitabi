@@ -212,7 +212,7 @@ export class ItineraryService {
     // Fetch source steps before batch to generate new IDs
     // secret_settings and walica_id are intentionally excluded from forks (personal configuration)
     const sourceSteps = await this.db
-      .prepare('SELECT id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
+      .prepare('SELECT id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
       .bind(sourceId)
       .all();
 
@@ -221,8 +221,8 @@ export class ItineraryService {
     // Use batch() for atomic execution: all inserts + fork_count upsert succeed or fail together
     const stepStatements = rows.map(row =>
       this.db
-        .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.type, row.is_all_day, now, now)
+        .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.link, row.type, row.is_all_day, now, now)
     );
 
     await this.db.batch([
@@ -252,7 +252,7 @@ export class ItineraryService {
     const now = getCurrentTimestamp();
 
     const sourceSteps = await this.db
-      .prepare('SELECT title, start_at, end_at, location, notes, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
+      .prepare('SELECT title, start_at, end_at, location, notes, link, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
       .bind(sourceId)
       .all();
     const rows = (sourceSteps.results ?? []).map(row => createPublicStepSnapshot(row, this.env));
@@ -267,8 +267,8 @@ export class ItineraryService {
       const newId = generateId();
       const stepStatements = rows.map(row =>
         this.db
-          .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-          .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.type, row.is_all_day, now, now)
+          .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.link, row.type, row.is_all_day, now, now)
       );
 
       try {
@@ -296,8 +296,8 @@ export class ItineraryService {
       const sharedId = existing.id;
       const stepStatements = rows.map(row =>
         this.db
-          .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-          .bind(generateId(), sharedId, row.title, row.start_at, row.end_at, row.location, row.notes, row.type, row.is_all_day, now, now)
+          .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .bind(generateId(), sharedId, row.title, row.start_at, row.end_at, row.location, row.notes, row.link, row.type, row.is_all_day, now, now)
       );
 
       await this.db.batch([

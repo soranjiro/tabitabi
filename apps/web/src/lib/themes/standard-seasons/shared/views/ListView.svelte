@@ -135,7 +135,7 @@
                       {step.location}
                     </div>
                   {/if}
-                  {#if step.notes}
+                  {#if renderMarkdown(step.notes)}
                     <div class="standard-list-notes">
                       {@html renderMarkdown(step.notes)}
                     </div>

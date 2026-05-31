@@ -4,9 +4,6 @@ import type { Env } from './index';
 
 type MemoRecord = {
   text: string;
-  public_text?: string;
-  public_title?: string;
-  public_location?: string;
   booking_url?: string;
   affiliate_url?: string;
   affiliate_provider?: string;
@@ -18,8 +15,8 @@ export const AFFILIATE_DISCLOSURE = 'このページにはアフィリエイト�
 
 const SENSITIVE_PATTERNS: RegExp[] = [
   /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
-  /\b(?:予約番号|予約No\.?|confirmation(?:\s*number)?|booking(?:\s*id)?)[:：]?\s*[A-Z0-9-]{4,}\b/gi,
-  /\b(?:部屋|客室|room)\s*(?:番号|no\.?)?[:：]?\s*[A-Z0-9-]{2,}\b/gi,
+  /(?:予約番号|予約No\.?|confirmation(?:\s*number)?|booking(?:\s*id)?)[:：]?\s*[A-Z0-9-]{4,}\b/gi,
+  /(?:部屋|客室|room)\s*(?:番号|no\.?)?[:：]?\s*[A-Z0-9-]{2,}\b/gi,
   /(?:\+?\d[\d\s().-]{8,}\d)/g,
 ];
 
@@ -57,10 +54,17 @@ function safeUrl(value: unknown): string | undefined {
 export function detectAffiliateProvider(url: string): string {
   const hostname = new URL(url).hostname.toLowerCase();
   if (hostname.includes('jalan.net')) return 'jalan';
-  if (hostname.includes('travel.rakuten') || hostname.includes('rakuten.co.jp')) return 'rakuten_travel';
+  if (hostname.includes('travel.rakuten')) return 'rakuten_travel';
   if (hostname.includes('ikyu.com')) return 'ikyu';
   if (hostname.includes('booking.com')) return 'booking';
   if (hostname.includes('agoda.com')) return 'agoda';
+  if (hostname.includes('tabelog.com')) return 'tabelog';
+  if (hostname.includes('gnavi.co.jp')) return 'gnavi';
+  if (hostname.includes('hotpepper.jp')) return 'hotpepper';
+  if (hostname.includes('asoview.com')) return 'asoview';
+  if (hostname.includes('klook.com')) return 'klook';
+  if (hostname.includes('rakuten.co.jp')) return 'rakuten_market';
+  if (hostname.includes('shopping.yahoo.co.jp')) return 'yahoo_shopping';
   return 'default';
 }
 
@@ -80,6 +84,13 @@ export function buildAffiliateUrl(rawUrl: string | undefined, env?: Partial<Env>
     ikyu: env?.AFFILIATE_TEMPLATE_IKYU,
     booking: env?.AFFILIATE_TEMPLATE_BOOKING,
     agoda: env?.AFFILIATE_TEMPLATE_AGODA,
+    tabelog: env?.AFFILIATE_TEMPLATE_TABELOG,
+    gnavi: env?.AFFILIATE_TEMPLATE_GNAVI,
+    hotpepper: env?.AFFILIATE_TEMPLATE_HOTPEPPER,
+    asoview: env?.AFFILIATE_TEMPLATE_ASOVIEW,
+    klook: env?.AFFILIATE_TEMPLATE_KLOOK,
+    rakuten_market: env?.AFFILIATE_TEMPLATE_RAKUTEN_MARKET,
+    yahoo_shopping: env?.AFFILIATE_TEMPLATE_YAHOO_SHOPPING,
     default: env?.AFFILIATE_TEMPLATE_DEFAULT,
   };
 
@@ -97,21 +108,21 @@ export function buildAffiliateUrl(rawUrl: string | undefined, env?: Partial<Env>
 
 export function createPublicStepSnapshot(row: Record<string, unknown>, env?: Partial<Env>) {
   const notes = parseMemo(row.notes as string | null | undefined);
-  const bookingUrl = safeUrl(notes.booking_url);
-  const affiliate = buildAffiliateUrl(bookingUrl, env);
+  const sourceLink = safeUrl(row.link) ?? safeUrl(notes.booking_url);
+  const affiliate = buildAffiliateUrl(sourceLink, env);
   const publicNotes: MemoRecord = {
-    text: redactSensitiveText(notes.public_text || notes.text),
+    text: redactSensitiveText(notes.text),
   };
 
-  if (bookingUrl) {
-    publicNotes.booking_url = bookingUrl;
-    publicNotes.affiliate_url = affiliate.url ?? bookingUrl;
-    publicNotes.affiliate_provider = affiliate.provider ?? detectAffiliateProvider(bookingUrl);
+  if (sourceLink) {
+    publicNotes.booking_url = sourceLink;
+    publicNotes.affiliate_url = affiliate.url ?? sourceLink;
+    publicNotes.affiliate_provider = affiliate.provider ?? detectAffiliateProvider(sourceLink);
     publicNotes.affiliate_disclosure = AFFILIATE_DISCLOSURE;
   }
 
-  const title = redactSensitiveText(notes.public_title || (row.title as string));
-  const location = redactSensitiveText(notes.public_location || (row.location as string | null | undefined));
+  const title = redactSensitiveText(row.title as string);
+  const location = redactSensitiveText(row.location as string | null | undefined);
 
   return {
     title: title || '旅の予定',
@@ -119,6 +130,7 @@ export function createPublicStepSnapshot(row: Record<string, unknown>, env?: Par
     end_at: row.end_at,
     location: location || null,
     notes: JSON.stringify(publicNotes),
+    link: sourceLink ?? null,
     type: (row.type as Step['type']) ?? STEP_TYPE.NORMAL_GENERAL,
     is_all_day: row.is_all_day,
   };
@@ -127,7 +139,7 @@ export function createPublicStepSnapshot(row: Record<string, unknown>, env?: Par
 export function createPublicMemoSnapshot(memo: string | null | undefined): string {
   const parsed = parseMemo(memo);
   return JSON.stringify({
-    text: redactSensitiveText(parsed.public_text || parsed.text),
+    text: redactSensitiveText(parsed.text),
     affiliate_disclosure: AFFILIATE_DISCLOSURE,
   });
 }

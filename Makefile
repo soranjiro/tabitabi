@@ -1,4 +1,9 @@
-.PHONY: build build-docs deploy deploy-api deploy-web dev lighthouse migrate-local migrate-remote test test-api test-web
+.PHONY: setup build build-docs deploy deploy-api deploy-web dev lighthouse migrate-local migrate-remote test test-api test-web
+
+setup:
+	pnpm install
+	cd apps/api && pnpm install
+	cd apps/web && pnpm install
 
 build: build-docs
 	pnpm run build

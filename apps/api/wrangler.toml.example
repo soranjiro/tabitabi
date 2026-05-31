@@ -35,6 +35,7 @@ migrations_dir = "./migrations"
 
 [env.preview.vars]
 ALLOWED_ORIGINS = "*"
+JWT_SECRET = "PLACEHOLDER_PREVIEW_SECRET"
 
 [env.preview.observability]
 enabled = true

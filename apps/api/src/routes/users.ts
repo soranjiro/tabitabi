@@ -150,7 +150,7 @@ users.patch('/me/bookmarks/:itineraryId/visibility', userAuthMiddleware, zValida
 
   // スナップショットの公開状態を元しおりと連動させる
   try {
-    const itineraryService = new ItineraryService(c.env.DB);
+    const itineraryService = new ItineraryService(c.env.DB, c.env);
     const itinerary = await itineraryService.get(itineraryId);
     if (itinerary) {
       if (input.is_visible) {

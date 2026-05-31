@@ -542,6 +542,64 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     expect(steps[0].itinerary_id).toBe(pub.id);
   });
 
+  it('publishes sanitized hotel cards with affiliate-ready links', async () => {
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'ホテル付きしおり',
+        memo: '{"text":"連絡先 test@example.com","public_text":"京都の週末旅"}',
+      }),
+    }, env);
+    const { data: original } = await createRes.json() as any;
+
+    await app.request('/api/v1/steps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        itinerary_id: original.id,
+        title: '京都ホテル 予約番号 ABCD1234',
+        start_at: 1700000000000,
+        end_at: 1700003600000,
+        location: '京都駅 090-1234-5678',
+        type: 'normal:hotel',
+        notes: JSON.stringify({
+          text: '部屋番号 1002。予約番号 ABCD1234',
+          public_title: '京都駅近くのホテル',
+          public_location: '京都駅周辺',
+          public_text: '駅から歩きやすい宿',
+          booking_url: 'https://www.jalan.net/yad123/?foo=bar',
+        }),
+      }),
+    }, env);
+
+    const publishRes = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, {
+      ...env,
+      AFFILIATE_TEMPLATE_JALAN: 'https://affiliate.example/click?url={encodedUrl}',
+    });
+    const { data: pub } = await publishRes.json() as any;
+
+    const snapshotRes = await app.request(`/api/v1/itineraries/${pub.id}`, {}, env);
+    const { data: snapshot } = await snapshotRes.json() as any;
+    expect(snapshot.memo).toContain('京都の週末旅');
+    expect(snapshot.memo).not.toContain('test@example.com');
+
+    const stepsRes = await app.request(`/api/v1/steps?itinerary_id=${pub.id}`, {}, env);
+    const { data: steps } = await stepsRes.json() as any;
+    expect(steps[0].title).toBe('京都駅近くのホテル');
+    expect(steps[0].location).toBe('京都駅周辺');
+
+    const notes = JSON.parse(steps[0].notes);
+    expect(notes.text).toBe('駅から歩きやすい宿');
+    expect(notes.affiliate_provider).toBe('jalan');
+    expect(notes.affiliate_url).toContain('https://affiliate.example/click');
+    expect(notes.affiliate_url).toContain(encodeURIComponent('https://www.jalan.net/yad123/?foo=bar'));
+    expect(notes.affiliate_disclosure).toContain('アフィリエイトリンク');
+  });
+
   it('returns 403 when publishing a shared snapshot', async () => {
     const createRes = await app.request('/api/v1/itineraries', {
       method: 'POST',

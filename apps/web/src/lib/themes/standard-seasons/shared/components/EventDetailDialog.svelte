@@ -10,13 +10,19 @@
     STEP_TYPE,
   } from "@tabitabi/types";
   import { renderMarkdown } from "../utils/markdown";
-  import { getMemoText, updateMemoText } from "$lib/memo";
+  import {
+    getMemoText,
+    parseMemoData,
+    stringifyMemoData,
+    updateMemoText,
+  } from "$lib/memo";
   import {
     STEP_TYPES_BY_CATEGORY,
     STEP_TYPE_CONFIGS,
   } from "../utils/step-type";
   import TypePicker from "./TypePicker.svelte";
   import IconRenderer from "../icons/IconRenderer.svelte";
+  import { getBookingCard } from "../utils/booking-card";
   import "../styles/EventDetailDialog.css";
 
   interface Props {
@@ -79,6 +85,10 @@
     endTime?: string;
     location?: string | null;
     notes?: string;
+    publicTitle?: string;
+    publicLocation?: string;
+    publicNotes?: string;
+    bookingUrl?: string;
     type?: StepType;
     is_all_day?: boolean;
   }>({});
@@ -90,6 +100,7 @@
   let endUserChanged = $state(false);
   let originalDuration = $state(60);
   let editIsAllDay = $state(step?.is_all_day || false);
+  let bookingCard = $derived(step ? getBookingCard(step.notes) : null);
 
   function initializeEditedStep() {
     const referenceStartAt = step?.start_at ?? new Date().setHours(9, 0, 0, 0);
@@ -105,6 +116,10 @@
       endTime: `${endHour}:${endMinute}`,
       location: step?.location ?? "",
       notes: getMemoText(step?.notes ?? "") || "",
+      publicTitle: (parseMemoData(step?.notes).public_title as string | undefined) ?? "",
+      publicLocation: (parseMemoData(step?.notes).public_location as string | undefined) ?? "",
+      publicNotes: (parseMemoData(step?.notes).public_text as string | undefined) ?? "",
+      bookingUrl: (parseMemoData(step?.notes).booking_url as string | undefined) ?? "",
       type: step?.type ?? STEP_TYPE.NORMAL_GENERAL,
       is_all_day: step?.is_all_day ?? false,
     };
@@ -252,9 +267,13 @@
     }
 
     const noteText = (editedStep.notes ?? "").trim();
-    const notes = step
-      ? updateMemoText(step.notes, noteText)
-      : noteText || undefined;
+    const baseNotes = step ? updateMemoText(step.notes, noteText) : stringifyMemoData({ text: noteText });
+    const noteData = parseMemoData(baseNotes);
+    noteData.public_title = editedStep.publicTitle?.trim() || undefined;
+    noteData.public_location = editedStep.publicLocation?.trim() || undefined;
+    noteData.public_text = editedStep.publicNotes?.trim() || undefined;
+    noteData.booking_url = editedStep.bookingUrl?.trim() || undefined;
+    const notes = stringifyMemoData(noteData);
 
     let startAt: number;
     let endAt: number;
@@ -513,6 +532,60 @@
               rows="5"
             ></textarea>
           </div>
+          {#if editedStep.type === STEP_TYPE.NORMAL_HOTEL}
+            <div class="standard-public-fields">
+              <div class="standard-form-field">
+                <label for="booking-url-input" class="standard-form-label"
+                  >予約・紹介リンク</label
+                >
+                <input
+                  id="booking-url-input"
+                  type="url"
+                  bind:value={editedStep.bookingUrl}
+                  placeholder="https://www.jalan.net/..."
+                  class="standard-input"
+                />
+              </div>
+              <div class="standard-event-detail-row">
+                <div class="standard-form-field">
+                  <label for="public-title-input" class="standard-form-label"
+                    >公開用タイトル</label
+                  >
+                  <input
+                    id="public-title-input"
+                    type="text"
+                    bind:value={editedStep.publicTitle}
+                    placeholder={editedStep.title || "ホテル名"}
+                    class="standard-input"
+                  />
+                </div>
+                <div class="standard-form-field">
+                  <label for="public-location-input" class="standard-form-label"
+                    >公開用場所</label
+                  >
+                  <input
+                    id="public-location-input"
+                    type="text"
+                    bind:value={editedStep.publicLocation}
+                    placeholder={editedStep.location || "エリア"}
+                    class="standard-input"
+                  />
+                </div>
+              </div>
+              <div class="standard-form-field">
+                <label for="public-notes-textarea" class="standard-form-label"
+                  >公開用メモ</label
+                >
+                <textarea
+                  id="public-notes-textarea"
+                  bind:value={editedStep.publicNotes}
+                  placeholder="公開しおりに残すメモ"
+                  class="standard-textarea standard-textarea-compact"
+                  rows="3"
+                ></textarea>
+              </div>
+            </div>
+          {/if}
         </div>
       {:else if step}
         <div class="standard-event-detail-content">
@@ -563,6 +636,29 @@
                 {@html renderMarkdown(step.notes || "")}
               </div>
             </div>
+          {/if}
+          {#if bookingCard}
+            <div class="standard-booking-card standard-booking-card-dialog">
+              <div class="standard-booking-card-main">
+                <span class="standard-booking-card-label">宿泊リンク</span>
+                <span class="standard-booking-card-provider">
+                  {bookingCard.providerLabel}
+                </span>
+              </div>
+              <a
+                class="standard-booking-card-button"
+                href={bookingCard.actionUrl}
+                target="_blank"
+                rel="nofollow sponsored noopener noreferrer"
+              >
+                開く
+              </a>
+            </div>
+            {#if bookingCard.disclosure}
+              <p class="standard-affiliate-disclosure">
+                {bookingCard.disclosure}
+              </p>
+            {/if}
           {/if}
         </div>
       {/if}

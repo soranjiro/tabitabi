@@ -133,6 +133,8 @@
     end_at: number;
     location?: string;
     notes?: string;
+    type?: import("@tabitabi/types").StepType;
+    is_all_day?: boolean;
   }) {
     try {
       await stepApi.create(
@@ -157,6 +159,8 @@
       end_at?: number;
       location?: string;
       notes?: string;
+      type?: import("@tabitabi/types").StepType;
+      is_all_day?: boolean;
     },
   ) {
     try {
@@ -176,6 +180,11 @@
       console.error("Failed to delete step:", error);
       alert("予定の削除に失敗しました");
     }
+  }
+
+  async function handlePublishItinerary() {
+    const result = await itineraryApi.publish(data.itinerary.id);
+    return result.id;
   }
 
   let isViewOnly = $derived(!!data.itinerary.source_itinerary_id);
@@ -218,6 +227,7 @@
     onCreateStep={isViewOnly ? undefined : handleCreateStep}
     onUpdateStep={isViewOnly ? undefined : handleUpdateStep}
     onDeleteStep={isViewOnly ? undefined : handleDeleteStep}
+    onPublishItinerary={isViewOnly ? undefined : handlePublishItinerary}
   />
 {/key}
 

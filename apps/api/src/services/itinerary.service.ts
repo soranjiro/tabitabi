@@ -1,13 +1,15 @@
 import type { Itinerary, CreateItineraryInput, UpdateItineraryInput } from '@tabitabi/types';
 import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
+import type { Env } from '../utils';
 import { validateMemoJson } from '../utils/memo';
+import { createPublicMemoSnapshot, createPublicStepSnapshot } from '../utils/publication';
 import { hashPassword } from '../utils/password';
 
 const DEFAULT_THEME_ID = 'standard-autumn';
 
 export class ItineraryService {
-  constructor(private db: D1Database) {}
+  constructor(private db: D1Database, private env?: Partial<Env>) {}
 
   async list(): Promise<Itinerary[]> {
     const result = await this.db
@@ -253,7 +255,8 @@ export class ItineraryService {
       .prepare('SELECT title, start_at, end_at, location, notes, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
       .bind(sourceId)
       .all();
-    const rows = sourceSteps.results ?? [];
+    const rows = (sourceSteps.results ?? []).map(row => createPublicStepSnapshot(row, this.env));
+    const publicMemo = createPublicMemoSnapshot(source.memo);
 
     let existing = await this.db
       .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
@@ -271,8 +274,8 @@ export class ItineraryService {
       try {
         await this.db.batch([
           this.db
-            .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?, ?)')
-            .bind(newId, source.title, source.theme_id, source.memo, sourceId, now, now),
+          .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?, ?)')
+            .bind(newId, source.title, source.theme_id, publicMemo, sourceId, now, now),
           ...stepStatements,
         ]);
         return (await this.get(newId))!;
@@ -300,7 +303,7 @@ export class ItineraryService {
       await this.db.batch([
         this.db
           .prepare('UPDATE itineraries SET title = ?, theme_id = ?, memo = ?, updated_at = ? WHERE id = ?')
-          .bind(source.title, source.theme_id, source.memo, now, sharedId),
+          .bind(source.title, source.theme_id, publicMemo, now, sharedId),
         this.db
           .prepare('DELETE FROM steps WHERE itinerary_id = ?')
           .bind(sharedId),

@@ -9,6 +9,7 @@
   export let onUpdateStep = undefined;
   export let onDeleteStep = undefined;
   export let onReorderSteps = undefined;
+  export let onPublishItinerary = undefined;
 </script>
 
 <SharedItineraryView
@@ -19,4 +20,5 @@
   {onUpdateStep}
   {onDeleteStep}
   {onReorderSteps}
+  {onPublishItinerary}
 />

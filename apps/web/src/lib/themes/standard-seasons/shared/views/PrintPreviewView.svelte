@@ -2,7 +2,7 @@
   import { browser } from "$app/environment";
   import type { Step } from "@tabitabi/types";
   import { getStepDate, getStepEndTime, getStepTime } from "@tabitabi/types";
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { renderMarkdown } from "../utils/markdown";
   import IconRenderer from "../icons/IconRenderer.svelte";
   import { isTransportType } from "../utils/step-type";
@@ -27,7 +27,18 @@
 
   let { title, memo = "", steps, seasonLabel, onPrint, onCancel }: Props = $props();
   let printLayout = $state<PrintLayout>("portrait");
+  let viewportWidth = $state(1200);
   let pageStyleEl: HTMLStyleElement | null = null;
+
+  const MM_TO_PX = 96 / 25.4;
+  const portraitPage = {
+    width: 210 * MM_TO_PX,
+    height: 297 * MM_TO_PX,
+  };
+  const landscapePage = {
+    width: 297 * MM_TO_PX,
+    height: 210 * MM_TO_PX,
+  };
 
   const sortedSteps = $derived([...steps].sort((a, b) => a.start_at - b.start_at));
 
@@ -51,6 +62,10 @@
   );
 
   const schedulePages = $derived(buildSchedulePages(dayGroups, printLayout));
+  const pageSize = $derived(printLayout === "landscape" ? landscapePage : portraitPage);
+  const previewScale = $derived(getPreviewScale(pageSize.width, viewportWidth));
+  const scaledPageWidth = $derived(pageSize.width * previewScale);
+  const scaledPageHeight = $derived(pageSize.height * previewScale);
 
   const travelDates = $derived(() => {
     const groups = groupedSteps();
@@ -123,6 +138,11 @@
     return pages;
   }
 
+  function getPreviewScale(pageWidth: number, width: number): number {
+    const availableWidth = Math.max(width - 24, 240);
+    return Math.min(1, availableWidth / pageWidth);
+  }
+
   function handlePrint() {
     updatePageStyle();
     onPrint();
@@ -143,6 +163,18 @@
     updatePageStyle();
   });
 
+  onMount(() => {
+    if (!browser) return;
+    const updateViewportWidth = () => {
+      viewportWidth = window.innerWidth;
+    };
+    updateViewportWidth();
+    window.addEventListener("resize", updateViewportWidth);
+    return () => {
+      window.removeEventListener("resize", updateViewportWidth);
+    };
+  });
+
   onDestroy(() => {
     pageStyleEl?.remove();
   });
@@ -151,6 +183,7 @@
 <section
   class="standard-print-preview"
   class:standard-print-preview-landscape={printLayout === "landscape"}
+  style={`--print-preview-scale: ${previewScale}; --print-scaled-page-width: ${scaledPageWidth}px; --print-scaled-page-height: ${scaledPageHeight}px;`}
   aria-label="印刷プレビュー"
 >
   <div class="standard-print-preview-toolbar">
@@ -187,80 +220,86 @@
   </div>
 
   <div class="standard-print-pages" aria-label={`${title}の印刷用しおり`}>
-    <article class="standard-print-sheet standard-print-cover-sheet">
-      <div class="standard-print-sheet-frame">
-        <header class="standard-print-cover" aria-label="しおり表紙">
-          <div class="standard-print-cover-meta">
-            <span>{seasonLabel}</span>
-            <span>{travelDates()}</span>
-          </div>
-          <p class="standard-print-cover-kicker">Travel Bookmark</p>
-          <h1>{title}</h1>
-          {#if renderMarkdown(memo || "")}
-            <div class="standard-print-cover-memo">
-              {@html renderMarkdown(memo || "")}
-            </div>
-          {/if}
-        </header>
-      </div>
-    </article>
-
-    {#if groupedSteps().length === 0}
-      <article class="standard-print-sheet">
+    <div class="standard-print-sheet-shell">
+      <article class="standard-print-sheet standard-print-cover-sheet">
         <div class="standard-print-sheet-frame">
-          <div class="standard-print-empty">予定がまだ登録されていません</div>
+          <header class="standard-print-cover" aria-label="しおり表紙">
+            <div class="standard-print-cover-meta">
+              <span>{seasonLabel}</span>
+              <span>{travelDates()}</span>
+            </div>
+            <p class="standard-print-cover-kicker">Travel Bookmark</p>
+            <h1>{title}</h1>
+            {#if renderMarkdown(memo || "")}
+              <div class="standard-print-cover-memo">
+                {@html renderMarkdown(memo || "")}
+              </div>
+            {/if}
+          </header>
         </div>
       </article>
-    {:else}
-      {#each schedulePages as pageDays}
-        <article class="standard-print-sheet standard-print-day-sheet">
-          <div class="standard-print-sheet-frame">
-            <main class="standard-print-days" aria-label="旅程">
-              {#each pageDays as day}
-                <section class="standard-print-day">
-                  <div class="standard-print-day-heading">
-                    <div>
-                      <span class="standard-print-day-label">
-                        DAY {formatDayNumber(day.dayIndex)}
-                      </span>
-                      <h2>{formatDate(day.date)}</h2>
-                    </div>
-                    <span class="standard-print-day-count">
-                      {getStepCountLabel(day.steps.length)}
-                    </span>
-                  </div>
+    </div>
 
-                  <div class="standard-print-timeline">
-                    {#each day.steps as step}
-                      <section
-                        class="standard-print-step"
-                        class:standard-print-step-transport={isTransportType(step.type)}
-                      >
-                        <div class="standard-print-step-time">
-                          {formatStepTime(step)}
-                        </div>
-                        <div class="standard-print-step-marker">
-                          <IconRenderer type={step.type} size="sm" />
-                        </div>
-                        <div class="standard-print-step-body">
-                          <h3>{step.title}</h3>
-                          {#if step.location}
-                            <p class="standard-print-step-location">{step.location}</p>
-                          {/if}
-                          {#if renderMarkdown(step.notes)}
-                            <div class="standard-print-step-notes">
-                              {@html renderMarkdown(step.notes)}
-                            </div>
-                          {/if}
-                        </div>
-                      </section>
-                    {/each}
-                  </div>
-                </section>
-              {/each}
-            </main>
+    {#if groupedSteps().length === 0}
+      <div class="standard-print-sheet-shell">
+        <article class="standard-print-sheet">
+          <div class="standard-print-sheet-frame">
+            <div class="standard-print-empty">予定がまだ登録されていません</div>
           </div>
         </article>
+      </div>
+    {:else}
+      {#each schedulePages as pageDays}
+        <div class="standard-print-sheet-shell">
+          <article class="standard-print-sheet standard-print-day-sheet">
+            <div class="standard-print-sheet-frame">
+              <main class="standard-print-days" aria-label="旅程">
+                {#each pageDays as day}
+                  <section class="standard-print-day">
+                    <div class="standard-print-day-heading">
+                      <div>
+                        <span class="standard-print-day-label">
+                          DAY {formatDayNumber(day.dayIndex)}
+                        </span>
+                        <h2>{formatDate(day.date)}</h2>
+                      </div>
+                      <span class="standard-print-day-count">
+                        {getStepCountLabel(day.steps.length)}
+                      </span>
+                    </div>
+
+                    <div class="standard-print-timeline">
+                      {#each day.steps as step}
+                        <section
+                          class="standard-print-step"
+                          class:standard-print-step-transport={isTransportType(step.type)}
+                        >
+                          <div class="standard-print-step-time">
+                            {formatStepTime(step)}
+                          </div>
+                          <div class="standard-print-step-marker">
+                            <IconRenderer type={step.type} size="sm" />
+                          </div>
+                          <div class="standard-print-step-body">
+                            <h3>{step.title}</h3>
+                            {#if step.location}
+                              <p class="standard-print-step-location">{step.location}</p>
+                            {/if}
+                            {#if renderMarkdown(step.notes)}
+                              <div class="standard-print-step-notes">
+                                {@html renderMarkdown(step.notes)}
+                              </div>
+                            {/if}
+                          </div>
+                        </section>
+                      {/each}
+                    </div>
+                  </section>
+                {/each}
+              </main>
+            </div>
+          </article>
+        </div>
       {/each}
     {/if}
   </div>

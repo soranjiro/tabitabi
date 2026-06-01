@@ -6,9 +6,12 @@
   --print-rule: color-mix(in srgb, var(--theme-primary) 24%, var(--theme-border));
   --print-soft-rule: color-mix(in srgb, var(--theme-border) 74%, white);
   --print-muted: color-mix(in srgb, var(--theme-text-light) 82%, white);
+  --print-preview-scale: 1;
+  --print-scaled-page-width: var(--print-page-width);
+  --print-scaled-page-height: var(--print-page-height);
   min-height: 100vh;
   padding: 16px 16px 56px;
-  overflow-x: auto;
+  overflow-x: hidden;
   background: #f3f3f0;
   color: var(--theme-text);
 }
@@ -112,13 +115,20 @@
   min-height: var(--print-page-height);
   background: var(--theme-card-bg);
   outline: 1px solid #d8d8d2;
+  transform: scale(var(--print-preview-scale));
+  transform-origin: top left;
 }
 
 .standard-print-pages {
   display: grid;
-  gap: 16px;
-  width: var(--print-page-width);
+  gap: max(10px, calc(16px * var(--print-preview-scale)));
+  width: var(--print-scaled-page-width);
   margin: 0 auto;
+}
+
+.standard-print-sheet-shell {
+  width: var(--print-scaled-page-width);
+  height: var(--print-scaled-page-height);
 }
 
 .standard-print-sheet-frame {
@@ -556,13 +566,31 @@
 
 @media (max-width: 860px) {
   .standard-print-preview {
-    padding-inline: 12px;
+    padding: 12px 12px 44px;
   }
 
   .standard-print-preview-toolbar {
     position: static;
-    width: var(--print-page-width);
-    min-width: var(--print-page-width);
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .standard-print-preview-actions {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 420px) {
+  .standard-print-preview-actions {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+  }
+
+  .standard-print-preview-actions button {
+    min-width: 56px;
+    padding-inline: 10px;
   }
 }
 
@@ -602,6 +630,7 @@
     margin: 0 !important;
     outline: 0 !important;
     background: var(--theme-card-bg) !important;
+    transform: none !important;
   }
 
   .standard-print-pages {
@@ -610,18 +639,24 @@
     margin: 0 !important;
   }
 
+  .standard-print-sheet-shell {
+    width: var(--print-page-width) !important;
+    min-height: var(--print-page-height) !important;
+    height: auto !important;
+  }
+
   .standard-print-sheet-frame {
     width: var(--print-page-width) !important;
     min-height: var(--print-page-height) !important;
     padding: var(--print-page-margin-y) var(--print-page-margin-x) !important;
   }
 
-  .standard-print-sheet {
+  .standard-print-sheet-shell {
     break-after: page;
     page-break-after: always;
   }
 
-  .standard-print-sheet:last-child {
+  .standard-print-sheet-shell:last-child {
     break-after: auto;
     page-break-after: auto;
   }

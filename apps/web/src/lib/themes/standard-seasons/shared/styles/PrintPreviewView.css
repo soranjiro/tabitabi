@@ -1,0 +1,672 @@
+.standard-print-preview {
+  --print-page-width: 210mm;
+  --print-page-height: 297mm;
+  --print-page-margin-x: 16mm;
+  --print-page-margin-y: 15mm;
+  --print-rule: color-mix(in srgb, var(--theme-primary) 24%, var(--theme-border));
+  --print-soft-rule: color-mix(in srgb, var(--theme-border) 74%, white);
+  --print-muted: color-mix(in srgb, var(--theme-text-light) 82%, white);
+  --print-preview-scale: 1;
+  --print-scaled-page-width: var(--print-page-width);
+  --print-scaled-page-height: var(--print-page-height);
+  min-height: 100vh;
+  padding: 16px 16px 56px;
+  overflow-x: hidden;
+  background: #f3f3f0;
+  color: var(--theme-text);
+}
+
+.standard-print-preview-landscape {
+  --print-page-width: 297mm;
+  --print-page-height: 210mm;
+  --print-page-margin-x: 14mm;
+  --print-page-margin-y: 10mm;
+}
+
+.standard-print-preview-toolbar {
+  position: sticky;
+  top: 12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(var(--print-page-width), calc(100vw - 32px));
+  min-width: min(var(--print-page-width), calc(100vw - 32px));
+  margin: 0 auto 16px;
+  padding: 10px 0;
+  background: #f3f3f0;
+  border-bottom: 1px solid #d9d9d4;
+}
+
+.standard-print-preview-eyebrow {
+  margin: 0 0 2px;
+  color: var(--theme-primary);
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.standard-print-preview-toolbar h2 {
+  margin: 0;
+  color: var(--theme-text);
+  font-size: 1rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.standard-print-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.standard-print-preview-layout {
+  display: inline-grid;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 2px;
+  border: 1px solid #c9c9c3;
+  border-radius: 4px;
+}
+
+.standard-print-preview-actions .standard-print-preview-layout button {
+  min-width: 44px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--theme-text-light);
+}
+
+.standard-print-preview-actions .standard-print-preview-layout button.active {
+  background: var(--theme-text);
+  color: var(--theme-card-bg);
+}
+
+.standard-print-preview-actions button {
+  min-width: 72px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.standard-print-preview-cancel {
+  border: 1px solid #c9c9c3;
+  background: transparent;
+  color: var(--theme-text);
+}
+
+.standard-print-preview-print {
+  border: 1px solid var(--theme-primary);
+  background: var(--theme-primary);
+  color: white;
+}
+
+.standard-print-sheet {
+  box-sizing: border-box;
+  width: var(--print-page-width);
+  min-height: var(--print-page-height);
+  background: var(--theme-card-bg);
+  outline: 1px solid #d8d8d2;
+  transform: scale(var(--print-preview-scale));
+  transform-origin: top left;
+}
+
+.standard-print-pages {
+  display: grid;
+  gap: max(10px, calc(16px * var(--print-preview-scale)));
+  width: var(--print-scaled-page-width);
+  margin: 0 auto;
+}
+
+.standard-print-sheet-shell {
+  width: var(--print-scaled-page-width);
+  height: var(--print-scaled-page-height);
+}
+
+.standard-print-sheet-frame {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--print-page-height);
+  padding: var(--print-page-margin-y) var(--print-page-margin-x);
+  background:
+    linear-gradient(90deg, var(--theme-primary) 0 6mm, transparent 6mm),
+    var(--theme-card-bg);
+}
+
+.standard-print-sheet-frame::before {
+  content: "";
+  position: absolute;
+  top: var(--print-page-margin-y);
+  bottom: var(--print-page-margin-y);
+  left: 9mm;
+  width: 1px;
+  background: color-mix(in srgb, var(--theme-primary) 28%, transparent);
+}
+
+.standard-print-cover,
+.standard-print-days,
+.standard-print-empty {
+  position: relative;
+  z-index: 1;
+}
+
+.standard-print-cover {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 46mm;
+  gap: 12mm;
+  min-height: 76mm;
+  padding: 0 0 10mm;
+  border-bottom: 1px solid var(--print-rule);
+}
+
+.standard-print-cover-sheet .standard-print-sheet-frame {
+  display: grid;
+  align-items: center;
+}
+
+.standard-print-cover-sheet .standard-print-cover {
+  min-height: 122mm;
+  border-bottom: 0;
+}
+
+.standard-print-preview-landscape .standard-print-cover-sheet .standard-print-cover {
+  min-height: 132mm;
+}
+
+.standard-print-cover-meta {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: start;
+  display: grid;
+  gap: 5mm;
+  padding-top: 2mm;
+  color: var(--theme-primary);
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 7.5pt;
+  font-weight: 800;
+  line-height: 1.45;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.standard-print-cover-meta span {
+  display: block;
+  padding-bottom: 4mm;
+  border-bottom: 1px solid var(--print-soft-rule);
+}
+
+.standard-print-cover-kicker,
+.standard-print-day-label {
+  margin: 0;
+  color: var(--theme-primary);
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 8pt;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.standard-print-cover h1 {
+  grid-column: 1;
+  max-width: 12.5ch;
+  margin: 5mm 0 0;
+  color: var(--theme-text);
+  font-size: 35pt;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.standard-print-cover-memo {
+  grid-column: 1;
+  max-width: 104mm;
+  margin-top: 7mm;
+  color: var(--theme-text-light);
+  font-size: 9.5pt;
+  line-height: 1.75;
+}
+
+.standard-print-days {
+  display: grid;
+  gap: 9mm;
+  padding-top: 10mm;
+}
+
+.standard-print-day {
+  break-inside: avoid;
+  padding: 0;
+}
+
+.standard-print-day-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8mm;
+  padding-bottom: 3mm;
+  border-bottom: 1px solid var(--print-soft-rule);
+}
+
+.standard-print-day-heading h2 {
+  margin: 1.5mm 0 0;
+  color: var(--theme-text);
+  font-size: 17pt;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.standard-print-day-count {
+  color: var(--print-muted);
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 8pt;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.standard-print-timeline {
+  display: grid;
+}
+
+.standard-print-step {
+  display: grid;
+  grid-template-columns: 23mm 7mm minmax(0, 1fr);
+  gap: 4mm;
+  align-items: start;
+  break-inside: avoid;
+  padding: 4.5mm 0;
+  border-bottom: 1px solid var(--print-soft-rule);
+}
+
+.standard-print-step:last-child {
+  border-bottom: 0;
+}
+
+.standard-print-step-time {
+  padding-top: 0.6mm;
+  color: var(--theme-primary);
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+  font-size: 8pt;
+  font-weight: 800;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.standard-print-step-marker {
+  display: grid;
+  place-items: center;
+  width: 7mm;
+  height: 7mm;
+  border: 1px solid var(--theme-primary);
+  border-radius: 50%;
+  color: var(--theme-primary);
+}
+
+.standard-print-step-marker svg {
+  width: 4mm;
+  height: 4mm;
+}
+
+.standard-print-step-transport .standard-print-step-marker {
+  background: color-mix(in srgb, var(--theme-secondary) 14%, transparent);
+}
+
+.standard-print-step-body {
+  min-width: 0;
+}
+
+.standard-print-step-body h3 {
+  margin: 0;
+  color: var(--theme-text);
+  font-size: 11.5pt;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.standard-print-step-location {
+  margin: 1mm 0 0;
+  color: var(--theme-primary);
+  font-size: 8.5pt;
+  font-weight: 700;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.standard-print-step-notes {
+  margin-top: 2mm;
+  color: var(--theme-text-light);
+  font-size: 8.8pt;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.standard-print-cover-memo > :first-child,
+.standard-print-step-notes > :first-child {
+  margin-top: 0;
+}
+
+.standard-print-cover-memo > :last-child,
+.standard-print-step-notes > :last-child {
+  margin-bottom: 0;
+}
+
+.standard-print-cover-memo p,
+.standard-print-step-notes p {
+  margin: 0 0 0.55em;
+}
+
+.standard-print-cover-memo h1,
+.standard-print-cover-memo h2,
+.standard-print-cover-memo h3,
+.standard-print-cover-memo h4,
+.standard-print-cover-memo h5,
+.standard-print-cover-memo h6,
+.standard-print-step-notes h1,
+.standard-print-step-notes h2,
+.standard-print-step-notes h3,
+.standard-print-step-notes h4,
+.standard-print-step-notes h5,
+.standard-print-step-notes h6 {
+  margin: 0.75em 0 0.35em;
+  color: var(--theme-text);
+  font-size: 1em;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.standard-print-cover-memo ul,
+.standard-print-cover-memo ol,
+.standard-print-step-notes ul,
+.standard-print-step-notes ol {
+  margin: 0.35em 0 0.7em;
+  padding-left: 1.3em;
+}
+
+.standard-print-cover-memo li,
+.standard-print-step-notes li {
+  margin: 0.18em 0;
+}
+
+.standard-print-cover-memo blockquote,
+.standard-print-step-notes blockquote {
+  margin: 0.7em 0;
+  padding: 0 0 0 3mm;
+  border-left: 1.5mm solid color-mix(in srgb, var(--theme-primary) 28%, transparent);
+  color: var(--theme-text-light);
+}
+
+.standard-print-cover-memo code,
+.standard-print-step-notes code {
+  padding: 0.08em 0.28em;
+  background: color-mix(in srgb, var(--theme-border) 44%, white);
+  border-radius: 2px;
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+
+.standard-print-cover-memo pre,
+.standard-print-step-notes pre {
+  margin: 0.7em 0;
+  padding: 2.5mm;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  background: color-mix(in srgb, var(--theme-border) 38%, white);
+}
+
+.standard-print-cover-memo pre code,
+.standard-print-step-notes pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.standard-print-cover-memo a,
+.standard-print-step-notes a {
+  color: var(--theme-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.standard-print-cover-memo table,
+.standard-print-step-notes table {
+  width: 100%;
+  margin: 0.7em 0;
+  border-collapse: collapse;
+  font-size: 0.92em;
+}
+
+.standard-print-cover-memo th,
+.standard-print-cover-memo td,
+.standard-print-step-notes th,
+.standard-print-step-notes td {
+  padding: 1.5mm 2mm;
+  border: 1px solid var(--print-soft-rule);
+  text-align: left;
+  vertical-align: top;
+}
+
+.standard-print-cover-memo th,
+.standard-print-step-notes th {
+  color: var(--theme-primary);
+  font-weight: 800;
+}
+
+.standard-print-empty {
+  padding: 18mm 0;
+  color: var(--theme-text-light);
+  font-size: 10pt;
+  text-align: center;
+}
+
+.standard-print-preview-landscape .standard-print-cover {
+  grid-template-columns: minmax(0, 1fr) 60mm;
+  gap: 16mm;
+}
+
+.standard-print-preview-landscape .standard-print-cover h1 {
+  max-width: 18ch;
+  font-size: 32pt;
+}
+
+.standard-print-preview-landscape .standard-print-cover-memo {
+  max-width: 160mm;
+}
+
+.standard-print-preview-landscape .standard-print-days {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8mm 10mm;
+  padding-top: 0;
+}
+
+.standard-print-preview-landscape .standard-print-day {
+  min-width: 0;
+}
+
+.standard-print-preview-landscape .standard-print-day:only-child {
+  grid-column: 1 / -1;
+}
+
+.standard-print-preview-landscape .standard-print-day-heading {
+  gap: 5mm;
+  padding-bottom: 2mm;
+}
+
+.standard-print-preview-landscape .standard-print-day-heading h2 {
+  font-size: 12.5pt;
+}
+
+.standard-print-preview-landscape .standard-print-day-label,
+.standard-print-preview-landscape .standard-print-day-count {
+  font-size: 7pt;
+}
+
+.standard-print-preview-landscape .standard-print-step {
+  grid-template-columns: 19mm 5.5mm minmax(0, 1fr);
+  gap: 2.7mm;
+  padding: 2.1mm 0;
+}
+
+.standard-print-preview-landscape .standard-print-day:only-child .standard-print-timeline {
+  display: block;
+  column-count: 2;
+  column-gap: 10mm;
+}
+
+.standard-print-preview-landscape .standard-print-day:only-child .standard-print-step {
+  display: grid;
+}
+
+.standard-print-preview-landscape .standard-print-step-time {
+  font-size: 7pt;
+}
+
+.standard-print-preview-landscape .standard-print-step-marker {
+  width: 5.5mm;
+  height: 5.5mm;
+}
+
+.standard-print-preview-landscape .standard-print-step-marker svg {
+  width: 3.2mm;
+  height: 3.2mm;
+}
+
+.standard-print-preview-landscape .standard-print-step-body h3 {
+  font-size: 9.4pt;
+  line-height: 1.35;
+}
+
+.standard-print-preview-landscape .standard-print-step-location,
+.standard-print-preview-landscape .standard-print-step-notes {
+  font-size: 7.5pt;
+  line-height: 1.45;
+}
+
+.standard-print-preview-landscape .standard-print-step-location {
+  margin-top: 0.6mm;
+}
+
+.standard-print-preview-landscape .standard-print-step-notes {
+  margin-top: 1mm;
+}
+
+@media (max-width: 860px) {
+  .standard-print-preview {
+    padding: 12px 12px 44px;
+  }
+
+  .standard-print-preview-toolbar {
+    position: static;
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .standard-print-preview-actions {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 420px) {
+  .standard-print-preview-actions {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+  }
+
+  .standard-print-preview-actions button {
+    min-width: 56px;
+    padding-inline: 10px;
+  }
+}
+
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  .standard-print-preview-toolbar,
+  .standard-bottom-nav,
+  .standard-floating-actions,
+  .demo-banner {
+    display: none !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body,
+  .standard-theme,
+  .standard-container,
+  .standard-print-preview {
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  .standard-print-sheet {
+    width: var(--print-page-width) !important;
+    min-height: var(--print-page-height) !important;
+    margin: 0 !important;
+    outline: 0 !important;
+    background: var(--theme-card-bg) !important;
+    transform: none !important;
+  }
+
+  .standard-print-pages {
+    display: block !important;
+    width: var(--print-page-width) !important;
+    margin: 0 !important;
+  }
+
+  .standard-print-sheet-shell {
+    width: var(--print-page-width) !important;
+    min-height: var(--print-page-height) !important;
+    height: auto !important;
+  }
+
+  .standard-print-sheet-frame {
+    width: var(--print-page-width) !important;
+    min-height: var(--print-page-height) !important;
+    padding: var(--print-page-margin-y) var(--print-page-margin-x) !important;
+  }
+
+  .standard-print-sheet-shell {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .standard-print-sheet-shell:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .standard-print-cover {
+    page-break-after: avoid;
+  }
+
+  .standard-print-day,
+  .standard-print-step {
+    page-break-inside: avoid;
+  }
+}

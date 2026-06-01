@@ -1,4 +1,4 @@
-export type ViewMode = 'dayCard' | 'list' | 'month' | 'week';
+export type ViewMode = 'dayCard' | 'list' | 'month' | 'week' | 'printPreview';
 
 const VIEW_MODE_KEY_PREFIX = 'tabitabi:itinerary:';
 const VIEW_MODE_KEY_SUFFIX = ':viewMode';
@@ -20,7 +20,7 @@ export function setViewMode(itineraryId: string, mode: ViewMode): void {
 }
 
 function isValidViewMode(mode: string): mode is ViewMode {
-  return ['dayCard', 'list', 'month', 'week'].includes(mode);
+  return ['dayCard', 'list', 'month', 'week', 'printPreview'].includes(mode);
 }
 
 export const VIEW_MODE_OPTIONS: Array<{ id: ViewMode; label: string; icon: string }> = [

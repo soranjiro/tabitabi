@@ -1,162 +1,163 @@
 .standard-print-preview {
+  --print-page-width: 210mm;
+  --print-page-height: 297mm;
+  --print-page-margin-x: 16mm;
+  --print-page-margin-y: 15mm;
+  --print-rule: color-mix(in srgb, var(--theme-primary) 24%, var(--theme-border));
+  --print-soft-rule: color-mix(in srgb, var(--theme-border) 74%, white);
+  --print-muted: color-mix(in srgb, var(--theme-text-light) 82%, white);
   min-height: 100vh;
-  padding: 1rem 1rem 6rem;
-  background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--theme-secondary) 18%, transparent), transparent 34rem),
-    linear-gradient(135deg, color-mix(in srgb, var(--theme-bg) 92%, white), color-mix(in srgb, var(--theme-accent) 12%, white));
+  padding: 16px 16px 56px;
+  overflow-x: auto;
+  background: #f3f3f0;
+  color: var(--theme-text);
 }
 
 .standard-print-preview-toolbar {
   position: sticky;
-  top: 1rem;
+  top: 12px;
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  max-width: 980px;
-  margin: 0 auto 1.5rem;
-  padding: 1rem;
-  border: 1px solid color-mix(in srgb, var(--theme-primary) 12%, white);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.14);
-  backdrop-filter: blur(18px);
+  gap: 16px;
+  width: min(var(--print-page-width), calc(100vw - 32px));
+  min-width: min(var(--print-page-width), calc(100vw - 32px));
+  margin: 0 auto 16px;
+  padding: 10px 0;
+  background: #f3f3f0;
+  border-bottom: 1px solid #d9d9d4;
 }
 
 .standard-print-preview-eyebrow {
-  margin: 0 0 0.25rem;
+  margin: 0 0 2px;
   color: var(--theme-primary);
   font-family: "Helvetica Neue", Arial, sans-serif;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
 }
 
 .standard-print-preview-toolbar h2 {
   margin: 0;
   color: var(--theme-text);
-  font-size: clamp(1.1rem, 3vw, 1.6rem);
-}
-
-.standard-print-preview-toolbar p:not(.standard-print-preview-eyebrow) {
-  margin: 0.35rem 0 0;
-  color: var(--theme-text-light);
-  font-size: 0.9rem;
+  font-size: 1rem;
+  line-height: 1.2;
+  letter-spacing: 0;
 }
 
 .standard-print-preview-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 8px;
   justify-content: flex-end;
 }
 
 .standard-print-preview-actions button {
-  min-height: 44px;
-  padding: 0.8rem 1.1rem;
-  border: 0;
-  border-radius: 999px;
-  font-weight: 800;
+  min-width: 72px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.standard-print-preview-actions button:hover {
-  transform: translateY(-1px);
 }
 
 .standard-print-preview-cancel {
-  background: color-mix(in srgb, var(--theme-border) 55%, white);
+  border: 1px solid #c9c9c3;
+  background: transparent;
   color: var(--theme-text);
 }
 
 .standard-print-preview-print {
-  background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-light));
+  border: 1px solid var(--theme-primary);
+  background: var(--theme-primary);
   color: white;
-  box-shadow: 0 12px 26px color-mix(in srgb, var(--theme-primary) 28%, transparent);
 }
 
 .standard-print-sheet {
-  max-width: 860px;
+  box-sizing: border-box;
+  width: var(--print-page-width);
+  min-height: var(--print-page-height);
+  background: var(--theme-card-bg);
+  outline: 1px solid #d8d8d2;
+}
+
+.standard-print-pages {
+  display: grid;
+  gap: 16px;
+  width: var(--print-page-width);
   margin: 0 auto;
-  padding: clamp(0.7rem, 2vw, 1.4rem);
-  border-radius: 34px;
-  background: color-mix(in srgb, var(--theme-primary) 8%, white);
-  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.18);
 }
 
 .standard-print-sheet-frame {
   position: relative;
-  overflow: hidden;
-  padding: clamp(1.5rem, 4vw, 3rem);
-  border: 1px solid color-mix(in srgb, var(--theme-primary) 18%, white);
-  border-radius: 26px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--print-page-height);
+  padding: var(--print-page-margin-y) var(--print-page-margin-x);
   background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.82)),
-    radial-gradient(circle at 8% 12%, color-mix(in srgb, var(--theme-secondary) 28%, transparent), transparent 15rem),
-    radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--theme-accent) 24%, transparent), transparent 16rem),
+    linear-gradient(90deg, var(--theme-primary) 0 6mm, transparent 6mm),
     var(--theme-card-bg);
 }
 
-.standard-print-sheet-frame::before,
-.standard-print-sheet-frame::after {
+.standard-print-sheet-frame::before {
   content: "";
   position: absolute;
-  pointer-events: none;
-  border-radius: 999px;
-}
-
-.standard-print-sheet-frame::before {
-  top: -4rem;
-  right: -3rem;
-  width: 14rem;
-  height: 14rem;
-  border: 1.5rem solid color-mix(in srgb, var(--theme-secondary) 24%, transparent);
-}
-
-.standard-print-sheet-frame::after {
-  bottom: -5rem;
-  left: -4rem;
-  width: 16rem;
-  height: 16rem;
-  background: color-mix(in srgb, var(--theme-primary) 8%, transparent);
+  top: var(--print-page-margin-y);
+  bottom: var(--print-page-margin-y);
+  left: 9mm;
+  width: 1px;
+  background: color-mix(in srgb, var(--theme-primary) 28%, transparent);
 }
 
 .standard-print-cover,
-.standard-print-days {
+.standard-print-days,
+.standard-print-empty {
   position: relative;
   z-index: 1;
 }
 
 .standard-print-cover {
-  min-height: 250px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: clamp(1rem, 4vw, 2.5rem) 0 2rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--theme-primary) 15%, transparent);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 46mm;
+  gap: 12mm;
+  min-height: 76mm;
+  padding: 0 0 10mm;
+  border-bottom: 1px solid var(--print-rule);
+}
+
+.standard-print-cover-sheet .standard-print-sheet-frame {
+  display: grid;
+  align-items: center;
+}
+
+.standard-print-cover-sheet .standard-print-cover {
+  min-height: 122mm;
+  border-bottom: 0;
 }
 
 .standard-print-cover-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.2rem;
-}
-
-.standard-print-cover-meta span,
-.standard-print-day-count {
-  padding: 0.35rem 0.65rem;
-  border: 1px solid color-mix(in srgb, var(--theme-primary) 18%, transparent);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.68);
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: start;
+  display: grid;
+  gap: 5mm;
+  padding-top: 2mm;
   color: var(--theme-primary);
   font-family: "Helvetica Neue", Arial, sans-serif;
-  font-size: 0.72rem;
+  font-size: 7.5pt;
   font-weight: 800;
+  line-height: 1.45;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.standard-print-cover-meta span {
+  display: block;
+  padding-bottom: 4mm;
+  border-bottom: 1px solid var(--print-soft-rule);
 }
 
 .standard-print-cover-kicker,
@@ -164,168 +165,286 @@
   margin: 0;
   color: var(--theme-primary);
   font-family: "Helvetica Neue", Arial, sans-serif;
-  font-size: 0.78rem;
+  font-size: 8pt;
   font-weight: 900;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
 .standard-print-cover h1 {
-  max-width: 14ch;
-  margin: 0.35rem 0 1rem;
+  grid-column: 1;
+  max-width: 12.5ch;
+  margin: 5mm 0 0;
   color: var(--theme-text);
-  font-size: clamp(2.7rem, 11vw, 6rem);
-  line-height: 0.95;
-  letter-spacing: -0.06em;
+  font-size: 35pt;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
-.standard-print-cover-memo,
-.standard-print-cover-subtitle {
-  max-width: 58ch;
-  margin: 0;
+.standard-print-cover-memo {
+  grid-column: 1;
+  max-width: 104mm;
+  margin-top: 7mm;
   color: var(--theme-text-light);
-  font-size: clamp(0.95rem, 2vw, 1.1rem);
-  line-height: 1.85;
+  font-size: 9.5pt;
+  line-height: 1.75;
 }
 
 .standard-print-days {
   display: grid;
-  gap: 1rem;
-  padding-top: 1.25rem;
+  gap: 9mm;
+  padding-top: 10mm;
 }
 
-.standard-print-day-card {
+.standard-print-day {
   break-inside: avoid;
-  padding: clamp(1rem, 3vw, 1.5rem);
-  border: 1px solid color-mix(in srgb, var(--theme-primary) 12%, white);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.07);
+  padding: 0;
 }
 
 .standard-print-day-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8mm;
+  padding-bottom: 3mm;
+  border-bottom: 1px solid var(--print-soft-rule);
 }
 
 .standard-print-day-heading h2 {
-  margin: 0.25rem 0 0;
+  margin: 1.5mm 0 0;
   color: var(--theme-text);
-  font-size: clamp(1.3rem, 4vw, 2.1rem);
+  font-size: 17pt;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.standard-print-day-count {
+  color: var(--print-muted);
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 8pt;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  text-transform: uppercase;
 }
 
 .standard-print-timeline {
   display: grid;
-  gap: 0.65rem;
 }
 
 .standard-print-step {
   display: grid;
-  grid-template-columns: minmax(3.3rem, auto) 2rem minmax(0, 1fr);
-  gap: 0.7rem;
+  grid-template-columns: 23mm 7mm minmax(0, 1fr);
+  gap: 4mm;
   align-items: start;
   break-inside: avoid;
+  padding: 4.5mm 0;
+  border-bottom: 1px solid var(--print-soft-rule);
+}
+
+.standard-print-step:last-child {
+  border-bottom: 0;
 }
 
 .standard-print-step-time {
-  padding-top: 0.35rem;
+  padding-top: 0.6mm;
   color: var(--theme-primary);
-  font-family: "SF Mono", Monaco, monospace;
-  font-size: 0.78rem;
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+  font-size: 8pt;
   font-weight: 800;
-  white-space: nowrap;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .standard-print-step-marker {
   display: grid;
   place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
-  color: white;
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--theme-primary) 24%, transparent);
+  width: 7mm;
+  height: 7mm;
+  border: 1px solid var(--theme-primary);
+  border-radius: 50%;
+  color: var(--theme-primary);
+}
+
+.standard-print-step-marker svg {
+  width: 4mm;
+  height: 4mm;
+}
+
+.standard-print-step-transport .standard-print-step-marker {
+  background: color-mix(in srgb, var(--theme-secondary) 14%, transparent);
 }
 
 .standard-print-step-body {
   min-width: 0;
-  padding: 0.65rem 0.8rem;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--theme-bg) 56%, white);
-}
-
-.standard-print-step-transport .standard-print-step-body {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--theme-secondary) 16%, white), rgba(255, 255, 255, 0.82));
 }
 
 .standard-print-step-body h3 {
   margin: 0;
   color: var(--theme-text);
-  font-size: 1rem;
+  font-size: 11.5pt;
+  font-weight: 700;
   line-height: 1.45;
+  letter-spacing: 0;
   overflow-wrap: anywhere;
 }
 
 .standard-print-step-location {
-  margin: 0.25rem 0 0;
+  margin: 1mm 0 0;
   color: var(--theme-primary);
-  font-size: 0.84rem;
+  font-size: 8.5pt;
   font-weight: 700;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 .standard-print-step-notes {
-  margin-top: 0.45rem;
+  margin-top: 2mm;
   color: var(--theme-text-light);
-  font-size: 0.86rem;
+  font-size: 8.8pt;
   line-height: 1.65;
   overflow-wrap: anywhere;
 }
 
-.standard-print-step-notes p {
-  margin: 0 0 0.4rem;
+.standard-print-cover-memo > :first-child,
+.standard-print-step-notes > :first-child {
+  margin-top: 0;
 }
 
-.standard-print-step-notes p:last-child {
+.standard-print-cover-memo > :last-child,
+.standard-print-step-notes > :last-child {
   margin-bottom: 0;
 }
 
-.standard-print-empty {
-  position: relative;
-  z-index: 1;
-  padding: 3rem 1rem;
-  text-align: center;
+.standard-print-cover-memo p,
+.standard-print-step-notes p {
+  margin: 0 0 0.55em;
+}
+
+.standard-print-cover-memo h1,
+.standard-print-cover-memo h2,
+.standard-print-cover-memo h3,
+.standard-print-cover-memo h4,
+.standard-print-cover-memo h5,
+.standard-print-cover-memo h6,
+.standard-print-step-notes h1,
+.standard-print-step-notes h2,
+.standard-print-step-notes h3,
+.standard-print-step-notes h4,
+.standard-print-step-notes h5,
+.standard-print-step-notes h6 {
+  margin: 0.75em 0 0.35em;
+  color: var(--theme-text);
+  font-size: 1em;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.standard-print-cover-memo ul,
+.standard-print-cover-memo ol,
+.standard-print-step-notes ul,
+.standard-print-step-notes ol {
+  margin: 0.35em 0 0.7em;
+  padding-left: 1.3em;
+}
+
+.standard-print-cover-memo li,
+.standard-print-step-notes li {
+  margin: 0.18em 0;
+}
+
+.standard-print-cover-memo blockquote,
+.standard-print-step-notes blockquote {
+  margin: 0.7em 0;
+  padding: 0 0 0 3mm;
+  border-left: 1.5mm solid color-mix(in srgb, var(--theme-primary) 28%, transparent);
   color: var(--theme-text-light);
 }
 
-@media (max-width: 720px) {
+.standard-print-cover-memo code,
+.standard-print-step-notes code {
+  padding: 0.08em 0.28em;
+  background: color-mix(in srgb, var(--theme-border) 44%, white);
+  border-radius: 2px;
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+  font-size: 0.92em;
+}
+
+.standard-print-cover-memo pre,
+.standard-print-step-notes pre {
+  margin: 0.7em 0;
+  padding: 2.5mm;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  background: color-mix(in srgb, var(--theme-border) 38%, white);
+}
+
+.standard-print-cover-memo pre code,
+.standard-print-step-notes pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.standard-print-cover-memo a,
+.standard-print-step-notes a {
+  color: var(--theme-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.standard-print-cover-memo table,
+.standard-print-step-notes table {
+  width: 100%;
+  margin: 0.7em 0;
+  border-collapse: collapse;
+  font-size: 0.92em;
+}
+
+.standard-print-cover-memo th,
+.standard-print-cover-memo td,
+.standard-print-step-notes th,
+.standard-print-step-notes td {
+  padding: 1.5mm 2mm;
+  border: 1px solid var(--print-soft-rule);
+  text-align: left;
+  vertical-align: top;
+}
+
+.standard-print-cover-memo th,
+.standard-print-step-notes th {
+  color: var(--theme-primary);
+  font-weight: 800;
+}
+
+.standard-print-empty {
+  padding: 18mm 0;
+  color: var(--theme-text-light);
+  font-size: 10pt;
+  text-align: center;
+}
+
+@media (max-width: 860px) {
+  .standard-print-preview {
+    padding-inline: 12px;
+  }
+
   .standard-print-preview-toolbar {
     position: static;
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .standard-print-preview-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .standard-print-sheet {
-    border-radius: 22px;
-  }
-
-  .standard-print-sheet-frame {
-    border-radius: 18px;
+    width: var(--print-page-width);
+    min-width: var(--print-page-width);
   }
 }
 
 @media print {
   @page {
     size: A4;
-    margin: 10mm;
+    margin: 0;
   }
 
   .standard-print-preview-toolbar,
@@ -333,6 +452,11 @@
   .standard-floating-actions,
   .demo-banner {
     display: none !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   html,
@@ -349,28 +473,41 @@
   }
 
   .standard-print-sheet {
-    max-width: none !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
     margin: 0 !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
+    outline: 0 !important;
+    background: var(--theme-card-bg) !important;
+  }
+
+  .standard-print-pages {
+    display: block !important;
+    width: 210mm !important;
+    margin: 0 !important;
   }
 
   .standard-print-sheet-frame {
-    min-height: calc(297mm - 20mm);
-    padding: 8mm !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    padding: var(--print-page-margin-y) var(--print-page-margin-x) !important;
+  }
+
+  .standard-print-sheet {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .standard-print-sheet:last-child {
+    break-after: auto;
+    page-break-after: auto;
   }
 
   .standard-print-cover {
-    min-height: 86mm;
     page-break-after: avoid;
   }
 
-  .standard-print-day-card {
-    box-shadow: none !important;
+  .standard-print-day,
+  .standard-print-step {
     page-break-inside: avoid;
   }
 }

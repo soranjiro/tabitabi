@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
-  import { getStepDate, getStepTime } from "@tabitabi/types";
+  import { getStepDate, getStepEndTime, getStepTime } from "@tabitabi/types";
   import { renderMarkdown } from "../utils/markdown";
   import IconRenderer from "../icons/IconRenderer.svelte";
   import { isTransportType } from "../utils/step-type";
@@ -57,53 +57,63 @@
   }
 
   function getStepCountLabel(count: number): string {
-    return `${count} ${count === 1 ? "plan" : "plans"}`;
+    return `${count}件`;
+  }
+
+  function formatStepTime(step: Step): string {
+    if (step.is_all_day) return "終日";
+    const start = getStepTime(step);
+    const end = getStepEndTime(step);
+    return start === end ? start : `${start}-${end}`;
   }
 </script>
 
 <section class="standard-print-preview" aria-label="印刷プレビュー">
   <div class="standard-print-preview-toolbar">
     <div>
-      <p class="standard-print-preview-eyebrow">PRINT PREVIEW</p>
-      <h2>このデザインでPDF/印刷します</h2>
-      <p>内容を確認して、印刷するかキャンセルを選んでください。</p>
+      <p class="standard-print-preview-eyebrow">A4 SHIORI</p>
+      <h2>印刷プレビュー</h2>
     </div>
     <div class="standard-print-preview-actions">
       <button type="button" class="standard-print-preview-cancel" onclick={onCancel}>
-        キャンセル
+        戻る
       </button>
       <button type="button" class="standard-print-preview-print" onclick={onPrint}>
-        印刷・PDF出力
+        印刷
       </button>
     </div>
   </div>
 
-  <article class="standard-print-sheet">
-    <div class="standard-print-sheet-frame">
-      <header class="standard-print-cover">
-        <div class="standard-print-cover-meta">
-          <span>{seasonLabel}</span>
-          <span>{travelDates()}</span>
-        </div>
-        <p class="standard-print-cover-kicker">Travel Itinerary</p>
-        <h1>{title}</h1>
-        {#if renderMarkdown(memo || "")}
-          <div class="standard-print-cover-memo">
-            {@html renderMarkdown(memo || "")}
+  <div class="standard-print-pages" aria-label={`${title}の印刷用しおり`}>
+    <article class="standard-print-sheet standard-print-cover-sheet">
+      <div class="standard-print-sheet-frame">
+        <header class="standard-print-cover" aria-label="しおり表紙">
+          <div class="standard-print-cover-meta">
+            <span>{seasonLabel}</span>
+            <span>{travelDates()}</span>
           </div>
-        {:else}
-          <p class="standard-print-cover-subtitle">
-            大切な予定を一枚のしおりにまとめました。
-          </p>
-        {/if}
-      </header>
+          <p class="standard-print-cover-kicker">Travel Bookmark</p>
+          <h1>{title}</h1>
+          {#if renderMarkdown(memo || "")}
+            <div class="standard-print-cover-memo">
+              {@html renderMarkdown(memo || "")}
+            </div>
+          {/if}
+        </header>
+      </div>
+    </article>
 
-      {#if groupedSteps().length === 0}
-        <div class="standard-print-empty">予定がまだ登録されていません</div>
-      {:else}
-        <div class="standard-print-days">
-          {#each groupedSteps() as [date, dateSteps], dayIndex}
-            <section class="standard-print-day-card">
+    {#if groupedSteps().length === 0}
+      <article class="standard-print-sheet">
+        <div class="standard-print-sheet-frame">
+          <div class="standard-print-empty">予定がまだ登録されていません</div>
+        </div>
+      </article>
+    {:else}
+      {#each groupedSteps() as [date, dateSteps], dayIndex}
+        <article class="standard-print-sheet standard-print-day-sheet">
+          <div class="standard-print-sheet-frame">
+            <section class="standard-print-day">
               <div class="standard-print-day-heading">
                 <div>
                   <span class="standard-print-day-label">DAY {formatDayNumber(dayIndex)}</span>
@@ -114,13 +124,12 @@
 
               <div class="standard-print-timeline">
                 {#each dateSteps as step}
-                  <div class="standard-print-step" class:standard-print-step-transport={isTransportType(step.type)}>
+                  <section
+                    class="standard-print-step"
+                    class:standard-print-step-transport={isTransportType(step.type)}
+                  >
                     <div class="standard-print-step-time">
-                      {#if step.is_all_day}
-                        終日
-                      {:else}
-                        {getStepTime(step)}
-                      {/if}
+                      {formatStepTime(step)}
                     </div>
                     <div class="standard-print-step-marker">
                       <IconRenderer type={step.type} size="sm" />
@@ -136,13 +145,14 @@
                         </div>
                       {/if}
                     </div>
-                  </div>
+                  </section>
                 {/each}
               </div>
             </section>
-          {/each}
-        </div>
-      {/if}
-    </div>
-  </article>
+          </div>
+        </article>
+      {/each}
+    {/if}
+  </div>
+
 </section>

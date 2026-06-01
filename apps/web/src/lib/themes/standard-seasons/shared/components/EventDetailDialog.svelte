@@ -10,13 +10,14 @@
     STEP_TYPE,
   } from "@tabitabi/types";
   import { renderMarkdown } from "../utils/markdown";
-  import { getMemoText, updateMemoText } from "$lib/memo";
   import {
-    STEP_TYPES_BY_CATEGORY,
-    STEP_TYPE_CONFIGS,
-  } from "../utils/step-type";
+    getMemoText,
+    parseMemoData,
+    stringifyMemoData,
+    updateMemoText,
+  } from "$lib/memo";
   import TypePicker from "./TypePicker.svelte";
-  import IconRenderer from "../icons/IconRenderer.svelte";
+  import { getBookingCard } from "../utils/booking-card";
   import "../styles/EventDetailDialog.css";
 
   interface Props {
@@ -32,6 +33,7 @@
       end_at: number;
       location?: string;
       notes?: string;
+      link?: string | null;
       type?: StepType;
       is_all_day?: boolean;
     }) => Promise<void>;
@@ -43,6 +45,7 @@
         end_at?: number;
         location?: string;
         notes?: string;
+        link?: string | null;
         type?: StepType;
         is_all_day?: boolean;
       },
@@ -79,6 +82,7 @@
     endTime?: string;
     location?: string | null;
     notes?: string;
+    link?: string;
     type?: StepType;
     is_all_day?: boolean;
   }>({});
@@ -90,6 +94,114 @@
   let endUserChanged = $state(false);
   let originalDuration = $state(60);
   let editIsAllDay = $state(step?.is_all_day || false);
+  let linkHelperOpen = $state(false);
+  let linkBrowserUrl = $state("");
+  let bookingCard = $derived(step ? getBookingCard(step) : null);
+
+  type LinkProvider = {
+    label: string;
+    url: string;
+    iconDomain: string;
+  };
+
+  const DEFAULT_LINK_PROVIDERS: LinkProvider[] = [
+    { label: "Google", url: "https://www.google.com/", iconDomain: "google.com" },
+    { label: "Google Maps", url: "https://www.google.com/maps", iconDomain: "google.com" },
+  ];
+
+  const LINK_PROVIDER_PRESETS: Partial<Record<StepType, LinkProvider[]>> = {
+    [STEP_TYPE.NORMAL_HOTEL]: [
+      { label: "じゃらん", url: "https://www.jalan.net/", iconDomain: "jalan.net" },
+      { label: "楽天トラベル", url: "https://travel.rakuten.co.jp/", iconDomain: "travel.rakuten.co.jp" },
+      { label: "一休", url: "https://www.ikyu.com/", iconDomain: "ikyu.com" },
+      { label: "Booking.com", url: "https://www.booking.com/", iconDomain: "booking.com" },
+    ],
+    [STEP_TYPE.NORMAL_FOOD]: [
+      { label: "食べログ", url: "https://tabelog.com/", iconDomain: "tabelog.com" },
+      { label: "ぐるなび", url: "https://www.gnavi.co.jp/", iconDomain: "gnavi.co.jp" },
+      { label: "ホットペッパー", url: "https://www.hotpepper.jp/", iconDomain: "hotpepper.jp" },
+    ],
+    [STEP_TYPE.NORMAL_MEAL]: [
+      { label: "食べログ", url: "https://tabelog.com/", iconDomain: "tabelog.com" },
+      { label: "ぐるなび", url: "https://www.gnavi.co.jp/", iconDomain: "gnavi.co.jp" },
+      { label: "ホットペッパー", url: "https://www.hotpepper.jp/", iconDomain: "hotpepper.jp" },
+    ],
+    [STEP_TYPE.NORMAL_SIGHTSEEING]: [
+      { label: "じゃらん遊び", url: "https://www.jalan.net/activity/", iconDomain: "jalan.net" },
+      { label: "アソビュー", url: "https://www.asoview.com/", iconDomain: "asoview.com" },
+      { label: "Klook", url: "https://www.klook.com/ja/", iconDomain: "klook.com" },
+    ],
+    [STEP_TYPE.NORMAL_SHOPPING]: [
+      { label: "楽天市場", url: "https://www.rakuten.co.jp/", iconDomain: "rakuten.co.jp" },
+      { label: "Yahoo!", url: "https://shopping.yahoo.co.jp/", iconDomain: "shopping.yahoo.co.jp" },
+    ],
+    [STEP_TYPE.TRANSPORT_TRAIN]: [
+      { label: "乗換案内", url: "https://transit.yahoo.co.jp/", iconDomain: "transit.yahoo.co.jp" },
+      { label: "NAVITIME", url: "https://www.navitime.co.jp/", iconDomain: "navitime.co.jp" },
+      { label: "Google Maps", url: "https://www.google.com/maps", iconDomain: "google.com" },
+    ],
+    [STEP_TYPE.TRANSPORT_CAR]: [
+      { label: "Google Maps", url: "https://www.google.com/maps", iconDomain: "google.com" },
+      { label: "NAVITIME", url: "https://www.navitime.co.jp/", iconDomain: "navitime.co.jp" },
+    ],
+    [STEP_TYPE.TRANSPORT_PLANE]: [
+      { label: "Google Flights", url: "https://www.google.com/travel/flights", iconDomain: "google.com" },
+      { label: "航空券", url: "https://travel.rakuten.co.jp/air/", iconDomain: "travel.rakuten.co.jp" },
+    ],
+    [STEP_TYPE.TRANSPORT_BUS]: [
+      { label: "高速バス", url: "https://travel.rakuten.co.jp/bus/", iconDomain: "travel.rakuten.co.jp" },
+      { label: "NAVITIME", url: "https://www.navitime.co.jp/", iconDomain: "navitime.co.jp" },
+    ],
+    [STEP_TYPE.TRANSPORT_SHIP]: [
+      { label: "Google", url: "https://www.google.com/", iconDomain: "google.com" },
+      { label: "NAVITIME", url: "https://www.navitime.co.jp/", iconDomain: "navitime.co.jp" },
+    ],
+  };
+
+  function getLinkProviders(type: StepType | undefined): LinkProvider[] {
+    return (type && LINK_PROVIDER_PRESETS[type]) || DEFAULT_LINK_PROVIDERS;
+  }
+
+  function getProviderIconUrl(provider: LinkProvider): string {
+    return `https://www.google.com/s2/favicons?domain=${provider.iconDomain}&sz=64`;
+  }
+
+  function getProviderInitial(provider: LinkProvider): string {
+    if (provider.label === "Google Maps") return "G";
+    if (provider.label === "Booking.com") return "B";
+    if (provider.label === "NAVITIME") return "N";
+    if (provider.label === "Klook") return "K";
+    return provider.label.slice(0, 1);
+  }
+
+  function getLinkFieldLabel(type: StepType | undefined): string {
+    if (type === STEP_TYPE.NORMAL_HOTEL) return "宿泊・予約リンク";
+    if (type === STEP_TYPE.NORMAL_FOOD || type === STEP_TYPE.NORMAL_MEAL) return "店舗・予約リンク";
+    if (type === STEP_TYPE.NORMAL_SIGHTSEEING) return "観光・体験リンク";
+    if (type === STEP_TYPE.NORMAL_SHOPPING) return "買い物リンク";
+    return "関連リンク";
+  }
+
+  function getLinkPlaceholder(type: StepType | undefined): string {
+    if (type === STEP_TYPE.NORMAL_HOTEL) return "https://www.jalan.net/...";
+    if (type === STEP_TYPE.NORMAL_FOOD || type === STEP_TYPE.NORMAL_MEAL) return "https://tabelog.com/...";
+    if (type === STEP_TYPE.NORMAL_SIGHTSEEING) return "https://www.asoview.com/...";
+    return "https://...";
+  }
+
+  function openLinkProvider(url: string) {
+    linkBrowserUrl = url;
+    linkHelperOpen = true;
+  }
+
+  function closeLinkHelper() {
+    linkHelperOpen = false;
+  }
+
+  function insertLinkFromBrowser() {
+    editedStep.link = linkBrowserUrl.trim();
+    closeLinkHelper();
+  }
 
   function initializeEditedStep() {
     const referenceStartAt = step?.start_at ?? new Date().setHours(9, 0, 0, 0);
@@ -105,6 +217,7 @@
       endTime: `${endHour}:${endMinute}`,
       location: step?.location ?? "",
       notes: getMemoText(step?.notes ?? "") || "",
+      link: step?.link ?? (parseMemoData(step?.notes).booking_url as string | undefined) ?? "",
       type: step?.type ?? STEP_TYPE.NORMAL_GENERAL,
       is_all_day: step?.is_all_day ?? false,
     };
@@ -252,9 +365,14 @@
     }
 
     const noteText = (editedStep.notes ?? "").trim();
-    const notes = step
-      ? updateMemoText(step.notes, noteText)
-      : noteText || undefined;
+    const baseNotes = step ? updateMemoText(step.notes, noteText) : stringifyMemoData({ text: noteText });
+    const noteData = parseMemoData(baseNotes);
+    delete noteData.public_title;
+    delete noteData.public_location;
+    delete noteData.public_text;
+    delete noteData.booking_url;
+    const notes = stringifyMemoData(noteData);
+    const link = editedStep.link?.trim() || null;
 
     let startAt: number;
     let endAt: number;
@@ -288,6 +406,7 @@
         end_at: endAt,
         location: editedStep.location?.trim() || undefined,
         notes,
+        link,
         type: editedStep.type,
         is_all_day: editIsAllDay,
       });
@@ -298,6 +417,7 @@
         end_at: endAt,
         location: editedStep.location?.trim() || undefined,
         notes,
+        link,
         type: editedStep.type,
         is_all_day: editIsAllDay,
       });
@@ -321,6 +441,10 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
+      if (linkHelperOpen) {
+        closeLinkHelper();
+        return;
+      }
       onClose();
     }
   }
@@ -376,7 +500,7 @@
         </div>
       {:else if isEditing}
         <div class="standard-form-grid">
-          <div class="standard-form-field">
+          <div class="standard-form-field standard-form-field-wide">
             <label for="title-input" class="standard-form-label"
               >タイトル *</label
             >
@@ -494,7 +618,7 @@
               class="standard-input"
             />
           </div>
-          <div class="standard-form-field">
+          <div class="standard-form-field standard-form-field-wide">
             <div class="standard-form-label">予定の種類</div>
             <TypePicker
               value={editedStep.type}
@@ -503,14 +627,54 @@
               }}
             />
           </div>
-          <div class="standard-form-field">
+          <div class="standard-public-fields standard-form-field-wide">
+            <div class="standard-form-field">
+              <label for="booking-url-input" class="standard-form-label"
+                >{getLinkFieldLabel(editedStep.type)}</label
+              >
+              <input
+                id="booking-url-input"
+                type="url"
+                bind:value={editedStep.link}
+                placeholder={getLinkPlaceholder(editedStep.type)}
+                class="standard-input"
+              />
+            </div>
+            <div class="standard-link-provider-tools">
+              {#each getLinkProviders(editedStep.type) as provider}
+                <button
+                  type="button"
+                  class="standard-link-provider-btn"
+                  title={`${provider.label}で探す`}
+                  aria-label={`${provider.label}で探す`}
+                  onclick={() => openLinkProvider(provider.url)}
+                >
+                  <span class="standard-link-provider-icon-wrap" aria-hidden="true">
+                    <span class="standard-link-provider-icon-fallback">
+                      {getProviderInitial(provider)}
+                    </span>
+                    <img
+                      src={getProviderIconUrl(provider)}
+                      alt=""
+                      class="standard-link-provider-icon"
+                      onerror={(event) => {
+                        (event.currentTarget as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  </span>
+                  <span>{provider.label}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+          <div class="standard-form-field standard-form-field-wide">
             <label for="notes-textarea" class="standard-form-label">メモ</label>
             <textarea
               id="notes-textarea"
               bind:value={editedStep.notes}
               placeholder="メモを入力"
               class="standard-textarea"
-              rows="5"
+              rows="4"
             ></textarea>
           </div>
         </div>
@@ -554,7 +718,7 @@
               </div>
             </div>
           {/if}
-          {#if step.notes}
+          {#if renderMarkdown(step.notes || "")}
             <div class="standard-event-detail-field">
               <span class="standard-event-detail-label">メモ</span>
               <div
@@ -563,6 +727,29 @@
                 {@html renderMarkdown(step.notes || "")}
               </div>
             </div>
+          {/if}
+          {#if bookingCard}
+            <div class="standard-booking-card standard-booking-card-dialog">
+              <div class="standard-booking-card-main">
+                <span class="standard-booking-card-label">{bookingCard.label}</span>
+                <span class="standard-booking-card-provider">
+                  {bookingCard.providerLabel}
+                </span>
+              </div>
+              <a
+                class="standard-booking-card-button"
+                href={bookingCard.actionUrl}
+                target="_blank"
+                rel="nofollow sponsored noopener noreferrer"
+              >
+                開く
+              </a>
+            </div>
+            {#if bookingCard.disclosure}
+              <p class="standard-affiliate-disclosure">
+                {bookingCard.disclosure}
+              </p>
+            {/if}
           {/if}
         </div>
       {/if}
@@ -604,4 +791,41 @@
       </div>
     {/if}
   </div>
+
+  {#if linkHelperOpen}
+    <div class="standard-link-browser-overlay" role="dialog" aria-modal="true">
+      <div class="standard-link-browser-header">
+        <button
+          type="button"
+          class="standard-link-browser-action standard-link-browser-close"
+          onclick={closeLinkHelper}
+        >
+          閉じる
+        </button>
+        <input
+          type="url"
+          bind:value={linkBrowserUrl}
+          placeholder="開きたいページのURL"
+          class="standard-link-browser-address"
+          aria-label="開いているURL"
+        />
+        <button
+          type="button"
+          class="standard-link-browser-action standard-link-browser-insert"
+          onclick={insertLinkFromBrowser}
+        >
+          リンクを挿入
+        </button>
+      </div>
+      <div class="standard-link-browser-surface">
+        {#if linkBrowserUrl}
+          <iframe
+            src={linkBrowserUrl}
+            title="リンク先サイト"
+            class="standard-link-browser-frame"
+          ></iframe>
+        {/if}
+      </div>
+    </div>
+  {/if}
 </div>

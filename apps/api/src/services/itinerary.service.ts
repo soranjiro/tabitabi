@@ -1,13 +1,15 @@
 import type { Itinerary, CreateItineraryInput, UpdateItineraryInput } from '@tabitabi/types';
 import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
+import type { Env } from '../utils';
 import { validateMemoJson } from '../utils/memo';
+import { createPublicMemoSnapshot, createPublicStepSnapshot } from '../utils/publication';
 import { hashPassword } from '../utils/password';
 
 const DEFAULT_THEME_ID = 'standard-autumn';
 
 export class ItineraryService {
-  constructor(private db: D1Database) {}
+  constructor(private db: D1Database, private env?: Partial<Env>) {}
 
   async list(): Promise<Itinerary[]> {
     const result = await this.db
@@ -210,7 +212,7 @@ export class ItineraryService {
     // Fetch source steps before batch to generate new IDs
     // secret_settings and walica_id are intentionally excluded from forks (personal configuration)
     const sourceSteps = await this.db
-      .prepare('SELECT id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
+      .prepare('SELECT id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
       .bind(sourceId)
       .all();
 
@@ -219,8 +221,8 @@ export class ItineraryService {
     // Use batch() for atomic execution: all inserts + fork_count upsert succeed or fail together
     const stepStatements = rows.map(row =>
       this.db
-        .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.type, row.is_all_day, now, now)
+        .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.link, row.type, row.is_all_day, now, now)
     );
 
     await this.db.batch([
@@ -250,10 +252,11 @@ export class ItineraryService {
     const now = getCurrentTimestamp();
 
     const sourceSteps = await this.db
-      .prepare('SELECT title, start_at, end_at, location, notes, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
+      .prepare('SELECT title, start_at, end_at, location, notes, link, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
       .bind(sourceId)
       .all();
-    const rows = sourceSteps.results ?? [];
+    const rows = (sourceSteps.results ?? []).map(row => createPublicStepSnapshot(row, this.env));
+    const publicMemo = createPublicMemoSnapshot(source.memo);
 
     let existing = await this.db
       .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
@@ -264,15 +267,15 @@ export class ItineraryService {
       const newId = generateId();
       const stepStatements = rows.map(row =>
         this.db
-          .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-          .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.type, row.is_all_day, now, now)
+          .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.link, row.type, row.is_all_day, now, now)
       );
 
       try {
         await this.db.batch([
           this.db
-            .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?, ?)')
-            .bind(newId, source.title, source.theme_id, source.memo, sourceId, now, now),
+          .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?, ?)')
+            .bind(newId, source.title, source.theme_id, publicMemo, sourceId, now, now),
           ...stepStatements,
         ]);
         return (await this.get(newId))!;
@@ -293,14 +296,14 @@ export class ItineraryService {
       const sharedId = existing.id;
       const stepStatements = rows.map(row =>
         this.db
-          .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-          .bind(generateId(), sharedId, row.title, row.start_at, row.end_at, row.location, row.notes, row.type, row.is_all_day, now, now)
+          .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .bind(generateId(), sharedId, row.title, row.start_at, row.end_at, row.location, row.notes, row.link, row.type, row.is_all_day, now, now)
       );
 
       await this.db.batch([
         this.db
           .prepare('UPDATE itineraries SET title = ?, theme_id = ?, memo = ?, updated_at = ? WHERE id = ?')
-          .bind(source.title, source.theme_id, source.memo, now, sharedId),
+          .bind(source.title, source.theme_id, publicMemo, now, sharedId),
         this.db
           .prepare('DELETE FROM steps WHERE itinerary_id = ?')
           .bind(sharedId),

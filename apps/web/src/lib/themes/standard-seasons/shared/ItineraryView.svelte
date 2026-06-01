@@ -26,6 +26,7 @@
   import { LinkIcon } from "./components/icons/index.svelte";
   import { renderMarkdown } from "./utils/markdown";
   import { getViewMode, setViewMode, type ViewMode } from "./utils/storage";
+  import { parseMemoData } from "$lib/memo";
 
   interface Props {
     itinerary: ItineraryResponse;
@@ -47,7 +48,9 @@
       end_at: number;
       location?: string;
       notes?: string;
+      link?: string | null;
       type?: StepType;
+      is_all_day?: boolean;
     }) => Promise<void>;
     onUpdateStep?: (
       stepId: string,
@@ -57,10 +60,14 @@
         end_at?: number;
         location?: string;
         notes?: string;
+        link?: string | null;
         type?: StepType;
+        is_all_day?: boolean;
       },
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
+    onReorderSteps?: (...args: unknown[]) => Promise<void> | void;
+    onPublishItinerary?: () => Promise<string>;
   }
 
   let {
@@ -70,6 +77,8 @@
     onCreateStep,
     onUpdateStep,
     onDeleteStep,
+    onReorderSteps: _onReorderSteps,
+    onPublishItinerary,
   }: Props = $props();
 
   const themes = getAvailableThemes();
@@ -99,6 +108,11 @@
   let showViewModeSelector = $state(false);
   let showThemeSelectorPopup = $state(false);
   let currentViewMode = $state<ViewMode>("dayCard");
+  let publicNotice = $derived(
+    typeof parseMemoData(itinerary.memo).affiliate_disclosure === "string"
+      ? (parseMemoData(itinerary.memo).affiliate_disclosure as string)
+      : "",
+  );
 
   let focusedDate = $state<string | null>(null);
   let stepListRef: any = undefined;
@@ -119,6 +133,7 @@
       end_at: endAt,
       location: "",
       notes: "",
+      link: null,
       type: STEP_TYPE.NORMAL_GENERAL,
       is_all_day: false,
       created_at: new Date().toISOString(),
@@ -268,6 +283,24 @@
       }, 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
+    }
+  }
+
+  async function copyPublishedLink() {
+    if (!onPublishItinerary) return;
+    try {
+      const publishedId = await onPublishItinerary();
+      const url = `${window.location.origin}/${publishedId}`;
+      await navigator.clipboard.writeText(url);
+      showShareDialog = false;
+      showShareMenu = false;
+      showCopyMessage = true;
+      setTimeout(() => {
+        showCopyMessage = false;
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to publish:", err);
+      alert("公開用リンクの作成に失敗しました");
     }
   }
 
@@ -480,6 +513,10 @@
       bind:focusedDate
     />
 
+    {#if itinerary.source_itinerary_id && publicNotice}
+      <p class="standard-public-disclosure">{publicNotice}</p>
+    {/if}
+
     <BottomNav
       {hasEditPermission}
       walicaId={itinerary.walica_id}
@@ -524,6 +561,9 @@
     show={showShareDialog}
     {hasEditPermission}
     onCopyLink={copyShareLink}
+    onPublishLink={onPublishItinerary && !itinerary.source_itinerary_id
+      ? copyPublishedLink
+      : undefined}
     onClose={() => (showShareDialog = false)}
   />
 

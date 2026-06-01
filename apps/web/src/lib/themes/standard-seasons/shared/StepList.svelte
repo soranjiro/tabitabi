@@ -18,6 +18,7 @@
   } from "./components/icons/index.svelte";
   import IconRenderer from "./icons/IconRenderer.svelte";
   import { isTransportType } from "./utils/step-type";
+  import { getBookingCard } from "./utils/booking-card";
   import { type ViewMode } from "./utils/storage";
   import { ListView, MonthView, WeekView } from "./views";
   import EventDetailDialog from "./components/EventDetailDialog.svelte";
@@ -37,6 +38,9 @@
         end_at?: number;
         location?: string;
         notes?: string;
+        link?: string | null;
+        type?: Step["type"];
+        is_all_day?: boolean;
       },
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
@@ -179,6 +183,22 @@
 
   function closeDetailDialog() {
     selectedStepForDialog = null;
+  }
+
+  function getStepBookingCard(step: Step) {
+    return getBookingCard(step);
+  }
+
+  function getStepBookingLabel(step: Step): string {
+    return getBookingCard(step)?.providerLabel ?? "リンクを見る";
+  }
+
+  function getStepBookingUrl(step: Step): string {
+    return getBookingCard(step)?.actionUrl ?? "#";
+  }
+
+  function getStepBookingCardLabel(step: Step): string {
+    return getBookingCard(step)?.label ?? "リンク";
   }
 
   function handleDragStart(e: DragEvent, stepId: string) {
@@ -615,9 +635,30 @@
                             {step.location}
                           </div>
                         {/if}
-                        {#if step.notes}
+                        {#if renderMarkdown(step.notes)}
                           <div class="standard-step-notes">
                             {@html renderMarkdown(step.notes)}
+                          </div>
+                        {/if}
+                        {#if getStepBookingCard(step)}
+                          <div class="standard-booking-card">
+                            <div class="standard-booking-card-main">
+                              <span class="standard-booking-card-label"
+                                >{getStepBookingCardLabel(step)}</span
+                              >
+                              <span class="standard-booking-card-provider">
+                                {getStepBookingLabel(step)}
+                              </span>
+                            </div>
+                            <a
+                              class="standard-booking-card-button"
+                              href={getStepBookingUrl(step)}
+                              target="_blank"
+                              rel="nofollow sponsored noopener noreferrer"
+                              onclick={(e) => e.stopPropagation()}
+                            >
+                              見る
+                            </a>
                           </div>
                         {/if}
                       </div>

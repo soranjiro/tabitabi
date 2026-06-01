@@ -11,15 +11,15 @@ import { validationHook } from '../validators/hook';
 const itineraries = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 itineraries.get('/', async (c) => {
-  const service = new ItineraryService(c.env.DB);
+  const service = new ItineraryService(c.env.DB, c.env);
   const data = await service.list();
   const response = data.map(itinerary => service.toResponseItinerary(itinerary));
   return c.json({ success: true, data: response });
 });
 
 itineraries.get('/:id', async (c) => {
-  const id = c.req.param('id');
-  const service = new ItineraryService(c.env.DB);
+  const id = c.req.param('id')!;
+  const service = new ItineraryService(c.env.DB, c.env);
   const data = await service.get(id);
 
   if (!data) {
@@ -31,7 +31,7 @@ itineraries.get('/:id', async (c) => {
 
 itineraries.post('/', optionalUserAuthMiddleware, zValidator('json', createItinerarySchema, validationHook), async (c) => {
   const input = c.req.valid('json');
-  const service = new ItineraryService(c.env.DB);
+  const service = new ItineraryService(c.env.DB, c.env);
   const data = await service.create(input);
 
   const token = await generateToken(data.id, c.env.JWT_SECRET);
@@ -51,9 +51,9 @@ itineraries.post('/', optionalUserAuthMiddleware, zValidator('json', createItine
 });
 
 itineraries.put('/:id', optionalAuthMiddleware, zValidator('json', updateItinerarySchema, validationHook), async (c) => {
-  const id = c.req.param('id');
+  const id = c.req.param('id')!;
   const input = c.req.valid('json');
-  const service = new ItineraryService(c.env.DB);
+  const service = new ItineraryService(c.env.DB, c.env);
   const existing = await service.get(id);
 
   if (!existing) {
@@ -85,8 +85,8 @@ itineraries.put('/:id', optionalAuthMiddleware, zValidator('json', updateItinera
 });
 
 itineraries.post('/:id/publish', optionalAuthMiddleware, async (c) => {
-  const id = c.req.param('id');
-  const service = new ItineraryService(c.env.DB);
+  const id = c.req.param('id')!;
+  const service = new ItineraryService(c.env.DB, c.env);
   const existing = await service.get(id);
 
   if (!existing) {
@@ -113,9 +113,9 @@ itineraries.post('/:id/publish', optionalAuthMiddleware, async (c) => {
 });
 
 itineraries.post('/:id/fork', userAuthMiddleware, async (c) => {
-  const sourceId = c.req.param('id');
+  const sourceId = c.req.param('id')!;
   const userId = c.get('userId');
-  const service = new ItineraryService(c.env.DB);
+  const service = new ItineraryService(c.env.DB, c.env);
 
   let result: Awaited<ReturnType<typeof service.fork>>;
   try {
@@ -154,8 +154,8 @@ itineraries.post('/:id/fork', userAuthMiddleware, async (c) => {
 });
 
 itineraries.delete('/:id', optionalAuthMiddleware, async (c) => {
-  const id = c.req.param('id');
-  const service = new ItineraryService(c.env.DB);
+  const id = c.req.param('id')!;
+  const service = new ItineraryService(c.env.DB, c.env);
   const existing = await service.get(id);
 
   if (!existing) {

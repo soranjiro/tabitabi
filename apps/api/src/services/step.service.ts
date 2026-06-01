@@ -11,6 +11,20 @@ function parseToUnixMs(value: unknown): number | null {
   return null;
 }
 
+function normalizeLink(value: unknown): string | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 export class StepService {
   constructor(private db: D1Database) {}
 
@@ -78,6 +92,7 @@ export class StepService {
       end_at: endAt!,
       location: input.location ?? null,
       notes,
+      link: normalizeLink(input.link),
       type: input.type ?? STEP_TYPE.NORMAL_GENERAL,
       is_all_day: input.is_all_day ?? false,
       created_at: now,
@@ -86,7 +101,7 @@ export class StepService {
 
     await this.db
       .prepare(
-        'INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       )
       .bind(
         step.id,
@@ -96,6 +111,7 @@ export class StepService {
         step.end_at,
         step.location,
         step.notes,
+        step.link,
         step.type,
         step.is_all_day ? 1 : 0,
         step.created_at,
@@ -145,6 +161,10 @@ export class StepService {
       fields.push('notes = ?');
       values.push(notes);
     }
+    if (input.link !== undefined) {
+      fields.push('link = ?');
+      values.push(normalizeLink(input.link));
+    }
     if (input.type !== undefined) {
       fields.push('type = ?');
       values.push(input.type);
@@ -181,6 +201,7 @@ export class StepService {
       end_at: row.end_at as number,
       location: row.location as string | null,
       notes: row.notes as string,
+      link: (row.link as string | null | undefined) ?? null,
       type: (row.type as any) ?? STEP_TYPE.NORMAL_GENERAL,
       is_all_day: !!(row.is_all_day as number),
       is_hidden: !!row.is_hidden_flag,
@@ -192,6 +213,7 @@ export class StepService {
       step.title = '?????';
       step.location = null;
       step.notes = '{"text":""}';
+      step.link = null;
     }
 
     return step;

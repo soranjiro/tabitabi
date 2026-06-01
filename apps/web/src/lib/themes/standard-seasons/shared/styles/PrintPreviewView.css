@@ -13,6 +13,13 @@
   color: var(--theme-text);
 }
 
+.standard-print-preview-landscape {
+  --print-page-width: 297mm;
+  --print-page-height: 210mm;
+  --print-page-margin-x: 14mm;
+  --print-page-margin-y: 10mm;
+}
+
 .standard-print-preview-toolbar {
   position: sticky;
   top: 12px;
@@ -48,8 +55,31 @@
 
 .standard-print-preview-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.standard-print-preview-layout {
+  display: inline-grid;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 2px;
+  border: 1px solid #c9c9c3;
+  border-radius: 4px;
+}
+
+.standard-print-preview-actions .standard-print-preview-layout button {
+  min-width: 44px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--theme-text-light);
+}
+
+.standard-print-preview-actions .standard-print-preview-layout button.active {
+  background: var(--theme-text);
+  color: var(--theme-card-bg);
 }
 
 .standard-print-preview-actions button {
@@ -136,6 +166,10 @@
 .standard-print-cover-sheet .standard-print-cover {
   min-height: 122mm;
   border-bottom: 0;
+}
+
+.standard-print-preview-landscape .standard-print-cover-sheet .standard-print-cover {
+  min-height: 132mm;
 }
 
 .standard-print-cover-meta {
@@ -429,6 +463,97 @@
   text-align: center;
 }
 
+.standard-print-preview-landscape .standard-print-cover {
+  grid-template-columns: minmax(0, 1fr) 60mm;
+  gap: 16mm;
+}
+
+.standard-print-preview-landscape .standard-print-cover h1 {
+  max-width: 18ch;
+  font-size: 32pt;
+}
+
+.standard-print-preview-landscape .standard-print-cover-memo {
+  max-width: 160mm;
+}
+
+.standard-print-preview-landscape .standard-print-days {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8mm 10mm;
+  padding-top: 0;
+}
+
+.standard-print-preview-landscape .standard-print-day {
+  min-width: 0;
+}
+
+.standard-print-preview-landscape .standard-print-day:only-child {
+  grid-column: 1 / -1;
+}
+
+.standard-print-preview-landscape .standard-print-day-heading {
+  gap: 5mm;
+  padding-bottom: 2mm;
+}
+
+.standard-print-preview-landscape .standard-print-day-heading h2 {
+  font-size: 12.5pt;
+}
+
+.standard-print-preview-landscape .standard-print-day-label,
+.standard-print-preview-landscape .standard-print-day-count {
+  font-size: 7pt;
+}
+
+.standard-print-preview-landscape .standard-print-step {
+  grid-template-columns: 19mm 5.5mm minmax(0, 1fr);
+  gap: 2.7mm;
+  padding: 2.1mm 0;
+}
+
+.standard-print-preview-landscape .standard-print-day:only-child .standard-print-timeline {
+  display: block;
+  column-count: 2;
+  column-gap: 10mm;
+}
+
+.standard-print-preview-landscape .standard-print-day:only-child .standard-print-step {
+  display: grid;
+}
+
+.standard-print-preview-landscape .standard-print-step-time {
+  font-size: 7pt;
+}
+
+.standard-print-preview-landscape .standard-print-step-marker {
+  width: 5.5mm;
+  height: 5.5mm;
+}
+
+.standard-print-preview-landscape .standard-print-step-marker svg {
+  width: 3.2mm;
+  height: 3.2mm;
+}
+
+.standard-print-preview-landscape .standard-print-step-body h3 {
+  font-size: 9.4pt;
+  line-height: 1.35;
+}
+
+.standard-print-preview-landscape .standard-print-step-location,
+.standard-print-preview-landscape .standard-print-step-notes {
+  font-size: 7.5pt;
+  line-height: 1.45;
+}
+
+.standard-print-preview-landscape .standard-print-step-location {
+  margin-top: 0.6mm;
+}
+
+.standard-print-preview-landscape .standard-print-step-notes {
+  margin-top: 1mm;
+}
+
 @media (max-width: 860px) {
   .standard-print-preview {
     padding-inline: 12px;
@@ -443,7 +568,6 @@
 
 @media print {
   @page {
-    size: A4;
     margin: 0;
   }
 
@@ -473,8 +597,8 @@
   }
 
   .standard-print-sheet {
-    width: 210mm !important;
-    min-height: 297mm !important;
+    width: var(--print-page-width) !important;
+    min-height: var(--print-page-height) !important;
     margin: 0 !important;
     outline: 0 !important;
     background: var(--theme-card-bg) !important;
@@ -482,13 +606,13 @@
 
   .standard-print-pages {
     display: block !important;
-    width: 210mm !important;
+    width: var(--print-page-width) !important;
     margin: 0 !important;
   }
 
   .standard-print-sheet-frame {
-    width: 210mm !important;
-    min-height: 297mm !important;
+    width: var(--print-page-width) !important;
+    min-height: var(--print-page-height) !important;
     padding: var(--print-page-margin-y) var(--print-page-margin-x) !important;
   }
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
   import { getStepDate, getStepTime } from "@tabitabi/types";
+  import { openExternalSiteOverlay } from "$lib/external-site-overlay";
 
   interface Props {
     steps: Step[];
@@ -78,7 +79,7 @@
 
     const data = getSaunaData(step);
     if (data.sauna_url) {
-      window.open(data.sauna_url, "_blank", "noopener,noreferrer");
+      openExternalSiteOverlay(data.sauna_url, { title: step.title });
     }
   }
 

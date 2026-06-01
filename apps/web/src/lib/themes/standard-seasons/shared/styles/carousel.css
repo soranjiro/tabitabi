@@ -8,37 +8,6 @@
   overflow: visible;
 }
 
-.standard-carousel-wrapper::before {
-  content: "";
-  position: absolute;
-  left: 10px;
-  top: 40%;
-  width: 60px;
-  height: 60px;
-  opacity: 0.10;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cellipse fill='%238b4513' cx='50' cy='65' rx='30' ry='35'/%3E%3Cpath fill='%23d2691e' d='M50 30 L55 45 L45 45 Z'/%3E%3Ccircle fill='%238b4513' cx='50' cy='28' r='3'/%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
-  transform: rotate(-15deg);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.standard-carousel-wrapper::after {
-  content: "";
-  position: absolute;
-  right: 15px;
-  top: 60%;
-  width: 70px;
-  height: 70px;
-  opacity: 0.08;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23a93529' d='M30 40 L33 55 L43 48 L38 60 L53 63 L38 66 L43 78 L33 71 L30 86 L27 71 L17 78 L22 66 L7 63 L22 60 L17 48 L27 55 Z'/%3E%3Cpath fill='%23d4762c' d='M60 15 L62 26 L69 21 L66 30 L77 32 L66 34 L69 43 L62 38 L60 49 L58 38 L51 43 L54 34 L43 32 L54 30 L51 21 L58 26 Z'/%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
-  transform: rotate(25deg);
-  pointer-events: none;
-  z-index: 0;
-}
 
 .standard-carousel {
   width: 100%;

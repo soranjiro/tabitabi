@@ -32,7 +32,7 @@
           onclick={() => handleSelect(type)}
         >
           <div class="standard-type-picker-icon">
-            <IconRenderer {type} size="lg" />
+            <IconRenderer {type} size="sm" />
           </div>
           <div class="standard-type-picker-label">
             {STEP_TYPE_CONFIGS[type as StepType].label}
@@ -53,7 +53,7 @@
           onclick={() => handleSelect(type)}
         >
           <div class="standard-type-picker-icon">
-            <IconRenderer {type} size="lg" />
+            <IconRenderer {type} size="sm" />
           </div>
           <div class="standard-type-picker-label">
             {STEP_TYPE_CONFIGS[type as StepType].label}

@@ -14,7 +14,7 @@
     "@hono/zod-validator": "^0.7.6",
     "@tsndr/cloudflare-worker-jwt": "^3.2.0",
     "bcryptjs": "^2.4.3",
-    "hono": "^4.12.18",
+    "hono": "^4.12.21",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -24,7 +24,7 @@
     "@types/bcryptjs": "^3.0.0",
     "@vitest/coverage-v8": "~3.2.4",
     "typescript": "^5.6.3",
-    "vitest": "~3.2.4",
-    "wrangler": "^4.83.0"
+    "vitest": "~3.2.6",
+    "wrangler": "^4.84.0"
   }
 }

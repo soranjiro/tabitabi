@@ -1,8 +1,10 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
+import { validateOrigin } from '$lib/server/validate-origin';
 
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ request, url }) => {
+  validateOrigin(request);
   const query = url.searchParams.get('query');
   const lng = url.searchParams.get('lng');
   const lat = url.searchParams.get('lat');

@@ -421,7 +421,11 @@
     >
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="shopping-dialog" onclick={(e) => e.stopPropagation()}>
+      <div
+        class="shopping-dialog"
+        class:shopping-dialog-editor={hasEditPermission}
+        onclick={(e) => e.stopPropagation()}
+      >
         <h3 class="shopping-dialog-title">メモ</h3>
         <textarea
           bind:value={editedMemo}

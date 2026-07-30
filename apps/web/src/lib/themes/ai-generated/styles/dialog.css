@@ -32,6 +32,52 @@
   animation: ai-scaleIn 0.2s ease;
 }
 
+.ai-dialog-editor {
+  display: flex;
+  flex-direction: column;
+  width: min(92vw, 900px);
+  max-width: 900px;
+  height: min(78vh, 760px);
+  max-height: 760px;
+  overflow: hidden;
+}
+
+.ai-dialog-editor .ai-memo-dialog-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ai-dialog-editor .ai-memo-textarea,
+.ai-dialog-editor .ai-memo-preview {
+  flex: 1;
+  min-height: 0;
+  resize: none;
+}
+
+@media (max-width: 767px) {
+  .ai-overlay:has(.ai-dialog-editor) {
+    padding:
+      max(0.5rem, env(safe-area-inset-top))
+      max(0.5rem, env(safe-area-inset-right))
+      max(0.5rem, env(safe-area-inset-bottom))
+      max(0.5rem, env(safe-area-inset-left));
+  }
+
+  .ai-dialog-editor {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    padding: 1rem;
+  }
+
+  .ai-dialog-editor .ai-memo-textarea {
+    font-size: 16px;
+  }
+}
+
 @keyframes ai-scaleIn {
   from {
     transform: scale(0.95);

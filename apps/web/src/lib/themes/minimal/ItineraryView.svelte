@@ -331,7 +331,11 @@
     >
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="minimal-dialog" onclick={(e) => e.stopPropagation()}>
+      <div
+        class="minimal-dialog"
+        class:minimal-dialog-editor={hasEditPermission}
+        onclick={(e) => e.stopPropagation()}
+      >
         <h3 class="minimal-dialog-title">メモ</h3>
         <textarea
           bind:value={editedMemo}

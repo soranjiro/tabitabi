@@ -29,7 +29,12 @@
   }
 </script>
 
-<Dialog {show} title="📝 メモ" {onClose}>
+<Dialog
+  {show}
+  title="📝 メモ"
+  {onClose}
+  variant={hasEditPermission ? "editor" : "default"}
+>
   <div class="ai-memo-dialog-content">
     {#if hasEditPermission}
       <div class="ai-memo-tabs">

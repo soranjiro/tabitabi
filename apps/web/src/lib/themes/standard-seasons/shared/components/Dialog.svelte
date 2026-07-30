@@ -3,11 +3,19 @@
     show: boolean;
     title: string;
     onClose: () => void;
+    variant?: "default" | "editor";
     children?: import("svelte").Snippet;
     actions?: import("svelte").Snippet;
   }
 
-  let { show, title, onClose, children, actions }: Props = $props();
+  let {
+    show,
+    title,
+    onClose,
+    variant = "default",
+    children,
+    actions,
+  }: Props = $props();
 </script>
 
 {#if show}
@@ -16,7 +24,11 @@
   <div class="standard-dialog-overlay" onclick={onClose}>
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="standard-dialog" onclick={(e) => e.stopPropagation()}>
+    <div
+      class="standard-dialog"
+      class:standard-dialog-editor={variant === "editor"}
+      onclick={(e) => e.stopPropagation()}
+    >
       <div class="standard-dialog-header">
         <h3 class="standard-dialog-title">{title}</h3>
       </div>

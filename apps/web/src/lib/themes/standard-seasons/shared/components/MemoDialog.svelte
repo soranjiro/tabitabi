@@ -25,7 +25,12 @@
   }
 </script>
 
-<Dialog {show} title="メモ" {onClose}>
+<Dialog
+  {show}
+  title="メモ"
+  {onClose}
+  variant={hasEditPermission ? "editor" : "default"}
+>
   {#snippet children()}
     <textarea
       bind:value={editedMemoText}

@@ -5,10 +5,17 @@
     show: boolean;
     title?: string;
     onClose: () => void;
+    variant?: "default" | "editor";
     children?: Snippet;
   }
 
-  let { show, title = "", onClose, children }: Props = $props();
+  let {
+    show,
+    title = "",
+    onClose,
+    variant = "default",
+    children,
+  }: Props = $props();
 </script>
 
 {#if show}
@@ -17,7 +24,11 @@
   <div class="ai-overlay" onclick={onClose}>
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="ai-dialog" onclick={(e) => e.stopPropagation()}>
+    <div
+      class="ai-dialog"
+      class:ai-dialog-editor={variant === "editor"}
+      onclick={(e) => e.stopPropagation()}
+    >
       {#if title}
         <h3 class="ai-dialog-title">{title}</h3>
       {/if}

@@ -21,7 +21,6 @@
   import ShareDialog from "./components/ShareDialog.svelte";
   import WalicaOverlay from "./components/WalicaOverlay.svelte";
   import ViewModeSelector from "./components/ViewModeSelector.svelte";
-  import { PrintPreviewView } from "./views";
   import ThemeSelectorPopup from "./components/ThemeSelectorPopup.svelte";
   import SettingsDialog from "./components/SettingsDialog.svelte";
   import { LinkIcon } from "./components/icons/index.svelte";
@@ -109,7 +108,6 @@
   let showViewModeSelector = $state(false);
   let showThemeSelectorPopup = $state(false);
   let currentViewMode = $state<ViewMode>("dayCard");
-  let previousViewMode = $state<ViewMode>("dayCard");
   let publicNotice = $derived(
     typeof parseMemoData(itinerary.memo).affiliate_disclosure === "string"
       ? (parseMemoData(itinerary.memo).affiliate_disclosure as string)
@@ -174,7 +172,6 @@
   function handleViewModeChange(mode: ViewMode) {
     if (mode === "printPreview") return;
     currentViewMode = mode;
-    previousViewMode = mode;
     setViewMode(itinerary.id, mode);
   }
 
@@ -249,24 +246,8 @@
   }
 
   function openPrintPreview() {
-    if (currentViewMode !== "printPreview") {
-      previousViewMode = currentViewMode;
-    }
     showShareMenu = false;
-    currentViewMode = "printPreview";
-  }
-
-  function printFromPreview() {
-    window.print();
-  }
-
-  function cancelPrintPreview() {
-    currentViewMode = previousViewMode === "printPreview" ? "dayCard" : previousViewMode;
-  }
-
-  function getSeasonLabel(): string {
-    const theme = themes.find((item) => item.id === selectedThemeId);
-    return theme?.name ?? "標準テーマ";
+    window.dispatchEvent(new CustomEvent("tabitabi:open-print"));
   }
 
   async function copyViewOnlyLink() {
@@ -399,8 +380,7 @@
   class:standard-winter-theme={selectedThemeId === "standard-winter"}
 >
   <div class="standard-container">
-    {#if currentViewMode !== "printPreview"}
-      <header class="standard-header">
+    <header class="standard-header">
       <div class="standard-share-wrapper">
         <button
           type="button"
@@ -510,19 +490,8 @@
           </button>
         {/if}
       </div>
-      </header>
-    {/if}
+    </header>
 
-    {#if currentViewMode === "printPreview"}
-      <PrintPreviewView
-        title={itinerary.title}
-        memo={itinerary.memo}
-        {steps}
-        seasonLabel={getSeasonLabel()}
-        onPrint={printFromPreview}
-        onCancel={cancelPrintPreview}
-      />
-    {:else}
       {#if hasEditPermission}
         <div class="standard-add-step">
           <button
@@ -548,10 +517,7 @@
       {#if itinerary.source_itinerary_id && publicNotice}
         <p class="standard-public-disclosure">{publicNotice}</p>
       {/if}
-    {/if}
-
-    {#if currentViewMode !== "printPreview"}
-      <BottomNav
+    <BottomNav
         {hasEditPermission}
         walicaId={itinerary.walica_id}
         {themes}
@@ -567,8 +533,7 @@
         onWalicaOpen={() => (showWalica = true)}
         onShowThemeSelector={() => (showThemeSelectorPopup = true)}
         onSettingsClick={() => (showSettingsDialog = true)}
-      />
-    {/if}
+    />
   </div>
 
   <MemoDialog
@@ -641,7 +606,5 @@
     onClose={() => (showSettingsDialog = false)}
   />
 
-  {#if currentViewMode !== "printPreview"}
-    <FloatingActions {hasEditPermission} onAddStep={openAddStepForm} />
-  {/if}
+  <FloatingActions {hasEditPermission} onAddStep={openAddStepForm} />
 </div>

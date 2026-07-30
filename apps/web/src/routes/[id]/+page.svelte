@@ -4,6 +4,7 @@
   import { stepApi } from "$lib/api/step";
   import { auth } from "$lib/auth";
   import { userAuth } from "$lib/user-auth";
+  import { PrintStudio } from "$lib/print";
   import { onMount } from "svelte";
   import type { Theme } from "@tabitabi/types";
 
@@ -232,6 +233,8 @@
     onPublishItinerary={isViewOnly ? undefined : handlePublishItinerary}
   />
 {/key}
+
+<PrintStudio {itinerary} {steps} />
 
 {#if isViewOnly}
   <div class="fixed bottom-6 right-6 z-50">

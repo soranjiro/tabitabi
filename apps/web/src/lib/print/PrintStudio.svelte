@@ -4,6 +4,11 @@
   import { getMemoText } from "$lib/memo";
   import { onDestroy, onMount } from "svelte";
   import {
+    closePrintStudio,
+    openPrintStudio,
+    printStudioOpen,
+  } from "./controller";
+  import {
     PRINT_TEMPLATES,
     buildTimelinePages,
     buildWeekPages,
@@ -22,7 +27,6 @@
   }
 
   let { itinerary, steps }: Props = $props();
-  let open = $state(false);
   let selectedTemplate = $state<PrintTemplateId>("week");
   let viewportWidth = $state(1280);
   let pageStyle: HTMLStyleElement | null = null;
@@ -63,16 +67,6 @@
     pageStyle.textContent = `@media print { @page { size: A4 ${currentTemplate.orientation}; margin: 0; } }`;
   }
 
-  function openStudio() {
-    open = true;
-    document.documentElement.classList.add("tabitabi-print-open");
-  }
-
-  function closeStudio() {
-    open = false;
-    document.documentElement.classList.remove("tabitabi-print-open");
-  }
-
   function printOrSavePdf() {
     updatePageStyle();
     window.print();
@@ -88,23 +82,26 @@
   }
 
   $effect(() => {
-    if (open) updatePageStyle();
+    if (!browser) return;
+    document.documentElement.classList.toggle(
+      "tabitabi-print-open",
+      $printStudioOpen,
+    );
+    if ($printStudioOpen) updatePageStyle();
   });
 
   onMount(() => {
     const resize = () => (viewportWidth = window.innerWidth);
-    const openFromTheme = () => openStudio();
     resize();
     window.addEventListener("resize", resize);
-    window.addEventListener("tabitabi:open-print", openFromTheme);
     return () => {
       window.removeEventListener("resize", resize);
-      window.removeEventListener("tabitabi:open-print", openFromTheme);
     };
   });
 
   onDestroy(() => {
     pageStyle?.remove();
+    closePrintStudio();
     document.documentElement.classList.remove("tabitabi-print-open");
   });
 </script>
@@ -112,14 +109,14 @@
 <button
   type="button"
   class="print-studio-launcher"
-  onclick={openStudio}
+  onclick={openPrintStudio}
   aria-label="印刷・PDF出力を開く"
 >
   <span aria-hidden="true">▤</span>
   <span>印刷・PDF</span>
 </button>
 
-{#if open}
+{#if $printStudioOpen}
   <section class="print-studio" aria-label="印刷・PDF出力">
     <header class="print-studio-toolbar">
       <div class="print-studio-heading">
@@ -151,7 +148,7 @@
           <strong>A4 {currentTemplate.orientation === "landscape" ? "横" : "縦"}</strong>
           <span>PDFは印刷画面で「PDFに保存」を選択</span>
         </div>
-        <button type="button" class="print-studio-back" onclick={closeStudio}>戻る</button>
+        <button type="button" class="print-studio-back" onclick={closePrintStudio}>戻る</button>
         <button type="button" class="print-studio-print" onclick={printOrSavePdf}>
           印刷 / PDF保存
         </button>

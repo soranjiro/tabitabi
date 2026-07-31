@@ -21,6 +21,7 @@
     stringifyMemoData,
     updateMemoText,
   } from "$lib/memo";
+  import { openPrintStudio } from "$lib/print";
   import "./styles/index.css";
 
   let MapComponent: any = $state(null);
@@ -804,7 +805,7 @@
           class="map-theme-menu-item"
           onclick={() => {
             showMenu = false;
-            window.dispatchEvent(new CustomEvent("tabitabi:open-print"));
+            openPrintStudio();
           }}
         >
           <svg

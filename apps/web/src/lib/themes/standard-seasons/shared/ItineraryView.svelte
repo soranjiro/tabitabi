@@ -27,6 +27,7 @@
   import { renderMarkdown } from "./utils/markdown";
   import { getViewMode, setViewMode, type ViewMode } from "./utils/storage";
   import { parseMemoData } from "$lib/memo";
+  import { openPrintStudio } from "$lib/print";
 
   interface Props {
     itinerary: ItineraryResponse;
@@ -247,7 +248,7 @@
 
   function openPrintPreview() {
     showShareMenu = false;
-    window.dispatchEvent(new CustomEvent("tabitabi:open-print"));
+    openPrintStudio();
   }
 
   async function copyViewOnlyLink() {

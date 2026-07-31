@@ -85,7 +85,7 @@
   aria-haspopup="dialog"
 >
   <span aria-hidden="true">✦</span>
-  ご意見
+  要望を送る
 </button>
 
 {#if open}

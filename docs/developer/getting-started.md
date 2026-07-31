@@ -76,6 +76,16 @@ tabitabi/
 
 ## 開発時の注意点
 
+### 要望フォームのGitHub連携
+
+Webアプリの要望フォームは、サーバー側からGitHub Issueを作成します。ローカル開発時は
+`apps/web/.env`、Cloudflare Pagesでは環境変数に次の値を設定してください。
+
+- `GITHUB_ISSUES_TOKEN`: 対象リポジトリのIssuesへ書き込めるFine-grained access token
+- `GITHUB_ISSUES_REPOSITORY`: Issueを作成する`owner/repository`（未設定時は`soranjiro/tabitabi`）
+
+トークンは公開環境変数やクライアントコードには設定しないでください。
+
 ### スタイリング
 
 用途に応じて手法を使い分け、混在を避ける。

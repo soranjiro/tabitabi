@@ -15,6 +15,7 @@
     type AvailableTheme,
   } from "$lib/themes";
   import { auth } from "$lib/auth";
+  import { PrintStudio } from "$lib/print";
   import type { Theme } from "@tabitabi/types";
   import type { Itinerary, Step } from "@tabitabi/types";
 
@@ -234,6 +235,7 @@
       onDeleteStep={handleDeleteStep}
     />
   {/key}
+  <PrintStudio {itinerary} {steps} />
 {/if}
 
 <style>

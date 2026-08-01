@@ -5,7 +5,6 @@
   import { onDestroy, onMount } from "svelte";
   import {
     closePrintStudio,
-    openPrintStudio,
     printStudioOpen,
   } from "./controller";
   import {
@@ -57,6 +56,12 @@
     selectedTemplate = templateId;
   }
 
+  function handleTemplateChange(event: Event) {
+    selectTemplate(
+      (event.currentTarget as HTMLSelectElement).value as PrintTemplateId,
+    );
+  }
+
   function updatePageStyle() {
     if (!browser) return;
     if (!pageStyle) {
@@ -106,48 +111,22 @@
   });
 </script>
 
-<button
-  type="button"
-  class="print-studio-launcher"
-  onclick={openPrintStudio}
-  aria-label="印刷・PDF出力を開く"
->
-  <span aria-hidden="true">▤</span>
-  <span>印刷・PDF</span>
-</button>
-
 {#if $printStudioOpen}
   <section class="print-studio" aria-label="印刷・PDF出力">
     <header class="print-studio-toolbar">
-      <div class="print-studio-heading">
-        <p>PRINT STUDIO</p>
-        <h2>旅のかたちを選ぶ</h2>
-      </div>
-
-      <div class="print-studio-template-list" aria-label="デザイン">
-        {#each PRINT_TEMPLATES as template}
-          {@const availability = getTemplateAvailability(template.id, days, memoText)}
-          <button
-            type="button"
-            class="print-studio-template"
-            class:active={selectedTemplate === template.id}
-            disabled={!availability.available}
-            onclick={() => selectTemplate(template.id)}
-            aria-pressed={selectedTemplate === template.id}
-            title={availability.reason ?? template.description}
-          >
-            <span class="print-studio-template-badge">{template.badge}</span>
-            <strong>{template.name}</strong>
-            <small>{availability.reason ?? template.description}</small>
-          </button>
-        {/each}
-      </div>
+      <label class="print-studio-template-select">
+        <span>デザイン</span>
+        <select value={selectedTemplate} onchange={handleTemplateChange}>
+          {#each PRINT_TEMPLATES as template}
+            {@const availability = getTemplateAvailability(template.id, days, memoText)}
+            <option value={template.id} disabled={!availability.available}>
+              {template.name}
+            </option>
+          {/each}
+        </select>
+      </label>
 
       <div class="print-studio-actions">
-        <div class="print-studio-output-note">
-          <strong>A4 {currentTemplate.orientation === "landscape" ? "横" : "縦"}</strong>
-          <span>PDFは印刷画面で「PDFに保存」を選択</span>
-        </div>
         <button type="button" class="print-studio-back" onclick={closePrintStudio}>戻る</button>
         <button type="button" class="print-studio-print" onclick={printOrSavePdf}>
           印刷 / PDF保存

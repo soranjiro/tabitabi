@@ -74,10 +74,10 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
     );
   }
 
-  const token = env.GITHUB_ISSUES_TOKEN;
-  const repository = env.GITHUB_ISSUES_REPOSITORY ?? "soranjiro/tabitabi";
+  const token = env.APP_GITHUB_ISSUES_TOKEN;
+  const repository = env.APP_GITHUB_ISSUES_REPOSITORY ?? "soranjiro/tabitabi";
   if (!token) {
-    console.error("GITHUB_ISSUES_TOKEN is not configured");
+    console.error("APP_GITHUB_ISSUES_TOKEN is not configured");
     return json(
       { message: "現在、要望を送信できません。時間をおいてお試しください" },
       { status: 503 },

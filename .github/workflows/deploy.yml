@@ -20,7 +20,7 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_DATABASE_ID: ${{ secrets.CLOUDFLARE_DATABASE_ID }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      GITHUB_ISSUES_TOKEN: ${{ secrets.GITHUB_ISSUES_TOKEN }}
+      APP_GITHUB_ISSUES_TOKEN: ${{ secrets.APP_GITHUB_ISSUES_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,7 +41,7 @@ jobs:
         run: |
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${CLOUDFLARE_DATABASE_ID}/g" wrangler.toml
-          node -e 'require("node:fs").appendFileSync("wrangler.toml", `\n[vars]\nGITHUB_ISSUES_TOKEN = ${JSON.stringify(process.env.GITHUB_ISSUES_TOKEN)}\n`)'
+          node -e 'require("node:fs").appendFileSync("wrangler.toml", `\n[vars]\nAPP_GITHUB_ISSUES_TOKEN = ${JSON.stringify(process.env.APP_GITHUB_ISSUES_TOKEN)}\n`)'
 
       - name: Generate API wrangler.toml from example
         working-directory: apps/api

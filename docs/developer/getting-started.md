@@ -81,17 +81,17 @@ tabitabi/
 Webアプリの要望フォームは、サーバー側からGitHub Issueを作成します。ローカル開発時は
 `apps/web/.env`に次の値を設定してください。
 
-- `GITHUB_ISSUES_TOKEN`: 対象リポジトリのIssuesへ書き込めるFine-grained access token
-- `GITHUB_ISSUES_REPOSITORY`: Issueを作成する`owner/repository`（未設定時は`soranjiro/tabitabi`）
+- `APP_GITHUB_ISSUES_TOKEN`: 対象リポジトリのIssuesへ書き込めるFine-grained access token
+- `APP_GITHUB_ISSUES_REPOSITORY`: Issueを作成する`owner/repository`（未設定時は`soranjiro/tabitabi`）
 
 トークンは公開環境変数やクライアントコードには設定しないでください。
 
 GitHub Actionsから本番環境やプレビュー環境をデプロイする場合は、リポジトリの
-**Settings > Secrets and variables > Actions**で`GITHUB_ISSUES_TOKEN`という名前の
+**Settings > Secrets and variables > Actions**で`APP_GITHUB_ISSUES_TOKEN`という名前の
 Repository secretを作成してください。デプロイWorkflowが生成する`wrangler.toml`の
 サーバー側変数へこのSecretを設定します。Secretの値には、対象リポジトリだけにアクセスでき、
 Repository permissionsの**Issues: Read and write**だけを付与したFine-grained personal access tokenを使用してください。
-`GITHUB_ISSUES_REPOSITORY`を設定しない場合、Issueの作成先は`soranjiro/tabitabi`です。
+`APP_GITHUB_ISSUES_REPOSITORY`を設定しない場合、Issueの作成先は`soranjiro/tabitabi`です。
 
 ### スタイリング
 

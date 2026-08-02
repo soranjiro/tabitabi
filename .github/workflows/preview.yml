@@ -33,6 +33,7 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       JWT_SECRET: ${{ secrets.PREVIEW_JWT_SECRET }}
+      APP_GITHUB_ISSUES_TOKEN: ${{ secrets.APP_GITHUB_ISSUES_TOKEN }}
       PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.issue.number }}
       PREVIEW_DB_NAME: tabitabi-preview-pr-${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.issue.number }}
     steps:
@@ -106,6 +107,7 @@ jobs:
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${{ steps.preview-db.outputs.database_id }}/g" wrangler.toml
           sed -i "s/database_name = \"tabitabi\"/database_name = \"${PREVIEW_DB_NAME}\"/g" wrangler.toml
+          node -e 'require("node:fs").appendFileSync("wrangler.toml", `\n[vars]\nAPP_GITHUB_ISSUES_TOKEN = ${JSON.stringify(process.env.APP_GITHUB_ISSUES_TOKEN)}\n`)'
 
       - name: Generate API wrangler.toml from example
         working-directory: apps/api

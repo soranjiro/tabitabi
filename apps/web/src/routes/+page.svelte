@@ -4,6 +4,7 @@
   import { auth } from "$lib/auth";
   import { userAuth } from "$lib/user-auth";
   import { resetDemoMode } from "$lib/demo";
+  import FeedbackWidget from "$lib/feedback/FeedbackWidget.svelte";
   import {
     PreviewCarousel,
     FeatureCard,
@@ -292,6 +293,8 @@
   <Footer />
 
   <ScrollTopButton visible={showScrollButton} onclick={scrollToTop} />
+
+  <FeedbackWidget />
 
   <DemoThemeSelector
     open={showDemoSelector}

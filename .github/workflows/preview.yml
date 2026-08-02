@@ -2,7 +2,6 @@ name: Preview Environment
 
 on:
   pull_request:
-    types: [opened, synchronize]
     branches:
       - main
   issue_comment:

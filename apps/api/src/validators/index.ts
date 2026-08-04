@@ -70,6 +70,7 @@ export const moneyItemSchema = z.object({
   paid_by_member_id: z.string().nullable().optional(),
   status: z.enum(['paid', 'planned']),
   occurred_on: z.string().date().nullable().optional(),
+  step_id: z.string().nullable().optional(),
   split_member_ids: z.array(z.string()).min(1, 'at least one participant is required').max(50),
 });
 

@@ -22,6 +22,7 @@ function itemFromRow(row: Record<string, unknown>): MoneyItem {
     amount: Number(row.amount), paid_by_member_id: row.paid_by_member_id ? String(row.paid_by_member_id) : null,
     status: row.status === 'planned' ? 'planned' : 'paid',
     occurred_on: row.occurred_on ? String(row.occurred_on) : null,
+    step_id: row.step_id ? String(row.step_id) : null,
     split_member_ids: splitMemberIds, created_at: String(row.created_at), updated_at: String(row.updated_at),
   };
 }
@@ -49,6 +50,11 @@ async function assertMembersBelongToItinerary(
     `SELECT COUNT(*) as count FROM itinerary_money_members WHERE itinerary_id = ? AND id IN (${placeholders})`,
   ).bind(itineraryId, ...ids).first<{ count: number }>();
   return Number(result?.count ?? 0) === ids.length;
+}
+
+async function assertStepBelongsToItinerary(db: D1Database, itineraryId: string, stepId: string | null | undefined): Promise<boolean> {
+  if (!stepId) return true;
+  return !!await db.prepare('SELECT id FROM steps WHERE id = ? AND itinerary_id = ?').bind(stepId, itineraryId).first();
 }
 
 money.get('/itineraries/:id/money', async (c) => {
@@ -114,13 +120,16 @@ money.post('/itineraries/:id/money/items', optionalAuthMiddleware, zValidator('j
   if (!await assertMembersBelongToItinerary(c.env.DB, itineraryId, idsToCheck)) {
     return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Members must belong to this itinerary' } }, 400);
   }
+  if (!await assertStepBelongsToItinerary(c.env.DB, itineraryId, input.step_id)) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Step must belong to this itinerary' } }, 400);
+  }
   if (input.status === 'paid' && !input.paid_by_member_id) {
     return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A payer is required for paid expenses' } }, 400);
   }
   const now = getCurrentTimestamp();
-  const item: MoneyItem = { id: generateId(), itinerary_id: itineraryId, title: input.title, amount: input.amount, paid_by_member_id: input.paid_by_member_id ?? null, status: input.status, occurred_on: input.occurred_on ?? null, split_member_ids: [...new Set(input.split_member_ids)], created_at: now, updated_at: now };
-  await c.env.DB.prepare(`INSERT INTO itinerary_money_items (id, itinerary_id, title, amount, paid_by_member_id, status, occurred_on, split_member_ids, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(item.id, item.itinerary_id, item.title, item.amount, item.paid_by_member_id, item.status, item.occurred_on, JSON.stringify(item.split_member_ids), now, now).run();
+  const item: MoneyItem = { id: generateId(), itinerary_id: itineraryId, title: input.title, amount: input.amount, paid_by_member_id: input.paid_by_member_id ?? null, status: input.status, occurred_on: input.occurred_on ?? null, step_id: input.step_id ?? null, split_member_ids: [...new Set(input.split_member_ids)], created_at: now, updated_at: now };
+  await c.env.DB.prepare(`INSERT INTO itinerary_money_items (id, itinerary_id, title, amount, paid_by_member_id, status, occurred_on, step_id, split_member_ids, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(item.id, item.itinerary_id, item.title, item.amount, item.paid_by_member_id, item.status, item.occurred_on, item.step_id, JSON.stringify(item.split_member_ids), now, now).run();
   return c.json({ success: true, data: item }, 201);
 });
 
@@ -136,11 +145,12 @@ money.put('/itineraries/:id/money/items/:itemId', optionalAuthMiddleware, zValid
   const next = { ...current, ...input, split_member_ids: input.split_member_ids ?? current.split_member_ids, paid_by_member_id: input.paid_by_member_id === undefined ? current.paid_by_member_id : input.paid_by_member_id };
   const idsToCheck = [...next.split_member_ids, ...(next.paid_by_member_id ? [next.paid_by_member_id] : [])];
   if (!await assertMembersBelongToItinerary(c.env.DB, itineraryId, idsToCheck)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Members must belong to this itinerary' } }, 400);
+  if (!await assertStepBelongsToItinerary(c.env.DB, itineraryId, next.step_id)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Step must belong to this itinerary' } }, 400);
   if (next.status === 'paid' && !next.paid_by_member_id) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A payer is required for paid expenses' } }, 400);
   const now = getCurrentTimestamp();
   const updated = { ...next, updated_at: now, split_member_ids: [...new Set(next.split_member_ids)] };
-  await c.env.DB.prepare(`UPDATE itinerary_money_items SET title = ?, amount = ?, paid_by_member_id = ?, status = ?, occurred_on = ?, split_member_ids = ?, updated_at = ? WHERE id = ? AND itinerary_id = ?`)
-    .bind(updated.title, updated.amount, updated.paid_by_member_id, updated.status, updated.occurred_on, JSON.stringify(updated.split_member_ids), now, itemId, itineraryId).run();
+  await c.env.DB.prepare(`UPDATE itinerary_money_items SET title = ?, amount = ?, paid_by_member_id = ?, status = ?, occurred_on = ?, step_id = ?, split_member_ids = ?, updated_at = ? WHERE id = ? AND itinerary_id = ?`)
+    .bind(updated.title, updated.amount, updated.paid_by_member_id, updated.status, updated.occurred_on, updated.step_id, JSON.stringify(updated.split_member_ids), now, itemId, itineraryId).run();
   return c.json({ success: true, data: updated });
 });
 

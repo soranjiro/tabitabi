@@ -15,6 +15,7 @@ export interface MoneyItem {
   paid_by_member_id: string | null;
   status: MoneyItemStatus;
   occurred_on: string | null;
+  step_id: string | null;
   split_member_ids: string[];
   created_at: string;
   updated_at: string;
@@ -36,6 +37,7 @@ export interface CreateMoneyItemInput {
   paid_by_member_id?: string | null;
   status: MoneyItemStatus;
   occurred_on?: string | null;
+  step_id?: string | null;
   split_member_ids: string[];
 }
 

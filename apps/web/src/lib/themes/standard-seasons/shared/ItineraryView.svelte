@@ -541,6 +541,7 @@
     show={showMoney}
     itineraryId={itinerary.id}
     canEdit={hasEditPermission}
+    {steps}
     onClose={() => (showMoney = false)}
   />
 

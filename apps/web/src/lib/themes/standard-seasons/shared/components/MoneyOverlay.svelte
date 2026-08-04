@@ -1,17 +1,19 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { MoneyData, MoneyItem, MoneyItemStatus, MoneyMember } from '@tabitabi/types';
+  import type { MoneyData, MoneyItem, MoneyItemStatus, MoneyMember, Step } from '@tabitabi/types';
   import { moneyApi } from '$lib/api/money';
   import { demoStorage, getIsDemoMode } from '$lib/demo';
   import { CloseIcon } from './icons/index.svelte';
+  import EventDetailDialog from './EventDetailDialog.svelte';
 
   interface Props {
     show: boolean;
     itineraryId: string;
     canEdit: boolean;
+    steps?: Step[];
     onClose: () => void;
   }
-  let { show, itineraryId, canEdit, onClose }: Props = $props();
+  let { show, itineraryId, canEdit, steps = [], onClose }: Props = $props();
 
   let data = $state<MoneyData>({ budget_amount: null, members: [], items: [] });
   let loading = $state(false);
@@ -23,7 +25,12 @@
   let payerId = $state('');
   let participantIds = $state<string[]>([]);
   let budget = $state('');
+  let budgetView = $state<'total' | 'perPerson'>('total');
+  let settingsOpen = $state(false);
   let activeTab = $state<'summary' | 'items'>('summary');
+  let editingItemId = $state<string | null>(null);
+  let linkedStepId = $state('');
+  let viewedStep = $state<Step | null>(null);
   let hasLoaded = $state(false);
 
   const isDemoMoney = () => itineraryId === 'demo' || getIsDemoMode();
@@ -37,7 +44,7 @@
     ];
     const item = (id: string, title: string, amount: number, paidBy: string | null, itemStatus: MoneyItemStatus, split: string[]): MoneyItem => ({
       id, itinerary_id: itineraryId, title, amount, paid_by_member_id: paidBy, status: itemStatus,
-      occurred_on: '2026-08-01', split_member_ids: split, created_at: createdAt, updated_at: createdAt,
+      occurred_on: '2026-08-01', step_id: null, split_member_ids: split, created_at: createdAt, updated_at: createdAt,
     });
     return {
       budget_amount: 120000,
@@ -59,6 +66,11 @@
   const paidTotal = $derived(paidItems.reduce((sum, item) => sum + item.amount, 0));
   const plannedTotal = $derived(plannedItems.reduce((sum, item) => sum + item.amount, 0));
   const remainingBudget = $derived(data.budget_amount === null ? null : data.budget_amount - paidTotal - plannedTotal);
+  const displayBudget = $derived(data.budget_amount === null ? null : budgetView === 'perPerson' && data.members.length ? Math.round(data.budget_amount / data.members.length) : data.budget_amount);
+  const displayPaid = $derived(budgetView === 'perPerson' && data.members.length ? Math.round(paidTotal / data.members.length) : paidTotal);
+  const displayPlanned = $derived(budgetView === 'perPerson' && data.members.length ? Math.round(plannedTotal / data.members.length) : plannedTotal);
+  const paidPercent = $derived(displayBudget ? Math.min(100, Math.round(displayPaid / displayBudget * 100)) : 0);
+  const plannedPercent = $derived(displayBudget ? Math.min(100 - paidPercent, Math.round(displayPlanned / displayBudget * 100)) : 0);
   const memberSummaries = $derived.by(() => data.members.map((member) => {
     let paid = 0;
     let actualOwed = 0;
@@ -152,7 +164,8 @@
   }
 
   async function saveBudget() {
-    const value = budget.trim() ? Number(budget) : null;
+    const enteredValue = budget.trim() ? Number(budget) : null;
+    const value = enteredValue === null ? null : budgetView === 'perPerson' && data.members.length ? enteredValue * data.members.length : enteredValue;
     if (value !== null && (!Number.isInteger(value) || value <= 0)) return alert('予算は1円以上の整数で入力してください');
     try {
       if (isDemoMoney()) {
@@ -162,6 +175,12 @@
       await moneyApi.updateSettings(itineraryId, value);
       data = { ...data, budget_amount: value };
     } catch (e) { alert(e instanceof Error ? e.message : '予算を保存できませんでした'); }
+  }
+
+  function selectBudgetView(view: 'total' | 'perPerson') {
+    budgetView = view;
+    if (data.budget_amount === null) { budget = ''; return; }
+    budget = String(view === 'perPerson' && data.members.length ? Math.round(data.budget_amount / data.members.length) : data.budget_amount);
   }
 
   async function addItem() {
@@ -174,24 +193,41 @@
       if (isDemoMoney()) {
         const now = new Date().toISOString();
         const item: MoneyItem = {
-          id: `demo-money-item-${Date.now()}`, itinerary_id: itineraryId, title: title.trim(), amount: value,
+          id: editingItemId ?? `demo-money-item-${Date.now()}`, itinerary_id: itineraryId, title: title.trim(), amount: value,
           status, paid_by_member_id: status === 'paid' ? payerId : null,
-          split_member_ids: participantIds, occurred_on: now.slice(0, 10), created_at: now, updated_at: now,
+          step_id: linkedStepId || null, split_member_ids: participantIds, occurred_on: now.slice(0, 10), created_at: now, updated_at: now,
         };
-        saveDemoData({ ...data, items: [item, ...data.items] });
-        title = ''; amount = ''; payerId = ''; participantIds = data.members.map((member) => member.id);
+        saveDemoData({ ...data, items: editingItemId ? data.items.map((current) => current.id === editingItemId ? { ...item, created_at: current.created_at } : current) : [item, ...data.items] });
+        resetForm();
         return;
       }
-      const item = await moneyApi.addItem(itineraryId, {
+      const input = {
         title: title.trim(), amount: value, status,
         paid_by_member_id: status === 'paid' ? payerId : null,
         split_member_ids: participantIds,
         occurred_on: new Date().toISOString().slice(0, 10),
-      });
-      data = { ...data, items: [item, ...data.items] };
-      title = ''; amount = ''; payerId = ''; participantIds = data.members.map((member) => member.id);
+        step_id: linkedStepId || null,
+      };
+      const item = editingItemId
+        ? await moneyApi.updateItem(itineraryId, editingItemId, input)
+        : await moneyApi.addItem(itineraryId, input);
+      data = { ...data, items: editingItemId ? data.items.map((current) => current.id === editingItemId ? item : current) : [item, ...data.items] };
+      resetForm();
     } catch (e) { alert(e instanceof Error ? e.message : '項目を登録できませんでした'); }
   }
+
+  function resetForm() {
+    title = ''; amount = ''; payerId = ''; linkedStepId = ''; editingItemId = null;
+    participantIds = data.members.map((member) => member.id);
+  }
+
+  function editItem(item: MoneyItem) {
+    editingItemId = item.id; title = item.title; amount = String(item.amount); status = item.status;
+    payerId = item.paid_by_member_id ?? ''; participantIds = [...item.split_member_ids]; linkedStepId = item.step_id ?? '';
+    activeTab = 'items';
+  }
+
+  function stepTitle(item: MoneyItem) { return steps.find((step) => step.id === item.step_id)?.title ?? ''; }
 
   async function deleteItem(itemId: string) {
     if (!confirm('この項目を削除しますか？')) return;
@@ -220,8 +256,8 @@
 </script>
 
 {#if show}
-  <div class="standard-money-overlay" role="dialog" aria-modal="true" aria-label="お金の管理">
-    <section class="standard-money-panel">
+  <div class="standard-money-overlay" role="presentation" onclick={(event) => event.target === event.currentTarget && onClose()}>
+    <div class="standard-money-panel" role="dialog" aria-modal="true" aria-label="お金の管理" tabindex="-1">
       <header class="standard-money-header">
         <div><p>旅の会計</p><h2>お金の管理</h2></div>
         <button class="standard-money-close" onclick={onClose} aria-label="閉じる">{@html CloseIcon}</button>
@@ -230,36 +266,42 @@
       {#if loading}<p class="standard-money-status">読み込み中…</p>
       {:else if error}<p class="standard-money-status">{error}</p>
       {:else}
-        {#if isDemoMoney()}<p class="standard-money-demo-note">デモ用の会計データです。変更内容はこのブラウザに保存されます。</p>{/if}
-        <div class="standard-money-total-grid">
-          <div><span>確定支出</span><strong>{formatYen(paidTotal)}</strong></div>
-          <div><span>支出予定</span><strong>{formatYen(plannedTotal)}</strong></div>
-          <div class:standard-money-over={remainingBudget !== null && remainingBudget < 0}><span>予算残</span><strong>{remainingBudget === null ? '—' : formatYen(remainingBudget)}</strong></div>
+        <div class="standard-money-budget-heading">
+          <div><span>予算の表示</span><div class="standard-money-segment"><button class:active={budgetView === 'total'} onclick={() => selectBudgetView('total')}>全体</button><button class:active={budgetView === 'perPerson'} onclick={() => selectBudgetView('perPerson')} disabled={!data.members.length}>1人あたり</button></div></div>
+          {#if budgetView === 'perPerson' && data.members.length}<small>{data.members.length}人で均等に計算</small>{/if}
         </div>
+        <section class="standard-money-budget-card">
+          <div class="standard-money-budget-label"><span>{budgetView === 'total' ? '全体予算' : '1人あたり予算'}</span><strong>{displayBudget === null ? '未設定' : formatYen(displayBudget)}</strong></div>
+          {#if displayBudget !== null}
+            <div class="standard-money-budget-bar" aria-label="予算の使用状況"><i class="paid" style={`width: ${paidPercent}%`}></i><i class="planned" style={`width: ${plannedPercent}%`}></i></div>
+          {/if}
+          <div class="standard-money-budget-legend"><span><i class="paid"></i>確定支出 <b>{formatYen(displayPaid)}</b></span><span><i class="planned"></i>予定支出 <b>{formatYen(displayPlanned)}</b></span><span class:standard-money-over={remainingBudget !== null && remainingBudget < 0}>残り <b>{remainingBudget === null ? '—' : formatYen(budgetView === 'perPerson' && data.members.length ? Math.round(remainingBudget / data.members.length) : remainingBudget)}</b></span></div>
+        </section>
 
         {#if canEdit}
-          <div class="standard-money-setup">
-            <label>全体予算 <input inputmode="numeric" placeholder="未設定" bind:value={budget} onblur={saveBudget} /> 円</label>
+          <details class="standard-money-setup" bind:open={settingsOpen}><summary>詳細設定 <small>予算・メンバー</small></summary><div class="standard-money-setup-body">
+            <label>{budgetView === 'total' ? '全体予算' : '1人あたり予算'} <input inputmode="numeric" placeholder="未設定" bind:value={budget} onblur={saveBudget} /> 円</label>
             <div class="standard-money-member-add"><input placeholder="メンバー名" bind:value={newMemberName} onkeydown={(e) => e.key === 'Enter' && addMember()} /><button onclick={addMember}>追加</button></div>
             {#if data.members.length}<div class="standard-money-members">{#each data.members as member}<span>{member.name}</span>{/each}</div>{/if}
-          </div>
+          </div></details>
         {/if}
 
         <div class="standard-money-tabs"><button class:active={activeTab === 'summary'} onclick={() => activeTab = 'summary'}>精算・内訳</button><button class:active={activeTab === 'items'} onclick={() => activeTab = 'items'}>支出一覧</button></div>
         {#if activeTab === 'summary'}
           {#if !data.members.length}<p class="standard-money-empty">メンバーを追加すると、立替と精算額を自動で計算します。</p>
           {:else}
-            <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><strong>{member.name}</strong><span>立替 {formatYen(member.paid)} · 確定負担 {formatYen(member.actualOwed)}{#if member.plannedOwed} · 予定 {formatYen(member.plannedOwed)}{/if}</span></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>
+            <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><strong>{member.name}</strong><span>立替合計 {formatYen(member.paid)} · 確定負担 {formatYen(member.actualOwed)}{#if member.plannedOwed} · 予定負担 {formatYen(member.plannedOwed)}{/if}</span></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>
             <section class="standard-money-settlements"><h3>いま精算するなら</h3>{#if settlements.length}{#each settlements as settlement}<p><b>{settlement.from}</b> → <b>{settlement.to}</b><strong>{formatYen(settlement.amount)}</strong></p>{/each}{:else}<p>精算は不要です</p>{/if}<small>予定支出は精算額に含めていません。</small></section>
           {/if}
         {:else}
           {#if canEdit && data.members.length}
-            <section class="standard-money-form"><h3>支出を登録</h3><input placeholder="例：ホテル、交通費" bind:value={title} /><div><input inputmode="numeric" placeholder="金額（円）" bind:value={amount} /><select bind:value={status}><option value="paid">支払い済み</option><option value="planned">支出予定</option></select></div>{#if status === 'paid'}<select bind:value={payerId}><option value="">支払った人を選択</option>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>{/if}<div class="standard-money-checks">{#each data.members as member}<label><input type="checkbox" checked={participantIds.includes(member.id)} onchange={() => toggleParticipant(member.id)} /> {member.name}</label>{/each}</div><button class="standard-money-submit" onclick={addItem}>登録する</button></section>
+            <section class="standard-money-form"><h3>{editingItemId ? '支出を編集' : '支出を登録'}</h3><input placeholder="例：ホテル、交通費" bind:value={title} /><div><input inputmode="numeric" placeholder="金額（円）" bind:value={amount} /><select bind:value={status}><option value="paid">支払い済み</option><option value="planned">支出予定</option></select></div>{#if status === 'paid'}<select bind:value={payerId}><option value="">支払った人を選択</option>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>{/if}{#if steps.length}<select bind:value={linkedStepId}><option value="">予定に紐づけない</option>{#each steps as step}<option value={step.id}>{step.title}</option>{/each}</select>{/if}<div class="standard-money-checks">{#each data.members as member}<label><input type="checkbox" checked={participantIds.includes(member.id)} onchange={() => toggleParticipant(member.id)} /> {member.name}</label>{/each}</div><div class="standard-money-form-actions">{#if editingItemId}<button class="standard-money-cancel" onclick={resetForm}>キャンセル</button>{/if}<button class="standard-money-submit" onclick={addItem}>{editingItemId ? '保存する' : '登録する'}</button></div></section>
           {/if}
           {#if !data.items.length}<p class="standard-money-empty">確定支出や、これから払う予定を登録できます。</p>
-          {:else}<div class="standard-money-item-list">{#each data.items as item}<article><div><span class:planned={item.status === 'planned'}>{item.status === 'paid' ? '確定' : '予定'}</span><strong>{item.title}</strong><small>{item.split_member_ids.map((id) => data.members.find((member) => member.id === id)?.name).filter(Boolean).join('・')}で負担</small></div><div><b>{formatYen(item.amount)}</b>{#if canEdit && item.status === 'planned'}<button onclick={() => markAsPaid(item.id)}>確定にする</button>{/if}{#if canEdit}<button class="delete" onclick={() => deleteItem(item.id)}>削除</button>{/if}</div></article>{/each}</div>{/if}
+          {:else}<div class="standard-money-item-list">{#each data.items as item}<article><div><span class:planned={item.status === 'planned'}>{item.status === 'paid' ? '確定' : '予定'}</span><strong>{item.title}</strong><small>{item.split_member_ids.map((id) => data.members.find((member) => member.id === id)?.name).filter(Boolean).join('・')}で負担</small>{#if stepTitle(item)}<button class="standard-money-step-link" onclick={() => viewedStep = steps.find((step) => step.id === item.step_id) ?? null}>予定：{stepTitle(item)}</button>{/if}</div><div><b>{formatYen(item.amount)}</b>{#if canEdit && item.status === 'planned'}<button onclick={() => markAsPaid(item.id)}>確定にする</button>{/if}{#if canEdit}<button onclick={() => editItem(item)}>編集</button><button class="delete" onclick={() => deleteItem(item.id)}>削除</button>{/if}</div></article>{/each}</div>{/if}
         {/if}
       {/if}
-    </section>
+    </div>
   </div>
+  {#if viewedStep}<EventDetailDialog step={viewedStep} onClose={() => viewedStep = null} />{/if}
 {/if}

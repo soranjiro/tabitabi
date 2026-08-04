@@ -85,7 +85,7 @@
         else plannedOwed += share;
       }
     }
-    return { ...member, paid, actualOwed, plannedOwed, balance: paid - actualOwed };
+    return { ...member, paid, actualOwed, plannedOwed, tripTotal: actualOwed + plannedOwed, balance: paid - actualOwed };
   }));
   const settlements = $derived.by(() => {
     const debtors = memberSummaries.filter((m) => m.balance < 0).map((m) => ({ ...m, left: -m.balance }));
@@ -290,7 +290,7 @@
         {#if activeTab === 'summary'}
           {#if !data.members.length}<p class="standard-money-empty">メンバーを追加すると、立替と精算額を自動で計算します。</p>
           {:else}
-            <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><strong>{member.name}</strong><span>立替合計 {formatYen(member.paid)} · 確定負担 {formatYen(member.actualOwed)}{#if member.plannedOwed} · 予定負担 {formatYen(member.plannedOwed)}{/if}</span></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>
+            <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><strong>{member.name}</strong><span class="standard-money-trip-total">旅行での支出合計 <b>{formatYen(member.tripTotal)}</b></span><details class="standard-money-person-detail"><summary>内訳を見る</summary><span>確定負担 {formatYen(member.actualOwed)}{#if member.plannedOwed} · 予定負担 {formatYen(member.plannedOwed)}{/if} · 立替合計 {formatYen(member.paid)}</span></details></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>
             <section class="standard-money-settlements"><h3>いま精算するなら</h3>{#if settlements.length}{#each settlements as settlement}<p><b>{settlement.from}</b> → <b>{settlement.to}</b><strong>{formatYen(settlement.amount)}</strong></p>{/each}{:else}<p>精算は不要です</p>{/if}<small>予定支出は精算額に含めていません。</small></section>
           {/if}
         {:else}

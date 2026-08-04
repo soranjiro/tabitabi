@@ -49,4 +49,26 @@ describe('Money API', () => {
     expect(data.members.map((member: { name: string }) => member.name)).toEqual(['Alice', 'Bob']);
     expect(data.items[0]).toMatchObject({ title: 'ホテル', amount: 12000, status: 'paid', split_member_ids: [alice.id, bob.id] });
   });
+
+  it('renames an unused member and allows deleting them', async () => {
+    const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'メンバー編集テスト' }),
+    }), env);
+    const { data: itinerary } = await create.json() as any;
+    const addResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/members`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Alice' }),
+    }), env);
+    const { data: member } = await addResponse.json() as any;
+
+    const renameResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/members/${member.id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Alicia' }),
+    }), env);
+    expect(renameResponse.status).toBe(200);
+    expect((await renameResponse.json() as any).data).toMatchObject({ id: member.id, name: 'Alicia' });
+
+    const deleteResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/members/${member.id}`, { method: 'DELETE' }), env);
+    expect(deleteResponse.status).toBe(200);
+    const moneyResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money`), env);
+    expect((await moneyResponse.json() as any).data.members).toEqual([]);
+  });
 });

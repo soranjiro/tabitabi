@@ -56,6 +56,7 @@
   let isViewMode = $state(false);
 
   let hasEditPermission = $state(false);
+  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
   let password = $state("");
   let isAuthenticating = $state(false);
   let shareUrl = $state("");
@@ -172,7 +173,7 @@
         if (token && itinerary.is_password_protected) {
           auth.setToken(itinerary.id, itinerary.title, token);
         }
-        hasEditPermission = auth.hasEditPermission(itinerary.id);
+        hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
         auth.updateAccessTime(itinerary.id, itinerary.title);
       }
 
@@ -219,6 +220,7 @@
   }
 
   async function attemptEditModeActivation() {
+    if (isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -658,7 +660,7 @@
     </svg>
   </button>
 
-  {#if !hasEditPermission}
+  {#if !hasEditPermission && !isSharedSnapshot}
     <button class="edit-mode-button" onclick={attemptEditModeActivation}>
       <svg
         xmlns="http://www.w3.org/2000/svg"

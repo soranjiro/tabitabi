@@ -3,6 +3,7 @@
 
   interface Props {
     hasEditPermission: boolean;
+    canRequestEdit?: boolean;
     walicaId: string | null | undefined;
     selectedThemeId: string;
     secretModeEnabled: boolean;
@@ -18,6 +19,7 @@
 
   let {
     hasEditPermission,
+    canRequestEdit = true,
     walicaId,
     selectedThemeId,
     secretModeEnabled,
@@ -71,15 +73,17 @@
       </button>
     {/if}
 
-    <button
-      type="button"
-      class="ai-nav-item"
-      class:active={hasEditPermission}
-      onclick={onEditModeToggle}
-    >
-      <span class="ai-nav-icon">{hasEditPermission ? "✓" : "✏️"}</span>
-      <span class="ai-nav-label">{hasEditPermission ? "編集中" : "編集"}</span>
-    </button>
+    {#if hasEditPermission || canRequestEdit}
+      <button
+        type="button"
+        class="ai-nav-item"
+        class:active={hasEditPermission}
+        onclick={onEditModeToggle}
+      >
+        <span class="ai-nav-icon">{hasEditPermission ? "✓" : "✏️"}</span>
+        <span class="ai-nav-label">{hasEditPermission ? "編集中" : "編集"}</span>
+      </button>
+    {/if}
   </div>
 </nav>
 

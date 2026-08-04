@@ -24,6 +24,7 @@
   let steps = $state<Step[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+  let loadingSlow = $state(false);
 
   let ItineraryView = $derived(theme?.components.ItineraryView);
   let backgroundColor = $derived(
@@ -70,6 +71,63 @@
     return defaultThemeId;
   }
 
+  const loadWithTimeout = <T,>(operation: Promise<T>, message: string): Promise<T> =>
+    Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error(message)), 10000);
+      }),
+    ]);
+
+  async function initializeDemo() {
+    loading = true;
+    loadingSlow = false;
+    error = null;
+
+    const slowLoadingTimer = window.setTimeout(() => {
+      loadingSlow = true;
+    }, 2500);
+
+    try {
+      setDemoMode(true);
+      const themeId = resolveThemeId($page.url.searchParams.get("theme"));
+
+      if (!demoStorage.hasData()) {
+        const demoData = await loadWithTimeout(
+          getDemoData(themeId),
+          "デモデータの取得がタイムアウトしました",
+        );
+        demoStorage.initializeDemo(demoData);
+      }
+
+      theme = await loadWithTimeout(
+        loadTheme(themeId),
+        "テーマの読み込みがタイムアウトしました",
+      );
+      itinerary = demoStorage.getItinerary();
+      steps = demoStorage.getSteps();
+
+      if (!itinerary) {
+        throw new Error("デモデータが見つかりません");
+      }
+
+      document.body.style.backgroundColor = backgroundColor;
+      document.documentElement.style.backgroundColor = backgroundColor;
+    } catch (e) {
+      console.error("Failed to load demo:", e);
+      error = "デモを表示できませんでした。再読み込みをお試しください。";
+    } finally {
+      window.clearTimeout(slowLoadingTimer);
+      loadingSlow = false;
+      loading = false;
+    }
+  }
+
+  function reloadDemo() {
+    // 古いService Workerや分割チャンクが残っているケースも、ページ更新で確実に解消する。
+    window.location.reload();
+  }
+
   onMount(() => {
     const handleUnload = () => {
       demoStorage.clear();
@@ -78,44 +136,7 @@
     window.addEventListener("pagehide", handleUnload);
     window.addEventListener("beforeunload", handleUnload);
 
-    const initializeDemo = async () => {
-      try {
-        // Enable demo mode for this page
-        setDemoMode(true);
-
-        // Get theme from URL parameter
-        const themeId = resolveThemeId($page.url.searchParams.get("theme"));
-
-        // Check if demo data exists, if not initialize
-        if (!demoStorage.hasData()) {
-          const demoData = await getDemoData(themeId);
-          demoStorage.initializeDemo(demoData);
-        }
-
-        // Load theme
-        theme = await loadTheme(themeId);
-
-        // Load data from demo storage
-        itinerary = demoStorage.getItinerary();
-        steps = demoStorage.getSteps();
-
-        if (!itinerary) {
-          error = "デモデータの読み込みに失敗しました";
-          loading = false;
-          return;
-        }
-
-        document.body.style.backgroundColor = backgroundColor;
-        document.documentElement.style.backgroundColor = backgroundColor;
-        loading = false;
-      } catch (e) {
-        console.error("Failed to load demo:", e);
-        error = "デモの読み込みに失敗しました";
-        loading = false;
-      }
-    };
-
-    initializeDemo();
+    void initializeDemo();
 
     return () => {
       window.removeEventListener("pagehide", handleUnload);
@@ -211,12 +232,18 @@
         </svg>
       </span>
       <p>デモを読み込み中...</p>
+      {#if loadingSlow}
+        <button class="demo-reload" onclick={reloadDemo}>再読み込み</button>
+      {/if}
     </div>
   </div>
 {:else if error}
   <div class="demo-error">
     <p>{error}</p>
-    <button onclick={goHome}>ホームに戻る</button>
+    <div class="demo-error-actions">
+      <button onclick={reloadDemo}>再読み込み</button>
+      <button onclick={goHome}>ホームに戻る</button>
+    </div>
   </div>
 {:else if ItineraryView && itinerary}
   <div class="demo-banner">
@@ -290,6 +317,20 @@
     font-weight: 600;
     cursor: pointer;
   }
+
+  .demo-reload,
+  .demo-error-actions button {
+    border: 0;
+    border-radius: 0.65rem;
+    padding: 0.65rem 1rem;
+    background: white;
+    color: #2563eb;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .demo-reload { margin-top: 0.75rem; }
+  .demo-error-actions { display: flex; gap: 0.5rem; }
 
   .demo-banner {
     position: sticky;

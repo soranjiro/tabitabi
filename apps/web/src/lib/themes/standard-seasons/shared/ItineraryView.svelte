@@ -19,7 +19,7 @@
   import MemoDialog from "./components/MemoDialog.svelte";
   import PasswordDialog from "./components/PasswordDialog.svelte";
   import ShareDialog from "./components/ShareDialog.svelte";
-  import WalicaOverlay from "./components/WalicaOverlay.svelte";
+  import MoneyOverlay from "./components/MoneyOverlay.svelte";
   import ViewModeSelector from "./components/ViewModeSelector.svelte";
   import ThemeSelectorPopup from "./components/ThemeSelectorPopup.svelte";
   import SettingsDialog from "./components/SettingsDialog.svelte";
@@ -36,7 +36,6 @@
       title?: string;
       theme_id?: string;
       memo?: string;
-      walica_id?: string | null;
       secret_settings?: {
         enabled: boolean;
         offset_minutes: number;
@@ -96,16 +95,14 @@
   let showMemoDialog = $state(false);
   let showSettingsDialog = $state(false);
   let isAuthenticating = $state(false);
+  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
 
   let selectedThemeId = $state(itinerary.theme_id || "standard-autumn");
   let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
   let secretModeOffset = $state(
     itinerary.secret_settings?.offset_minutes ?? 60,
   );
-  let walicaUrl = $state(
-    itinerary.walica_id ? `https://walica.jp/group/${itinerary.walica_id}` : "",
-  );
-  let showWalica = $state(false);
+  let showMoney = $state(false);
   let showViewModeSelector = $state(false);
   let showThemeSelectorPopup = $state(false);
   let currentViewMode = $state<ViewMode>("dayCard");
@@ -159,7 +156,7 @@
     if (token && itinerary.is_password_protected) {
       auth.setToken(itinerary.id, itinerary.title, token);
     }
-    hasEditPermission = auth.hasEditPermission(itinerary.id);
+    hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
 
     if (!hasEditPermission && !itinerary.is_password_protected && !itinerary.source_itinerary_id) {
       hasEditPermission = true;
@@ -191,6 +188,7 @@
   }
 
   function handleEditModeToggle() {
+    if (isSharedSnapshot) return;
     if (hasEditPermission) {
       // Check if currently editing
       if (stepListRef?.isCurrentlyEditing?.()) {
@@ -361,17 +359,6 @@
     }
   }
 
-  async function handleWalicaUpdate(url: string) {
-    if (url && !url.startsWith("https://walica.jp/group/")) {
-      alert("WalicaのURLは https://walica.jp/group/ で始まる必要があります");
-      return;
-    }
-    walicaUrl = url;
-    const walicaId = url ? url.split("/group/")[1] : null;
-    if (onUpdateItinerary) {
-      await onUpdateItinerary({ walica_id: walicaId });
-    }
-  }
 </script>
 
 <div
@@ -520,18 +507,16 @@
       {/if}
     <BottomNav
         {hasEditPermission}
-        walicaId={itinerary.walica_id}
+        canRequestEdit={!isSharedSnapshot}
         {themes}
         {selectedThemeId}
         {secretModeEnabled}
         {secretModeOffset}
-        {walicaUrl}
         onEditModeToggle={handleEditModeToggle}
         onViewModeClick={() => (showViewModeSelector = true)}
         onThemeChange={handleThemeChange}
         onSecretModeChange={handleSecretModeUpdate}
-        onWalicaUpdate={handleWalicaUpdate}
-        onWalicaOpen={() => (showWalica = true)}
+        onMoneyOpen={() => (showMoney = true)}
         onShowThemeSelector={() => (showThemeSelectorPopup = true)}
         onSettingsClick={() => (showSettingsDialog = true)}
     />
@@ -552,10 +537,11 @@
     onClose={() => (showPasswordDialog = false)}
   />
 
-  <WalicaOverlay
-    show={showWalica}
-    walicaId={itinerary.walica_id || ""}
-    onClose={() => (showWalica = false)}
+  <MoneyOverlay
+    show={showMoney}
+    itineraryId={itinerary.id}
+    canEdit={hasEditPermission}
+    onClose={() => (showMoney = false)}
   />
 
   <ShareDialog
@@ -600,10 +586,8 @@
     {selectedThemeId}
     {secretModeEnabled}
     {secretModeOffset}
-    {walicaUrl}
     onThemeChange={handleThemeChange}
     onSecretModeChange={handleSecretModeUpdate}
-    onWalicaUpdate={handleWalicaUpdate}
     onClose={() => (showSettingsDialog = false)}
   />
 

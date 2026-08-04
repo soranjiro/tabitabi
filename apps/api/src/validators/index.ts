@@ -58,6 +58,30 @@ export const updateItinerarySchema = z.object({
   }).nullable().optional(),
 });
 
+// ── Money management ──────────────────────────────────
+
+export const moneyMemberSchema = z.object({
+  name: z.string().trim().min(1, 'name is required').max(40, 'name must be at most 40 characters'),
+});
+
+export const moneyItemSchema = z.object({
+  title: z.string().trim().min(1, 'title is required').max(100, 'title must be at most 100 characters'),
+  amount: z.number().int().positive('amount must be positive').max(100_000_000),
+  paid_by_member_id: z.string().nullable().optional(),
+  status: z.enum(['paid', 'planned']),
+  occurred_on: z.string().date().nullable().optional(),
+  split_member_ids: z.array(z.string()).min(1, 'at least one participant is required').max(50),
+});
+
+export const updateMoneyItemSchema = moneyItemSchema.partial().refine(
+  (data) => Object.keys(data).length > 0,
+  { message: 'at least one field is required' },
+);
+
+export const moneySettingsSchema = z.object({
+  budget_amount: z.number().int().positive().max(100_000_000).nullable(),
+});
+
 // ── Profile / Password ─────────────────────────────────
 
 export const updateProfileSchema = z.object({

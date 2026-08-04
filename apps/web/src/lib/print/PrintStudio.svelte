@@ -107,7 +107,9 @@
   onDestroy(() => {
     pageStyle?.remove();
     closePrintStudio();
-    document.documentElement.classList.remove("tabitabi-print-open");
+    if (browser) {
+      document.documentElement.classList.remove("tabitabi-print-open");
+    }
   });
 </script>
 

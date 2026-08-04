@@ -69,6 +69,7 @@
   let showShareDialog = $state(false);
   let showCopyMessage = $state(false);
   let passwordDialogAuthenticating = $state(false);
+  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
 
   interface SaunaData {
     visited?: boolean;
@@ -104,7 +105,7 @@
     if (token && itinerary.is_password_protected) {
       auth.setToken(itinerary.id, itinerary.title, token);
     }
-    hasEditPermission = auth.hasEditPermission(itinerary.id);
+    hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
     auth.updateAccessTime(itinerary.id, itinerary.title);
   });
 
@@ -123,6 +124,7 @@
   }
 
   async function attemptEditModeActivation() {
+    if (isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -342,7 +344,7 @@
               🔑
             </button>
           {/if}
-        {:else}
+        {:else if !isSharedSnapshot}
           <button class="edit-button" onclick={attemptEditModeActivation}>
             編集モード
           </button>

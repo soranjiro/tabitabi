@@ -63,7 +63,22 @@
     editUsername = username ?? "";
 
     await loadBookmarks();
+    await continuePendingFork();
   });
+
+  async function continuePendingFork() {
+    const itineraryId = sessionStorage.getItem("tabitabi_pending_fork");
+    if (!itineraryId || !userAuth.isLoggedIn()) return;
+
+    sessionStorage.removeItem("tabitabi_pending_fork");
+    try {
+      const result = await itineraryApi.fork(itineraryId);
+      auth.setToken(result.id, result.title, result.token);
+      await goto(`/${result.id}`);
+    } catch (e) {
+      formError = e instanceof Error ? e.message : "しおりをコピーできませんでした";
+    }
+  }
 
   async function loadBookmarks() {
     try {
@@ -92,6 +107,7 @@
       loggedIn = userAuth.isLoggedIn();
       await syncLocalBookmarks();
       await loadBookmarks();
+      await continuePendingFork();
     } catch (e) {
       formError = e instanceof Error ? e.message : "エラーが発生しました";
     } finally {

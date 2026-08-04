@@ -14,10 +14,8 @@
     selectedThemeId: string;
     secretModeEnabled: boolean;
     secretModeOffset: number;
-    walicaUrl: string;
     onThemeChange: (themeId: string) => void;
     onSecretModeChange: (enabled: boolean, offset: number) => void;
-    onWalicaUpdate: (url: string) => void;
     onClose: () => void;
   }
 
@@ -27,37 +25,31 @@
     selectedThemeId,
     secretModeEnabled,
     secretModeOffset,
-    walicaUrl,
     onThemeChange,
     onSecretModeChange,
-    onWalicaUpdate,
     onClose,
   }: Props = $props();
 
   let localSecretEnabled = $state(secretModeEnabled);
   let localSecretOffset = $state(secretModeOffset);
-  let localWalicaUrl = $state(walicaUrl);
   let localThemeId = $state(selectedThemeId);
   let showThemeList = $state(false);
 
   $effect(() => {
     localSecretEnabled = secretModeEnabled;
     localSecretOffset = secretModeOffset;
-    localWalicaUrl = walicaUrl;
     localThemeId = selectedThemeId;
   });
 
   function handleSave() {
     onThemeChange(localThemeId);
     onSecretModeChange(localSecretEnabled, localSecretOffset);
-    onWalicaUpdate(localWalicaUrl);
     onClose();
   }
 
   function handleCancel() {
     localSecretEnabled = secretModeEnabled;
     localSecretOffset = secretModeOffset;
-    localWalicaUrl = walicaUrl;
     localThemeId = selectedThemeId;
     onClose();
   }
@@ -156,46 +148,6 @@
           </select>
         </div>
       {/if}
-    </div>
-
-    <div class="standard-settings-page-divider"></div>
-
-    <div class="standard-settings-page-section">
-      <div class="standard-settings-page-section-header">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          width="20"
-          height="20"
-        >
-          <path
-            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
-          />
-        </svg>
-        <h3>Walica連携</h3>
-      </div>
-      <p class="standard-settings-page-description">
-        Walicaの割り勘グループと連携できます
-      </p>
-      <div class="standard-settings-page-field">
-        <label
-          for="walica-url-input"
-          class="standard-settings-page-label"
-        >
-          Walica グループURL
-        </label>
-        <input
-          id="walica-url-input"
-          type="text"
-          bind:value={localWalicaUrl}
-          placeholder="https://walica.jp/group/..."
-          class="standard-settings-page-input"
-        />
-        <p class="standard-settings-page-hint">
-          WalicaグループのURLを入力すると、しおりからWalicaにアクセスできます
-        </p>
-      </div>
     </div>
 
     <div class="standard-settings-page-actions">

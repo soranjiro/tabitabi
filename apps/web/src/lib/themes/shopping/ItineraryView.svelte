@@ -61,6 +61,7 @@
   let editedMemo = $state(itinerary.memo || "");
   let password = $state("");
   let isAuthenticating = $state(false);
+  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
 
   function isCompleted(step: Step): boolean {
     return step.notes?.startsWith("Done") ?? false;
@@ -83,7 +84,7 @@
     if (token && itinerary.is_password_protected) {
       auth.setToken(itinerary.id, itinerary.title, token);
     }
-    hasEditPermission = auth.hasEditPermission(itinerary.id);
+    hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
     auth.updateAccessTime(itinerary.id, itinerary.title);
   });
 
@@ -103,6 +104,7 @@
   }
 
   async function attemptEditModeActivation() {
+    if (isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -281,7 +283,7 @@
     </div>
 
     <div class="shopping-header-controls">
-      {#if !hasEditPermission}
+      {#if !hasEditPermission && !isSharedSnapshot}
         <button onclick={attemptEditModeActivation} class="shopping-header-btn">
           編集モード
         </button>

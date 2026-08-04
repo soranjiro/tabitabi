@@ -78,6 +78,7 @@
   let showPasswordDialog = $state(false);
   let showMemoDialog = $state(false);
   let isAuthenticating = $state(false);
+  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
 
   let selectedThemeId = $state(itinerary.theme_id || "ai-generated");
   let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
@@ -112,7 +113,7 @@
     if (token && itinerary.is_password_protected) {
       auth.setToken(itinerary.id, itinerary.title, token);
     }
-    hasEditPermission = auth.hasEditPermission(itinerary.id);
+    hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
 
     if (!hasEditPermission && !itinerary.is_password_protected && !itinerary.source_itinerary_id) {
       attemptEditModeActivation();
@@ -136,6 +137,7 @@
   }
 
   function handleEditModeToggle() {
+    if (isSharedSnapshot) return;
     if (hasEditPermission) {
       hasEditPermission = false;
     } else {
@@ -144,6 +146,7 @@
   }
 
   async function attemptEditModeActivation() {
+    if (isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -374,6 +377,7 @@
 
   <BottomNav
     {hasEditPermission}
+    canRequestEdit={!isSharedSnapshot}
     walicaId={itinerary.walica_id}
     {selectedThemeId}
     {secretModeEnabled}

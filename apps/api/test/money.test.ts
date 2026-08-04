@@ -10,7 +10,7 @@ async function setup() {
     `CREATE TABLE IF NOT EXISTS itinerary_fork_stats (itinerary_id TEXT PRIMARY KEY, fork_count INTEGER NOT NULL DEFAULT 0);`,
     `CREATE TABLE IF NOT EXISTS itinerary_money_settings (itinerary_id TEXT PRIMARY KEY, budget_amount INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
     `CREATE TABLE IF NOT EXISTS itinerary_money_members (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_money_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL, paid_by_member_id TEXT, status TEXT NOT NULL, occurred_on TEXT, split_member_ids TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL, paid_by_member_id TEXT, status TEXT NOT NULL, occurred_on TEXT, step_id TEXT, split_member_ids TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
   ];
   for (const sql of migrations) await env.DB.prepare(sql).run();
   await env.DB.prepare('DELETE FROM itinerary_money_items').run();

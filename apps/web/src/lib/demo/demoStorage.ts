@@ -10,15 +10,20 @@ import type {
   Step,
   ItinerarySecretRecord,
   ItineraryWalicaSettingsRecord,
+  MoneyData,
 } from '@tabitabi/types';
 
 const DEMO_KEY = 'tabitabi_demo';
+
+const cloneMoneyData = (money: MoneyData): MoneyData =>
+  JSON.parse(JSON.stringify(money)) as MoneyData;
 
 export interface DemoData {
   itinerary: Itinerary;
   steps: Step[];
   itinerary_secrets?: ItinerarySecretRecord | null;
   itinerary_walica_settings?: ItineraryWalicaSettingsRecord | null;
+  itinerary_money?: MoneyData | null;
 }
 
 interface StoredDemoData {
@@ -26,6 +31,7 @@ interface StoredDemoData {
   steps: Step[];
   itinerary_secrets?: ItinerarySecretRecord | null;
   itinerary_walica_settings?: ItineraryWalicaSettingsRecord | null;
+  itinerary_money?: MoneyData | null;
 }
 
 export const demoStorage = {
@@ -95,6 +101,18 @@ export const demoStorage = {
   getItineraryWalicaSettings(): ItineraryWalicaSettingsRecord | null {
     const data = this.getData();
     return data?.itinerary_walica_settings ?? null;
+  },
+
+  /** Get the demo-only money data. It is deliberately kept in the same localStorage record. */
+  getMoneyData(): MoneyData | null {
+    const money = this.getData()?.itinerary_money;
+    return money ? cloneMoneyData(money) : null;
+  },
+
+  setMoneyData(money: MoneyData): void {
+    const data = this.getData();
+    if (!data) return;
+    this.saveData({ ...data, itinerary_money: cloneMoneyData(money) });
   },
 
   /**
@@ -233,6 +251,7 @@ export const demoStorage = {
       steps: demoData.steps,
       itinerary_secrets: demoData.itinerary_secrets ?? null,
       itinerary_walica_settings: demoData.itinerary_walica_settings ?? null,
+      itinerary_money: demoData.itinerary_money ?? null,
     });
   },
 

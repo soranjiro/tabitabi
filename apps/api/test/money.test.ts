@@ -1,0 +1,52 @@
+import { env } from 'cloudflare:test';
+import { beforeEach, describe, expect, it } from 'vitest';
+import app from '../src/index';
+
+async function setup() {
+  const migrations = [
+    `CREATE TABLE IF NOT EXISTS itineraries (id TEXT PRIMARY KEY, title TEXT NOT NULL, theme_id TEXT NOT NULL, memo TEXT, password TEXT, source_itinerary_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_secrets (itinerary_id TEXT PRIMARY KEY, enabled INTEGER, offset_minutes INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_walica_settings (itinerary_id TEXT PRIMARY KEY, walica_id TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_fork_stats (itinerary_id TEXT PRIMARY KEY, fork_count INTEGER NOT NULL DEFAULT 0);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_settings (itinerary_id TEXT PRIMARY KEY, budget_amount INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_members (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL, paid_by_member_id TEXT, status TEXT NOT NULL, occurred_on TEXT, step_id TEXT, split_member_ids TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
+  ];
+  for (const sql of migrations) await env.DB.prepare(sql).run();
+  await env.DB.prepare('DELETE FROM itinerary_money_items').run();
+  await env.DB.prepare('DELETE FROM itinerary_money_members').run();
+  await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
+  await env.DB.prepare('DELETE FROM itinerary_secrets').run();
+  await env.DB.prepare('DELETE FROM itinerary_walica_settings').run();
+  await env.DB.prepare('DELETE FROM itinerary_fork_stats').run();
+  await env.DB.prepare('DELETE FROM itineraries').run();
+}
+
+describe('Money API', () => {
+  beforeEach(setup);
+
+  it('stores paid and planned expenses against trip members', async () => {
+    const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '会計テスト' }),
+    }), env);
+    const { data: itinerary } = await create.json() as any;
+    const addMember = async (name: string) => {
+      const response = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/members`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+      }), env);
+      return (await response.json() as any).data;
+    };
+    const alice = await addMember('Alice');
+    const bob = await addMember('Bob');
+    const itemResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'ホテル', amount: 12000, status: 'paid', paid_by_member_id: alice.id, split_member_ids: [alice.id, bob.id] }),
+    }), env);
+    expect(itemResponse.status).toBe(201);
+
+    const moneyResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money`), env);
+    const { data } = await moneyResponse.json() as any;
+    expect(data.members.map((member: { name: string }) => member.name)).toEqual(['Alice', 'Bob']);
+    expect(data.items[0]).toMatchObject({ title: 'ホテル', amount: 12000, status: 'paid', split_member_ids: [alice.id, bob.id] });
+  });
+});

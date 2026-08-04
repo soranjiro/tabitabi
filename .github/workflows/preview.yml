@@ -18,13 +18,14 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: preview-${{ github.event.issue.number || inputs.pr_number }}
+  group: preview-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
   deploy-preview:
     runs-on: ubuntu-latest
     if: |
+      github.event_name == 'pull_request' ||
       (github.event_name == 'issue_comment' &&
        github.event.issue.pull_request &&
        contains(github.event.comment.body, '/deploy-preview')) ||
@@ -33,9 +34,9 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       JWT_SECRET: ${{ secrets.PREVIEW_JWT_SECRET }}
+      PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
+      PREVIEW_DB_NAME: tabitabi-preview-pr-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
       APP_GITHUB_ISSUES_TOKEN: ${{ secrets.APP_GITHUB_ISSUES_TOKEN }}
-      PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.issue.number }}
-      PREVIEW_DB_NAME: tabitabi-preview-pr-${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.issue.number }}
     steps:
       - name: Add reaction to comment
         if: github.event_name == 'issue_comment'

@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import type { Step, StepType } from "@tabitabi/types";
+  import type { MoneyItem } from "@tabitabi/types";
   import {
     getStepDate,
     getStepTime,
@@ -18,6 +20,8 @@
   } from "$lib/memo";
   import TypePicker from "./TypePicker.svelte";
   import { getBookingCard } from "../utils/booking-card";
+  import { moneyApi } from "$lib/api/money";
+  import { demoStorage, getIsDemoMode } from "$lib/demo";
   import "../styles/EventDetailDialog.css";
 
   interface Props {
@@ -97,6 +101,23 @@
   let linkHelperOpen = $state(false);
   let linkBrowserUrl = $state("");
   let bookingCard = $derived(step ? getBookingCard(step) : null);
+  let linkedBudgetItems = $state<MoneyItem[]>([]);
+  const yen = new Intl.NumberFormat("ja-JP");
+  const formatYen = (value: number) => `¥${yen.format(value)}`;
+
+  async function loadLinkedBudgetItems() {
+    if (!step) return;
+    try {
+      const money = step.itinerary_id === "demo" || getIsDemoMode()
+        ? demoStorage.getMoneyData()
+        : await moneyApi.get(step.itinerary_id);
+      linkedBudgetItems = (money?.items ?? []).filter((item) => item.step_id === step?.id);
+    } catch {
+      linkedBudgetItems = [];
+    }
+  }
+
+  onMount(loadLinkedBudgetItems);
 
   type LinkProvider = {
     label: string;
@@ -725,6 +746,16 @@
                 class="standard-event-detail-value standard-event-detail-notes"
               >
                 {@html renderMarkdown(step.notes || "")}
+              </div>
+            </div>
+          {/if}
+          {#if linkedBudgetItems.length}
+            <div class="standard-event-detail-field standard-event-linked-budget">
+              <span class="standard-event-detail-label">紐づく予算</span>
+              <div class="standard-event-linked-budget-list">
+                {#each linkedBudgetItems as item}
+                  <div><span class:planned={item.status === "planned"}>{item.status === "paid" ? "確定" : "予定"}</span><b>{item.title}</b><strong>{formatYen(item.amount)}</strong></div>
+                {/each}
               </div>
             </div>
           {/if}

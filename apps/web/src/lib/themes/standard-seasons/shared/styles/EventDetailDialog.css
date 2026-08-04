@@ -181,6 +181,12 @@
   display: block;
 }
 
+.standard-event-linked-budget-list { display: grid; gap: .4rem; margin-top: .35rem; }
+.standard-event-linked-budget-list > div { display: flex; align-items: center; gap: .45rem; padding: .5rem .6rem; background: #f6f7f4; border-radius: 8px; font-size: .83rem; }
+.standard-event-linked-budget-list span { color: #257451; background: #e8f5ec; border-radius: 999px; padding: .12rem .4rem; font-size: .68rem; font-weight: 700; }
+.standard-event-linked-budget-list span.planned { color: #9b611b; background: #fff0d5; }
+.standard-event-linked-budget-list strong { margin-left: auto; }
+
 .standard-form-grid {
   display: flex;
   flex-direction: column;

@@ -253,6 +253,29 @@ describe('Itineraries API', () => {
       const { error } = await updateRes.json() as any;
       expect(error.code).toBe('FORBIDDEN');
     });
+
+    it('does not issue an edit token for a shared snapshot', async () => {
+      const createRes = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'オリジナル' }),
+      }), env);
+      const { data: original } = await createRes.json() as any;
+
+      const publishRes = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${original.id}/publish`, {
+        method: 'POST',
+      }), env);
+      const { data: snapshot } = await publishRes.json() as any;
+
+      const authRes = await app.fetch(new Request('http://localhost/api/v1/auth/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shioriId: snapshot.id, password: '' }),
+      }), env);
+      expect(authRes.status).toBe(403);
+      const { error } = await authRes.json() as any;
+      expect(error.code).toBe('FORBIDDEN');
+    });
   });
 
   describe('DELETE /api/v1/itineraries/:id', () => {

@@ -192,22 +192,23 @@
 
   let isViewOnly = $derived(!!data.itinerary.source_itinerary_id);
 
-  let isLoggedIn = $state(false);
   let forking = $state(false);
 
   async function handleFork() {
     if (forking) return;
     const userToken = userAuth.getToken();
-    isLoggedIn = !!userToken;
     if (!userToken) {
-      alert("コピーするにはログインが必要です");
+      sessionStorage.setItem("tabitabi_pending_fork", data.itinerary.id);
+      await goto("/profile");
       return;
     }
     forking = true;
     try {
       const result = await itineraryApi.fork(data.itinerary.id);
       auth.setToken(result.id, result.title, result.token);
-      await goto(`/${result.id}`);
+      // 同じ動的ルート内の遷移では、テーマコンポーネントの編集状態が残ることがあるため、
+      // コピー先は新しいページとして開いて確実に自分用のしおりだけを表示する。
+      window.location.assign(`/${result.id}`);
     } catch (error) {
       console.error("Failed to fork itinerary:", error);
       alert("コピーに失敗しました");
@@ -237,13 +238,42 @@
 <PrintStudio {itinerary} {steps} />
 
 {#if isViewOnly}
-  <div class="fixed bottom-6 right-6 z-50">
+  <aside class="shared-snapshot-cta" aria-label="共有されたしおりの操作">
+    <div>
+      <p class="shared-snapshot-eyebrow">共有されたしおり</p>
+      <p class="shared-snapshot-copy">閲覧専用です。コピーすると自分用に編集できます。</p>
+    </div>
     <button
       onclick={handleFork}
       disabled={forking}
-      class="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-300 shadow-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-all"
+      class="shared-snapshot-button"
     >
-      {forking ? "コピー中..." : "コピーして使う"}
+      {forking ? "コピー中..." : "コピーして編集"}
     </button>
-  </div>
+  </aside>
 {/if}
+
+<style>
+  .shared-snapshot-cta {
+    position: fixed;
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    max-width: min(32rem, calc(100vw - 2rem));
+    padding: 0.75rem 0.8rem 0.75rem 1rem;
+    border: 1px solid #dbeafe;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 12px 32px rgba(30, 64, 175, 0.18);
+    backdrop-filter: blur(10px);
+  }
+  .shared-snapshot-eyebrow { margin: 0 0 0.15rem; color: #1d4ed8; font-size: 0.75rem; font-weight: 700; }
+  .shared-snapshot-copy { margin: 0; color: #334155; font-size: 0.78rem; line-height: 1.35; }
+  .shared-snapshot-button { flex: none; border: 0; border-radius: 0.7rem; padding: 0.7rem 0.85rem; background: #2563eb; color: white; font-size: 0.82rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
+  .shared-snapshot-button:hover { background: #1d4ed8; }
+  .shared-snapshot-button:disabled { cursor: wait; opacity: 0.65; }
+  @media (max-width: 540px) { .shared-snapshot-cta { left: 1rem; right: 1rem; } }
+</style>

@@ -2,12 +2,10 @@
   import { goto } from "$app/navigation";
   import {
     HomeIcon,
-    WalicaIcon,
     ViewIcon,
     EditIcon,
     SettingsIcon,
   } from "./icons/index.svelte";
-  import SettingsMenu from "./SettingsMenu.svelte";
 
   interface ThemeOption {
     id: string;
@@ -17,17 +15,15 @@
 
   interface Props {
     hasEditPermission: boolean;
-    walicaId?: string | null;
+    canRequestEdit?: boolean;
     themes: ThemeOption[];
     selectedThemeId: string;
     secretModeEnabled: boolean;
     secretModeOffset: number;
-    walicaUrl: string;
     onEditModeToggle: () => void;
     onThemeChange: (themeId: string) => void;
     onSecretModeChange: (enabled: boolean, offset: number) => void;
-    onWalicaUpdate: (url: string) => void;
-    onWalicaOpen: () => void;
+    onMoneyOpen: () => void;
     onViewModeClick?: () => void;
     onShowThemeSelector?: () => void;
     onSettingsClick?: () => void;
@@ -35,17 +31,15 @@
 
   let {
     hasEditPermission,
-    walicaId,
+    canRequestEdit = true,
     themes,
     selectedThemeId,
     secretModeEnabled,
     secretModeOffset,
-    walicaUrl,
     onEditModeToggle,
     onThemeChange,
     onSecretModeChange,
-    onWalicaUpdate,
-    onWalicaOpen,
+    onMoneyOpen,
     onViewModeClick,
     onShowThemeSelector,
     onSettingsClick,
@@ -93,17 +87,15 @@
     <span>Home</span>
   </button>
 
-  {#if walicaId}
-    <button
-      class="standard-bottom-btn"
-      title="Walica"
-      aria-label="Walica"
-      onclick={onWalicaOpen}
-    >
-      {@html WalicaIcon}
-      <span>Walica</span>
-    </button>
-  {/if}
+  <button
+    class="standard-bottom-btn"
+    title="お金の管理"
+    aria-label="お金の管理"
+    onclick={onMoneyOpen}
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 16.93V20h-2v-1.07A4.1 4.1 0 0 1 7.8 15h2.05c.08.7.68 1.18 1.66 1.18.9 0 1.5-.38 1.5-.98 0-.54-.4-.82-1.75-1.12-1.87-.42-3.08-1.25-3.08-2.88 0-1.43 1.09-2.54 2.82-2.8V5h2v1.13A3.72 3.72 0 0 1 15.9 9h-2.02c-.1-.58-.6-.98-1.44-.98-.8 0-1.3.35-1.3.88 0 .5.42.78 1.77 1.1 1.88.43 3.05 1.3 3.05 2.94 0 1.5-1.17 2.68-2.96 2.99Z"/></svg>
+    <span>Money</span>
+  </button>
 
   <div class="standard-btn-wrapper">
     <button
@@ -127,7 +119,7 @@
       {@html ViewIcon}
       <span>View</span>
     </button>
-  {:else}
+  {:else if canRequestEdit}
     <button
       class="standard-bottom-btn"
       title="編集モードに切り替え"

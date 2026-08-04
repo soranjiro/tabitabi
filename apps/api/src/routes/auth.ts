@@ -53,6 +53,15 @@ auth.post('/password', async (c) => {
     }, 404);
   }
 
+  // 公開用スナップショットは常に閲覧専用です。パスワードが未設定でも
+  // 編集用トークンを発行すると、クライアントが編集可能と誤認してしまいます。
+  if (itinerary.source_itinerary_id) {
+    return c.json({
+      success: false,
+      error: { code: 'FORBIDDEN', message: 'Shared snapshots are view-only. Copy it to create your own editable itinerary.' }
+    }, 403);
+  }
+
   if (itinerary.password) {
     if (!password) {
       return c.json({

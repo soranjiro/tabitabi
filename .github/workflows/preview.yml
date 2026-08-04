@@ -36,6 +36,7 @@ jobs:
       JWT_SECRET: ${{ secrets.PREVIEW_JWT_SECRET }}
       PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
       PREVIEW_DB_NAME: tabitabi-preview-pr-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
+      APP_GITHUB_ISSUES_TOKEN: ${{ secrets.APP_GITHUB_ISSUES_TOKEN }}
     steps:
       - name: Add reaction to comment
         if: github.event_name == 'issue_comment'
@@ -107,6 +108,7 @@ jobs:
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${{ steps.preview-db.outputs.database_id }}/g" wrangler.toml
           sed -i "s/database_name = \"tabitabi\"/database_name = \"${PREVIEW_DB_NAME}\"/g" wrangler.toml
+          node -e 'require("node:fs").appendFileSync("wrangler.toml", `\n[vars]\nAPP_GITHUB_ISSUES_TOKEN = ${JSON.stringify(process.env.APP_GITHUB_ISSUES_TOKEN)}\n`)'
 
       - name: Generate API wrangler.toml from example
         working-directory: apps/api

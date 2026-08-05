@@ -41,7 +41,7 @@ jobs:
         run: |
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${CLOUDFLARE_DATABASE_ID}/g" wrangler.toml
-          node -e 'require("node:fs").appendFileSync("wrangler.toml", `\n[vars]\nAPP_GITHUB_ISSUES_TOKEN = ${JSON.stringify(process.env.APP_GITHUB_ISSUES_TOKEN)}\n`)'
+          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const token = JSON.stringify(process.env.APP_GITHUB_ISSUES_TOKEN ?? ""); fs.writeFileSync(path, fs.readFileSync(path, "utf8").replaceAll("\"PLACEHOLDER_GITHUB_ISSUES_TOKEN\"", token));'
 
       - name: Generate API wrangler.toml from example
         working-directory: apps/api
@@ -68,5 +68,4 @@ jobs:
         run: pnpm wrangler deploy --env production
 
       - name: Deploy Web (Pages)
-        working-directory: apps/web
-        run: pnpm wrangler pages deploy .svelte-kit/cloudflare --project-name=tabitabi --branch=main --commit-message="$(git log -1 --format=%H)"
+        run: pnpm wrangler pages deploy apps/web/.svelte-kit/cloudflare --project-name=tabitabi --branch=main --commit-message="$(git log -1 --format=%H)"

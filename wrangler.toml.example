@@ -16,4 +16,23 @@ database_name = "tabitabi"
 database_id = "PLACEHOLDER_DATABASE_ID"
 
 [env.production]
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "tabitabi"
+database_id = "PLACEHOLDER_DATABASE_ID"
+
+[env.production.vars]
 VITE_API_URL = "https://tabitabi-api.youraccount.workers.dev/api/v1"
+APP_GITHUB_ISSUES_TOKEN = "PLACEHOLDER_GITHUB_ISSUES_TOKEN"
+APP_GITHUB_ISSUES_REPOSITORY = "soranjiro/tabitabi"
+
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "tabitabi"
+database_id = "PLACEHOLDER_DATABASE_ID"
+
+[env.preview.vars]
+VITE_API_URL = "https://tabitabi-api-preview-pr-PLACEHOLDER_PR_NUMBER.youraccount.workers.dev/api/v1"
+APP_GITHUB_ISSUES_TOKEN = "PLACEHOLDER_GITHUB_ISSUES_TOKEN"
+APP_GITHUB_ISSUES_REPOSITORY = "soranjiro/tabitabi"

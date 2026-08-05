@@ -108,7 +108,8 @@ jobs:
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${{ steps.preview-db.outputs.database_id }}/g" wrangler.toml
           sed -i "s/database_name = \"tabitabi\"/database_name = \"${PREVIEW_DB_NAME}\"/g" wrangler.toml
-          node -e 'require("node:fs").appendFileSync("wrangler.toml", `\n[vars]\nAPP_GITHUB_ISSUES_TOKEN = ${JSON.stringify(process.env.APP_GITHUB_ISSUES_TOKEN)}\n`)'
+          sed -i "s/PLACEHOLDER_PR_NUMBER/${PR_NUMBER}/g" wrangler.toml
+          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const token = JSON.stringify(process.env.APP_GITHUB_ISSUES_TOKEN ?? ""); fs.writeFileSync(path, fs.readFileSync(path, "utf8").replaceAll("\"PLACEHOLDER_GITHUB_ISSUES_TOKEN\"", token));'
 
       - name: Generate API wrangler.toml from example
         working-directory: apps/api
@@ -140,10 +141,9 @@ jobs:
 
       - name: Deploy Web to Pages preview
         id: pages-deploy
-        working-directory: apps/web
         run: |
           BRANCH_NAME="preview-pr-${PR_NUMBER}"
-          OUTPUT=$(pnpm wrangler pages deploy .svelte-kit/cloudflare --project-name=tabitabi --branch=${BRANCH_NAME})
+          OUTPUT=$(pnpm wrangler pages deploy apps/web/.svelte-kit/cloudflare --project-name=tabitabi --branch=${BRANCH_NAME})
           echo "$OUTPUT"
           URL=$(echo "$OUTPUT" | grep -oP 'https://[a-z0-9-]+\.tabitabi\.pages\.dev' | head -1)
           echo "url=${URL}" >> $GITHUB_OUTPUT

@@ -99,11 +99,27 @@ money.post('/itineraries/:id/money/members', optionalAuthMiddleware, zValidator(
   return c.json({ success: true, data: member }, 201);
 });
 
+money.put('/itineraries/:id/money/members/:memberId', optionalAuthMiddleware, zValidator('json', moneyMemberSchema, validationHook), async (c) => {
+  const itineraryId = c.req.param('id')!;
+  const memberId = c.req.param('memberId')!;
+  const denied = await canEdit(c, itineraryId);
+  if (denied) return denied;
+  const current = await c.env.DB.prepare('SELECT id, itinerary_id, name, created_at FROM itinerary_money_members WHERE id = ? AND itinerary_id = ?')
+    .bind(memberId, itineraryId).first<MoneyMember>();
+  if (!current) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Member not found' } }, 404);
+  const name = c.req.valid('json').name;
+  await c.env.DB.prepare('UPDATE itinerary_money_members SET name = ? WHERE id = ? AND itinerary_id = ?')
+    .bind(name, memberId, itineraryId).run();
+  return c.json({ success: true, data: { ...current, name } });
+});
+
 money.delete('/itineraries/:id/money/members/:memberId', optionalAuthMiddleware, async (c) => {
   const itineraryId = c.req.param('id')!;
   const memberId = c.req.param('memberId')!;
   const denied = await canEdit(c, itineraryId);
   if (denied) return denied;
+  const member = await c.env.DB.prepare('SELECT id FROM itinerary_money_members WHERE id = ? AND itinerary_id = ?').bind(memberId, itineraryId).first();
+  if (!member) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Member not found' } }, 404);
   const referenced = await c.env.DB.prepare('SELECT id FROM itinerary_money_items WHERE itinerary_id = ? AND (paid_by_member_id = ? OR split_member_ids LIKE ?) LIMIT 1')
     .bind(itineraryId, memberId, `%${memberId}%`).first();
   if (referenced) return c.json({ success: false, error: { code: 'CONFLICT', message: 'Update or delete this member’s expenses first' } }, 409);

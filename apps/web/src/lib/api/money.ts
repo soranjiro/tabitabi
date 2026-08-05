@@ -7,6 +7,8 @@ export const moneyApi = {
     apiClient.put<{ budget_amount: number | null }>(`/itineraries/${itineraryId}/money/settings`, { budget_amount }, itineraryId),
   addMember: (itineraryId: string, name: string) =>
     apiClient.post<MoneyMember>(`/itineraries/${itineraryId}/money/members`, { name }, itineraryId),
+  updateMember: (itineraryId: string, memberId: string, name: string) =>
+    apiClient.put<MoneyMember>(`/itineraries/${itineraryId}/money/members/${memberId}`, { name }, itineraryId),
   deleteMember: (itineraryId: string, memberId: string) =>
     apiClient.delete(`/itineraries/${itineraryId}/money/members/${memberId}`, itineraryId),
   addItem: (itineraryId: string, input: CreateMoneyItemInput) =>

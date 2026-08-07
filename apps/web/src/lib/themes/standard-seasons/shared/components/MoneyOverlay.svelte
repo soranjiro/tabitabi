@@ -76,23 +76,25 @@
   const paidPercent = $derived(displayBudget ? Math.min(100, Math.round(displayPaid / displayBudget * 100)) : 0);
   const plannedPercent = $derived(displayBudget ? Math.min(100 - paidPercent, Math.round(displayPlanned / displayBudget * 100)) : 0);
   const memberSummaries = $derived.by(() => data.members.map((member) => {
-    let paid = 0;
+    let unsettledPaid = 0;
     let actualOwed = 0;
     let plannedOwed = 0;
     let reimbursableOwed = 0;
     for (const item of data.items) {
-      if (item.status === 'paid' && item.paid_by_member_id === member.id) paid += item.amount;
+      if (item.status === 'paid' && item.paid_by_member_id === member.id) {
+        if (!item.is_settled) unsettledPaid += item.amount;
+      }
       const position = item.split_member_ids.indexOf(member.id);
       if (position >= 0) {
         const unit = Math.floor(item.amount / item.split_member_ids.length);
         const share = unit + (position < item.amount % item.split_member_ids.length ? 1 : 0);
         if (item.status === 'paid') {
           actualOwed += share;
-          if (item.paid_by_member_id) reimbursableOwed += share;
+          if (item.paid_by_member_id && !item.is_settled) reimbursableOwed += share;
         } else plannedOwed += share;
       }
     }
-    return { ...member, paid, actualOwed, plannedOwed, tripTotal: actualOwed + plannedOwed, balance: paid - reimbursableOwed };
+    return { ...member, unsettledPaid, actualOwed, plannedOwed, tripTotal: actualOwed + plannedOwed, balance: unsettledPaid - reimbursableOwed };
   }));
   const settlements = $derived.by(() => {
     const debtors = memberSummaries.filter((m) => m.balance < 0).map((m) => ({ ...m, left: -m.balance }));
@@ -367,8 +369,8 @@
         {#if activeTab === 'summary'}
           {#if !data.members.length}<p class="standard-money-empty">メンバーを追加すると、立替と精算額を自動で計算します。</p>
           {:else}
-            <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><strong>{member.name}</strong><span class="standard-money-trip-total">旅行での支出合計 <b>{formatYen(member.tripTotal)}</b></span><details class="standard-money-person-detail"><summary>内訳を見る</summary><span>確定負担 {formatYen(member.actualOwed)}{#if member.plannedOwed} · 予定負担 {formatYen(member.plannedOwed)}{/if} · 立替合計 {formatYen(member.paid)}</span></details></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>
-            <section class="standard-money-settlements"><h3>いま精算するなら</h3>{#if settlements.length}{#each settlements as settlement}<p><b>{settlement.from}</b> → <b>{settlement.to}</b><strong>{formatYen(settlement.amount)}</strong></p>{/each}{:else}<p>精算は不要です</p>{/if}<small>予定支出は精算額に含めていません。</small></section>
+            <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><strong>{member.name}</strong><span class="standard-money-trip-total">旅行での支出合計 <b>{formatYen(member.tripTotal)}</b></span><details class="standard-money-person-detail"><summary>内訳を見る</summary><span>確定負担 {formatYen(member.actualOwed)}{#if member.plannedOwed} · 予定負担 {formatYen(member.plannedOwed)}{/if} · 未精算の立替 {formatYen(member.unsettledPaid)}</span></details></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>
+            <section class="standard-money-settlements"><h3>いま精算するなら</h3>{#if settlements.length}{#each settlements as settlement}<p><b>{settlement.from}</b> → <b>{settlement.to}</b><strong>{formatYen(settlement.amount)}</strong></p>{/each}{:else}<p>精算は不要です</p>{/if}<small>予定支出と精算済みの支出は、精算額に含めていません。</small></section>
           {/if}
         {:else}
           {#if canEdit && data.members.length}

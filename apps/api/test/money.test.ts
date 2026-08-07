@@ -10,7 +10,7 @@ async function setup() {
     `CREATE TABLE IF NOT EXISTS itinerary_fork_stats (itinerary_id TEXT PRIMARY KEY, fork_count INTEGER NOT NULL DEFAULT 0);`,
     `CREATE TABLE IF NOT EXISTS itinerary_money_settings (itinerary_id TEXT PRIMARY KEY, budget_amount INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
     `CREATE TABLE IF NOT EXISTS itinerary_money_members (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_money_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL, paid_by_member_id TEXT, status TEXT NOT NULL, occurred_on TEXT, step_id TEXT, split_member_ids TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL, paid_by_member_id TEXT, status TEXT NOT NULL, is_settled INTEGER NOT NULL DEFAULT 0, occurred_on TEXT, step_id TEXT, split_member_ids TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
   ];
   for (const sql of migrations) await env.DB.prepare(sql).run();
   await env.DB.prepare('DELETE FROM itinerary_money_items').run();
@@ -44,10 +44,29 @@ describe('Money API', () => {
     }), env);
     expect(itemResponse.status).toBe(201);
 
+    const individualExpenseResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '現地交通費', amount: 3600, status: 'planned', paid_by_member_id: null, split_member_ids: [alice.id, bob.id] }),
+    }), env);
+    expect(individualExpenseResponse.status).toBe(201);
+    const individualExpense = (await individualExpenseResponse.json() as any).data;
+
+    const invalidSettlementResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items/${individualExpense.id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_settled: true }),
+    }), env);
+    expect(invalidSettlementResponse.status).toBe(400);
+
     const moneyResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money`), env);
     const { data } = await moneyResponse.json() as any;
     expect(data.members.map((member: { name: string }) => member.name)).toEqual(['Alice', 'Bob']);
-    expect(data.items[0]).toMatchObject({ title: 'ホテル', amount: 12000, status: 'paid', split_member_ids: [alice.id, bob.id] });
+    expect(data.items[0]).toMatchObject({ title: 'ホテル', amount: 12000, status: 'paid', is_settled: false, split_member_ids: [alice.id, bob.id] });
+    expect(data.items.find((item: { id: string }) => item.id === individualExpense.id)).toMatchObject({ status: 'planned', paid_by_member_id: null, is_settled: false });
+
+    const settleResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items/${data.items[0].id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_settled: true }),
+    }), env);
+    expect(settleResponse.status).toBe(200);
+    expect((await settleResponse.json() as any).data).toMatchObject({ is_settled: true, paid_by_member_id: alice.id });
   });
 
   it('renames an unused member and allows deleting them', async () => {

@@ -14,6 +14,8 @@ export interface MoneyItem {
   amount: number;
   paid_by_member_id: string | null;
   status: MoneyItemStatus;
+  /** Whether the reimbursement for this confirmed expense has been settled. */
+  is_settled: boolean;
   occurred_on: string | null;
   step_id: string | null;
   split_member_ids: string[];
@@ -36,6 +38,7 @@ export interface CreateMoneyItemInput {
   amount: number;
   paid_by_member_id?: string | null;
   status: MoneyItemStatus;
+  is_settled?: boolean;
   occurred_on?: string | null;
   step_id?: string | null;
   split_member_ids: string[];

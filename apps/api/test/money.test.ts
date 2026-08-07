@@ -43,15 +43,23 @@ describe('Money API', () => {
       body: JSON.stringify({ title: 'ホテル', amount: 12000, status: 'paid', paid_by_member_id: alice.id, split_member_ids: [alice.id, bob.id] }),
     }), env);
     expect(itemResponse.status).toBe(201);
+    const paidExpense = (await itemResponse.json() as any).data;
 
-    const individualExpenseResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items`, {
+    const individualPaidResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '拝観料', amount: 3600, status: 'paid', paid_by_member_id: null, split_member_ids: [alice.id, bob.id] }),
+    }), env);
+    expect(individualPaidResponse.status).toBe(201);
+    const individualPaid = (await individualPaidResponse.json() as any).data;
+
+    const individualPlannedResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: '現地交通費', amount: 3600, status: 'planned', paid_by_member_id: null, split_member_ids: [alice.id, bob.id] }),
     }), env);
-    expect(individualExpenseResponse.status).toBe(201);
-    const individualExpense = (await individualExpenseResponse.json() as any).data;
+    expect(individualPlannedResponse.status).toBe(201);
+    const individualPlanned = (await individualPlannedResponse.json() as any).data;
 
-    const invalidSettlementResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items/${individualExpense.id}`, {
+    const invalidSettlementResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items/${individualPlanned.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_settled: true }),
     }), env);
     expect(invalidSettlementResponse.status).toBe(400);
@@ -59,10 +67,11 @@ describe('Money API', () => {
     const moneyResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money`), env);
     const { data } = await moneyResponse.json() as any;
     expect(data.members.map((member: { name: string }) => member.name)).toEqual(['Alice', 'Bob']);
-    expect(data.items[0]).toMatchObject({ title: 'ホテル', amount: 12000, status: 'paid', is_settled: false, split_member_ids: [alice.id, bob.id] });
-    expect(data.items.find((item: { id: string }) => item.id === individualExpense.id)).toMatchObject({ status: 'planned', paid_by_member_id: null, is_settled: false });
+    expect(data.items.find((item: { id: string }) => item.id === paidExpense.id)).toMatchObject({ title: 'ホテル', amount: 12000, status: 'paid', is_settled: false, split_member_ids: [alice.id, bob.id] });
+    expect(data.items.find((item: { id: string }) => item.id === individualPaid.id)).toMatchObject({ title: '拝観料', status: 'paid', paid_by_member_id: null, is_settled: false });
+    expect(data.items.find((item: { id: string }) => item.id === individualPlanned.id)).toMatchObject({ status: 'planned', paid_by_member_id: null, is_settled: false });
 
-    const settleResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items/${data.items[0].id}`, {
+    const settleResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items/${paidExpense.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_settled: true }),
     }), env);
     expect(settleResponse.status).toBe(200);

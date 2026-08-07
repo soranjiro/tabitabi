@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import type { MoneyData, MoneyItem, MoneyItemStatus, MoneyMember, Step } from '@tabitabi/types';
   import { moneyApi } from '$lib/api/money';
   import { demoStorage, getIsDemoMode } from '$lib/demo';
@@ -35,6 +35,7 @@
   let linkedStepId = $state('');
   let viewedStep = $state<Step | null>(null);
   let hasLoaded = $state(false);
+  let itemFormElement = $state<HTMLElement | undefined>(undefined);
 
   const isDemoMoney = () => itineraryId === 'demo' || getIsDemoMode();
 
@@ -78,17 +79,20 @@
     let paid = 0;
     let actualOwed = 0;
     let plannedOwed = 0;
+    let reimbursableOwed = 0;
     for (const item of data.items) {
       if (item.status === 'paid' && item.paid_by_member_id === member.id) paid += item.amount;
       const position = item.split_member_ids.indexOf(member.id);
       if (position >= 0) {
         const unit = Math.floor(item.amount / item.split_member_ids.length);
         const share = unit + (position < item.amount % item.split_member_ids.length ? 1 : 0);
-        if (item.status === 'paid') actualOwed += share;
-        else plannedOwed += share;
+        if (item.status === 'paid') {
+          actualOwed += share;
+          if (item.paid_by_member_id) reimbursableOwed += share;
+        } else plannedOwed += share;
       }
     }
-    return { ...member, paid, actualOwed, plannedOwed, tripTotal: actualOwed + plannedOwed, balance: paid - actualOwed };
+    return { ...member, paid, actualOwed, plannedOwed, tripTotal: actualOwed + plannedOwed, balance: paid - reimbursableOwed };
   }));
   const settlements = $derived.by(() => {
     const debtors = memberSummaries.filter((m) => m.balance < 0).map((m) => ({ ...m, left: -m.balance }));
@@ -151,23 +155,20 @@
     if (nextStatus === 'planned') {
       payerId = 'individual';
       isSettled = false;
-    } else if (payerId === 'individual') {
-      payerId = '';
     }
   }
 
   function setPaymentMethod(nextPayerId: string) {
     payerId = nextPayerId;
-    if (nextPayerId === 'individual') {
-      setStatus('planned');
-    } else if (nextPayerId) {
+    if (nextPayerId && nextPayerId !== 'individual') {
       status = 'paid';
     }
   }
 
   function payerLabel(item: MoneyItem) {
     const payer = data.members.find((member) => member.id === item.paid_by_member_id);
-    return payer ? `立替：${payer.name}` : '各自で支払う（予定）';
+    if (payer) return `立替：${payer.name}`;
+    return item.status === 'paid' ? '各自で支払い済み' : '各自で支払う（予定）';
   }
 
   async function addMember() {
@@ -255,13 +256,13 @@
     if (!title.trim() || !Number.isInteger(value) || value <= 0 || !participantIds.length) {
       return alert('内容・金額・負担する人を入力してください');
     }
-    if (status === 'paid' && (!payerId || payerId === 'individual')) return alert('立替えた人を選択してください');
+    if (!payerId) return alert('支払い方法を選択してください');
     try {
       if (isDemoMoney()) {
         const now = new Date().toISOString();
         const item: MoneyItem = {
           id: editingItemId ?? `demo-money-item-${Date.now()}`, itinerary_id: itineraryId, title: title.trim(), amount: value,
-          status, paid_by_member_id: status === 'paid' ? payerId : null, is_settled: status === 'paid' && isSettled,
+          status, paid_by_member_id: status === 'paid' && payerId !== 'individual' ? payerId : null, is_settled: status === 'paid' && isSettled,
           step_id: linkedStepId || null, split_member_ids: participantIds, occurred_on: now.slice(0, 10), created_at: now, updated_at: now,
         };
         saveDemoData({ ...data, items: editingItemId ? data.items.map((current) => current.id === editingItemId ? { ...item, created_at: current.created_at } : current) : [item, ...data.items] });
@@ -270,7 +271,7 @@
       }
       const input = {
         title: title.trim(), amount: value, status,
-        paid_by_member_id: status === 'paid' ? payerId : null,
+        paid_by_member_id: status === 'paid' && payerId !== 'individual' ? payerId : null,
         is_settled: status === 'paid' && isSettled,
         split_member_ids: participantIds,
         occurred_on: new Date().toISOString().slice(0, 10),
@@ -289,11 +290,13 @@
     participantIds = data.members.map((member) => member.id);
   }
 
-  function editItem(item: MoneyItem) {
+  async function editItem(item: MoneyItem) {
     editingItemId = item.id; title = item.title; amount = String(item.amount); status = item.status;
     payerId = item.paid_by_member_id ?? 'individual'; isSettled = item.is_settled;
     participantIds = [...item.split_member_ids]; linkedStepId = item.step_id ?? '';
     activeTab = 'items';
+    await tick();
+    itemFormElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function stepTitle(item: MoneyItem) { return steps.find((step) => step.id === item.step_id)?.title ?? ''; }
@@ -311,7 +314,7 @@
   }
 
   function startMarkAsPaid(item: MoneyItem) {
-    editItem(item);
+    void editItem(item);
     status = 'paid';
     payerId = '';
   }
@@ -369,7 +372,7 @@
           {/if}
         {:else}
           {#if canEdit && data.members.length}
-            <section class="standard-money-form">
+            <section class="standard-money-form" bind:this={itemFormElement}>
               <h3>{editingItemId ? '支出を編集' : '支出を登録'}</h3>
               <label class="standard-money-field">
                 <span>内容</span>
@@ -392,10 +395,10 @@
                 <span>支払い方法</span>
                 <select value={payerId} onchange={(event) => setPaymentMethod((event.currentTarget as HTMLSelectElement).value)}>
                   <option value="">選択してください</option>
-                  <option value="individual">各自で支払う（予定）</option>
+                  <option value="individual">各自で支払う</option>
                   {#each data.members as member}<option value={member.id}>{member.name} が立替える</option>{/each}
                 </select>
-                <small>{payerId === 'individual' ? '立替は発生せず、対象者それぞれの予定支出に加算されます。' : '立替えた人を選ぶと、精算額を計算します。'}</small>
+                <small>{payerId === 'individual' ? '立替は発生せず、対象者それぞれの支出に反映します。' : '立替えた人を選ぶと、精算額を計算します。'}</small>
               </label>
               {#if steps.length}
                 <label class="standard-money-field">

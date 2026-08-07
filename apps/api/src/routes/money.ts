@@ -140,9 +140,6 @@ money.post('/itineraries/:id/money/items', optionalAuthMiddleware, zValidator('j
   if (!await assertStepBelongsToItinerary(c.env.DB, itineraryId, input.step_id)) {
     return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Step must belong to this itinerary' } }, 400);
   }
-  if (input.status === 'paid' && !input.paid_by_member_id) {
-    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A payer is required for paid expenses' } }, 400);
-  }
   if (input.is_settled && input.status !== 'paid') {
     return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Only paid expenses can be settled' } }, 400);
   }
@@ -166,7 +163,6 @@ money.put('/itineraries/:id/money/items/:itemId', optionalAuthMiddleware, zValid
   const idsToCheck = [...next.split_member_ids, ...(next.paid_by_member_id ? [next.paid_by_member_id] : [])];
   if (!await assertMembersBelongToItinerary(c.env.DB, itineraryId, idsToCheck)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Members must belong to this itinerary' } }, 400);
   if (!await assertStepBelongsToItinerary(c.env.DB, itineraryId, next.step_id)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Step must belong to this itinerary' } }, 400);
-  if (next.status === 'paid' && !next.paid_by_member_id) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A payer is required for paid expenses' } }, 400);
   if (next.is_settled && next.status !== 'paid') return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Only paid expenses can be settled' } }, 400);
   const now = getCurrentTimestamp();
   const updated = { ...next, updated_at: now, split_member_ids: [...new Set(next.split_member_ids)] };

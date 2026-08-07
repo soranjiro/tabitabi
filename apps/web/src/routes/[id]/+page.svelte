@@ -4,7 +4,7 @@
   import { stepApi } from "$lib/api/step";
   import { auth } from "$lib/auth";
   import { userAuth } from "$lib/user-auth";
-  import { PrintStudio } from "$lib/print";
+  import LazyPrintStudio from "$lib/print/LazyPrintStudio.svelte";
   import { onMount } from "svelte";
   import type { Theme } from "@tabitabi/types";
 
@@ -90,7 +90,6 @@
       }
     };
 
-    isLoggedIn = userAuth.isLoggedIn();
     init();
 
     return () => {
@@ -235,7 +234,7 @@
   />
 {/key}
 
-<PrintStudio {itinerary} {steps} />
+<LazyPrintStudio {itinerary} {steps} />
 
 {#if isViewOnly}
   <aside class="shared-snapshot-cta" aria-label="共有されたしおりの操作">

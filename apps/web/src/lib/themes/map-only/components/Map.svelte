@@ -30,6 +30,8 @@
   let MarkerClass: typeof google.maps.Marker | null = null;
   let directionsService: google.maps.DirectionsService | null = null;
   let apiInitialized = false;
+  let mapInitTimer: ReturnType<typeof setTimeout> | null = null;
+  let mapIdleCallback: number | null = null;
 
   async function fetchApiKeyFromServer(): Promise<string | undefined> {
     try {
@@ -150,7 +152,7 @@
     };
   }
 
-  onMount(async () => {
+  async function initMap() {
     if (!googleApiKey) {
       googleApiKey = await fetchApiKeyFromServer();
     }
@@ -204,6 +206,34 @@
       const message = e instanceof Error ? e.message : String(e);
       errorMsg = `Failed to load Google Maps API. ${message}`;
     }
+  }
+
+  onMount(() => {
+    // Keep the initial mobile paint independent from the Maps SDK download.
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      const start = () => {
+        mapIdleCallback = null;
+        mapInitTimer = null;
+        void initMap();
+      };
+
+      if ("requestIdleCallback" in window) {
+        mapIdleCallback = window.requestIdleCallback(start, { timeout: 3000 });
+      } else {
+        mapInitTimer = setTimeout(start, 1500);
+      }
+    } else {
+      void initMap();
+    }
+
+    return () => {
+      if (mapIdleCallback !== null && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(mapIdleCallback);
+      }
+      if (mapInitTimer !== null) {
+        clearTimeout(mapInitTimer);
+      }
+    };
   });
 
   $effect(() => {

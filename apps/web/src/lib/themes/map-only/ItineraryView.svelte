@@ -110,27 +110,19 @@
     "#607D8B",
   ];
 
-  function getUniqueDates(): string[] {
-    const sortedSteps = [...steps].sort((a, b) => {
+  const sortedSteps = $derived([...steps].sort((a, b) => {
       const dateCompare = getStepDate(a).localeCompare(getStepDate(b));
       if (dateCompare !== 0) return dateCompare;
       return getStepTime(a).localeCompare(getStepTime(b));
-    });
-    return [...new Set(sortedSteps.map((s) => getStepDate(s)))];
-  }
+    }));
+  const uniqueDates = $derived([...new Set(sortedSteps.map((s) => getStepDate(s)))]);
 
   function getDateColor(date: string): string {
-    const uniqueDates = getUniqueDates();
     const index = uniqueDates.indexOf(date);
     return DATE_COLORS[index % DATE_COLORS.length];
   }
 
   function getStepNumber(step: Step): number {
-    const sortedSteps = [...steps].sort((a, b) => {
-      const dateCompare = getStepDate(a).localeCompare(getStepDate(b));
-      if (dateCompare !== 0) return dateCompare;
-      return getStepTime(a).localeCompare(getStepTime(b));
-    });
     return sortedSteps.findIndex((s) => s.id === step.id) + 1;
   }
 
@@ -142,11 +134,7 @@
   }
 
   function getNextStep(basedOnTime: boolean = true): Step | null {
-    const sorted = [...steps].sort((a, b) => {
-      const dc = getStepDate(a).localeCompare(getStepDate(b));
-      if (dc !== 0) return dc;
-      return getStepTime(a).localeCompare(getStepTime(b));
-    });
+    const sorted = sortedSteps;
 
     if (basedOnTime) {
       const now = Date.now();
@@ -687,7 +675,7 @@
   {/if}
 
   <div class="legend-container">
-    {#each getUniqueDates() as date}
+    {#each uniqueDates as date}
       <div class="legend-item">
         <span class="legend-dot" style="background-color: {getDateColor(date)}"
         ></span>

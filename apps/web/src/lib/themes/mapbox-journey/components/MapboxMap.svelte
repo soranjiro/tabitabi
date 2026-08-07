@@ -32,6 +32,8 @@
   let isLoaded = $state(false);
   let routeAnimationFrame: number | null = null;
   let isPixelMode = $state(false);
+  let mapInitTimer: ReturnType<typeof setTimeout> | null = null;
+  let mapIdleCallback: number | null = null;
 
   function resolveAccessToken(): string | undefined {
     const fromImport =
@@ -448,10 +450,32 @@
   }
 
   onMount(() => {
-    initMap();
+    // Mapbox is below the initial content on mobile. Let the first paint and
+    // input handlers settle before downloading and constructing the map.
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      const start = () => {
+        mapIdleCallback = null;
+        mapInitTimer = null;
+        void initMap();
+      };
+
+      if ("requestIdleCallback" in window) {
+        mapIdleCallback = window.requestIdleCallback(start, { timeout: 3000 });
+      } else {
+        mapInitTimer = setTimeout(start, 1500);
+      }
+    } else {
+      void initMap();
+    }
   });
 
   onDestroy(() => {
+    if (mapIdleCallback !== null && "cancelIdleCallback" in window) {
+      window.cancelIdleCallback(mapIdleCallback);
+    }
+    if (mapInitTimer !== null) {
+      clearTimeout(mapInitTimer);
+    }
     if (routeAnimationFrame) {
       cancelAnimationFrame(routeAnimationFrame);
     }

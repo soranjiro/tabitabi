@@ -32,28 +32,21 @@
     "#607D8B",
   ];
 
-  function getSortedSteps(): Step[] {
-    return [...steps].sort((a, b) => {
+  const sortedSteps = $derived([...steps].sort((a, b) => {
       const dateCompare = getStepDate(a).localeCompare(getStepDate(b));
       if (dateCompare !== 0) return dateCompare;
       return getStepTime(a).localeCompare(getStepTime(b));
-    });
-  }
+    }));
 
-  function getUniqueDates(): string[] {
-    const sorted = getSortedSteps();
-    return [...new Set(sorted.map((s) => getStepDate(s)))];
-  }
+  const uniqueDates = $derived([...new Set(sortedSteps.map((s) => getStepDate(s)))]);
 
   function getDateColor(date: string): string {
-    const uniqueDates = getUniqueDates();
     const index = uniqueDates.indexOf(date);
     return DATE_COLORS[index % DATE_COLORS.length];
   }
 
   function getStepNumber(step: Step): number {
-    const sorted = getSortedSteps();
-    return sorted.findIndex((s) => s.id === step.id) + 1;
+    return sortedSteps.findIndex((s) => s.id === step.id) + 1;
   }
 
   function isSecretStep(step: Step): boolean {
@@ -64,12 +57,11 @@
   }
 
   function getStepsWithoutLocation(): Step[] {
-    const sorted = getSortedSteps();
-    return sorted.filter((s) => !s.location);
+    return sortedSteps.filter((s) => !s.location);
   }
 
   function getAllStepsForEdit(): Step[] {
-    return getSortedSteps();
+    return sortedSteps;
   }
 
   function formatDate(dateStr: string): string {

@@ -100,19 +100,15 @@
     "#6366F1",
   ];
 
-  function getUniqueDates(): string[] {
-    const sortedSteps = [...steps].sort((a, b) => a.start_at - b.start_at);
-    return [...new Set(sortedSteps.map((s) => getStepDate(s)))];
-  }
+  const sortedSteps = $derived([...steps].sort((a, b) => a.start_at - b.start_at));
+  const uniqueDates = $derived([...new Set(sortedSteps.map((s) => getStepDate(s)))]);
 
   function getDateColor(date: string): string {
-    const uniqueDates = getUniqueDates();
     const index = uniqueDates.indexOf(date);
     return DATE_COLORS[index % DATE_COLORS.length];
   }
 
   function getStepNumber(step: Step): number {
-    const sortedSteps = [...steps].sort((a, b) => a.start_at - b.start_at);
     return sortedSteps.findIndex((s) => s.id === step.id) + 1;
   }
 
@@ -524,7 +520,7 @@
       </svg>
       旅程
     </div>
-    {#each getUniqueDates() as date}
+    {#each uniqueDates as date}
       <div class="legend-item">
         <span class="legend-dot" style="background: {getDateColor(date)}"
         ></span>

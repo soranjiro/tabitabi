@@ -19,29 +19,21 @@
     "#6366F1",
   ];
 
-  function getSortedSteps(): Step[] {
-    return [...steps].sort((a, b) => a.start_at - b.start_at);
-  }
+  const sortedSteps = $derived([...steps].sort((a, b) => a.start_at - b.start_at));
 
-  function getUniqueDates(): string[] {
-    const sorted = getSortedSteps();
-    return [...new Set(sorted.map((s) => getStepDate(s)))];
-  }
+  const uniqueDates = $derived([...new Set(sortedSteps.map((s) => getStepDate(s)))]);
 
   function getDateColor(date: string): string {
-    const uniqueDates = getUniqueDates();
     const index = uniqueDates.indexOf(date);
     return DATE_COLORS[index % DATE_COLORS.length];
   }
 
   function getStepNumber(step: Step): number {
-    const sorted = getSortedSteps();
-    return sorted.findIndex((s) => s.id === step.id) + 1;
+    return sortedSteps.findIndex((s) => s.id === step.id) + 1;
   }
 
   function getStepsWithoutLocation(): Step[] {
-    const sorted = getSortedSteps();
-    return sorted.filter((s) => !s.location);
+    return sortedSteps.filter((s) => !s.location);
   }
 
   function handleStepClick(step: Step) {

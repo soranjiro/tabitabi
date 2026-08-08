@@ -127,10 +127,9 @@ jobs:
             exit 1
           fi
           cp wrangler.toml.example wrangler.toml
-          sed -i "s/PLACEHOLDER_DATABASE_ID/${{ steps.preview-db.outputs.database_id }}/g" wrangler.toml
-          sed -i "s/database_name = \"tabitabi\"/database_name = \"${PREVIEW_DB_NAME}\"/g" wrangler.toml
-          sed -i "s/PLACEHOLDER_PREVIEW_SECRET/${JWT_SECRET}/g" wrangler.toml
-          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const projectId = process.env.PUBLIC_FIREBASE_PROJECT_ID; fs.writeFileSync(path, fs.readFileSync(path, "utf8").replaceAll("your-firebase-project-id", projectId));'
+          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const replacements = { PLACEHOLDER_DATABASE_ID: process.env.PREVIEW_DATABASE_ID, PLACEHOLDER_PREVIEW_SECRET: process.env.JWT_SECRET, "your-firebase-project-id": process.env.PUBLIC_FIREBASE_PROJECT_ID, "database_name = \"tabitabi\"": `database_name = "${process.env.PREVIEW_DB_NAME}"` }; let config = fs.readFileSync(path, "utf8"); for (const [from, to] of Object.entries(replacements)) config = config.replaceAll(from, to); fs.writeFileSync(path, config);'
+        env:
+          PREVIEW_DATABASE_ID: ${{ steps.preview-db.outputs.database_id }}
 
       - name: Apply D1 migrations to preview database
         working-directory: apps/api

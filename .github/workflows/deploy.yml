@@ -59,9 +59,7 @@ jobs:
             exit 1
           fi
           cp wrangler.toml.example wrangler.toml
-          sed -i "s/PLACEHOLDER_DATABASE_ID/${CLOUDFLARE_DATABASE_ID}/g" wrangler.toml
-          sed -i "s/PLACEHOLDER_PROD_SECRET/${JWT_SECRET}/g" wrangler.toml
-          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const projectId = process.env.PUBLIC_FIREBASE_PROJECT_ID; fs.writeFileSync(path, fs.readFileSync(path, "utf8").replaceAll("your-firebase-project-id", projectId));'
+          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const replacements = { PLACEHOLDER_DATABASE_ID: process.env.CLOUDFLARE_DATABASE_ID, PLACEHOLDER_PROD_SECRET: process.env.JWT_SECRET, "your-firebase-project-id": process.env.PUBLIC_FIREBASE_PROJECT_ID }; let config = fs.readFileSync(path, "utf8"); for (const [from, to] of Object.entries(replacements)) config = config.replaceAll(from, to); fs.writeFileSync(path, config);'
 
       - name: Build all packages
         run: pnpm run build

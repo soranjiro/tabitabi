@@ -1,6 +1,6 @@
 name = "tabitabi-api"
 main = "src/index.ts"
-compatibility_date = "2026-08-09"
+compatibility_date = "2026-08-01"
 compatibility_flags = ["nodejs_compat"]
 
 [observability]
@@ -23,6 +23,7 @@ name = "tabitabi-api"
 
 [env.production.vars]
 ALLOWED_ORIGINS = "https://tabitabi.pages.dev"
+JWT_SECRET = "PLACEHOLDER_PROD_SECRET"
 FIREBASE_PROJECT_ID = "your-firebase-project-id"
 ENVIRONMENT = "production"
 
@@ -39,6 +40,7 @@ migrations_dir = "./migrations"
 
 [env.preview.vars]
 ALLOWED_ORIGINS = "*"
+JWT_SECRET = "PLACEHOLDER_PREVIEW_SECRET"
 FIREBASE_PROJECT_ID = "your-firebase-project-id"
 ENVIRONMENT = "preview"
 

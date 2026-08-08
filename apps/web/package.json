@@ -4,8 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "pnpm check:env",
     "dev": "vite dev",
+    "prebuild": "pnpm check:env",
     "build": "pnpm build:docs && vite build && pnpm post-build",
+    "check:env": "node scripts/check-public-env.mjs",
     "build:docs": "tsx scripts/build-docs.ts",
     "post-build": "tsx scripts/post-build.ts",
     "preview": "vite preview",

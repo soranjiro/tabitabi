@@ -218,6 +218,30 @@
 
 <svelte:head>
   <title>{data.itinerary.title} - たびたび</title>
+  <meta
+    name="description"
+    content="{data.itinerary.title}の旅のしおり。たびたびで作成された旅行計画を確認できます。"
+  />
+  <link rel="canonical" href="https://tabitabi.pages.dev/{data.itinerary.id}" />
+  <meta property="og:title" content="{data.itinerary.title} - たびたび" />
+  <meta
+    property="og:description"
+    content="{data.itinerary.title}の旅のしおり。たびたびで作成された旅行計画を確認できます。"
+  />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://tabitabi.pages.dev/{data.itinerary.id}" />
+  <meta property="og:image" content="https://tabitabi.pages.dev/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="ja_JP" />
+  <meta property="og:site_name" content="たびたび" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{data.itinerary.title} - たびたび" />
+  <meta
+    name="twitter:description"
+    content="{data.itinerary.title}の旅のしおり。たびたびで作成された旅行計画を確認できます。"
+  />
+  <meta name="twitter:image" content="https://tabitabi.pages.dev/og-image.png" />
   <meta name="theme-color" content={backgroundColor} />
 </svelte:head>
 

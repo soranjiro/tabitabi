@@ -19,6 +19,15 @@ PUBLIC_FIREBASE_PROJECT_ID
 PUBLIC_FIREBASE_APP_ID
 ```
 
+ローカル開発・ビルドでは、`apps/web/.env.example` を参考に `apps/web/.env` を用意し、Firebase ConsoleのWebアプリ設定から4つの値を入力してください。既存の`.env`がある場合は上書きせず、4項目だけ追加します。
+
+```bash
+cd apps/web
+test -f .env || cp .env.example .env
+```
+
+Webの`dev`と`build`は開始前に4項目を自動チェックします。不足している場合は、ビルド途中でSvelteKitの抽象的なimportエラーになる代わりに、不足項目を一覧表示して停止します。
+
 GitHub Actionsからデプロイする場合は、Repository Settings > Secrets and variables > Actionsに同じ名前で4つのSecretを登録します。`deploy.yml`（本番）と`preview.yml`（PR Preview）が、WebビルドとAPIのWrangler設定へ自動的に反映します。
 
 Firebase ConsoleのAuthorized domainsには、本番の`tabitabi.pages.dev`に加えて、Previewで使うPagesドメイン（通常は`tabitabi.pages.dev`配下のPreviewホスト）も登録してください。

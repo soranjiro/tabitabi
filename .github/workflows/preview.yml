@@ -105,6 +105,10 @@ jobs:
 
       - name: Generate wrangler.toml from example
         run: |
+          if [ -z "${APP_GITHUB_ISSUES_TOKEN:-}" ]; then
+            echo "::error::APP_GITHUB_ISSUES_TOKEN GitHub secret is not available"
+            exit 1
+          fi
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${{ steps.preview-db.outputs.database_id }}/g" wrangler.toml
           sed -i "s/database_name = \"tabitabi\"/database_name = \"${PREVIEW_DB_NAME}\"/g" wrangler.toml

@@ -1,5 +1,5 @@
-import { fetchMock } from 'cloudflare:test';
 import { importPKCS8, SignJWT } from 'jose';
+import { vi } from 'vitest';
 import { clearFirebaseCertificateCacheForTests } from '../../src/utils/firebase-token';
 
 const PROJECT_ID = 'tabitabi-test';
@@ -56,11 +56,16 @@ let privateKeyPromise: Promise<CryptoKey> | null = null;
 
 export function installFirebaseCertMock(): void {
   clearFirebaseCertificateCacheForTests();
-  fetchMock.activate();
-  fetchMock.get('https://www.googleapis.com')
-    .intercept({ path: '/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com', method: 'GET' })
-    .reply(200, JSON.stringify({ [KEY_ID]: CERTIFICATE }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' } })
-    .persist();
+  const originalFetch = globalThis.fetch;
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    if (url === 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com') {
+      return new Response(JSON.stringify({ [KEY_ID]: CERTIFICATE }), {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
+      });
+    }
+    return originalFetch(input, init);
+  });
 }
 
 export async function createFirebaseToken(uid: string, email: string, emailVerified = true, overrides: { audience?: string; issuer?: string } = {}): Promise<string> {

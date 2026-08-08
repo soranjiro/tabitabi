@@ -7,8 +7,8 @@ export const itineraryApi = {
 
   get: (id: string) => apiClient.get<ItineraryResponse>(`/itineraries/${id}`),
 
-  create: (data: CreateItineraryInput) => {
-    const userToken = userAuth.getToken();
+  create: async (data: CreateItineraryInput) => {
+    const userToken = await userAuth.getToken();
     if (userToken) {
       return apiClient.postWithUserToken<ItineraryResponse & { token: string }>('/itineraries', data, userToken);
     }
@@ -20,8 +20,8 @@ export const itineraryApi = {
 
   delete: (id: string) => apiClient.delete(`/itineraries/${id}`, id),
 
-  fork: (id: string) => {
-    const userToken = userAuth.getToken();
+  fork: async (id: string) => {
+    const userToken = await userAuth.getToken();
     if (!userToken) throw new Error('Not logged in');
     return apiClient.postWithUserToken<ForkItineraryResponse>(`/itineraries/${id}/fork`, {}, userToken);
   },

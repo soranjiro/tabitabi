@@ -1,6 +1,9 @@
 import { env } from 'cloudflare:test';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import app from '../src/index';
+import { insertVerifiedUser, installFirebaseCertMock } from './helpers/firebase-auth';
+
+beforeAll(() => installFirebaseCertMock());
 
 async function applyMigrations(db: D1Database) {
   const migrations = [
@@ -56,6 +59,8 @@ async function applyMigrations(db: D1Database) {
       username TEXT UNIQUE NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
+      prefecture TEXT,
+      email_verified_at TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );`,
@@ -75,14 +80,8 @@ async function applyMigrations(db: D1Database) {
   }
 }
 
-async function registerAndGetToken(username: string, email: string, password = 'password123'): Promise<string> {
-  const res = await app.request('/api/v1/users/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, email, password }),
-  }, env);
-  const json = await res.json() as { success: boolean; data: { token: string } };
-  return json.data.token;
+async function registerAndGetToken(username: string, email: string): Promise<string> {
+  return (await insertVerifiedUser(env.DB, username, email)).token;
 }
 
 async function makeVisible(token: string, itineraryId: string): Promise<void> {
@@ -146,20 +145,6 @@ describe('PATCH /api/v1/users/me/profile', () => {
     expect(json.data.email).toBe('user@example.com');
   });
 
-  it('updates email successfully', async () => {
-    const token = await registerAndGetToken('myuser', 'old@example.com');
-
-    const res = await app.request('/api/v1/users/me/profile', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ email: 'new@example.com' }),
-    }, env);
-
-    expect(res.status).toBe(200);
-    const json = await res.json() as { success: boolean; data: { username: string; email: string } };
-    expect(json.data.email).toBe('new@example.com');
-  });
-
   it('returns 400 when no fields provided', async () => {
     const token = await registerAndGetToken('user2', 'user2@example.com');
 
@@ -186,20 +171,6 @@ describe('PATCH /api/v1/users/me/profile', () => {
     expect(json.error.code).toBe('VALIDATION_ERROR');
   });
 
-  it('returns 400 for invalid email format', async () => {
-    const token = await registerAndGetToken('user4', 'user4@example.com');
-
-    const res = await app.request('/api/v1/users/me/profile', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ email: 'not-an-email' }),
-    }, env);
-
-    expect(res.status).toBe(400);
-    const json = await res.json() as { success: boolean; error: { code: string } };
-    expect(json.error.code).toBe('VALIDATION_ERROR');
-  });
-
   it('returns 409 for duplicate username', async () => {
     await registerAndGetToken('takenname', 'taken@example.com');
     const token = await registerAndGetToken('user5', 'user5@example.com');
@@ -215,109 +186,6 @@ describe('PATCH /api/v1/users/me/profile', () => {
     expect(json.error.code).toBe('USERNAME_ALREADY_EXISTS');
   });
 
-  it('returns 409 for duplicate email', async () => {
-    await registerAndGetToken('other', 'taken@example.com');
-    const token = await registerAndGetToken('user6', 'user6@example.com');
-
-    const res = await app.request('/api/v1/users/me/profile', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ email: 'taken@example.com' }),
-    }, env);
-
-    expect(res.status).toBe(409);
-    const json = await res.json() as { success: boolean; error: { code: string } };
-    expect(json.error.code).toBe('EMAIL_ALREADY_EXISTS');
-  });
-});
-
-describe('PATCH /api/v1/users/me/password', () => {
-  beforeEach(async () => {
-    await applyMigrations(env.DB);
-    await env.DB.prepare('DELETE FROM user_bookmarks').run();
-    await env.DB.prepare('DELETE FROM users').run();
-  });
-
-  it('returns 401 without auth token', async () => {
-    const res = await app.request('/api/v1/users/me/password', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ current_password: 'old', new_password: 'newpassword' }),
-    }, env);
-    expect(res.status).toBe(401);
-  });
-
-  it('changes password successfully', async () => {
-    const token = await registerAndGetToken('pwuser', 'pwuser@example.com', 'oldpassword1');
-
-    const res = await app.request('/api/v1/users/me/password', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ current_password: 'oldpassword1', new_password: 'newpassword1' }),
-    }, env);
-
-    expect(res.status).toBe(200);
-    const json = await res.json() as { success: boolean };
-    expect(json.success).toBe(true);
-  });
-
-  it('can login with new password after change', async () => {
-    const token = await registerAndGetToken('pwuser2', 'pwuser2@example.com', 'oldpassword2');
-
-    await app.request('/api/v1/users/me/password', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ current_password: 'oldpassword2', new_password: 'newpassword2' }),
-    }, env);
-
-    const loginRes = await app.request('/api/v1/users/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'pwuser2@example.com', password: 'newpassword2' }),
-    }, env);
-
-    expect(loginRes.status).toBe(200);
-  });
-
-  it('returns 400 for wrong current password', async () => {
-    const token = await registerAndGetToken('pwuser3', 'pwuser3@example.com', 'correctpassword');
-
-    const res = await app.request('/api/v1/users/me/password', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ current_password: 'wrongpassword', new_password: 'newpassword3' }),
-    }, env);
-
-    expect(res.status).toBe(400);
-    const json = await res.json() as { success: boolean; error: { code: string } };
-    expect(json.error.code).toBe('INVALID_CURRENT_PASSWORD');
-  });
-
-  it('returns 400 for new password shorter than 8 chars', async () => {
-    const token = await registerAndGetToken('pwuser4', 'pwuser4@example.com', 'correctpassword');
-
-    const res = await app.request('/api/v1/users/me/password', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ current_password: 'correctpassword', new_password: 'short' }),
-    }, env);
-
-    expect(res.status).toBe(400);
-    const json = await res.json() as { success: boolean; error: { code: string } };
-    expect(json.error.code).toBe('VALIDATION_ERROR');
-  });
-
-  it('returns 400 when fields are missing', async () => {
-    const token = await registerAndGetToken('pwuser5', 'pwuser5@example.com');
-
-    const res = await app.request('/api/v1/users/me/password', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ current_password: 'password123' }),
-    }, env);
-
-    expect(res.status).toBe(400);
-  });
 });
 
 describe('GET /api/v1/users (public feed)', () => {

@@ -58,3 +58,9 @@ jobs:
 
       - name: Build
         run: pnpm run build
+        env:
+          # CI only needs to compile the client. Deploy workflows inject the real values.
+          PUBLIC_FIREBASE_API_KEY: ${{ secrets.PUBLIC_FIREBASE_API_KEY || 'ci-placeholder-api-key' }}
+          PUBLIC_FIREBASE_APP_ID: ${{ secrets.PUBLIC_FIREBASE_APP_ID || 'ci-placeholder-app-id' }}
+          PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN || 'ci-placeholder.firebaseapp.com' }}
+          PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.PUBLIC_FIREBASE_PROJECT_ID || 'ci-placeholder-project' }}

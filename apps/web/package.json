@@ -18,10 +18,11 @@
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
     "@tabitabi/types": "workspace:*",
+    "firebase": "^12.4.0",
     "mapbox-gl": "^3.17.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250110.0",
+    "@cloudflare/workers-types": "^4.20260702.1",
     "@playwright/test": "^1.57.0",
     "@sveltejs/adapter-cloudflare": "^4.7.4",
     "@sveltejs/kit": "^2.69.1",

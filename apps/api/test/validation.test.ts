@@ -1,6 +1,9 @@
 import { env } from 'cloudflare:test';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import app from '../src/index';
+import { createFirebaseToken, insertVerifiedUser, installFirebaseCertMock } from './helpers/firebase-auth';
+
+beforeAll(() => installFirebaseCertMock());
 
 async function applyMigrations(db: D1Database) {
   const migrations = [
@@ -56,6 +59,8 @@ async function applyMigrations(db: D1Database) {
       username TEXT UNIQUE NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
+      prefecture TEXT,
+      email_verified_at TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );`,
@@ -92,9 +97,7 @@ function jsonPut(path: string, body: unknown, headers?: Record<string, string>) 
 }
 
 async function registerAndGetToken(username: string, email: string): Promise<string> {
-  const res = await jsonPost('/api/v1/users/register', { username, email, password: 'password123' });
-  const json = await res.json() as { success: boolean; data: { token: string } };
-  return json.data.token;
+  return (await insertVerifiedUser(env.DB, username, email)).token;
 }
 
 async function expectValidationError(res: Response, messageContains?: string) {
@@ -107,87 +110,33 @@ async function expectValidationError(res: Response, messageContains?: string) {
   }
 }
 
-// ── POST /users/register validation ────────────────────
-
-describe('POST /api/v1/users/register — validation', () => {
+describe('POST /api/v1/users/me/bootstrap — validation', () => {
+  let token: string;
   beforeEach(async () => {
     await applyMigrations(env.DB);
     await env.DB.prepare('DELETE FROM user_bookmarks').run();
     await env.DB.prepare('DELETE FROM users').run();
+    token = await createFirebaseToken('validation-user', 'validation@example.com');
   });
 
   it('rejects username shorter than 3 characters', async () => {
-    const res = await jsonPost('/api/v1/users/register', {
-      username: 'ab', email: 'test@example.com', password: 'password123',
-    });
+    const res = await jsonPost('/api/v1/users/me/bootstrap', { username: 'ab', prefecture: '東京都' }, { Authorization: `Bearer ${token}` });
     await expectValidationError(res, 'username must be at least 3 characters');
   });
 
   it('rejects username longer than 20 characters', async () => {
-    const res = await jsonPost('/api/v1/users/register', {
-      username: 'a'.repeat(21), email: 'test@example.com', password: 'password123',
-    });
+    const res = await jsonPost('/api/v1/users/me/bootstrap', { username: 'a'.repeat(21), prefecture: '東京都' }, { Authorization: `Bearer ${token}` });
     await expectValidationError(res, 'username must be at most 20 characters');
   });
 
   it('rejects username with special characters', async () => {
-    const res = await jsonPost('/api/v1/users/register', {
-      username: 'user@name!', email: 'test@example.com', password: 'password123',
-    });
+    const res = await jsonPost('/api/v1/users/me/bootstrap', { username: 'user@name!', prefecture: '東京都' }, { Authorization: `Bearer ${token}` });
     await expectValidationError(res, 'alphanumeric');
   });
 
   it('accepts username with underscores', async () => {
-    const res = await jsonPost('/api/v1/users/register', {
-      username: 'user_name_1', email: 'test@example.com', password: 'password123',
-    });
-    expect(res.status).toBe(201);
-  });
-
-  it('rejects invalid email format', async () => {
-    const res = await jsonPost('/api/v1/users/register', {
-      username: 'testuser', email: 'not-an-email', password: 'password123',
-    });
-    await expectValidationError(res, 'email');
-  });
-
-  it('rejects password shorter than 8 characters', async () => {
-    const res = await jsonPost('/api/v1/users/register', {
-      username: 'testuser', email: 'test@example.com', password: 'short',
-    });
-    await expectValidationError(res, 'password must be at least 8 characters');
-  });
-
-  it('rejects empty body', async () => {
-    const res = await jsonPost('/api/v1/users/register', {});
-    await expectValidationError(res);
-  });
-});
-
-// ── POST /users/login validation ───────────────────────
-
-describe('POST /api/v1/users/login — validation', () => {
-  beforeEach(async () => {
-    await applyMigrations(env.DB);
-    await env.DB.prepare('DELETE FROM user_bookmarks').run();
-    await env.DB.prepare('DELETE FROM users').run();
-  });
-
-  it('rejects invalid email format', async () => {
-    const res = await jsonPost('/api/v1/users/login', {
-      email: 'not-an-email', password: 'password123',
-    });
-    await expectValidationError(res, 'email');
-  });
-
-  it('rejects missing email', async () => {
-    const res = await jsonPost('/api/v1/users/login', { password: 'password123' });
-    await expectValidationError(res);
-  });
-
-  it('rejects missing password', async () => {
-    const res = await jsonPost('/api/v1/users/login', { email: 'test@example.com' });
-    await expectValidationError(res);
+    const res = await jsonPost('/api/v1/users/me/bootstrap', { username: 'user_name_1', prefecture: '東京都' }, { Authorization: `Bearer ${token}` });
+    expect(res.status).toBe(200);
   });
 });
 

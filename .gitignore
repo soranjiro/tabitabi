@@ -93,6 +93,7 @@ venv.bak/
 
 # Cloudflare wrangler
 wrangler.toml
+.auth-migration/
 
 # Spyder project settings
 .spyderproject

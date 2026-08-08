@@ -195,8 +195,7 @@
 
   async function handleFork() {
     if (forking) return;
-    const userToken = userAuth.getToken();
-    if (!userToken) {
+    if (!userAuth.isLoggedIn()) {
       sessionStorage.setItem("tabitabi_pending_fork", data.itinerary.id);
       await goto("/profile");
       return;

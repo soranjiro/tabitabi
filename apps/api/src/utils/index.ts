@@ -2,6 +2,8 @@ export interface Env {
   DB: D1Database;
   ALLOWED_ORIGINS?: string;
   JWT_SECRET?: string;
+  FIREBASE_PROJECT_ID?: string;
+  ENVIRONMENT?: string;
   AFFILIATE_TEMPLATE_JALAN?: string;
   AFFILIATE_TEMPLATE_RAKUTEN_TRAVEL?: string;
   AFFILIATE_TEMPLATE_IKYU?: string;
@@ -20,6 +22,7 @@ export interface Env {
 export interface Variables {
   shioriId?: string;
   userId?: string;
+  firebaseEmail?: string;
 }
 
 export function generateId(): string {

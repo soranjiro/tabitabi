@@ -1,6 +1,9 @@
 import { env } from 'cloudflare:test';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import app from '../src/index';
+import { insertVerifiedUser, installFirebaseCertMock } from './helpers/firebase-auth';
+
+beforeAll(() => installFirebaseCertMock());
 
 async function applyMigrations(db: D1Database) {
   const migrations = [
@@ -56,6 +59,8 @@ async function applyMigrations(db: D1Database) {
       username TEXT UNIQUE NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
+      prefecture TEXT,
+      email_verified_at TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );`,
@@ -76,13 +81,7 @@ async function applyMigrations(db: D1Database) {
 }
 
 async function registerAndGetToken(username: string, email: string): Promise<string> {
-  const res = await app.request('/api/v1/users/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, email, password: 'password123' }),
-  }, env);
-  const json = await res.json() as { success: boolean; data: { token: string } };
-  return json.data.token;
+  return (await insertVerifiedUser(env.DB, username, email)).token;
 }
 
 async function createItinerary(): Promise<string> {

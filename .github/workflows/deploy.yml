@@ -21,6 +21,10 @@ jobs:
       CLOUDFLARE_DATABASE_ID: ${{ secrets.CLOUDFLARE_DATABASE_ID }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       APP_GITHUB_ISSUES_TOKEN: ${{ secrets.APP_GITHUB_ISSUES_TOKEN }}
+      PUBLIC_FIREBASE_API_KEY: ${{ secrets.PUBLIC_FIREBASE_API_KEY }}
+      PUBLIC_FIREBASE_APP_ID: ${{ secrets.PUBLIC_FIREBASE_APP_ID }}
+      PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,14 +54,23 @@ jobs:
       - name: Generate API wrangler.toml from example
         working-directory: apps/api
         run: |
+          if [ -z "${PUBLIC_FIREBASE_PROJECT_ID:-}" ]; then
+            echo "::error::PUBLIC_FIREBASE_PROJECT_ID GitHub secret is not available"
+            exit 1
+          fi
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${CLOUDFLARE_DATABASE_ID}/g" wrangler.toml
           sed -i "s/PLACEHOLDER_PROD_SECRET/${JWT_SECRET}/g" wrangler.toml
+          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const projectId = process.env.PUBLIC_FIREBASE_PROJECT_ID; fs.writeFileSync(path, fs.readFileSync(path, "utf8").replaceAll("your-firebase-project-id", projectId));'
 
       - name: Build all packages
         run: pnpm run build
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          PUBLIC_FIREBASE_API_KEY: ${{ secrets.PUBLIC_FIREBASE_API_KEY }}
+          PUBLIC_FIREBASE_APP_ID: ${{ secrets.PUBLIC_FIREBASE_APP_ID }}
+          PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}
 
       - name: Create D1 database (remote)
         working-directory: apps/api

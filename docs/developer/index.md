@@ -29,6 +29,7 @@ pnpm dev
 | [はじめに](getting-started.md) | 開発環境セットアップ・起動方法 |
 | [アーキテクチャ](architecture.md) | プロジェクト構造・技術スタック |
 | [データベース](database.md) | スキーマ設計・マイグレーション |
+| [アカウント認証](account-auth.md) | Firebase認証・既存アカウント移行 |
 
 ### 機能を追加・修正したい
 

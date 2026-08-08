@@ -3,6 +3,13 @@ import { expect, test } from '@playwright/test';
 const apiBaseUrl = 'http://localhost:8787/api/v1';
 
 test('共有しおりは編集せず、自分用コピーへ進める', async ({ page, request }) => {
+  const firebaseEmail = process.env.E2E_FIREBASE_EMAIL;
+  const firebasePassword = process.env.E2E_FIREBASE_PASSWORD;
+  test.skip(
+    !firebaseEmail || !firebasePassword,
+    'E2E_FIREBASE_EMAIL/PASSWORD にメール確認・プロフィール設定済みのアカウントが必要です',
+  );
+
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const title = `共有フロー確認 ${suffix}`;
 
@@ -16,25 +23,16 @@ test('共有しおりは編集せず、自分用コピーへ進める', async ({
   expect(publishResponse.status()).toBe(200);
   const snapshot = (await publishResponse.json()).data;
 
-  const registerResponse = await request.post(`${apiBaseUrl}/users/register`, {
-    data: {
-      username: `flow${suffix.replace(/[^a-z0-9]/gi, '').slice(-12)}`,
-      email: `flow-${suffix}@example.test`,
-      password: 'test-password-1234',
-    },
-  });
-  expect(registerResponse.status()).toBe(201);
-  const user = (await registerResponse.json()).data;
+  await page.goto('/profile');
+  await page.locator('#email').fill(firebaseEmail!);
+  await page.locator('#password').fill(firebasePassword!);
+  await page.getByRole('button', { name: 'ログイン', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'アカウント設定' })).toBeVisible();
 
   await page.goto(`/${snapshot.id}`);
   await expect(page.getByText('閲覧専用です。コピーすると自分用に編集できます。')).toBeVisible();
   await expect(page.getByRole('button', { name: 'コピーして編集' })).toBeVisible();
   await expect(page.getByRole('button', { name: '編集モードに切り替え' })).toHaveCount(0);
-
-  await page.evaluate(({ token, username }) => {
-    localStorage.setItem('user_token', token);
-    localStorage.setItem('user_info', JSON.stringify({ username }));
-  }, { token: user.token, username: user.user.username });
 
   await page.getByRole('button', { name: 'コピーして編集' }).click();
   await page.waitForURL((url) => url.pathname !== `/${snapshot.id}`);

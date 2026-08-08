@@ -11,3 +11,5 @@ migrations_dir = "./migrations"
 [vars]
 ALLOWED_ORIGINS = "*"
 JWT_SECRET = "test-secret-for-ci"
+ENVIRONMENT = "test"
+FIREBASE_PROJECT_ID = "tabitabi-test"

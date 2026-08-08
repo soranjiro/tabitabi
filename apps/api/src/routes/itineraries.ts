@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { Env, Variables } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
-import { authMiddleware, optionalAuthMiddleware, optionalUserAuthMiddleware, userAuthMiddleware } from '../middleware/auth';
+import { authMiddleware, optionalAuthMiddleware, optionalUserAuthMiddleware, userAuthMiddleware, userProfileMiddleware } from '../middleware/auth';
 import { generateToken } from '../utils/jwt';
 import { UserService } from '../services/user.service';
 import { createItinerarySchema, updateItinerarySchema } from '../validators';
@@ -112,7 +112,7 @@ itineraries.post('/:id/publish', optionalAuthMiddleware, async (c) => {
   return c.json({ success: true, data: { id: snapshot.id } });
 });
 
-itineraries.post('/:id/fork', userAuthMiddleware, async (c) => {
+itineraries.post('/:id/fork', userAuthMiddleware, userProfileMiddleware, async (c) => {
   const sourceId = c.req.param('id')!;
   const userId = c.get('userId');
   const service = new ItineraryService(c.env.DB, c.env);

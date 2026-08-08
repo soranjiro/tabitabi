@@ -3,56 +3,11 @@ import { zValidator } from '@hono/zod-validator';
 import { Env, Variables } from '../utils';
 import { UserService } from '../services/user.service';
 import { ItineraryService } from '../services/itinerary.service';
-import { userAuthMiddleware } from '../middleware/auth';
-import { generateUserToken } from '../utils/jwt';
-import { registerSchema, loginSchema, syncBookmarksSchema, updateProfileSchema, updatePasswordSchema, updateVisibilitySchema } from '../validators';
+import { userAuthMiddleware, userProfileMiddleware } from '../middleware/auth';
+import { bootstrapProfileSchema, syncBookmarksSchema, updateProfileSchema, updateVisibilitySchema } from '../validators';
 import { validationHook } from '../validators/hook';
 
 const users = new Hono<{ Bindings: Env; Variables: Variables }>();
-
-// POST /users/register
-users.post('/register', zValidator('json', registerSchema, validationHook), async (c) => {
-  const input = c.req.valid('json');
-  const service = new UserService(c.env.DB);
-
-  try {
-    const profile = await service.register(input);
-    const token = await generateUserToken(profile.id, c.env.JWT_SECRET);
-
-    return c.json({
-      success: true,
-      data: { token, user: { username: profile.username, created_at: profile.created_at } }
-    }, 201);
-  } catch (err) {
-    const code = err instanceof Error ? err.message : 'UNKNOWN_ERROR';
-    if (code === 'EMAIL_ALREADY_EXISTS' || code === 'USERNAME_ALREADY_EXISTS') {
-      return c.json({ success: false, error: { code, message: code } }, 409);
-    }
-    throw err;
-  }
-});
-
-// POST /users/login
-users.post('/login', zValidator('json', loginSchema, validationHook), async (c) => {
-  const input = c.req.valid('json');
-  const service = new UserService(c.env.DB);
-
-  try {
-    const profile = await service.login(input.email, input.password);
-    const token = await generateUserToken(profile.id, c.env.JWT_SECRET);
-
-    return c.json({
-      success: true,
-      data: { token, user: { username: profile.username, created_at: profile.created_at } }
-    });
-  } catch (err) {
-    const code = err instanceof Error ? err.message : 'UNKNOWN_ERROR';
-    if (code === 'INVALID_CREDENTIALS') {
-      return c.json({ success: false, error: { code, message: 'Invalid email or password' } }, 401);
-    }
-    throw err;
-  }
-});
 
 // GET /users/search?q=:query (認証不要 - username 部分一致検索)
 users.get('/search', async (c) => {
@@ -81,8 +36,45 @@ users.get('/', async (c) => {
 });
 
 // ※ 静的ルート (/me/...) は動的ルート (/:username/...) より先に登録すること
+users.post('/me/bootstrap', userAuthMiddleware, zValidator('json', bootstrapProfileSchema, validationHook), async (c) => {
+  const service = new UserService(c.env.DB);
+  try {
+    const profile = await service.bootstrapFirebaseUser(
+      c.get('userId')!,
+      c.get('firebaseEmail')!,
+      c.req.valid('json'),
+    );
+    return c.json({ success: true, data: profileForClient(profile) });
+  } catch (err) {
+    const code = err instanceof Error ? err.message : 'UNKNOWN_ERROR';
+    if (code === 'PROFILE_SETUP_REQUIRED') {
+      return c.json({ success: false, error: { code, message: code } }, 409);
+    }
+    if (code === 'USERNAME_ALREADY_EXISTS' || code === 'EMAIL_ALREADY_EXISTS') {
+      return c.json({ success: false, error: { code, message: code } }, 409);
+    }
+    throw err;
+  }
+});
+
+users.get('/me/account', userAuthMiddleware, async (c) => {
+  try {
+    const profile = await new UserService(c.env.DB).bootstrapFirebaseUser(
+      c.get('userId')!,
+      c.get('firebaseEmail')!,
+      {},
+    );
+    return c.json({ success: true, data: profileForClient(profile) });
+  } catch (err) {
+    if (err instanceof Error && err.message === 'PROFILE_SETUP_REQUIRED') {
+      return c.json({ success: false, error: { code: 'PROFILE_SETUP_REQUIRED', message: 'Profile setup is required' } }, 409);
+    }
+    throw err;
+  }
+});
+
 // PATCH /users/me/profile (認証必須 - プロフィール更新)
-users.patch('/me/profile', userAuthMiddleware, zValidator('json', updateProfileSchema, validationHook), async (c) => {
+users.patch('/me/profile', userAuthMiddleware, userProfileMiddleware, zValidator('json', updateProfileSchema, validationHook), async (c) => {
   const userId = c.get('userId')!;
   const input = c.req.valid('json');
   const service = new UserService(c.env.DB);
@@ -92,34 +84,16 @@ users.patch('/me/profile', userAuthMiddleware, zValidator('json', updateProfileS
     return c.json({ success: true, data: updated });
   } catch (err) {
     const code = err instanceof Error ? err.message : 'UNKNOWN_ERROR';
-    if (code === 'USERNAME_INVALID_LENGTH' || code === 'EMAIL_INVALID_FORMAT' || code === 'USERNAME_ALREADY_EXISTS' || code === 'EMAIL_ALREADY_EXISTS') {
-      const status = (code === 'USERNAME_ALREADY_EXISTS' || code === 'EMAIL_ALREADY_EXISTS') ? 409 : 400;
+    if (code === 'USERNAME_INVALID_LENGTH' || code === 'USERNAME_ALREADY_EXISTS') {
+      const status = code === 'USERNAME_ALREADY_EXISTS' ? 409 : 400;
       return c.json({ success: false, error: { code, message: code } }, status);
     }
     throw err;
   }
 });
 
-// PATCH /users/me/password (認証必須 - パスワード変更)
-users.patch('/me/password', userAuthMiddleware, zValidator('json', updatePasswordSchema, validationHook), async (c) => {
-  const userId = c.get('userId')!;
-  const input = c.req.valid('json');
-  const service = new UserService(c.env.DB);
-
-  try {
-    await service.updatePassword(userId, input);
-    return c.json({ success: true, data: null });
-  } catch (err) {
-    const code = err instanceof Error ? err.message : 'UNKNOWN_ERROR';
-    if (code === 'INVALID_CURRENT_PASSWORD' || code === 'PASSWORD_TOO_SHORT') {
-      return c.json({ success: false, error: { code, message: code } }, 400);
-    }
-    throw err;
-  }
-});
-
 // POST /users/me/sync-bookmarks (認証必須 - ログイン時の localStorage→server 同期)
-users.post('/me/sync-bookmarks', userAuthMiddleware, zValidator('json', syncBookmarksSchema, validationHook), async (c) => {
+users.post('/me/sync-bookmarks', userAuthMiddleware, userProfileMiddleware, zValidator('json', syncBookmarksSchema, validationHook), async (c) => {
   const userId = c.get('userId')!;
   const input = c.req.valid('json');
 
@@ -129,7 +103,7 @@ users.post('/me/sync-bookmarks', userAuthMiddleware, zValidator('json', syncBook
 });
 
 // GET /users/me/bookmarks (認証必須 - 全しおり)
-users.get('/me/bookmarks', userAuthMiddleware, async (c) => {
+users.get('/me/bookmarks', userAuthMiddleware, userProfileMiddleware, async (c) => {
   const userId = c.get('userId')!;
   const service = new UserService(c.env.DB);
   const bookmarks = await service.getMyBookmarks(userId);
@@ -137,7 +111,7 @@ users.get('/me/bookmarks', userAuthMiddleware, async (c) => {
 });
 
 // PATCH /users/me/bookmarks/:itineraryId/visibility (認証必須)
-users.patch('/me/bookmarks/:itineraryId/visibility', userAuthMiddleware, zValidator('json', updateVisibilitySchema, validationHook), async (c) => {
+users.patch('/me/bookmarks/:itineraryId/visibility', userAuthMiddleware, userProfileMiddleware, zValidator('json', updateVisibilitySchema, validationHook), async (c) => {
   const userId = c.get('userId')!;
   const itineraryId = c.req.param('itineraryId');
   const input = c.req.valid('json');
@@ -208,3 +182,14 @@ users.get('/:username/bookmarks', async (c) => {
 });
 
 export default users;
+
+function profileForClient(profile: { username: string; email: string; prefecture: unknown; email_verified: boolean; profile_complete: boolean; created_at: string }) {
+  return {
+    username: profile.username,
+    email: profile.email,
+    prefecture: profile.prefecture,
+    email_verified: profile.email_verified,
+    profile_complete: profile.profile_complete,
+    created_at: profile.created_at,
+  };
+}

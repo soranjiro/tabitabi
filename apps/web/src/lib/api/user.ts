@@ -1,8 +1,5 @@
 import type {
-  RegisterInput,
-  LoginInput,
-  LoginResponse,
-  RegisterResponse,
+  BootstrapProfileInput,
   UserBookmarkWithItinerary,
   PublicBookmark,
   PublicFeedResponse,
@@ -10,10 +7,10 @@ import type {
   UserPublicProfile,
   SyncBookmarksResponse,
   UpdateProfileInput,
-  UpdatePasswordInput,
   UpdateProfileResponse,
   UserSearchResult,
   ApiResult,
+  UserSessionProfile,
 } from '@tabitabi/types';
 import { userAuth } from '../user-auth';
 
@@ -23,7 +20,7 @@ const API_BASE_URL =
   'http://localhost:8787/api/v1';
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = userAuth.getToken();
+  const token = await userAuth.getToken();
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
@@ -39,11 +36,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const userApi = {
-  register: (data: RegisterInput) =>
-    request<RegisterResponse>('/users/register', { method: 'POST', body: JSON.stringify(data) }),
+  bootstrap: (data: BootstrapProfileInput = {}) =>
+    request<UserSessionProfile>('/users/me/bootstrap', { method: 'POST', body: JSON.stringify(data) }),
 
-  login: (data: LoginInput) =>
-    request<LoginResponse>('/users/login', { method: 'POST', body: JSON.stringify(data) }),
+  getAccount: () => request<UserSessionProfile>('/users/me/account'),
 
   getPublicProfile: (username: string) =>
     request<UserPublicProfile>(`/users/${username}/profile`),
@@ -68,12 +64,6 @@ export const userApi = {
 
   updateProfile: (data: UpdateProfileInput) =>
     request<UpdateProfileResponse>('/users/me/profile', {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    }),
-
-  updatePassword: (data: UpdatePasswordInput) =>
-    request<null>('/users/me/password', {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),

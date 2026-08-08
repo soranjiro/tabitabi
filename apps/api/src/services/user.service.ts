@@ -1,80 +1,69 @@
 import type {
   User,
-  UserPublicProfile,
+  UserSessionProfile,
   UserBookmark,
   UserBookmarkWithItinerary,
   PublicBookmark,
   PublicFeedItem,
   PublicFeedResponse,
-  RegisterInput,
+  BootstrapProfileInput,
   SyncBookmarksResponse,
   UpdateProfileInput,
-  UpdatePasswordInput,
   UpdateProfileResponse,
   UserSearchResult,
 } from '@tabitabi/types';
 import type { D1Database } from '@cloudflare/workers-types';
-import { generateId, getCurrentTimestamp } from '../utils';
-import { hashPassword, verifyPassword } from '../utils/password';
+import { getCurrentTimestamp } from '../utils';
 
-// register/login 用の内部型（id が必要なため UserPublicProfile を拡張）
-type UserProfileWithId = UserPublicProfile & { id: string };
+type UserProfileWithId = UserSessionProfile & { id: string };
 
 export class UserService {
   constructor(private db: D1Database) {}
 
-  async register(input: RegisterInput): Promise<UserProfileWithId> {
-    const existing = await this.db
-      .prepare('SELECT id FROM users WHERE email = ? OR username = ?')
-      .bind(input.email, input.username)
-      .first();
+  async bootstrapFirebaseUser(userId: string, email: string, input: BootstrapProfileInput): Promise<UserProfileWithId> {
+    const normalizedEmail = email.toLowerCase();
+    const existing = await this.getById(userId);
+    const now = getCurrentTimestamp();
 
     if (existing) {
-      const emailConflict = await this.db
-        .prepare('SELECT id FROM users WHERE email = ?')
-        .bind(input.email)
-        .first();
-      if (emailConflict) {
-        throw new Error('EMAIL_ALREADY_EXISTS');
+      if (input.username && input.username !== existing.username) await this.assertUsernameAvailable(input.username, userId);
+      const fields = ['email = ?', 'email_verified_at = COALESCE(email_verified_at, ?)', 'updated_at = ?'];
+      const values: unknown[] = [normalizedEmail, now, now];
+      if (input.username) { fields.push('username = ?'); values.push(input.username); }
+      if (input.prefecture) { fields.push('prefecture = ?'); values.push(input.prefecture); }
+      values.push(userId);
+
+      try {
+        await this.db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();
+      } catch (error) {
+        this.rethrowConstraint(error);
       }
-      throw new Error('USERNAME_ALREADY_EXISTS');
+    } else {
+      if (!input.username || !input.prefecture) throw new Error('PROFILE_SETUP_REQUIRED');
+      await this.assertUsernameAvailable(input.username);
+      try {
+        await this.db.prepare(`INSERT INTO users
+          (id, username, email, password_hash, prefecture, email_verified_at, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(userId, input.username, normalizedEmail, '!firebase-managed!', input.prefecture, now, now, now)
+          .run();
+      } catch (error) {
+        this.rethrowConstraint(error);
+      }
     }
 
-    const id = generateId();
-    const now = getCurrentTimestamp();
-    const password_hash = await hashPassword(input.password);
-
-    await this.db
-      .prepare(
-        'INSERT INTO users (id, username, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
-      )
-      .bind(id, input.username, input.email, password_hash, now, now)
-      .run();
-
-    return { id, username: input.username, created_at: now };
+    return this.getSessionProfile(userId);
   }
 
-  async login(email: string, password: string): Promise<UserProfileWithId> {
-    const user = await this.db
-      .prepare('SELECT * FROM users WHERE email = ?')
-      .bind(email)
-      .first<User>();
-
-    if (!user) {
-      throw new Error('INVALID_CREDENTIALS');
-    }
-
-    const valid = await verifyPassword(password, user.password_hash);
-    if (!valid) {
-      throw new Error('INVALID_CREDENTIALS');
-    }
-
-    return { id: user.id, username: user.username, created_at: user.created_at };
+  async getSessionProfile(userId: string): Promise<UserProfileWithId> {
+    const user = await this.getById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+    return this.toSessionProfile(user);
   }
 
   async getByUsername(username: string): Promise<User | null> {
     const result = await this.db
-      .prepare('SELECT * FROM users WHERE username = ?')
+      .prepare('SELECT * FROM users WHERE username = ? AND email_verified_at IS NOT NULL')
       .bind(username)
       .first<User>();
     return result ?? null;
@@ -135,6 +124,7 @@ export class UserService {
         JOIN itineraries i ON ub.itinerary_id = i.id
         JOIN users u ON ub.user_id = u.id
         WHERE u.username = ?
+          AND u.email_verified_at IS NOT NULL
           AND ub.is_visible = 1
           AND i.password IS NULL
           AND i.source_itinerary_id IS NOT NULL
@@ -157,6 +147,7 @@ export class UserService {
         JOIN itineraries i ON ub.itinerary_id = i.id
         JOIN users u ON ub.user_id = u.id
         WHERE ub.is_visible = 1
+          AND u.email_verified_at IS NOT NULL
           AND i.password IS NULL
           AND i.source_itinerary_id IS NOT NULL
         ORDER BY i.created_at DESC
@@ -227,27 +218,13 @@ export class UserService {
   }
 
   async updateProfile(userId: string, input: UpdateProfileInput): Promise<UpdateProfileResponse> {
+    const currentUser = await this.getById(userId);
+    if (!currentUser) throw new Error('USER_NOT_FOUND');
     if (typeof input.username === 'string') {
       if (input.username.length < 3 || input.username.length > 20) {
         throw new Error('USERNAME_INVALID_LENGTH');
       }
-      const conflict = await this.db
-        .prepare('SELECT id FROM users WHERE username = ? AND id != ?')
-        .bind(input.username, userId)
-        .first();
-      if (conflict) throw new Error('USERNAME_ALREADY_EXISTS');
-    }
-
-    if (typeof input.email === 'string') {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(input.email)) {
-        throw new Error('EMAIL_INVALID_FORMAT');
-      }
-      const conflict = await this.db
-        .prepare('SELECT id FROM users WHERE email = ? AND id != ?')
-        .bind(input.email, userId)
-        .first();
-      if (conflict) throw new Error('EMAIL_ALREADY_EXISTS');
+      await this.assertUsernameAvailable(input.username, userId);
     }
 
     const now = getCurrentTimestamp();
@@ -258,9 +235,9 @@ export class UserService {
       fields.push('username = ?');
       values.push(input.username);
     }
-    if (typeof input.email === 'string') {
-      fields.push('email = ?');
-      values.push(input.email);
+    if (typeof input.prefecture === 'string') {
+      fields.push('prefecture = ?');
+      values.push(input.prefecture);
     }
     fields.push('updated_at = ?');
     values.push(now);
@@ -274,40 +251,42 @@ export class UserService {
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('UNIQUE constraint failed: users.username')) throw new Error('USERNAME_ALREADY_EXISTS');
-      if (msg.includes('UNIQUE constraint failed: users.email')) throw new Error('EMAIL_ALREADY_EXISTS');
       throw err;
     }
 
     const updated = await this.db
-      .prepare('SELECT username, email, created_at FROM users WHERE id = ?')
+      .prepare('SELECT * FROM users WHERE id = ?')
       .bind(userId)
-      .first<{ username: string; email: string; created_at: string }>();
+      .first<User>();
 
     if (!updated) throw new Error('USER_NOT_FOUND');
-    return { username: updated.username, email: updated.email, created_at: updated.created_at };
+    return this.toSessionProfile(updated);
   }
 
-  async updatePassword(userId: string, input: UpdatePasswordInput): Promise<void> {
-    const user = await this.db
-      .prepare('SELECT password_hash FROM users WHERE id = ?')
-      .bind(userId)
-      .first<{ password_hash: string }>();
+  private toSessionProfile(user: User): UserProfileWithId {
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      prefecture: user.prefecture,
+      email_verified: Boolean(user.email_verified_at),
+      profile_complete: Boolean(user.prefecture),
+      created_at: user.created_at,
+    };
+  }
 
-    if (!user) throw new Error('USER_NOT_FOUND');
+  private async assertUsernameAvailable(username: string, userId?: string): Promise<void> {
+    const query = userId
+      ? this.db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').bind(username, userId)
+      : this.db.prepare('SELECT id FROM users WHERE username = ?').bind(username);
+    if (await query.first()) throw new Error('USERNAME_ALREADY_EXISTS');
+  }
 
-    const valid = await verifyPassword(input.current_password, user.password_hash);
-    if (!valid) throw new Error('INVALID_CURRENT_PASSWORD');
-
-    if (input.new_password.length < 8) {
-      throw new Error('PASSWORD_TOO_SHORT');
-    }
-
-    const now = getCurrentTimestamp();
-    const newHash = await hashPassword(input.new_password);
-    await this.db
-      .prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
-      .bind(newHash, now, userId)
-      .run();
+  private rethrowConstraint(error: unknown): never {
+    const message = error instanceof Error ? error.message : '';
+    if (message.includes('users.username')) throw new Error('USERNAME_ALREADY_EXISTS');
+    if (message.includes('users.email')) throw new Error('EMAIL_ALREADY_EXISTS');
+    throw error;
   }
 
   private escapeLikePattern(value: string): string {
@@ -317,7 +296,7 @@ export class UserService {
   async searchUsers(query: string, limit: number = 20): Promise<UserSearchResult[]> {
     const escapedQuery = this.escapeLikePattern(query);
     const results = await this.db
-      .prepare("SELECT username, created_at FROM users WHERE username LIKE ? ESCAPE '\\' LIMIT ?")
+      .prepare("SELECT username, created_at FROM users WHERE email_verified_at IS NOT NULL AND username LIKE ? ESCAPE '\\' LIMIT ?")
       .bind(`%${escapedQuery}%`, limit)
       .all<UserSearchResult>();
     return results.results ?? [];

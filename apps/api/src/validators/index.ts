@@ -1,28 +1,16 @@
 import { z } from 'zod';
+import { PREFECTURES } from '@tabitabi/types';
 
 // ── Users ──────────────────────────────────────────────
 
-export const registerSchema = z.object({
+export const bootstrapProfileSchema = z.object({
   username: z
-    .string({ error: 'username is required' })
+    .string()
     .min(3, 'username must be at least 3 characters')
     .max(20, 'username must be at most 20 characters')
-    .regex(/^[a-zA-Z0-9_]+$/, 'username must contain only alphanumeric characters and underscores'),
-  email: z
-    .string({ error: 'email is required' })
-    .email('invalid email format'),
-  password: z
-    .string({ error: 'password is required' })
-    .min(8, 'password must be at least 8 characters'),
-});
-
-export const loginSchema = z.object({
-  email: z
-    .string({ error: 'email is required' })
-    .email('invalid email format'),
-  password: z
-    .string({ error: 'password is required' })
-    .min(1, 'password is required'),
+    .regex(/^[a-zA-Z0-9_]+$/, 'username must contain only alphanumeric characters and underscores')
+    .optional(),
+  prefecture: z.enum(PREFECTURES).optional(),
 });
 
 // ── Itineraries ────────────────────────────────────────
@@ -92,21 +80,9 @@ export const updateProfileSchema = z.object({
     .min(3, 'username must be at least 3 characters')
     .max(20, 'username must be at most 20 characters')
     .optional(),
-  email: z
-    .string()
-    .email('invalid email format')
-    .optional(),
-}).refine(data => data.username !== undefined || data.email !== undefined, {
-  message: 'username or email is required',
-});
-
-export const updatePasswordSchema = z.object({
-  current_password: z
-    .string({ error: 'current_password is required' })
-    .min(1, 'current_password is required'),
-  new_password: z
-    .string({ error: 'new_password is required' })
-    .min(8, 'new_password must be at least 8 characters'),
+  prefecture: z.enum(PREFECTURES).optional(),
+}).refine(data => data.username !== undefined || data.prefecture !== undefined, {
+  message: 'username or prefecture is required',
 });
 
 export const updateVisibilitySchema = z.object({

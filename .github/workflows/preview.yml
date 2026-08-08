@@ -37,6 +37,10 @@ jobs:
       PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
       PREVIEW_DB_NAME: tabitabi-preview-pr-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
       APP_GITHUB_ISSUES_TOKEN: ${{ secrets.APP_GITHUB_ISSUES_TOKEN }}
+      PUBLIC_FIREBASE_API_KEY: ${{ secrets.PUBLIC_FIREBASE_API_KEY }}
+      PUBLIC_FIREBASE_APP_ID: ${{ secrets.PUBLIC_FIREBASE_APP_ID }}
+      PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}
     steps:
       - name: Add reaction to comment
         if: github.event_name == 'issue_comment'
@@ -118,10 +122,15 @@ jobs:
       - name: Generate API wrangler.toml from example
         working-directory: apps/api
         run: |
+          if [ -z "${PUBLIC_FIREBASE_PROJECT_ID:-}" ]; then
+            echo "::error::PUBLIC_FIREBASE_PROJECT_ID GitHub secret is not available"
+            exit 1
+          fi
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${{ steps.preview-db.outputs.database_id }}/g" wrangler.toml
           sed -i "s/database_name = \"tabitabi\"/database_name = \"${PREVIEW_DB_NAME}\"/g" wrangler.toml
           sed -i "s/PLACEHOLDER_PREVIEW_SECRET/${JWT_SECRET}/g" wrangler.toml
+          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const projectId = process.env.PUBLIC_FIREBASE_PROJECT_ID; fs.writeFileSync(path, fs.readFileSync(path, "utf8").replaceAll("your-firebase-project-id", projectId));'
 
       - name: Apply D1 migrations to preview database
         working-directory: apps/api
@@ -142,6 +151,10 @@ jobs:
         run: pnpm run build
         env:
           VITE_API_URL: ${{ steps.api-url.outputs.url }}
+          PUBLIC_FIREBASE_API_KEY: ${{ secrets.PUBLIC_FIREBASE_API_KEY }}
+          PUBLIC_FIREBASE_APP_ID: ${{ secrets.PUBLIC_FIREBASE_APP_ID }}
+          PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}
 
       - name: Deploy Web to Pages preview
         id: pages-deploy

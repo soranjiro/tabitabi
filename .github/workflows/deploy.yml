@@ -39,6 +39,10 @@ jobs:
 
       - name: Generate wrangler.toml from example
         run: |
+          if [ -z "${APP_GITHUB_ISSUES_TOKEN:-}" ]; then
+            echo "::error::APP_GITHUB_ISSUES_TOKEN GitHub secret is not available"
+            exit 1
+          fi
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${CLOUDFLARE_DATABASE_ID}/g" wrangler.toml
           node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const token = JSON.stringify(process.env.APP_GITHUB_ISSUES_TOKEN ?? ""); fs.writeFileSync(path, fs.readFileSync(path, "utf8").replaceAll("\"PLACEHOLDER_GITHUB_ISSUES_TOKEN\"", token));'

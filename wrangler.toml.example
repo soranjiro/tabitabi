@@ -1,11 +1,7 @@
 name = "tabitabi"
 compatibility_date = "2024-09-17"
 compatibility_flags = ["nodejs_compat"]
-main = "apps/web/.svelte-kit/cloudflare/_worker.js"
-
-[assets]
-directory = "apps/web/.svelte-kit/cloudflare"
-binding = "ASSETS"
+pages_build_output_dir = "apps/web/.svelte-kit/cloudflare"
 
 [observability]
 enabled = true

@@ -1,5 +1,11 @@
 import type { UserSessionProfile } from '@tabitabi/types';
 import type { Auth, Unsubscribe, User } from 'firebase/auth';
+import {
+  PUBLIC_FIREBASE_API_KEY,
+  PUBLIC_FIREBASE_APP_ID,
+  PUBLIC_FIREBASE_AUTH_DOMAIN,
+  PUBLIC_FIREBASE_PROJECT_ID,
+} from '$env/static/public';
 
 const USER_KEY = 'user_info';
 const PENDING_PROFILE_KEY = 'pending_firebase_profile';
@@ -17,10 +23,10 @@ async function getAuthInstance(): Promise<Auth> {
   if (!authPromise) {
     authPromise = Promise.all([import('firebase/app'), import('firebase/auth')]).then(([appModule, authModule]) => {
       const config = {
-        apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
-        authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
-        projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
-        appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+        apiKey: PUBLIC_FIREBASE_API_KEY,
+        authDomain: PUBLIC_FIREBASE_AUTH_DOMAIN,
+        projectId: PUBLIC_FIREBASE_PROJECT_ID,
+        appId: PUBLIC_FIREBASE_APP_ID,
       };
       if (!config.apiKey || !config.authDomain || !config.projectId || !config.appId) {
         throw new Error('FIREBASE_CONFIG_MISSING');

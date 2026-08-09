@@ -3,10 +3,15 @@ export interface ItinerarySecretSettings {
   offset_minutes: number;
 }
 
+/** Standard theme layouts that can be selected as the opening view. */
+export type ItineraryViewMode = 'dayCard' | 'list' | 'month' | 'week';
+
 export interface Itinerary {
   id: string;
   title: string;
   theme_id: string;
+  /** Opening view chosen by the itinerary owner. Older itineraries use dayCard. */
+  default_view_mode?: ItineraryViewMode;
   memo: string;
   walica_id?: string | null;
   password?: string | null;
@@ -36,6 +41,7 @@ export type ItineraryResponse = Omit<Itinerary, 'password'> & {
 export interface CreateItineraryInput {
   title: string;
   theme_id?: string;             // オプション、デフォルト: 'map-only'
+  default_view_mode?: ItineraryViewMode;
   memo?: string;
   walica_id?: string;
   password?: string;
@@ -48,6 +54,7 @@ export interface CreateItineraryInput {
 export interface UpdateItineraryInput {
   title?: string;
   theme_id?: string;
+  default_view_mode?: ItineraryViewMode;
   memo?: string;
   walica_id?: string | null;
   password?: string;

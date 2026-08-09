@@ -63,6 +63,13 @@
   flex-shrink: 0;
 }
 
+.standard-settings-page-section-icon {
+  width: 20px;
+  text-align: center;
+  color: var(--theme-primary);
+  font-size: 1.1rem;
+}
+
 .standard-settings-page-description {
   font-size: 0.9rem;
   color: var(--theme-text-light);

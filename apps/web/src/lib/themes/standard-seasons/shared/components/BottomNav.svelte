@@ -4,76 +4,28 @@
     HomeIcon,
     ViewIcon,
     EditIcon,
-    SettingsIcon,
   } from "./icons/index.svelte";
-
-  interface ThemeOption {
-    id: string;
-    name: string;
-    description?: string;
-  }
 
   interface Props {
     hasEditPermission: boolean;
     canRequestEdit?: boolean;
-    themes: ThemeOption[];
-    selectedThemeId: string;
-    secretModeEnabled: boolean;
-    secretModeOffset: number;
     onEditModeToggle: () => void;
-    onThemeChange: (themeId: string) => void;
-    onSecretModeChange: (enabled: boolean, offset: number) => void;
     onMoneyOpen: () => void;
     onViewModeClick?: () => void;
-    onShowThemeSelector?: () => void;
-    onSettingsClick?: () => void;
+    onMenuClick?: () => void;
   }
 
   let {
     hasEditPermission,
     canRequestEdit = true,
-    themes,
-    selectedThemeId,
-    secretModeEnabled,
-    secretModeOffset,
     onEditModeToggle,
-    onThemeChange,
-    onSecretModeChange,
     onMoneyOpen,
     onViewModeClick,
-    onShowThemeSelector,
-    onSettingsClick,
+    onMenuClick,
   }: Props = $props();
 
-  let showSettingsMenu = $state(false);
-  let showThemeSelect = $state(false);
-
   const ModeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18v2H3V5zm0 6h18v2H3v-2zm0 6h18v2H3v-2z"/></svg>`;
-
-  function handleSettingsClick() {
-    showSettingsMenu = false;
-    showThemeSelect = false;
-    if (onSettingsClick) {
-      onSettingsClick();
-    }
-  }
-
-  function handleShowThemeSelect() {
-    showSettingsMenu = false;
-    if (onShowThemeSelector) {
-      onShowThemeSelector();
-    }
-  }
-
-  function handleThemeChange(themeId: string) {
-    showThemeSelect = false;
-    onThemeChange(themeId);
-  }
-
-  function handleEditModeToggle() {
-    showSettingsMenu = false;
-    onEditModeToggle();
-  }
+  const MenuIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>`;
 </script>
 
 <nav class="standard-bottom-nav" aria-label="フッターメニュー">
@@ -114,7 +66,7 @@
       class="standard-bottom-btn"
       title="閲覧モードに切り替え"
       aria-label="閲覧モードに切り替え"
-      onclick={handleEditModeToggle}
+      onclick={onEditModeToggle}
     >
       {@html ViewIcon}
       <span>View</span>
@@ -124,42 +76,20 @@
       class="standard-bottom-btn"
       title="編集モードに切り替え"
       aria-label="編集モードに切り替え"
-      onclick={handleEditModeToggle}
+      onclick={onEditModeToggle}
     >
       {@html EditIcon}
       <span>Edit</span>
     </button>
   {/if}
 
-  {#if hasEditPermission}
-    <div class="standard-btn-wrapper">
-      <button
-        class="standard-bottom-btn"
-        title="設定"
-        aria-label="設定"
-        onclick={handleSettingsClick}
-      >
-        {@html SettingsIcon}
-        <span>Settings</span>
-      </button>
-      {#if showThemeSelect}
-        <div class="standard-theme-select-popup">
-          <label for="theme-select" class="standard-theme-select-label"
-            >テーマを選択</label
-          >
-          <select
-            id="theme-select"
-            value={selectedThemeId}
-            onchange={(e) =>
-              handleThemeChange((e.target as HTMLSelectElement).value)}
-            class="standard-theme-select-input"
-          >
-            {#each themes as theme}
-              <option value={theme.id}>{theme.name}</option>
-            {/each}
-          </select>
-        </div>
-      {/if}
-    </div>
-  {/if}
+  <button
+    class="standard-bottom-btn"
+    title="メニュー"
+    aria-label="メニュー"
+    onclick={onMenuClick}
+  >
+    {@html MenuIcon}
+    <span>Menu</span>
+  </button>
 </nav>

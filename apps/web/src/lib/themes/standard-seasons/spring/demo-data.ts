@@ -7,6 +7,7 @@ export function getDemoData(): DemoDataSet {
       id: 'demo',
       title: '春休みの京都旅行',
       theme_id: 'standard-spring',
+      default_view_mode: 'dayCard',
       memo: '{"text":"桜シーズンは混雑するので早めの行動を！\\n\\n持ち物リスト\\n- カメラ\\n- 日焼け止め\\n- 歩きやすい靴"}',
       password: null,
       created_at: now,

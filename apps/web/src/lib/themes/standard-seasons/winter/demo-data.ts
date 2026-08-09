@@ -7,6 +7,7 @@ export function getDemoData(): DemoDataSet {
       id: 'demo',
       title: '冬休みのスキー旅行',
       theme_id: 'standard-winter',
+      default_view_mode: 'month',
       memo: '{"text":"冬の8日間旅行プラン。雪山アクティビティと温泉、城下町観光、東京の街歩きを楽しむ。\\n\\n持ち物リスト\\n- スキーウェア\\n- 手袋\\n- ゴーグル\\n- カイロ"}',
       password: null,
       created_at: now,

@@ -19,13 +19,12 @@
   import MemoDialog from "./components/MemoDialog.svelte";
   import PasswordDialog from "./components/PasswordDialog.svelte";
   import ShareDialog from "./components/ShareDialog.svelte";
+  import MoreMenu from "./components/MoreMenu.svelte";
   import MoneyOverlay from "./components/MoneyOverlay.svelte";
   import ViewModeSelector from "./components/ViewModeSelector.svelte";
-  import ThemeSelectorPopup from "./components/ThemeSelectorPopup.svelte";
   import SettingsDialog from "./components/SettingsDialog.svelte";
-  import { LinkIcon } from "./components/icons/index.svelte";
   import { renderMarkdown } from "./utils/markdown";
-  import { getViewMode, setViewMode, type ViewMode } from "./utils/storage";
+  import { DEFAULT_VIEW_MODE, isValidViewMode, type ViewMode } from "./utils/storage";
   import { parseMemoData } from "$lib/memo";
   import { openPrintStudio } from "$lib/print";
 
@@ -35,6 +34,7 @@
     onUpdateItinerary?: (data: {
       title?: string;
       theme_id?: string;
+      default_view_mode?: import("@tabitabi/types").ItineraryViewMode;
       memo?: string;
       secret_settings?: {
         enabled: boolean;
@@ -89,7 +89,7 @@
   let createStepTemplate = $state<Step | null>(null);
   let showCopyMessage = $state(false);
   let showShareDialog = $state(false);
-  let showShareMenu = $state(false);
+  let showMoreMenu = $state(false);
   let hasEditPermission = $state(false);
   let showPasswordDialog = $state(false);
   let showMemoDialog = $state(false);
@@ -104,8 +104,12 @@
   );
   let showMoney = $state(false);
   let showViewModeSelector = $state(false);
-  let showThemeSelectorPopup = $state(false);
-  let currentViewMode = $state<ViewMode>("dayCard");
+  let currentViewMode = $state<ViewMode>(DEFAULT_VIEW_MODE);
+  let defaultViewMode = $state<ViewMode>(
+    itinerary.default_view_mode && isValidViewMode(itinerary.default_view_mode)
+      ? itinerary.default_view_mode
+      : DEFAULT_VIEW_MODE,
+  );
   let publicNotice = $derived(
     typeof parseMemoData(itinerary.memo).affiliate_disclosure === "string"
       ? (parseMemoData(itinerary.memo).affiliate_disclosure as string)
@@ -145,7 +149,7 @@
   }
 
   onMount(() => {
-    currentViewMode = getViewMode(itinerary.id);
+    currentViewMode = defaultViewMode;
 
     if (getIsDemoMode()) {
       hasEditPermission = true;
@@ -170,7 +174,6 @@
   function handleViewModeChange(mode: ViewMode) {
     if (mode === "printPreview") return;
     currentViewMode = mode;
-    setViewMode(itinerary.id, mode);
   }
 
   async function onPasswordAuth(password: string) {
@@ -240,12 +243,7 @@
     showMemoDialog = false;
   }
 
-  function handleShare() {
-    showShareMenu = !showShareMenu;
-  }
-
   function openPrintPreview() {
-    showShareMenu = false;
     openPrintStudio();
   }
 
@@ -253,7 +251,6 @@
     try {
       const url = window.location.origin + window.location.pathname;
       await navigator.clipboard.writeText(url);
-      showShareMenu = false;
       showCopyMessage = true;
       setTimeout(() => {
         showCopyMessage = false;
@@ -276,7 +273,6 @@
 
       await navigator.clipboard.writeText(url);
       showShareDialog = false;
-      showShareMenu = false;
       showCopyMessage = true;
       setTimeout(() => {
         showCopyMessage = false;
@@ -293,7 +289,6 @@
       const url = `${window.location.origin}/${publishedId}`;
       await navigator.clipboard.writeText(url);
       showShareDialog = false;
-      showShareMenu = false;
       showCopyMessage = true;
       setTimeout(() => {
         showCopyMessage = false;
@@ -359,6 +354,15 @@
     }
   }
 
+  async function handleDefaultViewModeUpdate(mode: ViewMode) {
+    if (mode === "printPreview" || mode === defaultViewMode) return;
+    defaultViewMode = mode;
+    currentViewMode = mode;
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({ default_view_mode: mode });
+    }
+  }
+
 </script>
 
 <div
@@ -369,65 +373,6 @@
 >
   <div class="standard-container">
     <header class="standard-header">
-      <div class="standard-share-wrapper">
-        <button
-          type="button"
-          class="standard-share-icon"
-          onclick={handleShare}
-          aria-label="共有メニュー"
-          title="共有メニュー"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            width="24"
-            height="24"
-          >
-            <path
-              d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"
-            />
-          </svg>
-        </button>
-        {#if showShareMenu}
-          <div class="standard-share-menu">
-            <button
-              type="button"
-              class="standard-share-menu-item"
-              onclick={hasEditPermission
-                ? () => (showShareDialog = true)
-                : copyViewOnlyLink}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path
-                  d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
-                />
-              </svg>
-              リンクをコピー
-            </button>
-            <button
-              type="button"
-              class="standard-share-menu-item"
-              onclick={openPrintPreview}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path
-                  d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"
-                />
-              </svg>
-              印刷・PDF出力
-            </button>
-          </div>
-        {/if}
-      </div>
       {#if showCopyMessage}
         <div class="standard-copy-msg">コピーしました</div>
       {/if}
@@ -508,17 +453,10 @@
     <BottomNav
         {hasEditPermission}
         canRequestEdit={!isSharedSnapshot}
-        {themes}
-        {selectedThemeId}
-        {secretModeEnabled}
-        {secretModeOffset}
         onEditModeToggle={handleEditModeToggle}
         onViewModeClick={() => (showViewModeSelector = true)}
-        onThemeChange={handleThemeChange}
-        onSecretModeChange={handleSecretModeUpdate}
         onMoneyOpen={() => (showMoney = true)}
-        onShowThemeSelector={() => (showThemeSelectorPopup = true)}
-        onSettingsClick={() => (showSettingsDialog = true)}
+        onMenuClick={() => (showMoreMenu = true)}
     />
   </div>
 
@@ -555,6 +493,18 @@
     onClose={() => (showShareDialog = false)}
   />
 
+  <MoreMenu
+    show={showMoreMenu}
+    canConfigure={hasEditPermission}
+    onShare={() => {
+      if (hasEditPermission) showShareDialog = true;
+      else void copyViewOnlyLink();
+    }}
+    onPrint={openPrintPreview}
+    onSettings={() => (showSettingsDialog = true)}
+    onClose={() => (showMoreMenu = false)}
+  />
+
   {#if isCreatingStep && createStepTemplate}
     <EventDetailDialog
       step={createStepTemplate}
@@ -573,21 +523,15 @@
     />
   {/if}
 
-  <ThemeSelectorPopup
-    open={showThemeSelectorPopup}
-    {themes}
-    {selectedThemeId}
-    onThemeChange={handleThemeChange}
-    onClose={() => (showThemeSelectorPopup = false)}
-  />
-
   <SettingsDialog
     show={showSettingsDialog}
     {themes}
     {selectedThemeId}
+    defaultViewMode={defaultViewMode}
     {secretModeEnabled}
     {secretModeOffset}
     onThemeChange={handleThemeChange}
+    onDefaultViewModeChange={handleDefaultViewModeUpdate}
     onSecretModeChange={handleSecretModeUpdate}
     onClose={() => (showSettingsDialog = false)}
   />

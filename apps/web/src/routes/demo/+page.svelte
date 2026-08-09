@@ -148,6 +148,7 @@
   async function handleUpdateItinerary(updateData: {
     title?: string;
     theme_id?: string;
+    default_view_mode?: import("@tabitabi/types").ItineraryViewMode;
     memo?: string;
     walica_id?: string | null;
     secret_settings?: {

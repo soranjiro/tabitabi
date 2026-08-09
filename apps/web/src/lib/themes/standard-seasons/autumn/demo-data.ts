@@ -7,6 +7,7 @@ export function getDemoData(): DemoDataSet {
       id: 'demo',
       title: '秋の紅葉狩り旅',
       theme_id: 'standard-autumn',
+      default_view_mode: 'week',
       memo: '{"text":"紅葉シーズンは混雑するので早めの行動を！\\n\\n持ち物リスト\\n- カメラ\\n- 防寒具"}',
       password: null,
       created_at: now,

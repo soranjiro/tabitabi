@@ -1,3 +1,5 @@
+import { loadEnv } from 'vite';
+
 const required = [
   'PUBLIC_FIREBASE_API_KEY',
   'PUBLIC_FIREBASE_AUTH_DOMAIN',
@@ -5,7 +7,10 @@ const required = [
   'PUBLIC_FIREBASE_APP_ID'
 ];
 
-const missing = required.filter((name) => !process.env[name]?.trim());
+// `predev` runs directly in Node, which does not load `.env` automatically.
+// Use Vite's loader so this check sees the exact variables available to SvelteKit.
+const env = loadEnv(process.env.NODE_ENV ?? 'development', process.cwd(), '');
+const missing = required.filter((name) => !env[name]?.trim());
 
 if (missing.length > 0) {
   console.error('Missing required web build environment variables:');

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { PaletteIcon, SecretIcon } from "./icons/index.svelte";
   import Dialog from "./Dialog.svelte";
+  import { VIEW_MODE_OPTIONS, type ViewMode } from "../utils/storage";
 
   interface ThemeOption {
     id: string;
@@ -12,9 +13,11 @@
     show: boolean;
     themes: ThemeOption[];
     selectedThemeId: string;
+    defaultViewMode: ViewMode;
     secretModeEnabled: boolean;
     secretModeOffset: number;
     onThemeChange: (themeId: string) => void;
+    onDefaultViewModeChange: (mode: ViewMode) => void;
     onSecretModeChange: (enabled: boolean, offset: number) => void;
     onClose: () => void;
   }
@@ -23,9 +26,11 @@
     show,
     themes,
     selectedThemeId,
+    defaultViewMode,
     secretModeEnabled,
     secretModeOffset,
     onThemeChange,
+    onDefaultViewModeChange,
     onSecretModeChange,
     onClose,
   }: Props = $props();
@@ -33,16 +38,19 @@
   let localSecretEnabled = $state(secretModeEnabled);
   let localSecretOffset = $state(secretModeOffset);
   let localThemeId = $state(selectedThemeId);
+  let localDefaultViewMode = $state<ViewMode>(defaultViewMode);
   let showThemeList = $state(false);
 
   $effect(() => {
     localSecretEnabled = secretModeEnabled;
     localSecretOffset = secretModeOffset;
     localThemeId = selectedThemeId;
+    localDefaultViewMode = defaultViewMode;
   });
 
   function handleSave() {
     onThemeChange(localThemeId);
+    onDefaultViewModeChange(localDefaultViewMode);
     onSecretModeChange(localSecretEnabled, localSecretOffset);
     onClose();
   }
@@ -51,6 +59,7 @@
     localSecretEnabled = secretModeEnabled;
     localSecretOffset = secretModeOffset;
     localThemeId = selectedThemeId;
+    localDefaultViewMode = defaultViewMode;
     onClose();
   }
 </script>
@@ -99,6 +108,34 @@
           {/each}
         </div>
       {/if}
+    </div>
+
+    <div class="standard-settings-page-divider"></div>
+
+    <div class="standard-settings-page-section">
+      <div class="standard-settings-page-section-header">
+        <span class="standard-settings-page-section-icon" aria-hidden="true">▤</span>
+        <h3>初期表示</h3>
+      </div>
+      <p class="standard-settings-page-description">
+        しおりを開いたときに最初に表示する画面です。共有した相手にも反映されます。
+      </p>
+      <div class="standard-settings-page-field">
+        {#each VIEW_MODE_OPTIONS as option}
+          <label class="standard-settings-page-radio">
+            <input
+              type="radio"
+              name="default-view-mode"
+              value={option.id}
+              bind:group={localDefaultViewMode}
+            />
+            <div class="standard-settings-page-radio-content">
+              <span class="standard-settings-page-radio-title">{option.icon} {option.label}</span>
+            </div>
+            <div class="standard-settings-page-radio-check"></div>
+          </label>
+        {/each}
+      </div>
     </div>
 
     <div class="standard-settings-page-divider"></div>

@@ -1,25 +1,9 @@
-export type ViewMode = 'dayCard' | 'list' | 'month' | 'week' | 'printPreview';
+import type { ItineraryViewMode } from '@tabitabi/types';
 
-const VIEW_MODE_KEY_PREFIX = 'tabitabi:itinerary:';
-const VIEW_MODE_KEY_SUFFIX = ':viewMode';
+export type ViewMode = ItineraryViewMode | 'printPreview';
+export const DEFAULT_VIEW_MODE: ItineraryViewMode = 'dayCard';
 
-export function getViewMode(itineraryId: string): ViewMode {
-  if (typeof localStorage === 'undefined') return 'dayCard';
-  const key = `${VIEW_MODE_KEY_PREFIX}${itineraryId}${VIEW_MODE_KEY_SUFFIX}`;
-  const mode = localStorage.getItem(key);
-  if (mode && isValidViewMode(mode)) {
-    return mode;
-  }
-  return 'dayCard';
-}
-
-export function setViewMode(itineraryId: string, mode: ViewMode): void {
-  if (typeof localStorage === 'undefined') return;
-  const key = `${VIEW_MODE_KEY_PREFIX}${itineraryId}${VIEW_MODE_KEY_SUFFIX}`;
-  localStorage.setItem(key, mode);
-}
-
-function isValidViewMode(mode: string): mode is ViewMode {
+export function isValidViewMode(mode: string): mode is ViewMode {
   return ['dayCard', 'list', 'month', 'week', 'printPreview'].includes(mode);
 }
 

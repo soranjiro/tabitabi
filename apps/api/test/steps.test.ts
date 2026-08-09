@@ -14,6 +14,7 @@ async function applyMigrations(db: D1Database) {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       theme_id TEXT NOT NULL DEFAULT 'map-only',
+      default_view_mode TEXT NOT NULL DEFAULT 'dayCard',
       memo TEXT,
       password TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,

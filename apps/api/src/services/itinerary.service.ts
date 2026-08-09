@@ -7,6 +7,7 @@ import { createPublicMemoSnapshot, createPublicStepSnapshot } from '../utils/pub
 import { hashPassword } from '../utils/password';
 
 const DEFAULT_THEME_ID = 'standard-autumn';
+const DEFAULT_VIEW_MODE = 'dayCard';
 
 export class ItineraryService {
   constructor(private db: D1Database, private env?: Partial<Env>) {}
@@ -64,6 +65,7 @@ export class ItineraryService {
       id,
       title: input.title,
       theme_id: input.theme_id || DEFAULT_THEME_ID,
+      default_view_mode: input.default_view_mode ?? DEFAULT_VIEW_MODE,
       memo,
       walica_id: input.walica_id ?? null,
       password: hashedPassword,
@@ -78,8 +80,8 @@ export class ItineraryService {
 
     // Insert into main table
     await this.db
-      .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.memo, itinerary.password, itinerary.created_at, itinerary.updated_at)
+      .prepare('INSERT INTO itineraries (id, title, theme_id, default_view_mode, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.default_view_mode, itinerary.memo, itinerary.password, itinerary.created_at, itinerary.updated_at)
       .run();
 
     // Insert into secrets table if settings exist
@@ -122,6 +124,10 @@ export class ItineraryService {
     if (input.theme_id !== undefined) {
       fields.push('theme_id = ?');
       values.push(input.theme_id || DEFAULT_THEME_ID);
+    }
+    if (input.default_view_mode !== undefined) {
+      fields.push('default_view_mode = ?');
+      values.push(input.default_view_mode);
     }
     if (input.memo !== undefined) {
       const validation = validateMemoJson(input.memo);
@@ -227,8 +233,8 @@ export class ItineraryService {
 
     await this.db.batch([
       this.db
-        .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?)')
-        .bind(newId, `${source.title}（コピー）`, source.theme_id, source.memo, now, now),
+        .prepare('INSERT INTO itineraries (id, title, theme_id, default_view_mode, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NULL, ?, ?)')
+        .bind(newId, `${source.title}（コピー）`, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, source.memo, now, now),
       ...stepStatements,
       // Upsert fork_count in the dedicated stats table
       this.db
@@ -274,8 +280,8 @@ export class ItineraryService {
       try {
         await this.db.batch([
           this.db
-          .prepare('INSERT INTO itineraries (id, title, theme_id, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?, ?)')
-            .bind(newId, source.title, source.theme_id, publicMemo, sourceId, now, now),
+          .prepare('INSERT INTO itineraries (id, title, theme_id, default_view_mode, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)')
+            .bind(newId, source.title, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, publicMemo, sourceId, now, now),
           ...stepStatements,
         ]);
         return (await this.get(newId))!;
@@ -302,8 +308,8 @@ export class ItineraryService {
 
       await this.db.batch([
         this.db
-          .prepare('UPDATE itineraries SET title = ?, theme_id = ?, memo = ?, updated_at = ? WHERE id = ?')
-          .bind(source.title, source.theme_id, publicMemo, now, sharedId),
+          .prepare('UPDATE itineraries SET title = ?, theme_id = ?, default_view_mode = ?, memo = ?, updated_at = ? WHERE id = ?')
+          .bind(source.title, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, publicMemo, now, sharedId),
         this.db
           .prepare('DELETE FROM steps WHERE itinerary_id = ?')
           .bind(sharedId),
@@ -329,6 +335,7 @@ export class ItineraryService {
       id: row.id as string,
       title: row.title as string,
       theme_id: row.theme_id as string,
+      default_view_mode: (row.default_view_mode as Itinerary['default_view_mode']) ?? DEFAULT_VIEW_MODE,
       memo: row.memo as string,
       walica_id: row.walica_id as string | null | undefined,
       password: row.password as string | null | undefined,

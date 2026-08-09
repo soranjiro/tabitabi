@@ -7,6 +7,7 @@ export function getDemoData(): DemoDataSet {
       id: 'demo',
       title: '夏休みの沖縄旅行',
       theme_id: 'standard-summer',
+      default_view_mode: 'list',
       memo: '{"text":"真夏の沖縄！水分補給をこまめに\\n\\n持ち物リスト\\n- 水着\\n- 日焼け止め\\n- サングラス\\n- 帽子"}',
       password: null,
       created_at: now,

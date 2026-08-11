@@ -13,7 +13,6 @@ export interface Itinerary {
   /** Opening view chosen by the itinerary owner. Older itineraries use dayCard. */
   default_view_mode?: ItineraryViewMode;
   memo: string;
-  walica_id?: string | null;
   password?: string | null;
   secret_settings?: ItinerarySecretSettings | null;
   fork_count?: number;
@@ -43,7 +42,6 @@ export interface CreateItineraryInput {
   theme_id?: string;             // オプション、デフォルト: 'map-only'
   default_view_mode?: ItineraryViewMode;
   memo?: string;
-  walica_id?: string;
   password?: string;
   secret_settings?: {
     enabled: boolean;
@@ -56,7 +54,6 @@ export interface UpdateItineraryInput {
   theme_id?: string;
   default_view_mode?: ItineraryViewMode;
   memo?: string;
-  walica_id?: string | null;
   password?: string;
   secret_settings?: {
     enabled: boolean;

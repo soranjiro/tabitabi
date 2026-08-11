@@ -5,10 +5,3 @@ export interface ItinerarySecretRecord {
   created_at: string;
   updated_at: string;
 }
-
-export interface ItineraryWalicaSettingsRecord {
-  itinerary_id: string;
-  walica_id: string;
-  created_at: string;
-  updated_at: string;
-}

@@ -4,47 +4,30 @@
   interface Props {
     hasEditPermission: boolean;
     canRequestEdit?: boolean;
-    walicaId: string | null | undefined;
     selectedThemeId: string;
     secretModeEnabled: boolean;
     secretModeOffset: number;
-    walicaUrl: string;
     onEditModeToggle: () => void;
     onThemeChange: (themeId: string) => void;
     onSecretModeChange: (enabled: boolean, offset: number) => void;
-    onWalicaUpdate: (url: string) => void;
-    onWalicaOpen: () => void;
     onMemoOpen: () => void;
   }
 
   let {
     hasEditPermission,
     canRequestEdit = true,
-    walicaId,
     selectedThemeId,
     secretModeEnabled,
     secretModeOffset,
-    walicaUrl,
     onEditModeToggle,
     onThemeChange,
     onSecretModeChange,
-    onWalicaUpdate,
-    onWalicaOpen,
     onMemoOpen,
   }: Props = $props();
 
   const themes = getAvailableThemes();
 
   let showSettings = $state(false);
-  let localWalicaUrl = $state(walicaUrl);
-
-  $effect(() => {
-    localWalicaUrl = walicaUrl;
-  });
-
-  function handleWalicaSave() {
-    onWalicaUpdate(localWalicaUrl);
-  }
 </script>
 
 <nav class="ai-bottom-nav">
@@ -53,13 +36,6 @@
       <span class="ai-nav-icon">📝</span>
       <span class="ai-nav-label">メモ</span>
     </button>
-
-    {#if walicaId}
-      <button type="button" class="ai-nav-item" onclick={onWalicaOpen}>
-        <span class="ai-nav-icon">💰</span>
-        <span class="ai-nav-label">割り勘</span>
-      </button>
-    {/if}
 
     {#if hasEditPermission}
       <button
@@ -164,23 +140,6 @@
         {/if}
       </div>
 
-      <div class="ai-settings-section">
-        <label class="ai-settings-label" for="walica-url">💰 Walica連携</label>
-        <input
-          id="walica-url"
-          type="url"
-          bind:value={localWalicaUrl}
-          placeholder="https://walica.jp/group/..."
-          class="ai-input ai-input-spaced"
-        />
-        <button
-          type="button"
-          class="ai-btn ai-btn-secondary ai-btn-full"
-          onclick={handleWalicaSave}
-        >
-          保存
-        </button>
-      </div>
     {/if}
 
     <button

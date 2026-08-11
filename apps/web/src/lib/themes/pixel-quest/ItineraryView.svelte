@@ -30,7 +30,6 @@
       title?: string;
       theme_id?: string;
       memo?: string;
-      walica_id?: string | null;
       secret_settings?: {
         enabled: boolean;
         offset_minutes: number;

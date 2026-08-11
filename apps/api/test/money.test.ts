@@ -5,28 +5,28 @@ import app from '../src/index';
 async function setup() {
   const migrations = [
     `CREATE TABLE IF NOT EXISTS itineraries (id TEXT PRIMARY KEY, title TEXT NOT NULL, theme_id TEXT NOT NULL, default_view_mode TEXT NOT NULL DEFAULT 'dayCard', memo TEXT, password TEXT, source_itinerary_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_secrets (itinerary_id TEXT PRIMARY KEY, enabled INTEGER, offset_minutes INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_walica_settings (itinerary_id TEXT PRIMARY KEY, walica_id TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_fork_stats (itinerary_id TEXT PRIMARY KEY, fork_count INTEGER NOT NULL DEFAULT 0);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_money_settings (itinerary_id TEXT PRIMARY KEY, budget_amount INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_members (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_money_members (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_money_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL, paid_by_member_id TEXT, status TEXT NOT NULL, is_settled INTEGER NOT NULL DEFAULT 0, occurred_on TEXT, step_id TEXT, split_member_ids TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_packing_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1, kind TEXT NOT NULL, group_id TEXT, assignee_member_id TEXT, owner_member_id TEXT, is_packed INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_packing_groups (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, sort_order INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_packing_checks (item_id TEXT NOT NULL, member_id TEXT NOT NULL, checked_at TEXT NOT NULL, PRIMARY KEY (item_id, member_id));`,
+    `CREATE TABLE IF NOT EXISTS itinerary_secrets (itinerary_id TEXT PRIMARY KEY, enabled INTEGER, offset_minutes INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_fork_stats (itinerary_id TEXT PRIMARY KEY, fork_count INTEGER NOT NULL DEFAULT 0, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_settings (itinerary_id TEXT PRIMARY KEY, budget_amount INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_members (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
+    `CREATE TABLE IF NOT EXISTS steps (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, start_at INTEGER NOT NULL, end_at INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL CHECK(amount > 0), paid_by_member_id TEXT, status TEXT NOT NULL CHECK(status IN ('paid', 'planned')), is_settled INTEGER NOT NULL DEFAULT 0, occurred_on TEXT, step_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE, FOREIGN KEY (paid_by_member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT, FOREIGN KEY (step_id) REFERENCES steps(id) ON DELETE SET NULL);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_item_splits (item_id TEXT NOT NULL, member_id TEXT NOT NULL, itinerary_id TEXT NOT NULL, PRIMARY KEY (item_id, member_id), FOREIGN KEY (item_id, itinerary_id) REFERENCES itinerary_money_items(id, itinerary_id) ON DELETE CASCADE, FOREIGN KEY (member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_packing_groups (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, sort_order INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_packing_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1, kind TEXT NOT NULL, group_id TEXT NOT NULL, assignee_member_id TEXT, owner_member_id TEXT, is_packed INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE, FOREIGN KEY (group_id, itinerary_id) REFERENCES itinerary_packing_groups(id, itinerary_id) ON DELETE RESTRICT, FOREIGN KEY (assignee_member_id) REFERENCES itinerary_members(id) ON DELETE SET NULL, FOREIGN KEY (owner_member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE CASCADE);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_packing_checks (item_id TEXT NOT NULL, member_id TEXT NOT NULL, itinerary_id TEXT NOT NULL, checked_at TEXT NOT NULL, PRIMARY KEY (item_id, member_id), FOREIGN KEY (item_id, itinerary_id) REFERENCES itinerary_packing_items(id, itinerary_id) ON DELETE CASCADE, FOREIGN KEY (member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE CASCADE);`,
   ];
   for (const sql of migrations) await env.DB.prepare(sql).run();
+  await env.DB.prepare('DELETE FROM itinerary_money_item_splits').run();
   await env.DB.prepare('DELETE FROM itinerary_money_items').run();
   await env.DB.prepare('DELETE FROM itinerary_packing_checks').run();
   await env.DB.prepare('DELETE FROM itinerary_packing_items').run();
   await env.DB.prepare('DELETE FROM itinerary_packing_groups').run();
   await env.DB.prepare('DELETE FROM itinerary_members').run();
-  await env.DB.prepare('DELETE FROM itinerary_money_members').run();
   await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
   await env.DB.prepare('DELETE FROM itinerary_secrets').run();
-  await env.DB.prepare('DELETE FROM itinerary_walica_settings').run();
   await env.DB.prepare('DELETE FROM itinerary_fork_stats').run();
+  await env.DB.prepare('DELETE FROM steps').run();
   await env.DB.prepare('DELETE FROM itineraries').run();
 }
 
@@ -106,6 +106,27 @@ describe('Money API', () => {
     expect(deleteResponse.status).toBe(200);
     const moneyResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money`), env);
     expect((await moneyResponse.json() as any).data.members).toEqual([]);
+  });
+
+  it('prevents deleting a member referenced by an expense split', async () => {
+    const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '参照テスト' }),
+    }), env);
+    const { data: itinerary } = await create.json() as any;
+    const memberResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/members`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Alice' }),
+    }), env);
+    const { data: member } = await memberResponse.json() as any;
+    await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'ホテル', amount: 1000, status: 'paid', split_member_ids: [member.id] }),
+    }), env);
+
+    const response = await app.fetch(new Request(
+      `http://localhost/api/v1/itineraries/${itinerary.id}/members/${member.id}`,
+      { method: 'DELETE' },
+    ), env);
+    expect(response.status).toBe(409);
   });
 });
 
@@ -191,5 +212,75 @@ describe('Packing API', () => {
     const packingData = (await result.json() as any).data;
     expect(packingData.groups.some((current: { id: string }) => current.id === group.id)).toBe(false);
     expect(packingData.items.find((current: { id: string }) => current.id === item.id).group_id).toBe(reassignedTo);
+  });
+
+  it('cascades private items and clears shared assignments when a member is deleted', async () => {
+    const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '削除テスト' }),
+    }), env);
+    const { data: itinerary } = await create.json() as any;
+    const memberResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/members`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Alice' }),
+    }), env);
+    const { data: member } = await memberResponse.json() as any;
+    const packingResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    const packing = (await packingResponse.json() as any).data;
+    const groupId = packing.groups[0].id;
+
+    const privateResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing/items`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: '薬', kind: 'private', owner_member_id: member.id, group_id: groupId }),
+    }), env);
+    const privateItem = (await privateResponse.json() as any).data;
+    const sharedResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing/items`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'カメラ', kind: 'shared', assignee_member_id: member.id, group_id: groupId }),
+    }), env);
+    const sharedItem = (await sharedResponse.json() as any).data;
+
+    const deleteResponse = await app.fetch(new Request(
+      `http://localhost/api/v1/itineraries/${itinerary.id}/members/${member.id}`,
+      { method: 'DELETE' },
+    ), env);
+    expect(deleteResponse.status).toBe(200);
+
+    const result = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    const data = (await result.json() as any).data;
+    expect(data.items.some((item: { id: string }) => item.id === privateItem.id)).toBe(false);
+    expect(data.items.find((item: { id: string }) => item.id === sharedItem.id).assignee_member_id).toBeNull();
+  });
+
+  it('deletes all native money and packing rows with their itinerary', async () => {
+    const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'しおり削除テスト' }),
+    }), env);
+    const { data: itinerary } = await create.json() as any;
+    const memberResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/members`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Alice' }),
+    }), env);
+    const { data: member } = await memberResponse.json() as any;
+    const packingResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    const packing = (await packingResponse.json() as any).data;
+    await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/settings`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ budget_amount: 10000 }),
+    }), env);
+    await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '宿', amount: 1000, status: 'paid', paid_by_member_id: member.id, split_member_ids: [member.id] }),
+    }), env);
+    await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing/items`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: '薬', kind: 'private', owner_member_id: member.id, group_id: packing.groups[0].id }),
+    }), env);
+
+    const deleteResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}`, { method: 'DELETE' }), env);
+    expect(deleteResponse.status).toBe(200);
+    for (const table of [
+      'itinerary_money_settings', 'itinerary_money_items', 'itinerary_money_item_splits',
+      'itinerary_packing_groups', 'itinerary_packing_items', 'itinerary_packing_checks', 'itinerary_members',
+    ]) {
+      const row = await env.DB.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE itinerary_id = ?`).bind(itinerary.id).first<{ count: number }>();
+      expect(Number(row?.count ?? 0), table).toBe(0);
+    }
   });
 });

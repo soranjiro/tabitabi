@@ -37,13 +37,8 @@ members.post('/itineraries/:id/members', optionalAuthMiddleware, zValidator('jso
   const member: TripMember = {
     id: generateId(), itinerary_id: itineraryId, name: c.req.valid('json').name, created_at: getCurrentTimestamp(),
   };
-  await c.env.DB.batch([
-    c.env.DB.prepare('INSERT INTO itinerary_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)')
-      .bind(member.id, member.itinerary_id, member.name, member.created_at),
-    // Keep the legacy table in sync while existing money-item foreign keys still point to it.
-    c.env.DB.prepare('INSERT OR IGNORE INTO itinerary_money_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)')
-      .bind(member.id, member.itinerary_id, member.name, member.created_at),
-  ]);
+  await c.env.DB.prepare('INSERT INTO itinerary_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)')
+    .bind(member.id, member.itinerary_id, member.name, member.created_at).run();
   return c.json({ success: true, data: member }, 201);
 });
 
@@ -56,10 +51,8 @@ members.put('/itineraries/:id/members/:memberId', optionalAuthMiddleware, zValid
     .bind(memberId, itineraryId).first<TripMember>();
   if (!current) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Member not found' } }, 404);
   const name = c.req.valid('json').name;
-  await c.env.DB.batch([
-    c.env.DB.prepare('UPDATE itinerary_members SET name = ? WHERE id = ? AND itinerary_id = ?').bind(name, memberId, itineraryId),
-    c.env.DB.prepare('UPDATE itinerary_money_members SET name = ? WHERE id = ? AND itinerary_id = ?').bind(name, memberId, itineraryId),
-  ]);
+  await c.env.DB.prepare('UPDATE itinerary_members SET name = ? WHERE id = ? AND itinerary_id = ?')
+    .bind(name, memberId, itineraryId).run();
   return c.json({ success: true, data: { ...current, name } });
 });
 
@@ -70,20 +63,24 @@ members.delete('/itineraries/:id/members/:memberId', optionalAuthMiddleware, asy
   if (denied) return denied;
   const member = await c.env.DB.prepare('SELECT id FROM itinerary_members WHERE id = ? AND itinerary_id = ?').bind(memberId, itineraryId).first();
   if (!member) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Member not found' } }, 404);
-  const [moneyReference, packingReference] = await Promise.all([
-    c.env.DB.prepare('SELECT id FROM itinerary_money_items WHERE itinerary_id = ? AND (paid_by_member_id = ? OR split_member_ids LIKE ?) LIMIT 1')
-      .bind(itineraryId, memberId, `%${memberId}%`).first(),
-    c.env.DB.prepare('SELECT id FROM itinerary_packing_items WHERE itinerary_id = ? AND assignee_member_id = ? LIMIT 1')
-      .bind(itineraryId, memberId).first(),
-  ]);
-  if (moneyReference || packingReference) {
-    return c.json({ success: false, error: { code: 'CONFLICT', message: 'Update items assigned to this member first' } }, 409);
+  const moneyReference = await c.env.DB.prepare(`
+    SELECT item.id
+    FROM itinerary_money_items item
+    WHERE item.itinerary_id = ?
+      AND (
+        item.paid_by_member_id = ?
+        OR EXISTS (
+          SELECT 1 FROM itinerary_money_item_splits split
+          WHERE split.item_id = item.id AND split.member_id = ?
+        )
+      )
+    LIMIT 1
+  `).bind(itineraryId, memberId, memberId).first();
+  if (moneyReference) {
+    return c.json({ success: false, error: { code: 'CONFLICT', message: 'Update or delete this member’s expenses first' } }, 409);
   }
-  await c.env.DB.batch([
-    c.env.DB.prepare('DELETE FROM itinerary_packing_checks WHERE member_id = ?').bind(memberId),
-    c.env.DB.prepare('DELETE FROM itinerary_members WHERE id = ? AND itinerary_id = ?').bind(memberId, itineraryId),
-    c.env.DB.prepare('DELETE FROM itinerary_money_members WHERE id = ? AND itinerary_id = ?').bind(memberId, itineraryId),
-  ]);
+  await c.env.DB.prepare('DELETE FROM itinerary_members WHERE id = ? AND itinerary_id = ?')
+    .bind(memberId, itineraryId).run();
   return c.json({ success: true, data: null });
 });
 

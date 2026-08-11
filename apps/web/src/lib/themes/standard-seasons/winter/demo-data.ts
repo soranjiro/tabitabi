@@ -394,11 +394,5 @@ export function getDemoData(): DemoDataSet {
       created_at: now,
       updated_at: now,
     },
-    itinerary_walica_settings: {
-      itinerary_id: 'demo',
-      walica_id: '01KBTSYADVKY8HPQ1CHRHTNG19',
-      created_at: now,
-      updated_at: now,
-    },
   };
 }

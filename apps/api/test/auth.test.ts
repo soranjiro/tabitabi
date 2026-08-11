@@ -38,9 +38,9 @@ async function applyMigrations(db: D1Database) {
       updated_at TEXT NOT NULL,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
-    `CREATE TABLE IF NOT EXISTS itinerary_walica_settings (
+    `CREATE TABLE IF NOT EXISTS itinerary_money_settings (
       itinerary_id TEXT PRIMARY KEY,
-      walica_id TEXT NOT NULL,
+      budget_amount INTEGER,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
@@ -62,7 +62,7 @@ describe('Password Authentication', () => {
     await applyMigrations(env.DB);
     await env.DB.prepare('DELETE FROM steps').run();
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();
-    await env.DB.prepare('DELETE FROM itinerary_walica_settings').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
     await env.DB.prepare('DELETE FROM itineraries').run();
   });
 

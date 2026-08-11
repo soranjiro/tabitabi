@@ -67,7 +67,7 @@ packing.get('/itineraries/:id/packing', async (c) => {
     c.env.DB.prepare('SELECT id, itinerary_id, name, created_at FROM itinerary_members WHERE itinerary_id = ? ORDER BY created_at ASC').bind(itineraryId).all<TripMember>(),
     c.env.DB.prepare('SELECT * FROM itinerary_packing_groups WHERE itinerary_id = ? ORDER BY sort_order ASC, created_at ASC').bind(itineraryId).all(),
     c.env.DB.prepare('SELECT * FROM itinerary_packing_items WHERE itinerary_id = ? ORDER BY kind ASC, created_at ASC').bind(itineraryId).all(),
-    c.env.DB.prepare('SELECT c.item_id, c.member_id FROM itinerary_packing_checks c JOIN itinerary_packing_items i ON i.id = c.item_id WHERE i.itinerary_id = ?').bind(itineraryId).all<{ item_id: string; member_id: string }>(),
+    c.env.DB.prepare('SELECT item_id, member_id FROM itinerary_packing_checks WHERE itinerary_id = ?').bind(itineraryId).all<{ item_id: string; member_id: string }>(),
   ]);
   const checks = new Map<string, string[]>();
   for (const row of checksResult.results ?? []) checks.set(row.item_id, [...(checks.get(row.item_id) ?? []), row.member_id]);
@@ -184,7 +184,7 @@ packing.put('/itineraries/:id/packing/items/:itemId/check', optionalAuthMiddlewa
   } else {
     if (!member_id || !await memberBelongs(c.env.DB, itineraryId, member_id)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A valid member is required' } }, 400);
     if (item.kind === 'private' && item.owner_member_id !== member_id) return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Only the owner can check a private item' } }, 403);
-    if (checked) await c.env.DB.prepare('INSERT OR REPLACE INTO itinerary_packing_checks (item_id, member_id, checked_at) VALUES (?, ?, ?)').bind(itemId, member_id, now).run();
+    if (checked) await c.env.DB.prepare('INSERT OR REPLACE INTO itinerary_packing_checks (item_id, member_id, itinerary_id, checked_at) VALUES (?, ?, ?, ?)').bind(itemId, member_id, itineraryId, now).run();
     else await c.env.DB.prepare('DELETE FROM itinerary_packing_checks WHERE item_id = ? AND member_id = ?').bind(itemId, member_id).run();
   }
   return c.json({ success: true, data: { checked } });

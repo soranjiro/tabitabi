@@ -33,7 +33,7 @@
 `apps/api/migrations/` に未使用番号のSQLを追加します。
 
 ```sql
--- apps/api/migrations/0024_add_example_items.sql
+-- apps/api/migrations/0025_add_example_items.sql
 CREATE TABLE itinerary_example_items (
   id TEXT PRIMARY KEY,
   itinerary_id TEXT NOT NULL,

@@ -28,9 +28,6 @@ const aiGeneratedTheme: Theme = {
     secretMode: {
       enabled: true
     },
-    walica: {
-      enabled: true
-    },
     markdown: {
       enabled: true
     }

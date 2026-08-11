@@ -23,7 +23,6 @@ export const createItinerarySchema = z.object({
   theme_id: z.string().optional(),
   default_view_mode: z.enum(['dayCard', 'list', 'month', 'week']).optional(),
   memo: z.string().optional(),
-  walica_id: z.string().optional(),
   password: z.string().optional(),
   secret_settings: z.object({
     enabled: z.boolean(),
@@ -40,7 +39,6 @@ export const updateItinerarySchema = z.object({
   theme_id: z.string().optional(),
   default_view_mode: z.enum(['dayCard', 'list', 'month', 'week']).optional(),
   memo: z.string().optional(),
-  walica_id: z.string().nullable().optional(),
   password: z.string().optional(),
   secret_settings: z.object({
     enabled: z.boolean(),

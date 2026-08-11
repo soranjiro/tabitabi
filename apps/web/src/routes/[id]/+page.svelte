@@ -108,7 +108,6 @@
     theme_id?: string;
     default_view_mode?: import("@tabitabi/types").ItineraryViewMode;
     memo?: string;
-    walica_id?: string | null;
     secret_settings?: {
       enabled: boolean;
       offset_minutes: number;

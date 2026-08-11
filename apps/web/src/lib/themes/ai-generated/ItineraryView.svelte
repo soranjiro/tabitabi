@@ -18,7 +18,6 @@
     MemoDialog,
     PasswordDialog,
     ShareDialog,
-    WalicaOverlay,
   } from "./components";
   import TripProgress from "./components/TripProgress.svelte";
   import HeroHeader from "./components/HeroHeader.svelte";
@@ -34,7 +33,6 @@
       title?: string;
       theme_id?: string;
       memo?: string;
-      walica_id?: string | null;
       secret_settings?: {
         enabled: boolean;
         offset_minutes: number;
@@ -85,10 +83,6 @@
   let secretModeOffset = $state(
     itinerary.secret_settings?.offset_minutes ?? 60,
   );
-  let walicaUrl = $state(
-    itinerary.walica_id ? `https://walica.jp/group/${itinerary.walica_id}` : "",
-  );
-  let showWalica = $state(false);
 
   let newStep = $state({
     title: "",
@@ -291,18 +285,6 @@
     }
   }
 
-  async function handleWalicaUpdate(url: string) {
-    if (url && !url.startsWith("https://walica.jp/group/")) {
-      alert("WalicaのURLは https://walica.jp/group/ で始まる必要があります");
-      return;
-    }
-    walicaUrl = url;
-    const walicaId = url ? url.split("/group/")[1] : null;
-    if (onUpdateItinerary) {
-      await onUpdateItinerary({ walica_id: walicaId });
-    }
-  }
-
   const tripDates = $derived(() => {
     if (steps.length === 0) return { start: undefined, end: undefined };
     const dates = [...new Set(steps.map((s) => getStepDate(s)))].sort();
@@ -378,16 +360,12 @@
   <BottomNav
     {hasEditPermission}
     canRequestEdit={!isSharedSnapshot}
-    walicaId={itinerary.walica_id}
     {selectedThemeId}
     {secretModeEnabled}
     {secretModeOffset}
-    {walicaUrl}
     onEditModeToggle={handleEditModeToggle}
     onThemeChange={handleThemeChange}
     onSecretModeChange={handleSecretModeUpdate}
-    onWalicaUpdate={handleWalicaUpdate}
-    onWalicaOpen={() => (showWalica = true)}
     onMemoOpen={() => (showMemoDialog = true)}
   />
 
@@ -404,12 +382,6 @@
     {isAuthenticating}
     onAuth={onPasswordAuth}
     onClose={() => (showPasswordDialog = false)}
-  />
-
-  <WalicaOverlay
-    show={showWalica}
-    walicaId={itinerary.walica_id || ""}
-    onClose={() => (showWalica = false)}
   />
 
   <ShareDialog

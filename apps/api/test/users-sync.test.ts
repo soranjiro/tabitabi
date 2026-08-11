@@ -75,6 +75,13 @@ async function applyMigrations(db: D1Database) {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
+    `CREATE TABLE IF NOT EXISTS itinerary_members (
+      id TEXT PRIMARY KEY,
+      itinerary_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+    );`,
   ];
   for (const sql of migrations) {
     await db.prepare(sql).run();
@@ -100,6 +107,7 @@ describe('POST /api/v1/users/me/sync-bookmarks', () => {
     await applyMigrations(env.DB);
     await env.DB.prepare('DELETE FROM user_bookmarks').run();
     await env.DB.prepare('DELETE FROM users').run();
+    await env.DB.prepare('DELETE FROM itinerary_members').run();
     await env.DB.prepare('DELETE FROM itineraries').run();
   });
 
@@ -192,6 +200,7 @@ describe('POST /api/v1/itineraries with user token', () => {
     await applyMigrations(env.DB);
     await env.DB.prepare('DELETE FROM user_bookmarks').run();
     await env.DB.prepare('DELETE FROM users').run();
+    await env.DB.prepare('DELETE FROM itinerary_members').run();
     await env.DB.prepare('DELETE FROM itineraries').run();
   });
 
@@ -234,6 +243,7 @@ describe('PATCH /api/v1/users/me/bookmarks/:itineraryId/visibility — snapshot 
     await env.DB.prepare('DELETE FROM user_bookmarks').run();
     await env.DB.prepare('DELETE FROM users').run();
     await env.DB.prepare('DELETE FROM steps').run();
+    await env.DB.prepare('DELETE FROM itinerary_members').run();
     await env.DB.prepare('DELETE FROM itineraries').run();
   });
 

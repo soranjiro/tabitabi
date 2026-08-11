@@ -3,7 +3,7 @@ import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
 import type { Env } from '../utils';
 import { validateMemoJson } from '../utils/memo';
-import { createPublicMemoSnapshot, createPublicStepSnapshot } from '../utils/publication';
+import { createPublicMemoSnapshot, createPublicStepSnapshot, createPublicTextSnapshot } from '../utils/publication';
 import { hashPassword } from '../utils/password';
 
 const DEFAULT_THEME_ID = 'standard-autumn';
@@ -221,12 +221,20 @@ export class ItineraryService {
 
     const now = getCurrentTimestamp();
 
-    const sourceSteps = await this.db
-      .prepare('SELECT title, start_at, end_at, location, notes, link, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
-      .bind(sourceId)
-      .all();
-    const rows = (sourceSteps.results ?? []).map(row => createPublicStepSnapshot(row, this.env));
-    const publicMemo = createPublicMemoSnapshot(source.memo);
+    const [sourceSteps, sourceMembers] = await Promise.all([
+      this.db
+        .prepare('SELECT title, start_at, end_at, location, notes, link, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
+        .bind(sourceId)
+        .all(),
+      this.db
+        .prepare('SELECT name FROM itinerary_members WHERE itinerary_id = ?')
+        .bind(sourceId)
+        .all<{ name: string }>(),
+    ]);
+    const memberNames = (sourceMembers.results ?? []).map((member) => member.name);
+    const rows = (sourceSteps.results ?? []).map(row => createPublicStepSnapshot(row, this.env, memberNames));
+    const publicTitle = createPublicTextSnapshot(source.title, memberNames) || '旅のしおり';
+    const publicMemo = createPublicMemoSnapshot(source.memo, memberNames);
 
     let existing = await this.db
       .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
@@ -245,7 +253,7 @@ export class ItineraryService {
         await this.db.batch([
           this.db
           .prepare('INSERT INTO itineraries (id, title, theme_id, default_view_mode, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)')
-            .bind(newId, source.title, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, publicMemo, sourceId, now, now),
+            .bind(newId, publicTitle, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, publicMemo, sourceId, now, now),
           ...stepStatements,
         ]);
         return (await this.get(newId))!;
@@ -273,7 +281,7 @@ export class ItineraryService {
       await this.db.batch([
         this.db
           .prepare('UPDATE itineraries SET title = ?, theme_id = ?, default_view_mode = ?, memo = ?, updated_at = ? WHERE id = ?')
-          .bind(source.title, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, publicMemo, now, sharedId),
+          .bind(publicTitle, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, publicMemo, now, sharedId),
         this.db
           .prepare('DELETE FROM steps WHERE itinerary_id = ?')
           .bind(sharedId),

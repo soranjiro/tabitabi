@@ -78,6 +78,13 @@ async function applyMigrations(db: D1Database) {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
+    `CREATE TABLE IF NOT EXISTS itinerary_members (
+      id TEXT PRIMARY KEY,
+      itinerary_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+    );`,
   ];
 
   for (const sql of migrations) {
@@ -91,6 +98,7 @@ describe('Itineraries API', () => {
     await env.DB.prepare('DELETE FROM steps').run();
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();
     await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
+    await env.DB.prepare('DELETE FROM itinerary_members').run();
     await env.DB.prepare('DELETE FROM itineraries').run();
   });
 
@@ -403,6 +411,7 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
     await env.DB.prepare('DELETE FROM steps').run();
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();
     await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
+    await env.DB.prepare('DELETE FROM itinerary_members').run();
     await env.DB.prepare('DELETE FROM itineraries').run();
     await env.DB.prepare('DELETE FROM users').run();
   });
@@ -562,6 +571,54 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     expect(snapshot.title).toBe('旅のしおり');
     expect(snapshot.source_itinerary_id).toBe(original.id);
     expect(snapshot.default_view_mode).toBe('month');
+  });
+
+  it('masks trip member names in a shared snapshot', async () => {
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: '山田太郎と山田の旅行',
+        memo: '{"text":"代表者は山田太郎です"}',
+        theme_id: 'standard-autumn',
+      }),
+    }, env);
+    const { data: original } = await createRes.json() as any;
+
+    await env.DB.batch([
+      env.DB.prepare('INSERT INTO itinerary_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)')
+        .bind('member-yamada', original.id, '山田', new Date().toISOString()),
+      env.DB.prepare('INSERT INTO itinerary_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)')
+        .bind('member-yamada-taro', original.id, '山田太郎', new Date().toISOString()),
+    ]);
+    await app.request('/api/v1/steps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        itinerary_id: original.id,
+        title: '山田太郎と集合',
+        start_at: 1700000000000,
+        end_at: 1700003600000,
+        location: '山田の自宅',
+        notes: '{"text":"山田太郎に連絡"}',
+      }),
+    }, env);
+
+    const publishRes = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, env);
+    const { data: published } = await publishRes.json() as any;
+    const snapshotRes = await app.request(`/api/v1/itineraries/${published.id}`, {}, env);
+    const { data: snapshot } = await snapshotRes.json() as any;
+    const stepsRes = await app.request(`/api/v1/steps?itinerary_id=${published.id}`, {}, env);
+    const { data: steps } = await stepsRes.json() as any;
+
+    expect(snapshot.title).toBe('[非公開]と[非公開]の旅行');
+    expect(snapshot.memo).not.toContain('山田');
+    expect(steps[0].title).toBe('[非公開]と集合');
+    expect(steps[0].location).toBe('[非公開]の自宅');
+    expect(steps[0].notes).not.toContain('山田');
   });
 
   it('is idempotent — calling publish again updates the snapshot', async () => {

@@ -3,6 +3,7 @@
   import { packingApi } from '$lib/api/packing';
   import { membersApi } from '$lib/api/members';
   import { demoStorage, getIsDemoMode } from '$lib/demo';
+  import { shouldPromptForPackingIdentity } from '../utils/packing';
   import { CloseIcon } from './icons/index.svelte';
 
   interface Props { show: boolean; itineraryId: string; canEdit: boolean; onClose: () => void; }
@@ -92,7 +93,7 @@
       } else data = await packingApi.get(itineraryId);
       meId = localStorage.getItem(`tabitabi:packing:me:${itineraryId}`) ?? '';
       if (!data.members.some((member) => member.id === meId)) meId = '';
-      showIdentity = !meId;
+      showIdentity = shouldPromptForPackingIdentity(data.members.length, meId);
     } catch (e) { error = e instanceof Error ? e.message : '持ち物を読み込めませんでした'; }
     finally { loading = false; loaded = true; }
   }

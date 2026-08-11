@@ -48,3 +48,133 @@
     margin: 0 16px 20px;
   }
 }
+
+.standard-packing-actions {
+  display: flex;
+  gap: 10px;
+  margin: 0 24px 22px;
+}
+
+.standard-packing-actions .standard-packing-add,
+.standard-packing-manage {
+  position: static;
+  min-height: 46px;
+  margin: 0;
+  border-radius: 13px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.standard-packing-actions .standard-packing-add {
+  flex: 1;
+  width: auto;
+}
+
+.standard-packing-manage {
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 32%, transparent);
+  background: #fff;
+  color: var(--theme-primary);
+  padding: 10px 16px;
+}
+
+.standard-packing-groups {
+  display: grid;
+  gap: 17px;
+}
+
+.standard-packing-group h4 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 3px 7px;
+  color: var(--theme-text-light);
+  font-size: .78rem;
+  letter-spacing: .04em;
+}
+
+.standard-packing-group h4 small {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.standard-packing-progress-list details > div h5 {
+  margin: 10px 2px 3px;
+  color: var(--theme-text-light);
+  font-size: .72rem;
+}
+
+.standard-packing-group-editor {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0;
+}
+
+.standard-packing-group-editor > div,
+.standard-packing-group-add {
+  display: flex;
+  gap: 7px;
+}
+
+.standard-packing-group-editor input,
+.standard-packing-group-add input {
+  min-width: 0;
+  flex: 1;
+  border: 1.5px solid #d9d5cd;
+  border-radius: 10px;
+  padding: 10px 11px;
+  color: var(--theme-text);
+  font: inherit;
+}
+
+.standard-packing-group-editor button,
+.standard-packing-group-add button,
+.standard-packing-sheet-close {
+  border: 0;
+  border-radius: 10px;
+  background: var(--theme-primary);
+  color: #fff;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.standard-packing-group-editor button.delete {
+  background: #fff0ee;
+  color: #b23e32;
+}
+
+.standard-packing-group-add {
+  padding-top: 14px;
+  border-top: 1px solid rgba(0, 0, 0, .07);
+}
+
+.standard-packing-sheet > .standard-packing-sheet-close {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px;
+  text-align: center;
+}
+
+@media(max-width:700px) {
+  .standard-packing-actions {
+    margin: 0 16px 20px;
+  }
+
+  .standard-packing-manage {
+    padding-inline: 12px;
+    font-size: .82rem;
+  }
+
+  .standard-packing-group-editor > div {
+    gap: 5px;
+  }
+
+  .standard-packing-group-editor button {
+    padding-inline: 9px;
+  }
+}

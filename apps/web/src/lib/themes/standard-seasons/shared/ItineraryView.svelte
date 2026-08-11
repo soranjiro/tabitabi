@@ -288,7 +288,7 @@
     if (!onPublishItinerary) return;
     try {
       const publishedId = await onPublishItinerary();
-      const url = `${window.location.origin}/${publishedId}`;
+      const url = `${window.location.origin}/itineraries/${publishedId}`;
       await navigator.clipboard.writeText(url);
       showShareDialog = false;
       showCopyMessage = true;

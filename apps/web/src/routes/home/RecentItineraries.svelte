@@ -28,7 +28,7 @@
     <div class="recent-list">
       {#each items as item}
         <div class="recent-item">
-          <button onclick={() => goto(`/${item.id}`)} class="recent-link">
+          <button onclick={() => goto(`/itineraries/${item.id}`)} class="recent-link">
             <span class="recent-name">{item.title}</span>
             <span class="recent-date">{formatDate(item.visitedAt)}</span>
           </button>

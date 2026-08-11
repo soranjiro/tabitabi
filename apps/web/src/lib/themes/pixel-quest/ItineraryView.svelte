@@ -671,7 +671,7 @@
       delete memoData.gameData;
       const nextMemo = stringifyMemoData(memoData);
       await onUpdateItinerary({ theme_id: selectedThemeId, memo: nextMemo });
-      goto(`/${itinerary.id}`);
+      goto(`/itineraries/${itinerary.id}`);
     }
     showThemeDialog = false;
   }

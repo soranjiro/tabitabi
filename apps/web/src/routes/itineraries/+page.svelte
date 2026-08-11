@@ -70,7 +70,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {#each itineraries as itinerary}
           <a
-            href="/{itinerary.id}"
+            href="/itineraries/{itinerary.id}"
             class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 block"
           >
             <h3 class="text-xl font-semibold text-gray-900 mb-2">

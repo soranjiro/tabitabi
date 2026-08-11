@@ -23,7 +23,7 @@
     <span class="recent-label">最近のしおり</span>
     <div class="recent-row">
       {#each displayItems as item}
-        <button onclick={() => goto(`/${item.id}`)} class="recent-chip">
+        <button onclick={() => goto(`/itineraries/${item.id}`)} class="recent-chip">
           {item.title}
         </button>
       {/each}

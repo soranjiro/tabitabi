@@ -37,7 +37,7 @@
         auth.setToken(created.id, created.title, created.token);
       }
 
-      goto(`/${created.id}`);
+      goto(`/itineraries/${created.id}`);
     } catch (error) {
       console.error("Failed to create:", error);
       alert("しおりの作成に失敗しました");
@@ -80,9 +80,9 @@
       const token = urlObj.searchParams.get("token");
 
       if (token) {
-        goto(`/${id}?token=${token}`);
+        goto(`/itineraries/${id}?token=${token}`);
       } else {
-        goto(`/${id}`);
+        goto(`/itineraries/${id}`);
       }
     } catch {
       urlError = "無効なURLです";

@@ -206,7 +206,7 @@
       auth.setToken(result.id, result.title, result.token);
       // 同じ動的ルート内の遷移では、テーマコンポーネントの編集状態が残ることがあるため、
       // コピー先は新しいページとして開いて確実に自分用のしおりだけを表示する。
-      window.location.assign(`/${result.id}`);
+      window.location.assign(`/itineraries/${result.id}`);
     } catch (error) {
       console.error("Failed to fork itinerary:", error);
       alert("コピーに失敗しました");
@@ -222,14 +222,14 @@
     name="description"
     content="{data.itinerary.title}の旅のしおり。たびたびで作成された旅行計画を確認できます。"
   />
-  <link rel="canonical" href="https://tabitabi.pages.dev/{data.itinerary.id}" />
+  <link rel="canonical" href="https://tabitabi.pages.dev/itineraries/{data.itinerary.id}" />
   <meta property="og:title" content="{data.itinerary.title} - たびたび" />
   <meta
     property="og:description"
     content="{data.itinerary.title}の旅のしおり。たびたびで作成された旅行計画を確認できます。"
   />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://tabitabi.pages.dev/{data.itinerary.id}" />
+  <meta property="og:url" content="https://tabitabi.pages.dev/itineraries/{data.itinerary.id}" />
   <meta property="og:image" content="https://tabitabi.pages.dev/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />

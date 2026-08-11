@@ -54,7 +54,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           {#each bookmarks as bookmark}
             <a
-              href="/{bookmark.itinerary_id}"
+              href="/itineraries/{bookmark.itinerary_id}"
               class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow block"
             >
               <h3 class="font-medium text-gray-900 truncate">{bookmark.title}</h3>

@@ -168,7 +168,7 @@
 
   <section class="hero" class:hero-hidden={heroHidden}>
     <nav class="hero-nav" aria-label="サイトナビゲーション">
-      <a href="/users" class="nav-users-btn">みんなのしおり</a>
+      <a href="/explore" class="nav-users-btn">みんなのしおり</a>
       <a href="/profile" class="nav-profile-btn">
         {loggedIn ? "マイページ" : "ログイン"}
       </a>

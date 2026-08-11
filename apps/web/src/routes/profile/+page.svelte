@@ -200,7 +200,7 @@
     sessionStorage.removeItem("tabitabi_pending_fork");
     const result = await itineraryApi.fork(itineraryId);
     auth.setToken(result.id, result.title, result.token);
-    await goto(`/${result.id}`);
+    await goto(`/itineraries/${result.id}`);
   }
 
   async function loadBookmarks() {
@@ -333,7 +333,7 @@
       </section>
 
       <h2 class="text-lg font-semibold mb-3">保存したしおり</h2>
-      {#if bookmarks.length === 0}<div class="py-12 text-center rounded-xl border bg-white text-gray-500">保存したしおりはまだありません</div>{:else}<div class="space-y-3">{#each bookmarks as item}<article class="bg-white rounded-xl border shadow-sm p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div class="min-w-0"><a href="/{item.itinerary_id}" class="font-medium text-gray-900 hover:text-indigo-600 block truncate">{item.title}</a><p class="text-xs text-gray-500 mt-1">更新 {formatDate(item.itinerary_updated_at)}</p></div><div class="flex items-center gap-2">{#if item.is_visible && item.shared_itinerary_id}<button onclick={() => republish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)} class="secondary compact">{publishingIds.has(item.itinerary_id) ? "更新中" : "最新版を公開"}</button>{/if}<label class="inline-flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" checked={item.is_visible} onchange={() => toggleVisibility(item.itinerary_id, item.is_visible)} />公開</label></div></article>{/each}</div>{/if}
+      {#if bookmarks.length === 0}<div class="py-12 text-center rounded-xl border bg-white text-gray-500">保存したしおりはまだありません</div>{:else}<div class="space-y-3">{#each bookmarks as item}<article class="bg-white rounded-xl border shadow-sm p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div class="min-w-0"><a href="/itineraries/{item.itinerary_id}" class="font-medium text-gray-900 hover:text-indigo-600 block truncate">{item.title}</a><p class="text-xs text-gray-500 mt-1">更新 {formatDate(item.itinerary_updated_at)}</p></div><div class="flex items-center gap-2">{#if item.is_visible && item.shared_itinerary_id}<button onclick={() => republish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)} class="secondary compact">{publishingIds.has(item.itinerary_id) ? "更新中" : "最新版を公開"}</button>{/if}<label class="inline-flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" checked={item.is_visible} onchange={() => toggleVisibility(item.itinerary_id, item.is_visible)} />公開</label></div></article>{/each}</div>{/if}
     {/if}
   {/snippet}
 </PageShell>

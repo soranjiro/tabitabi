@@ -1,8 +1,8 @@
 # データベース
 
 「たびたび」は Cloudflare D1（SQLite）を使用します。スキーマの正本は
-`apps/api/migrations/*.sql` です。このページは `0024_normalize_itinerary_relations.sql`
-までを反映しています。
+`apps/db/migrations/sql/*.sql` です。このページは
+`202608120001_add_itinerary_publications.sql` までを反映しています。
 
 ## 設計方針
 
@@ -256,24 +256,26 @@ API上は `personal` を全員が個別にチェック、`private` を指定し�
 
 ## マイグレーション
 
-新しいファイルは `apps/api/migrations/NNNN_description.sql` として追加します。
-既に適用済みのファイルは編集せず、新しいマイグレーションで変更してください。
-過去には `0011` と `0020` の番号重複がありますが、新規migrationでは未使用番号を使います。
+すべての履歴は `apps/db/migrations/sql/` にまとめています。Wrangler時代のファイルは
+forward-onlyのまま保持し、新しい変更はdbmate形式（`-- migrate:up` / `-- migrate:down`）で追加します。
+up/downのDDLは `IF EXISTS` / `IF NOT EXISTS` を使い、再実行しても壊れない形にしてください。
 
 ```bash
+# 新規ファイル
+make migrate-new name=add_example
+
 # ローカルD1
-make migrate-local
+make migrate-status
+make migrate-up
+make migrate-down
 
-# 設定済みのリモートD1
-make migrate-remote
+# remote D1
+make migrate-status-remote
+make migrate-up-remote
+make migrate-down-remote
 ```
 
-環境を明示する場合は、APIディレクトリで実行します。
-
-```bash
-cd apps/api
-pnpm wrangler d1 migrations apply DB --local
-pnpm wrangler d1 migrations apply DB --remote --env production
-```
+ローカル・remoteともに同じスクリプトがWrangler経由でup/downを適用し、`schema_migrations` で履歴を共有します。
+旧Wranglerの `d1_migrations` 履歴は初回実行時に自動で取り込まれます。
 
 スキーマを変更したら、共有型、Service／Route、APIテスト、およびこのページも同じ変更で更新します。

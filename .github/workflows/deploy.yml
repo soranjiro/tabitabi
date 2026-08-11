@@ -76,7 +76,7 @@ jobs:
 
       - name: Apply D1 migrations (api)
         working-directory: apps/api
-        run: pnpm wrangler d1 migrations apply DB --remote --env production
+        run: node scripts/d1-migrate.mjs up --remote --env production
 
       - name: Deploy API (Workers)
         working-directory: apps/api

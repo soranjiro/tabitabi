@@ -10,7 +10,7 @@ enabled = true
 binding = "DB"
 database_name = "tabitabi"
 database_id = "PLACEHOLDER_DATABASE_ID"
-migrations_dir = "./migrations"
+migrations_dir = "../db/migrations/sql"
 
 [vars]
 ALLOWED_ORIGINS = "*"
@@ -34,7 +34,7 @@ enabled = true
 binding = "DB"
 database_name = "tabitabi"
 database_id = "PLACEHOLDER_DATABASE_ID"
-migrations_dir = "./migrations"
+migrations_dir = "../db/migrations/sql"
 
 [env.preview]
 
@@ -51,4 +51,4 @@ enabled = true
 binding = "DB"
 database_name = "tabitabi"
 database_id = "PLACEHOLDER_DATABASE_ID"
-migrations_dir = "./migrations"
+migrations_dir = "../db/migrations/sql"

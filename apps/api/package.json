@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "migrations:apply": "wrangler d1 migrations apply tabitabi",
+    "migrations:status": "node scripts/d1-migrate.mjs status",
+    "migrations:up": "node scripts/d1-migrate.mjs up",
+    "migrations:down": "node scripts/d1-migrate.mjs down",
+    "seed:local": "wrangler d1 execute tabitabi --local --file ./scripts/local-seed.sql",
     "auth:migration:prepare": "node scripts/prepare-firebase-import.mjs",
     "test": "vitest",
     "test:run": "vitest run && node --test scripts/*.node-test.mjs"

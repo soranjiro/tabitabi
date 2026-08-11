@@ -10,7 +10,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 32px;
+  gap: 24px;
   border-radius: 34px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.6);
@@ -242,7 +242,8 @@
     bottom: 10px;
     height: 64px;
     padding: 0 24px;
-    gap: 24px;
+    gap: 14px;
+    padding: 0 16px;
   }
 }
 

@@ -32,7 +32,7 @@
       {#if canConfigure}
         <button class="standard-more-menu-item" onclick={() => choose(onSettings)}>
           <span class="standard-more-menu-icon" aria-hidden="true">⚙</span>
-          <span><strong>しおり設定</strong><small>テーマ・初期表示・シークレットモード</small></span>
+          <span><strong>しおり設定</strong><small>旅行メンバー・テーマ・初期表示</small></span>
         </button>
       {/if}
     </div>

@@ -6,6 +6,8 @@ import itineraries from './routes/itineraries';
 import steps from './routes/steps';
 import users from './routes/users';
 import money from './routes/money';
+import members from './routes/members';
+import packing from './routes/packing';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -20,5 +22,7 @@ app.route('/api/v1/itineraries', itineraries);
 app.route('/api/v1/steps', steps);
 app.route('/api/v1/users', users);
 app.route('/api/v1', money);
+app.route('/api/v1', members);
+app.route('/api/v1', packing);
 
 export default app;

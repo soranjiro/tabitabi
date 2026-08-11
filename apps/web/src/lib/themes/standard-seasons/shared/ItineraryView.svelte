@@ -21,6 +21,7 @@
   import ShareDialog from "./components/ShareDialog.svelte";
   import MoreMenu from "./components/MoreMenu.svelte";
   import MoneyOverlay from "./components/MoneyOverlay.svelte";
+  import PackingOverlay from "./components/PackingOverlay.svelte";
   import ViewModeSelector from "./components/ViewModeSelector.svelte";
   import SettingsDialog from "./components/SettingsDialog.svelte";
   import { renderMarkdown } from "./utils/markdown";
@@ -103,6 +104,7 @@
     itinerary.secret_settings?.offset_minutes ?? 60,
   );
   let showMoney = $state(false);
+  let showPacking = $state(false);
   let showViewModeSelector = $state(false);
   let currentViewMode = $state<ViewMode>(DEFAULT_VIEW_MODE);
   let defaultViewMode = $state<ViewMode>(
@@ -456,6 +458,7 @@
         onEditModeToggle={handleEditModeToggle}
         onViewModeClick={() => (showViewModeSelector = true)}
         onMoneyOpen={() => (showMoney = true)}
+        onPackingOpen={() => (showPacking = true)}
         onMenuClick={() => (showMoreMenu = true)}
     />
   </div>
@@ -481,6 +484,13 @@
     canEdit={hasEditPermission}
     {steps}
     onClose={() => (showMoney = false)}
+  />
+
+  <PackingOverlay
+    show={showPacking}
+    itineraryId={itinerary.id}
+    canEdit={hasEditPermission}
+    onClose={() => (showPacking = false)}
   />
 
   <ShareDialog
@@ -525,6 +535,7 @@
 
   <SettingsDialog
     show={showSettingsDialog}
+    itineraryId={itinerary.id}
     {themes}
     {selectedThemeId}
     defaultViewMode={defaultViewMode}

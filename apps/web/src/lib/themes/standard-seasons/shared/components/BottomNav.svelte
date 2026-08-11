@@ -11,6 +11,7 @@
     canRequestEdit?: boolean;
     onEditModeToggle: () => void;
     onMoneyOpen: () => void;
+    onPackingOpen: () => void;
     onViewModeClick?: () => void;
     onMenuClick?: () => void;
   }
@@ -20,6 +21,7 @@
     canRequestEdit = true,
     onEditModeToggle,
     onMoneyOpen,
+    onPackingOpen,
     onViewModeClick,
     onMenuClick,
   }: Props = $props();
@@ -37,6 +39,16 @@
   >
     {@html HomeIcon}
     <span>Home</span>
+  </button>
+
+  <button
+    class="standard-bottom-btn"
+    title="持ち物リスト"
+    aria-label="持ち物リスト"
+    onclick={onPackingOpen}
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3h6a2 2 0 0 1 2 2v1h2a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2V5a2 2 0 0 1 2-2Zm0 3h6V5H9v1Zm-2 5v2h10v-2H7Z"/></svg>
+    <span>Packing</span>
   </button>
 
   <button

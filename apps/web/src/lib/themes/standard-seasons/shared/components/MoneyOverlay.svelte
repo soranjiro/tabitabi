@@ -18,9 +18,6 @@
   let data = $state<MoneyData>({ budget_amount: null, members: [], items: [] });
   let loading = $state(false);
   let error = $state('');
-  let newMemberName = $state('');
-  let editingMemberId = $state<string | null>(null);
-  let editingMemberName = $state('');
   let title = $state('');
   let amount = $state('');
   let status = $state<MoneyItemStatus>('paid');
@@ -41,11 +38,12 @@
 
   function demoMoneyData(): MoneyData {
     const createdAt = '2026-08-01T09:00:00.000Z';
-    const members: MoneyMember[] = [
+    const members: MoneyMember[] = demoStorage.getMembers().length ? demoStorage.getMembers() : [
       { id: 'demo-money-miki', itinerary_id: itineraryId, name: '美咲', created_at: createdAt },
       { id: 'demo-money-haru', itinerary_id: itineraryId, name: '陽介', created_at: createdAt },
       { id: 'demo-money-yui', itinerary_id: itineraryId, name: '結衣', created_at: createdAt },
     ];
+    if (!demoStorage.getMembers().length) demoStorage.setMembers(members);
     const item = (id: string, title: string, amount: number, paidBy: string | null, itemStatus: MoneyItemStatus, split: string[], settled = false): MoneyItem => ({
       id, itinerary_id: itineraryId, title, amount, paid_by_member_id: paidBy, status: itemStatus,
       is_settled: settled, occurred_on: '2026-08-01', step_id: null, split_member_ids: split, created_at: createdAt, updated_at: createdAt,
@@ -139,7 +137,7 @@
   }
 
   onMount(() => { if (show) load(); });
-  $effect(() => { if (show && !hasLoaded) load(); });
+  $effect(() => { if (show && !hasLoaded) load(); else if (!show) hasLoaded = false; });
 
   function saveDemoData(next: MoneyData) {
     data = next;
@@ -171,66 +169,6 @@
     const payer = data.members.find((member) => member.id === item.paid_by_member_id);
     if (payer) return `立替：${payer.name}`;
     return item.status === 'paid' ? '各自で支払い済み' : '各自で支払う（予定）';
-  }
-
-  async function addMember() {
-    if (!newMemberName.trim()) return;
-    try {
-      if (isDemoMoney()) {
-        const member: MoneyMember = {
-          id: `demo-money-member-${Date.now()}`, itinerary_id: itineraryId,
-          name: newMemberName.trim(), created_at: new Date().toISOString(),
-        };
-        saveDemoData({ ...data, members: [...data.members, member] });
-        participantIds = [...participantIds, member.id];
-        newMemberName = '';
-        return;
-      }
-      const member = await moneyApi.addMember(itineraryId, newMemberName.trim());
-      data = { ...data, members: [...data.members, member] };
-      participantIds = [...participantIds, member.id];
-      newMemberName = '';
-    } catch (e) { alert(e instanceof Error ? e.message : 'メンバーを追加できませんでした'); }
-  }
-
-  function startEditingMember(member: MoneyMember) {
-    editingMemberId = member.id;
-    editingMemberName = member.name;
-  }
-
-  function cancelEditingMember() {
-    editingMemberId = null;
-    editingMemberName = '';
-  }
-
-  async function saveMember(member: MoneyMember) {
-    const name = editingMemberName.trim();
-    if (!name) return alert('メンバー名を入力してください');
-    try {
-      if (isDemoMoney()) {
-        saveDemoData({ ...data, members: data.members.map((current) => current.id === member.id ? { ...current, name } : current) });
-      } else {
-        const updated = await moneyApi.updateMember(itineraryId, member.id, name);
-        data = { ...data, members: data.members.map((current) => current.id === member.id ? updated : current) };
-      }
-      cancelEditingMember();
-    } catch (e) { alert(e instanceof Error ? e.message : 'メンバー名を変更できませんでした'); }
-  }
-
-  async function deleteMember(member: MoneyMember) {
-    const hasExpenses = data.items.some((item) => item.paid_by_member_id === member.id || item.split_member_ids.includes(member.id));
-    if (hasExpenses) return alert('このメンバーが含まれる支出を更新または削除してから、メンバーを削除してください。');
-    if (!confirm(`「${member.name}」を削除しますか？`)) return;
-    try {
-      if (isDemoMoney()) {
-        saveDemoData({ ...data, members: data.members.filter((current) => current.id !== member.id) });
-      } else {
-        await moneyApi.deleteMember(itineraryId, member.id);
-        data = { ...data, members: data.members.filter((current) => current.id !== member.id) };
-      }
-      participantIds = participantIds.filter((id) => id !== member.id);
-      if (editingMemberId === member.id) cancelEditingMember();
-    } catch (e) { alert(e instanceof Error ? e.message : 'メンバーを削除できませんでした'); }
   }
 
   async function saveBudget() {
@@ -358,10 +296,9 @@
         </section>
 
         {#if canEdit}
-          <details class="standard-money-setup" bind:open={settingsOpen}><summary>詳細設定 <small>予算・メンバー</small></summary><div class="standard-money-setup-body">
+          <details class="standard-money-setup" bind:open={settingsOpen}><summary>詳細設定 <small>予算</small></summary><div class="standard-money-setup-body">
             <label>{budgetView === 'total' ? '全体予算' : '1人あたり予算'} <input inputmode="numeric" placeholder="未設定" bind:value={budget} onblur={saveBudget} /> 円</label>
-            <div class="standard-money-member-add"><input placeholder="メンバー名" bind:value={newMemberName} onkeydown={(e) => e.key === 'Enter' && addMember()} /><button onclick={addMember}>追加</button></div>
-            {#if data.members.length}<div class="standard-money-members">{#each data.members as member}<div class="standard-money-member">{#if editingMemberId === member.id}<input aria-label={`${member.name}の名前`} bind:value={editingMemberName} onkeydown={(event) => event.key === 'Enter' && saveMember(member)} /><button onclick={() => saveMember(member)}>保存</button><button class="secondary" onclick={cancelEditingMember}>キャンセル</button>{:else}<span>{member.name}</span><button class="secondary" onclick={() => startEditingMember(member)}>名前変更</button><button class="delete" onclick={() => deleteMember(member)}>削除</button>{/if}</div>{/each}</div>{/if}
+            <small>旅行メンバーは、しおり設定でまとめて管理できます。</small>
           </div></details>
         {/if}
 

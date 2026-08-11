@@ -17,11 +17,9 @@ export class ItineraryService {
       .prepare(`
         SELECT i.*,
                s.enabled as secret_enabled, s.offset_minutes as secret_offset,
-               w.walica_id as walica_id,
                COALESCE(f.fork_count, 0) as fork_count
         FROM itineraries i
         LEFT JOIN itinerary_secrets s ON i.id = s.itinerary_id
-        LEFT JOIN itinerary_walica_settings w ON i.id = w.itinerary_id
         LEFT JOIN itinerary_fork_stats f ON i.id = f.itinerary_id
         ORDER BY i.created_at DESC
       `)
@@ -35,11 +33,9 @@ export class ItineraryService {
       .prepare(`
         SELECT i.*,
                s.enabled as secret_enabled, s.offset_minutes as secret_offset,
-               w.walica_id as walica_id,
                COALESCE(f.fork_count, 0) as fork_count
         FROM itineraries i
         LEFT JOIN itinerary_secrets s ON i.id = s.itinerary_id
-        LEFT JOIN itinerary_walica_settings w ON i.id = w.itinerary_id
         LEFT JOIN itinerary_fork_stats f ON i.id = f.itinerary_id
         WHERE i.id = ?
       `)
@@ -67,7 +63,6 @@ export class ItineraryService {
       theme_id: input.theme_id || DEFAULT_THEME_ID,
       default_view_mode: input.default_view_mode ?? DEFAULT_VIEW_MODE,
       memo,
-      walica_id: input.walica_id ?? null,
       password: hashedPassword,
       secret_settings: input.secret_settings ? {
         enabled: input.secret_settings.enabled,
@@ -95,14 +90,6 @@ export class ItineraryService {
           now,
           now
         )
-        .run();
-    }
-
-    // Insert into walica table if exists
-    if (itinerary.walica_id) {
-      await this.db
-        .prepare('INSERT INTO itinerary_walica_settings (itinerary_id, walica_id, created_at, updated_at) VALUES (?, ?, ?, ?)')
-        .bind(itinerary.id, itinerary.walica_id, now, now)
         .run();
     }
 
@@ -181,29 +168,6 @@ export class ItineraryService {
       }
     }
 
-    // Handle walica settings update
-    if (input.walica_id !== undefined) {
-      if (input.walica_id === null) {
-        // Remove settings
-        await this.db
-          .prepare('DELETE FROM itinerary_walica_settings WHERE itinerary_id = ?')
-          .bind(id)
-          .run();
-      } else {
-        // Upsert settings
-        await this.db
-          .prepare(`
-            INSERT INTO itinerary_walica_settings (itinerary_id, walica_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(itinerary_id) DO UPDATE SET
-            walica_id = excluded.walica_id,
-            updated_at = excluded.updated_at
-          `)
-          .bind(id, input.walica_id, now, now)
-          .run();
-      }
-    }
-
     return await this.get(id);
   }
 
@@ -216,7 +180,7 @@ export class ItineraryService {
     const now = getCurrentTimestamp();
 
     // Fetch source steps before batch to generate new IDs
-    // secret_settings and walica_id are intentionally excluded from forks (personal configuration)
+    // Feature-specific settings are intentionally excluded from forks.
     const sourceSteps = await this.db
       .prepare('SELECT id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
       .bind(sourceId)
@@ -321,7 +285,7 @@ export class ItineraryService {
   }
 
   async delete(id: string): Promise<boolean> {
-    // Foreign key cascade handles secrets, walica, and fork_stats tables
+    // Foreign keys handle dependent rows; a trigger also deletes the published snapshot.
     const result = await this.db
       .prepare('DELETE FROM itineraries WHERE id = ?')
       .bind(id)
@@ -337,7 +301,6 @@ export class ItineraryService {
       theme_id: row.theme_id as string,
       default_view_mode: (row.default_view_mode as Itinerary['default_view_mode']) ?? DEFAULT_VIEW_MODE,
       memo: row.memo as string,
-      walica_id: row.walica_id as string | null | undefined,
       password: row.password as string | null | undefined,
       fork_count: (row.fork_count as number) ?? 0,
       created_at: row.created_at as string,

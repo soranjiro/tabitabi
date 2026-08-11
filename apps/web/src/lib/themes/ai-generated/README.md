@@ -6,7 +6,6 @@ Modern and feature-rich travel itinerary theme with a clean, accessible design.
 
 - **Timeline View**: Beautiful vertical timeline with day badges
 - **Secret Mode**: Hide itinerary details until the scheduled time
-- **Walica Integration**: Built-in expense splitting with Walica
 - **Markdown Support**: Rich text formatting in notes and memos
 - **Share Dialog**: Easy link sharing with edit/view-only options
 - **Responsive Design**: Optimized for mobile and desktop
@@ -27,7 +26,6 @@ ai-generated/
 │   ├── MemoDialog.svelte
 │   ├── PasswordDialog.svelte
 │   ├── ShareDialog.svelte
-│   ├── WalicaOverlay.svelte
 │   └── index.ts
 ├── styles/                 # CSS modules
 │   ├── index.css           # Style entry

@@ -43,13 +43,16 @@ async function applyMigrations(db: D1Database) {
       updated_at TEXT NOT NULL,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
-    `CREATE TABLE IF NOT EXISTS itinerary_walica_settings (
+    `CREATE TABLE IF NOT EXISTS itinerary_money_settings (
       itinerary_id TEXT PRIMARY KEY,
-      walica_id TEXT NOT NULL,
+      budget_amount INTEGER,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
+    `CREATE TRIGGER IF NOT EXISTS delete_published_snapshot_with_source
+      BEFORE DELETE ON itineraries WHEN OLD.source_itinerary_id IS NULL
+      BEGIN DELETE FROM itineraries WHERE source_itinerary_id = OLD.id; END;`,
     `CREATE TABLE IF NOT EXISTS itinerary_fork_stats (
       itinerary_id TEXT PRIMARY KEY,
       fork_count INTEGER NOT NULL DEFAULT 0,
@@ -87,7 +90,7 @@ describe('Itineraries API', () => {
     await applyMigrations(env.DB);
     await env.DB.prepare('DELETE FROM steps').run();
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();
-    await env.DB.prepare('DELETE FROM itinerary_walica_settings').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
     await env.DB.prepare('DELETE FROM itineraries').run();
   });
 
@@ -336,6 +339,27 @@ describe('Itineraries API', () => {
       expect(getResponse.status).toBe(404);
     });
 
+    it('deletes the published snapshot when its source itinerary is deleted', async () => {
+      const createResponse = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: '公開元' }),
+      }), env);
+      const { data: source } = await createResponse.json() as any;
+      const publishResponse = await app.fetch(new Request(
+        `http://localhost/api/v1/itineraries/${source.id}/publish`,
+        { method: 'POST' },
+      ), env);
+      const { data: snapshot } = await publishResponse.json() as any;
+
+      const deleteResponse = await app.fetch(new Request(
+        `http://localhost/api/v1/itineraries/${source.id}`,
+        { method: 'DELETE' },
+      ), env);
+      expect(deleteResponse.status).toBe(200);
+      expect(await env.DB.prepare('SELECT id FROM itineraries WHERE id = ?').bind(snapshot.id).first()).toBeNull();
+    });
+
     it('returns 404 for non-existent itinerary', async () => {
       const deleteRequest = new Request('http://localhost/api/v1/itineraries/nonexistent', {
         method: 'DELETE',
@@ -378,7 +402,7 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
     await env.DB.prepare('DELETE FROM user_bookmarks').run();
     await env.DB.prepare('DELETE FROM steps').run();
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();
-    await env.DB.prepare('DELETE FROM itinerary_walica_settings').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
     await env.DB.prepare('DELETE FROM itineraries').run();
     await env.DB.prepare('DELETE FROM users').run();
   });
@@ -509,7 +533,7 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     await applyMigrations(env.DB);
     await env.DB.prepare('DELETE FROM steps').run();
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();
-    await env.DB.prepare('DELETE FROM itinerary_walica_settings').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
     await env.DB.prepare('DELETE FROM itineraries').run();
     await env.DB.prepare('DELETE FROM users').run();
   });

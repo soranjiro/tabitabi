@@ -1,7 +1,7 @@
 # データベース
 
 「たびたび」は Cloudflare D1（SQLite）を使用します。スキーマの正本は
-`apps/api/migrations/*.sql` です。このページは `0023_add_private_packing_items.sql`
+`apps/api/migrations/*.sql` です。このページは `0024_normalize_itinerary_relations.sql`
 までを反映しています。
 
 ## 設計方針
@@ -11,30 +11,50 @@
 - しおりに属するデータは、原則として `ON DELETE CASCADE` で削除する
 - ORMは使わず、WorkerからD1へSQLを直接実行する
 - 真偽値は `INTEGER` の `0` / `1`、予定日時はUnix time（ミリ秒）で保存する
-- `memo`、`notes`、`split_member_ids` などの可変構造はJSON文字列として保存する
+- `memo`、`notes` などの可変構造はJSON文字列として保存する
 
 ## ER図
 
 ```mermaid
 erDiagram
     itineraries ||--o{ steps : contains
+    itineraries ||--o| itineraries : publishes
     itineraries ||--o| itinerary_secrets : configures
-    itineraries ||--o| itinerary_walica_settings : configures
     itineraries ||--o| itinerary_fork_stats : counts
     itineraries ||--o| itinerary_money_settings : configures
     itineraries ||--o{ itinerary_members : has
-    itineraries ||--o{ itinerary_money_members : keeps_legacy_members
     itineraries ||--o{ itinerary_money_items : has
+    itinerary_members ||--o{ itinerary_money_items : pays
+    itinerary_money_items ||--|{ itinerary_money_item_splits : splits
+    itinerary_members ||--o{ itinerary_money_item_splits : owes
     itineraries ||--o{ itinerary_packing_groups : has
     itineraries ||--o{ itinerary_packing_items : has
+    itinerary_packing_groups ||--o{ itinerary_packing_items : groups
+    itinerary_members ||--o{ itinerary_packing_items : owns_or_carries
     users ||--o{ user_bookmarks : saves
     itineraries ||--o{ user_bookmarks : bookmarked_by
     itinerary_members ||--o{ itinerary_packing_checks : checks
     itinerary_packing_items ||--o{ itinerary_packing_checks : checked_by
 ```
 
-`itineraries.source_itinerary_id` は元しおりを指しますが、公開スナップショットを
-元しおりと独立して保持するため、外部キー制約は設定していません。
+`itineraries.source_itinerary_id` は元しおりを指します。親テーブルを再作成せず既存DBを
+安全に移行するため自己外部キーではなくトリガーで参照先の存在を検証し、元しおりの
+削除時には公開スナップショットも削除します。
+
+## 更新・削除時のルール
+
+| 操作 | 従属データの扱い |
+|---|---|
+| しおりを削除 | 予定、設定、統計、保存情報、メンバー、お金、持ち物、公開スナップショットを削除 |
+| メンバー名を変更 | IDは維持され、お金と持ち物の参照も維持 |
+| お金で参照中のメンバーを削除 | 支払者・負担者の履歴を守るため拒否 |
+| 自分専用持ち物の所有者を削除 | 自分専用持ち物とチェック状態を削除 |
+| 共通品の担当者を削除 | 共通品を残し、担当者だけNULLへ変更 |
+| 予定を削除 | 関連する支出を残し、`step_id` だけNULLへ変更 |
+| 持ち物グループを削除 | APIで別グループへ持ち物を移してから削除。DB単独では参照中の削除を拒否 |
+
+`itinerary_id` を含む複合外部キーでは、参照先が存在するだけでなく、同じしおりに属することも
+保証します。
 
 ## コアテーブル
 
@@ -56,7 +76,8 @@ Webの作成画面は `catalog.ts` の `standard-spring` を明示して送信�
 `theme_id` を省略した場合の `ItineraryService` とDB既定値は `standard-autumn` です。
 DB既定値だけを変更しても、画面の既定テーマは変わりません。
 `source_itinerary_id` には部分ユニークインデックスがあり、元しおり1件につき公開
-スナップショットは最大1件です。
+スナップショットは最大1件です。元しおりを削除するとスナップショットとその従属行も
+連動して削除されます。
 
 ### `steps`
 
@@ -86,15 +107,6 @@ DB既定値だけを変更しても、画面の既定テーマは変わりませ
 | `itinerary_id` | TEXT | PRIMARY KEY、しおり削除時CASCADE |
 | `enabled` | BOOLEAN | シークレットモードの有効状態 |
 | `offset_minutes` | INTEGER | 予定開始の何分前に公開するか |
-| `created_at` | TEXT | ISO 8601 |
-| `updated_at` | TEXT | ISO 8601 |
-
-### `itinerary_walica_settings`
-
-| カラム | 型 | 制約・用途 |
-|---|---|---|
-| `itinerary_id` | TEXT | PRIMARY KEY、しおり削除時CASCADE |
-| `walica_id` | TEXT | NOT NULL、WalicaのグループID |
 | `created_at` | TEXT | ISO 8601 |
 | `updated_at` | TEXT | ISO 8601 |
 
@@ -167,19 +179,25 @@ Firebase Authenticationを認証元とし、D1には公開プロフィールと�
 | `itinerary_id` | TEXT | NOT NULL、しおり削除時CASCADE |
 | `title` | TEXT | NOT NULL |
 | `amount` | INTEGER | NOT NULL、正の円金額 |
-| `paid_by_member_id` | TEXT | 支払者。削除時SET NULL |
+| `paid_by_member_id` | TEXT | 支払者。同じしおりのメンバー、参照中は削除不可 |
 | `status` | TEXT | `paid` または `planned` |
 | `is_settled` | INTEGER | NOT NULL、精算済みなら `1` |
 | `occurred_on` | TEXT | 任意の日付（`YYYY-MM-DD`） |
-| `step_id` | TEXT | 任意の予定ID。DB上の外部キー制約はなし |
-| `split_member_ids` | TEXT | 負担者ID配列のJSON、既定値 `[]` |
+| `step_id` | TEXT | 任意の予定ID。予定削除時SET NULL |
 | `created_at` | TEXT | ISO 8601 |
 | `updated_at` | TEXT | ISO 8601 |
 
-`itinerary_money_members` は、お金機能が共通メンバーへ移行する前の互換テーブルです。
-`itinerary_money_items.paid_by_member_id` の外部キーが残っているため、メンバーAPIは
-`itinerary_members` とこのテーブルを同期して更新します。新しい参照処理では
-`itinerary_members` を使用してください。
+### `itinerary_money_item_splits`
+
+支出の負担者をJSONではなく行として保存します。
+
+| カラム | 型 | 制約・用途 |
+|---|---|---|
+| `item_id` | TEXT | 複合PRIMARY KEY、支出削除時CASCADE |
+| `member_id` | TEXT | 複合PRIMARY KEY、同じしおりのメンバー、参照中は削除不可 |
+| `itinerary_id` | TEXT | 支出とメンバーが同じしおりに属することを複合外部キーで保証 |
+
+旧 `itinerary_money_members` は `0024` で削除済みです。
 
 ## 持ち物
 
@@ -203,11 +221,11 @@ Firebase Authenticationを認証元とし、D1には公開プロフィールと�
 | `id` | TEXT | PRIMARY KEY、UUID |
 | `itinerary_id` | TEXT | NOT NULL、しおり削除時CASCADE |
 | `name` | TEXT | NOT NULL |
-| `kind` | TEXT | migration上は `personal` または `shared` のCHECK制約 |
-| `group_id` | TEXT | 持ち物グループID。DB上の外部キー制約はなし |
-| `quantity` | INTEGER | NOT NULL、既定値 `1` |
+| `kind` | TEXT | `personal`、`private`、`shared` のCHECK制約 |
+| `group_id` | TEXT | 同じしおりの持ち物グループ。参照中は削除不可 |
+| `quantity` | INTEGER | NOT NULL、正数、既定値 `1` |
 | `assignee_member_id` | TEXT | 共通品の担当者。削除時SET NULL |
-| `owner_member_id` | TEXT | 自分専用品の所有者。DB上の外部キー制約はなし |
+| `owner_member_id` | TEXT | 自分専用品の所有者。同じしおりのメンバー、削除時CASCADE |
 | `is_packed` | INTEGER | 共通品の準備状態、既定値 `0` |
 | `created_at` | TEXT | ISO 8601 |
 | `updated_at` | TEXT | ISO 8601 |
@@ -215,18 +233,13 @@ Firebase Authenticationを認証元とし、D1には公開プロフィールと�
 API上は `personal` を全員が個別にチェック、`private` を指定した所有者だけに表示、`shared` を
 グループで1つ準備する区分として扱います。個人ごとのチェック状態は次のテーブルに保存します。
 
-> [!WARNING]
-> `0023_add_private_packing_items.sql` は `owner_member_id` を追加しましたが、`0020_add_trip_members_and_packing.sql`
-> の `kind IN ('personal', 'shared')` 制約を更新していません。現在のmigrationを空DBへ適用したスキーマは
-> `private` を拒否する一方、APIは `private` を送信します。自分専用品を本番で有効にする前に、テーブルを
-> 再作成してCHECK制約へ `private` を追加する新しいmigrationが必要です。
-
 ### `itinerary_packing_checks`
 
 | カラム | 型 | 制約・用途 |
 |---|---|---|
 | `item_id` | TEXT | 複合PRIMARY KEY、持ち物削除時CASCADE |
 | `member_id` | TEXT | 複合PRIMARY KEY、メンバー削除時CASCADE |
+| `itinerary_id` | TEXT | 持ち物とメンバーが同じしおりに属することを複合外部キーで保証 |
 | `checked_at` | TEXT | ISO 8601 |
 
 ## Step Type

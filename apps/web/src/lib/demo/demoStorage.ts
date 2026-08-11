@@ -9,7 +9,6 @@ import type {
   Itinerary,
   Step,
   ItinerarySecretRecord,
-  ItineraryWalicaSettingsRecord,
   MoneyData,
   PackingData,
   TripMember,
@@ -25,7 +24,6 @@ export interface DemoData {
   itinerary: Itinerary;
   steps: Step[];
   itinerary_secrets?: ItinerarySecretRecord | null;
-  itinerary_walica_settings?: ItineraryWalicaSettingsRecord | null;
   itinerary_money?: MoneyData | null;
   itinerary_members?: TripMember[];
   itinerary_packing?: PackingData | null;
@@ -35,7 +33,6 @@ interface StoredDemoData {
   itinerary: Itinerary;
   steps: Step[];
   itinerary_secrets?: ItinerarySecretRecord | null;
-  itinerary_walica_settings?: ItineraryWalicaSettingsRecord | null;
   itinerary_money?: MoneyData | null;
   itinerary_members?: TripMember[];
   itinerary_packing?: PackingData | null;
@@ -63,7 +60,7 @@ export const demoStorage = {
 
   /**
    * Get demo itinerary from local storage
-   * Returns itinerary with walica_id and secret_settings merged for UI compatibility
+   * Returns itinerary with secret settings merged for UI compatibility.
    */
   getItinerary(): Itinerary | null {
     const data = this.getData();
@@ -76,10 +73,6 @@ export const demoStorage = {
         enabled: data.itinerary_secrets.enabled,
         offset_minutes: data.itinerary_secrets.offset_minutes,
       };
-    }
-
-    if (data.itinerary_walica_settings) {
-      itinerary.walica_id = data.itinerary_walica_settings.walica_id;
     }
 
     return itinerary;
@@ -100,14 +93,6 @@ export const demoStorage = {
   getItinerarySecrets(): ItinerarySecretRecord | null {
     const data = this.getData();
     return data?.itinerary_secrets ?? null;
-  },
-
-  /**
-   * Get demo itinerary walica settings
-   */
-  getItineraryWalicaSettings(): ItineraryWalicaSettingsRecord | null {
-    const data = this.getData();
-    return data?.itinerary_walica_settings ?? null;
   },
 
   /** Get the demo-only money data. It is deliberately kept in the same localStorage record. */
@@ -161,15 +146,11 @@ export const demoStorage = {
     const data = this.getData();
     if (!data) return null;
 
-    const { walica_id, secret_settings, ...rest } = updates;
+    const { secret_settings, ...rest } = updates;
     const now = new Date().toISOString();
 
     if (secret_settings !== undefined) {
       this.updateItinerarySecrets(secret_settings ?? null);
-    }
-
-    if (walica_id !== undefined) {
-      this.updateItineraryWalicaSettings(walica_id ?? null);
     }
 
     const updated = { ...data.itinerary, ...rest, updated_at: now };
@@ -204,33 +185,6 @@ export const demoStorage = {
         };
 
     this.saveData({ ...data, itinerary_secrets: updated });
-    return updated;
-  },
-
-  /**
-   * Update itinerary walica settings
-   */
-  updateItineraryWalicaSettings(walicaId: string | null): ItineraryWalicaSettingsRecord | null {
-    const data = this.getData();
-    if (!data) return null;
-
-    const now = new Date().toISOString();
-
-    if (walicaId === null) {
-      this.saveData({ ...data, itinerary_walica_settings: null });
-      return null;
-    }
-
-    const updated: ItineraryWalicaSettingsRecord = data.itinerary_walica_settings
-      ? { ...data.itinerary_walica_settings, walica_id: walicaId, updated_at: now }
-      : {
-          itinerary_id: data.itinerary.id,
-          walica_id: walicaId,
-          created_at: now,
-          updated_at: now,
-        };
-
-    this.saveData({ ...data, itinerary_walica_settings: updated });
     return updated;
   },
 
@@ -289,7 +243,6 @@ export const demoStorage = {
       itinerary: demoData.itinerary,
       steps: demoData.steps,
       itinerary_secrets: demoData.itinerary_secrets ?? null,
-      itinerary_walica_settings: demoData.itinerary_walica_settings ?? null,
       itinerary_money: demoData.itinerary_money ?? null,
       itinerary_members: demoData.itinerary_members ?? demoData.itinerary_money?.members ?? [],
       itinerary_packing: demoData.itinerary_packing ?? null,

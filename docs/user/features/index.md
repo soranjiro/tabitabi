@@ -31,6 +31,5 @@
 |---|---|
 | [Markdown](themes/markdown.md) | メモと予定ノートを装飾 |
 | [シークレットモード](themes/secret-mode.md) | 開始時刻が近づくまで予定内容を隠す |
-| [Walica連携](themes/walica.md) | AI GeneratedからWalicaを開く |
 
 テーマごとの全体像は[テーマの選び方](../themes.md)をご覧ください。

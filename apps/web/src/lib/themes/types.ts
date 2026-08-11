@@ -1,15 +1,13 @@
 import type {
   Itinerary,
   Step,
-  ItinerarySecretRecord,
-  ItineraryWalicaSettingsRecord
+  ItinerarySecretRecord
 } from '@tabitabi/types';
 
 export interface DemoDataSet {
   itinerary: Itinerary;
   steps: Step[];
   itinerary_secrets?: ItinerarySecretRecord | null;
-  itinerary_walica_settings?: ItineraryWalicaSettingsRecord | null;
 }
 
 export const now = new Date().toISOString();

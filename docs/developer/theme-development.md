@@ -15,7 +15,7 @@
 | `pixel-quest` | ピクセルクエスト | RPG風マップ |
 | `map-only` | Map Only | Google Maps中心 |
 | `mapbox-journey` | Mapbox Journey | Mapboxの3D地図・グローブ |
-| `ai-generated` | AI Generated | タイムライン、シークレット、Walica、Markdown |
+| `ai-generated` | AI Generated | タイムライン、シークレット、Markdown |
 | `sauna-rally` | サウナスタンプラリー | サウナ巡り向け |
 
 `minimal/` はソースに残っていますが、カタログと `loadTheme()` に登録されていないため選択できません。

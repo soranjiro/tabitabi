@@ -1,147 +1,177 @@
-# テーマ開発ガイド
+# テーマ開発
 
-Tabitabiのテーマシステムは、拡張性と保守性を重視して設計されています。
-新しいテーマを追加したり、既存のテーマを編集したりする手順は非常にシンプルです。
+テーマは、しおりと予定の共通データを異なるUIで表示する動的ロード単位です。
+登録可能なテーマとWeb画面の既定値は `apps/web/src/lib/themes/catalog.ts` が正本です。
 
-## ディレクトリ構造
+## 現在のテーマ
 
-テーマ関連のファイルは `apps/web/src/lib/themes` に集約されています。
+| ID | 表示名 | 概要 |
+|---|---|---|
+| `standard-spring` | 標準（春） | 標準機能一式。Web画面の既定テーマ |
+| `standard-summer` | 標準（夏） | 標準機能一式、夏配色 |
+| `standard-autumn` | 標準（秋） | 標準機能一式、秋配色 |
+| `standard-winter` | 標準（冬） | 標準機能一式、冬配色 |
+| `shopping` | 買い物リスト | 買い物管理向け |
+| `pixel-quest` | ピクセルクエスト | RPG風マップ |
+| `map-only` | Map Only | Google Maps中心 |
+| `mapbox-journey` | Mapbox Journey | Mapboxの3D地図・グローブ |
+| `ai-generated` | AI Generated | タイムライン、シークレット、Walica、Markdown |
+| `sauna-rally` | サウナスタンプラリー | サウナ巡り向け |
 
+`minimal/` はソースに残っていますが、カタログと `loadTheme()` に登録されていないため選択できません。
+
+## 構造
+
+独立テーマの標準的な構成です。
+
+```text
+themes/new-theme/
+├── index.ts              # Themeをdefault export
+├── config.ts             # 任意。メタ情報を分離する場合
+├── ItineraryView.svelte  # しおり全体
+├── StepList.svelte       # 予定一覧
+├── components/           # テーマ固有UI
+├── styles/               # テーマ固有CSS
+├── demo-data.ts          # デモ用データ
+└── DESIGN.md             # デザイン意図
 ```
-apps/web/src/lib/themes/
-├── index.ts          # テーマの登録と動的インポートの管理
-├── map-only/         # 地図に特化したテーマ
-├── standard-autumn/  # 標準（秋）テーマ（デフォルト）
-├── mapbox-journey/   # 3Dマップテーマ
-└── ...               # その他のテーマ
+
+季節テーマは例外で、機能とレイアウトを共有します。
+
+```text
+themes/standard-seasons/
+├── shared/               # 春夏秋冬すべてが使う画面・機能・CSS
+├── spring/               # 配色、entry、デモデータ
+├── summer/
+├── autumn/
+└── winter/
 ```
 
-## 新しいテーマの追加
+## Theme型
 
-新しいテーマを追加するには、以下の2つのステップを実行するだけです。
-
-### 1. テーマフォルダの作成
-
-`apps/web/src/lib/themes` 内に新しいフォルダを作成し（例: `new-theme`）、必要なコンポーネントを実装します。
-既存のテーマ（`map-only` や `standard-autumn` など）をコピーして参考にすることをお勧めします。
-
-必須ファイル:
-- `index.ts`: テーマ定義（`Theme` 型）を default export します。
-
-### 2. テーマの登録
-
-`apps/web/src/lib/themes/index.ts` を編集して、新しいテーマを登録します。
-
-1. `THEME_CATALOG` 配列に新しいテーマのメタ情報を追加します。
-2. `loadTheme` 関数の `switch` 文に新しいケースを追加し、動的インポートを設定します。
-3. `availableThemes` 配列にテーマIDを追加します。
+`packages/types/src/theme.ts` の `Theme` を実装し、`index.ts` からdefault exportします。
 
 ```typescript
-// apps/web/src/lib/themes/index.ts
+import type { Theme } from '@tabitabi/types';
+import ItineraryView from './ItineraryView.svelte';
+import StepList from './StepList.svelte';
 
-// ...
+const theme: Theme = {
+  id: 'new-theme',
+  name: '新しいテーマ',
+  version: '1.0.0',
+  description: 'テーマの説明',
+  author: 'Tabitabi Team',
+  features: {
+    steps: { enabled: true, required: true },
+    memo: { enabled: true },
+  },
+  ui: {
+    layout: 'single',
+    colorScheme: 'light',
+    customColors: {
+      primary: '#2563eb',
+      background: '#ffffff',
+      text: '#172033',
+    },
+  },
+  components: { ItineraryView, StepList },
+};
 
-const THEME_CATALOG = [
+export default theme;
+```
+
+`features` はテーマの能力を表すメタデータです。フラグを有効にするだけで画面やAPI連携が
+自動実装されるわけではありません。コンポーネント側の実装と一致させてください。
+
+## 新しいテーマを登録する
+
+### 1. カタログ
+
+`apps/web/src/lib/themes/catalog.ts` の `availableThemes` と `THEME_CATALOG` に同じIDを追加します。
+
+```typescript
+export const availableThemes = [
   // ...
-  { id: 'new-theme', name: '新しいテーマ', description: 'テーマの説明' },
-];
+  'new-theme',
+] as const;
 
-export async function loadTheme(themeId: string): Promise<Theme> {
-  switch (themeId) {
-    case 'new-theme':
-      return (await import('./new-theme')).default;
-    // ...
-  }
-}
-
-export const availableThemes = [..., 'new-theme'] as const;
+// THEME_CATALOGにも name / description / phrase を追加
 ```
 
-これだけで、アプリケーション内で新しいテーマが選択可能になります。
+ホームの作成フォーム、デモ選択、テーマ切り替えはこのカタログを参照します。
 
-## 既存テーマの編集
+### 2. 動的import
 
-既存のテーマを編集する場合は、対応するテーマフォルダ内のファイルを変更するだけです。
-他のテーマやアプリケーション全体への影響を気にする必要はありません。
+`apps/web/src/lib/themes/index.ts` の `loadTheme()` へcaseを追加します。
 
-## 利用可能なテーマ
-
-現在、以下のテーマが利用可能です。
-
-### Standard Autumn（秋）- デフォルト
-- **ID**: `standard-autumn`
-- **Color**: #8b2e1f (深い茶色)
-- **特徴**: 秋をモチーフにしたデザイン。完全なUI機能セットを含みます。
-
-### Standard Spring（春）
-- **ID**: `standard-spring`
-- **Color**: #d946a6 (ピンク)
-- **特徴**: 春をモチーフにしたデザイン。
-
-### Standard Summer（夏）
-- **ID**: `standard-summer`
-- **Color**: #0369a1 (青)
-- **特徴**: 夏をモチーフにしたデザイン。
-
-### Standard Winter（冬）
-- **ID**: `standard-winter`
-- **Color**: #2563eb (紫青)
-- **特徴**: 冬をモチーフにしたデザイン。
-
-## Step Type システム
-
-### 概要
-
-予定（Step）には「種類」（type）を指定できます。これにより、旅行中の異なる活動を視覚的に区別できます。
-
-### Type 格式
-
-Type は `category:type` 形式で指定されます。
-
-#### 通常の予定 (normal)
-- `normal:general` - 一般的な予定
-- `normal:food` - 食事
-- `normal:hotel` - 宿泊
-- `normal:sightseeing` - 観光
-
-#### 移動 (transport)
-- `transport:general` - 一般的な移動
-- `transport:train` - 電車
-- `transport:car` - 車
-- `transport:plane` - 飛行機
-- `transport:bus` - バス
-
-### アイコン
-
-各Type には SVG アイコンが関連付けられています。アイコンは [IconRenderer.svelte](../../../apps/web/src/lib/themes/standard-seasons/shared/icons/IconRenderer.svelte) で管理されます。
-
-### UI での表現
-
-- **リストビュー**: アイコン + タイトルを表示
-- **週ビュー**: 色分けされたブロック内にアイコンを表示
-  - 通常の予定：紫茶色
-  - 移動：黄色（accent カラー）
-- **月ビュー**: 色分けされたタグ形式で表示
-
-### Type 編集
-
-Type の編集は、予定作成・編集モーダルで **アイコン選択器** から行います。
-
-```
-[📋 一般的な予定] [🍽️ 食事] [🏨 宿泊] [🎌 観光]
-その他の移動手段
-
-[🚗 一般的な移動] [🚄 電車] [🚙 車] [✈️ 飛行機] [🚌 バス]
-移動手段
-
-※ アイコンをタップすることで選択できます
+```typescript
+case 'new-theme':
+  return (await import('./new-theme')).default;
 ```
 
-## その他のテーマ
+未知のIDは現在 `standard-spring` にフォールバックします。
 
-以下のテーマは、以前のバージョンで提供されていました：
+### 3. デモ
 
-- **Map Only**: 地図中心のシンプルUI
-- **Mapbox Journey**: 3Dグローブ表示
-- **Pixel Quest**: RPG風ドット絵表示
-- **Shopping**: 買い物リスト管理UI
+テーマ内の `demo-data.ts` に加えて、ホームのプレビューを出す場合は
+`apps/web/src/routes/home/previewData/` と `preview-carousel/` も更新します。
+`/demo?theme=new-theme` ではバックエンドを呼ばず、変更をブラウザ内のデモ状態へ保存します。
+
+### 4. テスト
+
+最低限、次を確認します。
+
+- `pnpm --filter web test:run`
+- `pnpm --filter web test:e2e -- themes-all.spec.ts`
+- モバイル幅で予定の追加・編集・削除、閲覧モード、共有メニュー
+- 鍵付きしおりと公開スナップショットで編集UIが出ないこと
+- テーマ切り替え後に前テーマの状態・CSSが残らないこと
+
+地図テーマではtoken未設定時、位置情報拒否時、geocoding失敗時も確認します。
+
+## コンポーネントの契約
+
+`ItineraryView` は `apps/web/src/routes/[id]/+page.svelte` から、少なくとも `itinerary` と
+`steps`、更新用callbackを受け取ります。公開スナップショットではcallbackが `undefined` になるため、
+その場合は編集UIを表示・実行しないでください。
+
+データ更新はcallbackまたは `$lib/api/` を通し、テーマからAPI URLを組み立てて直接fetchしません。
+メモと予定ノートはJSON文字列なので、`$lib/memo` のhelperでテキスト部分を読み書きします。
+
+## 標準テーマを変更するとき
+
+春・夏・秋・冬の機能修正は `standard-seasons/shared/` で行います。季節固有ディレクトリには、
+配色、装飾、テーマentry、デモデータだけを置くのが基本です。
+
+標準テーマには、次の共通機能があります。
+
+- 日カード、リスト、月、週の表示モードと初期表示設定
+- 旅行メンバー
+- 持ち物リスト
+- 予算、支出、立替、精算
+- Markdownメモ、予定リンク、シークレットモード
+- 閲覧／編集／公開用共有リンク
+- 印刷・PDF出力
+
+共通部の変更では4季節すべての配色と、狭い画面のボトムナビを確認してください。
+
+## Step Type
+
+予定種別の正本は `packages/types/src/step.ts`、表示名とアイコンは
+`standard-seasons/shared/utils/step-type.ts` です。
+
+| 通常 | 移動 |
+|---|---|
+| 一般、食事、宿泊、観光、買い物 | 一般、電車、車、飛行機、バス、船 |
+
+新しいtypeを追加する場合は、共有型、アイコンrenderer、選択UI、各表示モード、印刷、デモデータ、
+DBドキュメントを更新します。保存形式は `category:type` です。
+
+## CSSとパフォーマンス
+
+- テーマCSSはテーマディレクトリ内に閉じ、汎用名のグローバルselectorを避ける
+- 色は `Theme.ui.customColors` とCSS custom propertiesを揃える
+- 地図、印刷、大きなoverlayは初期表示で読み込まず遅延ロードする
+- テーマ間で大きな機能を共通化する場合は、独立性と初期バンドルへの影響を先に確認する
+- 画像は表示サイズに合わせて圧縮し、不要な高解像度assetを同梱しない

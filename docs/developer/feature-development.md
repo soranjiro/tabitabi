@@ -1,82 +1,183 @@
-# 機能開発ガイド（バックエンド連携）
+# 機能開発
 
-新しい機能、特にバックエンドのデータベース操作を伴う機能を追加する手順を説明します。
-基本的には、バックエンドでCRUD操作を実装し、フロントエンドでAPIラッパーを用意する構成になっています。
+ここでは、D1とAPIを伴う機能を追加する基本の流れを説明します。既存実装では旅行メンバー、
+お金、持ち物がこの構成の参考になります。
 
-## 開発フロー
+## 実装順序
 
-1. **データベース移行 (Migration)**
-2. **バックエンド実装 (Service & Worker)**
-3. **フロントエンド実装 (API Client)**
+1. データと権限の境界を決める
+2. D1 migrationを追加する
+3. `packages/types` の共有型を更新する
+4. Zod validatorとAPI route／serviceを実装する
+5. WebのAPI wrapperを実装する
+6. ページまたはテーマUIを実装する
+7. テストとドキュメントを更新する
 
----
+## 1. データと権限を決める
 
-## 1. データベース移行
+実装前に次を明確にします。
 
-`apps/api/migrations` フォルダに新しいSQLファイルを作成して、テーブル構造を変更します。
-ファイル名は `000N_description.sql` の形式にします（Nは連番）。
+- しおり削除時に一緒に消えるデータか
+- 閲覧者にも返すか、編集者だけに返すか
+- 鍵なししおりで誰でも更新できてよいか
+- 公開スナップショットへ含めるか
+- コピー時に引き継ぐか
+- 旅行メンバーや予定を参照するか
+- 金額、日時、URL、JSONに必要な検証は何か
 
-例: `0006_add_new_feature.sql`
+公開スナップショットは常に閲覧専用です。書き込みrouteでは、しおりの存在、
+`source_itinerary_id`、鍵付きの場合の編集JWTを共通して確認してください。
+
+## 2. Migration
+
+`apps/api/migrations/` に未使用番号のSQLを追加します。
 
 ```sql
-CREATE TABLE new_feature_items (
+-- apps/api/migrations/0024_add_example_items.sql
+CREATE TABLE itinerary_example_items (
   id TEXT PRIMARY KEY,
-  content TEXT NOT NULL,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
+  itinerary_id TEXT NOT NULL,
+  label TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
 );
+
+CREATE INDEX idx_example_items_itinerary
+  ON itinerary_example_items(itinerary_id, created_at);
 ```
 
-## 2. バックエンド実装
+注意点:
 
-### Service の作成・更新
+- 適用済みmigrationを編集しない
+- `itineraries` に必須でない機能カラムを増やさず、従属テーブルを優先する
+- SQLite / D1で実行可能なDDLだけを使う
+- 外部キーと削除時の動作を明示する
+- 同じ番号のmigrationが既にないか確認する
+- ローカルの空DBへ全migrationを通す
 
-`apps/api/src/services` 内にビジネスロジックを記述します。
-既存の `ItineraryService` などを参考にするか、新しい Service クラスを作成します。
+```bash
+make migrate-local
+```
+
+## 3. 共有型
+
+WebとAPIの両方で使うrecord、input、responseは `packages/types/src/` に追加し、
+`packages/types/src/index.ts` からexportします。
 
 ```typescript
-// apps/api/src/services/new-feature.service.ts
+export interface ExampleItem {
+  id: string;
+  itinerary_id: string;
+  label: string;
+  created_at: string;
+  updated_at: string;
+}
 
-export class NewFeatureService {
-  constructor(private db: D1Database) {}
-
-  async create(input: CreateInput) {
-    // ...
-  }
-
-  async get(id: string) {
-    // ...
-  }
+export interface CreateExampleItemInput {
+  label: string;
 }
 ```
 
-### Worker (API エンドポイント) の更新
+D1の `INTEGER` 真偽値やJSON文字列は、API境界でWeb向けの `boolean` や配列へ変換します。
 
-`apps/api/src/index.ts` (または対応するルーターファイル) で、APIエンドポイントを定義し、Serviceを呼び出します。
+## 4. ValidatorとAPI
+
+入力schemaは `apps/api/src/validators/index.ts` に置き、`@hono/zod-validator` と
+`validationHook` を使います。
 
 ```typescript
-app.post('/api/new-feature', async (c) => {
-  const input = await c.req.json();
-  const service = new NewFeatureService(c.env.DB);
-  const result = await service.create(input);
-  return c.json(result);
+export const exampleItemSchema = z.object({
+  label: z.string().trim().min(1).max(100),
 });
 ```
 
-## 3. フロントエンド実装
-
-`apps/web/src/lib/api.ts` (または機能ごとのAPIファイル) に、バックエンドAPIを呼び出すラッパー関数を追加します。
+routeは `apps/api/src/routes/`、複数routeで共有するDB処理やドメイン処理は
+`apps/api/src/services/` に置きます。新しいrouteファイルは `apps/api/src/index.ts` で
+mountしない限り公開されません。
 
 ```typescript
-export async function createNewFeatureItem(data: CreateInput) {
-  const response = await fetch(`${API_URL}/api/new-feature`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) throw new Error('Failed to create item');
-  return response.json();
-}
+example.post(
+  '/itineraries/:id/examples',
+  optionalAuthMiddleware,
+  zValidator('json', exampleItemSchema, validationHook),
+  async (c) => {
+    const itineraryId = c.req.param('id');
+    // existence / snapshot / itinerary JWTを確認
+    // D1へ保存
+    return c.json({ success: true, data: item }, 201);
+  },
+);
 ```
 
-あとは、この関数をSvelteコンポーネントから呼び出すだけです。
+### 2種類のBearer token
+
+このプロジェクトには用途の異なるtokenがあります。
+
+| token | 用途 | 主なmiddleware / client |
+|---|---|---|
+| しおりJWT | 鍵付きしおりの編集 | `optionalAuthMiddleware`、`apiClient.*(..., shioriId)` |
+| Firebase ID token | マイページ、公開、コピー | `userAuthMiddleware`、`postWithUserToken`、`userApi` |
+
+同じ `Authorization: Bearer` を使うため、1つのendpointで両方を曖昧に受け取らないようにします。
+
+## 5. Web API wrapper
+
+機能ごとに `apps/web/src/lib/api/example.ts` を作ります。
+
+```typescript
+import type { CreateExampleItemInput, ExampleItem } from '@tabitabi/types';
+import { apiClient } from './client';
+
+export const exampleApi = {
+  list: (itineraryId: string) =>
+    apiClient.get<ExampleItem[]>(`/itineraries/${itineraryId}/examples`),
+
+  create: (itineraryId: string, input: CreateExampleItemInput) =>
+    apiClient.post<ExampleItem>(
+      `/itineraries/${itineraryId}/examples`,
+      input,
+      itineraryId,
+    ),
+};
+```
+
+URL、JSON headers、しおりJWTを各コンポーネントで再実装しないでください。Firebase認証が
+必要な機能は `userApi` または `userAuth.getToken()` を使う専用wrapperへ分離します。
+
+## 6. UI
+
+テーマ固有機能なら対象テーマ内へ、テーマ非依存なら `apps/web/src/lib/` またはrouteへ置きます。
+
+- 標準4季節に共通: `themes/standard-seasons/shared/`
+- 独立テーマのみ: `themes/<theme-id>/`
+- 全テーマの上に重ねる機能: `routes/[id]/+page.svelte` または `$lib/`
+- アカウント／公開ページ: `routes/profile/`、`routes/users/`
+
+callbackが `undefined` の公開スナップショットでは編集UIを出さないようにします。鍵付き、鍵なし、
+公開スナップショット、デモの4状態を混同しないことが重要です。
+
+## 7. テスト
+
+APIでは、正常系だけでなく次を追加します。
+
+- 入力の空文字、長さ、範囲、形式
+- 別のしおりに属するmember／step ID
+- 鍵付きしおりのtokenなし・誤token
+- 公開スナップショットへの書き込み
+- 削除時のCASCADEまたはCONFLICT
+- D1 rowとAPI型の変換
+
+UIの計算は可能な限りpure functionへ分離し、Vitestで確認します。主要操作は対象のPlaywright
+specへ追加します。コマンドは[テスト](testing.md)を参照してください。
+
+## 完了チェック
+
+- [ ] 空のローカルD1へmigrationが通る
+- [ ] 共有型と実際のAPIレスポンスが一致する
+- [ ] すべての書き込みで権限境界を確認している
+- [ ] 公開・コピーへ含めるデータを意図的に決めた
+- [ ] API wrapperを経由している
+- [ ] 対象テーマとモバイル表示を確認した
+- [ ] API/Web/E2Eの必要なテストを追加した
+- [ ] `docs/developer/database.md` と `docs/user/` を更新した

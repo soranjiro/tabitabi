@@ -1,243 +1,178 @@
 # アーキテクチャ
 
-「たびたび」のプロジェクト構造と技術スタックについて説明します。
+「たびたび」は、SvelteKitのWebアプリ、Honoで構築したCloudflare Worker API、
+Cloudflare D1、共有TypeScript型からなるpnpm monorepoです。
 
 ## 技術スタック
 
-### フロントエンド
-- **フレームワーク**: SvelteKit 2.x
-- **言語**: TypeScript
-- **スタイリング**: Tailwind CSS
-- **ビルドツール**: Vite
-
-### バックエンド
-- **ランタイム**: Cloudflare Workers
-- **データベース**: Cloudflare D1 (SQLite)
-- **ORM**: なし（生SQL）
-
-### デプロイ
-- **ホスティング**: Cloudflare Pages
-- **CI/CD**: GitHub Actions（予定）
+| レイヤー | 主な技術 |
+|---|---|
+| Web | Svelte 5、SvelteKit 2、TypeScript、Vite、Tailwind CSS |
+| API | Cloudflare Workers、Hono、Zod |
+| Database | Cloudflare D1（SQLite）、生SQL |
+| アカウント認証 | Firebase Authentication、`jose` によるIDトークン検証 |
+| しおり編集認証 | bcryptjs、署名付きJWT（有効期間30日） |
+| Unit / integration test | Vitest、Cloudflare Workers pool、Testing Library |
+| E2E | Playwright |
+| Build / workspace | pnpm workspace、Turborepo |
+| Deploy | Cloudflare Pages、Cloudflare Workers、GitHub Actions |
 
 ## プロジェクト構造
 
-```
+```text
 tabitabi/
 ├── apps/
-│   ├── api/                 # バックエンドAPI
+│   ├── api/
+│   │   ├── migrations/       # D1マイグレーション（スキーマの正本）
 │   │   ├── src/
-│   │   │   ├── index.ts     # エントリーポイント
-│   │   │   ├── routes/      # APIルート
-│   │   │   └── services/    # ビジネスロジック
-│   │   └── wrangler.toml    # Cloudflare Workers設定
-│   │
-│   └── web/                 # フロントエンド
+│   │   │   ├── middleware/   # CORS、しおりJWT、Firebase認証
+│   │   │   ├── routes/       # HonoのAPIルート
+│   │   │   ├── services/     # DBアクセスとドメイン処理
+│   │   │   ├── utils/        # JWT、Firebase、公開用変換など
+│   │   │   └── validators/   # Zod入力検証
+│   │   └── test/             # Worker統合テスト
+│   └── web/
+│       ├── scripts/          # docs生成、ビルド後処理、環境変数チェック
 │       ├── src/
-│       │   ├── routes/      # ページコンポーネント
-│       │   │   ├── home/    # ホーム画面
-│       │   │   └── [id]/    # しおり表示（動的ルート）
-│       │   └── lib/
-│       │       ├── themes/  # テーマ定義
-│       │       └── components/ # 共有コンポーネント
-│       ├── static/          # 静的アセット
-│       └── scripts/         # ビルドスクリプト
-│
-├── packages/
-│   └── types/               # 共有型定義
-│
-├── migrations/              # DBマイグレーション
-│
-└── docs/                    # ドキュメント
+│       │   ├── lib/
+│       │   │   ├── api/      # ブラウザ側APIクライアント
+│       │   │   ├── auth/     # しおり編集トークン
+│       │   │   ├── demo/     # APIを使わないデモ状態
+│       │   │   ├── print/    # テーマ非依存の印刷データ／画面
+│       │   │   └── themes/   # テーマとテーマカタログ
+│       │   ├── routes/       # SvelteKitページとサーバールート
+│       │   └── service-worker.ts
+│       └── tests/e2e/        # Playwright
+├── packages/types/           # WebとAPIで共有する型・定数
+├── docs/                     # Markdownドキュメント
+├── .github/workflows/        # CI、本番、PR Preview、cleanup
+├── Makefile
+└── turbo.json
 ```
 
-## データフロー
+生成したドキュメントは `apps/web/static/docs/` に置かれます。このディレクトリを直接
+編集せず、`docs/` のMarkdownを更新して `pnpm --filter web build:docs` を実行します。
 
-### しおり作成フロー
-
-```
-1. ユーザー入力（Web）
-   ↓
-2. APIリクエスト（/api/itineraries POST）
-   ↓
-3. D1データベースに保存
-   ↓
-4. レスポンス（しおりID）
-   ↓
-5. しおりページへリダイレクト
-```
-
-### しおり表示フロー
-
-```
-1. URLアクセス（/[id]）
-   ↓
-2. APIリクエスト（/api/itineraries/[id] GET）
-   ↓
-3. D1データベースから取得
-   ↓
-4. テーマに応じたコンポーネントで描画
-```
-
-## 設計思想
-
-### 1. シンプルさ優先
-
-- アカウント管理なし
-- 最小限のAPI
-- 直感的なUI
-
-### 2. テーマ指向
-
-- テーマは独立したコンポーネント
-- 各テーマは`src/lib/themes/`に配置
-- テーマ切り替えは動的ロード
-
-### 3. プラグイン的機能追加
-
-- 基本テーブル（`itineraries`）はシンプルに保つ
-- 新機能は別テーブルで管理
-- 例: `itinerary_walica_settings`, `itinerary_steps_secret`
-
-### 4. PWA対応
-
-- Service Worker
-- マニフェストファイル
-- オフライン対応（閲覧のみ）
-
-## データベース設計
-
-主要テーブル:
-
-### `itineraries`
-しおりの基本情報
-
-| カラム | 型 | 説明 |
-|--------|---------|------|
-| id | TEXT PRIMARY KEY | UUID |
-| title | TEXT | タイトル |
-| theme_id | TEXT | テーマID |
-| memo | TEXT | メモ |
-| password | TEXT | 編集パスワード |
-| created_at | TEXT | 作成日時 |
-| updated_at | TEXT | 更新日時 |
-
-### `itinerary_steps`
-予定・ステップ
-
-| カラム | 型 | 説明 |
-|--------|---------|------|
-| id | TEXT PRIMARY KEY | UUID |
-| itinerary_id | TEXT | しおりID（外部キー） |
-| day | INTEGER | 日目 |
-| time | TEXT | 時刻 |
-| location | TEXT | 場所 |
-| description | TEXT | 説明 |
-| order | INTEGER | 表示順 |
-
-詳細は[データベース](database.md)をご覧ください。
-
-## テーマシステム
-
-### テーマの構造
-
-各テーマは`src/lib/themes/[theme-id]/`に配置:
-
-```
-themes/standard-autumn/
-├── index.svelte           # メインコンポーネント
-├── components/            # テーマ固有コンポーネント
-├── styles.css             # スタイル
-└── types.ts               # 型定義
-```
-
-### テーマの登録
-
-`src/lib/themes/index.ts`でテーマを登録:
-
-```typescript
-export const themes = {
-  'minimal': {
-    name: 'Minimal',
-    load: () => import('./minimal/index.svelte')
-  },
-  // ...
-}
-```
-
-詳細は[テーマ開発](theme-development.md)をご覧ください。
-
-## API設計
-
-RESTful API:
-
-- `POST /api/itineraries` - しおり作成
-- `GET /api/itineraries/:id` - しおり取得
-- `PUT /api/itineraries/:id` - しおり更新
-- `DELETE /api/itineraries/:id` - しおり削除
-
-認証:
-- 編集操作にはパスワードが必要
-- パスワードは`Authorization: Bearer [password]`ヘッダーで送信
-- サーバー側でハッシュ値と比較
-
-## パフォーマンス最適化
-
-### コード分割
-- テーマは動的インポート
-- ページごとの分割
-
-### キャッシング
-- 静的アセットのCDNキャッシュ
-- Service Workerでのキャッシング
-
-### 軽量化
-- 依存ライブラリの最小化
-- Tree shakingの活用
-
-## セキュリティ
-
-### パスワード保護とトークン運用
-- パスワードは平文で保存（将来ハッシュ化予定）
-- JWTトークンは「編集権限が必要な（パスワード設定あり）しおり」のみで使用
-- パスワード未設定のしおりはトークンを保存せず、`Authorization` ヘッダーも送信しない
-- トークンには有効期限あり（30日）
-
-編集権限判定のフロー:
+## 実行時の構成
 
 ```mermaid
-flowchart TD
-   A[ページ読み込み] --> B{is_password_protected?}
-   B -- No --> C[編集可能: トークン不要]
-   B -- Yes --> D{URLにtokenあり?}
-   D -- Yes --> E[localStorageにtoken保存]
-   D -- No --> F[未保存のまま]
-   E --> G[API呼出時にAuthorization付与]
-   F --> H[編集操作時にパスワード認証]
-   H --> E
+flowchart LR
+    Browser[Browser / PWA] --> Web[SvelteKit on Pages]
+    Browser --> API[Hono Worker /api/v1]
+    API --> D1[(Cloudflare D1)]
+    Browser --> Firebase[Firebase Authentication]
+    API --> FirebaseCerts[Google public certificates]
+    Web --> GitHub[GitHub Issues API]
 ```
 
-クライアント実装の要点:
-- `+page.svelte` で `auth.setPasswordProtected(id, is_password_protected)` を記録
-- `client.getAuthHeaders()` は `is_password_protected=true` のときのみ `Authorization` を付与
-- 各テーマは `token` の保存を `is_password_protected` でガード
+- Webはしおりページ `/:id` を読み込み、APIからしおりと予定を取得してテーマを動的ロードします。
+- APIレスポンスは原則 `{ success: true, data }`、失敗時は `{ success: false, error }` です。
+- 要望フォームはSvelteKitのサーバールート `/api/feedback` からGitHub Issueを作成します。
+- 地図用トークンもSvelteKitのサーバールートを経由し、秘密値をブラウザへ直接埋め込みません。
 
-### XSS対策
-- Svelteの自動エスケープ
-- Content Security Policy
+## 主要フロー
 
-### CSRF対策
-- 現在未実装（今後検討）
+### しおりの作成と編集
 
-## 今後の展望
+```mermaid
+sequenceDiagram
+    participant W as Web
+    participant A as Worker API
+    participant D as D1
+    W->>A: POST /api/v1/itineraries
+    A->>D: itineraryを作成
+    A-->>W: itinerary + 編集JWT
+    W->>W: localStorageへ編集JWTを保存
+    W->>A: PUT itinerary / POST step
+    A->>A: 鍵付きならJWTを検証
+    A->>D: 更新
+```
 
-- [ ] テストカバレッジの向上
-- [ ] CI/CDパイプライン
-- [ ] エクスポート機能
-- [ ] パフォーマンスモニタリング
-- [ ] エラートラッキング
+パスワードなしの通常しおりは、URLを知っている人が編集できます。パスワード付きの
+しおりはbcryptハッシュをD1へ保存し、パスワード確認後にそのしおり専用JWTを発行します。
 
-## 参考リンク
+### アカウント
 
-- [SvelteKit ドキュメント](https://kit.svelte.dev/)
-- [Cloudflare Workers ドキュメント](https://developers.cloudflare.com/workers/)
-- [Cloudflare D1 ドキュメント](https://developers.cloudflare.com/d1/)
+Firebaseがメールアドレスとアカウントパスワードを管理し、D1の `users` はFirebase UID、
+ユーザー名、都道府県、メール確認状態を保持します。Workerは秘密鍵を持たず、Googleの
+公開証明書でFirebase IDトークンの署名、issuer、audience、期限、メール確認状態を検証します。
+
+アカウントは、しおりの基本作成・編集には必須ではありません。次の機能で使用します。
+
+- 作成済みしおりをマイページへ保存・同期する
+- 公開プロフィールと「みんなのしおり」へ公開する
+- 閲覧専用の公開スナップショットを自分用にコピーする
+
+### 共有と公開スナップショット
+
+共有には3種類あります。
+
+1. 元しおりのURL: トークンを含まない。鍵付きなら閲覧のみ、鍵なしなら編集も可能
+2. 編集用URL: しおりJWTをクエリに含み、受け取った人へ編集権限を渡す
+3. 公開用URL: `source_itinerary_id` を持つ閲覧専用スナップショット
+
+公開用スナップショットは、メモと予定内のメールアドレス、電話番号、予約番号、部屋番号を
+規則ベースで伏せ、シークレット設定、Walica、お金、持ち物をコピーしません。元しおりとは
+別レコードなので、変更後は再公開が必要です。
+
+### テーマのロード
+
+`apps/web/src/lib/themes/catalog.ts` が選択肢とWeb側の既定テーマを管理し、
+`apps/web/src/lib/themes/index.ts` の `loadTheme()` がテーマごとに動的importします。
+標準の春・夏・秋・冬は `standard-seasons/shared/` の機能実装を共有し、色やデモデータだけを
+季節別ディレクトリで差し替えます。
+
+### PWAとキャッシュ
+
+Service Workerはビルド成果物と静的ファイルをcache-firstで配信します。画面遷移とGETデータは
+network-firstで、成功したレスポンスをキャッシュします。未訪問データの完全なオフライン利用や、
+オフライン中の更新キューは提供していません。
+
+## API構成
+
+ベースパスは `/api/v1` です。
+
+| グループ | 主な用途 |
+|---|---|
+| `/auth` | しおり編集JWTの発行・検証 |
+| `/itineraries` | CRUD、公開スナップショット、コピー |
+| `/steps` | 予定のCRUD、シークレット表示制御 |
+| `/users` | アカウント初期化、プロフィール、保存・公開、検索 |
+| `/itineraries/:id/members` | 旅行メンバー |
+| `/itineraries/:id/money` | 予算、支出、精算 |
+| `/itineraries/:id/packing` | グループ、持ち物、チェック状態 |
+
+APIルートは `apps/api/src/index.ts` で明示的にmountします。ファイルを追加しただけでは公開されません。
+`timeline.ts` と `timeline.service.ts` は現在indexからmountされていない旧実装です。
+
+> [!WARNING]
+> `GET /api/v1/itineraries` は現在、認証なしで元しおりと公開スナップショットを含む全件を返し、
+> Webの `/itineraries` もその一覧を表示します。`user_bookmarks.is_visible = 0` は公開プロフィールと
+> 「みんなのしおり」へ載せない設定であり、しおり自体を非公開にするアクセス制御ではありません。
+
+## データ所有と権限
+
+現在の権限モデルでは、Firebaseアカウントとしおり編集権限は別物です。
+
+| 対象 | 認証情報 | 判定 |
+|---|---|---|
+| 鍵なししおりの編集 | なし | 公開スナップショットでなければ可 |
+| 鍵付きしおりの編集 | しおりJWT | JWTの `shioriId` が対象IDと一致 |
+| マイページ・公開設定 | Firebase ID token | メール確認済みかつプロフィール設定済み |
+| 公開しおりのコピー | Firebase ID token | ログイン・プロフィール設定が必須 |
+
+アカウントに保存されたことだけでは、しおりの編集権限にはなりません。逆に、編集用URLを
+持っていても、そのしおりが自動的に特定アカウントの所有物になるわけではありません。
+
+## セキュリティ上の要点
+
+- しおりパスワードはbcryptでハッシュ化する
+- しおりJWTとFirebase ID tokenは用途を分離する
+- Firebase Web設定値は公開識別子、`JWT_SECRET` や外部APIトークンはサーバー側secretとして扱う
+- Markdownは許可タグ・属性・URLスキームを限定してサニタイズする
+- 公開用変換は補助的な規則ベース処理なので、公開前に利用者自身でも内容を確認する
+- 公開スナップショットはAPIでも更新・削除・予定変更を拒否する
+- 現行の全件一覧APIを残す間は、通常しおりも非公開データとして扱わない
+
+データベースの詳細は[データベース](database.md)、認証環境の設定は
+[Firebaseアカウント認証](account-auth.md)を参照してください。

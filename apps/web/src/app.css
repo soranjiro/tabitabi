@@ -6,3 +6,20 @@ body {
   @apply text-gray-900;
   background-color: #f9fafb;
 }
+
+/*
+ * iOS Safari zooms the page when a form control with text smaller than 16px
+ * receives focus. Keep text-entry controls at the no-zoom threshold on touch
+ * devices while leaving checkboxes, radios, and other non-text inputs alone.
+ */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not(
+      [type="range"]
+    ):not([type="color"]):not([type="file"]):not([type="button"]):not(
+      [type="submit"]
+    ):not([type="reset"]):not([type="image"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

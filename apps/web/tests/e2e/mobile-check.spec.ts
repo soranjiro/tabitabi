@@ -2,6 +2,9 @@ import { test, expect, devices } from "@playwright/test";
 
 test.use({
   ...devices["iPhone 13"],
+  // Keep the project browser (Chromium) while emulating the iPhone viewport,
+  // touch input, device scale factor, and user agent.
+  defaultBrowserType: undefined,
 });
 
 test.describe("Mobile Home Page", () => {
@@ -64,5 +67,42 @@ test.describe("Mobile Home Page", () => {
       window.getComputedStyle(el).opacity
     );
     console.log("Section header opacity:", headerOpacity);
+  });
+
+  test("should keep text-entry controls at 16px to prevent iOS focus zoom", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const fontSizes = await page.evaluate(() => {
+      const fixture = document.createElement("div");
+      fixture.innerHTML = `
+        <input data-control="text" type="text" style="font-size: 12px" />
+        <input data-control="email" type="email" style="font-size: 12px" />
+        <input data-control="date" type="date" style="font-size: 12px" />
+        <textarea data-control="textarea" style="font-size: 12px"></textarea>
+        <select data-control="select" style="font-size: 12px"><option>Option</option></select>
+        <input data-control="checkbox" type="checkbox" style="font-size: 12px" />
+      `;
+      document.body.appendChild(fixture);
+
+      return Object.fromEntries(
+        Array.from(fixture.querySelectorAll<HTMLElement>("[data-control]")).map(
+          (control) => [
+            control.dataset.control,
+            window.getComputedStyle(control).fontSize,
+          ],
+        ),
+      );
+    });
+
+    expect(fontSizes).toMatchObject({
+      text: "16px",
+      email: "16px",
+      date: "16px",
+      textarea: "16px",
+      select: "16px",
+      checkbox: "12px",
+    });
   });
 });

@@ -241,9 +241,28 @@
   .standard-bottom-nav {
     bottom: 10px;
     height: 64px;
-    padding: 0 24px;
-    gap: 14px;
-    padding: 0 16px;
+    width: calc(100% - 24px);
+    min-width: 0;
+    max-width: 440px;
+    box-sizing: border-box;
+    justify-content: space-around;
+    gap: 0;
+    padding: 0 8px;
+    border-radius: 22px;
+  }
+
+  .standard-bottom-btn {
+    min-width: 52px;
+    padding: 7px 5px;
+  }
+
+  .standard-bottom-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .standard-bottom-btn span {
+    font-size: 0.6rem;
   }
 }
 

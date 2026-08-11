@@ -453,9 +453,6 @@
         <p class="standard-public-disclosure">{publicNotice}</p>
       {/if}
     <BottomNav
-        {hasEditPermission}
-        canRequestEdit={!isSharedSnapshot}
-        onEditModeToggle={handleEditModeToggle}
         onViewModeClick={() => (showViewModeSelector = true)}
         onMoneyOpen={() => (showMoney = true)}
         onPackingOpen={() => (showPacking = true)}
@@ -506,12 +503,15 @@
   <MoreMenu
     show={showMoreMenu}
     canConfigure={hasEditPermission}
+    canRequestEdit={!isSharedSnapshot}
+    {hasEditPermission}
     onShare={() => {
       if (hasEditPermission) showShareDialog = true;
       else void copyViewOnlyLink();
     }}
     onPrint={openPrintPreview}
     onSettings={() => (showSettingsDialog = true)}
+    onEditModeToggle={handleEditModeToggle}
     onClose={() => (showMoreMenu = false)}
   />
 

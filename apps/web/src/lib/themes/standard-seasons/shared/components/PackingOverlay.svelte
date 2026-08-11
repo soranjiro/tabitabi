@@ -164,6 +164,7 @@
       {:else}
         <button class="standard-packing-me" onclick={() => showIdentity = true}><span>👤 自分</span><strong>{me?.name ?? '選択してください'}</strong><i>⌄</i></button>
         <div class="standard-packing-tabs" role="tablist"><button class:active={tab === 'mine'} onclick={() => tab = 'mine'}>自分</button><button class:active={tab === 'everyone'} onclick={() => tab = 'everyone'}>みんな</button></div>
+        {#if canEdit}<button class="standard-packing-add" onclick={openAdd}><span>＋</span> 持ち物を追加</button>{/if}
 
         {#if tab === 'mine' && me}
           <div class="standard-packing-content">
@@ -184,7 +185,6 @@
             </section>
           </div>
         {/if}
-        {#if canEdit}<button class="standard-packing-add" onclick={openAdd}>＋ 持ち物を追加</button>{/if}
       {/if}
     </div>
 

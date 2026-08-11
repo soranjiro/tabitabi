@@ -33,9 +33,16 @@ function parseMemo(value: string | null | undefined): MemoRecord {
   return { text: '' };
 }
 
-function redactSensitiveText(value: string | null | undefined): string {
+function redactSensitiveText(value: string | null | undefined, sensitiveValues: string[] = []): string {
   if (!value) return '';
-  return SENSITIVE_PATTERNS.reduce((text, pattern) => text.replace(pattern, '[非公開]'), value).trim();
+  const redacted = SENSITIVE_PATTERNS.reduce((text, pattern) => text.replace(pattern, '[非公開]'), value);
+  const normalizedValues = [...new Set(sensitiveValues.map((item) => item.trim()).filter(Boolean))]
+    .sort((left, right) => right.length - left.length);
+  return normalizedValues.reduce((text, item) => text.replaceAll(item, '[非公開]'), redacted).trim();
+}
+
+export function createPublicTextSnapshot(value: string | null | undefined, sensitiveValues: string[] = []): string {
+  return redactSensitiveText(value, sensitiveValues);
 }
 
 function safeUrl(value: unknown): string | undefined {
@@ -106,12 +113,12 @@ export function buildAffiliateUrl(rawUrl: string | undefined, env?: Partial<Env>
   return { url: fallback.toString(), provider };
 }
 
-export function createPublicStepSnapshot(row: Record<string, unknown>, env?: Partial<Env>) {
+export function createPublicStepSnapshot(row: Record<string, unknown>, env?: Partial<Env>, sensitiveValues: string[] = []) {
   const notes = parseMemo(row.notes as string | null | undefined);
   const sourceLink = safeUrl(row.link) ?? safeUrl(notes.booking_url);
   const affiliate = buildAffiliateUrl(sourceLink, env);
   const publicNotes: MemoRecord = {
-    text: redactSensitiveText(notes.text),
+    text: redactSensitiveText(notes.text, sensitiveValues),
   };
 
   if (sourceLink) {
@@ -121,8 +128,8 @@ export function createPublicStepSnapshot(row: Record<string, unknown>, env?: Par
     publicNotes.affiliate_disclosure = AFFILIATE_DISCLOSURE;
   }
 
-  const title = redactSensitiveText(row.title as string);
-  const location = redactSensitiveText(row.location as string | null | undefined);
+  const title = redactSensitiveText(row.title as string, sensitiveValues);
+  const location = redactSensitiveText(row.location as string | null | undefined, sensitiveValues);
 
   return {
     title: title || '旅の予定',
@@ -136,10 +143,10 @@ export function createPublicStepSnapshot(row: Record<string, unknown>, env?: Par
   };
 }
 
-export function createPublicMemoSnapshot(memo: string | null | undefined): string {
+export function createPublicMemoSnapshot(memo: string | null | undefined, sensitiveValues: string[] = []): string {
   const parsed = parseMemo(memo);
   return JSON.stringify({
-    text: redactSensitiveText(parsed.text),
+    text: redactSensitiveText(parsed.text, sensitiveValues),
     affiliate_disclosure: AFFILIATE_DISCLOSURE,
   });
 }

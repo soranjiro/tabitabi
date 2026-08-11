@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto, invalidateAll } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
+  import { userApi } from "$lib/api/user";
   import { stepApi } from "$lib/api/step";
   import { auth } from "$lib/auth";
   import { userAuth } from "$lib/user-auth";
@@ -184,8 +185,16 @@
     }
   }
 
-  async function handlePublishItinerary() {
-    const result = await itineraryApi.publish(data.itinerary.id);
+  async function handlePublishItinerary(metadata: {
+    prefectureSlugs: string[];
+    areas: string[];
+    tags: string[];
+  }) {
+    const result = await userApi.publishBookmark(data.itinerary.id, {
+      prefecture_slugs: metadata.prefectureSlugs,
+      areas: metadata.areas,
+      tags: metadata.tags,
+    });
     return result.id;
   }
 

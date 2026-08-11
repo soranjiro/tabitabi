@@ -12,6 +12,8 @@
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { getIsDemoMode } from "$lib/demo";
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
+  import { userAuth } from "$lib/user-auth";
   import StepList from "./StepList.svelte";
   import EventDetailDialog from "./components/EventDetailDialog.svelte";
   import BottomNav from "./components/BottomNav.svelte";
@@ -19,6 +21,7 @@
   import MemoDialog from "./components/MemoDialog.svelte";
   import PasswordDialog from "./components/PasswordDialog.svelte";
   import ShareDialog from "./components/ShareDialog.svelte";
+  import PublishDialog from "./components/PublishDialog.svelte";
   import MoreMenu from "./components/MoreMenu.svelte";
   import MoneyOverlay from "./components/MoneyOverlay.svelte";
   import PackingOverlay from "./components/PackingOverlay.svelte";
@@ -68,7 +71,11 @@
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
     onReorderSteps?: (...args: unknown[]) => Promise<void> | void;
-    onPublishItinerary?: () => Promise<string>;
+    onPublishItinerary?: (metadata?: {
+      prefectureSlugs: string[];
+      areas: string[];
+      tags: string[];
+    }) => Promise<string>;
   }
 
   let {
@@ -90,6 +97,8 @@
   let createStepTemplate = $state<Step | null>(null);
   let showCopyMessage = $state(false);
   let showShareDialog = $state(false);
+  let showPublishDialog = $state(false);
+  let loggedInForPublish = $state(false);
   let showMoreMenu = $state(false);
   let hasEditPermission = $state(false);
   let showPasswordDialog = $state(false);
@@ -170,6 +179,12 @@
 
     if (hasEditPermission) {
       auth.updateAccessTime(itinerary.id, itinerary.title);
+    }
+
+    if (onPublishItinerary && new URLSearchParams(window.location.search).get("publish") === "1") {
+      loggedInForPublish = userAuth.isLoggedIn();
+      showPublishDialog = true;
+      window.history.replaceState({}, "", window.location.pathname);
     }
   });
 
@@ -284,21 +299,23 @@
     }
   }
 
-  async function copyPublishedLink() {
-    if (!onPublishItinerary) return;
-    try {
-      const publishedId = await onPublishItinerary();
-      const url = `${window.location.origin}/itineraries/${publishedId}`;
-      await navigator.clipboard.writeText(url);
-      showShareDialog = false;
-      showCopyMessage = true;
-      setTimeout(() => {
-        showCopyMessage = false;
-      }, 2000);
-    } catch (err) {
-      console.error("Failed to publish:", err);
-      alert("公開用リンクの作成に失敗しました");
-    }
+  function openPublishDialog() {
+    loggedInForPublish = userAuth.isLoggedIn();
+    showPublishDialog = true;
+  }
+
+  function goToPublishLogin() {
+    sessionStorage.setItem("tabitabi_pending_publish", itinerary.id);
+    void goto("/profile");
+  }
+
+  async function publishToExplore(metadata: {
+    prefectureSlugs: string[];
+    areas: string[];
+    tags: string[];
+  }) {
+    if (!onPublishItinerary) throw new Error("PUBLISH_UNAVAILABLE");
+    return onPublishItinerary(metadata);
   }
 
   async function handleTitleUpdate() {
@@ -494,22 +511,30 @@
     show={showShareDialog}
     {hasEditPermission}
     onCopyLink={copyShareLink}
-    onPublishLink={onPublishItinerary && !itinerary.source_itinerary_id
-      ? copyPublishedLink
-      : undefined}
     onClose={() => (showShareDialog = false)}
+  />
+
+  <PublishDialog
+    show={showPublishDialog}
+    isLoggedIn={loggedInForPublish}
+    sourceText={`${itinerary.title} ${steps.map((step) => step.location ?? "").join(" ")}`}
+    onLogin={goToPublishLogin}
+    onPublish={publishToExplore}
+    onClose={() => (showPublishDialog = false)}
   />
 
   <MoreMenu
     show={showMoreMenu}
     canConfigure={hasEditPermission}
     canRequestEdit={!isSharedSnapshot}
+    canPublish={hasEditPermission && !!onPublishItinerary && !isSharedSnapshot}
     {hasEditPermission}
     onShare={() => {
       if (hasEditPermission) showShareDialog = true;
       else void copyViewOnlyLink();
     }}
     onPrint={openPrintPreview}
+    onPublish={openPublishDialog}
     onSettings={() => (showSettingsDialog = true)}
     onEditModeToggle={handleEditModeToggle}
     onClose={() => (showMoreMenu = false)}

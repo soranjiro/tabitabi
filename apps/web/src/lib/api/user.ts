@@ -11,6 +11,8 @@ import type {
   UserSearchResult,
   ApiResult,
   UserSessionProfile,
+  PublishItineraryInput,
+  PublishItineraryResponse,
 } from '@tabitabi/types';
 import { userAuth } from '../user-auth';
 
@@ -68,8 +70,23 @@ export const userApi = {
       body: JSON.stringify(data),
     }),
 
-  getPublicFeed: (offset: number) =>
-    request<PublicFeedResponse>(`/users?offset=${offset}`),
+  publishBookmark: (itineraryId: string, data: PublishItineraryInput) =>
+    request<PublishItineraryResponse>(`/users/me/bookmarks/${itineraryId}/publish`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  unpublishBookmark: (itineraryId: string) =>
+    request<{ unpublished: boolean }>(`/users/me/bookmarks/${itineraryId}/publication`, {
+      method: 'DELETE',
+    }),
+
+  getPublicFeed: (offset: number, filters: { prefecture?: string; tag?: string } = {}) => {
+    const params = new URLSearchParams({ offset: String(offset) });
+    if (filters.prefecture) params.set('prefecture', filters.prefecture);
+    if (filters.tag) params.set('tag', filters.tag);
+    return request<PublicFeedResponse>(`/users?${params}`);
+  },
 
   searchUsers: (query: string) =>
     request<{ users: UserSearchResult[] }>(`/users/search?q=${encodeURIComponent(query)}`),

@@ -11,12 +11,15 @@ import type {
   ItinerarySecretRecord,
   ItineraryWalicaSettingsRecord,
   MoneyData,
+  PackingData,
+  TripMember,
 } from '@tabitabi/types';
 
 const DEMO_KEY = 'tabitabi_demo';
 
 const cloneMoneyData = (money: MoneyData): MoneyData =>
   JSON.parse(JSON.stringify(money)) as MoneyData;
+const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 export interface DemoData {
   itinerary: Itinerary;
@@ -24,6 +27,8 @@ export interface DemoData {
   itinerary_secrets?: ItinerarySecretRecord | null;
   itinerary_walica_settings?: ItineraryWalicaSettingsRecord | null;
   itinerary_money?: MoneyData | null;
+  itinerary_members?: TripMember[];
+  itinerary_packing?: PackingData | null;
 }
 
 interface StoredDemoData {
@@ -32,6 +37,8 @@ interface StoredDemoData {
   itinerary_secrets?: ItinerarySecretRecord | null;
   itinerary_walica_settings?: ItineraryWalicaSettingsRecord | null;
   itinerary_money?: MoneyData | null;
+  itinerary_members?: TripMember[];
+  itinerary_packing?: PackingData | null;
 }
 
 export const demoStorage = {
@@ -113,6 +120,38 @@ export const demoStorage = {
     const data = this.getData();
     if (!data) return;
     this.saveData({ ...data, itinerary_money: cloneMoneyData(money) });
+  },
+
+  getMembers(): TripMember[] {
+    const data = this.getData();
+    if (!data) return [];
+    return clone(data.itinerary_members ?? data.itinerary_money?.members ?? []);
+  },
+
+  setMembers(members: TripMember[]): void {
+    const data = this.getData();
+    if (!data) return;
+    const itineraryMoney = data.itinerary_money
+      ? { ...data.itinerary_money, members: clone(members) }
+      : data.itinerary_money;
+    const itineraryPacking = data.itinerary_packing
+      ? { ...data.itinerary_packing, members: clone(members) }
+      : data.itinerary_packing;
+    this.saveData({ ...data, itinerary_members: clone(members), itinerary_money: itineraryMoney, itinerary_packing: itineraryPacking });
+  },
+
+  getPackingData(): PackingData | null {
+    const packing = this.getData()?.itinerary_packing;
+    return packing ? clone(packing) : null;
+  },
+
+  setPackingData(packing: PackingData): void {
+    const data = this.getData();
+    if (!data) return;
+    const itineraryMoney = data.itinerary_money
+      ? { ...data.itinerary_money, members: clone(packing.members) }
+      : data.itinerary_money;
+    this.saveData({ ...data, itinerary_packing: clone(packing), itinerary_members: clone(packing.members), itinerary_money: itineraryMoney });
   },
 
   /**
@@ -252,6 +291,8 @@ export const demoStorage = {
       itinerary_secrets: demoData.itinerary_secrets ?? null,
       itinerary_walica_settings: demoData.itinerary_walica_settings ?? null,
       itinerary_money: demoData.itinerary_money ?? null,
+      itinerary_members: demoData.itinerary_members ?? demoData.itinerary_money?.members ?? [],
+      itinerary_packing: demoData.itinerary_packing ?? null,
     });
   },
 

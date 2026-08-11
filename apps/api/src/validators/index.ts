@@ -50,9 +50,11 @@ export const updateItinerarySchema = z.object({
 
 // ── Money management ──────────────────────────────────
 
-export const moneyMemberSchema = z.object({
+export const tripMemberSchema = z.object({
   name: z.string().trim().min(1, 'name is required').max(40, 'name must be at most 40 characters'),
 });
+
+export const moneyMemberSchema = tripMemberSchema;
 
 export const moneyItemSchema = z.object({
   title: z.string().trim().min(1, 'title is required').max(100, 'title must be at most 100 characters'),
@@ -72,6 +74,24 @@ export const updateMoneyItemSchema = moneyItemSchema.partial().refine(
 
 export const moneySettingsSchema = z.object({
   budget_amount: z.number().int().positive().max(100_000_000).nullable(),
+});
+
+// ── Packing list ──────────────────────────────────────
+
+export const packingItemSchema = z.object({
+  name: z.string().trim().min(1, 'name is required').max(100, 'name must be at most 100 characters'),
+  kind: z.enum(['personal', 'shared']),
+  assignee_member_id: z.string().nullable().optional(),
+});
+
+export const updatePackingItemSchema = packingItemSchema.partial().refine(
+  (data) => Object.keys(data).length > 0,
+  { message: 'at least one field is required' },
+);
+
+export const packingCheckSchema = z.object({
+  member_id: z.string().nullable().optional(),
+  checked: z.boolean(),
 });
 
 // ── Profile / Password ─────────────────────────────────

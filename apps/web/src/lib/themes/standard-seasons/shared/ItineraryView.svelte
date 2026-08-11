@@ -21,6 +21,7 @@
   import ShareDialog from "./components/ShareDialog.svelte";
   import MoreMenu from "./components/MoreMenu.svelte";
   import MoneyOverlay from "./components/MoneyOverlay.svelte";
+  import PackingOverlay from "./components/PackingOverlay.svelte";
   import ViewModeSelector from "./components/ViewModeSelector.svelte";
   import SettingsDialog from "./components/SettingsDialog.svelte";
   import { renderMarkdown } from "./utils/markdown";
@@ -103,6 +104,7 @@
     itinerary.secret_settings?.offset_minutes ?? 60,
   );
   let showMoney = $state(false);
+  let showPacking = $state(false);
   let showViewModeSelector = $state(false);
   let currentViewMode = $state<ViewMode>(DEFAULT_VIEW_MODE);
   let defaultViewMode = $state<ViewMode>(
@@ -451,11 +453,9 @@
         <p class="standard-public-disclosure">{publicNotice}</p>
       {/if}
     <BottomNav
-        {hasEditPermission}
-        canRequestEdit={!isSharedSnapshot}
-        onEditModeToggle={handleEditModeToggle}
         onViewModeClick={() => (showViewModeSelector = true)}
         onMoneyOpen={() => (showMoney = true)}
+        onPackingOpen={() => (showPacking = true)}
         onMenuClick={() => (showMoreMenu = true)}
     />
   </div>
@@ -483,6 +483,13 @@
     onClose={() => (showMoney = false)}
   />
 
+  <PackingOverlay
+    show={showPacking}
+    itineraryId={itinerary.id}
+    canEdit={hasEditPermission}
+    onClose={() => (showPacking = false)}
+  />
+
   <ShareDialog
     show={showShareDialog}
     {hasEditPermission}
@@ -496,12 +503,15 @@
   <MoreMenu
     show={showMoreMenu}
     canConfigure={hasEditPermission}
+    canRequestEdit={!isSharedSnapshot}
+    {hasEditPermission}
     onShare={() => {
       if (hasEditPermission) showShareDialog = true;
       else void copyViewOnlyLink();
     }}
     onPrint={openPrintPreview}
     onSettings={() => (showSettingsDialog = true)}
+    onEditModeToggle={handleEditModeToggle}
     onClose={() => (showMoreMenu = false)}
   />
 
@@ -525,6 +535,7 @@
 
   <SettingsDialog
     show={showSettingsDialog}
+    itineraryId={itinerary.id}
     {themes}
     {selectedThemeId}
     defaultViewMode={defaultViewMode}

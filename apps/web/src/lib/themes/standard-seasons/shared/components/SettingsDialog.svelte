@@ -2,6 +2,7 @@
   import { PaletteIcon, SecretIcon } from "./icons/index.svelte";
   import Dialog from "./Dialog.svelte";
   import { VIEW_MODE_OPTIONS, type ViewMode } from "../utils/storage";
+  import TripMembersEditor from "./TripMembersEditor.svelte";
 
   interface ThemeOption {
     id: string;
@@ -11,6 +12,7 @@
 
   interface Props {
     show: boolean;
+    itineraryId: string;
     themes: ThemeOption[];
     selectedThemeId: string;
     defaultViewMode: ViewMode;
@@ -24,6 +26,7 @@
 
   let {
     show,
+    itineraryId,
     themes,
     selectedThemeId,
     defaultViewMode,
@@ -66,6 +69,19 @@
 
 <Dialog {show} title="設定" onClose={handleCancel}>
   <div class="standard-settings-page">
+    <div class="standard-settings-page-section">
+      <div class="standard-settings-page-section-header">
+        <span class="standard-settings-page-section-icon" aria-hidden="true">👥</span>
+        <h3>旅行メンバー</h3>
+      </div>
+      <p class="standard-settings-page-description">
+        持ち物とお金の管理で共通して使う、旅行内だけのメンバーです。
+      </p>
+      <TripMembersEditor {show} {itineraryId} />
+    </div>
+
+    <div class="standard-settings-page-divider"></div>
+
     <div class="standard-settings-page-section">
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->

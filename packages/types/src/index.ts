@@ -4,6 +4,8 @@ export * from './itinerary';
 export * from './itinerary-records';
 export * from './memo';
 export * from './money';
+export * from './trip-member';
+export * from './packing';
 export { STEP_TYPE, STEP_TYPE_CATEGORIES, STEP_TYPE_DEFAULT } from './step';
 export type { Step, CreateStepInput, UpdateStepInput, StepType } from './step';
 export { getStepDate, getStepTime, getStepEndTime, getStepEndDate, createTimestamp, createEndTimestamp } from './step';

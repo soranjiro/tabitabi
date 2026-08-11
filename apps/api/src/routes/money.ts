@@ -48,7 +48,7 @@ async function assertMembersBelongToItinerary(
   if (!ids.length) return false;
   const placeholders = ids.map(() => '?').join(', ');
   const result = await db.prepare(
-    `SELECT COUNT(*) as count FROM itinerary_money_members WHERE itinerary_id = ? AND id IN (${placeholders})`,
+    `SELECT COUNT(*) as count FROM itinerary_members WHERE itinerary_id = ? AND id IN (${placeholders})`,
   ).bind(itineraryId, ...ids).first<{ count: number }>();
   return Number(result?.count ?? 0) === ids.length;
 }
@@ -66,7 +66,7 @@ money.get('/itineraries/:id/money', async (c) => {
   }
   const [settings, membersResult, itemsResult] = await Promise.all([
     c.env.DB.prepare('SELECT budget_amount FROM itinerary_money_settings WHERE itinerary_id = ?').bind(itineraryId).first<{ budget_amount: number | null }>(),
-    c.env.DB.prepare('SELECT id, itinerary_id, name, created_at FROM itinerary_money_members WHERE itinerary_id = ? ORDER BY created_at ASC').bind(itineraryId).all<MoneyMember>(),
+    c.env.DB.prepare('SELECT id, itinerary_id, name, created_at FROM itinerary_members WHERE itinerary_id = ? ORDER BY created_at ASC').bind(itineraryId).all<MoneyMember>(),
     c.env.DB.prepare('SELECT * FROM itinerary_money_items WHERE itinerary_id = ? ORDER BY status ASC, occurred_on ASC, created_at DESC').bind(itineraryId).all(),
   ]);
   const data: MoneyData = {
@@ -95,8 +95,10 @@ money.post('/itineraries/:id/money/members', optionalAuthMiddleware, zValidator(
   if (denied) return denied;
   const now = getCurrentTimestamp();
   const member: MoneyMember = { id: generateId(), itinerary_id: itineraryId, name: c.req.valid('json').name, created_at: now };
-  await c.env.DB.prepare('INSERT INTO itinerary_money_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)')
-    .bind(member.id, member.itinerary_id, member.name, member.created_at).run();
+  await c.env.DB.batch([
+    c.env.DB.prepare('INSERT INTO itinerary_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)').bind(member.id, member.itinerary_id, member.name, member.created_at),
+    c.env.DB.prepare('INSERT OR IGNORE INTO itinerary_money_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)').bind(member.id, member.itinerary_id, member.name, member.created_at),
+  ]);
   return c.json({ success: true, data: member }, 201);
 });
 
@@ -105,12 +107,14 @@ money.put('/itineraries/:id/money/members/:memberId', optionalAuthMiddleware, zV
   const memberId = c.req.param('memberId')!;
   const denied = await canEdit(c, itineraryId);
   if (denied) return denied;
-  const current = await c.env.DB.prepare('SELECT id, itinerary_id, name, created_at FROM itinerary_money_members WHERE id = ? AND itinerary_id = ?')
+  const current = await c.env.DB.prepare('SELECT id, itinerary_id, name, created_at FROM itinerary_members WHERE id = ? AND itinerary_id = ?')
     .bind(memberId, itineraryId).first<MoneyMember>();
   if (!current) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Member not found' } }, 404);
   const name = c.req.valid('json').name;
-  await c.env.DB.prepare('UPDATE itinerary_money_members SET name = ? WHERE id = ? AND itinerary_id = ?')
-    .bind(name, memberId, itineraryId).run();
+  await c.env.DB.batch([
+    c.env.DB.prepare('UPDATE itinerary_members SET name = ? WHERE id = ? AND itinerary_id = ?').bind(name, memberId, itineraryId),
+    c.env.DB.prepare('UPDATE itinerary_money_members SET name = ? WHERE id = ? AND itinerary_id = ?').bind(name, memberId, itineraryId),
+  ]);
   return c.json({ success: true, data: { ...current, name } });
 });
 
@@ -119,12 +123,15 @@ money.delete('/itineraries/:id/money/members/:memberId', optionalAuthMiddleware,
   const memberId = c.req.param('memberId')!;
   const denied = await canEdit(c, itineraryId);
   if (denied) return denied;
-  const member = await c.env.DB.prepare('SELECT id FROM itinerary_money_members WHERE id = ? AND itinerary_id = ?').bind(memberId, itineraryId).first();
+  const member = await c.env.DB.prepare('SELECT id FROM itinerary_members WHERE id = ? AND itinerary_id = ?').bind(memberId, itineraryId).first();
   if (!member) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Member not found' } }, 404);
   const referenced = await c.env.DB.prepare('SELECT id FROM itinerary_money_items WHERE itinerary_id = ? AND (paid_by_member_id = ? OR split_member_ids LIKE ?) LIMIT 1')
     .bind(itineraryId, memberId, `%${memberId}%`).first();
   if (referenced) return c.json({ success: false, error: { code: 'CONFLICT', message: 'Update or delete this member’s expenses first' } }, 409);
-  await c.env.DB.prepare('DELETE FROM itinerary_money_members WHERE id = ? AND itinerary_id = ?').bind(memberId, itineraryId).run();
+  await c.env.DB.batch([
+    c.env.DB.prepare('DELETE FROM itinerary_members WHERE id = ? AND itinerary_id = ?').bind(memberId, itineraryId),
+    c.env.DB.prepare('DELETE FROM itinerary_money_members WHERE id = ? AND itinerary_id = ?').bind(memberId, itineraryId),
+  ]);
   return c.json({ success: true, data: null });
 });
 

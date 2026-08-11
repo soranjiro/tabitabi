@@ -4,6 +4,8 @@
   max-width: 100%;
 }
 
+.standard-member-add{display:flex;gap:8px}.standard-member-add input,.standard-member-row input{min-width:0;flex:1;border:1.5px solid var(--theme-border);border-radius:10px;padding:10px;font:inherit}.standard-member-add button,.standard-member-row button{border:0;border-radius:9px;background:var(--theme-primary);color:#fff;padding:8px 12px;font:inherit;font-size:.8rem;font-weight:700;cursor:pointer}.standard-member-list{display:grid;gap:7px;margin-top:12px}.standard-member-row{display:flex;align-items:center;gap:8px;border:1px solid var(--theme-border);background:#fff;border-radius:11px;padding:8px}.standard-member-row strong{flex:1}.standard-member-avatar{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:rgba(169,53,41,.1);color:var(--theme-primary);font-size:.8rem;font-weight:800}.standard-member-row button.secondary{background:#efede9;color:var(--theme-text)}.standard-member-row button.delete{background:#fff0ee;color:#aa3b30}.standard-member-empty,.standard-member-error{font-size:.84rem;color:var(--theme-text-light)}.standard-member-error{color:#aa3b30}
+
 .standard-settings-page-title {
   font-size: 1.75rem;
   font-weight: 700;

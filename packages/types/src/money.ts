@@ -1,11 +1,9 @@
 export type MoneyItemStatus = 'paid' | 'planned';
 
-export interface MoneyMember {
-  id: string;
-  itinerary_id: string;
-  name: string;
-  created_at: string;
-}
+import type { TripMember } from './trip-member';
+
+/** @deprecated Use TripMember. Kept as an alias for existing money consumers. */
+export type MoneyMember = TripMember;
 
 export interface MoneyItem {
   id: string;
@@ -27,10 +25,6 @@ export interface MoneyData {
   budget_amount: number | null;
   members: MoneyMember[];
   items: MoneyItem[];
-}
-
-export interface CreateMoneyMemberInput {
-  name: string;
 }
 
 export interface CreateMoneyItemInput {

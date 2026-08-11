@@ -11,7 +11,8 @@
 
 /* Expense form: native inputs retain keyboard and screen-reader semantics while
    the visible controls have a comfortable touch target. */
-.standard-money-close { min-width:44px; min-height:44px; display:grid; place-items:center; }
+.standard-money-close { min-width:44px; min-height:44px; display:grid; place-items:center; line-height:0; }
+.standard-money-close svg { display:block; width:24px; height:24px; }
 .standard-money-field { display:grid; gap:.3rem; color:#59645b; font-size:.78rem; font-weight:700; }
 .standard-money-field small { color:#748075; font-size:.72rem; font-weight:400; line-height:1.45; }
 .standard-money-form-row { display:grid !important; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:.55rem; }

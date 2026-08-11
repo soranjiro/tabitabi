@@ -10,7 +10,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 32px;
+  gap: 24px;
   border-radius: 34px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.6);
@@ -241,8 +241,28 @@
   .standard-bottom-nav {
     bottom: 10px;
     height: 64px;
-    padding: 0 24px;
-    gap: 24px;
+    width: calc(100% - 24px);
+    min-width: 0;
+    max-width: 440px;
+    box-sizing: border-box;
+    justify-content: space-around;
+    gap: 0;
+    padding: 0 8px;
+    border-radius: 22px;
+  }
+
+  .standard-bottom-btn {
+    min-width: 52px;
+    padding: 7px 5px;
+  }
+
+  .standard-bottom-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .standard-bottom-btn span {
+    font-size: 0.6rem;
   }
 }
 

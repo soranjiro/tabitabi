@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import { prefectures, publicItineraries } from '$lib/explore/data';
+import { prefectures } from '$lib/explore/data';
 
 export const prerender = true;
 
@@ -11,15 +11,6 @@ export const GET: RequestHandler = async () => {
     <loc>${baseUrl}/area/${prefecture.slug}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-  </url>`)
-    .join('\n');
-
-  const itineraryUrls = publicItineraries
-    .map((itinerary) => `  <url>
-    <loc>${baseUrl}/itineraries/${itinerary.id}</loc>
-    <lastmod>${itinerary.publishedAt.replaceAll('.', '-')}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
   </url>`)
     .join('\n');
 
@@ -36,7 +27,6 @@ export const GET: RequestHandler = async () => {
     <priority>0.9</priority>
   </url>
 ${areaUrls}
-${itineraryUrls}
 </urlset>`;
 
   return new Response(sitemap, {

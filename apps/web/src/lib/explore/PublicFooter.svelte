@@ -1,11 +1,10 @@
 <footer>
-  <div class="footer-inner">
-    <a class="footer-brand" href="/">たびたび</a>
-    <p>旅のアイデアが、次の誰かのしおりになる。</p>
+  <div class="inner">
+    <a class="brand" href="/">✈ たびたび</a>
     <nav aria-label="フッターナビゲーション">
-      <a href="/explore">旅先から探す</a>
+      <a href="/explore">みんなのしおり</a>
+      <a href="/#create">しおりを作る</a>
       <a href="/docs/index">使い方</a>
-      <a href="/profile">マイページ</a>
     </nav>
     <small>© 2026 tabitabi</small>
   </div>
@@ -13,55 +12,51 @@
 
 <style>
   footer {
-    padding: 56px 20px 40px;
-    color: #dce9e6;
-    background: #163f42;
+    padding: 42px 20px;
+    border-top: 1px solid #e7ecf6;
+    color: #64748b;
+    background: white;
   }
 
-  .footer-inner {
-    width: min(1100px, 100%);
+  .inner {
+    display: flex;
+    width: min(1080px, 100%);
     margin: 0 auto;
-    text-align: center;
+    align-items: center;
+    gap: 28px;
   }
 
-  .footer-brand {
-    color: white;
+  .brand {
+    color: #315da8;
     text-decoration: none;
-    font-size: 22px;
+    font-size: 16px;
     font-weight: 900;
-    letter-spacing: 0.05em;
-  }
-
-  p {
-    margin: 10px 0 24px;
-    color: #a8c3bf;
-    font-size: 13px;
   }
 
   nav {
     display: flex;
-    justify-content: center;
+    flex: 1;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 18px;
   }
 
   nav a {
-    color: #dce9e6;
+    color: inherit;
     text-decoration: none;
     font-size: 12px;
     font-weight: 700;
   }
 
-  nav a:hover {
-    color: white;
-    text-decoration: underline;
-  }
+  nav a:hover { color: #315da8; }
+  small { font-size: 10px; }
 
-  small {
-    display: block;
-    margin-top: 30px;
-    color: #6f9794;
-    font-size: 10px;
-    letter-spacing: 0.08em;
+  @media (max-width: 600px) {
+    .inner {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 18px;
+    }
+
+    nav { gap: 14px; }
   }
 </style>

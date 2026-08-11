@@ -1,233 +1,139 @@
 <script lang="ts">
-  import { prefectures } from "./data";
+  import { goto } from "$app/navigation";
+  import { onMount, tick } from "svelte";
+  import { prefectures, type ExplorePrefecture } from "./data";
 
-  let { activeSlug = "" }: { activeSlug?: string } = $props();
+  let {
+    activeSlug = "",
+    counts = {},
+  }: { activeSlug?: string; counts?: Record<string, number> } = $props();
+
+  let mapHost = $state<HTMLDivElement | null>(null);
+  let mapMarkup = $state("");
+  let focused = $state<ExplorePrefecture | null>(
+    prefectures.find((item) => item.slug === activeSlug) ?? null,
+  );
+  let removeNodeListeners: (() => void)[] = [];
+
+  function clearNodeListeners() {
+    removeNodeListeners.forEach((remove) => remove());
+    removeNodeListeners = [];
+  }
+
+  function makeInteractive() {
+    clearNodeListeners();
+    if (!mapHost) return;
+
+    for (const node of mapHost.querySelectorAll<SVGGElement>(".prefecture")) {
+      const prefecture = prefectures.find((item) => item.id === Number(node.dataset.code));
+      if (!prefecture) continue;
+
+      node.setAttribute("role", "link");
+      node.setAttribute("tabindex", "0");
+      node.setAttribute("aria-label", `${prefecture.name}の旅行しおり ${counts[prefecture.slug] ?? 0}件`);
+      node.classList.toggle("is-active", prefecture.slug === activeSlug);
+
+      const preview = () => (focused = prefecture);
+      const select = () => void goto(`/area/${prefecture.slug}`);
+      const keyboard = (event: KeyboardEvent) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          select();
+        }
+      };
+
+      node.addEventListener("mouseenter", preview);
+      node.addEventListener("focus", preview);
+      node.addEventListener("click", select);
+      node.addEventListener("keydown", keyboard);
+      removeNodeListeners.push(() => {
+        node.removeEventListener("mouseenter", preview);
+        node.removeEventListener("focus", preview);
+        node.removeEventListener("click", select);
+        node.removeEventListener("keydown", keyboard);
+      });
+    }
+  }
+
+  async function loadMap(useMobileMap: boolean) {
+    const response = await fetch(
+      useMobileMap ? "/maps/japan-prefectures-mobile.svg" : "/maps/japan-prefectures.svg",
+    );
+    mapMarkup = await response.text();
+    await tick();
+    makeInteractive();
+  }
+
+  onMount(() => {
+    const media = window.matchMedia("(max-width: 640px)");
+    void loadMap(media.matches);
+    const handleChange = (event: MediaQueryListEvent) => void loadMap(event.matches);
+    media.addEventListener("change", handleChange);
+    return () => {
+      clearNodeListeners();
+      media.removeEventListener("change", handleChange);
+    };
+  });
 </script>
 
 <div class="map-shell">
-  <div class="map-toolbar">
-    <p><span aria-hidden="true">⌖</span> 地図から都道府県を選ぶ</p>
-    <span class="scroll-hint">横に動かせます →</span>
+  <div class="map-copy">
+    <strong>{focused?.name ?? "都道府県を選択"}</strong>
+    <span>{focused ? `${counts[focused.slug] ?? 0}件の公開しおり` : "地図をタップして探せます"}</span>
   </div>
-  <div class="map-scroll" aria-label="日本地図。横にスクロールできます">
-    <div class="map" role="img" aria-label="47都道府県から選べる日本地図">
-      <span class="sea-label sea-label-top" aria-hidden="true">SEA OF JAPAN</span>
-      <span class="sea-label sea-label-bottom" aria-hidden="true">PACIFIC OCEAN</span>
-      <span class="route-line" aria-hidden="true"></span>
-      {#each prefectures as prefecture}
-        <a
-          href="/area/{prefecture.slug}"
-          class="prefecture"
-          class:active={prefecture.slug === activeSlug}
-          class:popular={prefecture.count >= 85}
-          style={`--x:${prefecture.x}%;--y:${prefecture.y}%`}
-          aria-label="{prefecture.name}の旅行しおり {prefecture.count}件"
-          title="{prefecture.name} · {prefecture.count}件"
-        >
-          {prefecture.shortName}
-        </a>
-      {/each}
-    </div>
+  <div class="map-host" bind:this={mapHost} aria-label="47都道府県から選べる日本地図">
+    {@html mapMarkup}
   </div>
-  <div class="map-legend">
-    <span><i class="dot popular-dot"></i> しおりが多い旅先</span>
-    <span><i class="dot"></i> 都道府県を選択</span>
-  </div>
+  <p class="attribution">
+    地図データ: <a href="https://github.com/geolonia/japanese-prefectures" rel="noreferrer">Geolonia</a> / Wikipedia (GFDL)
+  </p>
 </div>
 
 <style>
   .map-shell {
     overflow: hidden;
-    border: 1px solid #dfe7df;
-    border-radius: 24px;
-    background: #f2f7f1;
-    box-shadow: 0 18px 50px rgba(38, 75, 68, 0.08);
+    border: 1px solid #e1e8f4;
+    border-radius: 20px;
+    background: linear-gradient(145deg, #f7faff, #eef4ff);
   }
 
-  .map-toolbar {
+  .map-copy {
     display: flex;
-    align-items: center;
+    padding: 18px 20px 4px;
+    align-items: baseline;
     justify-content: space-between;
-    padding: 16px 20px 10px;
+    gap: 12px;
   }
 
-  .map-toolbar p {
+  .map-copy strong { color: #263b60; font-size: 15px; }
+  .map-copy span { color: #7b8aa2; font-size: 11px; }
+
+  .map-host {
+    width: min(680px, 96%);
+    margin: -16px auto -8px;
+    aspect-ratio: 1;
+  }
+
+  .map-host :global(.geolonia-svg-map) { display: block; width: 100%; height: 100%; }
+  .map-host :global(.prefecture) { fill: #dbe8fb !important; stroke: #ffffff !important; stroke-width: 1.6 !important; cursor: pointer; outline: none; transition: fill 130ms ease, filter 130ms ease; }
+  .map-host :global(.prefecture:hover),
+  .map-host :global(.prefecture:focus-visible) { fill: #769ee6 !important; filter: drop-shadow(0 4px 5px rgba(49, 93, 168, .22)); }
+  .map-host :global(.prefecture.is-active) { fill: #4d73cc !important; }
+  .map-host :global(.boundary-line) { stroke: #f7faff !important; }
+
+  .attribution {
     margin: 0;
-    color: #315658;
-    font-size: 12px;
-    font-weight: 800;
-  }
-
-  .map-toolbar p span {
-    margin-right: 5px;
-    color: #e56758;
-  }
-
-  .scroll-hint {
-    display: none;
-    color: #7a9391;
-    font-size: 10px;
-  }
-
-  .map-scroll {
-    overflow-x: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #b6cbc5 transparent;
-  }
-
-  .map {
-    position: relative;
-    width: 100%;
-    min-width: 760px;
-    height: 430px;
-    overflow: hidden;
-    background:
-      radial-gradient(circle at 72% 30%, rgba(255,255,255,.9) 0 2px, transparent 3px),
-      radial-gradient(circle at 25% 72%, rgba(255,255,255,.72) 0 2px, transparent 3px),
-      linear-gradient(146deg, #eff6f1, #e4f0ed);
-  }
-
-  .map::before,
-  .map::after {
-    position: absolute;
-    content: "";
-    border: 1px solid rgba(69, 115, 105, 0.1);
-    border-radius: 50%;
-  }
-
-  .map::before {
-    width: 440px;
-    height: 440px;
-    right: -120px;
-    top: -190px;
-  }
-
-  .map::after {
-    width: 520px;
-    height: 520px;
-    left: -190px;
-    bottom: -300px;
-  }
-
-  .sea-label {
-    position: absolute;
-    color: rgba(60, 105, 101, 0.25);
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.24em;
-  }
-
-  .sea-label-top {
-    left: 38%;
-    top: 19%;
-    transform: rotate(-22deg);
-  }
-
-  .sea-label-bottom {
-    right: 18%;
-    bottom: 7%;
-    transform: rotate(-12deg);
-  }
-
-  .route-line {
-    position: absolute;
-    left: 7%;
-    top: 18%;
-    width: 78%;
-    height: 66%;
-    border-bottom: 1px dashed rgba(67, 115, 107, 0.24);
-    border-radius: 50%;
-    transform: rotate(-17deg);
-  }
-
-  .prefecture {
-    position: absolute;
-    z-index: 2;
-    left: var(--x);
-    top: var(--y);
-    display: grid;
-    width: 42px;
-    height: 30px;
-    place-items: center;
-    border: 1px solid rgba(45, 92, 85, 0.18);
-    border-radius: 9px 9px 9px 3px;
-    color: #3f6664;
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: 0 3px 9px rgba(41, 76, 71, 0.07);
-    text-decoration: none;
-    font-size: 9px;
-    font-weight: 800;
-    transform: translate(-50%, -50%);
-    transition: 140ms ease;
-  }
-
-  .prefecture:hover,
-  .prefecture:focus-visible {
-    z-index: 4;
-    border-color: #e96859;
-    color: white;
-    background: #e96859;
-    outline: none;
-    box-shadow: 0 7px 16px rgba(233, 104, 89, 0.27);
-    transform: translate(-50%, -50%) scale(1.13);
-  }
-
-  .prefecture.popular {
-    border-color: rgba(226, 99, 82, 0.34);
-    color: #b84c40;
-    background: #fff4ec;
-  }
-
-  .prefecture.active {
-    z-index: 5;
-    border-color: #173f42;
-    color: white;
-    background: #173f42;
-    box-shadow: 0 0 0 5px rgba(23, 63, 66, 0.12);
-    transform: translate(-50%, -50%) scale(1.12);
-  }
-
-  .map-legend {
-    display: flex;
-    gap: 18px;
-    padding: 12px 20px 16px;
-    color: #7c8e8e;
-    background: rgba(255, 255, 255, 0.45);
+    padding: 0 16px 12px;
+    color: #9aa5b6;
+    text-align: right;
     font-size: 9px;
   }
 
-  .map-legend span {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
+  .attribution a { color: inherit; }
 
-  .dot {
-    width: 8px;
-    height: 8px;
-    border: 1px solid #9ab1ac;
-    border-radius: 50%;
-    background: white;
-  }
-
-  .popular-dot {
-    border-color: #e26352;
-    background: #fff0e6;
-  }
-
-  @media (max-width: 780px) {
-    .scroll-hint {
-      display: inline;
-    }
-
-    .map-scroll {
-      scroll-snap-type: x proximity;
-    }
-
-    .map {
-      min-width: 720px;
-      height: 405px;
-      scroll-snap-align: start;
-    }
+  @media (max-width: 640px) {
+    .map-shell { border-radius: 16px; }
+    .map-copy { padding: 15px 15px 0; }
+    .map-host { width: 100%; margin-top: -6px; }
   }
 </style>

@@ -1,6 +1,9 @@
 # Firebaseアカウント認証
 
-アカウント認証はFirebase Authenticationの無料Sparkプラン、プロフィールとしおりはCloudflare D1で管理します。WorkerにFirebaseの秘密鍵は置かず、Firebase IDトークンをGoogleの公開証明書で検証します。
+アカウント認証はFirebase Authentication、プロフィールと保存したしおりの関連はCloudflare D1で管理します。WorkerにFirebaseの秘密鍵は置かず、Firebase IDトークンをGoogleの公開証明書で検証します。
+
+> [!IMPORTANT]
+> Firebaseのアカウントパスワードと、しおりごとの編集パスワードは別の認証です。前者はマイページ・公開・コピー、後者は鍵付きしおりの編集に使用します。
 
 ## 1. Firebaseの初期設定
 
@@ -30,7 +33,7 @@ Webの`dev`と`build`は開始前に4項目を自動チェックします。不�
 
 GitHub Actionsからデプロイする場合は、Repository Settings > Secrets and variables > Actionsに同じ名前で4つのSecretを登録します。`deploy.yml`（本番）と`preview.yml`（PR Preview）が、WebビルドとAPIのWrangler設定へ自動的に反映します。
 
-Firebase ConsoleのAuthorized domainsには、本番の`tabitabi.pages.dev`に加えて、Previewで使うPagesドメイン（通常は`tabitabi.pages.dev`配下のPreviewホスト）も登録してください。
+Firebase ConsoleのAuthorized domainsには、本番の`tabitabi.pages.dev`に加えて、Workflowが出力するPages Previewのホストも登録してください。
 
 APIの各Wrangler環境には同じプロジェクトIDを設定します。
 
@@ -39,7 +42,7 @@ APIの各Wrangler環境には同じプロジェクトIDを設定します。
 FIREBASE_PROJECT_ID = "your-firebase-project-id"
 ```
 
-Firebase Web設定値はクライアント識別子であり秘密鍵ではありません。Workerでは`JWT_SECRET`を引き続き「しおり用トークン」にだけ使用します。
+Firebase Web設定値はクライアント識別子であり秘密鍵ではありません。Workerでは`JWT_SECRET`を「しおり編集用トークン」にだけ使用します。
 本番・プレビュー環境の`JWT_SECRET`は設定ファイルへ直書きせず、各環境にWrangler secretとして登録します。
 
 ```bash
@@ -66,7 +69,7 @@ pnpm dlx firebase-tools auth:import .auth-migration/firebase-users.json \
   --hash-algo=BCRYPT --project your-firebase-project-id
 ```
 
-生成処理はUID、メール重複、bcrypt形式を検証します。既存アカウントは`emailVerified: false`で取り込まれるため、利用者は以前のパスワードでログインしたあと、一度だけメール確認と都道府県設定を行います。
+生成処理はUID、メール重複、bcrypt形式を検証します。既存アカウントは`emailVerified: false`で取り込まれるため、利用者は以前のパスワードでログインしたあと、一度だけメール確認と都道府県設定を行います。移行後もD1の`password_hash`カラムは互換性のため残りますが、アプリはログインや変更に使用しません。
 
 インポート成功件数がD1件数と一致することをFirebase Consoleで確認し、機密ファイルを削除します。
 
@@ -78,7 +81,7 @@ rm .auth-migration/d1-users.json .auth-migration/firebase-users.json
 
 ```bash
 cd apps/api
-pnpm wrangler d1 migrations apply tabitabi --env production --remote
+pnpm wrangler d1 migrations apply DB --env production --remote
 pnpm deploy -- --env production
 cd ../web
 pnpm deploy
@@ -88,12 +91,14 @@ pnpm deploy
 
 ## セキュリティ仕様
 
-- Firebaseのメール確認が完了するまで非公開APIは利用不可
+- Firebaseのメール確認が完了するまでマイページ、公開設定、しおりコピーなどのアカウントAPIは利用不可
 - IDトークンの署名、期限、issuer、audience、UID、確認済みメールをWorkerで検証
 - 新規登録時と既存利用者の初回移行時に都道府県を必須入力
 - メール変更は新しいアドレスの確認後に反映
 - パスワード変更は現在のパスワードによる再認証が必要
 - 都道府県は非公開プロフィール情報
+
+Firebase ID tokenは`userAuthMiddleware`、しおり編集JWTは`optionalAuthMiddleware`で検証します。同じBearer headerを使用しますが、用途を取り違えないでください。
 
 ## 認証を含むE2Eテスト
 

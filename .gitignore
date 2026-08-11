@@ -167,3 +167,6 @@ apps/web/static/docs/
 
 # Partytown (generated from @qwik.dev/partytown)
 apps/web/static/~partytown/
+
+# .pnpm
+.pnpm-store/

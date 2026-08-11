@@ -18,28 +18,20 @@ interface RoutesJson {
 
 const routesJson: RoutesJson = JSON.parse(fs.readFileSync(ROUTES_FILE, 'utf-8'));
 
-const docsExcludes = routesJson.exclude.filter((rule) => rule.startsWith('/docs/') && rule.endsWith('.html'));
+// The adapter expands static and prerendered docs into one rule per file/path.
+// Collapse them so adding documentation pages cannot exceed Pages' 100-rule limit.
+const nonDocsExcludes = routesJson.exclude.filter(
+  (rule) => rule !== '/docs' && !rule.startsWith('/docs/')
+);
+routesJson.exclude = [...new Set([...nonDocsExcludes, '/docs', '/docs/*'])];
 
-const htmlLessExcludes = docsExcludes.map((rule) => rule.replace(/\.html$/, ''));
-
-const newExcludes = [...routesJson.exclude];
-for (const exclude of htmlLessExcludes) {
-  if (!newExcludes.includes(exclude)) {
-    newExcludes.push(exclude);
-  }
+const routeCount = routesJson.include.length + routesJson.exclude.length;
+if (routeCount > 100) {
+  throw new Error(`_routes.json has ${routeCount} rules; Cloudflare Pages allows at most 100`);
 }
-
-const directories = ['/docs', '/docs/user', '/docs/developer', '/docs/user/features', '/docs/user/features/common', '/docs/user/features/home', '/docs/user/features/themes'];
-for (const dir of directories) {
-  if (!newExcludes.includes(dir)) {
-    newExcludes.push(dir);
-  }
-}
-
-routesJson.exclude = newExcludes;
 
 fs.writeFileSync(ROUTES_FILE, JSON.stringify(routesJson, null, '\t'));
-console.log('Updated _routes.json with html-less doc paths');
+console.log(`Compacted docs routes in _routes.json (${routeCount}/100 rules)`);
 
 function inlineCssInHtml(htmlPath: string, baseDir: string, altAssetDirs: string[] = []): boolean {
   let html = fs.readFileSync(htmlPath, 'utf-8');

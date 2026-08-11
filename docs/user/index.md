@@ -1,62 +1,44 @@
 # 使い方ガイド
 
-> [!NOTE]
-> このドキュメントは作成中です。内容が実際の機能と異なる場合があります。
-
-「たびたび」で旅のしおりを作成・共有しましょう。
-
----
+「たびたび」で、旅程、持ち物、お金を1つのしおりにまとめて共有できます。
 
 ## はじめての方
 
-### Step 1: アプリを知る
-**[はじめに](getting-started.md)** - アプリの概要とインストール方法
+1. [はじめに](getting-started.md) — できることとインストール
+2. [基本的な使い方](basic-usage.md) — 作成、予定、共有
+3. [テーマの選び方](themes.md) — 標準テーマと特化テーマ
 
-### Step 2: しおりを作る
-**[基本的な使い方](basic-usage.md)** - しおりの作成・編集・共有
+しおりの作成・編集にアカウント登録は必須ではありません。アカウントを作ると、複数端末で
+しおりを保存したり、公開プロフィールへ掲載したり、公開しおりをコピーしたりできます。
 
-### Step 3: デザインを選ぶ
-**[テーマの選び方](themes.md)** - 各テーマの特徴と選び方
+## 機能から探す
 
----
+### しおりの基本
 
-## もっと詳しく
+- [編集パスワードと編集モード](features/common/auth.md)
+- [メモとMarkdown](features/common/memo.md)
+- [共有リンク・公開・コピー](features/common/sharing.md)
+- [アカウントとマイページ](features/common/account.md)
+- [旅行メンバー](features/common/members.md)
 
-### [機能一覧](features/index.md)
-すべての機能を詳しく解説
+### 標準テーマの旅支度
 
-- ホーム画面の機能
-- 共通機能（認証・メモ・共有など）
-- テーマ独自の機能
+- [表示モード](features/common/view-modes.md)
+- [持ち物リスト](features/common/packing.md)
+- [お金の管理](features/common/money.md)
+- [印刷・PDF保存](features/common/print-pdf.md)
 
-### [よくある質問](faq.md)
-困ったときはこちら
+### ホームと端末
 
-- データの保存場所は？
-- オフラインでも使える？
-- パスワードを忘れた...
+- [最近のしおり](features/home/recent-items.md)
+- [共有URLを開く](features/home/url-sharing.md)
+- [PWAとしてインストール](features/home/pwa.md)
 
----
+すべてのページは[機能一覧](features/index.md)から確認できます。困ったときは
+[よくある質問](faq.md)をご覧ください。
 
-## 💡 機能リクエスト・フィードバック
+## フィードバック
 
-「こんな機能がほしい」「ここが使いにくい」などのご意見をお待ちしています！
-
-### フィードバックを送る
-
-1. **[GitHub Issues](https://github.com/soranjiro/tabitabi/issues)** でバグ報告・機能要望
-2. **[GitHub Discussions](https://github.com/soranjiro/tabitabi/discussions)** で質問・アイデア共有
-
-### 自分で作ってみる
-
-「たびたび」はオープンソースです。プログラミングができる方は、自分で機能を追加することもできます！
-
-- 新しいテーマを作りたい
-- 欲しい機能を自分で実装したい
-- バグを見つけたので直したい
-
-**[開発者ガイドへ →](../developer/index.md)**
-
----
-
-**それでは、楽しい旅の計画を！** ✈️
+ホーム画面のフィードバックボタン、または
+[GitHub Issues](https://github.com/soranjiro/tabitabi/issues)から不具合・要望を送れます。
+実装に参加する方は[開発者ガイド](../developer/index.md)を参照してください。

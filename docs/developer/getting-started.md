@@ -1,264 +1,179 @@
-# 開発ガイド
+# 開発を始める
 
-## 開発方針
+## 必要な環境
 
-### 軽量なサイトを目指す
+- Node.js 22（CIと同じメジャーバージョンを推奨）
+- pnpm 10.16.1
+- Git
+- Cloudflareアカウント（リモートD1やデプロイを行う場合）
+- Firebaseプロジェクト（アカウント画面を実際に動かす場合）
 
-パフォーマンスを重視し、軽量なサイトを維持する。
+## 初回セットアップ
 
-- 画像は適切に圧縮する（WebP推奨、必要に応じてpngquant/optipngを使用）
-- 不要な依存パッケージを追加しない
-- バンドルサイズを意識する
-- 遅延読み込み（lazy loading）を活用する
-
-## プレビュー環境
-
-PRで変更内容を確認したい場合、コメントでプレビュー環境をデプロイできます。
-
-### デプロイ方法
-
-PRのコメント欄に以下を投稿：
-
-```
-/deploy-preview
+```bash
+git clone https://github.com/soranjiro/tabitabi.git
+cd tabitabi
+pnpm install
 ```
 
-または、GitHub ActionsのUIから手動実行も可能。
+### API設定
 
-### 仕組み
+サンプルをコピーし、ローカル用の `apps/api/wrangler.toml` を作ります。
 
-- コメントトリガーでGitHub Actionsの`.github/workflows/preview.yml`が実行される
-- Cloudflare WorkersとPagesに`preview-pr-{番号}`環境が作成される
-- PRのコメントにプレビューURLが投稿される
-
-### アクセス
-
-デプロイ後、以下のURLでアクセス可能：
-
-- **Web**: `https://preview-pr-{番号}.tabitabi.pages.dev`
-- **API**: `https://tabitabi-api-preview-pr-{番号}.oranda.workers.dev/api/v1`
-
-### 注意事項
-
-- データベースは本番環境と同じものを共有
-- PRをクローズすると自動的にクリーンアップされる
-- プレビュー環境は開発・検証用途のみ
-- 必要な時だけデプロイすることで、リソースを節約できる
-
-## 開発の進め方
-### ディレクトリ構成
-
-```
-tabitabi/
-├── apps/
-│   ├── api/                    # バックエンド (Cloudflare Workers + Hono)
-│   │   ├── src/
-│   │   │   ├── index.ts        # エントリーポイント
-│   │   │   ├── routes/         # APIエンドポイント
-│   │   │   ├── services/       # ビジネスロジック
-│   │   │   ├── middleware/     # 認証・CORSなど
-│   │   │   └── utils/          # ユーティリティ
-│   │   └── migrations/         # DBマイグレーション
-│   │
-│   └── web/                    # フロントエンド (SvelteKit)
-│       └── src/
-│           ├── lib/
-│           │   ├── api/        # APIラッパー（バックエンド呼び出し）
-│           │   ├── auth/       # 認証関連
-│           │   └── themes/     # テーマ（UIコンポーネント）
-│           └── routes/         # ページ
-│
-├── packages/
-│   └── types/                  # 共有型定義
-│
-└── docs/                       # ドキュメント
+```bash
+cp apps/api/wrangler.toml.example apps/api/wrangler.toml
 ```
 
-## 開発時の注意点
+ローカル開発では、少なくとも次を確認してください。
 
-### 要望フォームのGitHub連携
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "tabitabi"
+database_id = "ローカルだけならプレースホルダーでも可"
+migrations_dir = "./migrations"
 
-Webアプリの要望フォームは、サーバー側からGitHub Issueを作成します。ローカル開発時は
-`apps/web/.env`に次の値を設定してください。
-
-- `APP_GITHUB_ISSUES_TOKEN`: 対象リポジトリのIssuesへ書き込めるFine-grained access token
-- `APP_GITHUB_ISSUES_REPOSITORY`: Issueを作成する`owner/repository`（未設定時は`soranjiro/tabitabi`）
-
-トークンは公開環境変数やクライアントコードには設定しないでください。
-
-GitHub Actionsから本番環境やプレビュー環境をデプロイする場合は、リポジトリの
-**Settings > Secrets and variables > Actions**で`APP_GITHUB_ISSUES_TOKEN`という名前の
-Repository secretを作成してください。デプロイWorkflowが生成する`wrangler.toml`の
-サーバー側変数へこのSecretを設定します。Secretの値には、対象リポジトリだけにアクセスでき、
-Repository permissionsの**Issues: Read and write**だけを付与したFine-grained personal access tokenを使用してください。
-`APP_GITHUB_ISSUES_REPOSITORY`を設定しない場合、Issueの作成先は`soranjiro/tabitabi`です。
-
-### スタイリング
-
-用途に応じて手法を使い分け、混在を避ける。
-
-#### 1. Tailwind CSS（推奨: 汎用ページ）
-
-**使用場所**: `+error.svelte`, `+layout.svelte`, `itineraries/` など共通ページ
-
-```svelte
-<!-- ✅ OK -->
-<div class="min-h-screen bg-gray-50 p-4">
-  <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
-    送信
-  </button>
-</div>
+[vars]
+ALLOWED_ORIGINS = "*"
+JWT_SECRET = "ローカル専用の値"
+FIREBASE_PROJECT_ID = "Firebaseのproject ID"
+ENVIRONMENT = "development"
 ```
 
-#### 2. 外部CSSファイル（テーマ専用）
+### Web設定
 
-**使用場所**: `lib/themes/*/styles/`
-
-- テーマ固有のスタイルは`styles/`配下にCSSファイルとして分割
-- CSS変数を活用（`--ai-primary`, `--autumn-accent`など）
-- コンポーネントからは`import "./styles/index.css"`で一括読み込み
-
-```
-themes/ai-generated/
-├── styles/
-│   ├── index.css      # エントリーポイント（@import で他をまとめる）
-│   ├── variables.css  # CSS変数
-│   ├── base.css
-│   ├── header.css
-│   └── ...
-└── ItineraryView.svelte
+```bash
+cp apps/web/.env.example apps/web/.env
 ```
 
-#### 3. Scoped `<style>`（ホームページ専用）
+主な値は次のとおりです。
 
-**使用場所**: `routes/home/` 配下のコンポーネント
+| 変数 | 用途 |
+|---|---|
+| `PUBLIC_API_URL` | APIベースURL。ローカルは `http://localhost:8787/api/v1` |
+| `PUBLIC_FIREBASE_API_KEY` | Firebase Webアプリの公開API key |
+| `PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase Auth domain |
+| `PUBLIC_FIREBASE_PROJECT_ID` | Firebase project ID |
+| `PUBLIC_FIREBASE_APP_ID` | Firebase Web app ID |
+| `GOOGLE_MAPS_API_KEY` | Google Maps用のサーバー側キー |
+| `MAPBOX_ACCESS_TOKEN` | Mapbox用のサーバー側トークン |
+| `APP_GITHUB_ISSUES_TOKEN` | 要望フォームからIssueを作るサーバー側トークン |
+| `APP_GITHUB_ISSUES_REPOSITORY` | Issue作成先。既定は `soranjiro/tabitabi` |
+| `VITE_PUBLIC_GA_ID` | 任意のGoogle Analytics ID |
 
-- 他で再利用しない単発コンポーネント向け
-- 外部CSSを増やさずFCP/LCPを改善
+Firebaseの4変数は `dev` と `build` の前に検証されます。アカウント機能を使わない作業でも
+空にはできないため、実値を使わない場合はCIと同様の明示的なプレースホルダーを設定してください。
+秘密値を `PUBLIC_` / `VITE_PUBLIC_` で始まる変数へ入れてはいけません。
 
-```svelte
-<!-- ✅ OK: home/Footer.svelte -->
-<footer class="footer">...</footer>
+### ローカルD1
 
-<style>
-  .footer {
-    background: #1f2937;
-    padding: 1.5rem 1rem;
-  }
-</style>
+```bash
+make migrate-local
 ```
 
-#### 4. インラインスタイル（動的値のみ）
+マイグレーションは `apps/api/migrations/` から適用されます。
 
-**使用場所**: JavaScriptで計算される値
+## 開発サーバー
 
-```svelte
-<!-- ✅ OK: 動的な値 -->
-<div style="--delay: {index * 0.1}s"></div>
-<div style="left: {x}%; top: {y}%"></div>
-<div style="width: {progress}%"></div>
-
-<!-- ❌ NG: 静的な値 -->
-<div style="margin-top: 1.5rem;"></div>
-<div style="padding: 1rem; background: var(--surface);"></div>
+```bash
+make dev
 ```
 
-#### パフォーマンス考慮
+または `pnpm dev` でも同じです。TurborepoがWebとAPIを並行起動します。
 
-- クリティカルCSSは`app.html`にインライン化済み（FCP改善）
-- テーマCSSは動的import（`loadTheme()`）と同期してロードされるため、不要なテーマのCSSはバンドルされない
-- Scoped CSSはコンポーネント単位でcode-splitされるため、homeページ以外では読み込まれない
+- Web: `http://localhost:5173`
+- API: `http://localhost:8787`
+- Health check: `http://localhost:8787/health`
 
-### テーマは独立させる
+片方だけ起動する場合はフィルターを使います。
 
-- 各テーマは `apps/web/src/lib/themes/` 配下に作成
-- テーマ間でコードを共有しない（コピペOK）
-- 共通ロジックはAPIラッパー経由で利用
+```bash
+pnpm --filter api dev
+pnpm --filter web dev
+```
 
-### APIラッパーを経由する
+## よく使うコマンド
 
-テーマから直接fetchしない。必ず `lib/api/` のラッパー関数を使う。
+| コマンド | 内容 |
+|---|---|
+| `pnpm dev` | WebとAPIを開発モードで起動 |
+| `pnpm build` | docs生成を含む全パッケージのビルド |
+| `pnpm test` | APIとWebのVitest／Nodeテスト |
+| `pnpm test:api` | APIテスト |
+| `pnpm test:web` | WebのVitest |
+| `pnpm --filter web test:e2e` | Playwright E2E |
+| `pnpm --filter web build:docs` | `docs/` をWeb配信用HTMLへ変換 |
+| `make migrate-local` | ローカルD1へマイグレーション |
+| `make lighthouse` | 起動中のWebをLighthouse計測 |
+
+## 実装上のルール
+
+### APIクライアントを経由する
+
+テーマやページからAPI Workerへ直接 `fetch` せず、`apps/web/src/lib/api/` のラッパーを使います。
+ここでAPI URL、しおり編集JWT、Firebase ID token、共通エラー形式を揃えます。
 
 ```typescript
-// ❌ NG
-const res = await fetch('/api/v1/steps');
+import { stepApi } from '$lib/api/step';
 
-// ✅ OK
-import { getSteps } from '$lib/api/step';
-const steps = await getSteps(itineraryId);
+const steps = await stepApi.list(itineraryId);
 ```
 
-### 機能追加の流れ
+### 共有型を先に更新する
 
-複数のテーマを作成するので、重要なもの（認証など）以外はテーマ間で独立して作成できるようにする。
+WebとAPIで共通する入力・レスポンスは `packages/types/src/` に置きます。DB変更を伴う場合は、
+マイグレーション、共有型、API実装、テスト、`docs/developer/database.md` を同じ変更に含めます。
 
-機能追加の場合
-1. 対応するテーブルを作成する
-  1. migrationファイルを書く
-  1. データベースはシンプルに保ち、機能追加の場合は別でitinerariesに依存したテーブルを作成する
-  1. 更新されたテーブル構造を`docs/database.md`に記載する
-1. テーブルをラップするapiを作成
-1. フロントでbackendのapiを叩く処理をラップする関数を作成
-1. 各テーマでは、apiを呼び出すのは関数を叩くだけにする
+### スタイルの置き場所
 
-これで、テーマ間で独立しながらDRY原則を守って開発できる
+- 共通ページ: Tailwind CSS
+- テーマ: 各テーマの `styles/` にある外部CSS
+- ホーム専用の小さな部品: Svelteのscoped `<style>`
+- インラインstyle: JavaScriptで計算した動的値だけ
 
-## セットアップ
+標準の季節テーマは `standard-seasons/shared/` を共有します。ここを変更すると春・夏・秋・冬の
+すべてへ影響するため、4テーマで確認してください。その他のテーマは原則として独立しています。
 
-### 必要な環境
-- Node.js (v20以上推奨)
-- pnpm (v10.16.1)
+### パフォーマンス
 
-### 初回セットアップ手順
+- テーマと印刷画面は必要になるまで遅延ロードする
+- 画像を追加する場合は用途に合うサイズへ圧縮する
+- 新しい依存を追加する前に、ブラウザ標準APIや既存依存で代替できないか確認する
+- ホーム画面、しおり初期表示、モバイル表示へのバンドル影響を確認する
 
-1. **依存パッケージのインストール**
-   ```bash
-   pnpm install
-   ```
+## Preview環境
 
-2. **Cloudflare Wranglerのログイン**
-   ```bash
-   pnpm wrangler login
-   ```
+同一リポジトリ内のPRでは `.github/workflows/preview.yml` が実行されます。PRコメントの
+`/deploy-preview`、またはActionsの手動実行でも再デプロイできます。fork元が異なるPRは、
+secretsを渡さないためPreviewデプロイ対象外です。
 
-3. **環境設定ファイルの作成**
-   - `wrangler.toml.example`を参考に`apps/api/wrangler.toml`を作成
-   - D1データベースのIDを設定
+Previewごとに次が作られます。
 
-4. **データベースマイグレーション（ローカル開発用）**
-   ```bash
-   make migrate-local
-   ```
+- Pages Preview
+- `tabitabi-api-preview-pr-{PR番号}` Worker
+- `tabitabi-preview-pr-{PR番号}` D1データベース
 
-5. **開発サーバーの起動**
-   ```bash
-   make dev
-   ```
-   - API: `http://localhost:8787`
-   - Web: `http://localhost:5173`
+Previewは本番D1を共有しません。データベースはデプロイ時に作り直され、PRを閉じるとWorkerと
+D1を削除します。正確なURLはWorkflowがPRへ投稿するコメントで確認してください。
 
-### 環境変数 / Secrets の設定
-
-JWTベースの認証を利用しているため、`JWT_SECRET` の設定が必要です。ローカルとテストはサンプル値で動作しますが、本番は必ずダッシュボードまたはWranglerのSecretsで設定してください。
-
-- ローカル開発: `apps/api/wrangler.toml` の `[vars]` に開発用値を設定済み
-- CI/テスト: `apps/api/wrangler.test.toml` にテスト用値を設定済み
-- 本番環境: Cloudflare Workers の Secrets に登録（ソースコードに秘密値は含めない）
-
-本番への設定例（Wrangler経由）
+## 本番・リモート操作
 
 ```bash
-cd apps/api
 pnpm wrangler login
-pnpm wrangler secret put JWT_SECRET --env production
 ```
 
-Cloudflareダッシュボードから設定する場合
-- Workers & Queues → 該当Worker（例: `tabitabi-api`）→ Settings → Variables → Secrets に `JWT_SECRET` を追加
+本番用の `JWT_SECRET`、Cloudflare API token、Firebase公開設定、GitHub Issues tokenなどは
+GitHub ActionsまたはCloudflareのsecretとして管理し、リポジトリへコミットしません。
 
-デプロイ時に `--env production` を指定していない場合、`[env.production]` の設定が反映されません。必要に応じて以下で明示します。
+手動でAPIを更新する場合は、先にD1をバックアップし、マイグレーション、API、Webの順に進めます。
 
 ```bash
 cd apps/api
+pnpm wrangler d1 migrations apply DB --remote --env production
 pnpm wrangler deploy --env production
+
+cd ../web
+pnpm deploy
 ```
+
+通常の本番デプロイは `main` へのpushで `.github/workflows/deploy.yml` が実行します。

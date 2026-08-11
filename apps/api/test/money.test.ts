@@ -12,7 +12,7 @@ async function setup() {
     `CREATE TABLE IF NOT EXISTS itinerary_members (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL);`,
     `CREATE TABLE IF NOT EXISTS itinerary_money_members (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL);`,
     `CREATE TABLE IF NOT EXISTS itinerary_money_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL, paid_by_member_id TEXT, status TEXT NOT NULL, is_settled INTEGER NOT NULL DEFAULT 0, occurred_on TEXT, step_id TEXT, split_member_ids TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_packing_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1, kind TEXT NOT NULL, group_id TEXT, assignee_member_id TEXT, is_packed INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_packing_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1, kind TEXT NOT NULL, group_id TEXT, assignee_member_id TEXT, owner_member_id TEXT, is_packed INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
     `CREATE TABLE IF NOT EXISTS itinerary_packing_groups (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, sort_order INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
     `CREATE TABLE IF NOT EXISTS itinerary_packing_checks (item_id TEXT NOT NULL, member_id TEXT NOT NULL, checked_at TEXT NOT NULL, PRIMARY KEY (item_id, member_id));`,
   ];
@@ -134,6 +134,19 @@ describe('Packing API', () => {
     }), env);
     const personal = (await personalResponse.json() as any).data;
     expect(personalResponse.status).toBe(201);
+
+    const privateResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing/items`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: '個人用の薬', kind: 'private', owner_member_id: alice.id, group_id: valuables.id }),
+    }), env);
+    const privateBody = await privateResponse.json() as any;
+    const privateItem = privateBody.data;
+    expect(privateResponse.status).toBe(201);
+    expect(privateItem).toMatchObject({ kind: 'private', owner_member_id: alice.id });
+    const privateCheckByBob = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing/items/${privateItem.id}/check`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ member_id: bob.id, checked: true }),
+    }), env);
+    expect(privateCheckByBob.status).toBe(403);
 
     await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing/items/${personal.id}/check`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ member_id: alice.id, checked: true }),

@@ -48,9 +48,10 @@ function groupFromRow(row: Record<string, unknown>): PackingGroup {
 function itemFromRow(row: Record<string, unknown>, checks: string[]): PackingItem {
   return {
     id: String(row.id), itinerary_id: String(row.itinerary_id), name: String(row.name), quantity: Number(row.quantity ?? 1),
-    kind: row.kind === 'shared' ? 'shared' : 'personal',
+    kind: row.kind === 'shared' ? 'shared' : row.kind === 'private' ? 'private' : 'personal',
     group_id: String(row.group_id),
     assignee_member_id: row.assignee_member_id ? String(row.assignee_member_id) : null,
+    owner_member_id: row.owner_member_id ? String(row.owner_member_id) : null,
     is_packed: Number(row.is_packed) === 1, checked_member_ids: checks,
     created_at: String(row.created_at), updated_at: String(row.updated_at),
   };
@@ -85,11 +86,14 @@ packing.post('/itineraries/:id/packing/items', optionalAuthMiddleware, zValidato
   const input = c.req.valid('json');
   if (!await groupBelongs(c.env.DB, itineraryId, input.group_id)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Group must belong to this itinerary' } }, 400);
   const assignee = input.kind === 'shared' ? input.assignee_member_id ?? null : null;
+  const owner = input.kind === 'private' ? input.owner_member_id ?? null : null;
+  if (input.kind === 'private' && !owner) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Owner is required for a private item' } }, 400);
   if (!await memberBelongs(c.env.DB, itineraryId, assignee)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Assignee must belong to this itinerary' } }, 400);
+  if (!await memberBelongs(c.env.DB, itineraryId, owner)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Owner must belong to this itinerary' } }, 400);
   const now = getCurrentTimestamp();
-  const item: PackingItem = { id: generateId(), itinerary_id: itineraryId, name: input.name, quantity: input.quantity ?? 1, kind: input.kind, group_id: input.group_id, assignee_member_id: assignee, is_packed: false, checked_member_ids: [], created_at: now, updated_at: now };
-  await c.env.DB.prepare('INSERT INTO itinerary_packing_items (id, itinerary_id, name, quantity, kind, group_id, assignee_member_id, is_packed, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)')
-    .bind(item.id, itineraryId, item.name, item.quantity, item.kind, item.group_id, item.assignee_member_id, now, now).run();
+  const item: PackingItem = { id: generateId(), itinerary_id: itineraryId, name: input.name, quantity: input.quantity ?? 1, kind: input.kind, group_id: input.group_id, assignee_member_id: assignee, owner_member_id: owner, is_packed: false, checked_member_ids: [], created_at: now, updated_at: now };
+  await c.env.DB.prepare('INSERT INTO itinerary_packing_items (id, itinerary_id, name, quantity, kind, group_id, assignee_member_id, owner_member_id, is_packed, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)')
+    .bind(item.id, itineraryId, item.name, item.quantity, item.kind, item.group_id, item.assignee_member_id, item.owner_member_id, now, now).run();
   return c.json({ success: true, data: item }, 201);
 });
 
@@ -103,17 +107,20 @@ packing.put('/itineraries/:id/packing/items/:itemId', optionalAuthMiddleware, zV
   const input = c.req.valid('json');
   const groupId = input.group_id ?? String(current.group_id);
   if (!await groupBelongs(c.env.DB, itineraryId, groupId)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Group must belong to this itinerary' } }, 400);
-  const kind = input.kind ?? (current.kind === 'shared' ? 'shared' : 'personal');
+  const kind = input.kind ?? (current.kind === 'shared' ? 'shared' : current.kind === 'private' ? 'private' : 'personal');
   const assignee = kind === 'shared' ? (input.assignee_member_id === undefined ? (current.assignee_member_id ? String(current.assignee_member_id) : null) : input.assignee_member_id) : null;
+  const owner = kind === 'private' ? (input.owner_member_id === undefined ? (current.owner_member_id ? String(current.owner_member_id) : null) : input.owner_member_id) : null;
+  if (kind === 'private' && !owner) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Owner is required for a private item' } }, 400);
   if (!await memberBelongs(c.env.DB, itineraryId, assignee)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Assignee must belong to this itinerary' } }, 400);
+  if (!await memberBelongs(c.env.DB, itineraryId, owner)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Owner must belong to this itinerary' } }, 400);
   const now = getCurrentTimestamp();
-  await c.env.DB.prepare('UPDATE itinerary_packing_items SET name = ?, quantity = ?, kind = ?, group_id = ?, assignee_member_id = ?, updated_at = ? WHERE id = ? AND itinerary_id = ?')
-    .bind(input.name ?? String(current.name), input.quantity ?? Number(current.quantity ?? 1), kind, groupId, assignee, now, itemId, itineraryId).run();
+  await c.env.DB.prepare('UPDATE itinerary_packing_items SET name = ?, quantity = ?, kind = ?, group_id = ?, assignee_member_id = ?, owner_member_id = ?, updated_at = ? WHERE id = ? AND itinerary_id = ?')
+    .bind(input.name ?? String(current.name), input.quantity ?? Number(current.quantity ?? 1), kind, groupId, assignee, owner, now, itemId, itineraryId).run();
   if (kind === 'shared') await c.env.DB.prepare('DELETE FROM itinerary_packing_checks WHERE item_id = ?').bind(itemId).run();
-  const checks = kind === 'personal'
+  const checks = kind !== 'shared'
     ? (await c.env.DB.prepare('SELECT member_id FROM itinerary_packing_checks WHERE item_id = ?').bind(itemId).all<{ member_id: string }>()).results?.map((row) => row.member_id) ?? []
     : [];
-  return c.json({ success: true, data: itemFromRow({ ...current, name: input.name ?? current.name, quantity: input.quantity ?? current.quantity ?? 1, kind, group_id: groupId, assignee_member_id: assignee, updated_at: now }, checks) });
+  return c.json({ success: true, data: itemFromRow({ ...current, name: input.name ?? current.name, quantity: input.quantity ?? current.quantity ?? 1, kind, group_id: groupId, assignee_member_id: assignee, owner_member_id: owner, updated_at: now }, checks) });
 });
 
 packing.post('/itineraries/:id/packing/groups', optionalAuthMiddleware, zValidator('json', packingGroupSchema, validationHook), async (c) => {
@@ -168,7 +175,7 @@ packing.put('/itineraries/:id/packing/items/:itemId/check', optionalAuthMiddlewa
   const itemId = c.req.param('itemId')!;
   const denied = await canEdit(c, itineraryId);
   if (denied) return denied;
-  const item = await c.env.DB.prepare('SELECT kind FROM itinerary_packing_items WHERE id = ? AND itinerary_id = ?').bind(itemId, itineraryId).first<{ kind: string }>();
+  const item = await c.env.DB.prepare('SELECT kind, owner_member_id FROM itinerary_packing_items WHERE id = ? AND itinerary_id = ?').bind(itemId, itineraryId).first<{ kind: string; owner_member_id: string | null }>();
   if (!item) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Packing item not found' } }, 404);
   const { member_id, checked } = c.req.valid('json');
   const now = getCurrentTimestamp();
@@ -176,6 +183,7 @@ packing.put('/itineraries/:id/packing/items/:itemId/check', optionalAuthMiddlewa
     await c.env.DB.prepare('UPDATE itinerary_packing_items SET is_packed = ?, updated_at = ? WHERE id = ?').bind(checked ? 1 : 0, now, itemId).run();
   } else {
     if (!member_id || !await memberBelongs(c.env.DB, itineraryId, member_id)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A valid member is required' } }, 400);
+    if (item.kind === 'private' && item.owner_member_id !== member_id) return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Only the owner can check a private item' } }, 403);
     if (checked) await c.env.DB.prepare('INSERT OR REPLACE INTO itinerary_packing_checks (item_id, member_id, checked_at) VALUES (?, ?, ?)').bind(itemId, member_id, now).run();
     else await c.env.DB.prepare('DELETE FROM itinerary_packing_checks WHERE item_id = ? AND member_id = ?').bind(itemId, member_id).run();
   }

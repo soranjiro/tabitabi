@@ -81,9 +81,10 @@ export const moneySettingsSchema = z.object({
 export const packingItemSchema = z.object({
   name: z.string().trim().min(1, 'name is required').max(100, 'name must be at most 100 characters'),
   quantity: z.number().int().min(1, 'quantity must be at least 1').max(10, 'quantity must be at most 10').optional(),
-  kind: z.enum(['personal', 'shared']),
+  kind: z.enum(['personal', 'private', 'shared']),
   group_id: z.string().min(1, 'group is required'),
   assignee_member_id: z.string().nullable().optional(),
+  owner_member_id: z.string().nullable().optional(),
 });
 
 export const updatePackingItemSchema = packingItemSchema.partial().refine(

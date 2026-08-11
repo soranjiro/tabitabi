@@ -28,8 +28,9 @@
   const isDemo = () => itineraryId === 'demo' || getIsDemoMode();
   const me = $derived(data.members.find((member) => member.id === meId));
   const personalItems = $derived(data.items.filter((item) => item.kind === 'personal'));
+  const privateItems = $derived(data.items.filter((item) => item.kind === 'private' && item.owner_member_id === meId));
   const sharedItems = $derived(data.items.filter((item) => item.kind === 'shared'));
-  const myPersonal = $derived(personalItems);
+  const myPersonal = $derived([...personalItems, ...privateItems]);
   const myAssigned = $derived(sharedItems.filter((item) => item.assignee_member_id === meId));
   const donePersonal = $derived(myPersonal.filter((item) => item.checked_member_ids.includes(meId)).length);
   const doneAssigned = $derived(myAssigned.filter((item) => item.is_packed).length);
@@ -54,9 +55,9 @@
   function demoData(members: TripMember[]): PackingData {
     const now = '2026-08-01T09:00:00.000Z';
     const groups = demoGroups();
-    const item = (id: string, name: string, kind: PackingItemKind, groupIndex: number, assignee: string | null, packed = false, checked: string[] = []): PackingItem => ({
+    const item = (id: string, name: string, kind: PackingItemKind, groupIndex: number, assignee: string | null, packed = false, checked: string[] = [], owner: string | null = null): PackingItem => ({
       id, itinerary_id: itineraryId, name, quantity: 1, kind, group_id: groups[groupIndex].id, assignee_member_id: assignee, is_packed: packed,
-      checked_member_ids: checked, created_at: now, updated_at: now,
+      owner_member_id: owner, checked_member_ids: checked, created_at: now, updated_at: now,
     });
     return { members, groups, items: [
       item('demo-pack-passport', 'パスポート', 'personal', 0, null, false, [members[0]?.id].filter(Boolean) as string[]),
@@ -103,10 +104,10 @@
   function itemLabel(item: PackingItem) { return item.quantity > 1 ? `${item.name} ×${item.quantity}` : item.name; }
 
   async function toggle(item: PackingItem, memberId: string | null = meId) {
-    if (!canEdit || (item.kind === 'personal' && !memberId)) return;
+    if (!canEdit || (item.kind !== 'shared' && !memberId)) return;
     const checked = !isChecked(item, memberId ?? '');
     try {
-      if (!isDemo()) await packingApi.updateCheck(itineraryId, item.id, { member_id: item.kind === 'personal' ? memberId : null, checked });
+      if (!isDemo()) await packingApi.updateCheck(itineraryId, item.id, { member_id: item.kind !== 'shared' ? memberId : null, checked });
       const items = data.items.map((current) => current.id !== item.id ? current : current.kind === 'shared'
         ? { ...current, is_packed: checked }
         : { ...current, checked_member_ids: checked ? [...current.checked_member_ids, memberId as string] : current.checked_member_ids.filter((id) => id !== memberId) });
@@ -123,7 +124,7 @@
     if (!name) return;
     if (!groupId) return;
     const quantity = Math.max(1, Math.min(10, Math.trunc(itemQuantity || 1)));
-    const input = { name, quantity, kind: itemKind, group_id: groupId, assignee_member_id: itemKind === 'shared' ? assigneeId || null : null };
+    const input = { name, quantity, kind: itemKind, group_id: groupId, assignee_member_id: itemKind === 'shared' ? assigneeId || null : null, owner_member_id: itemKind === 'private' ? meId : null };
     try {
       let item: PackingItem;
       if (isDemo()) {
@@ -249,7 +250,7 @@
 
     {#if showIdentity}<div class="standard-packing-sheet-backdrop" onclick={() => meId && (showIdentity = false)}><div class="standard-packing-sheet" onclick={(event) => event.stopPropagation()}><span class="handle"></span><h3>この旅では誰ですか？</h3><p>この端末で表示する「自分」を選んでください。</p>{#each data.members as member}<button class:active={member.id === meId} onclick={() => selectMe(member.id)}><i>{member.id === meId ? '✓' : ''}</i><span>{member.name.slice(0, 1)}</span>{member.name}</button>{/each}{#if canEdit}<div class="standard-packing-member-add"><input placeholder="メンバー名" bind:value={newMemberName} onkeydown={(event) => event.key === 'Enter' && addMember()} /><button onclick={addMember}>＋ メンバーを追加</button></div>{/if}<small>あとから画面上部で変更できます</small></div></div>{/if}
 
-    {#if showForm}<div class="standard-packing-sheet-backdrop" onclick={closeForm}><form class="standard-packing-sheet standard-packing-form" onclick={(event) => event.stopPropagation()} onsubmit={(event) => { event.preventDefault(); saveItem(); }}><span class="handle"></span><h3>{editingId ? '持ち物を編集' : '持ち物を追加'}</h3><label>持ち物名<input autofocus placeholder="例：トップス" bind:value={itemName} /></label><label>個数<select bind:value={itemQuantity}>{#each Array.from({ length: 10 }, (_, index) => index + 1) as quantity}<option value={quantity}>{quantity}</option>{/each}</select></label><label>グループ<select bind:value={groupId}>{#each data.groups as group}<option value={group.id}>{group.name}</option>{/each}</select></label><fieldset><legend>誰が持つ？</legend><label><input type="radio" value="personal" bind:group={itemKind} /><span><b>各自で持つ</b><small>全員に同じチェック項目を作ります</small></span></label><label><input type="radio" value="shared" bind:group={itemKind} /><span><b>誰か1人が持つ</b><small>グループで1つだけ準備します</small></span></label></fieldset>{#if itemKind === 'shared'}<label>担当者<select bind:value={assigneeId}><option value="">未定</option>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select></label>{/if}<div class="actions">{#if editingId}<button type="button" class="delete" onclick={() => { const item = data.items.find((current) => current.id === editingId); if (item) remove(item); }}>削除</button>{/if}<button type="button" class="secondary" onclick={closeForm}>キャンセル</button><button type="submit">保存</button></div></form></div>{/if}
+    {#if showForm}<div class="standard-packing-sheet-backdrop" onclick={closeForm}><form class="standard-packing-sheet standard-packing-form" onclick={(event) => event.stopPropagation()} onsubmit={(event) => { event.preventDefault(); saveItem(); }}><span class="handle"></span><h3>{editingId ? '持ち物を編集' : '持ち物を追加'}</h3><label>持ち物名<input autofocus placeholder="例：トップス" bind:value={itemName} /></label><label>個数<select bind:value={itemQuantity}>{#each Array.from({ length: 10 }, (_, index) => index + 1) as quantity}<option value={quantity}>{quantity}</option>{/each}</select></label><label>グループ<select bind:value={groupId}>{#each data.groups as group}<option value={group.id}>{group.name}</option>{/each}</select></label><fieldset><legend>誰が持つ？</legend><label><input type="radio" value="private" bind:group={itemKind} /><span><b>自分専用</b><small>自分のリストだけに表示します</small></span></label><label><input type="radio" value="personal" bind:group={itemKind} /><span><b>各自で持つ</b><small>全員に同じチェック項目を作ります</small></span></label><label><input type="radio" value="shared" bind:group={itemKind} /><span><b>誰か1人が持つ</b><small>グループで1つだけ準備します</small></span></label></fieldset>{#if itemKind === 'shared'}<label>担当者<select bind:value={assigneeId}><option value="">未定</option>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select></label>{/if}<div class="actions">{#if editingId}<button type="button" class="delete" onclick={() => { const item = data.items.find((current) => current.id === editingId); if (item) remove(item); }}>削除</button>{/if}<button type="button" class="secondary" onclick={closeForm}>キャンセル</button><button type="submit">保存</button></div></form></div>{/if}
 
     {#if showGroups}<div class="standard-packing-sheet-backdrop" onclick={() => showGroups = false}><div class="standard-packing-sheet standard-packing-group-sheet" onclick={(event) => event.stopPropagation()}><span class="handle"></span><h3>グループを管理</h3><p>名前を変更したら「保存」を押してください。</p><div class="standard-packing-group-editor">{#each data.groups as group}<div><input aria-label={`${group.name}のグループ名`} value={group.name} /><button onclick={(event) => renameGroup(group, event.currentTarget.previousElementSibling instanceof HTMLInputElement ? event.currentTarget.previousElementSibling.value : group.name)}>保存</button><button class="delete" aria-label={`${group.name}を削除`} onclick={() => removeGroup(group)}>削除</button></div>{/each}</div><div class="standard-packing-group-add"><input placeholder="新しいグループ名" bind:value={newGroupName} onkeydown={(event) => event.key === 'Enter' && addGroup()} /><button onclick={addGroup}>＋ 追加</button></div><button class="standard-packing-sheet-close" onclick={() => showGroups = false}>完了</button></div></div>{/if}
   </div>

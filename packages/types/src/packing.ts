@@ -1,6 +1,6 @@
 import type { TripMember } from './trip-member';
 
-export type PackingItemKind = 'personal' | 'shared';
+export type PackingItemKind = 'personal' | 'private' | 'shared';
 
 export interface PackingGroup {
   id: string;
@@ -19,6 +19,7 @@ export interface PackingItem {
   kind: PackingItemKind;
   group_id: string;
   assignee_member_id: string | null;
+  owner_member_id: string | null;
   is_packed: boolean;
   checked_member_ids: string[];
   created_at: string;
@@ -37,6 +38,7 @@ export interface CreatePackingItemInput {
   kind: PackingItemKind;
   group_id: string;
   assignee_member_id?: string | null;
+  owner_member_id?: string | null;
 }
 
 export interface UpdatePackingItemInput extends Partial<CreatePackingItemInput> {}

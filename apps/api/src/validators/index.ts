@@ -116,6 +116,12 @@ export const updateVisibilitySchema = z.object({
   is_visible: z.boolean({ error: 'is_visible must be a boolean' }),
 });
 
+export const publishItinerarySchema = z.object({
+  prefecture_slugs: z.array(z.string().trim().min(1).max(32)).min(1).max(3),
+  areas: z.array(z.string().trim().min(1).max(16)).max(3).default([]),
+  tags: z.array(z.string().trim().min(1).max(24)).max(3).default([]),
+});
+
 // ── Bookmarks ──────────────────────────────────────────
 
 export const syncBookmarksSchema = z.object({

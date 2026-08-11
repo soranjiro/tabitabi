@@ -4,7 +4,7 @@ import { Env, Variables } from '../utils';
 import { UserService } from '../services/user.service';
 import { ItineraryService } from '../services/itinerary.service';
 import { userAuthMiddleware, userProfileMiddleware } from '../middleware/auth';
-import { bootstrapProfileSchema, syncBookmarksSchema, updateProfileSchema, updateVisibilitySchema } from '../validators';
+import { bootstrapProfileSchema, publishItinerarySchema, syncBookmarksSchema, updateProfileSchema, updateVisibilitySchema } from '../validators';
 import { validationHook } from '../validators/hook';
 
 const users = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -29,9 +29,17 @@ users.get('/', async (c) => {
   const offsetParam = c.req.query('offset') ?? '0';
   const offset = Math.max(0, parseInt(offsetParam, 10) || 0);
   const LIMIT = 30;
+  const prefecture = (c.req.query('prefecture') ?? '').trim();
+  const tag = (c.req.query('tag') ?? '').trim();
+  if (prefecture.length > 32 || tag.length > 24) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid feed filter' } }, 400);
+  }
 
   const service = new UserService(c.env.DB);
-  const result = await service.getPublicFeed(offset, LIMIT);
+  const result = await service.getPublicFeed(offset, LIMIT, {
+    prefecture: prefecture || undefined,
+    tag: tag || undefined,
+  });
   return c.json({ success: true, data: result });
 });
 
@@ -110,43 +118,68 @@ users.get('/me/bookmarks', userAuthMiddleware, userProfileMiddleware, async (c) 
   return c.json({ success: true, data: { bookmarks } });
 });
 
+// POST /users/me/bookmarks/:itineraryId/publish
+// Creates/refreshes the immutable public-ID snapshot and lists it in discovery.
+users.post(
+  '/me/bookmarks/:itineraryId/publish',
+  userAuthMiddleware,
+  userProfileMiddleware,
+  zValidator('json', publishItinerarySchema, validationHook),
+  async (c) => {
+    const userId = c.get('userId')!;
+    const itineraryId = c.req.param('itineraryId');
+    const input = c.req.valid('json');
+    const userService = new UserService(c.env.DB);
+    const itineraryService = new ItineraryService(c.env.DB, c.env);
+
+    try {
+      const snapshot = await itineraryService.publish(itineraryId);
+      await userService.publishBookmark(userId, itineraryId, snapshot.id, input);
+      return c.json({ success: true, data: { id: snapshot.id } });
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+      if (code === 'NOT_FOUND' || code === 'BOOKMARK_NOT_FOUND') {
+        return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Saved itinerary not found' } }, 404);
+      }
+      if (code === 'CANNOT_PUBLISH_SNAPSHOT') {
+        return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot publish a shared snapshot' } }, 403);
+      }
+      throw error;
+    }
+  },
+);
+
+users.delete('/me/bookmarks/:itineraryId/publication', userAuthMiddleware, userProfileMiddleware, async (c) => {
+  const removed = await new UserService(c.env.DB).unpublishBookmark(
+    c.get('userId')!,
+    c.req.param('itineraryId')!,
+  );
+  if (!removed) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Publication not found' } }, 404);
+  }
+  return c.json({ success: true, data: { unpublished: true } });
+});
+
 // PATCH /users/me/bookmarks/:itineraryId/visibility (認証必須)
 users.patch('/me/bookmarks/:itineraryId/visibility', userAuthMiddleware, userProfileMiddleware, zValidator('json', updateVisibilitySchema, validationHook), async (c) => {
   const userId = c.get('userId')!;
   const itineraryId = c.req.param('itineraryId');
   const input = c.req.valid('json');
   const service = new UserService(c.env.DB);
-  const result = await service.updateBookmarkVisibility(userId, itineraryId, input.is_visible);
+  if (input.is_visible) {
+    return c.json({
+      success: false,
+      error: { code: 'PUBLICATION_METADATA_REQUIRED', message: 'Use the publish endpoint with destination metadata' },
+    }, 400);
+  }
+
+  const result = await service.updateBookmarkVisibility(userId, itineraryId, false);
 
   if (!result) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Bookmark not found' } }, 404);
   }
 
-  // スナップショットの公開状態を元しおりと連動させる
-  try {
-    const itineraryService = new ItineraryService(c.env.DB, c.env);
-    const itinerary = await itineraryService.get(itineraryId);
-    if (itinerary) {
-      if (input.is_visible) {
-        // 公開にした場合、共有スナップショットを自動生成する
-        // スナップショットの password は常に NULL なので鍵付きしおりでも安全
-        const snapshot = await itineraryService.publish(itineraryId);
-        await service.syncBookmarks(userId, [snapshot.id]);
-        await service.updateBookmarkVisibility(userId, snapshot.id, true);
-      } else {
-        // 非公開にした場合、スナップショットのブックマークも非公開にする
-        const snapshotRow = await c.env.DB
-          .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
-          .bind(itineraryId)
-          .first<{ id: string }>();
-        if (snapshotRow) {
-          await service.updateBookmarkVisibility(userId, snapshotRow.id, false);
-        }
-      }
-    }
-  } catch {
-    // 非致命的: 元しおりの公開状態は変更済み、スナップショット連動は後から同期可能
-  }
+  await service.unpublishBookmark(userId, itineraryId);
 
   return c.json({ success: true, data: result });
 });

@@ -75,6 +75,17 @@ async function applyMigrations(db: D1Database) {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
+    `CREATE TABLE IF NOT EXISTS itinerary_publications (
+      source_itinerary_id TEXT NOT NULL,
+      shared_itinerary_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      prefecture_slugs TEXT NOT NULL,
+      areas TEXT NOT NULL DEFAULT '[]',
+      tags TEXT NOT NULL DEFAULT '[]',
+      published_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (source_itinerary_id, user_id)
+    );`,
     `CREATE TABLE IF NOT EXISTS itinerary_members (
       id TEXT PRIMARY KEY,
       itinerary_id TEXT NOT NULL,
@@ -237,9 +248,10 @@ describe('POST /api/v1/itineraries with user token', () => {
   });
 });
 
-describe('PATCH /api/v1/users/me/bookmarks/:itineraryId/visibility — snapshot sync', () => {
+describe('owner publication flow', () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
+    await env.DB.prepare('DELETE FROM itinerary_publications').run();
     await env.DB.prepare('DELETE FROM user_bookmarks').run();
     await env.DB.prepare('DELETE FROM users').run();
     await env.DB.prepare('DELETE FROM steps').run();
@@ -247,7 +259,7 @@ describe('PATCH /api/v1/users/me/bookmarks/:itineraryId/visibility — snapshot 
     await env.DB.prepare('DELETE FROM itineraries').run();
   });
 
-  it('creates snapshot and marks it visible when toggling visibility to true', async () => {
+  it('creates a snapshot and stores discovery metadata', async () => {
     const token = await registerAndGetToken('visuser', 'vis@example.com');
     const itineraryId = await createItinerary();
 
@@ -258,11 +270,10 @@ describe('PATCH /api/v1/users/me/bookmarks/:itineraryId/visibility — snapshot 
       body: JSON.stringify({ itinerary_ids: [itineraryId] }),
     }, env);
 
-    // toggle visibility to true
-    const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/visibility`, {
-      method: 'PATCH',
+    const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ is_visible: true }),
+      body: JSON.stringify({ prefecture_slugs: ['tokyo'], areas: ['浅草'], tags: ['グルメ'] }),
     }, env);
     expect(res.status).toBe(200);
 
@@ -273,16 +284,58 @@ describe('PATCH /api/v1/users/me/bookmarks/:itineraryId/visibility — snapshot 
       .first<{ id: string }>();
     expect(snapshot).not.toBeNull();
 
-    // verify snapshot bookmark is visible
-    const snapshotBookmark = await env.DB
-      .prepare('SELECT is_visible FROM user_bookmarks WHERE itinerary_id = ?')
-      .bind(snapshot!.id)
-      .first<{ is_visible: number }>();
-    expect(snapshotBookmark).not.toBeNull();
-    expect(snapshotBookmark!.is_visible).toBe(1);
+    const publication = await env.DB
+      .prepare('SELECT shared_itinerary_id, prefecture_slugs FROM itinerary_publications WHERE source_itinerary_id = ?')
+      .bind(itineraryId)
+      .first<{ shared_itinerary_id: string; prefecture_slugs: string }>();
+    expect(publication?.shared_itinerary_id).toBe(snapshot!.id);
+    expect(JSON.parse(publication!.prefecture_slugs)).toEqual(['tokyo']);
   });
 
-  it('hides snapshot bookmark when toggling visibility to false', async () => {
+  it('reuses one public ID when multiple accounts publish the same itinerary', async () => {
+    const firstToken = await registerAndGetToken('firstpublisher', 'first@example.com');
+    const secondToken = await registerAndGetToken('secondpublisher', 'second@example.com');
+    const itineraryId = await createItinerary();
+
+    for (const token of [firstToken, secondToken]) {
+      const syncRes = await app.request('/api/v1/users/me/sync-bookmarks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ itinerary_ids: [itineraryId] }),
+      }, env);
+      expect(syncRes.status).toBe(200);
+    }
+
+    const publish = (token: string, prefecture: string) => app.request(
+      `/api/v1/users/me/bookmarks/${itineraryId}/publish`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ prefecture_slugs: [prefecture] }),
+      },
+      env,
+    );
+
+    const firstRes = await publish(firstToken, 'tokyo');
+    const secondRes = await publish(secondToken, 'kyoto');
+    expect(firstRes.status).toBe(200);
+    expect(secondRes.status).toBe(200);
+
+    const first = await firstRes.json() as { data: { id: string } };
+    const second = await secondRes.json() as { data: { id: string } };
+    expect(second.data.id).toBe(first.data.id);
+
+    const publications = await env.DB.prepare(`
+      SELECT shared_itinerary_id, user_id
+      FROM itinerary_publications
+      WHERE source_itinerary_id = ?
+      ORDER BY user_id
+    `).bind(itineraryId).all<{ shared_itinerary_id: string; user_id: string }>();
+    expect(publications.results).toHaveLength(2);
+    expect(publications.results?.every((row) => row.shared_itinerary_id === first.data.id)).toBe(true);
+  });
+
+  it('removes the listing but keeps the public-ID snapshot when unpublished', async () => {
     const token = await registerAndGetToken('hideuser', 'hide@example.com');
     const itineraryId = await createItinerary();
 
@@ -292,36 +345,31 @@ describe('PATCH /api/v1/users/me/bookmarks/:itineraryId/visibility — snapshot 
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ itinerary_ids: [itineraryId] }),
     }, env);
-    await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/visibility`, {
-      method: 'PATCH',
+    await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ is_visible: true }),
+      body: JSON.stringify({ prefecture_slugs: ['kyoto'] }),
     }, env);
 
-    // toggle visibility to false
-    const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/visibility`, {
-      method: 'PATCH',
+    const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publication`, {
+      method: 'DELETE',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ is_visible: false }),
     }, env);
     expect(res.status).toBe(200);
 
-    // verify snapshot bookmark is now hidden
     const snapshot = await env.DB
       .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
       .bind(itineraryId)
       .first<{ id: string }>();
     expect(snapshot).not.toBeNull();
-
-    const snapshotBookmark = await env.DB
-      .prepare('SELECT is_visible FROM user_bookmarks WHERE itinerary_id = ?')
-      .bind(snapshot!.id)
-      .first<{ is_visible: number }>();
-    expect(snapshotBookmark).not.toBeNull();
-    expect(snapshotBookmark!.is_visible).toBe(0);
+    const publication = await env.DB
+      .prepare('SELECT 1 FROM itinerary_publications WHERE source_itinerary_id = ?')
+      .bind(itineraryId)
+      .first();
+    expect(publication).toBeNull();
   });
 
-  it('creates snapshot for password-protected itinerary when toggling visibility to true', async () => {
+  it('creates a password-free snapshot for a password-protected source', async () => {
     const token = await registerAndGetToken('pwuser', 'pw@example.com');
 
     // create password-protected itinerary
@@ -333,11 +381,10 @@ describe('PATCH /api/v1/users/me/bookmarks/:itineraryId/visibility — snapshot 
     const createJson = await createRes.json() as { data: { id: string } };
     const itineraryId = createJson.data.id;
 
-    // toggle visibility to true
-    const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/visibility`, {
-      method: 'PATCH',
+    const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ is_visible: true }),
+      body: JSON.stringify({ prefecture_slugs: ['hokkaido'] }),
     }, env);
     expect(res.status).toBe(200);
 

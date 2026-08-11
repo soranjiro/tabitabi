@@ -78,6 +78,17 @@ async function applyMigrations(db: D1Database) {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
+    `CREATE TABLE IF NOT EXISTS itinerary_publications (
+      source_itinerary_id TEXT NOT NULL,
+      shared_itinerary_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      prefecture_slugs TEXT NOT NULL,
+      areas TEXT NOT NULL DEFAULT '[]',
+      tags TEXT NOT NULL DEFAULT '[]',
+      published_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (source_itinerary_id, user_id)
+    );`,
     `CREATE TABLE IF NOT EXISTS itinerary_members (
       id TEXT PRIMARY KEY,
       itinerary_id TEXT NOT NULL,

@@ -36,12 +36,12 @@
         {#each itinerary.areas.slice(0, 2) as area}<span>{area}</span>{/each}
         {#each itinerary.tags.slice(0, compact ? 1 : 2) as tag}<span>#{tag}</span>{/each}
       </div>
-      <div class="meta">
-        <span class="author"><i>{itinerary.username.slice(0, 1).toUpperCase()}</i> @{itinerary.username}</span>
-        <span>{itinerary.stops}件の予定 · {itinerary.copies}コピー</span>
-      </div>
     </div>
   </a>
+  <div class="meta">
+    <a class="author" href="/users/{itinerary.username}"><i>{itinerary.username.slice(0, 1).toUpperCase()}</i> @{itinerary.username}</a>
+    <span>{itinerary.stops}件の予定 · {itinerary.copies}コピー</span>
+  </div>
 </article>
 
 <style>
@@ -106,8 +106,8 @@
 
   .meta {
     display: flex;
-    margin-top: 14px;
-    padding-top: 12px;
+    margin: -2px 16px 0;
+    padding: 12px 0 16px;
     border-top: 1px solid #eef1f6;
     align-items: center;
     justify-content: space-between;
@@ -116,7 +116,8 @@
     font-size: 10px;
   }
 
-  .author { display: inline-flex; align-items: center; gap: 5px; }
+  .author { display: inline-flex; align-items: center; gap: 5px; color: inherit; text-decoration: none; }
+  .author:hover { color: #4c72bc; }
   .author i { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; color: #4c72bc; background: #eef4ff; font-style: normal; font-weight: 900; }
 
   @media (max-width: 420px) {

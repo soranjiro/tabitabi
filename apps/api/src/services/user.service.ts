@@ -269,6 +269,37 @@ export class UserService {
     ]);
   }
 
+  async hasBookmark(userId: string, itineraryId: string): Promise<boolean> {
+    const bookmark = await this.db.prepare(
+      'SELECT 1 FROM user_bookmarks WHERE user_id = ? AND itinerary_id = ?',
+    ).bind(userId, itineraryId).first();
+    return Boolean(bookmark);
+  }
+
+  async unlinkBookmark(userId: string, itineraryId: string): Promise<void> {
+    const bookmark = await this.db.prepare(`
+      SELECT
+        i.source_itinerary_id,
+        EXISTS(
+          SELECT 1 FROM itinerary_publications publication
+          WHERE publication.user_id = ub.user_id
+            AND publication.source_itinerary_id = ub.itinerary_id
+        ) AS is_published
+      FROM user_bookmarks ub
+      JOIN itineraries i ON i.id = ub.itinerary_id
+      WHERE ub.user_id = ? AND ub.itinerary_id = ?
+    `).bind(userId, itineraryId).first<{ source_itinerary_id: string | null; is_published: number }>();
+
+    if (!bookmark) throw new Error('BOOKMARK_NOT_FOUND');
+    if (bookmark.source_itinerary_id || bookmark.is_published === 1) {
+      throw new Error('PUBLISHED_ITINERARY');
+    }
+
+    await this.db.prepare(
+      'DELETE FROM user_bookmarks WHERE user_id = ? AND itinerary_id = ?',
+    ).bind(userId, itineraryId).run();
+  }
+
   async unpublishBookmark(userId: string, sourceItineraryId: string): Promise<boolean> {
     const now = getCurrentTimestamp();
     const [deleted] = await this.db.batch([
@@ -315,7 +346,7 @@ export class UserService {
     // 1. 存在する itinerary を一括確認
     const placeholders = uniqueItineraryIds.map(() => '?').join(', ');
     const existing = await this.db
-      .prepare(`SELECT id FROM itineraries WHERE id IN (${placeholders})`)
+      .prepare(`SELECT id FROM itineraries WHERE id IN (${placeholders}) AND source_itinerary_id IS NULL`)
       .bind(...uniqueItineraryIds)
       .all<{ id: string }>();
 

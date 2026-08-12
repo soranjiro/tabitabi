@@ -41,6 +41,7 @@
   let publicationAreas = $state("");
   let publicationTags = $state<string[]>([]);
   let publicationError = $state("");
+  let unlinkTarget = $state<UserBookmarkWithItinerary | null>(null);
 
   onMount(async () => {
     try {
@@ -309,12 +310,28 @@
     }
   }
 
+  async function unlinkBookmark(id: string) {
+    publishingIds = new Set([...publishingIds, id]);
+    try {
+      await userApi.unlinkBookmark(id);
+      // ログイン時の履歴同期で、解除済みのしおりを直ちに再紐付けしない。
+      auth.removeFromHistory(id);
+      unlinkTarget = null;
+      editSuccess = "アカウントからしおりの紐付けを解除しました。しおり自体は削除されていません。";
+      await loadBookmarks();
+    } catch {
+      error = "しおりの紐付け解除に失敗しました。";
+    } finally {
+      publishingIds = new Set([...publishingIds].filter((item) => item !== id));
+    }
+  }
+
   async function republish(id: string) {
     if (publishingIds.has(id)) return;
-    publishingIds = new Set([...publishingIds, id]);
     const item = bookmarks.find((bookmark) => bookmark.itinerary_id === id);
     if (!item) return;
     if (!item.prefecture_slugs?.length) return openPublication(item);
+    publishingIds = new Set([...publishingIds, id]);
     try {
       await userApi.publishBookmark(id, {
         prefecture_slugs: item.prefecture_slugs,
@@ -430,6 +447,7 @@
                   <button class="danger" onclick={() => unpublish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)}>取り下げ</button>
                 {:else}
                   <button class="publish-action" onclick={() => openPublication(item)}>みんなに公開</button>
+                  <button class="danger" onclick={() => (unlinkTarget = item)} disabled={publishingIds.has(item.itinerary_id)}>紐付けを解除</button>
                 {/if}
               </div>
             </article>
@@ -453,6 +471,21 @@
               <div class="publication-tags">{#each travelTags as tag}<button class:selected={publicationTags.includes(tag)} onclick={() => togglePublicationTag(tag)}>{tag}</button>{/each}</div>
             </fieldset>
             <button class="dialog-publish" onclick={savePublication} disabled={publishingIds.has(publicationTarget.itinerary_id)}>{publishingIds.has(publicationTarget.itinerary_id) ? "公開しています…" : publicationTarget.is_visible ? "変更して最新版を公開" : "この内容で公開する"}</button>
+          </div>
+        </div>
+      {/if}
+
+      {#if unlinkTarget}
+        <div class="publication-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (unlinkTarget = null)}>
+          <div class="publication-dialog unlink-dialog" role="dialog" aria-modal="true" aria-labelledby="unlink-title">
+            <button class="dialog-close" onclick={() => (unlinkTarget = null)} aria-label="閉じる">×</button>
+            <p class="dialog-eyebrow">UNLINK ITINERARY</p>
+            <h2 id="unlink-title">紐付けを解除しますか？</h2>
+            <p class="dialog-intro">「{unlinkTarget.title}」はこのアカウントのしおり一覧から見えなくなります。しおり自体や共有URLは削除されません。</p>
+            <div class="unlink-actions">
+              <button type="button" class="cancel-button" onclick={() => (unlinkTarget = null)}>キャンセル</button>
+              <button type="button" class="unlink-confirm" onclick={() => unlinkBookmark(unlinkTarget!.itinerary_id)} disabled={publishingIds.has(unlinkTarget.itinerary_id)}>{publishingIds.has(unlinkTarget.itinerary_id) ? "解除しています…" : "紐付けを解除する"}</button>
+            </div>
           </div>
         </div>
       {/if}
@@ -511,6 +544,12 @@
   .publication-tags button.selected { border-color: #6085d2; color: white; background: #6085d2; }
   .dialog-error { padding: .6rem; border-radius: .5rem; color: #a6434d; background: #fff0f1; font-size: .7rem; }
   .dialog-publish { width: 100%; margin-top: 1.25rem; padding: .75rem; border: 0; border-radius: .65rem; color: white; background: #5379cb; font-size: .78rem; font-weight: 900; cursor: pointer; }
+  .unlink-dialog { max-width: 25rem; }
+  .unlink-actions { display: flex; margin-top: 1.25rem; gap: .55rem; }
+  .unlink-actions .cancel-button, .unlink-confirm { width: 50%; margin: 0; padding: .75rem; border-radius: .65rem; font: inherit; font-size: .78rem; font-weight: 900; cursor: pointer; }
+  .unlink-actions .cancel-button { border: 1px solid #dce4f1; color: #64748b; background: white; }
+  .unlink-confirm { border: 0; color: white; background: #a15d65; }
+  .unlink-confirm:disabled { cursor: wait; opacity: .55; }
   label { display: block; font-size: .875rem; font-weight: 500; color: rgb(55 65 81); }
   input, select { width: 100%; border: 1px solid rgb(209 213 219); border-radius: .5rem; padding: .625rem .75rem; font-size: .875rem; background: white; }
   input:focus, select:focus { outline: 2px solid rgb(99 102 241); outline-offset: 1px; }

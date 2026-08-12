@@ -81,6 +81,11 @@ export const userApi = {
       method: 'DELETE',
     }),
 
+  unlinkBookmark: (itineraryId: string) =>
+    request<{ unlinked: boolean }>(`/users/me/bookmarks/${itineraryId}`, {
+      method: 'DELETE',
+    }),
+
   getPublicFeed: (offset: number, filters: { prefecture?: string; tag?: string } = {}) => {
     const params = new URLSearchParams({ offset: String(offset) });
     if (filters.prefecture) params.set('prefecture', filters.prefecture);

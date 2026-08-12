@@ -192,6 +192,25 @@ describe('POST /api/v1/users/me/sync-bookmarks', () => {
     expect(json.data.skipped).toBe(1);
   });
 
+  it('does not sync public snapshots', async () => {
+    const token = await registerAndGetToken('snapshotviewer', 'snapshotviewer@example.com');
+    const sourceId = await createItinerary();
+    await env.DB.prepare(`
+      INSERT INTO itineraries (id, title, theme_id, default_view_mode, source_itinerary_id, created_at, updated_at)
+      VALUES (?, '公開しおり', 'standard-autumn', 'dayCard', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `).bind('public-snapshot-id', sourceId).run();
+
+    const res = await app.request('/api/v1/users/me/sync-bookmarks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ itinerary_ids: ['public-snapshot-id'] }),
+    }, env);
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as { data: { synced: number; skipped: number } };
+    expect(json.data).toEqual({ synced: 0, skipped: 1 });
+  });
+
   it('returns 400 for more than 50 IDs', async () => {
     const token = await registerAndGetToken('testuser4', 'test4@example.com');
     const ids = Array.from({ length: 51 }, (_, i) => `id-${i}`);
@@ -292,6 +311,23 @@ describe('owner publication flow', () => {
     expect(JSON.parse(publication!.prefecture_slugs)).toEqual(['tokyo']);
   });
 
+  it('does not create a snapshot when the itinerary is not saved by the account', async () => {
+    const token = await registerAndGetToken('notowner', 'notowner@example.com');
+    const itineraryId = await createItinerary();
+
+    const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ prefecture_slugs: ['tokyo'] }),
+    }, env);
+
+    expect(res.status).toBe(404);
+    const snapshot = await env.DB.prepare(
+      'SELECT id FROM itineraries WHERE source_itinerary_id = ?',
+    ).bind(itineraryId).first();
+    expect(snapshot).toBeNull();
+  });
+
   it('reuses one public ID when multiple accounts publish the same itinerary', async () => {
     const firstToken = await registerAndGetToken('firstpublisher', 'first@example.com');
     const secondToken = await registerAndGetToken('secondpublisher', 'second@example.com');
@@ -367,6 +403,46 @@ describe('owner publication flow', () => {
       .bind(itineraryId)
       .first();
     expect(publication).toBeNull();
+  });
+
+  it('unlinks a non-published itinerary without deleting it', async () => {
+    const token = await registerAndGetToken('unlinkuser', 'unlink@example.com');
+    const itineraryId = await createItinerary();
+    await app.request('/api/v1/users/me/sync-bookmarks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ itinerary_ids: [itineraryId] }),
+    }, env);
+
+    const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }, env);
+    expect(res.status).toBe(200);
+    expect(await env.DB.prepare('SELECT 1 FROM itineraries WHERE id = ?').bind(itineraryId).first()).not.toBeNull();
+    expect(await env.DB.prepare('SELECT 1 FROM user_bookmarks WHERE itinerary_id = ?').bind(itineraryId).first()).toBeNull();
+  });
+
+  it('does not unlink an itinerary while it is published', async () => {
+    const token = await registerAndGetToken('publishedunlink', 'publishedunlink@example.com');
+    const itineraryId = await createItinerary();
+    await app.request('/api/v1/users/me/sync-bookmarks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ itinerary_ids: [itineraryId] }),
+    }, env);
+    await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ prefecture_slugs: ['tokyo'] }),
+    }, env);
+
+    const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }, env);
+    expect(res.status).toBe(409);
+    expect(await env.DB.prepare('SELECT 1 FROM user_bookmarks WHERE itinerary_id = ?').bind(itineraryId).first()).not.toBeNull();
   });
 
   it('creates a password-free snapshot for a password-protected source', async () => {

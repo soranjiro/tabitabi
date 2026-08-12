@@ -133,6 +133,9 @@ users.post(
     const itineraryService = new ItineraryService(c.env.DB, c.env);
 
     try {
+      if (!await userService.hasBookmark(userId, itineraryId)) {
+        return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Saved itinerary not found' } }, 404);
+      }
       const snapshot = await itineraryService.publish(itineraryId);
       await userService.publishBookmark(userId, itineraryId, snapshot.id, input);
       return c.json({ success: true, data: { id: snapshot.id } });
@@ -148,6 +151,24 @@ users.post(
     }
   },
 );
+
+// DELETE /users/me/bookmarks/:itineraryId
+// Removes only the current account's saved-itinerary relation. The itinerary remains intact.
+users.delete('/me/bookmarks/:itineraryId', userAuthMiddleware, userProfileMiddleware, async (c) => {
+  try {
+    await new UserService(c.env.DB).unlinkBookmark(c.get('userId')!, c.req.param('itineraryId')!);
+    return c.json({ success: true, data: { unlinked: true } });
+  } catch (error) {
+    const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+    if (code === 'BOOKMARK_NOT_FOUND') {
+      return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Saved itinerary not found' } }, 404);
+    }
+    if (code === 'PUBLISHED_ITINERARY') {
+      return c.json({ success: false, error: { code, message: 'Published itineraries cannot be unlinked' } }, 409);
+    }
+    throw error;
+  }
+});
 
 users.delete('/me/bookmarks/:itineraryId/publication', userAuthMiddleware, userProfileMiddleware, async (c) => {
   const removed = await new UserService(c.env.DB).unpublishBookmark(

@@ -62,15 +62,27 @@
 
   onMount(() => {
     const init = async () => {
-      // Record password protection state for client-side header resolution
-      auth.setPasswordProtected(
-        data.itinerary.id,
-        data.itinerary.is_password_protected,
-      );
-
-      auth.updateAccessTime(data.itinerary.id, data.itinerary.title);
+      // 公開スナップショットは最近のしおり・アカウント同期の対象にしない。
+      if (!data.itinerary.source_itinerary_id) {
+        // Record password protection state for client-side header resolution
+        auth.setPasswordProtected(
+          data.itinerary.id,
+          data.itinerary.is_password_protected,
+        );
+        auth.updateAccessTime(data.itinerary.id, data.itinerary.title);
+      }
       document.body.style.backgroundColor = backgroundColor;
       document.documentElement.style.backgroundColor = backgroundColor;
+
+      // 開いた通常しおりは、ログイン中のアカウントにも保存する。
+      // 公開スナップショットは閲覧専用のため紐付けない。
+      if (!data.itinerary.source_itinerary_id && userAuth.isLoggedIn()) {
+        try {
+          await userApi.syncBookmarks([data.itinerary.id]);
+        } catch {
+          // 保存に失敗しても閲覧は継続する。次回のログイン同期で再試行される。
+        }
+      }
 
       // Check if we have edit permission and need to re-fetch steps to reveal secrets
       const token =

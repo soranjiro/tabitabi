@@ -1,39 +1,55 @@
 prefix_rule(
-    pattern = ["git", "add"],
-    decision = "allow",
-    justification = "Allow staging project changes without an approval prompt.",
-    match = ["git add README.md", "git add ."],
-    not_match = ["git status"],
-)
-
-prefix_rule(
-    pattern = ["git", "commit"],
-    decision = "allow",
-    justification = "Allow committing project changes without an approval prompt.",
-    match = ["git commit -m update"],
-    not_match = ["git status"],
-)
-
-prefix_rule(
-    pattern = ["git", "switch"],
-    decision = "allow",
-    justification = "Allow switching or creating branches without an approval prompt.",
-    match = ["git switch main", "git switch -c feature/example"],
-    not_match = ["git checkout main"],
-)
-
-prefix_rule(
-    pattern = ["git", "push", ["-u", "--set-upstream"], "origin"],
-    decision = "allow",
-    justification = "Allow publishing a branch to origin and updating its local upstream configuration and tracking ref.",
-    match = [
-        "git push -u origin feature/example",
-        "git push --set-upstream origin feature/example",
+    pattern = [
+        "git",
+        [
+            "add",
+            "branch",
+            "checkout",
+            "commit",
+            "diff",
+            "fetch",
+            "log",
+            "merge",
+            "pull",
+            "push",
+            "rebase",
+            "restore",
+            "show",
+            "stash",
+            "status",
+            "switch",
+            "tag",
+        ],
     ],
+    decision = "allow",
+    justification = "Allow common Git development commands without an approval prompt.",
     not_match = [
-        "git push",
-        "git push origin main",
-        "git push --force origin main",
+        "git push --force",
+        "git push -f",
+        "git reset --hard",
+        "git clean -f",
+    ],
+)
+
+prefix_rule(
+    pattern = [
+        "gh",
+        [
+            "api",
+            "auth",
+            "browse",
+            "issue",
+            "pr",
+            "repo",
+            "run",
+            "workflow",
+        ],
+    ],
+    decision = "allow",
+    justification = "Allow common GitHub CLI development commands without an approval prompt.",
+    not_match = [
+        "gh repo delete",
+        "gh auth logout",
     ],
 )
 
@@ -49,4 +65,5 @@ prefix_rule(
     decision = "allow",
     justification = "Allow pnpm development commands without an approval prompt.",
     match = ["pnpm install", "pnpm test", "pnpm run build", "pnpm run dev"],
+)
 )

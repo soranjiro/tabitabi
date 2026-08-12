@@ -24,6 +24,12 @@ body {
   overflow: hidden;
 }
 
+/* The week grid uses the document as its only vertical scroll container. */
+.standard-theme.standard-week-mode,
+.standard-week-mode .standard-container {
+  overflow: visible;
+}
+
 .standard-empty {
   text-align: center;
   padding: 4rem 2rem;

@@ -148,7 +148,19 @@ jobs:
 
       - name: Apply D1 migrations to preview database
         working-directory: apps/api
-        run: node scripts/d1-migrate.mjs up --remote --env preview
+        run: |
+          for attempt in 1 2 3; do
+            if node scripts/d1-migrate.mjs up --remote --env preview; then
+              exit 0
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+
+            echo "D1 migration failed; retrying in $((attempt * 5)) seconds..."
+            sleep $((attempt * 5))
+          done
 
       - name: Deploy API to preview environment
         working-directory: apps/api

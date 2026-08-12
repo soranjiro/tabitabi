@@ -114,7 +114,19 @@
 .standard-packing-group-editor > div,
 .standard-packing-group-add {
   display: flex;
+  align-items: center;
   gap: 7px;
+}
+
+.standard-packing-group-editor > div {
+  transition: transform .15s ease, opacity .15s ease, box-shadow .15s ease;
+}
+
+.standard-packing-group-editor > div.dragging {
+  position: relative;
+  z-index: 2;
+  opacity: .72;
+  transform: scale(1.015);
 }
 
 .standard-packing-group-editor input,
@@ -147,21 +159,25 @@
   color: #b23e32;
 }
 
-.standard-packing-group-order {
-  display: grid;
-  grid-template-columns: repeat(2, 32px);
-  gap: 4px;
-}
-
-.standard-packing-group-editor .standard-packing-group-order button {
+.standard-packing-group-editor .standard-packing-drag-handle {
+  flex: 0 0 38px;
+  align-self: stretch;
   padding: 0;
   background: #eeece7;
-  color: var(--theme-text);
+  color: var(--theme-text-light);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
 
-.standard-packing-group-editor .standard-packing-group-order button:disabled {
-  opacity: .35;
-  cursor: default;
+.standard-packing-group-editor .standard-packing-drag-handle:active {
+  cursor: grabbing;
+  color: var(--theme-primary);
+}
+
+.standard-packing-drag-handle span {
+  font-size: 1.35rem;
+  line-height: 1;
 }
 
 .standard-packing-group-add {
@@ -193,7 +209,7 @@
   }
 
   .standard-packing-group-editor input {
-    flex-basis: calc(100% - 73px);
+    flex-basis: calc(100% - 45px);
   }
 
   .standard-packing-group-editor button {

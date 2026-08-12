@@ -80,8 +80,8 @@ rm .auth-migration/d1-users.json .auth-migration/firebase-users.json
 ## 3. デプロイ順序
 
 ```bash
+make migrate-up-remote
 cd apps/api
-pnpm wrangler d1 migrations apply DB --env production --remote
 pnpm deploy -- --env production
 cd ../web
 pnpm deploy

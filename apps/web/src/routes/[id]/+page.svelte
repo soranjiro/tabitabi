@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto, invalidateAll } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
+  import { userApi } from "$lib/api/user";
   import { stepApi } from "$lib/api/step";
   import { auth } from "$lib/auth";
   import { userAuth } from "$lib/user-auth";
@@ -61,15 +62,27 @@
 
   onMount(() => {
     const init = async () => {
-      // Record password protection state for client-side header resolution
-      auth.setPasswordProtected(
-        data.itinerary.id,
-        data.itinerary.is_password_protected,
-      );
-
-      auth.updateAccessTime(data.itinerary.id, data.itinerary.title);
+      // 公開スナップショットは最近のしおり・アカウント同期の対象にしない。
+      if (!data.itinerary.source_itinerary_id) {
+        // Record password protection state for client-side header resolution
+        auth.setPasswordProtected(
+          data.itinerary.id,
+          data.itinerary.is_password_protected,
+        );
+        auth.updateAccessTime(data.itinerary.id, data.itinerary.title);
+      }
       document.body.style.backgroundColor = backgroundColor;
       document.documentElement.style.backgroundColor = backgroundColor;
+
+      // 開いた通常しおりは、ログイン中のアカウントにも保存する。
+      // 公開スナップショットは閲覧専用のため紐付けない。
+      if (!data.itinerary.source_itinerary_id && userAuth.isLoggedIn()) {
+        try {
+          await userApi.syncBookmarks([data.itinerary.id]);
+        } catch {
+          // 保存に失敗しても閲覧は継続する。次回のログイン同期で再試行される。
+        }
+      }
 
       // Check if we have edit permission and need to re-fetch steps to reveal secrets
       const token =
@@ -184,8 +197,16 @@
     }
   }
 
-  async function handlePublishItinerary() {
-    const result = await itineraryApi.publish(data.itinerary.id);
+  async function handlePublishItinerary(metadata: {
+    prefectureSlugs: string[];
+    areas: string[];
+    tags: string[];
+  }) {
+    const result = await userApi.publishBookmark(data.itinerary.id, {
+      prefecture_slugs: metadata.prefectureSlugs,
+      areas: metadata.areas,
+      tags: metadata.tags,
+    });
     return result.id;
   }
 
@@ -206,7 +227,7 @@
       auth.setToken(result.id, result.title, result.token);
       // 同じ動的ルート内の遷移では、テーマコンポーネントの編集状態が残ることがあるため、
       // コピー先は新しいページとして開いて確実に自分用のしおりだけを表示する。
-      window.location.assign(`/${result.id}`);
+      window.location.assign(`/itineraries/${result.id}`);
     } catch (error) {
       console.error("Failed to fork itinerary:", error);
       alert("コピーに失敗しました");
@@ -222,14 +243,14 @@
     name="description"
     content="{data.itinerary.title}の旅のしおり。たびたびで作成された旅行計画を確認できます。"
   />
-  <link rel="canonical" href="https://tabitabi.pages.dev/{data.itinerary.id}" />
+  <link rel="canonical" href="https://tabitabi.pages.dev/itineraries/{data.itinerary.id}" />
   <meta property="og:title" content="{data.itinerary.title} - たびたび" />
   <meta
     property="og:description"
     content="{data.itinerary.title}の旅のしおり。たびたびで作成された旅行計画を確認できます。"
   />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://tabitabi.pages.dev/{data.itinerary.id}" />
+  <meta property="og:url" content="https://tabitabi.pages.dev/itineraries/{data.itinerary.id}" />
   <meta property="og:image" content="https://tabitabi.pages.dev/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />

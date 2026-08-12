@@ -6,6 +6,7 @@ import type {
   PublicBookmark,
   PublicFeedItem,
   PublicFeedResponse,
+  PublishItineraryInput,
   BootstrapProfileInput,
   SyncBookmarksResponse,
   UpdateProfileInput,
@@ -88,9 +89,16 @@ export class UserService {
           i.updated_at as itinerary_updated_at,
           i.source_itinerary_id,
           (SELECT id FROM itineraries WHERE source_itinerary_id = ub.itinerary_id LIMIT 1) as shared_itinerary_id,
-          (SELECT updated_at FROM itineraries WHERE source_itinerary_id = ub.itinerary_id LIMIT 1) as shared_updated_at
+          (SELECT updated_at FROM itineraries WHERE source_itinerary_id = ub.itinerary_id LIMIT 1) as shared_updated_at,
+          publication.prefecture_slugs,
+          publication.areas,
+          publication.tags,
+          CASE WHEN publication.source_itinerary_id IS NULL THEN 0 ELSE 1 END as is_published
         FROM user_bookmarks ub
         JOIN itineraries i ON ub.itinerary_id = i.id
+        LEFT JOIN itinerary_publications publication
+          ON publication.source_itinerary_id = ub.itinerary_id
+         AND publication.user_id = ub.user_id
         WHERE ub.user_id = ?
           AND i.source_itinerary_id IS NULL
         ORDER BY ub.created_at DESC
@@ -101,7 +109,7 @@ export class UserService {
     return (results.results ?? []).map(row => ({
       user_id: row.user_id as string,
       itinerary_id: row.itinerary_id as string,
-      is_visible: row.is_visible === 1,
+      is_visible: row.is_published === 1,
       created_at: row.created_at as string,
       updated_at: row.updated_at as string,
       title: row.title as string,
@@ -111,6 +119,9 @@ export class UserService {
       source_itinerary_id: (row.source_itinerary_id as string | null) ?? null,
       shared_itinerary_id: (row.shared_itinerary_id as string | null) ?? null,
       shared_updated_at: (row.shared_updated_at as string | null) ?? null,
+      prefecture_slugs: this.parseStringArray(row.prefecture_slugs),
+      areas: this.parseStringArray(row.areas),
+      tags: this.parseStringArray(row.tags),
     }));
   }
 
@@ -119,46 +130,187 @@ export class UserService {
     const results = await this.db
       .prepare(`
         SELECT
-          ub.itinerary_id, i.title, i.theme_id, i.created_at
-        FROM user_bookmarks ub
-        JOIN itineraries i ON ub.itinerary_id = i.id
-        JOIN users u ON ub.user_id = u.id
+          publication.shared_itinerary_id as itinerary_id,
+          i.title, i.theme_id, publication.published_at as created_at,
+          publication.prefecture_slugs, publication.areas, publication.tags,
+          (SELECT COUNT(*) FROM steps WHERE itinerary_id = i.id) as stops,
+          COALESCE(stats.fork_count, 0) as copies,
+          (SELECT MIN(start_at) FROM steps WHERE itinerary_id = i.id) as start_at,
+          (SELECT MAX(end_at) FROM steps WHERE itinerary_id = i.id) as end_at,
+          '' as description
+        FROM itinerary_publications publication
+        JOIN itineraries i ON i.id = publication.shared_itinerary_id
+        JOIN users u ON publication.user_id = u.id
+        LEFT JOIN itinerary_fork_stats stats ON stats.itinerary_id = i.id
         WHERE u.username = ?
           AND u.email_verified_at IS NOT NULL
-          AND ub.is_visible = 1
           AND i.password IS NULL
           AND i.source_itinerary_id IS NOT NULL
-        ORDER BY i.created_at DESC
+        ORDER BY publication.published_at DESC
       `)
       .bind(username)
       .all<PublicBookmark>();
 
-    return results.results ?? [];
+    return (results.results ?? []).map((row) => this.mapPublicBookmark(row as unknown as Record<string, unknown>));
   }
 
   // 全ユーザーの公開しおりフィード（is_visible:true かつ鍵なし、最新順）
-  async getPublicFeed(offset: number, limit: number): Promise<PublicFeedResponse> {
+  async getPublicFeed(
+    offset: number,
+    limit: number,
+    filters: { prefecture?: string; tag?: string } = {},
+  ): Promise<PublicFeedResponse> {
     const fetchLimit = limit + 1; // hasMore 判定用に1件多く取得
+    const conditions = [
+      'u.email_verified_at IS NOT NULL',
+      'i.password IS NULL',
+      'i.source_itinerary_id IS NOT NULL',
+    ];
+    const values: string[] = [];
+    if (filters.prefecture) {
+      conditions.push('EXISTS (SELECT 1 FROM json_each(publication.prefecture_slugs) WHERE value = ?)');
+      values.push(filters.prefecture);
+    }
+    if (filters.tag) {
+      conditions.push('EXISTS (SELECT 1 FROM json_each(publication.tags) WHERE value = ?)');
+      values.push(filters.tag);
+    }
+    const where = conditions.join(' AND ');
     const results = await this.db
       .prepare(`
         SELECT
-          ub.itinerary_id, i.title, i.theme_id, i.created_at, u.username
-        FROM user_bookmarks ub
-        JOIN itineraries i ON ub.itinerary_id = i.id
-        JOIN users u ON ub.user_id = u.id
-        WHERE ub.is_visible = 1
-          AND u.email_verified_at IS NOT NULL
-          AND i.password IS NULL
-          AND i.source_itinerary_id IS NOT NULL
-        ORDER BY i.created_at DESC
+          publication.shared_itinerary_id as itinerary_id,
+          i.title, i.theme_id, publication.published_at as created_at, u.username,
+          publication.prefecture_slugs, publication.areas, publication.tags,
+          (SELECT COUNT(*) FROM steps WHERE itinerary_id = i.id) as stops,
+          COALESCE(stats.fork_count, 0) as copies,
+          (SELECT MIN(start_at) FROM steps WHERE itinerary_id = i.id) as start_at,
+          (SELECT MAX(end_at) FROM steps WHERE itinerary_id = i.id) as end_at,
+          '' as description
+        FROM itinerary_publications publication
+        JOIN itineraries i ON i.id = publication.shared_itinerary_id
+        JOIN users u ON publication.user_id = u.id
+        LEFT JOIN itinerary_fork_stats stats ON stats.itinerary_id = i.id
+        WHERE ${where}
+        ORDER BY publication.published_at DESC
         LIMIT ? OFFSET ?
       `)
-      .bind(fetchLimit, offset)
-      .all<PublicFeedItem>();
+      .bind(...values, fetchLimit, offset)
+      .all<Record<string, unknown>>();
+
+    const countResult = await this.db.prepare(`
+      SELECT COUNT(*) as total
+      FROM itinerary_publications publication
+      JOIN itineraries i ON i.id = publication.shared_itinerary_id
+      JOIN users u ON publication.user_id = u.id
+      WHERE ${where}
+    `).bind(...values).first<{ total: number }>();
+
+    const destinationResults = await this.db.prepare(`
+      SELECT destination.value as slug, COUNT(*) as count
+      FROM itinerary_publications publication, json_each(publication.prefecture_slugs) destination
+      JOIN itineraries i ON i.id = publication.shared_itinerary_id
+      JOIN users u ON publication.user_id = u.id
+      WHERE u.email_verified_at IS NOT NULL
+        AND i.password IS NULL
+        AND i.source_itinerary_id IS NOT NULL
+      GROUP BY destination.value
+    `).all<{ slug: string; count: number }>();
 
     const rows = results.results ?? [];
     const hasMore = rows.length > limit;
-    return { items: hasMore ? rows.slice(0, limit) : rows, hasMore };
+    const items = (hasMore ? rows.slice(0, limit) : rows).map((row) => ({
+      ...this.mapPublicBookmark(row),
+      username: row.username as string,
+    } satisfies PublicFeedItem));
+    const destinationCounts = Object.fromEntries(
+      (destinationResults.results ?? []).map((row) => [row.slug, Number(row.count)]),
+    );
+    return { items, hasMore, total: Number(countResult?.total ?? 0), destinationCounts };
+  }
+
+  async publishBookmark(
+    userId: string,
+    sourceItineraryId: string,
+    sharedItineraryId: string,
+    metadata: PublishItineraryInput,
+  ): Promise<void> {
+    const bookmark = await this.db.prepare(
+      'SELECT 1 FROM user_bookmarks WHERE user_id = ? AND itinerary_id = ?',
+    ).bind(userId, sourceItineraryId).first();
+    if (!bookmark) throw new Error('BOOKMARK_NOT_FOUND');
+
+    const now = getCurrentTimestamp();
+    await this.db.batch([
+      this.db.prepare(`
+        INSERT INTO itinerary_publications (
+          source_itinerary_id, shared_itinerary_id, user_id,
+          prefecture_slugs, areas, tags, published_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(source_itinerary_id, user_id) DO UPDATE SET
+          shared_itinerary_id = excluded.shared_itinerary_id,
+          prefecture_slugs = excluded.prefecture_slugs,
+          areas = excluded.areas,
+          tags = excluded.tags,
+          updated_at = excluded.updated_at
+      `).bind(
+        sourceItineraryId,
+        sharedItineraryId,
+        userId,
+        JSON.stringify(metadata.prefecture_slugs),
+        JSON.stringify(metadata.areas ?? []),
+        JSON.stringify(metadata.tags ?? []),
+        now,
+        now,
+      ),
+      this.db.prepare(
+        'UPDATE user_bookmarks SET is_visible = 1, updated_at = ? WHERE user_id = ? AND itinerary_id = ?',
+      ).bind(now, userId, sourceItineraryId),
+    ]);
+  }
+
+  async hasBookmark(userId: string, itineraryId: string): Promise<boolean> {
+    const bookmark = await this.db.prepare(
+      'SELECT 1 FROM user_bookmarks WHERE user_id = ? AND itinerary_id = ?',
+    ).bind(userId, itineraryId).first();
+    return Boolean(bookmark);
+  }
+
+  async unlinkBookmark(userId: string, itineraryId: string): Promise<void> {
+    const bookmark = await this.db.prepare(`
+      SELECT
+        i.source_itinerary_id,
+        EXISTS(
+          SELECT 1 FROM itinerary_publications publication
+          WHERE publication.user_id = ub.user_id
+            AND publication.source_itinerary_id = ub.itinerary_id
+        ) AS is_published
+      FROM user_bookmarks ub
+      JOIN itineraries i ON i.id = ub.itinerary_id
+      WHERE ub.user_id = ? AND ub.itinerary_id = ?
+    `).bind(userId, itineraryId).first<{ source_itinerary_id: string | null; is_published: number }>();
+
+    if (!bookmark) throw new Error('BOOKMARK_NOT_FOUND');
+    if (bookmark.source_itinerary_id || bookmark.is_published === 1) {
+      throw new Error('PUBLISHED_ITINERARY');
+    }
+
+    await this.db.prepare(
+      'DELETE FROM user_bookmarks WHERE user_id = ? AND itinerary_id = ?',
+    ).bind(userId, itineraryId).run();
+  }
+
+  async unpublishBookmark(userId: string, sourceItineraryId: string): Promise<boolean> {
+    const now = getCurrentTimestamp();
+    const [deleted] = await this.db.batch([
+      this.db.prepare(
+        'DELETE FROM itinerary_publications WHERE user_id = ? AND source_itinerary_id = ?',
+      ).bind(userId, sourceItineraryId),
+      this.db.prepare(
+        'UPDATE user_bookmarks SET is_visible = 0, updated_at = ? WHERE user_id = ? AND itinerary_id = ?',
+      ).bind(now, userId, sourceItineraryId),
+    ]);
+    return Number(deleted.meta?.changes ?? 0) > 0;
   }
 
   async updateBookmarkVisibility(userId: string, itineraryId: string, isVisible: boolean): Promise<UserBookmark | null> {
@@ -194,7 +346,7 @@ export class UserService {
     // 1. 存在する itinerary を一括確認
     const placeholders = uniqueItineraryIds.map(() => '?').join(', ');
     const existing = await this.db
-      .prepare(`SELECT id FROM itineraries WHERE id IN (${placeholders})`)
+      .prepare(`SELECT id FROM itineraries WHERE id IN (${placeholders}) AND source_itinerary_id IS NULL`)
       .bind(...uniqueItineraryIds)
       .all<{ id: string }>();
 
@@ -291,6 +443,33 @@ export class UserService {
 
   private escapeLikePattern(value: string): string {
     return value.replace(/[\\%_]/g, '\\$&');
+  }
+
+  private parseStringArray(value: unknown): string[] {
+    if (typeof value !== 'string') return [];
+    try {
+      const parsed: unknown = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private mapPublicBookmark(row: Record<string, unknown>): PublicBookmark {
+    return {
+      itinerary_id: row.itinerary_id as string,
+      title: row.title as string,
+      theme_id: row.theme_id as string,
+      created_at: row.created_at as string,
+      prefecture_slugs: this.parseStringArray(row.prefecture_slugs),
+      areas: this.parseStringArray(row.areas),
+      tags: this.parseStringArray(row.tags),
+      stops: Number(row.stops ?? 0),
+      copies: Number(row.copies ?? 0),
+      start_at: row.start_at == null ? null : Number(row.start_at),
+      end_at: row.end_at == null ? null : Number(row.end_at),
+      description: typeof row.description === 'string' ? row.description : '',
+    };
   }
 
   async searchUsers(query: string, limit: number = 20): Promise<UserSearchResult[]> {

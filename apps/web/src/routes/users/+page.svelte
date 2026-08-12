@@ -130,7 +130,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           {#each items as item}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-              <a href="/{item.itinerary_id}" class="block">
+              <a href="/itineraries/{item.itinerary_id}" class="block">
                 <h3 class="font-medium text-gray-900 truncate">{item.title}</h3>
               </a>
               <div class="flex items-center justify-between mt-2">

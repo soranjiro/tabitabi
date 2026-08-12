@@ -22,6 +22,9 @@ importers:
       chrome-launcher:
         specifier: ^1.2.1
         version: 1.2.1
+      dbmate:
+        specifier: 2.34.1
+        version: 2.34.1
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -377,6 +380,41 @@ packages:
   '@csstools/css-tokenizer@4.0.0':
     resolution: {integrity: sha512-QxULHAm7cNu72w97JUNCBFODFaXpbDg+dP8b/oWFAZ2MTRppA3U00Y2L1HqaS4J6yBqxwa/Y3nMBaxVKbB/NsA==}
     engines: {node: '>=20.19.0'}
+
+  '@dbmate/darwin-arm64@2.34.1':
+    resolution: {integrity: sha512-Ez6UWKuws/E/yMGgVyUZ5ngbe/hMYFOV31pZIwTp7dcT8yGL4JV5ayOYbHHnvwiX9Ram28p7JwXntDh1jI2TFw==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@dbmate/darwin-x64@2.34.1':
+    resolution: {integrity: sha512-aAGZCFum2PeAsbQXeKorIjjn8tbhCSCOYEILLCeAe++egPLk6dttXwf+5sLeBFtnZfy47tb3vgo07MKVMCcOWQ==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@dbmate/linux-arm64@2.34.1':
+    resolution: {integrity: sha512-TXxc8l8vnNrAqqEUgIkSjJ4ILyHd8a7iRUcRl8BJ/8l7tfHuscffCMxDB5+NOz/d10HnUcaJcOXerpIzPlpORA==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@dbmate/linux-arm@2.34.1':
+    resolution: {integrity: sha512-rOFS9es48gYdUHPN/MDbNueWWEL7BEtglehPFMg6kUnKykBifde4EoEReiK8/okiCvtdOYPBFOio7vWQ4nwlPg==}
+    cpu: [arm]
+    os: [linux]
+
+  '@dbmate/linux-ia32@2.34.1':
+    resolution: {integrity: sha512-wiR1ai3+KKYfZTcLZx430hAqmE2hA5hCCZG/hMwnQgERU3ziygpAheuw0fEC5TYcS3KltldtGSLEd7ls+pdNDQ==}
+    cpu: [ia32]
+    os: [linux]
+
+  '@dbmate/linux-x64@2.34.1':
+    resolution: {integrity: sha512-cJ4B+SKqgJaIAfF5lgUUe50j3dYAczlWolL47qXLiTqAlut+KmGvL0kxdRiUYAOtSml+jEu1mqRXLHv5EX4ZmQ==}
+    cpu: [x64]
+    os: [linux]
+
+  '@dbmate/win32-x64@2.34.1':
+    resolution: {integrity: sha512-HmrBbB+Hsc3u9sDa40q656Nu9RnNP26nI8NbYwuypikElI4DTJbSUC5qktMrKYruk9FRZqXA2TpkCcDxhr3rXQ==}
+    cpu: [x64]
+    os: [win32]
 
   '@emnapi/runtime@1.11.3':
     resolution: {integrity: sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA==}
@@ -1761,6 +1799,10 @@ packages:
   data-urls@7.0.0:
     resolution: {integrity: sha512-23XHcCF+coGYevirZceTVD7NdJOqVn+49IHyxgszm+JIiHLoB2TkmPtsYkNWT1pvRSGkc35L6NHs0yHkN2SumA==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
+
+  dbmate@2.34.1:
+    resolution: {integrity: sha512-fB+M/mnR0b6uyaPTK4ng7CDb2dHsEnxdkUCkQKiNq/I9mwExb/W11UEmhmdcxpBRm30I+E5TApf15PfDpEnEZA==}
+    hasBin: true
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -3378,6 +3420,27 @@ snapshots:
   '@csstools/css-tokenizer@4.0.0':
     optional: true
 
+  '@dbmate/darwin-arm64@2.34.1':
+    optional: true
+
+  '@dbmate/darwin-x64@2.34.1':
+    optional: true
+
+  '@dbmate/linux-arm64@2.34.1':
+    optional: true
+
+  '@dbmate/linux-arm@2.34.1':
+    optional: true
+
+  '@dbmate/linux-ia32@2.34.1':
+    optional: true
+
+  '@dbmate/linux-x64@2.34.1':
+    optional: true
+
+  '@dbmate/win32-x64@2.34.1':
+    optional: true
+
   '@emnapi/runtime@1.11.3':
     dependencies:
       tslib: 2.8.1
@@ -4707,6 +4770,16 @@ snapshots:
     transitivePeerDependencies:
       - '@noble/hashes'
     optional: true
+
+  dbmate@2.34.1:
+    optionalDependencies:
+      '@dbmate/darwin-arm64': 2.34.1
+      '@dbmate/darwin-x64': 2.34.1
+      '@dbmate/linux-arm': 2.34.1
+      '@dbmate/linux-arm64': 2.34.1
+      '@dbmate/linux-ia32': 2.34.1
+      '@dbmate/linux-x64': 2.34.1
+      '@dbmate/win32-x64': 2.34.1
 
   debug@4.4.3:
     dependencies:

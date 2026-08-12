@@ -30,10 +30,14 @@
 
 ## 2. Migration
 
-`apps/api/migrations/` に未使用番号のSQLを追加します。
+`make migrate-new` で `apps/db/migrations/sql/` にSQLを追加します。
+
+```bash
+make migrate-new name=add_example_items
+```
 
 ```sql
--- apps/api/migrations/0025_add_example_items.sql
+-- migrate:up
 CREATE TABLE itinerary_example_items (
   id TEXT PRIMARY KEY,
   itinerary_id TEXT NOT NULL,
@@ -45,6 +49,10 @@ CREATE TABLE itinerary_example_items (
 
 CREATE INDEX idx_example_items_itinerary
   ON itinerary_example_items(itinerary_id, created_at);
+
+-- migrate:down
+DROP INDEX IF EXISTS idx_example_items_itinerary;
+DROP TABLE IF EXISTS itinerary_example_items;
 ```
 
 注意点:
@@ -53,11 +61,12 @@ CREATE INDEX idx_example_items_itinerary
 - `itineraries` に必須でない機能カラムを増やさず、従属テーブルを優先する
 - SQLite / D1で実行可能なDDLだけを使う
 - 外部キーと削除時の動作を明示する
-- 同じ番号のmigrationが既にないか確認する
+- dbmateのup/downセクションを両方書く
+- up/downを冪等なDDLにする
 - ローカルの空DBへ全migrationを通す
 
 ```bash
-make migrate-local
+make migrate-up
 ```
 
 ## 3. 共有型

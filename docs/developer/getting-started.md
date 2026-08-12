@@ -31,7 +31,7 @@ cp apps/api/wrangler.toml.example apps/api/wrangler.toml
 binding = "DB"
 database_name = "tabitabi"
 database_id = "ローカルだけならプレースホルダーでも可"
-migrations_dir = "./migrations"
+migrations_dir = "../db/migrations/sql"
 
 [vars]
 ALLOWED_ORIGINS = "*"
@@ -68,10 +68,11 @@ Firebaseの4変数は `dev` と `build` の前に検証されます。アカウ�
 ### ローカルD1
 
 ```bash
-make migrate-local
+make migrate-up
 ```
 
-マイグレーションは `apps/api/migrations/` から適用されます。
+すべてのマイグレーションは `apps/db/migrations/sql/` で管理し、新しいファイルは
+dbmate形式（`-- migrate:up` / `-- migrate:down`）で追加します。
 
 ## 開発サーバー
 
@@ -96,14 +97,16 @@ pnpm --filter web dev
 
 | コマンド | 内容 |
 |---|---|
-| `pnpm dev` | WebとAPIを開発モードで起動 |
+| `make dev` | WebとAPIを開発モードで起動 |
 | `pnpm build` | docs生成を含む全パッケージのビルド |
 | `pnpm test` | APIとWebのVitest／Nodeテスト |
 | `pnpm test:api` | APIテスト |
 | `pnpm test:web` | WebのVitest |
 | `pnpm --filter web test:e2e` | Playwright E2E |
 | `pnpm --filter web build:docs` | `docs/` をWeb配信用HTMLへ変換 |
-| `make migrate-local` | ローカルD1へマイグレーション |
+| `make migrate-status` | ローカルD1の適用状態を表示 |
+| `make migrate-up` | ローカルD1を最新化 |
+| `make migrate-down` | ローカルD1の最新1件を戻す |
 | `make lighthouse` | 起動中のWebをLighthouse計測 |
 
 ## 実装上のルール
@@ -168,8 +171,8 @@ GitHub ActionsまたはCloudflareのsecretとして管理し、リポジトリ�
 手動でAPIを更新する場合は、先にD1をバックアップし、マイグレーション、API、Webの順に進めます。
 
 ```bash
+make migrate-up-remote
 cd apps/api
-pnpm wrangler d1 migrations apply DB --remote --env production
 pnpm wrangler deploy --env production
 
 cd ../web

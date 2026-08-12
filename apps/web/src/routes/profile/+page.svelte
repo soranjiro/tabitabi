@@ -6,6 +6,7 @@
   import { userAuth } from "$lib/user-auth";
   import PageShell from "$lib/PageShell.svelte";
   import { auth } from "$lib/auth";
+  import { prefectures as explorePrefectures, prefectureName, travelTags } from "$lib/explore/data";
   import { PREFECTURES, type Prefecture, type UserBookmarkWithItinerary, type UserSessionProfile } from "@tabitabi/types";
 
   type Mode = "login" | "register" | "verify" | "forgot" | "setup";
@@ -35,6 +36,12 @@
   let editError = $state<string | null>(null);
   let editSuccess = $state<string | null>(null);
   let publishingIds = $state(new Set<string>());
+  let publicationTarget = $state<UserBookmarkWithItinerary | null>(null);
+  let publicationPrefecture = $state("");
+  let publicationAreas = $state("");
+  let publicationTags = $state<string[]>([]);
+  let publicationError = $state("");
+  let unlinkTarget = $state<UserBookmarkWithItinerary | null>(null);
 
   onMount(async () => {
     try {
@@ -78,7 +85,7 @@
       editEmail = profile.email;
       await syncLocalBookmarks();
       await loadBookmarks();
-      await continuePendingFork();
+      await continuePendingAction();
     } catch (e) {
       if (errorCode(e) === "PROFILE_SETUP_REQUIRED") {
         mode = "setup";
@@ -174,7 +181,7 @@
       notice = "アカウントの準備が完了しました。";
       await syncLocalBookmarks();
       await loadBookmarks();
-      await continuePendingFork();
+      await continuePendingAction();
     } catch (e) { error = apiMessage(e); }
     finally { submitting = false; }
   }
@@ -194,13 +201,20 @@
     } catch { /* 次回ログイン時に再同期する */ }
   }
 
-  async function continuePendingFork() {
+  async function continuePendingAction() {
+    const publishId = sessionStorage.getItem("tabitabi_pending_publish");
+    if (publishId) {
+      sessionStorage.removeItem("tabitabi_pending_publish");
+      await goto(`/itineraries/${publishId}?publish=1`);
+      return;
+    }
+
     const itineraryId = sessionStorage.getItem("tabitabi_pending_fork");
     if (!itineraryId) return;
     sessionStorage.removeItem("tabitabi_pending_fork");
     const result = await itineraryApi.fork(itineraryId);
     auth.setToken(result.id, result.title, result.token);
-    await goto(`/${result.id}`);
+    await goto(`/itineraries/${result.id}`);
   }
 
   async function loadBookmarks() {
@@ -246,16 +260,87 @@
     finally { submitting = false; }
   }
 
-  async function toggleVisibility(id: string, current: boolean) {
-    bookmarks = bookmarks.map((item) => item.itinerary_id === id ? { ...item, is_visible: !current } : item);
-    try { await userApi.updateVisibility(id, { is_visible: !current }); }
-    catch { bookmarks = bookmarks.map((item) => item.itinerary_id === id ? { ...item, is_visible: current } : item); }
+  function openPublication(item: UserBookmarkWithItinerary) {
+    publicationTarget = item;
+    publicationPrefecture = item.prefecture_slugs?.[0] ?? "";
+    publicationAreas = item.areas?.join("、") ?? "";
+    publicationTags = item.tags ?? [];
+    publicationError = "";
+  }
+
+  function togglePublicationTag(tag: string) {
+    if (publicationTags.includes(tag)) publicationTags = publicationTags.filter((item) => item !== tag);
+    else if (publicationTags.length < 3) publicationTags = [...publicationTags, tag];
+  }
+
+  async function savePublication() {
+    if (!publicationTarget || !publicationPrefecture) {
+      publicationError = "旅行先を選択してください。";
+      return;
+    }
+    const target = publicationTarget;
+    publishingIds = new Set([...publishingIds, target.itinerary_id]);
+    publicationError = "";
+    try {
+      await userApi.publishBookmark(target.itinerary_id, {
+        prefecture_slugs: [publicationPrefecture],
+        areas: publicationAreas.split(/[、,]/).map((item) => item.trim()).filter(Boolean).slice(0, 3),
+        tags: publicationTags,
+      });
+      publicationTarget = null;
+      editSuccess = target.is_visible ? "公開情報としおりの最新版を反映しました。" : "みんなのしおりに公開しました。";
+      await loadBookmarks();
+    } catch {
+      publicationError = "公開に失敗しました。時間をおいてもう一度お試しください。";
+    } finally {
+      publishingIds = new Set([...publishingIds].filter((item) => item !== target.itinerary_id));
+    }
+  }
+
+  async function unpublish(id: string) {
+    publishingIds = new Set([...publishingIds, id]);
+    try {
+      await userApi.unpublishBookmark(id);
+      editSuccess = "みんなのしおりから取り下げました。公開用URLは引き続き利用できます。";
+      await loadBookmarks();
+    } catch {
+      error = "公開の取り下げに失敗しました。";
+    } finally {
+      publishingIds = new Set([...publishingIds].filter((item) => item !== id));
+    }
+  }
+
+  async function unlinkBookmark(id: string) {
+    publishingIds = new Set([...publishingIds, id]);
+    try {
+      await userApi.unlinkBookmark(id);
+      // ログイン時の履歴同期で、解除済みのしおりを直ちに再紐付けしない。
+      auth.removeFromHistory(id);
+      unlinkTarget = null;
+      editSuccess = "アカウントからしおりの紐付けを解除しました。しおり自体は削除されていません。";
+      await loadBookmarks();
+    } catch {
+      error = "しおりの紐付け解除に失敗しました。";
+    } finally {
+      publishingIds = new Set([...publishingIds].filter((item) => item !== id));
+    }
   }
 
   async function republish(id: string) {
     if (publishingIds.has(id)) return;
+    const item = bookmarks.find((bookmark) => bookmark.itinerary_id === id);
+    if (!item) return;
+    if (!item.prefecture_slugs?.length) return openPublication(item);
     publishingIds = new Set([...publishingIds, id]);
-    try { await itineraryApi.publish(id); await loadBookmarks(); }
+    try {
+      await userApi.publishBookmark(id, {
+        prefecture_slugs: item.prefecture_slugs,
+        areas: item.areas ?? [],
+        tags: item.tags ?? [],
+      });
+      editSuccess = "公開ページを最新版に更新しました。";
+      await loadBookmarks();
+    }
     catch { error = "最新版の公開に失敗しました。"; }
     finally { publishingIds = new Set([...publishingIds].filter((item) => item !== id)); }
   }
@@ -319,11 +404,15 @@
         {/if}
       </section>
     {:else}
-      <div class="flex justify-between items-center mb-6"><a href="/users/{account?.username}" class="text-sm text-indigo-600 hover:underline">@{account?.username} の公開プロフィール</a><button onclick={handleLogout} class="secondary compact">ログアウト</button></div>
+      <section class="dashboard-hero">
+        <div class="avatar">{account?.username.slice(0, 1).toUpperCase()}</div>
+        <div><p>TRAVEL LIBRARY</p><h2>@{account?.username} のしおり</h2><span>旅の編集・公開・更新を、ここからまとめて管理できます。</span></div>
+        <div class="dashboard-links"><a href="/users/{account?.username}">公開プロフィール</a><a href="/explore">みんなのしおり</a><button onclick={handleLogout}>ログアウト</button></div>
+      </section>
       {#if editSuccess}<p class="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm" role="status">{editSuccess}</p>{/if}
       {#if error}<p class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</p>{/if}
 
-      <section class="bg-white rounded-xl shadow-sm border p-5 mb-6">
+      <section class="account-card">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"><div><div class="flex items-center gap-2"><h2 class="font-semibold text-gray-900">アカウント設定</h2><span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">メール確認済み</span></div><p class="text-sm text-gray-500 mt-1">{account?.email} · {account?.prefecture}</p></div>{#if editSection === "none"}<div class="flex flex-wrap gap-2"><button onclick={() => editSection = "profile"} class="secondary compact">プロフィール</button><button onclick={() => { editEmail = account?.email ?? ""; editSection = "email"; }} class="secondary compact">メール変更</button><button onclick={() => editSection = "password"} class="secondary compact">パスワード</button></div>{/if}</div>
         {#if editSection !== "none"}<div class="mt-5 pt-5 border-t">{#if editError}<p class="mb-3 text-sm text-red-600">{editError}</p>{/if}
           {#if editSection === "profile"}<form onsubmit={(event) => { event.preventDefault(); updateProfile(); }} class="space-y-3"><label for="edit-username">ユーザー名</label><input id="edit-username" bind:value={editUsername} minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" required /><label for="edit-prefecture">お住まいの都道府県</label><select id="edit-prefecture" bind:value={editPrefecture} required>{#each PREFECTURES as item}<option value={item}>{item}</option>{/each}</select><div class="actions"><button type="button" onclick={() => editSection = "none"} class="secondary compact">キャンセル</button><button type="submit" disabled={submitting} class="primary compact">保存</button></div></form>
@@ -332,13 +421,135 @@
         </div>{/if}
       </section>
 
-      <h2 class="text-lg font-semibold mb-3">保存したしおり</h2>
-      {#if bookmarks.length === 0}<div class="py-12 text-center rounded-xl border bg-white text-gray-500">保存したしおりはまだありません</div>{:else}<div class="space-y-3">{#each bookmarks as item}<article class="bg-white rounded-xl border shadow-sm p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div class="min-w-0"><a href="/{item.itinerary_id}" class="font-medium text-gray-900 hover:text-indigo-600 block truncate">{item.title}</a><p class="text-xs text-gray-500 mt-1">更新 {formatDate(item.itinerary_updated_at)}</p></div><div class="flex items-center gap-2">{#if item.is_visible && item.shared_itinerary_id}<button onclick={() => republish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)} class="secondary compact">{publishingIds.has(item.itinerary_id) ? "更新中" : "最新版を公開"}</button>{/if}<label class="inline-flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" checked={item.is_visible} onchange={() => toggleVisibility(item.itinerary_id, item.is_visible)} />公開</label></div></article>{/each}</div>{/if}
+      <div class="library-heading"><div><p>MY ITINERARIES</p><h2>保存したしおり</h2></div><span>{bookmarks.filter((item) => item.is_visible).length}件 公開中</span></div>
+      {#if bookmarks.length === 0}
+        <div class="library-empty"><span>✈</span><h3>最初のしおりを作りましょう</h3><p>作成したしおりは自動でここに保存され、完成後に公開できます。</p><a href="/#create">しおりを作る</a></div>
+      {:else}
+        <div class="bookmark-grid">
+          {#each bookmarks as item}
+            <article class:published={item.is_visible}>
+              <div class="bookmark-status"><span>{item.is_visible ? "公開中" : "非公開"}</span><small>更新 {formatDate(item.itinerary_updated_at)}</small></div>
+              <a class="bookmark-title" href="/itineraries/{item.itinerary_id}">{item.title}</a>
+              {#if item.is_visible}
+                <div class="publication-meta">
+                  {#each item.prefecture_slugs ?? [] as slug}<span>{prefectureName(slug)}</span>{/each}
+                  {#each item.tags ?? [] as tag}<span>#{tag}</span>{/each}
+                </div>
+                <p class="publication-note">公開用ID: <a href="/itineraries/{item.shared_itinerary_id}">{item.shared_itinerary_id}</a></p>
+              {:else}
+                <p class="publication-note">公開すると、元の編集用IDとは別に閲覧専用IDを発行します。</p>
+              {/if}
+              <div class="bookmark-actions">
+                <a href="/itineraries/{item.itinerary_id}">編集する</a>
+                {#if item.is_visible}
+                  <button onclick={() => republish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)}>{publishingIds.has(item.itinerary_id) ? "更新中…" : "最新版を反映"}</button>
+                  <button class="quiet" onclick={() => openPublication(item)}>公開情報</button>
+                  <button class="danger" onclick={() => unpublish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)}>取り下げ</button>
+                {:else}
+                  <button class="publish-action" onclick={() => openPublication(item)}>みんなに公開</button>
+                  <button class="danger" onclick={() => (unlinkTarget = item)} disabled={publishingIds.has(item.itinerary_id)}>紐付けを解除</button>
+                {/if}
+              </div>
+            </article>
+          {/each}
+        </div>
+      {/if}
+
+      {#if publicationTarget}
+        <div class="publication-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (publicationTarget = null)}>
+          <div class="publication-dialog" role="dialog" aria-modal="true" aria-labelledby="publication-title">
+            <button class="dialog-close" onclick={() => (publicationTarget = null)} aria-label="閉じる">×</button>
+            <p class="dialog-eyebrow">PUBLIC SETTINGS</p>
+            <h2 id="publication-title">{publicationTarget.is_visible ? "公開情報を編集" : "みんなのしおりに公開"}</h2>
+            <p class="dialog-intro">公開時点の内容を閲覧専用IDへコピーします。元のしおりや編集用URLは公開されません。</p>
+            {#if publicationError}<p class="dialog-error">{publicationError}</p>{/if}
+            <label for="publication-prefecture">主な旅行先 <strong>必須</strong></label>
+            <select id="publication-prefecture" bind:value={publicationPrefecture}><option value="">選択してください</option>{#each explorePrefectures as item}<option value={item.slug}>{item.name}</option>{/each}</select>
+            <label for="publication-areas">エリア <span>任意・3件まで</span></label>
+            <input id="publication-areas" bind:value={publicationAreas} maxlength="50" placeholder="例：東山、嵐山" />
+            <fieldset><legend>旅のテーマ <span>任意・3件まで</span></legend>
+              <div class="publication-tags">{#each travelTags as tag}<button class:selected={publicationTags.includes(tag)} onclick={() => togglePublicationTag(tag)}>{tag}</button>{/each}</div>
+            </fieldset>
+            <button class="dialog-publish" onclick={savePublication} disabled={publishingIds.has(publicationTarget.itinerary_id)}>{publishingIds.has(publicationTarget.itinerary_id) ? "公開しています…" : publicationTarget.is_visible ? "変更して最新版を公開" : "この内容で公開する"}</button>
+          </div>
+        </div>
+      {/if}
+
+      {#if unlinkTarget}
+        <div class="publication-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (unlinkTarget = null)}>
+          <div class="publication-dialog unlink-dialog" role="dialog" aria-modal="true" aria-labelledby="unlink-title">
+            <button class="dialog-close" onclick={() => (unlinkTarget = null)} aria-label="閉じる">×</button>
+            <p class="dialog-eyebrow">UNLINK ITINERARY</p>
+            <h2 id="unlink-title">紐付けを解除しますか？</h2>
+            <p class="dialog-intro">「{unlinkTarget.title}」はこのアカウントのしおり一覧から見えなくなります。しおり自体や共有URLは削除されません。</p>
+            <div class="unlink-actions">
+              <button type="button" class="cancel-button" onclick={() => (unlinkTarget = null)}>キャンセル</button>
+              <button type="button" class="unlink-confirm" onclick={() => unlinkBookmark(unlinkTarget!.itinerary_id)} disabled={publishingIds.has(unlinkTarget.itinerary_id)}>{publishingIds.has(unlinkTarget.itinerary_id) ? "解除しています…" : "紐付けを解除する"}</button>
+            </div>
+          </div>
+        </div>
+      {/if}
     {/if}
   {/snippet}
 </PageShell>
 
 <style>
+  .dashboard-hero { display: grid; grid-template-columns: auto 1fr auto; margin-bottom: 1.25rem; padding: 1.35rem; border: 1px solid #dce7f7; border-radius: 1.1rem; align-items: center; gap: 1rem; background: linear-gradient(135deg, #f3f8ff, #f3f1ff); }
+  .avatar { display: grid; width: 3.25rem; height: 3.25rem; border-radius: 1rem; place-items: center; color: white; background: linear-gradient(135deg, #5ca4ee, #7b88ec); font-size: 1.2rem; font-weight: 900; }
+  .dashboard-hero p, .library-heading p { margin: 0 0 .2rem; color: #718dc5; font-size: .65rem; font-weight: 900; letter-spacing: .14em; }
+  .dashboard-hero h2 { margin: 0; color: #293b5c; font-size: 1.2rem; }
+  .dashboard-hero span { display: block; margin-top: .25rem; color: #738098; font-size: .75rem; }
+  .dashboard-links { display: flex; align-items: center; gap: .35rem; }
+  .dashboard-links a, .dashboard-links button { width: auto; padding: .5rem .65rem; border: 0; border-radius: .55rem; color: #526f9f; background: rgba(255,255,255,.75); font-size: .68rem; font-weight: 700; text-decoration: none; cursor: pointer; }
+  .account-card { margin-bottom: 1.5rem; padding: 1.25rem; border: 1px solid #e2e8f1; border-radius: .9rem; background: white; box-shadow: 0 8px 25px rgba(52, 72, 110, .05); }
+  .library-heading { display: flex; margin: 1.8rem 0 .85rem; align-items: flex-end; justify-content: space-between; }
+  .library-heading h2 { margin: 0; color: #293b5b; font-size: 1.2rem; }
+  .library-heading > span { padding: .35rem .6rem; border-radius: 999px; color: #5271ac; background: #edf3ff; font-size: .68rem; font-weight: 800; }
+  .bookmark-grid { display: grid; gap: .8rem; }
+  .bookmark-grid article { padding: 1.15rem; border: 1px solid #e1e7f0; border-left: 4px solid #d6deea; border-radius: .9rem; background: white; box-shadow: 0 7px 20px rgba(47, 67, 103, .04); }
+  .bookmark-grid article.published { border-left-color: #5d8be0; }
+  .bookmark-status { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .bookmark-status span { padding: .25rem .5rem; border-radius: 999px; color: #68758a; background: #f0f3f7; font-size: .62rem; font-weight: 900; }
+  .published .bookmark-status span { color: #3467bd; background: #eaf2ff; }
+  .bookmark-status small { color: #99a3b2; font-size: .65rem; }
+  .bookmark-title { display: block; margin-top: .7rem; overflow: hidden; color: #263751; font-size: 1rem; font-weight: 800; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+  .bookmark-title:hover { color: #4d71cb; }
+  .publication-meta { display: flex; flex-wrap: wrap; margin-top: .6rem; gap: .3rem; }
+  .publication-meta span { padding: .25rem .4rem; border-radius: .35rem; color: #64748b; background: #f2f5f9; font-size: .62rem; }
+  .publication-note { margin: .7rem 0 0; color: #8893a5; font-size: .66rem; line-height: 1.6; }
+  .publication-note a { color: #5475ad; }
+  .bookmark-actions { display: flex; flex-wrap: wrap; margin-top: .9rem; padding-top: .8rem; border-top: 1px solid #edf0f5; align-items: center; gap: .4rem; }
+  .bookmark-actions a, .bookmark-actions button { width: auto; padding: .5rem .65rem; border: 1px solid #dce4f1; border-radius: .55rem; color: #4f6486; background: white; font-size: .68rem; font-weight: 800; text-decoration: none; cursor: pointer; }
+  .bookmark-actions .publish-action { margin-left: auto; border-color: #547bd0; color: white; background: #547bd0; }
+  .bookmark-actions .quiet { color: #78859a; }
+  .bookmark-actions .danger { margin-left: auto; border-color: transparent; color: #a15d65; background: transparent; }
+  .library-empty { padding: 3rem 1rem; border: 1px dashed #cbd8eb; border-radius: 1rem; color: #718096; background: rgba(255,255,255,.65); text-align: center; }
+  .library-empty > span { display: block; color: #6e91d4; font-size: 1.5rem; }
+  .library-empty h3 { margin: .65rem 0 .35rem; color: #344761; }
+  .library-empty p { margin: 0 0 1rem; font-size: .75rem; }
+  .library-empty a { display: inline-block; padding: .65rem .9rem; border-radius: .6rem; color: white; background: #557bd0; font-size: .75rem; font-weight: 800; text-decoration: none; }
+  .publication-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; padding: 1rem; place-items: center; background: rgba(31, 45, 72, .52); backdrop-filter: blur(6px); }
+  .publication-dialog { position: relative; width: min(29rem, 100%); max-height: calc(100vh - 2rem); overflow-y: auto; box-sizing: border-box; padding: 1.7rem; border-radius: 1.1rem; background: white; box-shadow: 0 24px 70px rgba(31,45,72,.25); }
+  .dialog-close { position: absolute; right: .8rem; top: .8rem; width: 2rem; height: 2rem; border: 0; border-radius: 50%; color: #748197; background: #f0f3f7; font-size: 1.1rem; cursor: pointer; }
+  .dialog-eyebrow { margin: 0; color: #6685c2; font-size: .62rem; font-weight: 900; letter-spacing: .14em; }
+  .publication-dialog h2 { margin: .35rem 0 .55rem; color: #2b3e5e; font-size: 1.3rem; }
+  .dialog-intro { margin: 0 0 1.1rem; color: #748096; font-size: .75rem; line-height: 1.7; }
+  .publication-dialog label, .publication-dialog legend { margin: .85rem 0 .35rem; font-size: .75rem; font-weight: 800; }
+  .publication-dialog label strong { color: #4f75c4; font-size: .62rem; }
+  .publication-dialog label span { color: #929bab; font-size: .62rem; font-weight: 500; }
+  .publication-dialog fieldset { margin: 0; padding: 0; border: 0; }
+  .publication-dialog legend span { color: #929bab; font-size: .62rem; font-weight: 500; }
+  .publication-tags { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .publication-tags button { padding: .4rem .55rem; border: 1px solid #dfe5ef; border-radius: 999px; color: #657389; background: white; font-size: .66rem; cursor: pointer; }
+  .publication-tags button.selected { border-color: #6085d2; color: white; background: #6085d2; }
+  .dialog-error { padding: .6rem; border-radius: .5rem; color: #a6434d; background: #fff0f1; font-size: .7rem; }
+  .dialog-publish { width: 100%; margin-top: 1.25rem; padding: .75rem; border: 0; border-radius: .65rem; color: white; background: #5379cb; font-size: .78rem; font-weight: 900; cursor: pointer; }
+  .unlink-dialog { max-width: 25rem; }
+  .unlink-actions { display: flex; margin-top: 1.25rem; gap: .55rem; }
+  .unlink-actions .cancel-button, .unlink-confirm { width: 50%; margin: 0; padding: .75rem; border-radius: .65rem; font: inherit; font-size: .78rem; font-weight: 900; cursor: pointer; }
+  .unlink-actions .cancel-button { border: 1px solid #dce4f1; color: #64748b; background: white; }
+  .unlink-confirm { border: 0; color: white; background: #a15d65; }
+  .unlink-confirm:disabled { cursor: wait; opacity: .55; }
   label { display: block; font-size: .875rem; font-weight: 500; color: rgb(55 65 81); }
   input, select { width: 100%; border: 1px solid rgb(209 213 219); border-radius: .5rem; padding: .625rem .75rem; font-size: .875rem; background: white; }
   input:focus, select:focus { outline: 2px solid rgb(99 102 241); outline-offset: 1px; }
@@ -352,4 +563,12 @@
   .compact { width: auto; padding: .45rem .75rem; }
   .actions { display: flex; justify-content: flex-end; gap: .5rem; padding-top: .5rem; }
   button:disabled { opacity: .55; cursor: not-allowed; }
+  @media (max-width: 640px) {
+    .dashboard-hero { grid-template-columns: auto 1fr; }
+    .dashboard-links { grid-column: 1 / -1; flex-wrap: wrap; }
+    .dashboard-hero span { line-height: 1.5; }
+    .bookmark-actions .danger { margin-left: 0; }
+    .publication-backdrop { padding: 0; align-items: end; }
+    .publication-dialog { max-height: 92vh; border-radius: 1.1rem 1.1rem 0 0; }
+  }
 </style>

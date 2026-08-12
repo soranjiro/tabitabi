@@ -75,6 +75,17 @@ async function applyMigrations(db: D1Database) {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
+    `CREATE TABLE IF NOT EXISTS itinerary_publications (
+      source_itinerary_id TEXT NOT NULL,
+      shared_itinerary_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      prefecture_slugs TEXT NOT NULL,
+      areas TEXT NOT NULL DEFAULT '[]',
+      tags TEXT NOT NULL DEFAULT '[]',
+      published_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (source_itinerary_id, user_id)
+    );`,
     `CREATE TABLE IF NOT EXISTS itinerary_members (
       id TEXT PRIMARY KEY,
       itinerary_id TEXT NOT NULL,
@@ -92,38 +103,22 @@ async function registerAndGetToken(username: string, email: string): Promise<str
   return (await insertVerifiedUser(env.DB, username, email)).token;
 }
 
-async function makeVisible(token: string, itineraryId: string): Promise<void> {
-  const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/visibility`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ is_visible: true }),
-  }, env);
-  expect(res.status).toBe(200);
-}
-
-// Publish itinerary → sync shared snapshot to bookmarks → make it visible
-// Returns the shared snapshot ID
+// Publish through the authenticated owner flow. Returns the public snapshot ID.
 async function publishAndMakeVisible(token: string, itineraryId: string): Promise<string> {
-  const publishRes = await app.request(`/api/v1/itineraries/${itineraryId}/publish`, {
+  const publishRes = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ prefecture_slugs: ['kyoto'], areas: ['東山'], tags: ['寺社・歴史'] }),
   }, env);
   expect(publishRes.status).toBe(200);
   const publishJson = await publishRes.json() as { data: { id: string } };
-  const sharedId = publishJson.data.id;
-
-  await app.request('/api/v1/users/me/sync-bookmarks', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ itinerary_ids: [sharedId] }),
-  }, env);
-
-  await makeVisible(token, sharedId);
-  return sharedId;
+  return publishJson.data.id;
 }
 
 describe('PATCH /api/v1/users/me/profile', () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
+    await env.DB.prepare('DELETE FROM itinerary_publications').run();
     await env.DB.prepare('DELETE FROM user_bookmarks').run();
     await env.DB.prepare('DELETE FROM users').run();
   });

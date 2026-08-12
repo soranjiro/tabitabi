@@ -148,7 +148,7 @@ jobs:
 
       - name: Apply D1 migrations to preview database
         working-directory: apps/api
-        run: pnpm wrangler d1 migrations apply DB --remote --env preview
+        run: node scripts/d1-migrate.mjs up --remote --env preview
 
       - name: Deploy API to preview environment
         working-directory: apps/api

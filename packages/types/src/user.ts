@@ -50,6 +50,9 @@ export interface UserBookmarkWithItinerary extends UserBookmark {
   source_itinerary_id?: string | null;
   shared_itinerary_id?: string | null;
   shared_updated_at?: string | null;
+  prefecture_slugs?: string[];
+  areas?: string[];
+  tags?: string[];
 }
 
 export interface PublicBookmark {
@@ -57,6 +60,14 @@ export interface PublicBookmark {
   title: string;
   theme_id: string;
   created_at: string;
+  prefecture_slugs: string[];
+  areas: string[];
+  tags: string[];
+  stops: number;
+  copies: number;
+  start_at: number | null;
+  end_at: number | null;
+  description: string;
 }
 
 export interface PublicFeedItem extends PublicBookmark {
@@ -66,6 +77,14 @@ export interface PublicFeedItem extends PublicBookmark {
 export interface PublicFeedResponse {
   items: PublicFeedItem[];
   hasMore: boolean;
+  total: number;
+  destinationCounts: Record<string, number>;
+}
+
+export interface PublishItineraryInput {
+  prefecture_slugs: string[];
+  areas?: string[];
+  tags?: string[];
 }
 
 export interface BootstrapProfileInput {

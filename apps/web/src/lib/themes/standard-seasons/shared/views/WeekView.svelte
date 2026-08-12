@@ -100,24 +100,32 @@
   {#if weekDates().length === 0}
     <div class="standard-week-no-events">予定がまだ登録されていません</div>
   {:else}
-    <div class="standard-week-container">
-      <div class="standard-week-header">
-        <div class="standard-week-corner"></div>
-        {#each weekDates() as date}
-          <div
-            class="standard-week-day-header"
-            class:has-events={utilGetOverlappingStepsForDay(
-              timedSteps(),
-              formatDateKey(date),
-            ).length > 0 || getAllDayStepsForDate(date).length > 0}
-          >
-            <div class="standard-week-day-name">{getDayName(date)}</div>
-            <div class="standard-week-day-date">
-              {getDateDisplay(date)}
+    <div
+      class="standard-week-scroll"
+      role="region"
+      aria-label="週表示。左右にスワイプして日程を確認できます"
+    >
+      <p class="standard-week-scroll-hint" aria-hidden="true">
+        左右にスワイプして日程を確認
+      </p>
+      <div class="standard-week-container">
+        <div class="standard-week-header">
+          <div class="standard-week-corner"></div>
+          {#each weekDates() as date}
+            <div
+              class="standard-week-day-header"
+              class:has-events={utilGetOverlappingStepsForDay(
+                timedSteps(),
+                formatDateKey(date),
+              ).length > 0 || getAllDayStepsForDate(date).length > 0}
+            >
+              <div class="standard-week-day-name">{getDayName(date)}</div>
+              <div class="standard-week-day-date">
+                {getDateDisplay(date)}
+              </div>
             </div>
-          </div>
-        {/each}
-      </div>
+          {/each}
+        </div>
 
       {#if hasAnyAllDayEvents()}
         <div class="standard-week-allday-row">
@@ -216,6 +224,7 @@
             </div>
           {/each}
         </div>
+      </div>
       </div>
     </div>
   {/if}

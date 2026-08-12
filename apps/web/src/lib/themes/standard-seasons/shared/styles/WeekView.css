@@ -41,6 +41,14 @@
   width: 100%;
 }
 
+.standard-week-scroll {
+  width: 100%;
+}
+
+.standard-week-scroll-hint {
+  display: none;
+}
+
 .standard-week-header {
   display: contents;
 }
@@ -307,25 +315,50 @@
   }
 
   .standard-week-container {
-    grid-template-columns: 42px repeat(var(--week-cols, 7), minmax(0, 1fr));
+    grid-template-columns: 48px repeat(var(--week-cols, 7), minmax(108px, 1fr));
     border-width: 1px;
     border-radius: 6px;
+    min-width: max-content;
+    width: max-content;
+  }
+
+  .standard-week-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    touch-action: pan-x pan-y;
+    padding-bottom: 0.4rem;
+  }
+
+  .standard-week-scroll-hint {
+    display: block;
+    position: sticky;
+    left: 0;
+    width: fit-content;
+    margin: 0 0 0.35rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--theme-primary) 12%, var(--theme-bg));
+    color: var(--theme-text-light);
+    font-size: 0.68rem;
+    font-weight: 600;
   }
 
   .standard-week-body {
-    grid-template-columns: 42px repeat(var(--week-cols, 7), minmax(0, 1fr));
-    grid-auto-rows: 62px;
+    grid-template-columns: 48px repeat(var(--week-cols, 7), minmax(108px, 1fr));
+    grid-auto-rows: 56px;
   }
 
   .standard-week-events-layer {
-    grid-template-columns: 42px repeat(var(--week-cols, 7), minmax(0, 1fr));
-    grid-template-rows: repeat(var(--week-hour-rows, 16), 62px);
+    grid-template-columns: 48px repeat(var(--week-cols, 7), minmax(108px, 1fr));
+    grid-template-rows: repeat(var(--week-hour-rows, 16), 56px);
   }
 
   .standard-week-day-header {
-    min-width: 0;
-    padding: 0.5rem 0.1rem 0.45rem;
+    padding: 0.55rem 0.35rem 0.5rem;
     gap: 0.12rem;
+    scroll-snap-align: start;
   }
 
   .standard-week-day-name {
@@ -360,13 +393,13 @@
   }
 
   .standard-week-event {
-    margin: 1px;
-    padding: 3px 2px;
+    margin: 2px;
+    padding: 4px;
     border-radius: 3px;
-    font-size: 0.62rem;
+    font-size: 0.68rem;
     line-height: 1.25;
     min-width: unset;
-    max-width: calc(100% - 2px);
+    max-width: calc(100% - 4px);
     white-space: normal;
     overflow-wrap: anywhere;
     align-items: flex-start;

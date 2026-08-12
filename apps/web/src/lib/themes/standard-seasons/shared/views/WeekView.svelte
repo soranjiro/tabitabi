@@ -37,6 +37,7 @@
   }: Props = $props();
 
   let selectedStep = $state<Step | null>(null);
+  let headerScroll = $state<HTMLDivElement | null>(null);
 
   function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
@@ -93,6 +94,12 @@
     selectedStep = null;
   }
 
+  function syncHeaderScroll(event: Event) {
+    if (headerScroll && event.currentTarget instanceof HTMLElement) {
+      headerScroll.scrollLeft = event.currentTarget.scrollLeft;
+    }
+  }
+
   let numCols = $derived(weekDates().length);
 </script>
 
@@ -100,25 +107,34 @@
   {#if weekDates().length === 0}
     <div class="standard-week-no-events">予定がまだ登録されていません</div>
   {:else}
-    <div class="standard-week-container">
-      <div class="standard-week-header">
-        <div class="standard-week-corner"></div>
-        {#each weekDates() as date}
-          <div
-            class="standard-week-day-header"
-            class:has-events={utilGetOverlappingStepsForDay(
-              timedSteps(),
-              formatDateKey(date),
-            ).length > 0 || getAllDayStepsForDate(date).length > 0}
-          >
-            <div class="standard-week-day-name">{getDayName(date)}</div>
-            <div class="standard-week-day-date">
-              {getDateDisplay(date)}
+    <div class="standard-week-sticky-header">
+      <div class="standard-week-header-viewport" bind:this={headerScroll}>
+        <div class="standard-week-header">
+          <div class="standard-week-corner"></div>
+          {#each weekDates() as date}
+            <div
+              class="standard-week-day-header"
+              class:has-events={utilGetOverlappingStepsForDay(
+                timedSteps(),
+                formatDateKey(date),
+              ).length > 0 || getAllDayStepsForDate(date).length > 0}
+            >
+              <div class="standard-week-day-name">{getDayName(date)}</div>
+              <div class="standard-week-day-date">
+                {getDateDisplay(date)}
+              </div>
             </div>
-          </div>
-        {/each}
+          {/each}
+        </div>
       </div>
-
+    </div>
+    <div
+      class="standard-week-scroll"
+      role="region"
+      aria-label="週表示。左右にスワイプして日程を確認できます"
+      onscroll={syncHeaderScroll}
+    >
+      <div class="standard-week-container">
       {#if hasAnyAllDayEvents()}
         <div class="standard-week-allday-row">
           <div class="standard-week-allday-label">終日</div>
@@ -216,6 +232,7 @@
             </div>
           {/each}
         </div>
+      </div>
       </div>
     </div>
   {/if}

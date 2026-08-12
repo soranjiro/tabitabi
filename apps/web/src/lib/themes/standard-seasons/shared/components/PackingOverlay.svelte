@@ -197,6 +197,20 @@
     } catch (e) { alert(e instanceof Error ? e.message : 'グループ名を変更できませんでした'); }
   }
 
+  async function moveGroup(group: PackingGroup, offset: -1 | 1) {
+    const currentIndex = data.groups.findIndex((current) => current.id === group.id);
+    const destinationIndex = currentIndex + offset;
+    if (currentIndex < 0 || destinationIndex < 0 || destinationIndex >= data.groups.length) return;
+    const groups = [...data.groups];
+    [groups[currentIndex], groups[destinationIndex]] = [groups[destinationIndex], groups[currentIndex]];
+    const reordered = groups.map((current, sort_order) => ({ ...current, sort_order }));
+    try {
+      if (!isDemo()) await packingApi.reorderGroups(itineraryId, { group_ids: reordered.map((current) => current.id) });
+      const next = { ...data, groups: reordered };
+      if (isDemo()) persist(next); else data = next;
+    } catch (e) { alert(e instanceof Error ? e.message : 'グループの順番を変更できませんでした'); }
+  }
+
   async function removeGroup(group: PackingGroup) {
     if (data.groups.length === 1) { alert('グループは1つ以上必要です。'); return; }
     if (!confirm(`「${group.name}」を削除しますか？\nこのグループの持ち物は別のグループに移動します。`)) return;
@@ -253,6 +267,6 @@
 
     {#if showForm}<div class="standard-packing-sheet-backdrop" onclick={closeForm}><form class="standard-packing-sheet standard-packing-form" onclick={(event) => event.stopPropagation()} onsubmit={(event) => { event.preventDefault(); saveItem(); }}><span class="handle"></span><h3>{editingId ? '持ち物を編集' : '持ち物を追加'}</h3><label>持ち物名<input autofocus placeholder="例：トップス" bind:value={itemName} /></label><label>個数<select bind:value={itemQuantity}>{#each Array.from({ length: 10 }, (_, index) => index + 1) as quantity}<option value={quantity}>{quantity}</option>{/each}</select></label><label>グループ<select bind:value={groupId}>{#each data.groups as group}<option value={group.id}>{group.name}</option>{/each}</select></label><fieldset><legend>誰が持つ？</legend><label><input type="radio" value="private" bind:group={itemKind} /><span><b>自分専用</b><small>自分のリストだけに表示します</small></span></label><label><input type="radio" value="personal" bind:group={itemKind} /><span><b>各自で持つ</b><small>全員に同じチェック項目を作ります</small></span></label><label><input type="radio" value="shared" bind:group={itemKind} /><span><b>誰か1人が持つ</b><small>グループで1つだけ準備します</small></span></label></fieldset>{#if itemKind === 'shared'}<label>担当者<select bind:value={assigneeId}><option value="">未定</option>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select></label>{/if}<div class="actions">{#if editingId}<button type="button" class="delete" onclick={() => { const item = data.items.find((current) => current.id === editingId); if (item) remove(item); }}>削除</button>{/if}<button type="button" class="secondary" onclick={closeForm}>キャンセル</button><button type="submit">保存</button></div></form></div>{/if}
 
-    {#if showGroups}<div class="standard-packing-sheet-backdrop" onclick={() => showGroups = false}><div class="standard-packing-sheet standard-packing-group-sheet" onclick={(event) => event.stopPropagation()}><span class="handle"></span><h3>グループを管理</h3><p>名前を変更したら「保存」を押してください。</p><div class="standard-packing-group-editor">{#each data.groups as group}<div><input aria-label={`${group.name}のグループ名`} value={group.name} /><button onclick={(event) => renameGroup(group, event.currentTarget.previousElementSibling instanceof HTMLInputElement ? event.currentTarget.previousElementSibling.value : group.name)}>保存</button><button class="delete" aria-label={`${group.name}を削除`} onclick={() => removeGroup(group)}>削除</button></div>{/each}</div><div class="standard-packing-group-add"><input placeholder="新しいグループ名" bind:value={newGroupName} onkeydown={(event) => event.key === 'Enter' && addGroup()} /><button onclick={addGroup}>＋ 追加</button></div><button class="standard-packing-sheet-close" onclick={() => showGroups = false}>完了</button></div></div>{/if}
+    {#if showGroups}<div class="standard-packing-sheet-backdrop" onclick={() => showGroups = false}><div class="standard-packing-sheet standard-packing-group-sheet" onclick={(event) => event.stopPropagation()}><span class="handle"></span><h3>グループを管理</h3><p>矢印で順番を変更できます。名前を変更したら「保存」を押してください。</p><div class="standard-packing-group-editor">{#each data.groups as group, index}<div><span class="standard-packing-group-order"><button disabled={index === 0} aria-label={`${group.name}を上へ移動`} onclick={() => moveGroup(group, -1)}>↑</button><button disabled={index === data.groups.length - 1} aria-label={`${group.name}を下へ移動`} onclick={() => moveGroup(group, 1)}>↓</button></span><input aria-label={`${group.name}のグループ名`} value={group.name} /><button onclick={(event) => renameGroup(group, event.currentTarget.previousElementSibling instanceof HTMLInputElement ? event.currentTarget.previousElementSibling.value : group.name)}>保存</button><button class="delete" aria-label={`${group.name}を削除`} onclick={() => removeGroup(group)}>削除</button></div>{/each}</div><div class="standard-packing-group-add"><input placeholder="新しいグループ名" bind:value={newGroupName} onkeydown={(event) => event.key === 'Enter' && addGroup()} /><button onclick={addGroup}>＋ 追加</button></div><button class="standard-packing-sheet-close" onclick={() => showGroups = false}>完了</button></div></div>{/if}
   </div>
 {/if}

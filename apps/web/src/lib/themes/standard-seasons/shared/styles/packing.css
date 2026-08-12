@@ -147,6 +147,23 @@
   color: #b23e32;
 }
 
+.standard-packing-group-order {
+  display: grid;
+  grid-template-columns: repeat(2, 32px);
+  gap: 4px;
+}
+
+.standard-packing-group-editor .standard-packing-group-order button {
+  padding: 0;
+  background: #eeece7;
+  color: var(--theme-text);
+}
+
+.standard-packing-group-editor .standard-packing-group-order button:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
 .standard-packing-group-add {
   padding-top: 14px;
   border-top: 1px solid rgba(0, 0, 0, .07);
@@ -171,7 +188,12 @@
   }
 
   .standard-packing-group-editor > div {
+    flex-wrap: wrap;
     gap: 5px;
+  }
+
+  .standard-packing-group-editor input {
+    flex-basis: calc(100% - 73px);
   }
 
   .standard-packing-group-editor button {

@@ -55,3 +55,7 @@ export interface CreatePackingGroupInput {
 export interface UpdatePackingGroupInput {
   name: string;
 }
+
+export interface ReorderPackingGroupsInput {
+  group_ids: string[];
+}

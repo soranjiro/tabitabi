@@ -99,6 +99,11 @@ export const packingGroupSchema = z.object({
   name: z.string().trim().min(1, 'name is required').max(50, 'name must be at most 50 characters'),
 });
 
+export const reorderPackingGroupsSchema = z.object({
+  group_ids: z.array(z.string().min(1)).min(1, 'at least one group is required')
+    .refine((ids) => new Set(ids).size === ids.length, 'group ids must be unique'),
+});
+
 // ── Profile / Password ─────────────────────────────────
 
 export const updateProfileSchema = z.object({

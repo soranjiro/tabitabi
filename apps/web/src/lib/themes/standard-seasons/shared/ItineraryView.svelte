@@ -386,6 +386,7 @@
 
 <div
   class="standard-theme"
+  class:standard-week-mode={currentViewMode === "week"}
   class:standard-spring-theme={selectedThemeId === "standard-spring"}
   class:standard-summer-theme={selectedThemeId === "standard-summer"}
   class:standard-winter-theme={selectedThemeId === "standard-winter"}

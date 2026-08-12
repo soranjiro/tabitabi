@@ -1,10 +1,7 @@
 .standard-week-view {
-  padding: 1rem;
-  padding-bottom: 100px;
-  max-height: calc(100dvh - 120px);
-  overflow: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 1rem 1rem calc(100px + env(safe-area-inset-bottom));
   background: var(--theme-bg);
 }
 
@@ -34,14 +31,13 @@
 
 .standard-week-container {
   display: grid;
-  grid-template-columns: 60px repeat(var(--week-cols, 7), minmax(80px, 1fr));
+  grid-template-columns: 60px repeat(var(--week-cols, 7), minmax(0, 1fr));
   gap: 0;
   background: var(--theme-card-bg);
   border: 2px solid var(--theme-primary);
   border-radius: 8px;
   overflow: visible;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  min-width: max-content;
   width: 100%;
 }
 
@@ -53,7 +49,7 @@
   position: sticky;
   left: 0;
   top: 0;
-  z-index: 15;
+  z-index: 35;
   background: var(--theme-header-bg);
   border-bottom: 1px solid var(--theme-border);
   border-right: 1px solid var(--theme-border);
@@ -62,12 +58,13 @@
 .standard-week-day-header {
   position: sticky;
   top: 0;
-  z-index: 14;
+  z-index: 34;
   padding: 0.75rem 0.5rem;
   text-align: center;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   border-right: 1px solid rgba(0, 0, 0, 0.08);
   background: var(--theme-header-bg);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -102,7 +99,7 @@
 .standard-week-body {
   display: grid;
   grid-column: 1 / -1;
-  grid-template-columns: 60px repeat(var(--week-cols, 7), minmax(80px, 1fr));
+  grid-template-columns: 60px repeat(var(--week-cols, 7), minmax(0, 1fr));
   grid-auto-rows: 56px;
   grid-auto-flow: row;
   background: var(--theme-bg);
@@ -144,7 +141,7 @@
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: 60px repeat(var(--week-cols, 7), minmax(80px, 1fr));
+  grid-template-columns: 60px repeat(var(--week-cols, 7), minmax(0, 1fr));
   grid-template-rows: repeat(var(--week-hour-rows, 16), 56px);
   pointer-events: none;
   z-index: 8;
@@ -179,7 +176,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   margin: 2px;
   white-space: nowrap;
-  min-width: 60px;
+  min-width: 0;
 }
 
 .standard-week-event:hover {
@@ -305,31 +302,74 @@
 }
 
 @media (max-width: 600px) {
+  .standard-week-view {
+    padding: 0.5rem 0.35rem calc(92px + env(safe-area-inset-bottom));
+  }
+
   .standard-week-container {
-    grid-template-columns: 50px repeat(var(--week-cols, 7),
-        minmax(calc((100vw - 50px) / 3.5), 1fr));
-    min-width: max-content;
-    width: 100%;
+    grid-template-columns: 42px repeat(var(--week-cols, 7), minmax(0, 1fr));
+    border-width: 1px;
+    border-radius: 6px;
   }
 
   .standard-week-body {
-    grid-template-columns: 50px repeat(var(--week-cols, 7),
-        minmax(calc((100vw - 50px) / 3.5), 1fr));
+    grid-template-columns: 42px repeat(var(--week-cols, 7), minmax(0, 1fr));
+    grid-auto-rows: 62px;
   }
 
   .standard-week-events-layer {
-    grid-template-columns: 50px repeat(var(--week-cols, 7),
-        minmax(calc((100vw - 50px) / 3.5), 1fr));
+    grid-template-columns: 42px repeat(var(--week-cols, 7), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--week-hour-rows, 16), 62px);
+  }
+
+  .standard-week-day-header {
+    min-width: 0;
+    padding: 0.5rem 0.1rem 0.45rem;
+    gap: 0.12rem;
+  }
+
+  .standard-week-day-name {
+    font-size: 0.72rem;
+    line-height: 1;
+  }
+
+  .standard-week-day-date {
+    font-size: 0.68rem;
+    line-height: 1.2;
+  }
+
+  .standard-week-day-header.has-events .standard-week-day-date {
+    padding: 2px 4px;
+    border-radius: 999px;
+  }
+
+  .standard-week-time-label {
+    padding: 0.3rem 0.25rem;
+    font-size: 0.62rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .standard-week-allday-label {
+    padding: 0.45rem 0.2rem;
+    font-size: 0.65rem;
+  }
+
+  .standard-week-allday-cell {
+    min-height: 38px;
+    padding: 3px 2px;
   }
 
   .standard-week-event {
-    font-size: 0.65rem;
-    padding: 3px 4px;
+    margin: 1px;
+    padding: 3px 2px;
+    border-radius: 3px;
+    font-size: 0.62rem;
+    line-height: 1.25;
     min-width: unset;
-    max-width: calc(100% - 8px);
+    max-width: calc(100% - 2px);
     white-space: normal;
-    word-break: break-word;
-    flex-wrap: wrap;
+    overflow-wrap: anywhere;
+    align-items: flex-start;
   }
 
   .standard-week-event-icon {
@@ -339,9 +379,17 @@
   .standard-week-event-title {
     white-space: normal;
     min-width: 0;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
   }
 
   .standard-week-allday-event {
+    width: 100%;
+    padding: 4px 2px;
+    border-radius: 4px;
+    font-size: 0.62rem;
+    line-height: 1.2;
     white-space: normal;
     min-width: 0;
   }

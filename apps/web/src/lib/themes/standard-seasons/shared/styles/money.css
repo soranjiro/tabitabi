@@ -33,6 +33,7 @@
 .standard-money-item-meta { display:grid; gap:.13rem; }
 .standard-money-item-meta small:first-child { color:#526057; font-weight:700; }
 .standard-money-item-actions { min-width:128px; }
+.standard-money-item-per-person { width:100%; text-align:right; white-space:nowrap; }
 .standard-money-item-list button.active { border-color:#4d8b6c; background:#e8f5ec; color:#27684e; }
 
 @media (max-width: 520px) {

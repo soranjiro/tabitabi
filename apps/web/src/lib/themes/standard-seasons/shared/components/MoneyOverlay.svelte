@@ -62,6 +62,9 @@
 
   const yen = new Intl.NumberFormat('ja-JP');
   const formatYen = (value: number) => `¥${yen.format(value)}`;
+  const perPersonAmount = (item: MoneyItem) => item.split_member_ids.length
+    ? Math.round(item.amount / item.split_member_ids.length)
+    : null;
 
   const paidItems = $derived(data.items.filter((item) => item.status === 'paid'));
   const plannedItems = $derived(data.items.filter((item) => item.status === 'planned'));
@@ -382,6 +385,7 @@
                   </div>
                   <div class="standard-money-item-actions">
                     <b>{formatYen(item.amount)}</b>
+                    {#if perPersonAmount(item) !== null}<small class="standard-money-item-per-person">1人あたり {formatYen(perPersonAmount(item)!)}</small>{/if}
                     {#if canEdit && item.status === 'planned'}<button onclick={() => startMarkAsPaid(item)}>立替済みにする</button>{/if}
                     {#if canEdit && item.status === 'paid'}<button class:active={item.is_settled} aria-pressed={item.is_settled} onclick={() => setItemSettled(item, !item.is_settled)}>{item.is_settled ? '精算を戻す' : '精算済みにする'}</button>{/if}
                     {#if canEdit}<button onclick={() => editItem(item)}>編集</button><button class="delete" onclick={() => deleteItem(item.id)}>削除</button>{/if}

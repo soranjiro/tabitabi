@@ -65,6 +65,10 @@ test('デモのお金管理はAPIを待たずに表示・操作できる', async
   await expect(page.getByText('読み込み中…')).toHaveCount(0);
   await expect(page.getByText('¥69,000')).toBeVisible();
 
+  await page.getByRole('button', { name: '支出一覧' }).click();
+  await expect(page.getByText('1人あたり ¥12,000')).toBeVisible();
+  await expect(page.getByText('1人あたり ¥6,000')).toBeVisible();
+
   const memberName = `テスト参加者-${Date.now()}`;
   await page.getByPlaceholder('メンバー名').fill(memberName);
   await page.getByRole('button', { name: '追加', exact: true }).click();

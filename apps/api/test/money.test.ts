@@ -198,6 +198,19 @@ describe('Packing API', () => {
     }), env);
     const group = (await add.json() as any).data;
     expect(add.status).toBe(201);
+    const beforeReorder = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    const beforeReorderData = (await beforeReorder.json() as any).data;
+    const reorderedIds = [group.id, ...beforeReorderData.groups.filter((current: { id: string }) => current.id !== group.id).map((current: { id: string }) => current.id)];
+    const reorder = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing/groups/order`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group_ids: reorderedIds }),
+    }), env);
+    expect(reorder.status).toBe(200);
+    const afterReorder = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    expect((await afterReorder.json() as any).data.groups.map((current: { id: string }) => current.id)).toEqual(reorderedIds);
+    const invalidReorder = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing/groups/order`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group_ids: reorderedIds.slice(1) }),
+    }), env);
+    expect(invalidReorder.status).toBe(400);
     const rename = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing/groups/${group.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: '登山用品' }),
     }), env);

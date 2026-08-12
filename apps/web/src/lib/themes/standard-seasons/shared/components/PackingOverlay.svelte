@@ -3,7 +3,7 @@
   import { packingApi } from '$lib/api/packing';
   import { membersApi } from '$lib/api/members';
   import { demoStorage, getIsDemoMode } from '$lib/demo';
-  import { shouldPromptForPackingIdentity } from '../utils/packing';
+  import { movePackingGroup, orderPackingGroups, shouldPromptForPackingIdentity } from '../utils/packing';
   import { CloseIcon } from './icons/index.svelte';
 
   interface Props { show: boolean; itineraryId: string; canEdit: boolean; onClose: () => void; }
@@ -25,6 +25,9 @@
   let groupId = $state('');
   let newMemberName = $state('');
   let newGroupName = $state('');
+  let draggingGroupId = $state<string | null>(null);
+  let dragStartGroups = $state<PackingGroup[]>([]);
+  let dragPointerId = $state<number | null>(null);
 
   const isDemo = () => itineraryId === 'demo' || getIsDemoMode();
   const me = $derived(data.members.find((member) => member.id === meId));
@@ -36,6 +39,7 @@
   const donePersonal = $derived(myPersonal.filter((item) => item.checked_member_ids.includes(meId)).length);
   const doneAssigned = $derived(myAssigned.filter((item) => item.is_packed).length);
   const doneShared = $derived(sharedItems.filter((item) => item.is_packed).length);
+  const orderedGroups = $derived(orderPackingGroups(data.groups));
 
   function demoMembers(): TripMember[] {
     const created_at = '2026-08-01T09:00:00.000Z';
@@ -116,7 +120,7 @@
     } catch (e) { alert(e instanceof Error ? e.message : 'チェックを更新できませんでした'); }
   }
 
-  function openAdd() { editingId = null; itemName = ''; itemQuantity = 1; itemKind = 'personal'; groupId = data.groups[0]?.id ?? ''; assigneeId = ''; showForm = true; }
+  function openAdd() { editingId = null; itemName = ''; itemQuantity = 1; itemKind = 'personal'; groupId = orderedGroups[0]?.id ?? ''; assigneeId = ''; showForm = true; }
   function openEdit(item: PackingItem) { editingId = item.id; itemName = item.name; itemQuantity = item.quantity; itemKind = item.kind; groupId = item.group_id; assigneeId = item.assignee_member_id ?? ''; showForm = true; }
   function closeForm() { showForm = false; editingId = null; }
 
@@ -179,9 +183,9 @@
     try {
       const now = new Date().toISOString();
       const group: PackingGroup = isDemo()
-        ? { id: `demo-pack-group-${Date.now()}`, itinerary_id: itineraryId, name, sort_order: data.groups.length, created_at: now, updated_at: now }
+        ? { id: `demo-pack-group-${Date.now()}`, itinerary_id: itineraryId, name, sort_order: orderedGroups.length, created_at: now, updated_at: now }
         : await packingApi.addGroup(itineraryId, { name });
-      const next = { ...data, groups: [...data.groups, group] };
+      const next = { ...data, groups: [...orderedGroups, group] };
       if (isDemo()) persist(next); else data = next;
       newGroupName = '';
     } catch (e) { alert(e instanceof Error ? e.message : 'グループを追加できませんでした'); }
@@ -197,14 +201,79 @@
     } catch (e) { alert(e instanceof Error ? e.message : 'グループ名を変更できませんでした'); }
   }
 
+  async function saveGroupOrder(groups: PackingGroup[], previousGroups: PackingGroup[]) {
+    data = { ...data, groups };
+    try {
+      if (isDemo()) persist({ ...data, groups });
+      else {
+        const saved = await packingApi.reorderGroups(itineraryId, { group_ids: groups.map((current) => current.id) });
+        data = { ...data, groups: saved };
+      }
+    } catch (e) {
+      data = { ...data, groups: previousGroups };
+      alert(e instanceof Error ? e.message : 'グループの順番を変更できませんでした');
+    }
+  }
+
+  function moveGroup(group: PackingGroup, offset: -1 | 1) {
+    const currentIndex = orderedGroups.findIndex((current) => current.id === group.id);
+    const moved = movePackingGroup(orderedGroups, group.id, currentIndex + offset);
+    if (moved.every((current, index) => current.id === orderedGroups[index]?.id)) return;
+    void saveGroupOrder(moved, orderedGroups);
+  }
+
+  function startGroupDrag(event: PointerEvent, group: PackingGroup) {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    draggingGroupId = group.id;
+    dragStartGroups = orderedGroups;
+    dragPointerId = event.pointerId;
+    event.currentTarget instanceof HTMLElement && event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function dragGroup(event: PointerEvent) {
+    if (!draggingGroupId || event.pointerId !== dragPointerId) return;
+    event.preventDefault();
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-packing-group-id]');
+    const targetIndex = orderedGroups.findIndex((group) => group.id === target?.dataset.packingGroupId);
+    const currentIndex = orderedGroups.findIndex((group) => group.id === draggingGroupId);
+    if (targetIndex < 0 || currentIndex < 0 || targetIndex === currentIndex) return;
+    data = { ...data, groups: movePackingGroup(orderedGroups, draggingGroupId, targetIndex) };
+  }
+
+  function finishGroupDrag(event: PointerEvent) {
+    if (!draggingGroupId || event.pointerId !== dragPointerId) return;
+    const previousGroups = dragStartGroups;
+    const groups = orderedGroups;
+    draggingGroupId = null;
+    dragStartGroups = [];
+    dragPointerId = null;
+    if (event.currentTarget instanceof HTMLElement && event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if (!groups.every((group, index) => group.id === previousGroups[index]?.id)) void saveGroupOrder(groups, previousGroups);
+  }
+
+  function cancelGroupDrag(event: PointerEvent) {
+    if (!draggingGroupId || event.pointerId !== dragPointerId) return;
+    data = { ...data, groups: dragStartGroups };
+    draggingGroupId = null;
+    dragStartGroups = [];
+    dragPointerId = null;
+  }
+
+  function handleGroupOrderKey(event: KeyboardEvent, group: PackingGroup) {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+    event.preventDefault();
+    moveGroup(group, event.key === 'ArrowUp' ? -1 : 1);
+  }
+
   async function removeGroup(group: PackingGroup) {
     if (data.groups.length === 1) { alert('グループは1つ以上必要です。'); return; }
     if (!confirm(`「${group.name}」を削除しますか？\nこのグループの持ち物は別のグループに移動します。`)) return;
     try {
-      let fallback = data.groups.find((current) => current.id !== group.id);
+      let fallback = orderedGroups.find((current) => current.id !== group.id);
       if (!fallback) return;
       const response = isDemo() ? { reassigned_to_group_id: fallback.id } : await packingApi.deleteGroup(itineraryId, group.id);
-      const groups = data.groups.filter((current) => current.id !== group.id);
+      const groups = orderedGroups.filter((current) => current.id !== group.id);
       const next = { ...data, groups, items: data.items.map((item) => item.group_id === group.id ? { ...item, group_id: response.reassigned_to_group_id } : item) };
       if (isDemo()) persist(next); else data = next;
     } catch (e) { alert(e instanceof Error ? e.message : 'グループを削除できませんでした'); }
@@ -230,19 +299,19 @@
         {#if tab === 'mine' && me}
           <div class="standard-packing-content">
             <section class="standard-packing-section"><div class="standard-packing-section-title"><h3>自分の持ち物</h3><span>{donePersonal} / {myPersonal.length}</span></div>
-              <div class="standard-packing-groups">{#each data.groups as group}{@const items = myPersonal.filter((item) => item.group_id === group.id)}{#if items.length}<div class="standard-packing-group"><h4>{group.name}<small>{items.filter((item) => isChecked(item)).length} / {items.length}</small></h4><div class="standard-packing-list">{#each items as item}<div class:done={isChecked(item)} class="standard-packing-row"><button class="check" aria-label={`${item.name}をチェック`} onclick={() => toggle(item)}>{isChecked(item) ? '✓' : ''}</button><span>{itemLabel(item)}</span>{#if canEdit}<button class="more" aria-label={`${item.name}を編集`} onclick={() => openEdit(item)}>•••</button>{/if}</div>{/each}</div></div>{/if}{/each}</div>
+              <div class="standard-packing-groups">{#each orderedGroups as group (group.id)}{@const items = myPersonal.filter((item) => item.group_id === group.id)}{#if items.length}<div class="standard-packing-group"><h4>{group.name}<small>{items.filter((item) => isChecked(item)).length} / {items.length}</small></h4><div class="standard-packing-list">{#each items as item}<div class:done={isChecked(item)} class="standard-packing-row"><button class="check" aria-label={`${item.name}をチェック`} onclick={() => toggle(item)}>{isChecked(item) ? '✓' : ''}</button><span>{itemLabel(item)}</span>{#if canEdit}<button class="more" aria-label={`${item.name}を編集`} onclick={() => openEdit(item)}>•••</button>{/if}</div>{/each}</div></div>{/if}{/each}</div>
             </section>
             <section class="standard-packing-section"><div class="standard-packing-section-title"><h3>自分が担当</h3><span>{doneAssigned} / {myAssigned.length}</span></div>
-              {#if myAssigned.length}<div class="standard-packing-groups">{#each data.groups as group}{@const items = myAssigned.filter((item) => item.group_id === group.id)}{#if items.length}<div class="standard-packing-group"><h4>{group.name}</h4><div class="standard-packing-list">{#each items as item}<div class:done={item.is_packed} class="standard-packing-row"><button class="check" onclick={() => toggle(item)}>{item.is_packed ? '✓' : ''}</button><span>{itemLabel(item)}</span>{#if canEdit}<button class="more" onclick={() => openEdit(item)}>•••</button>{/if}</div>{/each}</div></div>{/if}{/each}</div>{:else}<p class="standard-packing-note">担当している共通の持ち物はありません。</p>{/if}
+              {#if myAssigned.length}<div class="standard-packing-groups">{#each orderedGroups as group (group.id)}{@const items = myAssigned.filter((item) => item.group_id === group.id)}{#if items.length}<div class="standard-packing-group"><h4>{group.name}</h4><div class="standard-packing-list">{#each items as item}<div class:done={item.is_packed} class="standard-packing-row"><button class="check" onclick={() => toggle(item)}>{item.is_packed ? '✓' : ''}</button><span>{itemLabel(item)}</span>{#if canEdit}<button class="more" onclick={() => openEdit(item)}>•••</button>{/if}</div>{/each}</div></div>{/if}{/each}</div>{:else}<p class="standard-packing-note">担当している共通の持ち物はありません。</p>{/if}
             </section>
           </div>
         {:else if tab === 'everyone'}
           <div class="standard-packing-content">
             <section class="standard-packing-section"><div class="standard-packing-section-title"><h3>準備状況</h3></div>
-              <div class="standard-packing-progress-list">{#each data.members as member}{@const count = personalItems.filter((item) => item.checked_member_ids.includes(member.id)).length}<details><summary><span><i>{member.name.slice(0, 1)}</i>{member.name}</span><b>{count} / {personalItems.length}</b></summary><div>{#each data.groups as group}{@const items = personalItems.filter((item) => item.group_id === group.id)}{#if items.length}<h5>{group.name}</h5>{#each items as item}<button class:done={item.checked_member_ids.includes(member.id)} onclick={() => toggle(item, member.id)}><i>{item.checked_member_ids.includes(member.id) ? '✓' : ''}</i>{itemLabel(item)}</button>{/each}{/if}{/each}</div></details>{/each}</div>
+              <div class="standard-packing-progress-list">{#each data.members as member}{@const count = personalItems.filter((item) => item.checked_member_ids.includes(member.id)).length}<details><summary><span><i>{member.name.slice(0, 1)}</i>{member.name}</span><b>{count} / {personalItems.length}</b></summary><div>{#each orderedGroups as group (group.id)}{@const items = personalItems.filter((item) => item.group_id === group.id)}{#if items.length}<h5>{group.name}</h5>{#each items as item}<button class:done={item.checked_member_ids.includes(member.id)} onclick={() => toggle(item, member.id)}><i>{item.checked_member_ids.includes(member.id) ? '✓' : ''}</i>{itemLabel(item)}</button>{/each}{/if}{/each}</div></details>{/each}</div>
             </section>
             <section class="standard-packing-section"><div class="standard-packing-section-title"><h3>共通の持ち物</h3><span>{doneShared} / {sharedItems.length}</span></div>
-              <div class="standard-packing-groups">{#each data.groups as group}{@const items = sharedItems.filter((item) => item.group_id === group.id)}{#if items.length}<div class="standard-packing-group"><h4>{group.name}<small>{items.filter((item) => item.is_packed).length} / {items.length}</small></h4><div class="standard-packing-list">{#each items as item}<div class:done={item.is_packed} class="standard-packing-row shared"><button class="check" onclick={() => toggle(item)}>{item.is_packed ? '✓' : ''}</button><span>{itemLabel(item)}</span><select class:undecided={!item.assignee_member_id} value={item.assignee_member_id ?? ''} disabled={!canEdit} aria-label={`${item.name}の担当者`} onchange={(event) => changeAssignee(item, event.currentTarget.value)}><option value="">未定</option>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>{#if canEdit}<button class="more" onclick={() => openEdit(item)}>•••</button>{/if}</div>{/each}</div></div>{/if}{/each}</div>
+              <div class="standard-packing-groups">{#each orderedGroups as group (group.id)}{@const items = sharedItems.filter((item) => item.group_id === group.id)}{#if items.length}<div class="standard-packing-group"><h4>{group.name}<small>{items.filter((item) => item.is_packed).length} / {items.length}</small></h4><div class="standard-packing-list">{#each items as item}<div class:done={item.is_packed} class="standard-packing-row shared"><button class="check" onclick={() => toggle(item)}>{item.is_packed ? '✓' : ''}</button><span>{itemLabel(item)}</span><select class:undecided={!item.assignee_member_id} value={item.assignee_member_id ?? ''} disabled={!canEdit} aria-label={`${item.name}の担当者`} onchange={(event) => changeAssignee(item, event.currentTarget.value)}><option value="">未定</option>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>{#if canEdit}<button class="more" onclick={() => openEdit(item)}>•••</button>{/if}</div>{/each}</div></div>{/if}{/each}</div>
             </section>
           </div>
         {/if}
@@ -251,8 +320,8 @@
 
     {#if showIdentity}<div class="standard-packing-sheet-backdrop" onclick={() => meId && (showIdentity = false)}><div class="standard-packing-sheet" onclick={(event) => event.stopPropagation()}><span class="handle"></span><h3>この旅では誰ですか？</h3><p>この端末で表示する「自分」を選んでください。</p>{#each data.members as member}<button class:active={member.id === meId} onclick={() => selectMe(member.id)}><i>{member.id === meId ? '✓' : ''}</i><span>{member.name.slice(0, 1)}</span>{member.name}</button>{/each}{#if canEdit}<div class="standard-packing-member-add"><input placeholder="メンバー名" bind:value={newMemberName} onkeydown={(event) => event.key === 'Enter' && addMember()} /><button onclick={addMember}>＋ メンバーを追加</button></div>{/if}<small>あとから画面上部で変更できます</small></div></div>{/if}
 
-    {#if showForm}<div class="standard-packing-sheet-backdrop" onclick={closeForm}><form class="standard-packing-sheet standard-packing-form" onclick={(event) => event.stopPropagation()} onsubmit={(event) => { event.preventDefault(); saveItem(); }}><span class="handle"></span><h3>{editingId ? '持ち物を編集' : '持ち物を追加'}</h3><label>持ち物名<input autofocus placeholder="例：トップス" bind:value={itemName} /></label><label>個数<select bind:value={itemQuantity}>{#each Array.from({ length: 10 }, (_, index) => index + 1) as quantity}<option value={quantity}>{quantity}</option>{/each}</select></label><label>グループ<select bind:value={groupId}>{#each data.groups as group}<option value={group.id}>{group.name}</option>{/each}</select></label><fieldset><legend>誰が持つ？</legend><label><input type="radio" value="private" bind:group={itemKind} /><span><b>自分専用</b><small>自分のリストだけに表示します</small></span></label><label><input type="radio" value="personal" bind:group={itemKind} /><span><b>各自で持つ</b><small>全員に同じチェック項目を作ります</small></span></label><label><input type="radio" value="shared" bind:group={itemKind} /><span><b>誰か1人が持つ</b><small>グループで1つだけ準備します</small></span></label></fieldset>{#if itemKind === 'shared'}<label>担当者<select bind:value={assigneeId}><option value="">未定</option>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select></label>{/if}<div class="actions">{#if editingId}<button type="button" class="delete" onclick={() => { const item = data.items.find((current) => current.id === editingId); if (item) remove(item); }}>削除</button>{/if}<button type="button" class="secondary" onclick={closeForm}>キャンセル</button><button type="submit">保存</button></div></form></div>{/if}
+    {#if showForm}<div class="standard-packing-sheet-backdrop" onclick={closeForm}><form class="standard-packing-sheet standard-packing-form" onclick={(event) => event.stopPropagation()} onsubmit={(event) => { event.preventDefault(); saveItem(); }}><span class="handle"></span><h3>{editingId ? '持ち物を編集' : '持ち物を追加'}</h3><label>持ち物名<input autofocus placeholder="例：トップス" bind:value={itemName} /></label><label>個数<select bind:value={itemQuantity}>{#each Array.from({ length: 10 }, (_, index) => index + 1) as quantity}<option value={quantity}>{quantity}</option>{/each}</select></label><label>グループ<select bind:value={groupId}>{#each orderedGroups as group (group.id)}<option value={group.id}>{group.name}</option>{/each}</select></label><fieldset><legend>誰が持つ？</legend><label><input type="radio" value="private" bind:group={itemKind} /><span><b>自分専用</b><small>自分のリストだけに表示します</small></span></label><label><input type="radio" value="personal" bind:group={itemKind} /><span><b>各自で持つ</b><small>全員に同じチェック項目を作ります</small></span></label><label><input type="radio" value="shared" bind:group={itemKind} /><span><b>誰か1人が持つ</b><small>グループで1つだけ準備します</small></span></label></fieldset>{#if itemKind === 'shared'}<label>担当者<select bind:value={assigneeId}><option value="">未定</option>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select></label>{/if}<div class="actions">{#if editingId}<button type="button" class="delete" onclick={() => { const item = data.items.find((current) => current.id === editingId); if (item) remove(item); }}>削除</button>{/if}<button type="button" class="secondary" onclick={closeForm}>キャンセル</button><button type="submit">保存</button></div></form></div>{/if}
 
-    {#if showGroups}<div class="standard-packing-sheet-backdrop" onclick={() => showGroups = false}><div class="standard-packing-sheet standard-packing-group-sheet" onclick={(event) => event.stopPropagation()}><span class="handle"></span><h3>グループを管理</h3><p>名前を変更したら「保存」を押してください。</p><div class="standard-packing-group-editor">{#each data.groups as group}<div><input aria-label={`${group.name}のグループ名`} value={group.name} /><button onclick={(event) => renameGroup(group, event.currentTarget.previousElementSibling instanceof HTMLInputElement ? event.currentTarget.previousElementSibling.value : group.name)}>保存</button><button class="delete" aria-label={`${group.name}を削除`} onclick={() => removeGroup(group)}>削除</button></div>{/each}</div><div class="standard-packing-group-add"><input placeholder="新しいグループ名" bind:value={newGroupName} onkeydown={(event) => event.key === 'Enter' && addGroup()} /><button onclick={addGroup}>＋ 追加</button></div><button class="standard-packing-sheet-close" onclick={() => showGroups = false}>完了</button></div></div>{/if}
+    {#if showGroups}<div class="standard-packing-sheet-backdrop" onclick={() => showGroups = false}><div class="standard-packing-sheet standard-packing-group-sheet" onclick={(event) => event.stopPropagation()}><span class="handle"></span><h3>グループを管理</h3><p>左のハンドルをドラッグして並び替えられます。名前を変更したら「保存」を押してください。</p><div class="standard-packing-group-editor">{#each orderedGroups as group (group.id)}<div data-packing-group-id={group.id} class:dragging={draggingGroupId === group.id}><button type="button" class="standard-packing-drag-handle" aria-label={`${group.name}を並び替え`} aria-keyshortcuts="ArrowUp ArrowDown" title="ドラッグして並び替え（↑↓キーでも移動）" onpointerdown={(event) => startGroupDrag(event, group)} onpointermove={dragGroup} onpointerup={finishGroupDrag} onpointercancel={cancelGroupDrag} onkeydown={(event) => handleGroupOrderKey(event, group)}><span aria-hidden="true">⠿</span></button><input aria-label={`${group.name}のグループ名`} value={group.name} /><button onclick={(event) => renameGroup(group, event.currentTarget.previousElementSibling instanceof HTMLInputElement ? event.currentTarget.previousElementSibling.value : group.name)}>保存</button><button class="delete" aria-label={`${group.name}を削除`} onclick={() => removeGroup(group)}>削除</button></div>{/each}</div><div class="standard-packing-group-add"><input placeholder="新しいグループ名" bind:value={newGroupName} onkeydown={(event) => event.key === 'Enter' && addGroup()} /><button onclick={addGroup}>＋ 追加</button></div><button class="standard-packing-sheet-close" onclick={() => showGroups = false}>完了</button></div></div>{/if}
   </div>
 {/if}

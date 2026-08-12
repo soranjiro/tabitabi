@@ -4,7 +4,7 @@ import type { PackingData, PackingGroup, PackingItem, TripMember } from '@tabita
 import { Env, Variables, generateId, getCurrentTimestamp } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
 import { optionalAuthMiddleware } from '../middleware/auth';
-import { packingCheckSchema, packingGroupSchema, packingItemSchema, updatePackingItemSchema } from '../validators';
+import { packingCheckSchema, packingGroupSchema, packingItemSchema, reorderPackingGroupsSchema, updatePackingItemSchema } from '../validators';
 import { validationHook } from '../validators/hook';
 
 const packing = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -135,6 +135,28 @@ packing.post('/itineraries/:id/packing/groups', optionalAuthMiddleware, zValidat
   await c.env.DB.prepare('INSERT INTO itinerary_packing_groups (id, itinerary_id, name, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
     .bind(group.id, itineraryId, group.name, group.sort_order, now, now).run();
   return c.json({ success: true, data: group }, 201);
+});
+
+packing.put('/itineraries/:id/packing/groups/order', optionalAuthMiddleware, zValidator('json', reorderPackingGroupsSchema, validationHook), async (c) => {
+  const itineraryId = c.req.param('id')!;
+  const denied = await canEdit(c, itineraryId);
+  if (denied) return denied;
+  await ensureDefaultGroups(c.env.DB, itineraryId);
+  const { group_ids: groupIds } = c.req.valid('json');
+  const existing = await c.env.DB.prepare('SELECT id FROM itinerary_packing_groups WHERE itinerary_id = ?').bind(itineraryId).all<{ id: string }>();
+  const existingIds = new Set((existing.results ?? []).map((group) => group.id));
+  if (groupIds.length !== existingIds.size || groupIds.some((id) => !existingIds.has(id))) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'All packing groups must be included exactly once' } }, 400);
+  }
+  const now = getCurrentTimestamp();
+  await c.env.DB.batch(groupIds.map((groupId, sortOrder) => c.env.DB.prepare(
+    'UPDATE itinerary_packing_groups SET sort_order = ?, updated_at = ? WHERE id = ? AND itinerary_id = ?',
+  ).bind(sortOrder, now, groupId, itineraryId)));
+  const reordered = await c.env.DB.prepare(
+    'SELECT * FROM itinerary_packing_groups WHERE itinerary_id = ? ORDER BY sort_order ASC, created_at ASC',
+  ).bind(itineraryId).all();
+  const groups = (reordered.results ?? []).map((row) => groupFromRow(row as Record<string, unknown>));
+  return c.json({ success: true, data: groups });
 });
 
 packing.put('/itineraries/:id/packing/groups/:groupId', optionalAuthMiddleware, zValidator('json', packingGroupSchema, validationHook), async (c) => {

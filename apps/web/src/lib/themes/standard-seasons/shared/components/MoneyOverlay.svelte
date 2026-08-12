@@ -20,6 +20,7 @@
   let error = $state('');
   let title = $state('');
   let amount = $state('');
+  let amountInputMode = $state<'total' | 'perPerson'>('total');
   let status = $state<MoneyItemStatus>('paid');
   let payerId = $state('');
   let isSettled = $state(false);
@@ -62,6 +63,9 @@
 
   const yen = new Intl.NumberFormat('ja-JP');
   const formatYen = (value: number) => `¥${yen.format(value)}`;
+  const perPersonAmount = (item: MoneyItem) => item.split_member_ids.length
+    ? Math.round(item.amount / item.split_member_ids.length)
+    : null;
 
   const paidItems = $derived(data.items.filter((item) => item.status === 'paid'));
   const plannedItems = $derived(data.items.filter((item) => item.status === 'planned'));
@@ -191,11 +195,23 @@
     budget = String(view === 'perPerson' && data.members.length ? Math.round(data.budget_amount / data.members.length) : data.budget_amount);
   }
 
+  function selectAmountInputMode(mode: 'total' | 'perPerson') {
+    if (mode === amountInputMode) return;
+    const enteredValue = Number(amount);
+    if (amount.trim() && Number.isInteger(enteredValue) && enteredValue > 0 && participantIds.length) {
+      amount = String(mode === 'perPerson'
+        ? Math.round(enteredValue / participantIds.length)
+        : enteredValue * participantIds.length);
+    }
+    amountInputMode = mode;
+  }
+
   async function addItem() {
-    const value = Number(amount);
-    if (!title.trim() || !Number.isInteger(value) || value <= 0 || !participantIds.length) {
+    const enteredValue = Number(amount);
+    if (!title.trim() || !Number.isInteger(enteredValue) || enteredValue <= 0 || !participantIds.length) {
       return alert('内容・金額・負担する人を入力してください');
     }
+    const value = amountInputMode === 'perPerson' ? enteredValue * participantIds.length : enteredValue;
     if (!payerId) return alert('支払い方法を選択してください');
     try {
       if (isDemoMoney()) {
@@ -226,12 +242,12 @@
   }
 
   function resetForm() {
-    title = ''; amount = ''; payerId = ''; isSettled = false; linkedStepId = ''; editingItemId = null;
+    title = ''; amount = ''; amountInputMode = 'total'; payerId = ''; isSettled = false; linkedStepId = ''; editingItemId = null;
     participantIds = data.members.map((member) => member.id);
   }
 
   async function editItem(item: MoneyItem) {
-    editingItemId = item.id; title = item.title; amount = String(item.amount); status = item.status;
+    editingItemId = item.id; title = item.title; amount = String(item.amount); amountInputMode = 'total'; status = item.status;
     payerId = item.paid_by_member_id ?? 'individual'; isSettled = item.is_settled;
     participantIds = [...item.split_member_ids]; linkedStepId = item.step_id ?? '';
     activeTab = 'items';
@@ -318,10 +334,17 @@
                 <input aria-label="支出の内容" placeholder="例：ホテル、交通費" bind:value={title} />
               </label>
               <div class="standard-money-form-row">
-                <label class="standard-money-field">
-                  <span>金額</span>
-                  <input aria-label="金額（円）" inputmode="numeric" placeholder="金額（円）" bind:value={amount} />
-                </label>
+                <div class="standard-money-field">
+                  <div class="standard-money-amount-heading">
+                    <span>金額</span>
+                    <div class="standard-money-amount-segment" role="group" aria-label="金額の入力方法">
+                      <button type="button" class:active={amountInputMode === 'total'} onclick={() => selectAmountInputMode('total')}>総額</button>
+                      <button type="button" class:active={amountInputMode === 'perPerson'} onclick={() => selectAmountInputMode('perPerson')}>1人あたり</button>
+                    </div>
+                  </div>
+                  <input aria-label={amountInputMode === 'total' ? '総額（円）' : '1人あたり金額（円）'} inputmode="numeric" placeholder={amountInputMode === 'total' ? '総額（円）' : '1人あたり（円）'} bind:value={amount} />
+                  {#if amountInputMode === 'perPerson' && participantIds.length}<small>{participantIds.length}人分の総額で登録します</small>{/if}
+                </div>
                 <label class="standard-money-field">
                   <span>区分</span>
                   <select value={status} onchange={(event) => setStatus((event.currentTarget as HTMLSelectElement).value as MoneyItemStatus)}>
@@ -382,6 +405,7 @@
                   </div>
                   <div class="standard-money-item-actions">
                     <b>{formatYen(item.amount)}</b>
+                    {#if perPersonAmount(item) !== null}<small class="standard-money-item-per-person">1人あたり {formatYen(perPersonAmount(item)!)}</small>{/if}
                     {#if canEdit && item.status === 'planned'}<button onclick={() => startMarkAsPaid(item)}>立替済みにする</button>{/if}
                     {#if canEdit && item.status === 'paid'}<button class:active={item.is_settled} aria-pressed={item.is_settled} onclick={() => setItemSettled(item, !item.is_settled)}>{item.is_settled ? '精算を戻す' : '精算済みにする'}</button>{/if}
                     {#if canEdit}<button onclick={() => editItem(item)}>編集</button><button class="delete" onclick={() => deleteItem(item.id)}>削除</button>{/if}

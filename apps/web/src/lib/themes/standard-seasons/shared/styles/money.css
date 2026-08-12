@@ -15,6 +15,11 @@
 .standard-money-close svg { display:block; width:24px; height:24px; }
 .standard-money-field { display:grid; gap:.3rem; color:#59645b; font-size:.78rem; font-weight:700; }
 .standard-money-field small { color:#748075; font-size:.72rem; font-weight:400; line-height:1.45; }
+.standard-money-amount-heading { display:flex; align-items:center; justify-content:space-between; gap:.4rem; }
+.standard-money-amount-segment { display:flex; overflow:hidden; border:1px solid #d6d2c8; border-radius:7px; background:#fff; }
+.standard-money-amount-segment button { min-height:28px; border:0; border-left:1px solid #d6d2c8; padding:.2rem .45rem; background:#fff; color:#68736a; font:inherit; font-size:.68rem; cursor:pointer; }
+.standard-money-amount-segment button:first-child { border-left:0; }
+.standard-money-amount-segment button.active { background:var(--theme-primary); color:#fff; }
 .standard-money-form-row { display:grid !important; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:.55rem; }
 .standard-money-form-row > * { min-width:0; }
 .standard-money-form select,.standard-money-form input { min-height:44px; box-sizing:border-box; color:#29332d; }
@@ -33,6 +38,7 @@
 .standard-money-item-meta { display:grid; gap:.13rem; }
 .standard-money-item-meta small:first-child { color:#526057; font-weight:700; }
 .standard-money-item-actions { min-width:128px; }
+.standard-money-item-per-person { width:100%; text-align:right; white-space:nowrap; }
 .standard-money-item-list button.active { border-color:#4d8b6c; background:#e8f5ec; color:#27684e; }
 
 @media (max-width: 520px) {

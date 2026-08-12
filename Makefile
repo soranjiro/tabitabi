@@ -1,4 +1,4 @@
-.PHONY: build build-docs deploy deploy-api deploy-web dev lighthouse migrate-status migrate-up migrate-down migrate-status-remote migrate-up-remote migrate-down-remote migrate-new seed-local test test-api test-web
+.PHONY: build build-docs deploy deploy-api deploy-web dev down lighthouse migrate-status migrate-up migrate-down migrate-status-remote migrate-up-remote migrate-down-remote migrate-new seed-local test test-api test-web
 
 build: build-docs
 	pnpm run build
@@ -16,6 +16,12 @@ deploy-web:
 
 dev:
 	pnpm run dev
+
+down:
+	@pkill -TERM -f 'turbo dev' 2>/dev/null || true
+	@pkill -TERM -f 'wrangler dev' 2>/dev/null || true
+	@pkill -TERM -f 'vite dev' 2>/dev/null || true
+	@echo "Development servers stopped."
 
 lighthouse:
 	node tools/run-lighthouse.js http://localhost:5173

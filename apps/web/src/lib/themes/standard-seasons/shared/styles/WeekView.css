@@ -186,6 +186,8 @@
   display: flex;
   gap: 4px;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   overflow: hidden;
   font-size: 0.7rem;
   font-weight: 600;
@@ -242,19 +244,25 @@
 }
 
 .standard-week-event-icon {
+  position: absolute;
+  left: 6px;
   display: inline-flex;
   align-items: center;
   font-size: 0.85rem;
   flex-shrink: 0;
+  pointer-events: none;
 }
 
 .standard-week-event-title {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;
+  width: 100%;
+  padding: 0 14px;
   min-width: 0;
   font-weight: 600;
+  text-align: center;
 }
 
 .standard-week-allday-row {
@@ -413,15 +421,20 @@
     max-width: calc(100% - 4px);
     white-space: normal;
     overflow-wrap: anywhere;
-    align-items: flex-start;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .standard-week-event-icon {
-    display: none;
+    position: static;
+    font-size: 0.8rem;
   }
 
   .standard-week-event-title {
     white-space: normal;
+    width: 100%;
+    padding: 0;
     min-width: 0;
     display: -webkit-box;
     -webkit-box-orient: vertical;

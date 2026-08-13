@@ -93,7 +93,6 @@ venv.bak/
 
 # Cloudflare wrangler
 wrangler.toml
-.auth-migration/
 
 # Spyder project settings
 .spyderproject
@@ -168,5 +167,5 @@ apps/web/static/docs/
 # Partytown (generated from @qwik.dev/partytown)
 apps/web/static/~partytown/
 
-# .pnpm
-.pnpm-store/
+# Local Chrome for Lighthouse
+chrome/

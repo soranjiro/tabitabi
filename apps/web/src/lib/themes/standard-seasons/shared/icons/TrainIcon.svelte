@@ -6,10 +6,6 @@
   stroke-linecap="round"
   stroke-linejoin="round"
 >
-  <rect x="2" y="6" width="20" height="8" rx="1" />
-  <path d="M4 14v4M20 14v4" />
-  <circle cx="6" cy="18" r="1" />
-  <circle cx="18" cy="18" r="1" />
-  <line x1="6" y1="6" x2="6" y2="2" />
-  <line x1="18" y1="6" x2="18" y2="2" />
+  <rect x="4" y="3" width="16" height="15" rx="3" />
+  <path d="M4 12h16M8 18l-2 3M16 18l2 3M8 7h.01M16 7h.01M8 22h8" />
 </svg>

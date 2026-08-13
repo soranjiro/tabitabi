@@ -6,7 +6,8 @@
   let {
     activeSlug = "",
     counts = {},
-  }: { activeSlug?: string; counts?: Record<string, number> } = $props();
+    variant = "public",
+  }: { activeSlug?: string; counts?: Record<string, number>; variant?: "public" | "visited" } = $props();
 
   let mapHost = $state<HTMLDivElement | null>(null);
   let mapMarkup = $state("");
@@ -32,6 +33,9 @@
       node.setAttribute("tabindex", "0");
       node.setAttribute("aria-label", `${prefecture.name}の旅行しおり ${counts[prefecture.slug] ?? 0}件`);
       node.classList.toggle("is-active", prefecture.slug === activeSlug);
+      for (let level = 0; level <= 3; level += 1) {
+        node.classList.toggle(`visited-level-${level}`, variant === "visited" && Math.min(counts[prefecture.slug] ?? 0, 3) === level);
+      }
 
       const preview = () => (focused = prefecture);
       const select = () => void goto(`/area/${prefecture.slug}`);
@@ -79,7 +83,7 @@
 <div class="map-shell">
   <div class="map-copy">
     <strong>{focused?.name ?? "都道府県を選択"}</strong>
-    <span>{focused ? `${counts[focused.slug] ?? 0}件の公開しおり` : "地図をタップして探せます"}</span>
+    <span>{#if focused}{variant === "visited" ? `${counts[focused.slug] ?? 0}件の旅` : `${counts[focused.slug] ?? 0}件の公開しおり`}{:else}{variant === "visited" ? "旅先をタップして確認できます" : "地図をタップして探せます"}{/if}</span>
   </div>
   <div class="map-host" bind:this={mapHost} aria-label="47都道府県から選べる日本地図">
     {@html mapMarkup}
@@ -87,6 +91,14 @@
   <p class="attribution">
     地図データ: <a href="https://github.com/geolonia/japanese-prefectures" rel="noreferrer">Geolonia</a> / Wikipedia (GFDL)
   </p>
+  {#if variant === "visited"}
+    <div class="legend" aria-label="訪問回数の凡例">
+      <span><i class="legend-swatch visited-level-0"></i>未登録</span>
+      <span><i class="legend-swatch visited-level-1"></i>1件</span>
+      <span><i class="legend-swatch visited-level-2"></i>2件</span>
+      <span><i class="legend-swatch visited-level-3"></i>3件以上</span>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -119,6 +131,10 @@
   .map-host :global(.prefecture:hover),
   .map-host :global(.prefecture:focus-visible) { fill: #769ee6 !important; filter: drop-shadow(0 4px 5px rgba(49, 93, 168, .22)); }
   .map-host :global(.prefecture.is-active) { fill: #4d73cc !important; }
+  .map-host :global(.prefecture.visited-level-0) { fill: #e9eef5 !important; }
+  .map-host :global(.prefecture.visited-level-1) { fill: #c6dcff !important; }
+  .map-host :global(.prefecture.visited-level-2) { fill: #78aaf3 !important; }
+  .map-host :global(.prefecture.visited-level-3) { fill: #3f6fc7 !important; }
   .map-host :global(.boundary-line) { stroke: #f7faff !important; }
 
   .attribution {
@@ -130,6 +146,13 @@
   }
 
   .attribution a { color: inherit; }
+
+  .legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px 12px; padding: 0 16px 14px; color: #71809a; font-size: 10px; }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .legend-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: #e9eef5; }
+  .legend-swatch.visited-level-1 { background: #c6dcff; }
+  .legend-swatch.visited-level-2 { background: #78aaf3; }
+  .legend-swatch.visited-level-3 { background: #3f6fc7; }
 
   @media (max-width: 640px) {
     .map-shell { border-radius: 16px; }

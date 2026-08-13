@@ -3,6 +3,7 @@
 const { default: lighthouse } = require('lighthouse');
 const chromeLauncher = require('chrome-launcher');
 const fs = require('fs');
+const path = require('path');
 
 const COLORS = {
   reset: '\x1b[0m',
@@ -25,8 +26,36 @@ function formatScore(score) {
   return Math.round(score * 100);
 }
 
+function findLocalChromeForTesting() {
+  const chromeRoot = path.resolve(__dirname, '..', 'chrome');
+  if (!fs.existsSync(chromeRoot)) return null;
+
+  const executablePath = path.join(
+    'chrome-mac-x64',
+    'Google Chrome for Testing.app',
+    'Contents',
+    'MacOS',
+    'Google Chrome for Testing'
+  );
+
+  const versions = fs
+    .readdirSync(chromeRoot)
+    .filter((name) => name.startsWith('mac-'))
+    .sort()
+    .reverse();
+
+  for (const version of versions) {
+    const chromePath = path.join(chromeRoot, version, executablePath);
+    if (fs.existsSync(chromePath)) return chromePath;
+  }
+
+  return null;
+}
+
 async function runLighthouse(url, options = {}) {
+  const chromePath = process.env.CHROME_PATH || findLocalChromeForTesting();
   const chrome = await chromeLauncher.launch({
+    ...(chromePath ? { chromePath } : {}),
     chromeFlags: ['--headless', '--disable-gpu', '--no-first-run', '--disable-default-apps'],
   });
 

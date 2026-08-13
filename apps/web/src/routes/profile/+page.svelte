@@ -7,6 +7,7 @@
   import PageShell from "$lib/PageShell.svelte";
   import { auth } from "$lib/auth";
   import { prefectures as explorePrefectures, prefectureName, travelTags } from "$lib/explore/data";
+  import JapanMap from "$lib/explore/JapanMap.svelte";
   import { PREFECTURES, type Prefecture, type UserBookmarkWithItinerary, type UserSessionProfile } from "@tabitabi/types";
 
   type Mode = "login" | "register" | "verify" | "forgot" | "setup";
@@ -42,6 +43,14 @@
   let publicationTags = $state<string[]>([]);
   let publicationError = $state("");
   let unlinkTarget = $state<UserBookmarkWithItinerary | null>(null);
+  let activeTab = $state<"itineraries" | "map">("itineraries");
+  const visitedCounts = $derived.by(() => {
+    const counts: Record<string, number> = {};
+    for (const item of bookmarks) {
+      for (const slug of item.prefecture_slugs ?? []) counts[slug] = (counts[slug] ?? 0) + 1;
+    }
+    return counts;
+  });
 
   onMount(async () => {
     try {
@@ -421,10 +430,22 @@
         </div>{/if}
       </section>
 
-      <div class="library-heading"><div><p>MY ITINERARIES</p><h2>保存したしおり</h2></div><span>{bookmarks.filter((item) => item.is_visible).length}件 公開中</span></div>
-      {#if bookmarks.length === 0}
-        <div class="library-empty"><span>✈</span><h3>最初のしおりを作りましょう</h3><p>作成したしおりは自動でここに保存され、完成後に公開できます。</p><a href="/#create">しおりを作る</a></div>
+      <nav class="library-tabs" aria-label="マイページの表示切り替え">
+        <button class:active={activeTab === "itineraries"} onclick={() => (activeTab = "itineraries")}>保存したしおり</button>
+        <button class:active={activeTab === "map"} onclick={() => (activeTab = "map")}>訪問マップ</button>
+      </nav>
+
+      {#if activeTab === "map"}
+        <section class="visited-map-card" aria-labelledby="visited-map-title">
+          <div class="library-heading"><div><p>MY TRAVEL MAP</p><h2 id="visited-map-title">行った場所</h2></div><span>{Object.keys(visitedCounts).length}都道府県</span></div>
+          <p class="map-intro">公開情報に登録した旅行先を、しおりの件数で色分けしています。</p>
+          <JapanMap counts={visitedCounts} variant="visited" />
+        </section>
       {:else}
+        <div class="library-heading"><div><p>MY ITINERARIES</p><h2>保存したしおり</h2></div><span>{bookmarks.filter((item) => item.is_visible).length}件 公開中</span></div>
+        {#if bookmarks.length === 0}
+        <div class="library-empty"><span>✈</span><h3>最初のしおりを作りましょう</h3><p>作成したしおりは自動でここに保存され、完成後に公開できます。</p><a href="/#create">しおりを作る</a></div>
+        {:else}
         <div class="bookmark-grid">
           {#each bookmarks as item}
             <article class:published={item.is_visible}>
@@ -453,6 +474,7 @@
             </article>
           {/each}
         </div>
+        {/if}
       {/if}
 
       {#if publicationTarget}
@@ -505,6 +527,12 @@
   .library-heading { display: flex; margin: 1.8rem 0 .85rem; align-items: flex-end; justify-content: space-between; }
   .library-heading h2 { margin: 0; color: #293b5b; font-size: 1.2rem; }
   .library-heading > span { padding: .35rem .6rem; border-radius: 999px; color: #5271ac; background: #edf3ff; font-size: .68rem; font-weight: 800; }
+  .library-tabs { display: flex; margin: 1.7rem 0 1rem; border-bottom: 1px solid #e2e8f1; gap: .25rem; }
+  .library-tabs button { padding: .7rem 1rem; border: 0; border-bottom: 2px solid transparent; color: #8794a8; background: transparent; font-size: .78rem; font-weight: 800; cursor: pointer; }
+  .library-tabs button.active { border-bottom-color: #547bd0; color: #426bc0; }
+  .visited-map-card { padding: 1.15rem; border: 1px solid #e1e7f0; border-radius: .9rem; background: white; box-shadow: 0 7px 20px rgba(47, 67, 103, .04); }
+  .visited-map-card .library-heading { margin-top: 0; }
+  .map-intro { margin: -.35rem 0 1rem; color: #7d899d; font-size: .72rem; }
   .bookmark-grid { display: grid; gap: .8rem; }
   .bookmark-grid article { padding: 1.15rem; border: 1px solid #e1e7f0; border-left: 4px solid #d6deea; border-radius: .9rem; background: white; box-shadow: 0 7px 20px rgba(47, 67, 103, .04); }
   .bookmark-grid article.published { border-left-color: #5d8be0; }

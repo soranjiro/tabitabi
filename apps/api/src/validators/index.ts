@@ -54,7 +54,7 @@ export const tripMemberSchema = z.object({
 
 export const moneyMemberSchema = tripMemberSchema;
 
-export const moneyItemSchema = z.object({
+const moneyItemFields = z.object({
   title: z.string().trim().min(1, 'title is required').max(100, 'title must be at most 100 characters'),
   amount: z.number().int().positive('amount must be positive').max(100_000_000),
   paid_by_member_id: z.string().nullable().optional(),
@@ -62,13 +62,34 @@ export const moneyItemSchema = z.object({
   is_settled: z.boolean().optional(),
   occurred_on: z.string().date().nullable().optional(),
   step_id: z.string().nullable().optional(),
-  split_member_ids: z.array(z.string()).min(1, 'at least one participant is required').max(50),
+  splits: z.array(z.object({
+    member_id: z.string().min(1),
+    amount: z.number().int().positive('split amount must be positive').max(100_000_000),
+  })).min(1, 'at least one participant is required').max(50).optional(),
+  split_member_ids: z.array(z.string()).min(1, 'at least one participant is required').max(50).optional(),
 });
 
-export const updateMoneyItemSchema = moneyItemSchema.partial().refine(
-  (data) => Object.keys(data).length > 0,
-  { message: 'at least one field is required' },
-);
+export const moneyItemSchema = moneyItemFields.superRefine((data, ctx) => {
+  if (!data.splits?.length && !data.split_member_ids?.length) {
+    ctx.addIssue({ code: 'custom', message: 'at least one participant is required', path: ['splits'] });
+  }
+  if (data.splits && new Set(data.splits.map((split) => split.member_id)).size !== data.splits.length) {
+    ctx.addIssue({ code: 'custom', message: 'participants must be unique', path: ['splits'] });
+  }
+  if (data.splits && data.splits.reduce((sum, split) => sum + split.amount, 0) !== data.amount) {
+    ctx.addIssue({ code: 'custom', message: 'split amounts must add up to amount', path: ['splits'] });
+  }
+});
+
+export const updateMoneyItemSchema = moneyItemFields.partial().superRefine((data, ctx) => {
+  if (!Object.keys(data).length) ctx.addIssue({ code: 'custom', message: 'at least one field is required' });
+  if (data.splits && new Set(data.splits.map((split) => split.member_id)).size !== data.splits.length) {
+    ctx.addIssue({ code: 'custom', message: 'participants must be unique', path: ['splits'] });
+  }
+  if (data.splits && data.amount !== undefined && data.splits.reduce((sum, split) => sum + split.amount, 0) !== data.amount) {
+    ctx.addIssue({ code: 'custom', message: 'split amounts must add up to amount', path: ['splits'] });
+  }
+});
 
 export const moneySettingsSchema = z.object({
   budget_amount: z.number().int().positive().max(100_000_000).nullable(),

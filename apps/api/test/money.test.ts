@@ -11,7 +11,7 @@ async function setup() {
     `CREATE TABLE IF NOT EXISTS itinerary_members (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS steps (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, start_at INTEGER NOT NULL, end_at INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS itinerary_money_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL CHECK(amount > 0), paid_by_member_id TEXT, status TEXT NOT NULL CHECK(status IN ('paid', 'planned')), is_settled INTEGER NOT NULL DEFAULT 0, occurred_on TEXT, step_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE, FOREIGN KEY (paid_by_member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT, FOREIGN KEY (step_id) REFERENCES steps(id) ON DELETE SET NULL);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_money_item_splits (item_id TEXT NOT NULL, member_id TEXT NOT NULL, itinerary_id TEXT NOT NULL, PRIMARY KEY (item_id, member_id), FOREIGN KEY (item_id, itinerary_id) REFERENCES itinerary_money_items(id, itinerary_id) ON DELETE CASCADE, FOREIGN KEY (member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_item_splits (item_id TEXT NOT NULL, member_id TEXT NOT NULL, itinerary_id TEXT NOT NULL, amount INTEGER CHECK(amount > 0), PRIMARY KEY (item_id, member_id), FOREIGN KEY (item_id, itinerary_id) REFERENCES itinerary_money_items(id, itinerary_id) ON DELETE CASCADE, FOREIGN KEY (member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT);`,
     `CREATE TABLE IF NOT EXISTS itinerary_packing_groups (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, sort_order INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS itinerary_packing_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1, kind TEXT NOT NULL, group_id TEXT NOT NULL, assignee_member_id TEXT, owner_member_id TEXT, is_packed INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE, FOREIGN KEY (group_id, itinerary_id) REFERENCES itinerary_packing_groups(id, itinerary_id) ON DELETE RESTRICT, FOREIGN KEY (assignee_member_id) REFERENCES itinerary_members(id) ON DELETE SET NULL, FOREIGN KEY (owner_member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS itinerary_packing_checks (item_id TEXT NOT NULL, member_id TEXT NOT NULL, itinerary_id TEXT NOT NULL, checked_at TEXT NOT NULL, PRIMARY KEY (item_id, member_id), FOREIGN KEY (item_id, itinerary_id) REFERENCES itinerary_packing_items(id, itinerary_id) ON DELETE CASCADE, FOREIGN KEY (member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE CASCADE);`,
@@ -48,7 +48,7 @@ describe('Money API', () => {
     const bob = await addMember('Bob');
     const itemResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: 'ホテル', amount: 12000, status: 'paid', paid_by_member_id: alice.id, split_member_ids: [alice.id, bob.id] }),
+      body: JSON.stringify({ title: 'ホテル', amount: 12000, status: 'paid', paid_by_member_id: alice.id, splits: [{ member_id: alice.id, amount: 8000 }, { member_id: bob.id, amount: 4000 }] }),
     }), env);
     expect(itemResponse.status).toBe(201);
     const paidExpense = (await itemResponse.json() as any).data;
@@ -75,7 +75,11 @@ describe('Money API', () => {
     const moneyResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money`), env);
     const { data } = await moneyResponse.json() as any;
     expect(data.members.map((member: { name: string }) => member.name)).toEqual(['Alice', 'Bob']);
-    expect(data.items.find((item: { id: string }) => item.id === paidExpense.id)).toMatchObject({ title: 'ホテル', amount: 12000, status: 'paid', is_settled: false, split_member_ids: [alice.id, bob.id] });
+    expect(data.items.find((item: { id: string }) => item.id === paidExpense.id)).toMatchObject({
+      title: 'ホテル', amount: 12000, status: 'paid', is_settled: false,
+      split_member_ids: [alice.id, bob.id],
+      splits: [{ member_id: alice.id, amount: 8000 }, { member_id: bob.id, amount: 4000 }],
+    });
     expect(data.items.find((item: { id: string }) => item.id === individualPaid.id)).toMatchObject({ title: '拝観料', status: 'paid', paid_by_member_id: null, is_settled: false });
     expect(data.items.find((item: { id: string }) => item.id === individualPlanned.id)).toMatchObject({ status: 'planned', paid_by_member_id: null, is_settled: false });
 
@@ -84,6 +88,22 @@ describe('Money API', () => {
     }), env);
     expect(settleResponse.status).toBe(200);
     expect((await settleResponse.json() as any).data).toMatchObject({ is_settled: true, paid_by_member_id: alice.id });
+  });
+
+  it('rejects individual shares that do not match the expense total', async () => {
+    const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '個別負担テスト' }),
+    }), env);
+    const { data: itinerary } = await create.json() as any;
+    const memberResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/members`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Alice' }),
+    }), env);
+    const { data: member } = await memberResponse.json() as any;
+    const response = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'ホテル', amount: 12000, status: 'paid', splits: [{ member_id: member.id, amount: 10000 }] }),
+    }), env);
+    expect(response.status).toBe(400);
   });
 
   it('renames an unused member and allows deleting them', async () => {

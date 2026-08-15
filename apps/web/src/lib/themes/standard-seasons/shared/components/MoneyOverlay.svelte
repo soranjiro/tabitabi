@@ -21,6 +21,8 @@
   let title = $state('');
   let amount = $state('');
   let amountInputMode = $state<'total' | 'perPerson'>('total');
+  let splitMode = $state<'equal' | 'custom'>('equal');
+  let customAmounts = $state<Record<string, string>>({});
   let status = $state<MoneyItemStatus>('paid');
   let payerId = $state('');
   let isSettled = $state(false);
@@ -47,7 +49,8 @@
     if (!demoStorage.getMembers().length) demoStorage.setMembers(members);
     const item = (id: string, title: string, amount: number, paidBy: string | null, itemStatus: MoneyItemStatus, split: string[], settled = false): MoneyItem => ({
       id, itinerary_id: itineraryId, title, amount, paid_by_member_id: paidBy, status: itemStatus,
-      is_settled: settled, occurred_on: '2026-08-01', step_id: null, split_member_ids: split, created_at: createdAt, updated_at: createdAt,
+      is_settled: settled, occurred_on: '2026-08-01', step_id: null,
+      splits: equalSplits(amount, split), split_member_ids: split, created_at: createdAt, updated_at: createdAt,
     });
     return {
       budget_amount: 120000,
@@ -63,9 +66,25 @@
 
   const yen = new Intl.NumberFormat('ja-JP');
   const formatYen = (value: number) => `¥${yen.format(value)}`;
-  const perPersonAmount = (item: MoneyItem) => item.split_member_ids.length
-    ? Math.round(item.amount / item.split_member_ids.length)
-    : null;
+  function equalSplits(total: number, memberIds: string[]) {
+    if (!memberIds.length) return [];
+    const unit = Math.floor(total / memberIds.length);
+    const remainder = total % memberIds.length;
+    return memberIds.map((memberId, index) => ({ member_id: memberId, amount: unit + (index < remainder ? 1 : 0) }));
+  }
+  function itemSplits(item: MoneyItem) {
+    return item.splits?.length ? item.splits : equalSplits(item.amount, item.split_member_ids);
+  }
+  function perPersonAmount(item: MoneyItem) {
+    const splits = itemSplits(item);
+    return splits.length && splits.every((split) => split.amount === splits[0].amount) ? splits[0].amount : null;
+  }
+  function splitLabel(item: MoneyItem) {
+    return itemSplits(item).map((split) => {
+      const name = data.members.find((member) => member.id === split.member_id)?.name;
+      return name ? `${name} ${formatYen(split.amount)}` : '';
+    }).filter(Boolean).join('・');
+  }
 
   const paidItems = $derived(data.items.filter((item) => item.status === 'paid'));
   const plannedItems = $derived(data.items.filter((item) => item.status === 'planned'));
@@ -86,10 +105,8 @@
       if (item.status === 'paid' && item.paid_by_member_id === member.id) {
         if (!item.is_settled) unsettledPaid += item.amount;
       }
-      const position = item.split_member_ids.indexOf(member.id);
-      if (position >= 0) {
-        const unit = Math.floor(item.amount / item.split_member_ids.length);
-        const share = unit + (position < item.amount % item.split_member_ids.length ? 1 : 0);
+      const share = itemSplits(item).find((split) => split.member_id === member.id)?.amount;
+      if (share !== undefined) {
         if (item.status === 'paid') {
           actualOwed += share;
           if (item.paid_by_member_id && !item.is_settled) reimbursableOwed += share;
@@ -152,6 +169,7 @@
     participantIds = participantIds.includes(memberId)
       ? participantIds.filter((id) => id !== memberId)
       : [...participantIds, memberId];
+    if (!(memberId in customAmounts)) customAmounts = { ...customAmounts, [memberId]: '' };
   }
 
   function setStatus(nextStatus: MoneyItemStatus) {
@@ -206,12 +224,32 @@
     amountInputMode = mode;
   }
 
+  function selectSplitMode(mode: 'equal' | 'custom') {
+    if (mode === 'custom' && amountInputMode === 'perPerson') selectAmountInputMode('total');
+    splitMode = mode;
+    if (mode === 'custom') {
+      const total = Number(amount);
+      const suggested = Number.isInteger(total) && total > 0 ? equalSplits(total, participantIds) : [];
+      customAmounts = Object.fromEntries(participantIds.map((id) => [id, customAmounts[id] || String(suggested.find((split) => split.member_id === id)?.amount ?? '')]));
+    }
+  }
+
+  function buildSplits(total: number) {
+    if (splitMode === 'equal') return equalSplits(total, participantIds);
+    return participantIds.map((memberId) => ({ member_id: memberId, amount: Number(customAmounts[memberId]) }));
+  }
+
+  const customSplitTotal = $derived(participantIds.reduce((sum, id) => sum + (Number(customAmounts[id]) || 0), 0));
+
   async function addItem() {
     const enteredValue = Number(amount);
     if (!title.trim() || !Number.isInteger(enteredValue) || enteredValue <= 0 || !participantIds.length) {
       return alert('内容・金額・負担する人を入力してください');
     }
     const value = amountInputMode === 'perPerson' ? enteredValue * participantIds.length : enteredValue;
+    const splits = buildSplits(value);
+    if (splits.some((split) => !Number.isInteger(split.amount) || split.amount <= 0)) return alert('一人ずつの負担額を1円以上の整数で入力してください');
+    if (splits.reduce((sum, split) => sum + split.amount, 0) !== value) return alert('一人ずつの負担額の合計を総額と一致させてください');
     if (!payerId) return alert('支払い方法を選択してください');
     try {
       if (isDemoMoney()) {
@@ -219,7 +257,7 @@
         const item: MoneyItem = {
           id: editingItemId ?? `demo-money-item-${Date.now()}`, itinerary_id: itineraryId, title: title.trim(), amount: value,
           status, paid_by_member_id: status === 'paid' && payerId !== 'individual' ? payerId : null, is_settled: status === 'paid' && isSettled,
-          step_id: linkedStepId || null, split_member_ids: participantIds, occurred_on: now.slice(0, 10), created_at: now, updated_at: now,
+          step_id: linkedStepId || null, splits, split_member_ids: participantIds, occurred_on: now.slice(0, 10), created_at: now, updated_at: now,
         };
         saveDemoData({ ...data, items: editingItemId ? data.items.map((current) => current.id === editingItemId ? { ...item, created_at: current.created_at } : current) : [item, ...data.items] });
         resetForm();
@@ -229,7 +267,7 @@
         title: title.trim(), amount: value, status,
         paid_by_member_id: status === 'paid' && payerId !== 'individual' ? payerId : null,
         is_settled: status === 'paid' && isSettled,
-        split_member_ids: participantIds,
+        splits,
         occurred_on: new Date().toISOString().slice(0, 10),
         step_id: linkedStepId || null,
       };
@@ -242,7 +280,7 @@
   }
 
   function resetForm() {
-    title = ''; amount = ''; amountInputMode = 'total'; payerId = ''; isSettled = false; linkedStepId = ''; editingItemId = null;
+    title = ''; amount = ''; amountInputMode = 'total'; splitMode = 'equal'; customAmounts = {}; payerId = ''; isSettled = false; linkedStepId = ''; editingItemId = null;
     participantIds = data.members.map((member) => member.id);
   }
 
@@ -250,6 +288,9 @@
     editingItemId = item.id; title = item.title; amount = String(item.amount); amountInputMode = 'total'; status = item.status;
     payerId = item.paid_by_member_id ?? 'individual'; isSettled = item.is_settled;
     participantIds = [...item.split_member_ids]; linkedStepId = item.step_id ?? '';
+    const splits = itemSplits(item);
+    splitMode = splits.every((split) => split.amount === splits[0]?.amount) ? 'equal' : 'custom';
+    customAmounts = Object.fromEntries(splits.map((split) => [split.member_id, String(split.amount)]));
     activeTab = 'items';
     await tick();
     itemFormElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -369,7 +410,13 @@
                 </label>
               {/if}
               <fieldset class="standard-money-checks">
-                <legend>誰が対象？</legend>
+                <div class="standard-money-split-heading">
+                  <legend>誰がいくら負担する？</legend>
+                  <div class="standard-money-amount-segment" role="group" aria-label="負担額の分け方">
+                    <button type="button" class:active={splitMode === 'equal'} onclick={() => selectSplitMode('equal')}>均等</button>
+                    <button type="button" class:active={splitMode === 'custom'} onclick={() => selectSplitMode('custom')}>個別</button>
+                  </div>
+                </div>
                 <div>
                   {#each data.members as member}
                     <label class:active={participantIds.includes(member.id)}>
@@ -379,6 +426,22 @@
                     </label>
                   {/each}
                 </div>
+                {#if splitMode === 'custom' && participantIds.length}
+                  <div class="standard-money-custom-splits">
+                    {#each data.members.filter((member) => participantIds.includes(member.id)) as member}
+                      <label>
+                        <span>{member.name}</span>
+                        <span class="standard-money-custom-input"><input aria-label={`${member.name}の負担額（円）`} inputmode="numeric" placeholder="0" bind:value={customAmounts[member.id]} /> 円</span>
+                      </label>
+                    {/each}
+                    <p class:invalid={Number(amount) !== customSplitTotal}>
+                      <span>入力合計</span><b>{formatYen(customSplitTotal)}</b>
+                      {#if Number(amount) !== customSplitTotal}<small>総額まで {formatYen(Number(amount) - customSplitTotal)}</small>{/if}
+                    </p>
+                  </div>
+                {:else if participantIds.length}
+                  <small class="standard-money-split-help">総額を{participantIds.length}人で均等に分けます。</small>
+                {/if}
               </fieldset>
               <div class="standard-money-form-actions">
                 {#if editingItemId}<button class="standard-money-cancel" onclick={resetForm}>キャンセル</button>{/if}
@@ -399,7 +462,7 @@
                     <strong>{item.title}</strong>
                     <div class="standard-money-item-meta">
                       <small>{payerLabel(item)}</small>
-                      <small>{item.split_member_ids.map((id) => data.members.find((member) => member.id === id)?.name).filter(Boolean).join('・')}で負担</small>
+                      <small>{splitLabel(item)}</small>
                     </div>
                     {#if stepTitle(item)}<button class="standard-money-step-link" onclick={() => viewedStep = steps.find((step) => step.id === item.step_id) ?? null}>予定：{stepTitle(item)}</button>{/if}
                   </div>

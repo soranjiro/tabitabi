@@ -3,6 +3,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'n
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import process from 'node:process';
+import { parseMigrationText } from './migration-format.mjs';
 
 const command = process.argv[2];
 const remote = process.argv.includes('--remote');
@@ -144,19 +145,7 @@ function idOf(file) {
 
 function parseMigration(file) {
   const sql = readFileSync(join(migrationsDir, file), 'utf8');
-  const upMarker = '-- migrate:up';
-  const downMarker = '-- migrate:down';
-  const upStart = sql.indexOf(upMarker);
-  const downStart = sql.indexOf(downMarker);
-
-  if (upStart < 0 && downStart < 0) return { up: sql.trim(), down: '' };
-  if (upStart < 0 || downStart < 0 || downStart <= upStart) {
-    throw new Error(`${file} must contain both dbmate up and down sections.`);
-  }
-  return {
-    up: sql.slice(upStart + upMarker.length, downStart).trim(),
-    down: sql.slice(downStart + downMarker.length).trim(),
-  };
+  return parseMigrationText(sql, file);
 }
 
 function optionValue(option) {

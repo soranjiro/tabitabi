@@ -51,21 +51,36 @@
       { id: 'demo-money-yui', itinerary_id: itineraryId, name: '結衣', created_at: createdAt },
     ];
     if (!demoStorage.getMembers().length) demoStorage.setMembers(members);
-    const item = (id: string, title: string, amount: number, paidBy: string | null, itemStatus: MoneyItemStatus, split: string[], settled = false): MoneyItem => ({
-      id, itinerary_id: itineraryId, title, amount, paid_by_member_id: paidBy, paid_from_fund: false, status: itemStatus,
+    const item = (id: string, title: string, amount: number, paidBy: string | null, itemStatus: MoneyItemStatus, splits: MoneyItem['splits'], settled = false, paidFromFund = false): MoneyItem => ({
+      id, itinerary_id: itineraryId, title, amount, paid_by_member_id: paidBy, paid_from_fund: paidFromFund, status: itemStatus,
       is_settled: settled, occurred_on: '2026-08-01', step_id: null,
-      splits: equalSplits(amount, split), split_member_ids: split, created_at: createdAt, updated_at: createdAt,
+      splits, split_member_ids: splits.map((split) => split.member_id), created_at: createdAt, updated_at: createdAt,
     });
+    const allMemberIds = members.map((member) => member.id);
+    const [misakiId, yosukeId, yuiId] = allMemberIds;
     return {
       budget_amount: 120000,
       members,
       items: [
-        item('demo-money-hotel', 'ホテル', 36000, 'demo-money-miki', 'paid', members.map((member) => member.id), true),
-        item('demo-money-shinkansen', '新幹線', 24000, 'demo-money-haru', 'paid', members.map((member) => member.id)),
-        item('demo-money-dinner', '初日の夕食', 9000, 'demo-money-yui', 'paid', members.map((member) => member.id)),
-        item('demo-money-rental', 'レンタカー（予定）', 12000, null, 'planned', ['demo-money-miki', 'demo-money-haru']),
+        item('demo-money-admission', '清水寺の拝観料', 5000, null, 'paid', [
+          { member_id: misakiId, amount: 2000 },
+          { member_id: yosukeId, amount: 2000 },
+          { member_id: yuiId, amount: 1000 },
+        ], false, true),
+        item('demo-money-hotel', 'ホテル', 36000, misakiId, 'paid', equalSplits(36000, allMemberIds), true),
+        item('demo-money-shinkansen', '新幹線', 24000, yosukeId, 'paid', [
+          { member_id: misakiId, amount: 10000 },
+          { member_id: yosukeId, amount: 10000 },
+          { member_id: yuiId, amount: 4000 },
+        ]),
+        item('demo-money-dinner', '初日の夕食', 9000, yuiId, 'paid', equalSplits(9000, allMemberIds)),
+        item('demo-money-rental', 'レンタカー（予定）', 12000, null, 'planned', equalSplits(12000, [misakiId, yosukeId])),
       ],
-      fund_transactions: [],
+      fund_transactions: [
+        { id: 'demo-fund-misaki', itinerary_id: itineraryId, member_id: misakiId, kind: 'contribution', amount: 10000, note: '旅行前の集金', occurred_on: '2026-07-25', created_at: createdAt },
+        { id: 'demo-fund-yosuke', itinerary_id: itineraryId, member_id: yosukeId, kind: 'contribution', amount: 10000, note: '旅行前の集金', occurred_on: '2026-07-25', created_at: createdAt },
+        { id: 'demo-fund-yui', itinerary_id: itineraryId, member_id: yuiId, kind: 'contribution', amount: 5000, note: '子ども分', occurred_on: '2026-07-25', created_at: createdAt },
+      ],
     };
   }
 
@@ -107,6 +122,12 @@
   const fundRefunded = $derived(data.fund_transactions.filter((transaction) => transaction.kind === 'refund').reduce((sum, transaction) => sum + transaction.amount, 0));
   const fundSpent = $derived(paidItems.filter((item) => item.paid_from_fund).reduce((sum, item) => sum + item.amount, 0));
   const fundBalance = $derived(fundContributed - fundRefunded - fundSpent);
+  const fundByMember = $derived(data.members.map((member) => ({
+    ...member,
+    amount: data.fund_transactions
+      .filter((transaction) => transaction.member_id === member.id)
+      .reduce((sum, transaction) => sum + (transaction.kind === 'contribution' ? transaction.amount : -transaction.amount), 0),
+  })).filter((member) => member.amount !== 0));
   const memberSummaries = $derived.by(() => data.members.map((member) => {
     let unsettledPaid = 0;
     let actualOwed = 0;
@@ -438,19 +459,20 @@
           <section class="standard-money-fund-card">
             <div class="standard-money-fund-heading"><div><span>みんなで使うお金</span><h3>共同基金</h3></div><div><small>現在の残高</small><strong class:negative={fundBalance < 0}>{formatYen(fundBalance)}</strong></div></div>
             <div class="standard-money-fund-stats"><span>入金 <b>{formatYen(fundContributed)}</b></span><span>基金払い <b>{formatYen(fundSpent)}</b></span>{#if fundRefunded}<span>返金 <b>{formatYen(fundRefunded)}</b></span>{/if}</div>
+            {#if fundByMember.length}<div class="standard-money-fund-members">{#each fundByMember as member}<span>{member.name} <b>{formatYen(member.amount)}</b></span>{/each}</div>{/if}
             <details class="standard-money-fund-details">
-              <summary>入金・返金履歴を管理</summary>
+              <summary>＋ 入金・返金を記録</summary>
               {#if canEdit && data.members.length}
                 <div class="standard-money-fund-form">
-                  <select aria-label="入出金するメンバー" bind:value={fundMemberId}>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>
-                  <select aria-label="共同基金の入出金区分" bind:value={fundKind}><option value="contribution">入金</option><option value="refund">返金</option></select>
-                  <input aria-label="共同基金の金額（円）" inputmode="numeric" placeholder="金額（円）" bind:value={fundAmount} />
-                  <input aria-label="共同基金のメモ" placeholder="メモ（任意）" bind:value={fundNote} />
-                  <button class="standard-money-submit" onclick={addFundTransaction}>登録</button>
+                  <div class="standard-money-fund-kind" role="group" aria-label="共同基金の入出金区分"><button type="button" class:active={fundKind === 'contribution'} onclick={() => fundKind = 'contribution'}>基金に入金</button><button type="button" class:active={fundKind === 'refund'} onclick={() => fundKind = 'refund'}>基金から返金</button></div>
+                  <select aria-label={fundKind === 'contribution' ? '入金するメンバー' : '返金するメンバー'} bind:value={fundMemberId}>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>
+                  <input aria-label="共同基金の金額（円）" inputmode="numeric" placeholder="例：10,000円" bind:value={fundAmount} />
+                  <input aria-label="共同基金のメモ" placeholder="例：旅行前の集金" bind:value={fundNote} />
+                  <button class="standard-money-submit" onclick={addFundTransaction}>{fundKind === 'contribution' ? '共同基金に入金' : '返金を記録'}</button>
                 </div>
               {/if}
               {#if data.fund_transactions.length}
-                <div class="standard-money-fund-list">{#each data.fund_transactions as transaction}<article><div><strong>{memberName(transaction.member_id)}</strong><small>{transaction.occurred_on}{transaction.note ? ` · ${transaction.note}` : ''}</small></div><b class:negative={transaction.kind === 'refund'}>{transaction.kind === 'contribution' ? '+' : '-'}{formatYen(transaction.amount)}</b>{#if canEdit}<button aria-label="入出金履歴を削除" onclick={() => deleteFundTransaction(transaction.id)}>削除</button>{/if}</article>{/each}</div>
+                <div class="standard-money-fund-list">{#each data.fund_transactions as transaction}<article><div><strong>{memberName(transaction.member_id)} <em class:refund={transaction.kind === 'refund'}>{transaction.kind === 'contribution' ? '入金' : '返金'}</em></strong><small>{transaction.occurred_on}{transaction.note ? ` · ${transaction.note}` : ''}</small></div><b class:negative={transaction.kind === 'refund'}>{transaction.kind === 'contribution' ? '+' : '-'}{formatYen(transaction.amount)}</b>{#if canEdit}<button aria-label="入出金履歴を削除" onclick={() => deleteFundTransaction(transaction.id)}>削除</button>{/if}</article>{/each}</div>
               {:else}<p class="standard-money-fund-empty">まだ入金はありません。</p>{/if}
             </details>
           </section>
@@ -477,13 +499,12 @@
                     </div>
                   </div>
                   <input aria-label={amountInputMode === 'total' ? '総額（円）' : '1人あたり金額（円）'} inputmode="numeric" placeholder={amountInputMode === 'total' ? '総額（円）' : '1人あたり（円）'} bind:value={amount} />
-                  {#if amountInputMode === 'perPerson' && participantIds.length}<small>{participantIds.length}人分の総額で登録します</small>{/if}
                 </div>
                 <label class="standard-money-field">
-                  <span>区分</span>
+                  <span>支払い状況</span>
                   <select value={status} onchange={(event) => setStatus((event.currentTarget as HTMLSelectElement).value as MoneyItemStatus)}>
                     <option value="paid">支払い済み</option>
-                    <option value="planned">支出予定</option>
+                    <option value="planned">これから支払う</option>
                   </select>
                 </label>
               </div>
@@ -495,7 +516,6 @@
                   <option value="fund">共同基金から支払う</option>
                   {#each data.members as member}<option value={member.id}>{member.name} が立替える</option>{/each}
                 </select>
-                <small>{payerId === 'individual' ? '立替は発生せず、対象者それぞれの支出に反映します。' : payerId === 'fund' ? '共同基金の残高から差し引きます。' : '立替えた人を選ぶと、精算額を計算します。'}</small>
               </label>
               {#if steps.length}
                 <label class="standard-money-field">
@@ -507,8 +527,8 @@
                 <div class="standard-money-split-heading">
                   <legend>誰がいくら負担する？</legend>
                   <div class="standard-money-amount-segment" role="group" aria-label="負担額の分け方">
-                    <button type="button" class:active={splitMode === 'equal'} onclick={() => selectSplitMode('equal')}>均等</button>
-                    <button type="button" class:active={splitMode === 'custom'} onclick={() => selectSplitMode('custom')}>個別</button>
+                    <button type="button" class:active={splitMode === 'equal'} onclick={() => selectSplitMode('equal')}>同じ金額</button>
+                    <button type="button" class:active={splitMode === 'custom'} onclick={() => selectSplitMode('custom')}>人ごとに設定</button>
                   </div>
                 </div>
                 <div>
@@ -522,7 +542,6 @@
                 </div>
                 {#if splitMode === 'custom' && participantIds.length}
                   <div class="standard-money-custom-splits">
-                    <small class="standard-money-custom-help">同じ金額の人はまとめて入力できます。別の金額にする人だけ「別額」に分けてください。</small>
                     {#each customAmountGroups as group}
                       <div class="standard-money-custom-group">
                         <div class="standard-money-custom-members">
@@ -538,8 +557,6 @@
                       {#if Number(amount) !== customSplitTotal}<small>総額まで {formatYen(Number(amount) - customSplitTotal)}</small>{/if}
                     </p>
                   </div>
-                {:else if participantIds.length}
-                  <small class="standard-money-split-help">総額を{participantIds.length}人で均等に分けます。</small>
                 {/if}
               </fieldset>
               <div class="standard-money-form-actions">

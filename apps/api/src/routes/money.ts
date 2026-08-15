@@ -1,6 +1,6 @@
 import { Hono, type Context } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import type { MoneyData, MoneyItem, MoneyMember } from '@tabitabi/types';
+import type { MoneyData, MoneyItem, MoneyItemSplit, MoneyMember } from '@tabitabi/types';
 import { Env, Variables, generateId, getCurrentTimestamp } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
 import { optionalAuthMiddleware } from '../middleware/auth';
@@ -9,7 +9,26 @@ import { validationHook } from '../validators/hook';
 
 const money = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-function itemFromRow(row: Record<string, unknown>, splitMemberIds: string[]): MoneyItem {
+type SplitRow = { item_id: string; member_id: string; amount: number | null };
+
+function evenSplits(amount: number, memberIds: string[]): MoneyItemSplit[] {
+  const uniqueIds = [...new Set(memberIds)];
+  if (!uniqueIds.length) return [];
+  const unit = Math.floor(amount / uniqueIds.length);
+  const remainder = amount % uniqueIds.length;
+  return uniqueIds.map((memberId, index) => ({ member_id: memberId, amount: unit + (index < remainder ? 1 : 0) }));
+}
+
+function normalizeSplits(amount: number, rows: Pick<SplitRow, 'member_id' | 'amount'>[]): MoneyItemSplit[] {
+  const stored = rows.map((row) => ({ member_id: row.member_id, amount: Number(row.amount) }));
+  if (stored.length && stored.every((split) => split.amount > 0) && stored.reduce((sum, split) => sum + split.amount, 0) === amount) {
+    return stored;
+  }
+  return evenSplits(amount, rows.map((row) => row.member_id));
+}
+
+function itemFromRow(row: Record<string, unknown>, splitRows: Pick<SplitRow, 'member_id' | 'amount'>[]): MoneyItem {
+  const splits = normalizeSplits(Number(row.amount), splitRows);
   return {
     id: String(row.id), itinerary_id: String(row.itinerary_id), title: String(row.title),
     amount: Number(row.amount), paid_by_member_id: row.paid_by_member_id ? String(row.paid_by_member_id) : null,
@@ -17,22 +36,22 @@ function itemFromRow(row: Record<string, unknown>, splitMemberIds: string[]): Mo
     is_settled: Number(row.is_settled ?? 0) === 1,
     occurred_on: row.occurred_on ? String(row.occurred_on) : null,
     step_id: row.step_id ? String(row.step_id) : null,
-    split_member_ids: splitMemberIds, created_at: String(row.created_at), updated_at: String(row.updated_at),
+    splits, split_member_ids: splits.map((split) => split.member_id), created_at: String(row.created_at), updated_at: String(row.updated_at),
   };
 }
 
-function groupSplitMemberIds(rows: { item_id: string; member_id: string }[]): Map<string, string[]> {
-  const result = new Map<string, string[]>();
+function groupSplits(rows: SplitRow[]): Map<string, SplitRow[]> {
+  const result = new Map<string, SplitRow[]>();
   for (const row of rows) {
-    result.set(row.item_id, [...(result.get(row.item_id) ?? []), row.member_id]);
+    result.set(row.item_id, [...(result.get(row.item_id) ?? []), row]);
   }
   return result;
 }
 
-function splitStatements(db: D1Database, itemId: string, itineraryId: string, memberIds: string[]) {
-  return [...new Set(memberIds)].map((memberId) => db.prepare(
-    'INSERT INTO itinerary_money_item_splits (item_id, member_id, itinerary_id) VALUES (?, ?, ?)',
-  ).bind(itemId, memberId, itineraryId));
+function splitStatements(db: D1Database, itemId: string, itineraryId: string, splits: MoneyItemSplit[]) {
+  return splits.map((split) => db.prepare(
+    'INSERT INTO itinerary_money_item_splits (item_id, member_id, itinerary_id, amount) VALUES (?, ?, ?, ?)',
+  ).bind(itemId, split.member_id, itineraryId, split.amount));
 }
 
 async function canEdit(c: Context<{ Bindings: Env; Variables: Variables }>, itineraryId: string): Promise<Response | null> {
@@ -76,16 +95,16 @@ money.get('/itineraries/:id/money', async (c) => {
       .bind(itineraryId).first<{ budget_amount: number | null }>(),
     c.env.DB.prepare('SELECT id, itinerary_id, name, created_at FROM itinerary_members WHERE itinerary_id = ? ORDER BY created_at ASC').bind(itineraryId).all<MoneyMember>(),
     c.env.DB.prepare('SELECT * FROM itinerary_money_items WHERE itinerary_id = ? ORDER BY status ASC, occurred_on ASC, created_at DESC').bind(itineraryId).all(),
-    c.env.DB.prepare('SELECT item_id, member_id FROM itinerary_money_item_splits WHERE itinerary_id = ? ORDER BY rowid ASC')
-      .bind(itineraryId).all<{ item_id: string; member_id: string }>(),
+    c.env.DB.prepare('SELECT item_id, member_id, amount FROM itinerary_money_item_splits WHERE itinerary_id = ? ORDER BY rowid ASC')
+      .bind(itineraryId).all<SplitRow>(),
   ]);
-  const splitMemberIds = groupSplitMemberIds(splitsResult.results ?? []);
+  const splits = groupSplits(splitsResult.results ?? []);
   const data: MoneyData = {
     budget_amount: settings?.budget_amount ?? null,
     members: membersResult.results ?? [],
     items: (itemsResult.results ?? []).map((row) => itemFromRow(
       row as Record<string, unknown>,
-      splitMemberIds.get(String((row as Record<string, unknown>).id)) ?? [],
+      splits.get(String((row as Record<string, unknown>).id)) ?? [],
     )),
   };
   return c.json({ success: true, data });
@@ -159,7 +178,8 @@ money.post('/itineraries/:id/money/items', optionalAuthMiddleware, zValidator('j
   const denied = await canEdit(c, itineraryId);
   if (denied) return denied;
   const input = c.req.valid('json');
-  const idsToCheck = [...input.split_member_ids, ...(input.paid_by_member_id ? [input.paid_by_member_id] : [])];
+  const splits = input.splits ?? evenSplits(input.amount, input.split_member_ids ?? []);
+  const idsToCheck = [...splits.map((split) => split.member_id), ...(input.paid_by_member_id ? [input.paid_by_member_id] : [])];
   if (!await assertMembersBelongToItinerary(c.env.DB, itineraryId, idsToCheck)) {
     return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Members must belong to this itinerary' } }, 400);
   }
@@ -170,11 +190,11 @@ money.post('/itineraries/:id/money/items', optionalAuthMiddleware, zValidator('j
     return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Only paid expenses can be settled' } }, 400);
   }
   const now = getCurrentTimestamp();
-  const item: MoneyItem = { id: generateId(), itinerary_id: itineraryId, title: input.title, amount: input.amount, paid_by_member_id: input.paid_by_member_id ?? null, status: input.status, is_settled: input.is_settled ?? false, occurred_on: input.occurred_on ?? null, step_id: input.step_id ?? null, split_member_ids: [...new Set(input.split_member_ids)], created_at: now, updated_at: now };
+  const item: MoneyItem = { id: generateId(), itinerary_id: itineraryId, title: input.title, amount: input.amount, paid_by_member_id: input.paid_by_member_id ?? null, status: input.status, is_settled: input.is_settled ?? false, occurred_on: input.occurred_on ?? null, step_id: input.step_id ?? null, splits, split_member_ids: splits.map((split) => split.member_id), created_at: now, updated_at: now };
   await c.env.DB.batch([
     c.env.DB.prepare(`INSERT INTO itinerary_money_items (id, itinerary_id, title, amount, paid_by_member_id, status, is_settled, occurred_on, step_id, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(item.id, item.itinerary_id, item.title, item.amount, item.paid_by_member_id, item.status, item.is_settled ? 1 : 0, item.occurred_on, item.step_id, now, now),
-    ...splitStatements(c.env.DB, item.id, itineraryId, item.split_member_ids),
+    ...splitStatements(c.env.DB, item.id, itineraryId, item.splits),
   ]);
   return c.json({ success: true, data: item }, 201);
 });
@@ -188,21 +208,27 @@ money.put('/itineraries/:id/money/items/:itemId', optionalAuthMiddleware, zValid
   if (!existing) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Money item not found' } }, 404);
   const input = c.req.valid('json');
   const existingSplits = await c.env.DB.prepare(
-    'SELECT member_id FROM itinerary_money_item_splits WHERE item_id = ? AND itinerary_id = ? ORDER BY rowid ASC',
-  ).bind(itemId, itineraryId).all<{ member_id: string }>();
-  const current = itemFromRow(existing, (existingSplits.results ?? []).map((row) => row.member_id));
-  const next = { ...current, ...input, split_member_ids: input.split_member_ids ?? current.split_member_ids, paid_by_member_id: input.paid_by_member_id === undefined ? current.paid_by_member_id : input.paid_by_member_id };
-  const idsToCheck = [...next.split_member_ids, ...(next.paid_by_member_id ? [next.paid_by_member_id] : [])];
+    'SELECT member_id, amount FROM itinerary_money_item_splits WHERE item_id = ? AND itinerary_id = ? ORDER BY rowid ASC',
+  ).bind(itemId, itineraryId).all<Pick<SplitRow, 'member_id' | 'amount'>>();
+  const current = itemFromRow(existing, existingSplits.results ?? []);
+  const nextAmount = input.amount ?? current.amount;
+  const nextSplits = input.splits
+    ?? (input.split_member_ids ? evenSplits(nextAmount, input.split_member_ids) : input.amount !== undefined ? evenSplits(nextAmount, current.split_member_ids) : current.splits);
+  if (!nextSplits.length || nextSplits.reduce((sum, split) => sum + split.amount, 0) !== nextAmount) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Split amounts must add up to the expense amount' } }, 400);
+  }
+  const next = { ...current, ...input, amount: nextAmount, splits: nextSplits, split_member_ids: nextSplits.map((split) => split.member_id), paid_by_member_id: input.paid_by_member_id === undefined ? current.paid_by_member_id : input.paid_by_member_id };
+  const idsToCheck = [...next.splits.map((split) => split.member_id), ...(next.paid_by_member_id ? [next.paid_by_member_id] : [])];
   if (!await assertMembersBelongToItinerary(c.env.DB, itineraryId, idsToCheck)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Members must belong to this itinerary' } }, 400);
   if (!await assertStepBelongsToItinerary(c.env.DB, itineraryId, next.step_id)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Step must belong to this itinerary' } }, 400);
   if (next.is_settled && next.status !== 'paid') return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Only paid expenses can be settled' } }, 400);
   const now = getCurrentTimestamp();
-  const updated = { ...next, updated_at: now, split_member_ids: [...new Set(next.split_member_ids)] };
+  const updated: MoneyItem = { ...next, updated_at: now };
   await c.env.DB.batch([
     c.env.DB.prepare(`UPDATE itinerary_money_items SET title = ?, amount = ?, paid_by_member_id = ?, status = ?, is_settled = ?, occurred_on = ?, step_id = ?, updated_at = ? WHERE id = ? AND itinerary_id = ?`)
       .bind(updated.title, updated.amount, updated.paid_by_member_id, updated.status, updated.is_settled ? 1 : 0, updated.occurred_on, updated.step_id, now, itemId, itineraryId),
     c.env.DB.prepare('DELETE FROM itinerary_money_item_splits WHERE item_id = ? AND itinerary_id = ?').bind(itemId, itineraryId),
-    ...splitStatements(c.env.DB, itemId, itineraryId, updated.split_member_ids),
+    ...splitStatements(c.env.DB, itemId, itineraryId, updated.splits),
   ]);
   return c.json({ success: true, data: updated });
 });

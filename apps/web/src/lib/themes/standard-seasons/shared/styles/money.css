@@ -23,15 +23,25 @@
 .standard-money-form-row { display:grid !important; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:.55rem; }
 .standard-money-form-row > * { min-width:0; }
 .standard-money-form select,.standard-money-form input { min-height:44px; box-sizing:border-box; color:#29332d; }
-.standard-money-checks { margin:0; min-width:0; border:0; padding:0; }
-.standard-money-checks legend { margin-bottom:.45rem; color:#59645b; font-size:.78rem; font-weight:700; }
-.standard-money-checks > div { display:flex; flex-wrap:wrap; gap:.45rem; }
-.standard-money-checks label { position:relative; display:inline-flex; align-items:center; gap:.42rem; min-height:44px; box-sizing:border-box; padding:.45rem .7rem; border:1px solid #d6d2c8; border-radius:999px; background:#fff; color:#526057; cursor:pointer; font-size:.82rem; font-weight:700; transition:background .16s ease, border-color .16s ease, color .16s ease; }
+.standard-money-checks { display:grid; gap:.45rem; margin:0; min-width:0; border:0; padding:0; }
+.standard-money-checks legend { color:#59645b; font-size:.78rem; font-weight:700; }
+.standard-money-split-heading { display:flex; align-items:center; justify-content:space-between; gap:.6rem; }
+.standard-money-checks > div:not(.standard-money-split-heading):not(.standard-money-custom-splits) { display:flex; flex-wrap:wrap; gap:.45rem; }
+.standard-money-checks > div:not(.standard-money-split-heading):not(.standard-money-custom-splits) > label { position:relative; display:inline-flex; align-items:center; gap:.42rem; min-height:44px; box-sizing:border-box; padding:.45rem .7rem; border:1px solid #d6d2c8; border-radius:999px; background:#fff; color:#526057; cursor:pointer; font-size:.82rem; font-weight:700; transition:background .16s ease, border-color .16s ease, color .16s ease; }
 .standard-money-checks label.active { border-color:var(--theme-primary); background:#e8f5ec; color:#1f6847; }
-.standard-money-checks input { position:absolute; inline-size:1px; block-size:1px; opacity:0; pointer-events:none; }
+.standard-money-checks > div:not(.standard-money-custom-splits) input { position:absolute; inline-size:1px; block-size:1px; opacity:0; pointer-events:none; }
 .standard-money-checkmark { display:grid; width:18px; height:18px; place-items:center; border:1px solid #aeb7ad; border-radius:50%; background:#fff; color:#fff; font-size:.68rem; line-height:1; }
 .standard-money-checks label.active .standard-money-checkmark { border-color:var(--theme-primary); background:var(--theme-primary); }
 .standard-money-checks label:has(input:focus-visible) { outline:3px solid rgba(70, 122, 99, .35); outline-offset:2px; }
+.standard-money-split-help { color:#748075; font-size:.72rem; }
+.standard-money-custom-splits { display:grid; gap:.4rem; margin-top:.2rem; padding:.65rem; border:1px solid #ded9cf; border-radius:10px; background:#fff; }
+.standard-money-custom-splits > label { display:flex; align-items:center; justify-content:space-between; gap:.75rem; color:#526057; font-size:.8rem; font-weight:700; }
+.standard-money-custom-input { display:flex; align-items:center; gap:.35rem; font-weight:400; }
+.standard-money-custom-input input { position:static; width:110px; min-height:40px; opacity:1; pointer-events:auto; text-align:right; }
+.standard-money-custom-splits p { display:flex; align-items:baseline; gap:.45rem; margin:.15rem 0 0; padding-top:.5rem; border-top:1px solid #ece7de; color:#526057; font-size:.76rem; }
+.standard-money-custom-splits p b { margin-left:auto; color:#29332d; font-size:.88rem; }
+.standard-money-custom-splits p small { color:#748075; }
+.standard-money-custom-splits p.invalid,.standard-money-custom-splits p.invalid b,.standard-money-custom-splits p.invalid small { color:#b33b32; }
 .standard-money-form-actions button { min-height:44px; }
 .standard-money-item-badges { display:flex; flex-wrap:wrap; gap:.35rem; }
 .standard-money-item-list .standard-money-item-badges .settled { color:#27684e; background:#dff2e6; }
@@ -49,8 +59,9 @@
   .standard-money-tabs button { flex:1; min-height:44px; padding:.55rem .35rem; }
   .standard-money-form { scroll-margin-top:7rem; }
   .standard-money-form-row { grid-template-columns:1fr; }
-  .standard-money-checks > div { gap:.4rem; }
-  .standard-money-checks label { flex:1 0 calc(50% - .4rem); justify-content:center; }
+  .standard-money-checks > div:not(.standard-money-split-heading):not(.standard-money-custom-splits) { gap:.4rem; }
+  .standard-money-checks > div:not(.standard-money-split-heading):not(.standard-money-custom-splits) > label { flex:1 0 calc(50% - .4rem); justify-content:center; }
+  .standard-money-custom-input input { width:96px; }
   .standard-money-item-list article { gap:.65rem; }
   .standard-money-item-list article > div:last-child { max-width:none; }
   .standard-money-item-actions { min-width:0; align-items:flex-end; }

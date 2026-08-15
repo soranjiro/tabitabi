@@ -16,6 +16,8 @@ export interface MoneyItem {
   title: string;
   amount: number;
   paid_by_member_id: string | null;
+  /** Whether this expense was paid out of the shared trip fund. */
+  paid_from_fund: boolean;
   status: MoneyItemStatus;
   /** Whether the reimbursement for this confirmed expense has been settled. */
   is_settled: boolean;
@@ -29,16 +31,31 @@ export interface MoneyItem {
   updated_at: string;
 }
 
+export type MoneyFundTransactionKind = 'contribution' | 'refund';
+
+export interface MoneyFundTransaction {
+  id: string;
+  itinerary_id: string;
+  member_id: string;
+  kind: MoneyFundTransactionKind;
+  amount: number;
+  note: string | null;
+  occurred_on: string;
+  created_at: string;
+}
+
 export interface MoneyData {
   budget_amount: number | null;
   members: MoneyMember[];
   items: MoneyItem[];
+  fund_transactions: MoneyFundTransaction[];
 }
 
 export interface CreateMoneyItemInput {
   title: string;
   amount: number;
   paid_by_member_id?: string | null;
+  paid_from_fund?: boolean;
   status: MoneyItemStatus;
   is_settled?: boolean;
   occurred_on?: string | null;
@@ -49,3 +66,11 @@ export interface CreateMoneyItemInput {
 }
 
 export interface UpdateMoneyItemInput extends Partial<CreateMoneyItemInput> {}
+
+export interface CreateMoneyFundTransactionInput {
+  member_id: string;
+  kind: MoneyFundTransactionKind;
+  amount: number;
+  note?: string | null;
+  occurred_on?: string;
+}

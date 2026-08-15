@@ -1,10 +1,10 @@
 import { Hono, type Context } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import type { MoneyData, MoneyItem, MoneyItemSplit, MoneyMember } from '@tabitabi/types';
+import type { MoneyData, MoneyFundTransaction, MoneyItem, MoneyItemSplit, MoneyMember } from '@tabitabi/types';
 import { Env, Variables, generateId, getCurrentTimestamp } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
 import { optionalAuthMiddleware } from '../middleware/auth';
-import { moneyItemSchema, moneyMemberSchema, moneySettingsSchema, updateMoneyItemSchema } from '../validators';
+import { moneyFundTransactionSchema, moneyItemSchema, moneyMemberSchema, moneySettingsSchema, updateMoneyItemSchema } from '../validators';
 import { validationHook } from '../validators/hook';
 
 const money = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -32,6 +32,7 @@ function itemFromRow(row: Record<string, unknown>, splitRows: Pick<SplitRow, 'me
   return {
     id: String(row.id), itinerary_id: String(row.itinerary_id), title: String(row.title),
     amount: Number(row.amount), paid_by_member_id: row.paid_by_member_id ? String(row.paid_by_member_id) : null,
+    paid_from_fund: Number(row.paid_from_fund ?? 0) === 1,
     status: row.status === 'planned' ? 'planned' : 'paid',
     is_settled: Number(row.is_settled ?? 0) === 1,
     occurred_on: row.occurred_on ? String(row.occurred_on) : null,
@@ -90,13 +91,15 @@ money.get('/itineraries/:id/money', async (c) => {
   if (!await service.get(itineraryId)) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   }
-  const [settings, membersResult, itemsResult, splitsResult] = await Promise.all([
+  const [settings, membersResult, itemsResult, splitsResult, fundTransactionsResult] = await Promise.all([
     c.env.DB.prepare('SELECT budget_amount FROM itinerary_money_settings WHERE itinerary_id = ?')
       .bind(itineraryId).first<{ budget_amount: number | null }>(),
     c.env.DB.prepare('SELECT id, itinerary_id, name, created_at FROM itinerary_members WHERE itinerary_id = ? ORDER BY created_at ASC').bind(itineraryId).all<MoneyMember>(),
     c.env.DB.prepare('SELECT * FROM itinerary_money_items WHERE itinerary_id = ? ORDER BY status ASC, occurred_on ASC, created_at DESC').bind(itineraryId).all(),
     c.env.DB.prepare('SELECT item_id, member_id, amount FROM itinerary_money_item_splits WHERE itinerary_id = ? ORDER BY rowid ASC')
       .bind(itineraryId).all<SplitRow>(),
+    c.env.DB.prepare('SELECT id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at FROM itinerary_money_fund_transactions WHERE itinerary_id = ? ORDER BY occurred_on DESC, created_at DESC')
+      .bind(itineraryId).all<MoneyFundTransaction>(),
   ]);
   const splits = groupSplits(splitsResult.results ?? []);
   const data: MoneyData = {
@@ -106,6 +109,7 @@ money.get('/itineraries/:id/money', async (c) => {
       row as Record<string, unknown>,
       splits.get(String((row as Record<string, unknown>).id)) ?? [],
     )),
+    fund_transactions: (fundTransactionsResult.results ?? []).map((transaction) => ({ ...transaction, amount: Number(transaction.amount) })),
   };
   return c.json({ success: true, data });
 });
@@ -155,19 +159,16 @@ money.delete('/itineraries/:id/money/members/:memberId', optionalAuthMiddleware,
   const member = await c.env.DB.prepare('SELECT id FROM itinerary_members WHERE id = ? AND itinerary_id = ?').bind(memberId, itineraryId).first();
   if (!member) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Member not found' } }, 404);
   const referenced = await c.env.DB.prepare(`
-    SELECT item.id
-    FROM itinerary_money_items item
-    WHERE item.itinerary_id = ?
-      AND (
-        item.paid_by_member_id = ?
-        OR EXISTS (
-          SELECT 1 FROM itinerary_money_item_splits split
-          WHERE split.item_id = item.id AND split.member_id = ?
-        )
-      )
+    SELECT item.id FROM itinerary_money_items item
+    WHERE item.itinerary_id = ? AND (item.paid_by_member_id = ? OR EXISTS (
+      SELECT 1 FROM itinerary_money_item_splits split WHERE split.item_id = item.id AND split.member_id = ?
+    ))
+    UNION ALL
+    SELECT fund_entry.id FROM itinerary_money_fund_transactions fund_entry
+    WHERE fund_entry.itinerary_id = ? AND fund_entry.member_id = ?
     LIMIT 1
-  `).bind(itineraryId, memberId, memberId).first();
-  if (referenced) return c.json({ success: false, error: { code: 'CONFLICT', message: 'Update or delete this member’s expenses first' } }, 409);
+  `).bind(itineraryId, memberId, memberId, itineraryId, memberId).first();
+  if (referenced) return c.json({ success: false, error: { code: 'CONFLICT', message: 'Update or delete this member’s money records first' } }, 409);
   await c.env.DB.prepare('DELETE FROM itinerary_members WHERE id = ? AND itinerary_id = ?')
     .bind(memberId, itineraryId).run();
   return c.json({ success: true, data: null });
@@ -190,10 +191,13 @@ money.post('/itineraries/:id/money/items', optionalAuthMiddleware, zValidator('j
     return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Only paid expenses can be settled' } }, 400);
   }
   const now = getCurrentTimestamp();
-  const item: MoneyItem = { id: generateId(), itinerary_id: itineraryId, title: input.title, amount: input.amount, paid_by_member_id: input.paid_by_member_id ?? null, status: input.status, is_settled: input.is_settled ?? false, occurred_on: input.occurred_on ?? null, step_id: input.step_id ?? null, splits, split_member_ids: splits.map((split) => split.member_id), created_at: now, updated_at: now };
+  if (input.paid_from_fund && input.paid_by_member_id) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'An expense cannot be paid by both a member and the shared fund' } }, 400);
+  }
+  const item: MoneyItem = { id: generateId(), itinerary_id: itineraryId, title: input.title, amount: input.amount, paid_by_member_id: input.paid_by_member_id ?? null, paid_from_fund: input.paid_from_fund ?? false, status: input.status, is_settled: input.paid_from_fund ? false : input.is_settled ?? false, occurred_on: input.occurred_on ?? null, step_id: input.step_id ?? null, splits, split_member_ids: splits.map((split) => split.member_id), created_at: now, updated_at: now };
   await c.env.DB.batch([
-    c.env.DB.prepare(`INSERT INTO itinerary_money_items (id, itinerary_id, title, amount, paid_by_member_id, status, is_settled, occurred_on, step_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(item.id, item.itinerary_id, item.title, item.amount, item.paid_by_member_id, item.status, item.is_settled ? 1 : 0, item.occurred_on, item.step_id, now, now),
+    c.env.DB.prepare(`INSERT INTO itinerary_money_items (id, itinerary_id, title, amount, paid_by_member_id, paid_from_fund, status, is_settled, occurred_on, step_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(item.id, item.itinerary_id, item.title, item.amount, item.paid_by_member_id, item.paid_from_fund ? 1 : 0, item.status, item.is_settled ? 1 : 0, item.occurred_on, item.step_id, now, now),
     ...splitStatements(c.env.DB, item.id, itineraryId, item.splits),
   ]);
   return c.json({ success: true, data: item }, 201);
@@ -217,7 +221,9 @@ money.put('/itineraries/:id/money/items/:itemId', optionalAuthMiddleware, zValid
   if (!nextSplits.length || nextSplits.reduce((sum, split) => sum + split.amount, 0) !== nextAmount) {
     return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Split amounts must add up to the expense amount' } }, 400);
   }
-  const next = { ...current, ...input, amount: nextAmount, splits: nextSplits, split_member_ids: nextSplits.map((split) => split.member_id), paid_by_member_id: input.paid_by_member_id === undefined ? current.paid_by_member_id : input.paid_by_member_id };
+  const nextPaidFromFund = input.paid_from_fund ?? current.paid_from_fund;
+  const next = { ...current, ...input, amount: nextAmount, splits: nextSplits, split_member_ids: nextSplits.map((split) => split.member_id), paid_by_member_id: input.paid_by_member_id === undefined ? current.paid_by_member_id : input.paid_by_member_id, paid_from_fund: nextPaidFromFund, is_settled: nextPaidFromFund ? false : input.is_settled ?? current.is_settled };
+  if (next.paid_from_fund && next.paid_by_member_id) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'An expense cannot be paid by both a member and the shared fund' } }, 400);
   const idsToCheck = [...next.splits.map((split) => split.member_id), ...(next.paid_by_member_id ? [next.paid_by_member_id] : [])];
   if (!await assertMembersBelongToItinerary(c.env.DB, itineraryId, idsToCheck)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Members must belong to this itinerary' } }, 400);
   if (!await assertStepBelongsToItinerary(c.env.DB, itineraryId, next.step_id)) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Step must belong to this itinerary' } }, 400);
@@ -225,8 +231,8 @@ money.put('/itineraries/:id/money/items/:itemId', optionalAuthMiddleware, zValid
   const now = getCurrentTimestamp();
   const updated: MoneyItem = { ...next, updated_at: now };
   await c.env.DB.batch([
-    c.env.DB.prepare(`UPDATE itinerary_money_items SET title = ?, amount = ?, paid_by_member_id = ?, status = ?, is_settled = ?, occurred_on = ?, step_id = ?, updated_at = ? WHERE id = ? AND itinerary_id = ?`)
-      .bind(updated.title, updated.amount, updated.paid_by_member_id, updated.status, updated.is_settled ? 1 : 0, updated.occurred_on, updated.step_id, now, itemId, itineraryId),
+    c.env.DB.prepare(`UPDATE itinerary_money_items SET title = ?, amount = ?, paid_by_member_id = ?, paid_from_fund = ?, status = ?, is_settled = ?, occurred_on = ?, step_id = ?, updated_at = ? WHERE id = ? AND itinerary_id = ?`)
+      .bind(updated.title, updated.amount, updated.paid_by_member_id, updated.paid_from_fund ? 1 : 0, updated.status, updated.is_settled ? 1 : 0, updated.occurred_on, updated.step_id, now, itemId, itineraryId),
     c.env.DB.prepare('DELETE FROM itinerary_money_item_splits WHERE item_id = ? AND itinerary_id = ?').bind(itemId, itineraryId),
     ...splitStatements(c.env.DB, itemId, itineraryId, updated.splits),
   ]);
@@ -238,6 +244,34 @@ money.delete('/itineraries/:id/money/items/:itemId', optionalAuthMiddleware, asy
   const denied = await canEdit(c, itineraryId);
   if (denied) return denied;
   await c.env.DB.prepare('DELETE FROM itinerary_money_items WHERE id = ? AND itinerary_id = ?').bind(c.req.param('itemId'), itineraryId).run();
+  return c.json({ success: true, data: null });
+});
+
+money.post('/itineraries/:id/money/fund-transactions', optionalAuthMiddleware, zValidator('json', moneyFundTransactionSchema, validationHook), async (c) => {
+  const itineraryId = c.req.param('id')!;
+  const denied = await canEdit(c, itineraryId);
+  if (denied) return denied;
+  const input = c.req.valid('json');
+  if (!await assertMembersBelongToItinerary(c.env.DB, itineraryId, [input.member_id])) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Member must belong to this itinerary' } }, 400);
+  }
+  const now = getCurrentTimestamp();
+  const transaction: MoneyFundTransaction = {
+    id: generateId(), itinerary_id: itineraryId, member_id: input.member_id, kind: input.kind,
+    amount: input.amount, note: input.note || null, occurred_on: input.occurred_on ?? now.slice(0, 10), created_at: now,
+  };
+  await c.env.DB.prepare(`INSERT INTO itinerary_money_fund_transactions
+    (id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(transaction.id, itineraryId, transaction.member_id, transaction.kind, transaction.amount, transaction.note, transaction.occurred_on, now).run();
+  return c.json({ success: true, data: transaction }, 201);
+});
+
+money.delete('/itineraries/:id/money/fund-transactions/:transactionId', optionalAuthMiddleware, async (c) => {
+  const itineraryId = c.req.param('id')!;
+  const denied = await canEdit(c, itineraryId);
+  if (denied) return denied;
+  await c.env.DB.prepare('DELETE FROM itinerary_money_fund_transactions WHERE id = ? AND itinerary_id = ?')
+    .bind(c.req.param('transactionId'), itineraryId).run();
   return c.json({ success: true, data: null });
 });
 

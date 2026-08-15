@@ -58,6 +58,7 @@ const moneyItemFields = z.object({
   title: z.string().trim().min(1, 'title is required').max(100, 'title must be at most 100 characters'),
   amount: z.number().int().positive('amount must be positive').max(100_000_000),
   paid_by_member_id: z.string().nullable().optional(),
+  paid_from_fund: z.boolean().optional(),
   status: z.enum(['paid', 'planned']),
   is_settled: z.boolean().optional(),
   occurred_on: z.string().date().nullable().optional(),
@@ -93,6 +94,14 @@ export const updateMoneyItemSchema = moneyItemFields.partial().superRefine((data
 
 export const moneySettingsSchema = z.object({
   budget_amount: z.number().int().positive().max(100_000_000).nullable(),
+});
+
+export const moneyFundTransactionSchema = z.object({
+  member_id: z.string().min(1),
+  kind: z.enum(['contribution', 'refund']),
+  amount: z.number().int().positive('amount must be positive').max(100_000_000),
+  note: z.string().trim().max(100).nullable().optional(),
+  occurred_on: z.string().date().optional(),
 });
 
 // ── Packing list ──────────────────────────────────────

@@ -85,10 +85,12 @@
     return splits.length && splits.every((split) => split.amount === splits[0].amount) ? splits[0].amount : null;
   }
   function splitLabel(item: MoneyItem) {
-    return itemSplits(item).map((split) => {
+    const groups = new Map<number, string[]>();
+    for (const split of itemSplits(item)) {
       const name = data.members.find((member) => member.id === split.member_id)?.name;
-      return name ? `${name} ${formatYen(split.amount)}` : '';
-    }).filter(Boolean).join('・');
+      if (name) groups.set(split.amount, [...(groups.get(split.amount) ?? []), name]);
+    }
+    return [...groups.entries()].map(([splitAmount, names]) => `${names.join('・')} ${formatYen(splitAmount)}`).join(' ／ ');
   }
 
   const paidItems = $derived(data.items.filter((item) => item.status === 'paid'));
@@ -291,6 +293,26 @@
   }
 
   const customSplitTotal = $derived(participantIds.reduce((sum, id) => sum + (Number(customAmounts[id]) || 0), 0));
+  const customAmountGroups = $derived.by(() => {
+    const groups = new Map<string, { amount: string; members: MoneyMember[] }>();
+    for (const member of data.members.filter((current) => participantIds.includes(current.id))) {
+      const rawAmount = customAmounts[member.id]?.trim() ?? '';
+      const numericAmount = Number(rawAmount);
+      const key = rawAmount && Number.isFinite(numericAmount) ? `amount:${numericAmount}` : `member:${member.id}`;
+      const group = groups.get(key) ?? { amount: rawAmount, members: [] };
+      group.members.push(member);
+      groups.set(key, group);
+    }
+    return [...groups.values()];
+  });
+
+  function setCustomGroupAmount(memberIds: string[], nextAmount: string) {
+    customAmounts = { ...customAmounts, ...Object.fromEntries(memberIds.map((memberId) => [memberId, nextAmount])) };
+  }
+
+  function detachCustomMember(memberId: string) {
+    customAmounts = { ...customAmounts, [memberId]: '' };
+  }
 
   async function addItem() {
     const enteredValue = Number(amount);
@@ -500,11 +522,16 @@
                 </div>
                 {#if splitMode === 'custom' && participantIds.length}
                   <div class="standard-money-custom-splits">
-                    {#each data.members.filter((member) => participantIds.includes(member.id)) as member}
-                      <label>
-                        <span>{member.name}</span>
-                        <span class="standard-money-custom-input"><input aria-label={`${member.name}の負担額（円）`} inputmode="numeric" placeholder="0" bind:value={customAmounts[member.id]} /> 円</span>
-                      </label>
+                    <small class="standard-money-custom-help">同じ金額の人はまとめて入力できます。別の金額にする人だけ「別額」に分けてください。</small>
+                    {#each customAmountGroups as group}
+                      <div class="standard-money-custom-group">
+                        <div class="standard-money-custom-members">
+                          {#each group.members as member}
+                            <span>{member.name}{#if group.members.length > 1}<button type="button" aria-label={`${member.name}を別の負担額にする`} onclick={() => detachCustomMember(member.id)}>別額</button>{/if}</span>
+                          {/each}
+                        </div>
+                        <label class="standard-money-custom-input"><span>{group.members.length > 1 ? `${group.members.length}人とも` : '負担額'}</span><input aria-label={`${group.members.map((member) => member.name).join('・')}の負担額（円）`} inputmode="numeric" placeholder="0" value={group.amount} oninput={(event) => setCustomGroupAmount(group.members.map((member) => member.id), event.currentTarget.value)} /> 円</label>
+                      </div>
                     {/each}
                     <p class:invalid={Number(amount) !== customSplitTotal}>
                       <span>入力合計</span><b>{formatYen(customSplitTotal)}</b>

@@ -10,13 +10,15 @@ async function setup() {
     `CREATE TABLE IF NOT EXISTS itinerary_money_settings (itinerary_id TEXT PRIMARY KEY, budget_amount INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS itinerary_members (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS steps (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, start_at INTEGER NOT NULL, end_at INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_money_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL CHECK(amount > 0), paid_by_member_id TEXT, status TEXT NOT NULL CHECK(status IN ('paid', 'planned')), is_settled INTEGER NOT NULL DEFAULT 0, occurred_on TEXT, step_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE, FOREIGN KEY (paid_by_member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT, FOREIGN KEY (step_id) REFERENCES steps(id) ON DELETE SET NULL);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL CHECK(amount > 0), paid_by_member_id TEXT, paid_from_fund INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL CHECK(status IN ('paid', 'planned')), is_settled INTEGER NOT NULL DEFAULT 0, occurred_on TEXT, step_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE, FOREIGN KEY (paid_by_member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT, FOREIGN KEY (step_id) REFERENCES steps(id) ON DELETE SET NULL);`,
     `CREATE TABLE IF NOT EXISTS itinerary_money_item_splits (item_id TEXT NOT NULL, member_id TEXT NOT NULL, itinerary_id TEXT NOT NULL, amount INTEGER CHECK(amount > 0), PRIMARY KEY (item_id, member_id), FOREIGN KEY (item_id, itinerary_id) REFERENCES itinerary_money_items(id, itinerary_id) ON DELETE CASCADE, FOREIGN KEY (member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_fund_transactions (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, member_id TEXT NOT NULL, kind TEXT NOT NULL CHECK(kind IN ('contribution', 'refund')), amount INTEGER NOT NULL CHECK(amount > 0), note TEXT, occurred_on TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE, FOREIGN KEY (member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT);`,
     `CREATE TABLE IF NOT EXISTS itinerary_packing_groups (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, sort_order INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS itinerary_packing_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1, kind TEXT NOT NULL, group_id TEXT NOT NULL, assignee_member_id TEXT, owner_member_id TEXT, is_packed INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE, FOREIGN KEY (group_id, itinerary_id) REFERENCES itinerary_packing_groups(id, itinerary_id) ON DELETE RESTRICT, FOREIGN KEY (assignee_member_id) REFERENCES itinerary_members(id) ON DELETE SET NULL, FOREIGN KEY (owner_member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS itinerary_packing_checks (item_id TEXT NOT NULL, member_id TEXT NOT NULL, itinerary_id TEXT NOT NULL, checked_at TEXT NOT NULL, PRIMARY KEY (item_id, member_id), FOREIGN KEY (item_id, itinerary_id) REFERENCES itinerary_packing_items(id, itinerary_id) ON DELETE CASCADE, FOREIGN KEY (member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE CASCADE);`,
   ];
   for (const sql of migrations) await env.DB.prepare(sql).run();
+  await env.DB.prepare('DELETE FROM itinerary_money_fund_transactions').run();
   await env.DB.prepare('DELETE FROM itinerary_money_item_splits').run();
   await env.DB.prepare('DELETE FROM itinerary_money_items').run();
   await env.DB.prepare('DELETE FROM itinerary_packing_checks').run();
@@ -104,6 +106,49 @@ describe('Money API', () => {
       body: JSON.stringify({ title: 'ホテル', amount: 12000, status: 'paid', splits: [{ member_id: member.id, amount: 10000 }] }),
     }), env);
     expect(response.status).toBe(400);
+  });
+
+  it('tracks member contributions and expenses paid from a shared fund', async () => {
+    const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '共同基金テスト' }),
+    }), env);
+    const { data: itinerary } = await create.json() as any;
+    const addMember = async (name: string) => {
+      const response = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/members`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+      }), env);
+      return (await response.json() as any).data;
+    };
+    const alice = await addMember('Alice');
+    const bob = await addMember('Bob');
+    for (const member of [alice, bob]) {
+      const contribution = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/fund-transactions`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ member_id: member.id, kind: 'contribution', amount: 10000, note: '旅行前に集金' }),
+      }), env);
+      expect(contribution.status).toBe(201);
+    }
+    const expense = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'レンタカー', amount: 15000, status: 'paid', paid_from_fund: true, splits: [{ member_id: alice.id, amount: 7500 }, { member_id: bob.id, amount: 7500 }] }),
+    }), env);
+    expect(expense.status).toBe(201);
+    expect((await expense.json() as any).data).toMatchObject({ paid_from_fund: true, paid_by_member_id: null });
+
+    const invalidExpense = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '二重支払元', amount: 1000, status: 'paid', paid_from_fund: true, paid_by_member_id: alice.id, split_member_ids: [alice.id] }),
+    }), env);
+    expect(invalidExpense.status).toBe(400);
+
+    const moneyResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money`), env);
+    const money = (await moneyResponse.json() as any).data;
+    expect(money.fund_transactions).toHaveLength(2);
+    expect(money.fund_transactions.reduce((sum: number, transaction: { amount: number }) => sum + transaction.amount, 0)).toBe(20000);
+    expect(money.items[0]).toMatchObject({ title: 'レンタカー', paid_from_fund: true });
+
+    const deleteMember = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/members/${alice.id}`, { method: 'DELETE' }), env);
+    expect(deleteMember.status).toBe(409);
   });
 
   it('renames an unused member and allows deleting them', async () => {

@@ -64,20 +64,17 @@ members.delete('/itineraries/:id/members/:memberId', optionalAuthMiddleware, asy
   const member = await c.env.DB.prepare('SELECT id FROM itinerary_members WHERE id = ? AND itinerary_id = ?').bind(memberId, itineraryId).first();
   if (!member) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Member not found' } }, 404);
   const moneyReference = await c.env.DB.prepare(`
-    SELECT item.id
-    FROM itinerary_money_items item
-    WHERE item.itinerary_id = ?
-      AND (
-        item.paid_by_member_id = ?
-        OR EXISTS (
-          SELECT 1 FROM itinerary_money_item_splits split
-          WHERE split.item_id = item.id AND split.member_id = ?
-        )
-      )
+    SELECT item.id FROM itinerary_money_items item
+    WHERE item.itinerary_id = ? AND (item.paid_by_member_id = ? OR EXISTS (
+      SELECT 1 FROM itinerary_money_item_splits split WHERE split.item_id = item.id AND split.member_id = ?
+    ))
+    UNION ALL
+    SELECT fund_entry.id FROM itinerary_money_fund_transactions fund_entry
+    WHERE fund_entry.itinerary_id = ? AND fund_entry.member_id = ?
     LIMIT 1
-  `).bind(itineraryId, memberId, memberId).first();
+  `).bind(itineraryId, memberId, memberId, itineraryId, memberId).first();
   if (moneyReference) {
-    return c.json({ success: false, error: { code: 'CONFLICT', message: 'Update or delete this member’s expenses first' } }, 409);
+    return c.json({ success: false, error: { code: 'CONFLICT', message: 'Update or delete this member’s money records first' } }, 409);
   }
   await c.env.DB.prepare('DELETE FROM itinerary_members WHERE id = ? AND itinerary_id = ?')
     .bind(memberId, itineraryId).run();

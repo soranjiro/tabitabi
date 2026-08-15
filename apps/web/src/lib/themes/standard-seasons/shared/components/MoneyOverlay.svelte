@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import type { MoneyData, MoneyItem, MoneyItemStatus, MoneyMember, Step } from '@tabitabi/types';
+  import type { MoneyData, MoneyFundTransactionKind, MoneyItem, MoneyItemStatus, MoneyMember, Step } from '@tabitabi/types';
   import { moneyApi } from '$lib/api/money';
   import { demoStorage, getIsDemoMode } from '$lib/demo';
   import { CloseIcon } from './icons/index.svelte';
@@ -15,7 +15,7 @@
   }
   let { show, itineraryId, canEdit, steps = [], onClose }: Props = $props();
 
-  let data = $state<MoneyData>({ budget_amount: null, members: [], items: [] });
+  let data = $state<MoneyData>({ budget_amount: null, members: [], items: [], fund_transactions: [] });
   let loading = $state(false);
   let error = $state('');
   let title = $state('');
@@ -36,6 +36,10 @@
   let viewedStep = $state<Step | null>(null);
   let hasLoaded = $state(false);
   let itemFormElement = $state<HTMLElement | undefined>(undefined);
+  let fundMemberId = $state('');
+  let fundKind = $state<MoneyFundTransactionKind>('contribution');
+  let fundAmount = $state('');
+  let fundNote = $state('');
 
   const isDemoMoney = () => itineraryId === 'demo' || getIsDemoMode();
 
@@ -48,7 +52,7 @@
     ];
     if (!demoStorage.getMembers().length) demoStorage.setMembers(members);
     const item = (id: string, title: string, amount: number, paidBy: string | null, itemStatus: MoneyItemStatus, split: string[], settled = false): MoneyItem => ({
-      id, itinerary_id: itineraryId, title, amount, paid_by_member_id: paidBy, status: itemStatus,
+      id, itinerary_id: itineraryId, title, amount, paid_by_member_id: paidBy, paid_from_fund: false, status: itemStatus,
       is_settled: settled, occurred_on: '2026-08-01', step_id: null,
       splits: equalSplits(amount, split), split_member_ids: split, created_at: createdAt, updated_at: createdAt,
     });
@@ -61,6 +65,7 @@
         item('demo-money-dinner', '初日の夕食', 9000, 'demo-money-yui', 'paid', members.map((member) => member.id)),
         item('demo-money-rental', 'レンタカー（予定）', 12000, null, 'planned', ['demo-money-miki', 'demo-money-haru']),
       ],
+      fund_transactions: [],
     };
   }
 
@@ -80,10 +85,12 @@
     return splits.length && splits.every((split) => split.amount === splits[0].amount) ? splits[0].amount : null;
   }
   function splitLabel(item: MoneyItem) {
-    return itemSplits(item).map((split) => {
+    const groups = new Map<number, string[]>();
+    for (const split of itemSplits(item)) {
       const name = data.members.find((member) => member.id === split.member_id)?.name;
-      return name ? `${name} ${formatYen(split.amount)}` : '';
-    }).filter(Boolean).join('・');
+      if (name) groups.set(split.amount, [...(groups.get(split.amount) ?? []), name]);
+    }
+    return [...groups.entries()].map(([splitAmount, names]) => `${names.join('・')} ${formatYen(splitAmount)}`).join(' ／ ');
   }
 
   const paidItems = $derived(data.items.filter((item) => item.status === 'paid'));
@@ -96,11 +103,18 @@
   const displayPlanned = $derived(budgetView === 'perPerson' && data.members.length ? Math.round(plannedTotal / data.members.length) : plannedTotal);
   const paidPercent = $derived(displayBudget ? Math.min(100, Math.round(displayPaid / displayBudget * 100)) : 0);
   const plannedPercent = $derived(displayBudget ? Math.min(100 - paidPercent, Math.round(displayPlanned / displayBudget * 100)) : 0);
+  const fundContributed = $derived(data.fund_transactions.filter((transaction) => transaction.kind === 'contribution').reduce((sum, transaction) => sum + transaction.amount, 0));
+  const fundRefunded = $derived(data.fund_transactions.filter((transaction) => transaction.kind === 'refund').reduce((sum, transaction) => sum + transaction.amount, 0));
+  const fundSpent = $derived(paidItems.filter((item) => item.paid_from_fund).reduce((sum, item) => sum + item.amount, 0));
+  const fundBalance = $derived(fundContributed - fundRefunded - fundSpent);
   const memberSummaries = $derived.by(() => data.members.map((member) => {
     let unsettledPaid = 0;
     let actualOwed = 0;
     let plannedOwed = 0;
     let reimbursableOwed = 0;
+    const fundNet = data.fund_transactions
+      .filter((transaction) => transaction.member_id === member.id)
+      .reduce((sum, transaction) => sum + (transaction.kind === 'contribution' ? transaction.amount : -transaction.amount), 0);
     for (const item of data.items) {
       if (item.status === 'paid' && item.paid_by_member_id === member.id) {
         if (!item.is_settled) unsettledPaid += item.amount;
@@ -110,14 +124,16 @@
         if (item.status === 'paid') {
           actualOwed += share;
           if (item.paid_by_member_id && !item.is_settled) reimbursableOwed += share;
+          if (item.paid_from_fund) reimbursableOwed += share;
         } else plannedOwed += share;
       }
     }
-    return { ...member, unsettledPaid, actualOwed, plannedOwed, tripTotal: actualOwed + plannedOwed, balance: unsettledPaid - reimbursableOwed };
+    return { ...member, unsettledPaid, fundNet, actualOwed, plannedOwed, tripTotal: actualOwed + plannedOwed, balance: unsettledPaid + fundNet - reimbursableOwed };
   }));
   const settlements = $derived.by(() => {
-    const debtors = memberSummaries.filter((m) => m.balance < 0).map((m) => ({ ...m, left: -m.balance }));
-    const creditors = memberSummaries.filter((m) => m.balance > 0).map((m) => ({ ...m, left: m.balance }));
+    const accounts = [...memberSummaries.map((member) => ({ name: member.name, balance: member.balance })), { name: '共同基金', balance: -fundBalance }];
+    const debtors = accounts.filter((account) => account.balance < 0).map((account) => ({ ...account, left: -account.balance }));
+    const creditors = accounts.filter((account) => account.balance > 0).map((account) => ({ ...account, left: account.balance }));
     const result: { from: string; to: string; amount: number }[] = [];
     let debtorIndex = 0;
     let creditorIndex = 0;
@@ -139,16 +155,18 @@
     try {
       if (isDemoMoney()) {
         const storedMoney = demoStorage.getMoneyData();
-        data = storedMoney ?? demoMoneyData();
+        data = storedMoney ? { ...storedMoney, fund_transactions: storedMoney.fund_transactions ?? [], items: storedMoney.items.map((item) => ({ ...item, paid_from_fund: item.paid_from_fund ?? false })) } : demoMoneyData();
         if (!storedMoney) demoStorage.setMoneyData(data);
         budget = data.budget_amount?.toString() ?? '';
         participantIds = data.members.map((member) => member.id);
+        fundMemberId ||= data.members[0]?.id ?? '';
         return;
       }
 
       data = await moneyApi.get(itineraryId);
       budget = data.budget_amount?.toString() ?? '';
       participantIds = data.members.map((member) => member.id);
+      fundMemberId ||= data.members[0]?.id ?? '';
     } catch (e) {
       error = e instanceof Error ? e.message : 'お金の管理データを読み込めませんでした';
     } finally {
@@ -188,9 +206,44 @@
   }
 
   function payerLabel(item: MoneyItem) {
+    if (item.paid_from_fund) return item.status === 'paid' ? '共同基金から支払い' : '共同基金から支払う（予定）';
     const payer = data.members.find((member) => member.id === item.paid_by_member_id);
     if (payer) return `立替：${payer.name}`;
     return item.status === 'paid' ? '各自で支払い済み' : '各自で支払う（予定）';
+  }
+
+  function memberName(memberId: string) {
+    return data.members.find((member) => member.id === memberId)?.name ?? '削除されたメンバー';
+  }
+
+  async function addFundTransaction() {
+    const value = Number(fundAmount);
+    if (!fundMemberId || !Number.isInteger(value) || value <= 0) return alert('メンバーと1円以上の金額を入力してください');
+    const input = { member_id: fundMemberId, kind: fundKind, amount: value, note: fundNote.trim() || null };
+    try {
+      if (isDemoMoney()) {
+        const now = new Date().toISOString();
+        saveDemoData({ ...data, fund_transactions: [{ id: `demo-fund-${Date.now()}`, itinerary_id: itineraryId, ...input, occurred_on: now.slice(0, 10), created_at: now }, ...data.fund_transactions] });
+      } else {
+        const transaction = await moneyApi.addFundTransaction(itineraryId, input);
+        data = { ...data, fund_transactions: [transaction, ...data.fund_transactions] };
+      }
+      fundAmount = '';
+      fundNote = '';
+    } catch (e) { alert(e instanceof Error ? e.message : '共同基金の履歴を登録できませんでした'); }
+  }
+
+  async function deleteFundTransaction(transactionId: string) {
+    if (!confirm('この入出金履歴を削除しますか？')) return;
+    try {
+      if (!isDemoMoney()) await moneyApi.deleteFundTransaction(itineraryId, transactionId);
+      saveDemoDataIfNeeded({ ...data, fund_transactions: data.fund_transactions.filter((transaction) => transaction.id !== transactionId) });
+    } catch (e) { alert(e instanceof Error ? e.message : '共同基金の履歴を削除できませんでした'); }
+  }
+
+  function saveDemoDataIfNeeded(next: MoneyData) {
+    if (isDemoMoney()) saveDemoData(next);
+    else data = next;
   }
 
   async function saveBudget() {
@@ -240,6 +293,26 @@
   }
 
   const customSplitTotal = $derived(participantIds.reduce((sum, id) => sum + (Number(customAmounts[id]) || 0), 0));
+  const customAmountGroups = $derived.by(() => {
+    const groups = new Map<string, { amount: string; members: MoneyMember[] }>();
+    for (const member of data.members.filter((current) => participantIds.includes(current.id))) {
+      const rawAmount = customAmounts[member.id]?.trim() ?? '';
+      const numericAmount = Number(rawAmount);
+      const key = rawAmount && Number.isFinite(numericAmount) ? `amount:${numericAmount}` : `member:${member.id}`;
+      const group = groups.get(key) ?? { amount: rawAmount, members: [] };
+      group.members.push(member);
+      groups.set(key, group);
+    }
+    return [...groups.values()];
+  });
+
+  function setCustomGroupAmount(memberIds: string[], nextAmount: string) {
+    customAmounts = { ...customAmounts, ...Object.fromEntries(memberIds.map((memberId) => [memberId, nextAmount])) };
+  }
+
+  function detachCustomMember(memberId: string) {
+    customAmounts = { ...customAmounts, [memberId]: '' };
+  }
 
   async function addItem() {
     const enteredValue = Number(amount);
@@ -256,7 +329,7 @@
         const now = new Date().toISOString();
         const item: MoneyItem = {
           id: editingItemId ?? `demo-money-item-${Date.now()}`, itinerary_id: itineraryId, title: title.trim(), amount: value,
-          status, paid_by_member_id: status === 'paid' && payerId !== 'individual' ? payerId : null, is_settled: status === 'paid' && isSettled,
+          status, paid_by_member_id: status === 'paid' && payerId !== 'individual' && payerId !== 'fund' ? payerId : null, paid_from_fund: payerId === 'fund', is_settled: status === 'paid' && payerId !== 'fund' && isSettled,
           step_id: linkedStepId || null, splits, split_member_ids: participantIds, occurred_on: now.slice(0, 10), created_at: now, updated_at: now,
         };
         saveDemoData({ ...data, items: editingItemId ? data.items.map((current) => current.id === editingItemId ? { ...item, created_at: current.created_at } : current) : [item, ...data.items] });
@@ -265,8 +338,9 @@
       }
       const input = {
         title: title.trim(), amount: value, status,
-        paid_by_member_id: status === 'paid' && payerId !== 'individual' ? payerId : null,
-        is_settled: status === 'paid' && isSettled,
+        paid_by_member_id: status === 'paid' && payerId !== 'individual' && payerId !== 'fund' ? payerId : null,
+        paid_from_fund: payerId === 'fund',
+        is_settled: status === 'paid' && payerId !== 'fund' && isSettled,
         splits,
         occurred_on: new Date().toISOString().slice(0, 10),
         step_id: linkedStepId || null,
@@ -286,7 +360,7 @@
 
   async function editItem(item: MoneyItem) {
     editingItemId = item.id; title = item.title; amount = String(item.amount); amountInputMode = 'total'; status = item.status;
-    payerId = item.paid_by_member_id ?? 'individual'; isSettled = item.is_settled;
+    payerId = item.paid_from_fund ? 'fund' : item.paid_by_member_id ?? 'individual'; isSettled = item.is_settled;
     participantIds = [...item.split_member_ids]; linkedStepId = item.step_id ?? '';
     const splits = itemSplits(item);
     splitMode = splits.every((split) => split.amount === splits[0]?.amount) ? 'equal' : 'custom';
@@ -361,9 +435,28 @@
 
         <div class="standard-money-tabs"><button class:active={activeTab === 'summary'} onclick={() => activeTab = 'summary'}>精算・内訳</button><button class:active={activeTab === 'items'} onclick={() => activeTab = 'items'}>支出一覧</button></div>
         {#if activeTab === 'summary'}
+          <section class="standard-money-fund-card">
+            <div class="standard-money-fund-heading"><div><span>みんなで使うお金</span><h3>共同基金</h3></div><div><small>現在の残高</small><strong class:negative={fundBalance < 0}>{formatYen(fundBalance)}</strong></div></div>
+            <div class="standard-money-fund-stats"><span>入金 <b>{formatYen(fundContributed)}</b></span><span>基金払い <b>{formatYen(fundSpent)}</b></span>{#if fundRefunded}<span>返金 <b>{formatYen(fundRefunded)}</b></span>{/if}</div>
+            <details class="standard-money-fund-details">
+              <summary>入金・返金履歴を管理</summary>
+              {#if canEdit && data.members.length}
+                <div class="standard-money-fund-form">
+                  <select aria-label="入出金するメンバー" bind:value={fundMemberId}>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>
+                  <select aria-label="共同基金の入出金区分" bind:value={fundKind}><option value="contribution">入金</option><option value="refund">返金</option></select>
+                  <input aria-label="共同基金の金額（円）" inputmode="numeric" placeholder="金額（円）" bind:value={fundAmount} />
+                  <input aria-label="共同基金のメモ" placeholder="メモ（任意）" bind:value={fundNote} />
+                  <button class="standard-money-submit" onclick={addFundTransaction}>登録</button>
+                </div>
+              {/if}
+              {#if data.fund_transactions.length}
+                <div class="standard-money-fund-list">{#each data.fund_transactions as transaction}<article><div><strong>{memberName(transaction.member_id)}</strong><small>{transaction.occurred_on}{transaction.note ? ` · ${transaction.note}` : ''}</small></div><b class:negative={transaction.kind === 'refund'}>{transaction.kind === 'contribution' ? '+' : '-'}{formatYen(transaction.amount)}</b>{#if canEdit}<button aria-label="入出金履歴を削除" onclick={() => deleteFundTransaction(transaction.id)}>削除</button>{/if}</article>{/each}</div>
+              {:else}<p class="standard-money-fund-empty">まだ入金はありません。</p>{/if}
+            </details>
+          </section>
           {#if !data.members.length}<p class="standard-money-empty">メンバーを追加すると、立替と精算額を自動で計算します。</p>
           {:else}
-            <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><strong>{member.name}</strong><span class="standard-money-trip-total">旅行での支出合計 <b>{formatYen(member.tripTotal)}</b></span><details class="standard-money-person-detail"><summary>内訳を見る</summary><span>確定負担 {formatYen(member.actualOwed)}{#if member.plannedOwed} · 予定負担 {formatYen(member.plannedOwed)}{/if} · 未精算の立替 {formatYen(member.unsettledPaid)}</span></details></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>
+            <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><strong>{member.name}</strong><span class="standard-money-trip-total">旅行での支出合計 <b>{formatYen(member.tripTotal)}</b></span><details class="standard-money-person-detail"><summary>内訳を見る</summary><span>確定負担 {formatYen(member.actualOwed)}{#if member.plannedOwed} · 予定負担 {formatYen(member.plannedOwed)}{/if} · 未精算の立替 {formatYen(member.unsettledPaid)}{#if member.fundNet} · 基金への入金差引 {formatYen(member.fundNet)}{/if}</span></details></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>
             <section class="standard-money-settlements"><h3>いま精算するなら</h3>{#if settlements.length}{#each settlements as settlement}<p><b>{settlement.from}</b> → <b>{settlement.to}</b><strong>{formatYen(settlement.amount)}</strong></p>{/each}{:else}<p>精算は不要です</p>{/if}<small>予定支出と精算済みの支出は、精算額に含めていません。</small></section>
           {/if}
         {:else}
@@ -399,9 +492,10 @@
                 <select value={payerId} onchange={(event) => setPaymentMethod((event.currentTarget as HTMLSelectElement).value)}>
                   <option value="">選択してください</option>
                   <option value="individual">各自で支払う</option>
+                  <option value="fund">共同基金から支払う</option>
                   {#each data.members as member}<option value={member.id}>{member.name} が立替える</option>{/each}
                 </select>
-                <small>{payerId === 'individual' ? '立替は発生せず、対象者それぞれの支出に反映します。' : '立替えた人を選ぶと、精算額を計算します。'}</small>
+                <small>{payerId === 'individual' ? '立替は発生せず、対象者それぞれの支出に反映します。' : payerId === 'fund' ? '共同基金の残高から差し引きます。' : '立替えた人を選ぶと、精算額を計算します。'}</small>
               </label>
               {#if steps.length}
                 <label class="standard-money-field">
@@ -428,11 +522,16 @@
                 </div>
                 {#if splitMode === 'custom' && participantIds.length}
                   <div class="standard-money-custom-splits">
-                    {#each data.members.filter((member) => participantIds.includes(member.id)) as member}
-                      <label>
-                        <span>{member.name}</span>
-                        <span class="standard-money-custom-input"><input aria-label={`${member.name}の負担額（円）`} inputmode="numeric" placeholder="0" bind:value={customAmounts[member.id]} /> 円</span>
-                      </label>
+                    <small class="standard-money-custom-help">同じ金額の人はまとめて入力できます。別の金額にする人だけ「別額」に分けてください。</small>
+                    {#each customAmountGroups as group}
+                      <div class="standard-money-custom-group">
+                        <div class="standard-money-custom-members">
+                          {#each group.members as member}
+                            <span>{member.name}{#if group.members.length > 1}<button type="button" aria-label={`${member.name}を別の負担額にする`} onclick={() => detachCustomMember(member.id)}>別額</button>{/if}</span>
+                          {/each}
+                        </div>
+                        <label class="standard-money-custom-input"><span>{group.members.length > 1 ? `${group.members.length}人とも` : '負担額'}</span><input aria-label={`${group.members.map((member) => member.name).join('・')}の負担額（円）`} inputmode="numeric" placeholder="0" value={group.amount} oninput={(event) => setCustomGroupAmount(group.members.map((member) => member.id), event.currentTarget.value)} /> 円</label>
+                      </div>
                     {/each}
                     <p class:invalid={Number(amount) !== customSplitTotal}>
                       <span>入力合計</span><b>{formatYen(customSplitTotal)}</b>
@@ -469,8 +568,8 @@
                   <div class="standard-money-item-actions">
                     <b>{formatYen(item.amount)}</b>
                     {#if perPersonAmount(item) !== null}<small class="standard-money-item-per-person">1人あたり {formatYen(perPersonAmount(item)!)}</small>{/if}
-                    {#if canEdit && item.status === 'planned'}<button onclick={() => startMarkAsPaid(item)}>立替済みにする</button>{/if}
-                    {#if canEdit && item.status === 'paid'}<button class:active={item.is_settled} aria-pressed={item.is_settled} onclick={() => setItemSettled(item, !item.is_settled)}>{item.is_settled ? '精算を戻す' : '精算済みにする'}</button>{/if}
+                    {#if canEdit && item.status === 'planned'}<button onclick={() => startMarkAsPaid(item)}>支払い済みにする</button>{/if}
+                    {#if canEdit && item.status === 'paid' && !item.paid_from_fund}<button class:active={item.is_settled} aria-pressed={item.is_settled} onclick={() => setItemSettled(item, !item.is_settled)}>{item.is_settled ? '精算を戻す' : '精算済みにする'}</button>{/if}
                     {#if canEdit}<button onclick={() => editItem(item)}>編集</button><button class="delete" onclick={() => deleteItem(item.id)}>削除</button>{/if}
                   </div>
                 </article>

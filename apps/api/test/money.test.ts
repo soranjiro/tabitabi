@@ -121,13 +121,21 @@ describe('Money API', () => {
     };
     const alice = await addMember('Alice');
     const bob = await addMember('Bob');
+    const transactions = [];
     for (const member of [alice, bob]) {
       const contribution = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/fund-transactions`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ member_id: member.id, kind: 'contribution', amount: 10000, note: '旅行前に集金' }),
       }), env);
       expect(contribution.status).toBe(201);
+      transactions.push((await contribution.json() as any).data);
     }
+    const updateTransaction = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/fund-transactions/${transactions[0].id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ member_id: bob.id, kind: 'refund', amount: 2000, note: '余りを返金', occurred_on: '2026-08-15' }),
+    }), env);
+    expect(updateTransaction.status).toBe(200);
+    expect((await updateTransaction.json() as any).data).toMatchObject({ member_id: bob.id, kind: 'refund', amount: 2000, note: '余りを返金', occurred_on: '2026-08-15' });
     const expense = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/items`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: 'レンタカー', amount: 15000, status: 'paid', paid_from_fund: true, splits: [{ member_id: alice.id, amount: 7500 }, { member_id: bob.id, amount: 7500 }] }),
@@ -144,7 +152,7 @@ describe('Money API', () => {
     const moneyResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money`), env);
     const money = (await moneyResponse.json() as any).data;
     expect(money.fund_transactions).toHaveLength(2);
-    expect(money.fund_transactions.reduce((sum: number, transaction: { amount: number }) => sum + transaction.amount, 0)).toBe(20000);
+    expect(money.fund_transactions.reduce((sum: number, transaction: { kind: string; amount: number }) => sum + (transaction.kind === 'contribution' ? transaction.amount : -transaction.amount), 0)).toBe(8000);
     expect(money.items[0]).toMatchObject({ title: 'レンタカー', paid_from_fund: true });
 
     const deleteMember = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/members/${alice.id}`, { method: 'DELETE' }), env);

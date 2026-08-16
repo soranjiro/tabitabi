@@ -4,7 +4,7 @@ import type { MoneyData, MoneyFundTransaction, MoneyItem, MoneyItemSplit, MoneyM
 import { Env, Variables, generateId, getCurrentTimestamp } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
 import { optionalAuthMiddleware } from '../middleware/auth';
-import { moneyFundTransactionSchema, moneyItemSchema, moneyMemberSchema, moneySettingsSchema, updateMoneyItemSchema } from '../validators';
+import { moneyFundTransactionSchema, moneyItemSchema, moneyMemberSchema, moneySettingsSchema, updateMoneyFundTransactionSchema, updateMoneyItemSchema } from '../validators';
 import { validationHook } from '../validators/hook';
 
 const money = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -264,6 +264,25 @@ money.post('/itineraries/:id/money/fund-transactions', optionalAuthMiddleware, z
     (id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(transaction.id, itineraryId, transaction.member_id, transaction.kind, transaction.amount, transaction.note, transaction.occurred_on, now).run();
   return c.json({ success: true, data: transaction }, 201);
+});
+
+money.put('/itineraries/:id/money/fund-transactions/:transactionId', optionalAuthMiddleware, zValidator('json', updateMoneyFundTransactionSchema, validationHook), async (c) => {
+  const itineraryId = c.req.param('id')!;
+  const transactionId = c.req.param('transactionId')!;
+  const denied = await canEdit(c, itineraryId);
+  if (denied) return denied;
+  const current = await c.env.DB.prepare('SELECT id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at FROM itinerary_money_fund_transactions WHERE id = ? AND itinerary_id = ?')
+    .bind(transactionId, itineraryId).first<MoneyFundTransaction>();
+  if (!current) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Fund transaction not found' } }, 404);
+  const input = c.req.valid('json');
+  const memberId = input.member_id ?? current.member_id;
+  if (!await assertMembersBelongToItinerary(c.env.DB, itineraryId, [memberId])) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Member must belong to this itinerary' } }, 400);
+  }
+  const updated: MoneyFundTransaction = { ...current, ...input, member_id: memberId, note: input.note === undefined ? current.note : input.note || null };
+  await c.env.DB.prepare('UPDATE itinerary_money_fund_transactions SET member_id = ?, kind = ?, amount = ?, note = ?, occurred_on = ? WHERE id = ? AND itinerary_id = ?')
+    .bind(updated.member_id, updated.kind, updated.amount, updated.note, updated.occurred_on, transactionId, itineraryId).run();
+  return c.json({ success: true, data: updated });
 });
 
 money.delete('/itineraries/:id/money/fund-transactions/:transactionId', optionalAuthMiddleware, async (c) => {

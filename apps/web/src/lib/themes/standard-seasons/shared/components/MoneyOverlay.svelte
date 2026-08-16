@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import type { MoneyData, MoneyFundTransactionKind, MoneyItem, MoneyItemStatus, MoneyMember, Step } from '@tabitabi/types';
+  import type { MoneyData, MoneyFundTransaction, MoneyFundTransactionKind, MoneyItem, MoneyItemStatus, MoneyMember, Step } from '@tabitabi/types';
   import { moneyApi } from '$lib/api/money';
   import { demoStorage, getIsDemoMode } from '$lib/demo';
   import { CloseIcon } from './icons/index.svelte';
@@ -40,6 +40,9 @@
   let fundKind = $state<MoneyFundTransactionKind>('contribution');
   let fundAmount = $state('');
   let fundNote = $state('');
+  let fundOccurredOn = $state('');
+  let editingFundTransactionId = $state<string | null>(null);
+  let fundHistoryOpen = $state(false);
 
   const isDemoMoney = () => itineraryId === 'demo' || getIsDemoMode();
 
@@ -240,9 +243,14 @@
   async function addFundTransaction() {
     const value = Number(fundAmount);
     if (!fundMemberId || !Number.isInteger(value) || value <= 0) return alert('メンバーと1円以上の金額を入力してください');
-    const input = { member_id: fundMemberId, kind: fundKind, amount: value, note: fundNote.trim() || null };
+    const input = { member_id: fundMemberId, kind: fundKind, amount: value, note: fundNote.trim() || null, occurred_on: fundOccurredOn || undefined };
     try {
-      if (isDemoMoney()) {
+      if (editingFundTransactionId && isDemoMoney()) {
+        saveDemoData({ ...data, fund_transactions: data.fund_transactions.map((transaction) => transaction.id === editingFundTransactionId ? { ...transaction, ...input, occurred_on: input.occurred_on ?? transaction.occurred_on } : transaction) });
+      } else if (editingFundTransactionId) {
+        const transaction = await moneyApi.updateFundTransaction(itineraryId, editingFundTransactionId, input);
+        data = { ...data, fund_transactions: data.fund_transactions.map((current) => current.id === transaction.id ? transaction : current) };
+      } else if (isDemoMoney()) {
         const now = new Date().toISOString();
         saveDemoData({ ...data, fund_transactions: [{ id: `demo-fund-${Date.now()}`, itinerary_id: itineraryId, ...input, occurred_on: now.slice(0, 10), created_at: now }, ...data.fund_transactions] });
       } else {
@@ -251,8 +259,22 @@
       }
       fundAmount = '';
       fundNote = '';
-    } catch (e) { alert(e instanceof Error ? e.message : '共同基金の履歴を登録できませんでした'); }
+      fundOccurredOn = '';
+      editingFundTransactionId = null;
+    } catch (e) { alert(e instanceof Error ? e.message : '共同基金の履歴を保存できませんでした'); }
   }
+
+  function editFundTransaction(transaction: MoneyFundTransaction) {
+    editingFundTransactionId = transaction.id;
+    fundMemberId = transaction.member_id;
+    fundKind = transaction.kind;
+    fundAmount = String(transaction.amount);
+    fundNote = transaction.note ?? '';
+    fundOccurredOn = transaction.occurred_on;
+    fundHistoryOpen = true;
+  }
+
+  function cancelFundEdit() { editingFundTransactionId = null; fundAmount = ''; fundNote = ''; fundOccurredOn = ''; }
 
   async function deleteFundTransaction(transactionId: string) {
     if (!confirm('この入出金履歴を削除しますか？')) return;
@@ -460,21 +482,26 @@
             <div class="standard-money-fund-heading"><div><span>みんなで使うお金</span><h3>共同基金</h3></div><div><small>現在の残高</small><strong class:negative={fundBalance < 0}>{formatYen(fundBalance)}</strong></div></div>
             <div class="standard-money-fund-stats"><span>入金 <b>{formatYen(fundContributed)}</b></span><span>基金払い <b>{formatYen(fundSpent)}</b></span>{#if fundRefunded}<span>返金 <b>{formatYen(fundRefunded)}</b></span>{/if}</div>
             {#if fundByMember.length}<div class="standard-money-fund-members">{#each fundByMember as member}<span>{member.name} <b>{formatYen(member.amount)}</b></span>{/each}</div>{/if}
-            <details class="standard-money-fund-details">
+            {#if canEdit}<details class="standard-money-fund-details">
               <summary>＋ 入金・返金を記録</summary>
-              {#if canEdit && data.members.length}
+              {#if data.members.length}
                 <div class="standard-money-fund-form">
                   <div class="standard-money-fund-kind" role="group" aria-label="共同基金の入出金区分"><button type="button" class:active={fundKind === 'contribution'} onclick={() => fundKind = 'contribution'}>基金に入金</button><button type="button" class:active={fundKind === 'refund'} onclick={() => fundKind = 'refund'}>基金から返金</button></div>
                   <select aria-label={fundKind === 'contribution' ? '入金するメンバー' : '返金するメンバー'} bind:value={fundMemberId}>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>
                   <input aria-label="共同基金の金額（円）" inputmode="numeric" placeholder="例：10,000円" bind:value={fundAmount} />
                   <input aria-label="共同基金のメモ" placeholder="例：旅行前の集金" bind:value={fundNote} />
-                  <button class="standard-money-submit" onclick={addFundTransaction}>{fundKind === 'contribution' ? '共同基金に入金' : '返金を記録'}</button>
+                  <input aria-label="共同基金の取引日" type="date" bind:value={fundOccurredOn} />
+                  {#if editingFundTransactionId}<button type="button" class="standard-money-cancel" onclick={cancelFundEdit}>編集をやめる</button>{/if}
+                  <button class="standard-money-submit" onclick={addFundTransaction}>{editingFundTransactionId ? '取引を保存' : fundKind === 'contribution' ? '共同基金に入金' : '返金を記録'}</button>
                 </div>
               {/if}
+            </details>{/if}
+            <button class="standard-money-fund-history-toggle" aria-expanded={fundHistoryOpen} onclick={() => fundHistoryOpen = !fundHistoryOpen}>{fundHistoryOpen ? '履歴を隠す' : `履歴を見る（${data.fund_transactions.length}件）`}</button>
+            {#if fundHistoryOpen}
               {#if data.fund_transactions.length}
-                <div class="standard-money-fund-list">{#each data.fund_transactions as transaction}<article><div><strong>{memberName(transaction.member_id)} <em class:refund={transaction.kind === 'refund'}>{transaction.kind === 'contribution' ? '入金' : '返金'}</em></strong><small>{transaction.occurred_on}{transaction.note ? ` · ${transaction.note}` : ''}</small></div><b class:negative={transaction.kind === 'refund'}>{transaction.kind === 'contribution' ? '+' : '-'}{formatYen(transaction.amount)}</b>{#if canEdit}<button aria-label="入出金履歴を削除" onclick={() => deleteFundTransaction(transaction.id)}>削除</button>{/if}</article>{/each}</div>
+                <div class="standard-money-fund-list">{#each data.fund_transactions as transaction}<article><div><strong>{memberName(transaction.member_id)} <em class:refund={transaction.kind === 'refund'}>{transaction.kind === 'contribution' ? '入金' : '返金'}</em></strong><small>{transaction.occurred_on}{transaction.note ? ` · ${transaction.note}` : ''}</small></div><b class:negative={transaction.kind === 'refund'}>{transaction.kind === 'contribution' ? '+' : '-'}{formatYen(transaction.amount)}</b>{#if canEdit}<button aria-label="入出金履歴を編集" onclick={() => editFundTransaction(transaction)}>編集</button><button aria-label="入出金履歴を削除" onclick={() => deleteFundTransaction(transaction.id)}>削除</button>{/if}</article>{/each}</div>
               {:else}<p class="standard-money-fund-empty">まだ入金はありません。</p>{/if}
-            </details>
+            {/if}
           </section>
           {#if !data.members.length}<p class="standard-money-empty">メンバーを追加すると、立替と精算額を自動で計算します。</p>
           {:else}

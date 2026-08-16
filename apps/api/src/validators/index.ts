@@ -104,6 +104,11 @@ export const moneyFundTransactionSchema = z.object({
   occurred_on: z.string().date().optional(),
 });
 
+export const updateMoneyFundTransactionSchema = moneyFundTransactionSchema.partial().refine(
+  (data) => Object.keys(data).length > 0,
+  { message: 'at least one field is required' },
+);
+
 // ── Packing list ──────────────────────────────────────
 
 export const packingItemSchema = z.object({

@@ -74,3 +74,5 @@ export interface CreateMoneyFundTransactionInput {
   note?: string | null;
   occurred_on?: string;
 }
+
+export interface UpdateMoneyFundTransactionInput extends Partial<CreateMoneyFundTransactionInput> {}

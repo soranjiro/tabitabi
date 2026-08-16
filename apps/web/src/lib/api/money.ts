@@ -1,4 +1,4 @@
-import type { CreateMoneyFundTransactionInput, CreateMoneyItemInput, MoneyData, MoneyFundTransaction, MoneyItem, UpdateMoneyItemInput } from '@tabitabi/types';
+import type { CreateMoneyFundTransactionInput, CreateMoneyItemInput, MoneyData, MoneyFundTransaction, MoneyItem, UpdateMoneyFundTransactionInput, UpdateMoneyItemInput } from '@tabitabi/types';
 import { apiClient } from './client';
 
 export const moneyApi = {
@@ -13,6 +13,8 @@ export const moneyApi = {
     apiClient.delete(`/itineraries/${itineraryId}/money/items/${itemId}`, itineraryId),
   addFundTransaction: (itineraryId: string, input: CreateMoneyFundTransactionInput) =>
     apiClient.post<MoneyFundTransaction>(`/itineraries/${itineraryId}/money/fund-transactions`, input, itineraryId),
+  updateFundTransaction: (itineraryId: string, transactionId: string, input: UpdateMoneyFundTransactionInput) =>
+    apiClient.put<MoneyFundTransaction>(`/itineraries/${itineraryId}/money/fund-transactions/${transactionId}`, input, itineraryId),
   deleteFundTransaction: (itineraryId: string, transactionId: string) =>
     apiClient.delete(`/itineraries/${itineraryId}/money/fund-transactions/${transactionId}`, itineraryId),
 };

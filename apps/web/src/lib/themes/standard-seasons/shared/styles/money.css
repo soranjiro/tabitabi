@@ -52,6 +52,9 @@
 .standard-money-item-per-person { width:100%; text-align:right; white-space:nowrap; }
 .standard-money-item-list button.active { border-color:#4d8b6c; background:#e8f5ec; color:#27684e; }
 
+.standard-money-fund-history-toggle { margin-top:.7rem; border:0; background:transparent; color:#27684e; padding:0; font:inherit; font-size:.8rem; font-weight:700; cursor:pointer; }
+.standard-money-fund-list button[aria-label="入出金履歴を編集"] { color:#27684e; }
+
 @media (max-width: 520px) {
   .standard-money-overlay { align-items:end; padding:0; }
   .standard-money-panel { width:100%; max-height:100dvh; min-height:min(620px, 92dvh); box-sizing:border-box; border-radius:20px 20px 0 0; padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom)); }

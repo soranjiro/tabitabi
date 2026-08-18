@@ -42,7 +42,9 @@
   let fundNote = $state('');
   let fundOccurredOn = $state('');
   let editingFundTransactionId = $state<string | null>(null);
+  let fundEntryOpen = $state(false);
   let fundHistoryOpen = $state(false);
+  let fundFormElement = $state<HTMLElement | undefined>(undefined);
 
   const isDemoMoney = () => itineraryId === 'demo' || getIsDemoMode();
 
@@ -264,7 +266,7 @@
     } catch (e) { alert(e instanceof Error ? e.message : '共同基金の履歴を保存できませんでした'); }
   }
 
-  function editFundTransaction(transaction: MoneyFundTransaction) {
+  async function editFundTransaction(transaction: MoneyFundTransaction) {
     editingFundTransactionId = transaction.id;
     fundMemberId = transaction.member_id;
     fundKind = transaction.kind;
@@ -272,6 +274,9 @@
     fundNote = transaction.note ?? '';
     fundOccurredOn = transaction.occurred_on;
     fundHistoryOpen = true;
+    fundEntryOpen = true;
+    await tick();
+    fundFormElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function cancelFundEdit() { editingFundTransactionId = null; fundAmount = ''; fundNote = ''; fundOccurredOn = ''; }
@@ -482,10 +487,10 @@
             <div class="standard-money-fund-heading"><div><span>みんなで使うお金</span><h3>共同基金</h3></div><div><small>現在の残高</small><strong class:negative={fundBalance < 0}>{formatYen(fundBalance)}</strong></div></div>
             <div class="standard-money-fund-stats"><span>入金 <b>{formatYen(fundContributed)}</b></span><span>基金払い <b>{formatYen(fundSpent)}</b></span>{#if fundRefunded}<span>返金 <b>{formatYen(fundRefunded)}</b></span>{/if}</div>
             {#if fundByMember.length}<div class="standard-money-fund-members">{#each fundByMember as member}<span>{member.name} <b>{formatYen(member.amount)}</b></span>{/each}</div>{/if}
-            {#if canEdit}<details class="standard-money-fund-details">
+            {#if canEdit}<details class="standard-money-fund-details" bind:open={fundEntryOpen}>
               <summary>＋ 入金・返金を記録</summary>
               {#if data.members.length}
-                <div class="standard-money-fund-form">
+                <div class="standard-money-fund-form" bind:this={fundFormElement}>
                   <div class="standard-money-fund-kind" role="group" aria-label="共同基金の入出金区分"><button type="button" class:active={fundKind === 'contribution'} onclick={() => fundKind = 'contribution'}>基金に入金</button><button type="button" class:active={fundKind === 'refund'} onclick={() => fundKind = 'refund'}>基金から返金</button></div>
                   <select aria-label={fundKind === 'contribution' ? '入金するメンバー' : '返金するメンバー'} bind:value={fundMemberId}>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>
                   <input aria-label="共同基金の金額（円）" inputmode="numeric" placeholder="例：10,000円" bind:value={fundAmount} />

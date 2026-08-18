@@ -754,7 +754,18 @@
               <span class="standard-event-detail-label">紐づく予算</span>
               <div class="standard-event-linked-budget-list">
                 {#each linkedBudgetItems as item}
-                  <div><span class:planned={item.status === "planned"}>{item.status === "paid" ? "確定" : "予定"}</span><b>{item.title}</b><strong>{formatYen(item.amount)}</strong></div>
+                  <details>
+                    <summary>
+                      <span class:planned={item.status === "planned"}>{item.status === "paid" ? "確定" : "予定"}</span>
+                      <b>{item.title}</b>
+                      <strong>{formatYen(item.amount)}</strong>
+                    </summary>
+                    <div class="standard-event-linked-budget-detail">
+                      <span>{item.status === "paid" ? "支払い済み" : "これから支払う予定"}</span>
+                      <span>{item.split_member_ids.length}人で負担{item.is_settled ? " · 精算済み" : ""}</span>
+                      {#if item.occurred_on}<span>登録日：{item.occurred_on}</span>{/if}
+                    </div>
+                  </details>
                 {/each}
               </div>
             </div>

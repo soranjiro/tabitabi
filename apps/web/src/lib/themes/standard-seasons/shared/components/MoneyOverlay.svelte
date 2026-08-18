@@ -43,6 +43,11 @@
   let fundOccurredOn = $state('');
   let editingFundTransactionId = $state<string | null>(null);
   let fundHistoryOpen = $state(false);
+  let selectedMemberId = $state<string | null>(null);
+  let shareSheetOpen = $state(false);
+  let shareSettlements = $state(true);
+  let shareTransactions = $state(false);
+  let shareMessage = $state('');
 
   const isDemoMoney = () => itineraryId === 'demo' || getIsDemoMode();
 
@@ -171,6 +176,51 @@
     }
     return result;
   });
+  const selectedMember = $derived(data.members.find((member) => member.id === selectedMemberId) ?? null);
+  const selectedMemberHistory = $derived.by(() => {
+    if (!selectedMember) return [];
+    const expenses = data.items.flatMap((item) => {
+      const share = itemSplits(item).find((split) => split.member_id === selectedMember.id)?.amount;
+      return share === undefined ? [] : [{ id: `expense-${item.id}`, kind: '支出', title: item.title, amount: share, date: item.occurred_on ?? '', isIncome: false, note: item.status === 'planned' ? '予定' : payerLabel(item) }];
+    });
+    const fundTransactions = data.fund_transactions
+      .filter((transaction) => transaction.member_id === selectedMember.id)
+      .map((transaction) => ({ id: `fund-${transaction.id}`, kind: transaction.kind === 'contribution' ? '入金' : '返金', title: transaction.note || '共同基金', amount: transaction.amount, date: transaction.occurred_on ?? '', isIncome: transaction.kind === 'refund', note: '共同基金' }));
+    return [...expenses, ...fundTransactions].sort((a, b) => b.date.localeCompare(a.date));
+  });
+  const shareText = $derived.by(() => {
+    const sections: string[] = [];
+    if (shareSettlements) {
+      sections.push(['【精算】', settlements.length
+        ? settlements.map((settlement) => `${settlement.from} → ${settlement.to}　${formatYen(settlement.amount)}`).join('\n')
+        : '精算は不要です'].join('\n'));
+    }
+    if (shareTransactions) {
+      sections.push(['【取引の詳細】', data.items.length
+        ? data.items.map((item) => `${item.status === 'paid' ? '確定' : '予定'}｜${item.title}　${formatYen(item.amount)}\n${payerLabel(item)}／${splitLabel(item)}`).join('\n\n')
+        : '登録された取引はありません'].join('\n'));
+    }
+    return sections.join('\n\n');
+  });
+
+  function openMemberHistory(memberId: string) { selectedMemberId = memberId; }
+
+  async function shareTextOutput() {
+    if (!shareText) return;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: '旅の精算', text: shareText });
+      } else {
+        await navigator.clipboard.writeText(shareText);
+        shareMessage = 'テキストをコピーしました。共有したいアプリに貼り付けてください。';
+        return;
+      }
+      shareSheetOpen = false;
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return;
+      shareMessage = '共有を開始できませんでした。';
+    }
+  }
 
   async function load() {
     if (loading || hasLoaded) return;
@@ -505,8 +555,8 @@
           </section>
           {#if !data.members.length}<p class="standard-money-empty">メンバーを追加すると、立替と精算額を自動で計算します。</p>
           {:else}
-            <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><strong>{member.name}</strong><span class="standard-money-trip-total">旅行での支出合計 <b>{formatYen(member.tripTotal)}</b></span><details class="standard-money-person-detail"><summary>内訳を見る</summary><span>確定負担 {formatYen(member.actualOwed)}{#if member.plannedOwed} · 予定負担 {formatYen(member.plannedOwed)}{/if} · 未精算の立替 {formatYen(member.unsettledPaid)}{#if member.fundNet} · 基金への入金差引 {formatYen(member.fundNet)}{/if}</span></details></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>
-            <section class="standard-money-settlements"><h3>いま精算するなら</h3>{#if settlements.length}{#each settlements as settlement}<p><b>{settlement.from}</b> → <b>{settlement.to}</b><strong>{formatYen(settlement.amount)}</strong></p>{/each}{:else}<p>精算は不要です</p>{/if}<small>予定支出と精算済みの支出は、精算額に含めていません。</small></section>
+            <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><button class="standard-money-member-history" onclick={() => openMemberHistory(member.id)} aria-label={`${member.name}の旅行中の取引履歴を見る`}><strong>{member.name}</strong><span>履歴を見る</span></button><span class="standard-money-trip-total">旅行での支出合計 <b>{formatYen(member.tripTotal)}</b></span></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>
+            <section class="standard-money-settlements"><div class="standard-money-settlements-heading"><div><h3>いま精算するなら</h3><small>予定支出と精算済みの支出は、精算額に含めていません。</small></div><button class="standard-money-share-button" onclick={() => { shareMessage = ''; shareSheetOpen = true; }}>共有</button></div>{#if settlements.length}{#each settlements as settlement}<p><b>{settlement.from}</b> → <b>{settlement.to}</b><strong>{formatYen(settlement.amount)}</strong></p>{/each}{:else}<p>精算は不要です</p>{/if}</section>
           {/if}
         {:else}
           {#if canEdit && data.members.length}
@@ -625,4 +675,25 @@
     </div>
   </div>
   {#if viewedStep}<EventDetailDialog step={viewedStep} onClose={() => viewedStep = null} />{/if}
+  {#if selectedMember}
+    <div class="standard-money-subdialog-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (selectedMemberId = null)}>
+      <div class="standard-money-subdialog" role="dialog" aria-modal="true" aria-label={`${selectedMember.name}の取引履歴`}>
+        <header><div><span>旅行中の取引</span><h3>{selectedMember.name}さんの履歴</h3></div><button aria-label="履歴を閉じる" onclick={() => selectedMemberId = null}>×</button></header>
+        {#if selectedMemberHistory.length}
+          <div class="standard-money-member-history-list">{#each selectedMemberHistory as entry (entry.id)}<article><div><span class:income={entry.isIncome}>{entry.kind}</span><strong>{entry.title}</strong><small>{entry.date}{entry.note ? ` · ${entry.note}` : ''}</small></div><b class:income={entry.isIncome}>{entry.isIncome ? '+' : '-'}{formatYen(entry.amount)}</b></article>{/each}</div>
+        {:else}<p class="standard-money-empty">この人の取引はまだありません。</p>{/if}
+      </div>
+    </div>
+  {/if}
+  {#if shareSheetOpen}
+    <div class="standard-money-subdialog-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (shareSheetOpen = false)}>
+      <div class="standard-money-subdialog standard-money-share-sheet" role="dialog" aria-modal="true" aria-label="精算を共有">
+        <header><div><span>LINEなどにそのまま送れます</span><h3>精算を共有</h3></div><button aria-label="共有を閉じる" onclick={() => shareSheetOpen = false}>×</button></header>
+        <div class="standard-money-share-options"><label><input type="checkbox" bind:checked={shareSettlements} /><span><b>誰が誰に送るか</b><small>精算の送金案内</small></span></label><label><input type="checkbox" bind:checked={shareTransactions} /><span><b>取引の詳細</b><small>支出の内容・負担・支払い方法</small></span></label></div>
+        <section class="standard-money-share-preview"><span>プレビュー</span><pre>{shareText || '共有する項目を選択してください'}</pre></section>
+        {#if shareMessage}<p class="standard-money-share-message">{shareMessage}</p>{/if}
+        <button class="standard-money-share-submit" disabled={!shareText} onclick={shareTextOutput}>テキストを共有</button>
+      </div>
+    </div>
+  {/if}
 {/if}

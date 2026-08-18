@@ -4,16 +4,18 @@
   import { moneyApi } from '$lib/api/money';
   import { demoStorage, getIsDemoMode } from '$lib/demo';
   import { CloseIcon } from './icons/index.svelte';
-  import EventDetailDialog from './EventDetailDialog.svelte';
 
   interface Props {
     show: boolean;
     itineraryId: string;
     canEdit: boolean;
     steps?: Step[];
+    requestedEditItemId?: string | null;
+    onEditItemOpened?: () => void;
+    onViewStep?: (step: Step) => void;
     onClose: () => void;
   }
-  let { show, itineraryId, canEdit, steps = [], onClose }: Props = $props();
+  let { show, itineraryId, canEdit, steps = [], requestedEditItemId = null, onEditItemOpened, onViewStep, onClose }: Props = $props();
 
   let data = $state<MoneyData>({ budget_amount: null, members: [], items: [], fund_transactions: [] });
   let loading = $state(false);
@@ -33,8 +35,8 @@
   let activeTab = $state<'summary' | 'items'>('summary');
   let editingItemId = $state<string | null>(null);
   let linkedStepId = $state('');
-  let viewedStep = $state<Step | null>(null);
   let hasLoaded = $state(false);
+  let handledEditItemId = $state<string | null>(null);
   let itemFormElement = $state<HTMLElement | undefined>(undefined);
   let fundMemberId = $state('');
   let fundKind = $state<MoneyFundTransactionKind>('contribution');
@@ -45,6 +47,7 @@
   let fundEntryOpen = $state(false);
   let fundHistoryOpen = $state(false);
   let fundFormElement = $state<HTMLElement | undefined>(undefined);
+  let fundDetailsElement = $state<HTMLDetailsElement | undefined>(undefined);
 
   const isDemoMoney = () => itineraryId === 'demo' || getIsDemoMode();
 
@@ -203,6 +206,17 @@
 
   onMount(() => { if (show) load(); });
   $effect(() => { if (show && !hasLoaded) load(); else if (!show) hasLoaded = false; });
+  $effect(() => {
+    if (!requestedEditItemId) {
+      handledEditItemId = null;
+      return;
+    }
+    if (!show || !hasLoaded || handledEditItemId === requestedEditItemId) return;
+    handledEditItemId = requestedEditItemId;
+    const requestedItem = data.items.find((item) => item.id === requestedEditItemId);
+    if (requestedItem) void editItem(requestedItem).finally(() => onEditItemOpened?.());
+    else onEditItemOpened?.();
+  });
 
   function saveDemoData(next: MoneyData) {
     data = next;
@@ -276,7 +290,8 @@
     fundHistoryOpen = true;
     fundEntryOpen = true;
     await tick();
-    fundFormElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    fundDetailsElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    fundFormElement?.querySelector<HTMLInputElement>('input[aria-label="共同基金の金額（円）"]')?.focus({ preventScroll: true });
   }
 
   function cancelFundEdit() { editingFundTransactionId = null; fundAmount = ''; fundNote = ''; fundOccurredOn = ''; }
@@ -415,7 +430,8 @@
     customAmounts = Object.fromEntries(splits.map((split) => [split.member_id, String(split.amount)]));
     activeTab = 'items';
     await tick();
-    itemFormElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    itemFormElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    itemFormElement?.querySelector<HTMLInputElement>('input[aria-label="支出の内容"]')?.focus({ preventScroll: true });
   }
 
   function stepTitle(item: MoneyItem) { return steps.find((step) => step.id === item.step_id)?.title ?? ''; }
@@ -487,7 +503,7 @@
             <div class="standard-money-fund-heading"><div><span>みんなで使うお金</span><h3>共同基金</h3></div><div><small>現在の残高</small><strong class:negative={fundBalance < 0}>{formatYen(fundBalance)}</strong></div></div>
             <div class="standard-money-fund-stats"><span>入金 <b>{formatYen(fundContributed)}</b></span><span>基金払い <b>{formatYen(fundSpent)}</b></span>{#if fundRefunded}<span>返金 <b>{formatYen(fundRefunded)}</b></span>{/if}</div>
             {#if fundByMember.length}<div class="standard-money-fund-members">{#each fundByMember as member}<span>{member.name} <b>{formatYen(member.amount)}</b></span>{/each}</div>{/if}
-            {#if canEdit}<details class="standard-money-fund-details" bind:open={fundEntryOpen}>
+            {#if canEdit}<details class="standard-money-fund-details" bind:this={fundDetailsElement} bind:open={fundEntryOpen}>
               <summary>＋ 入金・返金を記録</summary>
               {#if data.members.length}
                 <div class="standard-money-fund-form" bind:this={fundFormElement}>
@@ -612,7 +628,7 @@
                       <small>{payerLabel(item)}</small>
                       <small>{splitLabel(item)}</small>
                     </div>
-                    {#if stepTitle(item)}<button class="standard-money-step-link" onclick={() => viewedStep = steps.find((step) => step.id === item.step_id) ?? null}>予定：{stepTitle(item)}</button>{/if}
+                    {#if stepTitle(item)}<button class="standard-money-step-link" onclick={() => { const linkedStep = steps.find((step) => step.id === item.step_id); if (linkedStep) onViewStep?.(linkedStep); }}>予定：{stepTitle(item)}</button>{/if}
                   </div>
                   <div class="standard-money-item-actions">
                     <b>{formatYen(item.amount)}</b>
@@ -629,5 +645,4 @@
       {/if}
     </div>
   </div>
-  {#if viewedStep}<EventDetailDialog step={viewedStep} onClose={() => viewedStep = null} />{/if}
 {/if}

@@ -11,7 +11,7 @@
   import { authApi } from "$lib/api/auth";
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { getIsDemoMode } from "$lib/demo";
-  import { onMount } from "svelte";
+  import { onMount, setContext } from "svelte";
   import { goto } from "$app/navigation";
   import { userAuth } from "$lib/user-auth";
   import StepList from "./StepList.svelte";
@@ -24,6 +24,7 @@
   import PublishDialog from "./components/PublishDialog.svelte";
   import MoreMenu from "./components/MoreMenu.svelte";
   import MoneyOverlay from "./components/MoneyOverlay.svelte";
+  import { MONEY_NAVIGATION_CONTEXT, type MoneyNavigationContext } from "./components/money-navigation";
   import PackingOverlay from "./components/PackingOverlay.svelte";
   import ViewModeSelector from "./components/ViewModeSelector.svelte";
   import SettingsDialog from "./components/SettingsDialog.svelte";
@@ -113,6 +114,8 @@
     itinerary.secret_settings?.offset_minutes ?? 60,
   );
   let showMoney = $state(false);
+  let requestedMoneyItemId = $state<string | null>(null);
+  let stepOpenedFromMoney = $state<Step | null>(null);
   let showPacking = $state(false);
   let showViewModeSelector = $state(false);
   let currentViewMode = $state<ViewMode>(DEFAULT_VIEW_MODE);
@@ -129,6 +132,20 @@
 
   let focusedDate = $state<string | null>(null);
   let stepListRef: any = undefined;
+
+  function openMoneyItem(itemId: string) {
+    stepOpenedFromMoney = null;
+    requestedMoneyItemId = itemId;
+    showMoney = true;
+  }
+
+  function openStepFromMoney(step: Step) {
+    showMoney = false;
+    requestedMoneyItemId = null;
+    stepOpenedFromMoney = step;
+  }
+
+  setContext<MoneyNavigationContext>(MONEY_NAVIGATION_CONTEXT, { openMoneyItem });
 
   function getCreateStepTemplate(): Step {
     const startDate = focusedDate
@@ -498,8 +515,26 @@
     itineraryId={itinerary.id}
     canEdit={hasEditPermission}
     {steps}
-    onClose={() => (showMoney = false)}
+    requestedEditItemId={requestedMoneyItemId}
+    onEditItemOpened={() => (requestedMoneyItemId = null)}
+    onViewStep={openStepFromMoney}
+    onClose={() => {
+      showMoney = false;
+      requestedMoneyItemId = null;
+    }}
   />
+
+  {#if stepOpenedFromMoney}
+    <EventDetailDialog
+      step={stepOpenedFromMoney}
+      {hasEditPermission}
+      {secretModeEnabled}
+      {secretModeOffset}
+      onClose={() => (stepOpenedFromMoney = null)}
+      {onUpdateStep}
+      {onDeleteStep}
+    />
+  {/if}
 
   <PackingOverlay
     show={showPacking}

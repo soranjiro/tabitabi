@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { getContext, onMount, tick } from "svelte";
   import type { Step, StepType } from "@tabitabi/types";
-  import type { MoneyItem } from "@tabitabi/types";
+  import type { MoneyData, MoneyItem } from "@tabitabi/types";
   import {
     getStepDate,
     getStepTime,
@@ -22,6 +22,7 @@
   import { getBookingCard } from "../utils/booking-card";
   import { moneyApi } from "$lib/api/money";
   import { demoStorage, getIsDemoMode } from "$lib/demo";
+  import { MONEY_NAVIGATION_CONTEXT, type MoneyNavigationContext } from "./money-navigation";
   import "../styles/EventDetailDialog.css";
 
   interface Props {
@@ -102,6 +103,10 @@
   let linkBrowserUrl = $state("");
   let bookingCard = $derived(step ? getBookingCard(step) : null);
   let linkedBudgetItems = $state<MoneyItem[]>([]);
+  let moneyMembers = $state<MoneyData["members"]>([]);
+  let deletingBudgetItemId = $state<string | null>(null);
+  let expandedBudgetItemId = $state<string | null>(null);
+  const moneyNavigation = getContext<MoneyNavigationContext | undefined>(MONEY_NAVIGATION_CONTEXT);
   const yen = new Intl.NumberFormat("ja-JP");
   const formatYen = (value: number) => `¥${yen.format(value)}`;
 
@@ -112,8 +117,75 @@
         ? demoStorage.getMoneyData()
         : await moneyApi.get(step.itinerary_id);
       linkedBudgetItems = (money?.items ?? []).filter((item) => item.step_id === step?.id);
+      moneyMembers = money?.members ?? [];
     } catch {
       linkedBudgetItems = [];
+      moneyMembers = [];
+    }
+  }
+
+  function itemSplits(item: MoneyItem) {
+    if (item.splits?.length) return item.splits;
+    if (!item.split_member_ids.length) return [];
+    const unit = Math.floor(item.amount / item.split_member_ids.length);
+    const remainder = item.amount % item.split_member_ids.length;
+    return item.split_member_ids.map((memberId, index) => ({ member_id: memberId, amount: unit + (index < remainder ? 1 : 0) }));
+  }
+
+  function memberName(memberId: string) {
+    return moneyMembers.find((member) => member.id === memberId)?.name ?? "削除されたメンバー";
+  }
+
+  function payerLabel(item: MoneyItem) {
+    if (item.paid_from_fund) return item.status === "paid" ? "共同基金から支払い" : "共同基金から支払う予定";
+    const payer = moneyMembers.find((member) => member.id === item.paid_by_member_id);
+    if (payer) return `${payer.name}が立替`;
+    return item.status === "paid" ? "各自で支払い済み" : "各自で支払う予定";
+  }
+
+  function perPersonAmount(item: MoneyItem) {
+    const splits = itemSplits(item);
+    return splits.length && splits.every((split) => split.amount === splits[0].amount) ? splits[0].amount : null;
+  }
+
+  function editBudgetItem(itemId: string) {
+    onClose();
+    moneyNavigation?.openMoneyItem(itemId);
+  }
+
+  async function toggleBudgetDetails(event: MouseEvent, itemId: string) {
+    const card = (event.currentTarget as HTMLButtonElement).closest<HTMLElement>(".standard-event-budget-card");
+    const willOpen = expandedBudgetItemId !== itemId;
+    expandedBudgetItemId = willOpen ? itemId : null;
+    if (!willOpen || !card) return;
+    await tick();
+    const scrollArea = card.closest<HTMLElement>(".standard-event-dialog-body");
+    if (!scrollArea) return;
+    const itemRect = card.getBoundingClientRect();
+    const areaRect = scrollArea.getBoundingClientRect();
+    if (itemRect.bottom > areaRect.bottom) {
+      scrollArea.scrollTo({ top: scrollArea.scrollTop + itemRect.bottom - areaRect.bottom + 16, behavior: "smooth" });
+    } else if (itemRect.top < areaRect.top) {
+      scrollArea.scrollTo({ top: scrollArea.scrollTop + itemRect.top - areaRect.top - 16, behavior: "smooth" });
+    }
+  }
+
+  async function deleteBudgetItem(item: MoneyItem) {
+    if (!confirm(`「${item.title}」を削除しますか？`)) return;
+    deletingBudgetItemId = item.id;
+    try {
+      if (step?.itinerary_id === "demo" || getIsDemoMode()) {
+        const money = demoStorage.getMoneyData();
+        if (money) demoStorage.setMoneyData({ ...money, items: money.items.filter((current) => current.id !== item.id) });
+      } else if (step) {
+        await moneyApi.deleteItem(step.itinerary_id, item.id);
+      }
+      linkedBudgetItems = linkedBudgetItems.filter((current) => current.id !== item.id);
+      if (expandedBudgetItemId === item.id) expandedBudgetItemId = null;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "予算を削除できませんでした");
+    } finally {
+      deletingBudgetItemId = null;
     }
   }
 
@@ -754,18 +826,36 @@
               <span class="standard-event-detail-label">紐づく予算</span>
               <div class="standard-event-linked-budget-list">
                 {#each linkedBudgetItems as item}
-                  <details>
-                    <summary>
+                  <div class="standard-event-budget-card" data-expanded={expandedBudgetItemId === item.id}>
+                    <button type="button" class="standard-event-budget-summary" aria-expanded={expandedBudgetItemId === item.id} onclick={(event) => toggleBudgetDetails(event, item.id)}>
                       <span class:planned={item.status === "planned"}>{item.status === "paid" ? "確定" : "予定"}</span>
                       <b>{item.title}</b>
                       <strong>{formatYen(item.amount)}</strong>
-                    </summary>
-                    <div class="standard-event-linked-budget-detail">
-                      <span>{item.status === "paid" ? "支払い済み" : "これから支払う予定"}</span>
-                      <span>{item.split_member_ids.length}人で負担{item.is_settled ? " · 精算済み" : ""}</span>
-                      {#if item.occurred_on}<span>登録日：{item.occurred_on}</span>{/if}
-                    </div>
-                  </details>
+                    </button>
+                    {#if expandedBudgetItemId === item.id}<div class="standard-event-linked-budget-detail">
+                      <div class="standard-event-budget-amounts">
+                        <div><small>総額</small><strong>{formatYen(item.amount)}</strong></div>
+                        <div><small>1人あたり</small><strong>{perPersonAmount(item) === null ? "個別設定" : formatYen(perPersonAmount(item)!)}</strong></div>
+                      </div>
+                      <dl>
+                        <div><dt>支払い方法</dt><dd>{payerLabel(item)}</dd></div>
+                        <div><dt>精算状態</dt><dd>{item.status === "planned" ? "支払い前" : item.paid_from_fund ? "精算不要（基金払い）" : item.is_settled ? "精算済み" : "未精算"}</dd></div>
+                        {#if item.occurred_on}<div><dt>登録日</dt><dd>{item.occurred_on}</dd></div>{/if}
+                      </dl>
+                      <div class="standard-event-budget-splits">
+                        <small>負担内訳</small>
+                        {#each itemSplits(item) as split}
+                          <div><span>{memberName(split.member_id)}</span><strong>{formatYen(split.amount)}</strong></div>
+                        {/each}
+                      </div>
+                      {#if hasEditPermission}
+                        <div class="standard-event-budget-actions">
+                          {#if moneyNavigation}<button type="button" onclick={() => editBudgetItem(item.id)}>お金の画面で編集</button>{/if}
+                          <button type="button" class="delete" disabled={deletingBudgetItemId === item.id} onclick={() => deleteBudgetItem(item)}>{deletingBudgetItemId === item.id ? "削除中…" : "予算を削除"}</button>
+                        </div>
+                      {/if}
+                    </div>{/if}
+                  </div>
                 {/each}
               </div>
             </div>

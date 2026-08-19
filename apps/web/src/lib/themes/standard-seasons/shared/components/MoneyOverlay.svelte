@@ -64,9 +64,11 @@
       { id: 'demo-money-yui', itinerary_id: itineraryId, name: '結衣', created_at: createdAt },
     ];
     if (!demoStorage.getMembers().length) demoStorage.setMembers(members);
-    const item = (id: string, title: string, amount: number, paidBy: string | null, itemStatus: MoneyItemStatus, splits: MoneyItem['splits'], settled = false, paidFromFund = false): MoneyItem => ({
+    const demoStepId = (pattern: RegExp, fallbackIndex: number) =>
+      steps.find((step) => pattern.test(step.title))?.id ?? steps[fallbackIndex]?.id ?? null;
+    const item = (id: string, title: string, amount: number, paidBy: string | null, itemStatus: MoneyItemStatus, splits: MoneyItem['splits'], settled = false, paidFromFund = false, stepId: string | null = null): MoneyItem => ({
       id, itinerary_id: itineraryId, title, amount, paid_by_member_id: paidBy, paid_from_fund: paidFromFund, status: itemStatus,
-      is_settled: settled, occurred_on: '2026-08-01', step_id: null,
+      is_settled: settled, occurred_on: '2026-08-01', step_id: stepId,
       splits, split_member_ids: splits.map((split) => split.member_id), created_at: createdAt, updated_at: createdAt,
     });
     const allMemberIds = members.map((member) => member.id);
@@ -79,15 +81,15 @@
           { member_id: misakiId, amount: 2000 },
           { member_id: yosukeId, amount: 2000 },
           { member_id: yuiId, amount: 1000 },
-        ], false, true),
-        item('demo-money-hotel', 'ホテル', 36000, misakiId, 'paid', equalSplits(36000, allMemberIds), true),
+        ], false, true, demoStepId(/寺|神社|城|観光|散策|体験|祭り/, 1)),
+        item('demo-money-hotel', 'ホテル', 36000, misakiId, 'paid', equalSplits(36000, allMemberIds), true, false, demoStepId(/ホテル|旅館|宿/, 4)),
         item('demo-money-shinkansen', '新幹線', 24000, yosukeId, 'paid', [
           { member_id: misakiId, amount: 10000 },
           { member_id: yosukeId, amount: 10000 },
           { member_id: yuiId, amount: 4000 },
-        ]),
-        item('demo-money-dinner', '初日の夕食', 9000, yuiId, 'paid', equalSplits(9000, allMemberIds)),
-        item('demo-money-rental', 'レンタカー（予定）', 12000, null, 'planned', equalSplits(12000, [misakiId, yosukeId])),
+        ], false, false, demoStepId(/新幹線|電車|空港|移動|バス|到着/, 1)),
+        item('demo-money-dinner', '初日の夕食', 9000, yuiId, 'paid', equalSplits(9000, allMemberIds), false, false, demoStepId(/夕食|料理|ディナー|居酒屋|ランチ|そば/, 2)),
+        item('demo-money-rental', 'レンタカー（予定）', 12000, null, 'planned', equalSplits(12000, [misakiId, yosukeId]), false, false, demoStepId(/移動|観光|体験|散策|スキー|シュノーケリング/, 3)),
       ],
       fund_transactions: [
         { id: 'demo-fund-misaki', itinerary_id: itineraryId, member_id: misakiId, kind: 'contribution', amount: 10000, note: '旅行前の集金', occurred_on: '2026-07-25', created_at: createdAt },
@@ -234,8 +236,19 @@
     try {
       if (isDemoMoney()) {
         const storedMoney = demoStorage.getMoneyData();
-        data = storedMoney ? { ...storedMoney, fund_transactions: storedMoney.fund_transactions ?? [], items: storedMoney.items.map((item) => ({ ...item, paid_from_fund: item.paid_from_fund ?? false })) } : demoMoneyData();
-        if (!storedMoney) demoStorage.setMoneyData(data);
+        const defaults = demoMoneyData();
+        data = storedMoney
+          ? {
+              ...storedMoney,
+              fund_transactions: storedMoney.fund_transactions ?? [],
+              items: storedMoney.items.map((item, index) => ({
+                ...item,
+                paid_from_fund: item.paid_from_fund ?? false,
+                step_id: item.step_id ?? defaults.items[index]?.step_id ?? null,
+              })),
+            }
+          : defaults;
+        if (!storedMoney || data.items.some((item, index) => item.step_id !== storedMoney.items[index]?.step_id)) demoStorage.setMoneyData(data);
         budget = data.budget_amount?.toString() ?? '';
         participantIds = data.members.map((member) => member.id);
         fundMemberId ||= data.members[0]?.id ?? '';

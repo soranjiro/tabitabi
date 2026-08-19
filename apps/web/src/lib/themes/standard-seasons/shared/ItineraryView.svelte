@@ -147,6 +147,10 @@
 
   setContext<MoneyNavigationContext>(MONEY_NAVIGATION_CONTEXT, { openMoneyItem });
 
+  function openMoney() {
+    showMoreMenu = false;
+    showMoney = true;
+  }
   function getCreateStepTemplate(): Step {
     const startDate = focusedDate
       ? new Date(`${focusedDate}T09:00:00`)
@@ -489,7 +493,7 @@
       {/if}
     <BottomNav
         onViewModeClick={() => (showViewModeSelector = true)}
-        onMoneyOpen={() => (showMoney = true)}
+        onMoneyOpen={openMoney}
         onPackingOpen={() => (showPacking = true)}
         onMenuClick={() => (showMoreMenu = true)}
     />
@@ -565,6 +569,7 @@
     canRequestEdit={!isSharedSnapshot}
     canPublish={hasEditPermission && !!onPublishItinerary && !isSharedSnapshot}
     {hasEditPermission}
+    onMoney={openMoney}
     onShare={() => {
       if (hasEditPermission) showShareDialog = true;
       else void copyViewOnlyLink();

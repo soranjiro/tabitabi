@@ -7,6 +7,7 @@
     canRequestEdit: boolean;
     canPublish: boolean;
     hasEditPermission: boolean;
+    onMoney: () => void;
     onShare: () => void;
     onPrint: () => void;
     onPublish: () => void;
@@ -15,7 +16,7 @@
     onClose: () => void;
   }
 
-  let { show, canConfigure, canRequestEdit, canPublish, hasEditPermission, onShare, onPrint, onPublish, onSettings, onEditModeToggle, onClose }: Props = $props();
+  let { show, canConfigure, canRequestEdit, canPublish, hasEditPermission, onMoney, onShare, onPrint, onPublish, onSettings, onEditModeToggle, onClose }: Props = $props();
 
   function choose(action: () => void) {
     onClose();
@@ -26,6 +27,10 @@
 <Dialog {show} title="メニュー" {onClose}>
   {#snippet children()}
     <div class="standard-more-menu" aria-label="しおりのメニュー">
+      <button class="standard-more-menu-item" onclick={() => choose(onMoney)}>
+        <span class="standard-more-menu-icon" aria-hidden="true">¥</span>
+        <span><strong>お金の管理</strong><small>予算・支出・精算を確認する</small></span>
+      </button>
       <button class="standard-more-menu-item" onclick={() => choose(onShare)}>
         <span class="standard-more-menu-icon" aria-hidden="true">↗</span>
         <span><strong>共有</strong><small>リンクをコピーして、旅の仲間に送る</small></span>

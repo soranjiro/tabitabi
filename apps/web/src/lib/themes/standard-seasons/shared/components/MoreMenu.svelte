@@ -5,17 +5,15 @@
     show: boolean;
     canConfigure: boolean;
     canRequestEdit: boolean;
-    canPublish: boolean;
     hasEditPermission: boolean;
     onShare: () => void;
     onPrint: () => void;
-    onPublish: () => void;
     onSettings: () => void;
     onEditModeToggle: () => void;
     onClose: () => void;
   }
 
-  let { show, canConfigure, canRequestEdit, canPublish, hasEditPermission, onShare, onPrint, onPublish, onSettings, onEditModeToggle, onClose }: Props = $props();
+  let { show, canConfigure, canRequestEdit, hasEditPermission, onShare, onPrint, onSettings, onEditModeToggle, onClose }: Props = $props();
 
   function choose(action: () => void) {
     onClose();
@@ -34,12 +32,6 @@
         <span class="standard-more-menu-icon" aria-hidden="true">▣</span>
         <span><strong>印刷・PDF出力</strong><small>しおりを紙やPDFで持ち歩く</small></span>
       </button>
-      {#if canPublish}
-        <button class="standard-more-menu-item" onclick={() => choose(onPublish)}>
-          <span class="standard-more-menu-icon" aria-hidden="true">◎</span>
-          <span><strong>みんなのしおりに公開</strong><small>旅行先を設定して公開ページに掲載する</small></span>
-        </button>
-      {/if}
       {#if hasEditPermission || canRequestEdit}
         <button class="standard-more-menu-item" onclick={() => choose(onEditModeToggle)}>
           <span class="standard-more-menu-icon" aria-hidden="true">{hasEditPermission ? '◉' : '✎'}</span>

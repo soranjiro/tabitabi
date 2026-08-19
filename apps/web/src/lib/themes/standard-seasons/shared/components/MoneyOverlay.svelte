@@ -4,16 +4,18 @@
   import { moneyApi } from '$lib/api/money';
   import { demoStorage, getIsDemoMode } from '$lib/demo';
   import { CloseIcon } from './icons/index.svelte';
-  import EventDetailDialog from './EventDetailDialog.svelte';
 
   interface Props {
     show: boolean;
     itineraryId: string;
     canEdit: boolean;
     steps?: Step[];
+    requestedEditItemId?: string | null;
+    onEditItemOpened?: () => void;
+    onViewStep?: (step: Step) => void;
     onClose: () => void;
   }
-  let { show, itineraryId, canEdit, steps = [], onClose }: Props = $props();
+  let { show, itineraryId, canEdit, steps = [], requestedEditItemId = null, onEditItemOpened, onViewStep, onClose }: Props = $props();
 
   let data = $state<MoneyData>({ budget_amount: null, members: [], items: [], fund_transactions: [] });
   let loading = $state(false);
@@ -33,8 +35,8 @@
   let activeTab = $state<'summary' | 'items'>('summary');
   let editingItemId = $state<string | null>(null);
   let linkedStepId = $state('');
-  let viewedStep = $state<Step | null>(null);
   let hasLoaded = $state(false);
+  let handledEditItemId = $state<string | null>(null);
   let itemFormElement = $state<HTMLElement | undefined>(undefined);
   let fundMemberId = $state('');
   let fundKind = $state<MoneyFundTransactionKind>('contribution');
@@ -42,7 +44,10 @@
   let fundNote = $state('');
   let fundOccurredOn = $state('');
   let editingFundTransactionId = $state<string | null>(null);
+  let fundEntryOpen = $state(false);
   let fundHistoryOpen = $state(false);
+  let fundFormElement = $state<HTMLElement | undefined>(undefined);
+  let fundDetailsElement = $state<HTMLDetailsElement | undefined>(undefined);
   let selectedMemberId = $state<string | null>(null);
   let shareSheetOpen = $state(false);
   let shareSettlements = $state(true);
@@ -59,9 +64,11 @@
       { id: 'demo-money-yui', itinerary_id: itineraryId, name: '結衣', created_at: createdAt },
     ];
     if (!demoStorage.getMembers().length) demoStorage.setMembers(members);
-    const item = (id: string, title: string, amount: number, paidBy: string | null, itemStatus: MoneyItemStatus, splits: MoneyItem['splits'], settled = false, paidFromFund = false): MoneyItem => ({
+    const demoStepId = (pattern: RegExp, fallbackIndex: number) =>
+      steps.find((step) => pattern.test(step.title))?.id ?? steps[fallbackIndex]?.id ?? null;
+    const item = (id: string, title: string, amount: number, paidBy: string | null, itemStatus: MoneyItemStatus, splits: MoneyItem['splits'], settled = false, paidFromFund = false, stepId: string | null = null): MoneyItem => ({
       id, itinerary_id: itineraryId, title, amount, paid_by_member_id: paidBy, paid_from_fund: paidFromFund, status: itemStatus,
-      is_settled: settled, occurred_on: '2026-08-01', step_id: null,
+      is_settled: settled, occurred_on: '2026-08-01', step_id: stepId,
       splits, split_member_ids: splits.map((split) => split.member_id), created_at: createdAt, updated_at: createdAt,
     });
     const allMemberIds = members.map((member) => member.id);
@@ -74,15 +81,15 @@
           { member_id: misakiId, amount: 2000 },
           { member_id: yosukeId, amount: 2000 },
           { member_id: yuiId, amount: 1000 },
-        ], false, true),
-        item('demo-money-hotel', 'ホテル', 36000, misakiId, 'paid', equalSplits(36000, allMemberIds), true),
+        ], false, true, demoStepId(/寺|神社|城|観光|散策|体験|祭り/, 1)),
+        item('demo-money-hotel', 'ホテル', 36000, misakiId, 'paid', equalSplits(36000, allMemberIds), true, false, demoStepId(/ホテル|旅館|宿/, 4)),
         item('demo-money-shinkansen', '新幹線', 24000, yosukeId, 'paid', [
           { member_id: misakiId, amount: 10000 },
           { member_id: yosukeId, amount: 10000 },
           { member_id: yuiId, amount: 4000 },
-        ]),
-        item('demo-money-dinner', '初日の夕食', 9000, yuiId, 'paid', equalSplits(9000, allMemberIds)),
-        item('demo-money-rental', 'レンタカー（予定）', 12000, null, 'planned', equalSplits(12000, [misakiId, yosukeId])),
+        ], false, false, demoStepId(/新幹線|電車|空港|移動|バス|到着/, 1)),
+        item('demo-money-dinner', '初日の夕食', 9000, yuiId, 'paid', equalSplits(9000, allMemberIds), false, false, demoStepId(/夕食|料理|ディナー|居酒屋|ランチ|そば/, 2)),
+        item('demo-money-rental', 'レンタカー（予定）', 12000, null, 'planned', equalSplits(12000, [misakiId, yosukeId]), false, false, demoStepId(/移動|観光|体験|散策|スキー|シュノーケリング/, 3)),
       ],
       fund_transactions: [
         { id: 'demo-fund-misaki', itinerary_id: itineraryId, member_id: misakiId, kind: 'contribution', amount: 10000, note: '旅行前の集金', occurred_on: '2026-07-25', created_at: createdAt },
@@ -229,8 +236,19 @@
     try {
       if (isDemoMoney()) {
         const storedMoney = demoStorage.getMoneyData();
-        data = storedMoney ? { ...storedMoney, fund_transactions: storedMoney.fund_transactions ?? [], items: storedMoney.items.map((item) => ({ ...item, paid_from_fund: item.paid_from_fund ?? false })) } : demoMoneyData();
-        if (!storedMoney) demoStorage.setMoneyData(data);
+        const defaults = demoMoneyData();
+        data = storedMoney
+          ? {
+              ...storedMoney,
+              fund_transactions: storedMoney.fund_transactions ?? [],
+              items: storedMoney.items.map((item, index) => ({
+                ...item,
+                paid_from_fund: item.paid_from_fund ?? false,
+                step_id: item.step_id ?? defaults.items[index]?.step_id ?? null,
+              })),
+            }
+          : defaults;
+        if (!storedMoney || data.items.some((item, index) => item.step_id !== storedMoney.items[index]?.step_id)) demoStorage.setMoneyData(data);
         budget = data.budget_amount?.toString() ?? '';
         participantIds = data.members.map((member) => member.id);
         fundMemberId ||= data.members[0]?.id ?? '';
@@ -251,6 +269,17 @@
 
   onMount(() => { if (show) load(); });
   $effect(() => { if (show && !hasLoaded) load(); else if (!show) hasLoaded = false; });
+  $effect(() => {
+    if (!requestedEditItemId) {
+      handledEditItemId = null;
+      return;
+    }
+    if (!show || !hasLoaded || handledEditItemId === requestedEditItemId) return;
+    handledEditItemId = requestedEditItemId;
+    const requestedItem = data.items.find((item) => item.id === requestedEditItemId);
+    if (requestedItem) void editItem(requestedItem).finally(() => onEditItemOpened?.());
+    else onEditItemOpened?.();
+  });
 
   function saveDemoData(next: MoneyData) {
     data = next;
@@ -314,7 +343,7 @@
     } catch (e) { alert(e instanceof Error ? e.message : '共同基金の履歴を保存できませんでした'); }
   }
 
-  function editFundTransaction(transaction: MoneyFundTransaction) {
+  async function editFundTransaction(transaction: MoneyFundTransaction) {
     editingFundTransactionId = transaction.id;
     fundMemberId = transaction.member_id;
     fundKind = transaction.kind;
@@ -322,6 +351,10 @@
     fundNote = transaction.note ?? '';
     fundOccurredOn = transaction.occurred_on;
     fundHistoryOpen = true;
+    fundEntryOpen = true;
+    await tick();
+    fundDetailsElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    fundFormElement?.querySelector<HTMLInputElement>('input[aria-label="共同基金の金額（円）"]')?.focus({ preventScroll: true });
   }
 
   function cancelFundEdit() { editingFundTransactionId = null; fundAmount = ''; fundNote = ''; fundOccurredOn = ''; }
@@ -460,7 +493,8 @@
     customAmounts = Object.fromEntries(splits.map((split) => [split.member_id, String(split.amount)]));
     activeTab = 'items';
     await tick();
-    itemFormElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    itemFormElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    itemFormElement?.querySelector<HTMLInputElement>('input[aria-label="支出の内容"]')?.focus({ preventScroll: true });
   }
 
   function stepTitle(item: MoneyItem) { return steps.find((step) => step.id === item.step_id)?.title ?? ''; }
@@ -532,10 +566,10 @@
             <div class="standard-money-fund-heading"><div><span>みんなで使うお金</span><h3>共同基金</h3></div><div><small>現在の残高</small><strong class:negative={fundBalance < 0}>{formatYen(fundBalance)}</strong></div></div>
             <div class="standard-money-fund-stats"><span>入金 <b>{formatYen(fundContributed)}</b></span><span>基金払い <b>{formatYen(fundSpent)}</b></span>{#if fundRefunded}<span>返金 <b>{formatYen(fundRefunded)}</b></span>{/if}</div>
             {#if fundByMember.length}<div class="standard-money-fund-members">{#each fundByMember as member}<span>{member.name} <b>{formatYen(member.amount)}</b></span>{/each}</div>{/if}
-            {#if canEdit}<details class="standard-money-fund-details">
+            {#if canEdit}<details class="standard-money-fund-details" bind:this={fundDetailsElement} bind:open={fundEntryOpen}>
               <summary>＋ 入金・返金を記録</summary>
               {#if data.members.length}
-                <div class="standard-money-fund-form">
+                <div class="standard-money-fund-form" bind:this={fundFormElement}>
                   <div class="standard-money-fund-kind" role="group" aria-label="共同基金の入出金区分"><button type="button" class:active={fundKind === 'contribution'} onclick={() => fundKind = 'contribution'}>基金に入金</button><button type="button" class:active={fundKind === 'refund'} onclick={() => fundKind = 'refund'}>基金から返金</button></div>
                   <select aria-label={fundKind === 'contribution' ? '入金するメンバー' : '返金するメンバー'} bind:value={fundMemberId}>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>
                   <input aria-label="共同基金の金額（円）" inputmode="numeric" placeholder="例：10,000円" bind:value={fundAmount} />
@@ -657,7 +691,7 @@
                       <small>{payerLabel(item)}</small>
                       <small>{splitLabel(item)}</small>
                     </div>
-                    {#if stepTitle(item)}<button class="standard-money-step-link" onclick={() => viewedStep = steps.find((step) => step.id === item.step_id) ?? null}>予定：{stepTitle(item)}</button>{/if}
+                    {#if stepTitle(item)}<button class="standard-money-step-link" onclick={() => { const linkedStep = steps.find((step) => step.id === item.step_id); if (linkedStep) onViewStep?.(linkedStep); }}>予定：{stepTitle(item)}</button>{/if}
                   </div>
                   <div class="standard-money-item-actions">
                     <b>{formatYen(item.amount)}</b>
@@ -674,7 +708,6 @@
       {/if}
     </div>
   </div>
-  {#if viewedStep}<EventDetailDialog step={viewedStep} onClose={() => viewedStep = null} />{/if}
   {#if selectedMember}
     <div class="standard-money-subdialog-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (selectedMemberId = null)}>
       <div class="standard-money-subdialog" role="dialog" aria-modal="true" aria-label={`${selectedMember.name}の取引履歴`}>

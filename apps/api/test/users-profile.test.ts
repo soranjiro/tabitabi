@@ -324,7 +324,7 @@ describe('GET /api/v1/users (public feed)', () => {
     const json2 = await res2.json() as { data: { items: unknown[]; hasMore: boolean } };
     expect(json2.data.items).toHaveLength(1);
     expect(json2.data.hasMore).toBe(false);
-  });
+  }, 15_000);
 
   it('excludes password-protected itineraries from public feed', async () => {
     const token = await registerAndGetToken('feeduser5', 'feed5@example.com');

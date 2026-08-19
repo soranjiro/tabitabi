@@ -708,7 +708,6 @@
       {/if}
     </div>
   </div>
-  {#if viewedStep}<EventDetailDialog step={viewedStep} onClose={() => viewedStep = null} />{/if}
   {#if selectedMember}
     <div class="standard-money-subdialog-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (selectedMemberId = null)}>
       <div class="standard-money-subdialog" role="dialog" aria-modal="true" aria-label={`${selectedMember.name}の取引履歴`}>

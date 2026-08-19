@@ -147,10 +147,6 @@
 
   setContext<MoneyNavigationContext>(MONEY_NAVIGATION_CONTEXT, { openMoneyItem });
 
-  function openMoney() {
-    showMoreMenu = false;
-    showMoney = true;
-  }
   function getCreateStepTemplate(): Step {
     const startDate = focusedDate
       ? new Date(`${focusedDate}T09:00:00`)
@@ -318,11 +314,6 @@
     } catch (err) {
       console.error("Failed to copy:", err);
     }
-  }
-
-  function openPublishDialog() {
-    loggedInForPublish = userAuth.isLoggedIn();
-    showPublishDialog = true;
   }
 
   function goToPublishLogin() {
@@ -493,7 +484,7 @@
       {/if}
     <BottomNav
         onViewModeClick={() => (showViewModeSelector = true)}
-        onMoneyOpen={openMoney}
+        onMoneyOpen={() => (showMoney = true)}
         onPackingOpen={() => (showPacking = true)}
         onMenuClick={() => (showMoreMenu = true)}
     />
@@ -567,15 +558,12 @@
     show={showMoreMenu}
     canConfigure={hasEditPermission}
     canRequestEdit={!isSharedSnapshot}
-    canPublish={hasEditPermission && !!onPublishItinerary && !isSharedSnapshot}
     {hasEditPermission}
-    onMoney={openMoney}
     onShare={() => {
       if (hasEditPermission) showShareDialog = true;
       else void copyViewOnlyLink();
     }}
     onPrint={openPrintPreview}
-    onPublish={openPublishDialog}
     onSettings={() => (showSettingsDialog = true)}
     onEditModeToggle={handleEditModeToggle}
     onClose={() => (showMoreMenu = false)}

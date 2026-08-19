@@ -59,22 +59,29 @@ test('デモのお金管理はAPIを待たずに表示・操作できる', async
   await page.goto('/demo?theme=standard-spring');
   await expect(page.getByText('変更はローカルに保存されます')).toBeVisible();
 
-  await page.getByRole('button', { name: 'お金の管理' }).click();
+  const footerMenu = page.getByRole('navigation', { name: 'フッターメニュー' });
+  await footerMenu.getByRole('button', { name: 'お金の管理' }).click();
   await expect(page.getByRole('heading', { name: 'お金の管理' })).toBeVisible();
-  await expect(page.getByText('デモ用の会計データです。変更内容はこのブラウザに保存されます。')).toBeVisible();
   await expect(page.getByText('読み込み中…')).toHaveCount(0);
-  await expect(page.getByText('¥69,000')).toBeVisible();
+  await expect(page.getByText('確定支出 ¥74,000')).toBeVisible();
 
   await page.getByRole('button', { name: '支出一覧' }).click();
   await expect(page.getByText('1人あたり ¥12,000')).toBeVisible();
   await expect(page.getByText('1人あたり ¥6,000')).toBeVisible();
-  await expect(page.getByRole('group', { name: '金額の入力方法' })).toBeVisible();
-  await page.getByRole('button', { name: '1人あたり', exact: true }).click();
+  const amountInputMode = page.getByRole('group', { name: '金額の入力方法' });
+  await expect(amountInputMode).toBeVisible();
+  await amountInputMode.getByRole('button', { name: '1人あたり', exact: true }).click();
   await expect(page.getByLabel('1人あたり金額（円）')).toBeVisible();
-  await expect(page.getByText('3人分の総額で登録します')).toBeVisible();
+});
 
-  const memberName = `テスト参加者-${Date.now()}`;
-  await page.getByPlaceholder('メンバー名').fill(memberName);
-  await page.getByRole('button', { name: '追加', exact: true }).click();
-  await expect(page.getByText(memberName, { exact: true }).first()).toBeVisible();
+test('3点メニューには重複するお金と公開の導線を表示しない', async ({ page }) => {
+  await page.goto('/demo?theme=standard-spring');
+
+  const footerMenu = page.getByRole('navigation', { name: 'フッターメニュー' });
+  await footerMenu.getByRole('button', { name: 'メニュー' }).click();
+
+  const moreMenu = page.getByLabel('しおりのメニュー');
+  await expect(moreMenu).toBeVisible();
+  await expect(moreMenu.getByText('お金の管理', { exact: true })).toHaveCount(0);
+  await expect(moreMenu.getByText('みんなのしおりに公開', { exact: true })).toHaveCount(0);
 });

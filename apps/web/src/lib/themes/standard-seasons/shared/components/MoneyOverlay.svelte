@@ -184,16 +184,30 @@
     return result;
   });
   const selectedMember = $derived(data.members.find((member) => member.id === selectedMemberId) ?? null);
+  const chronologicalDescending = <T extends { date: string; createdAt: string }>(entries: T[]) => entries.sort((a, b) =>
+    `${b.date}\u0000${b.createdAt}`.localeCompare(`${a.date}\u0000${a.createdAt}`),
+  );
+  const fundHistoryEntries = $derived.by(() => chronologicalDescending([
+    ...data.fund_transactions.map((transaction) => ({
+      id: `fund-${transaction.id}`, kind: transaction.kind === 'contribution' ? '入金' : '返金', title: transaction.note || memberName(transaction.member_id), amount: transaction.amount,
+      date: transaction.occurred_on ?? '', createdAt: transaction.created_at, isIncome: transaction.kind === 'contribution', note: transaction.note ? memberName(transaction.member_id) : '共同基金',
+    })),
+    ...paidItems.filter((item) => item.paid_from_fund).map((item) => ({
+      id: `expense-${item.id}`, kind: '支出', title: item.title, amount: item.amount,
+      date: item.occurred_on ?? '', createdAt: item.created_at, isIncome: false, note: splitLabel(item),
+    })),
+  ]));
   const selectedMemberHistory = $derived.by(() => {
     if (!selectedMember) return [];
     const expenses = data.items.flatMap((item) => {
       const share = itemSplits(item).find((split) => split.member_id === selectedMember.id)?.amount;
-      return share === undefined ? [] : [{ id: `expense-${item.id}`, kind: '支出', title: item.title, amount: share, date: item.occurred_on ?? '', isIncome: false, note: item.status === 'planned' ? '予定' : payerLabel(item) }];
+      const settlement = item.status === 'planned' ? '予定' : item.paid_from_fund ? '共同基金から支払い' : item.is_settled ? '精算済み' : '未精算';
+      return share === undefined ? [] : [{ id: `expense-${item.id}`, kind: '支出', title: item.title, amount: share, date: item.occurred_on ?? '', createdAt: item.created_at, isIncome: false, settlement, note: payerLabel(item) }];
     });
     const fundTransactions = data.fund_transactions
       .filter((transaction) => transaction.member_id === selectedMember.id)
-      .map((transaction) => ({ id: `fund-${transaction.id}`, kind: transaction.kind === 'contribution' ? '入金' : '返金', title: transaction.note || '共同基金', amount: transaction.amount, date: transaction.occurred_on ?? '', isIncome: transaction.kind === 'refund', note: '共同基金' }));
-    return [...expenses, ...fundTransactions].sort((a, b) => b.date.localeCompare(a.date));
+      .map((transaction) => ({ id: `fund-${transaction.id}`, kind: transaction.kind === 'contribution' ? '入金' : '返金', title: transaction.note || '共同基金', amount: transaction.amount, date: transaction.occurred_on ?? '', createdAt: transaction.created_at, isIncome: transaction.kind === 'refund', settlement: undefined, note: '共同基金' }));
+    return chronologicalDescending([...expenses, ...fundTransactions]);
   });
   const shareText = $derived.by(() => {
     const sections: string[] = [];
@@ -580,11 +594,11 @@
                 </div>
               {/if}
             </details>{/if}
-            <button class="standard-money-fund-history-toggle" aria-expanded={fundHistoryOpen} onclick={() => fundHistoryOpen = !fundHistoryOpen}>{fundHistoryOpen ? '履歴を隠す' : `履歴を見る（${data.fund_transactions.length}件）`}</button>
+            <button class="standard-money-fund-history-toggle" aria-expanded={fundHistoryOpen} onclick={() => fundHistoryOpen = !fundHistoryOpen}>{fundHistoryOpen ? '履歴を隠す' : `履歴を見る（${fundHistoryEntries.length}件）`}</button>
             {#if fundHistoryOpen}
-              {#if data.fund_transactions.length}
-                <div class="standard-money-fund-list">{#each data.fund_transactions as transaction}<article><div><strong>{memberName(transaction.member_id)} <em class:refund={transaction.kind === 'refund'}>{transaction.kind === 'contribution' ? '入金' : '返金'}</em></strong><small>{transaction.occurred_on}{transaction.note ? ` · ${transaction.note}` : ''}</small></div><b class:negative={transaction.kind === 'refund'}>{transaction.kind === 'contribution' ? '+' : '-'}{formatYen(transaction.amount)}</b>{#if canEdit}<button aria-label="入出金履歴を編集" onclick={() => editFundTransaction(transaction)}>編集</button><button aria-label="入出金履歴を削除" onclick={() => deleteFundTransaction(transaction.id)}>削除</button>{/if}</article>{/each}</div>
-              {:else}<p class="standard-money-fund-empty">まだ入金はありません。</p>{/if}
+              {#if fundHistoryEntries.length}
+                <div class="standard-money-fund-list">{#each fundHistoryEntries as entry (entry.id)}<article><div><strong>{entry.title} <em class:refund={entry.kind === '返金'} class:expense={entry.kind === '支出'}>{entry.kind}</em></strong><small>{entry.date}{entry.note ? ` · ${entry.note}` : ''}</small></div><b class:negative={!entry.isIncome}>{entry.isIncome ? '+' : '-'}{formatYen(entry.amount)}</b>{#if canEdit && entry.id.startsWith('fund-')}<button aria-label="入出金履歴を編集" onclick={() => editFundTransaction(data.fund_transactions.find((transaction) => `fund-${transaction.id}` === entry.id)!)}>編集</button><button aria-label="入出金履歴を削除" onclick={() => deleteFundTransaction(entry.id.slice(5))}>削除</button>{/if}</article>{/each}</div>
+              {:else}<p class="standard-money-fund-empty">まだ共同基金の取引はありません。</p>{/if}
             {/if}
           </section>
           {#if !data.members.length}<p class="standard-money-empty">メンバーを追加すると、立替と精算額を自動で計算します。</p>
@@ -713,7 +727,7 @@
       <div class="standard-money-subdialog" role="dialog" aria-modal="true" aria-label={`${selectedMember.name}の取引履歴`}>
         <header><div><span>旅行中の取引</span><h3>{selectedMember.name}さんの履歴</h3></div><button aria-label="履歴を閉じる" onclick={() => selectedMemberId = null}>×</button></header>
         {#if selectedMemberHistory.length}
-          <div class="standard-money-member-history-list">{#each selectedMemberHistory as entry (entry.id)}<article><div><span class:income={entry.isIncome}>{entry.kind}</span><strong>{entry.title}</strong><small>{entry.date}{entry.note ? ` · ${entry.note}` : ''}</small></div><b class:income={entry.isIncome}>{entry.isIncome ? '+' : '-'}{formatYen(entry.amount)}</b></article>{/each}</div>
+          <div class="standard-money-member-history-list">{#each selectedMemberHistory as entry (entry.id)}<article><div><div class="standard-money-history-badges"><span class:income={entry.isIncome}>{entry.kind}</span>{#if entry.settlement}<span class:unsettled={entry.settlement === '未精算'} class:settled={entry.settlement === '精算済み'}>{entry.settlement}</span>{/if}</div><strong>{entry.title}</strong><small>{entry.date}{entry.note ? ` · ${entry.note}` : ''}</small></div><b class:income={entry.isIncome}>{entry.isIncome ? '+' : '-'}{formatYen(entry.amount)}</b></article>{/each}</div>
         {:else}<p class="standard-money-empty">この人の取引はまだありません。</p>{/if}
       </div>
     </div>

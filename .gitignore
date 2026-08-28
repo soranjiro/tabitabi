@@ -169,3 +169,7 @@ apps/web/static/~partytown/
 
 # Local Chrome for Lighthouse
 chrome/
+
+.pnpm-store
+
+

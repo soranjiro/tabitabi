@@ -66,4 +66,3 @@ prefix_rule(
     justification = "Allow pnpm development commands without an approval prompt.",
     match = ["pnpm install", "pnpm test", "pnpm run build", "pnpm run dev"],
 )
-)

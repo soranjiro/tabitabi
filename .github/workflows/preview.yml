@@ -162,6 +162,10 @@ jobs:
             sleep $((attempt * 5))
           done
 
+      - name: Seed preview database
+        working-directory: apps/api
+        run: pnpm wrangler d1 execute DB --remote --env preview --yes --file ./scripts/local-seed.sql
+
       - name: Deploy API to preview environment
         working-directory: apps/api
         run: |

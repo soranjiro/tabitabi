@@ -26,9 +26,29 @@
 }
 
 .standard-dialog-header {
+  position: relative;
   padding: 2.5rem 2.5rem 1.5rem 2.5rem;
   flex-shrink: 0;
 }
+
+.standard-dialog-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: var(--theme-text-light);
+  background: transparent;
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+
+.standard-dialog-close:hover { background: color-mix(in srgb, var(--theme-primary) 10%, white); }
 
 .standard-dialog-content {
   overflow-y: auto;

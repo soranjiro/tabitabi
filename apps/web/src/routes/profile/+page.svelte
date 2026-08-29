@@ -6,7 +6,7 @@
   import { userAuth } from "$lib/user-auth";
   import PageShell from "$lib/PageShell.svelte";
   import { auth } from "$lib/auth";
-  import { prefectures as explorePrefectures, prefectureName, travelTags } from "$lib/explore/data";
+  import { prefectureName } from "$lib/explore/data";
   import JapanMap from "$lib/explore/JapanMap.svelte";
   import { PREFECTURES, type Prefecture, type UserBookmarkWithItinerary, type UserSessionProfile } from "@tabitabi/types";
 
@@ -37,12 +37,6 @@
   let editError = $state<string | null>(null);
   let editSuccess = $state<string | null>(null);
   let publishingIds = $state(new Set<string>());
-  let publicationTarget = $state<UserBookmarkWithItinerary | null>(null);
-  let publicationIntent = $state<"metadata" | "publish">("metadata");
-  let publicationPrefecture = $state("");
-  let publicationAreas = $state("");
-  let publicationTags = $state<string[]>([]);
-  let publicationError = $state("");
   let unlinkTarget = $state<UserBookmarkWithItinerary | null>(null);
   let activeTab = $state<"itineraries" | "map">("itineraries");
   const visitedCounts = $derived.by(() => {
@@ -270,46 +264,6 @@
     finally { submitting = false; }
   }
 
-  function openPublication(item: UserBookmarkWithItinerary, intent: "metadata" | "publish" = "metadata") {
-    publicationTarget = item;
-    publicationIntent = intent;
-    publicationPrefecture = item.prefecture_slugs?.[0] ?? "";
-    publicationAreas = item.areas?.join("、") ?? "";
-    publicationTags = item.tags ?? [];
-    publicationError = "";
-  }
-
-  function togglePublicationTag(tag: string) {
-    if (publicationTags.includes(tag)) publicationTags = publicationTags.filter((item) => item !== tag);
-    else if (publicationTags.length < 3) publicationTags = [...publicationTags, tag];
-  }
-
-  async function savePublication() {
-    if (!publicationTarget || !publicationPrefecture) {
-      publicationError = "旅行先を選択してください。";
-      return;
-    }
-    const target = publicationTarget;
-    publishingIds = new Set([...publishingIds, target.itinerary_id]);
-    publicationError = "";
-    try {
-      const metadata = {
-        prefecture_slugs: [publicationPrefecture],
-        areas: publicationAreas.split(/[、,]/).map((item) => item.trim()).filter(Boolean).slice(0, 3),
-        tags: publicationTags,
-      };
-      if (publicationIntent === "publish") await userApi.publishBookmark(target.itinerary_id, metadata);
-      else await userApi.updateBookmarkMetadata(target.itinerary_id, metadata);
-      publicationTarget = null;
-      editSuccess = publicationIntent === "publish" ? (target.is_visible ? "公開情報としおりの最新版を反映しました。" : "みんなのしおりに公開しました。") : "旅行先・タグを保存しました。";
-      await loadBookmarks();
-    } catch {
-      publicationError = "公開に失敗しました。時間をおいてもう一度お試しください。";
-    } finally {
-      publishingIds = new Set([...publishingIds].filter((item) => item !== target.itinerary_id));
-    }
-  }
-
   async function unpublish(id: string) {
     publishingIds = new Set([...publishingIds, id]);
     try {
@@ -343,7 +297,11 @@
     if (publishingIds.has(id)) return;
     const item = bookmarks.find((bookmark) => bookmark.itinerary_id === id);
     if (!item) return;
-    if (!item.prefecture_slugs?.length) return openPublication(item, "publish");
+    if (!item.prefecture_slugs?.length) {
+      editSuccess = "公開前に、しおりの設定で旅行先を登録してください。";
+      await goto(`/itineraries/${id}?metadata=1`);
+      return;
+    }
     publishingIds = new Set([...publishingIds, id]);
     try {
       await userApi.publishBookmark(id, {
@@ -470,11 +428,9 @@
                 <a href="/itineraries/{item.itinerary_id}">編集する</a>
                 {#if item.is_visible}
                   <button onclick={() => republish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)}>{publishingIds.has(item.itinerary_id) ? "更新中…" : "最新版を反映"}</button>
-                  <button class="quiet" onclick={() => openPublication(item, "publish")}>公開情報</button>
                   <button class="danger" onclick={() => unpublish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)}>取り下げ</button>
                 {:else}
-                  <button class="quiet" onclick={() => openPublication(item)}>旅行先・タグ</button>
-                  <button class="publish-action" onclick={() => openPublication(item, "publish")}>みんなに公開</button>
+                  <button class="publish-action" onclick={() => republish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)}>みんなに公開</button>
                   <button class="danger" onclick={() => (unlinkTarget = item)} disabled={publishingIds.has(item.itinerary_id)}>紐付けを解除</button>
                 {/if}
               </div>
@@ -482,26 +438,6 @@
           {/each}
         </div>
         {/if}
-      {/if}
-
-      {#if publicationTarget}
-        <div class="publication-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (publicationTarget = null)}>
-          <div class="publication-dialog" role="dialog" aria-modal="true" aria-labelledby="publication-title">
-            <button class="dialog-close" onclick={() => (publicationTarget = null)} aria-label="閉じる">×</button>
-            <p class="dialog-eyebrow">TRIP METADATA</p>
-            <h2 id="publication-title">{publicationIntent === "publish" ? (publicationTarget.is_visible ? "公開情報を編集" : "みんなのしおりに公開") : "旅行先・タグを編集"}</h2>
-            <p class="dialog-intro">{publicationIntent === "publish" ? "公開時点の内容を閲覧専用IDへコピーします。元のしおりや編集用URLは公開されません。" : "旅行先とタグは非公開のまま登録できます。公開時はこの内容を公開情報にも使用します。"}</p>
-            {#if publicationError}<p class="dialog-error">{publicationError}</p>{/if}
-            <label for="publication-prefecture">主な旅行先 <strong>必須</strong></label>
-            <select id="publication-prefecture" bind:value={publicationPrefecture}><option value="">選択してください</option>{#each explorePrefectures as item}<option value={item.slug}>{item.name}</option>{/each}</select>
-            <label for="publication-areas">エリア <span>任意・3件まで</span></label>
-            <input id="publication-areas" bind:value={publicationAreas} maxlength="50" placeholder="例：東山、嵐山" />
-            <fieldset><legend>旅のテーマ <span>任意・3件まで</span></legend>
-              <div class="publication-tags">{#each travelTags as tag}<button class:selected={publicationTags.includes(tag)} onclick={() => togglePublicationTag(tag)}>{tag}</button>{/each}</div>
-            </fieldset>
-            <button class="dialog-publish" onclick={savePublication} disabled={publishingIds.has(publicationTarget.itinerary_id)}>{publishingIds.has(publicationTarget.itinerary_id) ? (publicationIntent === "publish" ? "公開しています…" : "保存しています…") : publicationIntent === "publish" ? (publicationTarget.is_visible ? "変更して最新版を公開" : "この内容で公開する") : "保存する"}</button>
-          </div>
-        </div>
       {/if}
 
       {#if unlinkTarget}
@@ -556,7 +492,6 @@
   .bookmark-actions { display: flex; flex-wrap: wrap; margin-top: .9rem; padding-top: .8rem; border-top: 1px solid #edf0f5; align-items: center; gap: .4rem; }
   .bookmark-actions a, .bookmark-actions button { width: auto; padding: .5rem .65rem; border: 1px solid #dce4f1; border-radius: .55rem; color: #4f6486; background: white; font-size: .68rem; font-weight: 800; text-decoration: none; cursor: pointer; }
   .bookmark-actions .publish-action { margin-left: auto; border-color: #547bd0; color: white; background: #547bd0; }
-  .bookmark-actions .quiet { color: #78859a; }
   .bookmark-actions .danger { margin-left: auto; border-color: transparent; color: #a15d65; background: transparent; }
   .library-empty { padding: 3rem 1rem; border: 1px dashed #cbd8eb; border-radius: 1rem; color: #718096; background: rgba(255,255,255,.65); text-align: center; }
   .library-empty > span { display: block; color: #6e91d4; font-size: 1.5rem; }
@@ -569,16 +504,6 @@
   .dialog-eyebrow { margin: 0; color: #6685c2; font-size: .62rem; font-weight: 900; letter-spacing: .14em; }
   .publication-dialog h2 { margin: .35rem 0 .55rem; color: #2b3e5e; font-size: 1.3rem; }
   .dialog-intro { margin: 0 0 1.1rem; color: #748096; font-size: .75rem; line-height: 1.7; }
-  .publication-dialog label, .publication-dialog legend { margin: .85rem 0 .35rem; font-size: .75rem; font-weight: 800; }
-  .publication-dialog label strong { color: #4f75c4; font-size: .62rem; }
-  .publication-dialog label span { color: #929bab; font-size: .62rem; font-weight: 500; }
-  .publication-dialog fieldset { margin: 0; padding: 0; border: 0; }
-  .publication-dialog legend span { color: #929bab; font-size: .62rem; font-weight: 500; }
-  .publication-tags { display: flex; flex-wrap: wrap; gap: .35rem; }
-  .publication-tags button { padding: .4rem .55rem; border: 1px solid #dfe5ef; border-radius: 999px; color: #657389; background: white; font-size: .66rem; cursor: pointer; }
-  .publication-tags button.selected { border-color: #6085d2; color: white; background: #6085d2; }
-  .dialog-error { padding: .6rem; border-radius: .5rem; color: #a6434d; background: #fff0f1; font-size: .7rem; }
-  .dialog-publish { width: 100%; margin-top: 1.25rem; padding: .75rem; border: 0; border-radius: .65rem; color: white; background: #5379cb; font-size: .78rem; font-weight: 900; cursor: pointer; }
   .unlink-dialog { max-width: 25rem; }
   .unlink-actions { display: flex; margin-top: 1.25rem; gap: .55rem; }
   .unlink-actions .cancel-button, .unlink-confirm { width: 50%; margin: 0; padding: .75rem; border-radius: .65rem; font: inherit; font-size: .78rem; font-weight: 900; cursor: pointer; }

@@ -1,3 +1,4 @@
+/* Theme-agnostic money feature UI. */
 .standard-money-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(19, 27, 38, .46); display: grid; place-items: center; padding: 1rem; }
 .standard-money-panel { width: min(720px, 100%); max-height: min(820px, calc(100vh - 2rem)); overflow: auto; background: #fffcf7; border-radius: 24px; padding: 1.35rem; box-shadow: 0 24px 70px rgba(0,0,0,.25); color: #29332d; }
 .standard-money-header { display:flex; justify-content:space-between; align-items:start; margin-bottom:1rem; }.standard-money-header p { margin:0; color:var(--theme-primary); font-size:.78rem; font-weight:700; }.standard-money-header h2 { margin:.15rem 0 0; font-size:1.45rem; }.standard-money-close { border:0; background:transparent; color:#59645b; cursor:pointer; padding:.35rem; }.standard-money-close svg { width:24px; }

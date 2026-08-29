@@ -18,9 +18,12 @@
     defaultViewMode: ViewMode;
     secretModeEnabled: boolean;
     secretModeOffset: number;
+    packingEnabled: boolean;
     onThemeChange: (themeId: string) => void;
     onDefaultViewModeChange: (mode: ViewMode) => void;
     onSecretModeChange: (enabled: boolean, offset: number) => void;
+    onPackingEnabledChange: (enabled: boolean) => void;
+    onEditMetadata: () => void;
     onClose: () => void;
   }
 
@@ -32,9 +35,12 @@
     defaultViewMode,
     secretModeEnabled,
     secretModeOffset,
+    packingEnabled,
     onThemeChange,
     onDefaultViewModeChange,
     onSecretModeChange,
+    onPackingEnabledChange,
+    onEditMetadata,
     onClose,
   }: Props = $props();
 
@@ -43,18 +49,21 @@
   let localThemeId = $state(selectedThemeId);
   let localDefaultViewMode = $state<ViewMode>(defaultViewMode);
   let showThemeList = $state(false);
+  let localPackingEnabled = $state(packingEnabled);
 
   $effect(() => {
     localSecretEnabled = secretModeEnabled;
     localSecretOffset = secretModeOffset;
     localThemeId = selectedThemeId;
     localDefaultViewMode = defaultViewMode;
+    localPackingEnabled = packingEnabled;
   });
 
   function handleSave() {
     onThemeChange(localThemeId);
     onDefaultViewModeChange(localDefaultViewMode);
     onSecretModeChange(localSecretEnabled, localSecretOffset);
+    onPackingEnabledChange(localPackingEnabled);
     onClose();
   }
 
@@ -63,12 +72,29 @@
     localSecretOffset = secretModeOffset;
     localThemeId = selectedThemeId;
     localDefaultViewMode = defaultViewMode;
+    localPackingEnabled = packingEnabled;
     onClose();
+  }
+
+  function openMetadata() {
+    handleCancel();
+    onEditMetadata();
   }
 </script>
 
 <Dialog {show} title="設定" onClose={handleCancel}>
   <div class="standard-settings-page">
+    <div class="standard-settings-page-section">
+      <div class="standard-settings-page-section-header">
+        <span class="standard-settings-page-section-icon" aria-hidden="true">⌖</span>
+        <h3>旅行先とタグ</h3>
+      </div>
+      <p class="standard-settings-page-description">このしおりに紐づく都道府県、エリア、旅のタグを編集します。</p>
+      <button type="button" class="standard-btn standard-btn-secondary" onclick={openMetadata}>旅行先とタグを編集</button>
+    </div>
+
+    <div class="standard-settings-page-divider"></div>
+
     <div class="standard-settings-page-section">
       <div class="standard-settings-page-section-header">
         <span class="standard-settings-page-section-icon" aria-hidden="true">👥</span>
@@ -90,14 +116,14 @@
         onclick={() => (showThemeList = !showThemeList)}
       >
         {@html PaletteIcon}
-        <h3>テーマ</h3>
+        <h3>しおりの色</h3>
         <span
           class="standard-collapse-icon"
           class:expanded={showThemeList}>▼</span
         >
       </div>
       <p class="standard-settings-page-description">
-        しおりの見た目とスタイルを選択できます
+        季節ごとの色合いを選択できます
       </p>
       {#if showThemeList}
         <div class="standard-settings-page-field">
@@ -124,6 +150,21 @@
           {/each}
         </div>
       {/if}
+    </div>
+
+    <div class="standard-settings-page-divider"></div>
+
+    <div class="standard-settings-page-section">
+      <div class="standard-settings-page-section-header">
+        <span class="standard-settings-page-section-icon" aria-hidden="true">▣</span>
+        <h3>持ち物管理</h3>
+      </div>
+      <p class="standard-settings-page-description">オフにすると、下のメニューバーから持ち物を非表示にします。</p>
+      <label class="standard-settings-page-toggle">
+        <span class="standard-settings-page-toggle-label">持ち物管理を使う</span>
+        <input type="checkbox" bind:checked={localPackingEnabled} class="standard-toggle-input" />
+        <span class="standard-toggle-slider"></span>
+      </label>
     </div>
 
     <div class="standard-settings-page-divider"></div>

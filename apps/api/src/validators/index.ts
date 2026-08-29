@@ -22,6 +22,7 @@ export const createItinerarySchema = z.object({
     .max(100, 'title must be at most 100 characters'),
   theme_id: z.string().optional(),
   default_view_mode: z.enum(['dayCard', 'list', 'month', 'week']).optional(),
+  packing_enabled: z.boolean().optional(),
   memo: z.string().optional(),
   password: z.string().optional(),
   secret_settings: z.object({
@@ -38,6 +39,11 @@ export const updateItinerarySchema = z.object({
     .optional(),
   theme_id: z.string().optional(),
   default_view_mode: z.enum(['dayCard', 'list', 'month', 'week']).optional(),
+  packing_enabled: z.boolean().optional(),
+  prefecture_slugs: z.array(z.string().trim().min(1).max(32)).max(3).optional(),
+  areas: z.array(z.string().trim().min(1).max(16)).max(3).optional(),
+  tags: z.array(z.string().trim().min(1).max(24)).max(3).optional(),
+  metadata_initialized: z.boolean().optional(),
   memo: z.string().optional(),
   password: z.string().optional(),
   secret_settings: z.object({

@@ -22,7 +22,7 @@
   import { getBookingCard } from "../utils/booking-card";
   import { moneyApi } from "$lib/api/money";
   import { demoStorage, getIsDemoMode } from "$lib/demo";
-  import { MONEY_NAVIGATION_CONTEXT, type MoneyNavigationContext } from "./money-navigation";
+  import { MONEY_NAVIGATION_CONTEXT, type MoneyNavigationContext } from "$lib/features/money/navigation";
   import "../styles/EventDetailDialog.css";
 
   interface Props {

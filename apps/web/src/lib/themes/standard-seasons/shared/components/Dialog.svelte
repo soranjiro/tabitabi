@@ -31,6 +31,7 @@
     >
       <div class="standard-dialog-header">
         <h3 class="standard-dialog-title">{title}</h3>
+        <button type="button" class="standard-dialog-close" onclick={onClose} aria-label="閉じる">×</button>
       </div>
       <div class="standard-dialog-content">
         {#if children}

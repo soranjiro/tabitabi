@@ -12,6 +12,11 @@ async function applyMigrations(db: D1Database) {
       title TEXT NOT NULL,
       theme_id TEXT NOT NULL DEFAULT 'standard-autumn',
       default_view_mode TEXT NOT NULL DEFAULT 'dayCard',
+      packing_enabled INTEGER NOT NULL DEFAULT 1,
+      prefecture_slugs TEXT NOT NULL DEFAULT '[]',
+      areas TEXT NOT NULL DEFAULT '[]',
+      tags TEXT NOT NULL DEFAULT '[]',
+      metadata_initialized INTEGER NOT NULL DEFAULT 0,
       memo TEXT,
       password TEXT,
       source_itinerary_id TEXT,
@@ -131,8 +136,40 @@ describe('Itineraries API', () => {
       expect(success).toBe(true);
       expect(data.title).toBe('Test Trip');
       expect(data.theme_id).toBe('standard-autumn');
+      expect(data.packing_enabled).toBe(true);
+      expect(data.metadata_initialized).toBe(false);
+      expect(data.prefecture_slugs).toEqual([]);
       expect(data.id).toBeDefined();
       expect(data.token).toBeDefined();
+    });
+
+    it('stores feature switches and destination metadata on the itinerary', async () => {
+      const createResponse = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Metadata trip' }),
+      }), env);
+      const { data: created } = await createResponse.json() as any;
+
+      const updateResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${created.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          packing_enabled: false,
+          prefecture_slugs: ['kyoto'],
+          areas: ['嵐山'],
+          tags: ['グルメ'],
+          metadata_initialized: true,
+        }),
+      }), env);
+
+      expect(updateResponse.status).toBe(200);
+      const { data } = await updateResponse.json() as any;
+      expect(data.packing_enabled).toBe(false);
+      expect(data.prefecture_slugs).toEqual(['kyoto']);
+      expect(data.areas).toEqual(['嵐山']);
+      expect(data.tags).toEqual(['グルメ']);
+      expect(data.metadata_initialized).toBe(true);
     });
 
     it('creates itinerary with custom theme', async () => {

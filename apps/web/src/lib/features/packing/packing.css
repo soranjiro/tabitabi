@@ -78,6 +78,7 @@
   padding: 10px 16px;
 }
 
+/* Theme-agnostic packing feature UI. */
 .standard-packing-groups {
   display: grid;
   gap: 17px;

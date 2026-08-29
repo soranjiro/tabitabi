@@ -120,6 +120,11 @@
     title?: string;
     theme_id?: string;
     default_view_mode?: import("@tabitabi/types").ItineraryViewMode;
+    packing_enabled?: boolean;
+    prefecture_slugs?: string[];
+    areas?: string[];
+    tags?: string[];
+    metadata_initialized?: boolean;
     memo?: string;
     secret_settings?: {
       enabled: boolean;
@@ -266,6 +271,21 @@
   <meta name="theme-color" content={backgroundColor} />
 </svelte:head>
 
+{#if isViewOnly}
+  <header class="shared-snapshot-header">
+    <a class="shared-snapshot-back" href="/explore" aria-label="共有されたしおり一覧に戻る">
+      <span aria-hidden="true">←</span> 共有されたしおり一覧
+    </a>
+    <div class="shared-snapshot-header-copy">
+      <span class="shared-snapshot-eyebrow">共有されたしおり</span>
+      <span class="shared-snapshot-copy">閲覧専用</span>
+    </div>
+    <button onclick={handleFork} disabled={forking} class="shared-snapshot-button">
+      {forking ? "コピー中..." : "コピーして編集"}
+    </button>
+  </header>
+{/if}
+
 {#key data.itinerary.theme_id}
   <ItineraryView
     {itinerary}
@@ -280,43 +300,33 @@
 
 <LazyPrintStudio {itinerary} {steps} />
 
-{#if isViewOnly}
-  <aside class="shared-snapshot-cta" aria-label="共有されたしおりの操作">
-    <div>
-      <p class="shared-snapshot-eyebrow">共有されたしおり</p>
-      <p class="shared-snapshot-copy">閲覧専用です。コピーすると自分用に編集できます。</p>
-    </div>
-    <button
-      onclick={handleFork}
-      disabled={forking}
-      class="shared-snapshot-button"
-    >
-      {forking ? "コピー中..." : "コピーして編集"}
-    </button>
-  </aside>
-{/if}
 
 <style>
-  .shared-snapshot-cta {
-    position: fixed;
-    right: max(1rem, env(safe-area-inset-right));
-    bottom: max(1rem, env(safe-area-inset-bottom));
+  .shared-snapshot-header {
+    position: relative;
     z-index: 60;
     display: flex;
+    min-height: 58px;
+    width: 100%;
     align-items: center;
-    gap: 0.8rem;
-    max-width: min(32rem, calc(100vw - 2rem));
-    padding: 0.75rem 0.8rem 0.75rem 1rem;
-    border: 1px solid #dbeafe;
-    border-radius: 1rem;
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 12px 32px rgba(30, 64, 175, 0.18);
+    gap: 1rem;
+    padding: 0.65rem max(1rem, env(safe-area-inset-right)) 0.65rem max(1rem, env(safe-area-inset-left));
+    border-bottom: 1px solid #dbeafe;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 4px 18px rgba(30, 64, 175, 0.1);
     backdrop-filter: blur(10px);
   }
-  .shared-snapshot-eyebrow { margin: 0 0 0.15rem; color: #1d4ed8; font-size: 0.75rem; font-weight: 700; }
-  .shared-snapshot-copy { margin: 0; color: #334155; font-size: 0.78rem; line-height: 1.35; }
-  .shared-snapshot-button { flex: none; border: 0; border-radius: 0.7rem; padding: 0.7rem 0.85rem; background: #2563eb; color: white; font-size: 0.82rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
+  .shared-snapshot-back { flex: none; color: #1d4ed8; font-size: 0.78rem; font-weight: 700; text-decoration: none; }
+  .shared-snapshot-back:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .shared-snapshot-header-copy { display: flex; min-width: 0; flex: 1; align-items: baseline; gap: 0.6rem; }
+  .shared-snapshot-eyebrow { color: #1d4ed8; font-size: 0.75rem; font-weight: 700; }
+  .shared-snapshot-copy { color: #64748b; font-size: 0.72rem; }
+  .shared-snapshot-button { flex: none; border: 0; border-radius: 0.7rem; padding: 0.65rem 0.85rem; background: #2563eb; color: white; font-size: 0.82rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
   .shared-snapshot-button:hover { background: #1d4ed8; }
   .shared-snapshot-button:disabled { cursor: wait; opacity: 0.65; }
-  @media (max-width: 540px) { .shared-snapshot-cta { left: 1rem; right: 1rem; } }
+  @media (max-width: 540px) {
+    .shared-snapshot-header { gap: 0.65rem; }
+    .shared-snapshot-header-copy { display: none; }
+    .shared-snapshot-back { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  }
 </style>

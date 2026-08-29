@@ -23,11 +23,12 @@
   import ShareDialog from "./components/ShareDialog.svelte";
   import PublishDialog from "./components/PublishDialog.svelte";
   import MoreMenu from "./components/MoreMenu.svelte";
-  import MoneyOverlay from "./components/MoneyOverlay.svelte";
-  import { MONEY_NAVIGATION_CONTEXT, type MoneyNavigationContext } from "./components/money-navigation";
-  import PackingOverlay from "./components/PackingOverlay.svelte";
+  import MoneyOverlay from "$lib/features/money/MoneyOverlay.svelte";
+  import { MONEY_NAVIGATION_CONTEXT, type MoneyNavigationContext } from "$lib/features/money/navigation";
+  import PackingOverlay from "$lib/features/packing/PackingOverlay.svelte";
   import ViewModeSelector from "./components/ViewModeSelector.svelte";
   import SettingsDialog from "./components/SettingsDialog.svelte";
+  import MetadataDialog from "./components/MetadataDialog.svelte";
   import { renderMarkdown } from "./utils/markdown";
   import { DEFAULT_VIEW_MODE, isValidViewMode, type ViewMode } from "./utils/storage";
   import { parseMemoData } from "$lib/memo";
@@ -40,6 +41,11 @@
       title?: string;
       theme_id?: string;
       default_view_mode?: import("@tabitabi/types").ItineraryViewMode;
+      packing_enabled?: boolean;
+      prefecture_slugs?: string[];
+      areas?: string[];
+      tags?: string[];
+      metadata_initialized?: boolean;
       memo?: string;
       secret_settings?: {
         enabled: boolean;
@@ -105,6 +111,7 @@
   let showPasswordDialog = $state(false);
   let showMemoDialog = $state(false);
   let showSettingsDialog = $state(false);
+  let showMetadataDialog = $state(false);
   let isAuthenticating = $state(false);
   let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
 
@@ -117,6 +124,10 @@
   let requestedMoneyItemId = $state<string | null>(null);
   let stepOpenedFromMoney = $state<Step | null>(null);
   let showPacking = $state(false);
+  let packingEnabled = $state(itinerary.packing_enabled ?? true);
+  let prefectureSlugs = $state([...(itinerary.prefecture_slugs ?? [])]);
+  let itineraryAreas = $state([...(itinerary.areas ?? [])]);
+  let itineraryTags = $state([...(itinerary.tags ?? [])]);
   let showViewModeSelector = $state(false);
   let currentViewMode = $state<ViewMode>(DEFAULT_VIEW_MODE);
   let defaultViewMode = $state<ViewMode>(
@@ -202,6 +213,12 @@
       loggedInForPublish = userAuth.isLoggedIn();
       showPublishDialog = true;
       window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    const metadataRequested = new URLSearchParams(window.location.search).get("metadata") === "1";
+    if (hasEditPermission && !isSharedSnapshot && (!itinerary.metadata_initialized || metadataRequested)) {
+      showMetadataDialog = true;
+      if (metadataRequested) window.history.replaceState({}, "", window.location.pathname);
     }
   });
 
@@ -327,7 +344,30 @@
     tags: string[];
   }) {
     if (!onPublishItinerary) throw new Error("PUBLISH_UNAVAILABLE");
+    await saveMetadata(metadata);
     return onPublishItinerary(metadata);
+  }
+
+  async function saveMetadata(metadata: { prefectureSlugs: string[]; areas: string[]; tags: string[] }) {
+    prefectureSlugs = metadata.prefectureSlugs;
+    itineraryAreas = metadata.areas;
+    itineraryTags = metadata.tags;
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({
+        prefecture_slugs: metadata.prefectureSlugs,
+        areas: metadata.areas,
+        tags: metadata.tags,
+        metadata_initialized: true,
+      });
+    }
+    showMetadataDialog = false;
+  }
+
+  async function dismissMetadata() {
+    showMetadataDialog = false;
+    if (!itinerary.metadata_initialized && onUpdateItinerary) {
+      await onUpdateItinerary({ metadata_initialized: true });
+    }
   }
 
   async function handleTitleUpdate() {
@@ -392,6 +432,13 @@
     if (onUpdateItinerary) {
       await onUpdateItinerary({ default_view_mode: mode });
     }
+  }
+
+  async function handlePackingEnabledUpdate(enabled: boolean) {
+    if (enabled === packingEnabled) return;
+    packingEnabled = enabled;
+    if (!enabled) showPacking = false;
+    if (onUpdateItinerary) await onUpdateItinerary({ packing_enabled: enabled });
   }
 
 </script>
@@ -483,6 +530,7 @@
         <p class="standard-public-disclosure">{publicNotice}</p>
       {/if}
     <BottomNav
+        {packingEnabled}
         onViewModeClick={() => (showViewModeSelector = true)}
         onMoneyOpen={() => (showMoney = true)}
         onPackingOpen={() => (showPacking = true)}
@@ -531,12 +579,14 @@
     />
   {/if}
 
-  <PackingOverlay
-    show={showPacking}
-    itineraryId={itinerary.id}
-    canEdit={hasEditPermission}
-    onClose={() => (showPacking = false)}
-  />
+  {#if packingEnabled}
+    <PackingOverlay
+      show={showPacking}
+      itineraryId={itinerary.id}
+      canEdit={hasEditPermission}
+      onClose={() => (showPacking = false)}
+    />
+  {/if}
 
   <ShareDialog
     show={showShareDialog}
@@ -549,6 +599,7 @@
     show={showPublishDialog}
     isLoggedIn={loggedInForPublish}
     sourceText={`${itinerary.title} ${steps.map((step) => step.location ?? "").join(" ")}`}
+    initialMetadata={{ prefectureSlugs, areas: itineraryAreas, tags: itineraryTags }}
     onLogin={goToPublishLogin}
     onPublish={publishToExplore}
     onClose={() => (showPublishDialog = false)}
@@ -595,10 +646,22 @@
     defaultViewMode={defaultViewMode}
     {secretModeEnabled}
     {secretModeOffset}
+    {packingEnabled}
     onThemeChange={handleThemeChange}
     onDefaultViewModeChange={handleDefaultViewModeUpdate}
     onSecretModeChange={handleSecretModeUpdate}
+    onPackingEnabledChange={handlePackingEnabledUpdate}
+    onEditMetadata={() => (showMetadataDialog = true)}
     onClose={() => (showSettingsDialog = false)}
+  />
+
+  <MetadataDialog
+    show={showMetadataDialog}
+    {prefectureSlugs}
+    areas={itineraryAreas}
+    tags={itineraryTags}
+    onSave={saveMetadata}
+    onClose={dismissMetadata}
   />
 
   <FloatingActions {hasEditPermission} onAddStep={openAddStepForm} />

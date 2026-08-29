@@ -185,14 +185,14 @@
 
         {#if season}
           <div class="preview-area">
-            <a class="shiori-preview" href="/itineraries/{season.itineraryId}" aria-label="たびたび公式の{season.title}を開く">
+            <a class="shiori-preview" href="/itineraries/{season.itineraryId}" aria-label="{season.title}のしおりを開く">
               <picture class="preview-photo">
                 <source srcset="/hero/background-{season.id}.avif" type="image/avif" />
                 <source srcset="/hero/background-{season.id}.webp" type="image/webp" />
                 <img src="/hero/background-{season.id}.webp" alt="" style:object-position={season.imagePosition} />
               </picture>
               <div class="preview-body">
-                <div class="preview-label"><span>公式デモ</span><b aria-hidden="true">♡</b></div>
+                <div class="preview-label"><b aria-hidden="true">♡</b></div>
                 <h2>{season.title}</h2>
                 <p>{season.duration}・{season.destination}</p>
                 <strong class="day-label">Day 1</strong>
@@ -218,7 +218,7 @@
   <section id="create" class="create-section" aria-labelledby="create-title">
     <div class="section-inner">
       <div class="create-heading">
-        <span class="tiny-route" aria-hidden="true">····· ✈</span>
+        <span class="tiny-route" aria-hidden="true"><i></i><b>✈</b></span>
         <p>NEXT TRIP</p>
         <h2 id="create-title">次の旅を、つくろう。</h2>
       </div>
@@ -272,8 +272,7 @@
   .preview-photo { display: block; height: 118px; overflow: hidden; }
   .preview-photo img { width: 100%; height: 100%; object-fit: cover; }
   .preview-body { padding: 15px 20px 11px; }
-  .preview-label { display: flex; align-items: center; justify-content: space-between; }
-  .preview-label span { padding: 4px 8px; border-radius: 999px; color: #e54f5b; background: #fff0f1; font-size: 9px; font-weight: 900; }
+  .preview-label { display: flex; align-items: center; justify-content: flex-end; }
   .preview-label b { font-size: 20px; font-weight: 400; }
   .preview-body h2 { margin: 10px 0 4px; overflow: hidden; font-family: Georgia, "Yu Mincho", serif; font-size: 17px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
   .preview-body > p { margin: 0 0 14px; color: #778398; font-size: 9px; font-weight: 700; }
@@ -298,9 +297,11 @@
   .paper-reveal i { left: 22%; transform: rotate(8deg); }
   .paper-reveal b { right: 18%; transform: rotate(-6deg); }
   .create-section { position: relative; z-index: 3; min-height: 100vh; margin-top: -1px; padding: 78px 20px 110px; background: white; }
-  .section-inner { width: min(900px, 100%); margin: 0 auto; }
+  .section-inner { width: min(820px, 100%); margin: 0 auto; }
   .create-heading { margin-bottom: 30px; text-align: center; }
-  .create-heading .tiny-route { display: block; margin-bottom: 8px; color: #9aabba; font-size: 12px; }
+  .create-heading .tiny-route { position: relative; display: block; width: 112px; height: 19px; margin: 0 auto 8px; color: #9aabba; }
+  .create-heading .tiny-route i { position: absolute; top: 8px; left: 0; width: 88px; height: 5px; background: radial-gradient(circle, currentColor 1.2px, transparent 1.5px) 0 50% / 9px 5px repeat-x; opacity: .8; transform: rotate(-2deg); }
+  .create-heading .tiny-route b { position: absolute; top: -1px; right: 2px; font-size: 17px; font-weight: 400; transform: rotate(7deg); }
   .create-heading p { margin: 0 0 8px; color: #7086a5; font-size: 9px; font-weight: 900; letter-spacing: .2em; }
   .create-heading h2 { margin: 0; font-family: Georgia, "Yu Mincho", serif; font-size: clamp(27px, 4vw, 39px); font-weight: 400; letter-spacing: .06em; }
   .recent-wrapper { margin-top: 42px; }

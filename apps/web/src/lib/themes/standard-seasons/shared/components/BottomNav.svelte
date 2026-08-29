@@ -7,6 +7,7 @@
     onPackingOpen: () => void;
     onViewModeClick?: () => void;
     onMenuClick?: () => void;
+    packingEnabled?: boolean;
   }
 
   let {
@@ -14,6 +15,7 @@
     onPackingOpen,
     onViewModeClick,
     onMenuClick,
+    packingEnabled = true,
   }: Props = $props();
 
   const ModeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="4" width="7" height="6" rx="1.4"/><rect x="13.5" y="4" width="7" height="6" rx="1.4"/><rect x="3.5" y="14" width="7" height="6" rx="1.4"/><rect x="13.5" y="14" width="7" height="6" rx="1.4"/></svg>`;
@@ -31,15 +33,17 @@
     <span>ホーム</span>
   </button>
 
-  <button
-    class="standard-bottom-btn"
-    title="持ち物リスト"
-    aria-label="持ち物リスト"
-    onclick={onPackingOpen}
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3h6a2 2 0 0 1 2 2v1h2a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2V5a2 2 0 0 1 2-2Zm0 3h6V5H9v1Zm-2 5v2h10v-2H7Z"/></svg>
-    <span>持ち物</span>
-  </button>
+  {#if packingEnabled}
+    <button
+      class="standard-bottom-btn"
+      title="持ち物リスト"
+      aria-label="持ち物リスト"
+      onclick={onPackingOpen}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3h6a2 2 0 0 1 2 2v1h2a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2V5a2 2 0 0 1 2-2Zm0 3h6V5H9v1Zm-2 5v2h10v-2H7Z"/></svg>
+      <span>持ち物</span>
+    </button>
+  {/if}
 
   <button
     class="standard-bottom-btn"

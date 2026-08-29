@@ -136,8 +136,14 @@ users.post(
       if (!await userService.hasBookmark(userId, itineraryId)) {
         return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Saved itinerary not found' } }, 404);
       }
+      await itineraryService.update(itineraryId, {
+        prefecture_slugs: input.prefecture_slugs,
+        areas: input.areas,
+        tags: input.tags,
+        metadata_initialized: true,
+      });
       const snapshot = await itineraryService.publish(itineraryId);
-      await userService.publishBookmark(userId, itineraryId, snapshot.id, input);
+      await userService.publishBookmark(userId, itineraryId, snapshot.id);
       return c.json({ success: true, data: { id: snapshot.id } });
     } catch (error) {
       const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
@@ -149,26 +155,6 @@ users.post(
       }
       throw error;
     }
-  },
-);
-
-// PATCH /users/me/bookmarks/:itineraryId/metadata
-// Destination metadata belongs to the account's saved itinerary and does not publish it.
-users.patch(
-  '/me/bookmarks/:itineraryId/metadata',
-  userAuthMiddleware,
-  userProfileMiddleware,
-  zValidator('json', publishItinerarySchema, validationHook),
-  async (c) => {
-    const result = await new UserService(c.env.DB).updateBookmarkMetadata(
-      c.get('userId')!,
-      c.req.param('itineraryId'),
-      c.req.valid('json'),
-    );
-    if (!result) {
-      return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Saved itinerary not found' } }, 404);
-    }
-    return c.json({ success: true, data: result });
   },
 );
 

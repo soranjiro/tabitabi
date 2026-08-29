@@ -12,12 +12,13 @@
     show: boolean;
     isLoggedIn: boolean;
     sourceText?: string;
+    initialMetadata?: PublishMetadata;
     onLogin: () => void;
     onPublish: (metadata: PublishMetadata) => Promise<string>;
     onClose: () => void;
   }
 
-  let { show, isLoggedIn, sourceText = "", onLogin, onPublish, onClose }: Props = $props();
+  let { show, isLoggedIn, sourceText = "", initialMetadata, onLogin, onPublish, onClose }: Props = $props();
   let selectedPrefectures = $state<string[]>([]);
   let prefectureCandidate = $state("");
   let areas = $state<string[]>([]);
@@ -35,6 +36,12 @@
     }
     if (initialized || selectedPrefectures.length) return;
     initialized = true;
+    if (initialMetadata && (initialMetadata.prefectureSlugs.length || initialMetadata.areas.length || initialMetadata.tags.length)) {
+      selectedPrefectures = [...initialMetadata.prefectureSlugs];
+      areas = [...initialMetadata.areas];
+      tags = [...initialMetadata.tags];
+      return;
+    }
     const suggestions = prefectures.filter((item) => {
       const short = item.name.replace(/[都道府県]$/, "");
       return sourceText.includes(item.name) || (short.length >= 2 && sourceText.includes(short));

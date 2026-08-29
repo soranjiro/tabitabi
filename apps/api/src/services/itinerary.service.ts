@@ -62,6 +62,11 @@ export class ItineraryService {
       title: input.title,
       theme_id: input.theme_id || DEFAULT_THEME_ID,
       default_view_mode: input.default_view_mode ?? DEFAULT_VIEW_MODE,
+      packing_enabled: input.packing_enabled ?? true,
+      prefecture_slugs: [],
+      areas: [],
+      tags: [],
+      metadata_initialized: false,
       memo,
       password: hashedPassword,
       secret_settings: input.secret_settings ? {
@@ -75,8 +80,8 @@ export class ItineraryService {
 
     // Insert into main table
     await this.db
-      .prepare('INSERT INTO itineraries (id, title, theme_id, default_view_mode, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.default_view_mode, itinerary.memo, itinerary.password, itinerary.created_at, itinerary.updated_at)
+      .prepare('INSERT INTO itineraries (id, title, theme_id, default_view_mode, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.default_view_mode, itinerary.packing_enabled ? 1 : 0, '[]', '[]', '[]', 0, itinerary.memo, itinerary.password, itinerary.created_at, itinerary.updated_at)
       .run();
 
     // Insert into secrets table if settings exist
@@ -115,6 +120,24 @@ export class ItineraryService {
     if (input.default_view_mode !== undefined) {
       fields.push('default_view_mode = ?');
       values.push(input.default_view_mode);
+    }
+    if (input.packing_enabled !== undefined) {
+      fields.push('packing_enabled = ?');
+      values.push(input.packing_enabled ? 1 : 0);
+    }
+    for (const [field, value] of [
+      ['prefecture_slugs', input.prefecture_slugs],
+      ['areas', input.areas],
+      ['tags', input.tags],
+    ] as const) {
+      if (value !== undefined) {
+        fields.push(`${field} = ?`);
+        values.push(JSON.stringify(value));
+      }
+    }
+    if (input.metadata_initialized !== undefined) {
+      fields.push('metadata_initialized = ?');
+      values.push(input.metadata_initialized ? 1 : 0);
     }
     if (input.memo !== undefined) {
       const validation = validateMemoJson(input.memo);
@@ -197,8 +220,8 @@ export class ItineraryService {
 
     await this.db.batch([
       this.db
-        .prepare('INSERT INTO itineraries (id, title, theme_id, default_view_mode, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NULL, ?, ?)')
-        .bind(newId, `${source.title}（コピー）`, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, source.memo, now, now),
+        .prepare('INSERT INTO itineraries (id, title, theme_id, default_view_mode, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?)')
+        .bind(newId, `${source.title}（コピー）`, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), source.memo, now, now),
       ...stepStatements,
       // Upsert fork_count in the dedicated stats table
       this.db
@@ -252,8 +275,8 @@ export class ItineraryService {
       try {
         await this.db.batch([
           this.db
-          .prepare('INSERT INTO itineraries (id, title, theme_id, default_view_mode, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)')
-            .bind(newId, publicTitle, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, publicMemo, sourceId, now, now),
+          .prepare('INSERT INTO itineraries (id, title, theme_id, default_view_mode, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?, ?)')
+            .bind(newId, publicTitle, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, sourceId, now, now),
           ...stepStatements,
         ]);
         return (await this.get(newId))!;
@@ -280,8 +303,8 @@ export class ItineraryService {
 
       await this.db.batch([
         this.db
-          .prepare('UPDATE itineraries SET title = ?, theme_id = ?, default_view_mode = ?, memo = ?, updated_at = ? WHERE id = ?')
-          .bind(publicTitle, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, publicMemo, now, sharedId),
+          .prepare('UPDATE itineraries SET title = ?, theme_id = ?, default_view_mode = ?, packing_enabled = ?, prefecture_slugs = ?, areas = ?, tags = ?, metadata_initialized = 1, memo = ?, updated_at = ? WHERE id = ?')
+          .bind(publicTitle, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, now, sharedId),
         this.db
           .prepare('DELETE FROM steps WHERE itinerary_id = ?')
           .bind(sharedId),
@@ -308,6 +331,11 @@ export class ItineraryService {
       title: row.title as string,
       theme_id: row.theme_id as string,
       default_view_mode: (row.default_view_mode as Itinerary['default_view_mode']) ?? DEFAULT_VIEW_MODE,
+      packing_enabled: row.packing_enabled !== 0,
+      prefecture_slugs: this.parseStringArray(row.prefecture_slugs),
+      areas: this.parseStringArray(row.areas),
+      tags: this.parseStringArray(row.tags),
+      metadata_initialized: row.metadata_initialized !== 0,
       memo: row.memo as string,
       password: row.password as string | null | undefined,
       fork_count: (row.fork_count as number) ?? 0,
@@ -327,6 +355,16 @@ export class ItineraryService {
     }
 
     return itinerary;
+  }
+
+  private parseStringArray(value: unknown): string[] {
+    if (typeof value !== 'string') return [];
+    try {
+      const parsed: unknown = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+    } catch {
+      return [];
+    }
   }
 
   // フロントエンド用：パスワード除外したレスポンスを返す

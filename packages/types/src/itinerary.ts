@@ -12,6 +12,14 @@ export interface Itinerary {
   theme_id: string;
   /** Opening view chosen by the itinerary owner. Older itineraries use dayCard. */
   default_view_mode?: ItineraryViewMode;
+  /** Feature switches belong to the itinerary, not to a visual theme. */
+  packing_enabled?: boolean;
+  /** Search/discovery metadata shared by every owner and publication of this itinerary. */
+  prefecture_slugs?: string[];
+  areas?: string[];
+  tags?: string[];
+  /** False only until the first metadata prompt has been handled. */
+  metadata_initialized?: boolean;
   memo: string;
   password?: string | null;
   secret_settings?: ItinerarySecretSettings | null;
@@ -39,8 +47,9 @@ export type ItineraryResponse = Omit<Itinerary, 'password'> & {
 
 export interface CreateItineraryInput {
   title: string;
-  theme_id?: string;             // オプション、デフォルト: 'map-only'
+  theme_id?: string;             // オプション、デフォルト: standard season
   default_view_mode?: ItineraryViewMode;
+  packing_enabled?: boolean;
   memo?: string;
   password?: string;
   secret_settings?: {
@@ -53,6 +62,11 @@ export interface UpdateItineraryInput {
   title?: string;
   theme_id?: string;
   default_view_mode?: ItineraryViewMode;
+  packing_enabled?: boolean;
+  prefecture_slugs?: string[];
+  areas?: string[];
+  tags?: string[];
+  metadata_initialized?: boolean;
   memo?: string;
   password?: string;
   secret_settings?: {

@@ -41,6 +41,7 @@
 
   .footer-links {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     gap: 2rem;
     margin-bottom: 0.75rem;
@@ -69,5 +70,9 @@
   .footer-copy {
     color: #d1d5db;
     font-size: 0.75rem;
+  }
+
+  @media (max-width: 560px) {
+    .footer-links { flex-direction: column; align-items: center; gap: 0.2rem; }
   }
 </style>

@@ -6,7 +6,6 @@ import type {
   PublicBookmark,
   PublicFeedItem,
   PublicFeedResponse,
-  PublishItineraryInput,
   BootstrapProfileInput,
   SyncBookmarksResponse,
   UpdateProfileInput,
@@ -90,9 +89,9 @@ export class UserService {
           i.source_itinerary_id,
           (SELECT id FROM itineraries WHERE source_itinerary_id = ub.itinerary_id LIMIT 1) as shared_itinerary_id,
           (SELECT updated_at FROM itineraries WHERE source_itinerary_id = ub.itinerary_id LIMIT 1) as shared_updated_at,
-          ub.prefecture_slugs,
-          ub.areas,
-          ub.tags,
+          i.prefecture_slugs,
+          i.areas,
+          i.tags,
           CASE WHEN publication.source_itinerary_id IS NULL THEN 0 ELSE 1 END as is_published
         FROM user_bookmarks ub
         JOIN itineraries i ON ub.itinerary_id = i.id
@@ -233,17 +232,20 @@ export class UserService {
     userId: string,
     sourceItineraryId: string,
     sharedItineraryId: string,
-    metadata: PublishItineraryInput,
   ): Promise<void> {
     const bookmark = await this.db.prepare(
       'SELECT 1 FROM user_bookmarks WHERE user_id = ? AND itinerary_id = ?',
     ).bind(userId, sourceItineraryId).first();
     if (!bookmark) throw new Error('BOOKMARK_NOT_FOUND');
 
+    const metadata = await this.db.prepare(
+      'SELECT prefecture_slugs, areas, tags FROM itineraries WHERE id = ?',
+    ).bind(sourceItineraryId).first<Record<string, unknown>>();
+    if (!metadata) throw new Error('BOOKMARK_NOT_FOUND');
     const now = getCurrentTimestamp();
-    const prefectureSlugs = JSON.stringify(metadata.prefecture_slugs);
-    const areas = JSON.stringify(metadata.areas ?? []);
-    const tags = JSON.stringify(metadata.tags ?? []);
+    const prefectureSlugs = String(metadata.prefecture_slugs ?? '[]');
+    const areas = String(metadata.areas ?? '[]');
+    const tags = String(metadata.tags ?? '[]');
     await this.db.batch([
       this.db.prepare(`
         INSERT INTO itinerary_publications (
@@ -267,41 +269,10 @@ export class UserService {
         now,
       ),
       this.db.prepare(
-        `UPDATE user_bookmarks
-         SET is_visible = 1, prefecture_slugs = ?, areas = ?, tags = ?, updated_at = ?
+        `UPDATE user_bookmarks SET is_visible = 1, updated_at = ?
          WHERE user_id = ? AND itinerary_id = ?`,
-      ).bind(prefectureSlugs, areas, tags, now, userId, sourceItineraryId),
+      ).bind(now, userId, sourceItineraryId),
     ]);
-  }
-
-  async updateBookmarkMetadata(userId: string, itineraryId: string, metadata: PublishItineraryInput): Promise<UserBookmark | null> {
-    const now = getCurrentTimestamp();
-    await this.db.prepare(
-      `UPDATE user_bookmarks
-       SET prefecture_slugs = ?, areas = ?, tags = ?, updated_at = ?
-       WHERE user_id = ? AND itinerary_id = ?`,
-    ).bind(
-      JSON.stringify(metadata.prefecture_slugs),
-      JSON.stringify(metadata.areas ?? []),
-      JSON.stringify(metadata.tags ?? []),
-      now,
-      userId,
-      itineraryId,
-    ).run();
-
-    const result = await this.db.prepare('SELECT * FROM user_bookmarks WHERE user_id = ? AND itinerary_id = ?')
-      .bind(userId, itineraryId).first<Record<string, unknown>>();
-    if (!result) return null;
-    return {
-      user_id: result.user_id as string,
-      itinerary_id: result.itinerary_id as string,
-      is_visible: result.is_visible === 1,
-      created_at: result.created_at as string,
-      updated_at: result.updated_at as string,
-      prefecture_slugs: this.parseStringArray(result.prefecture_slugs),
-      areas: this.parseStringArray(result.areas),
-      tags: this.parseStringArray(result.tags),
-    };
   }
 
   async hasBookmark(userId: string, itineraryId: string): Promise<boolean> {
@@ -543,6 +514,9 @@ export class UserService {
       is_visible: result.is_visible === 1,
       created_at: result.created_at as string,
       updated_at: result.updated_at as string,
+      prefecture_slugs: [],
+      areas: [],
+      tags: [],
     };
   }
 }

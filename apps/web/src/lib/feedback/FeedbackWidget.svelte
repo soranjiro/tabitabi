@@ -2,6 +2,8 @@
   import { tick } from "svelte";
   import type { FeedbackCategory } from "./feedback";
 
+  let { variant = "floating" }: { variant?: "floating" | "footer" } = $props();
+
   let open = $state(false);
   let category = $state<FeedbackCategory>("feature");
   let title = $state("");
@@ -80,6 +82,7 @@
 
 <button
   type="button"
+  class:footer-trigger={variant === "footer"}
   class="feedback-trigger"
   onclick={openDialog}
   aria-haspopup="dialog"
@@ -210,10 +213,6 @@
 
 <style>
   .feedback-trigger {
-    position: fixed;
-    right: 1rem;
-    bottom: 1rem;
-    z-index: 900;
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
@@ -233,10 +232,35 @@
       box-shadow 0.2s;
   }
 
+  .feedback-trigger:not(.footer-trigger) {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 900;
+  }
+
+  .footer-trigger {
+    padding: 0.5rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: #e5e7eb;
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+
   .feedback-trigger:hover {
     transform: translateY(-2px);
     background: #1d3158;
     box-shadow: 0 9px 28px rgba(23, 37, 67, 0.32);
+  }
+
+  .footer-trigger:hover {
+    transform: none;
+    background: transparent;
+    box-shadow: none;
+    color: white;
   }
 
   .feedback-trigger:focus-visible,

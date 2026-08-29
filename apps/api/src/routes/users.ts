@@ -152,6 +152,26 @@ users.post(
   },
 );
 
+// PATCH /users/me/bookmarks/:itineraryId/metadata
+// Destination metadata belongs to the account's saved itinerary and does not publish it.
+users.patch(
+  '/me/bookmarks/:itineraryId/metadata',
+  userAuthMiddleware,
+  userProfileMiddleware,
+  zValidator('json', publishItinerarySchema, validationHook),
+  async (c) => {
+    const result = await new UserService(c.env.DB).updateBookmarkMetadata(
+      c.get('userId')!,
+      c.req.param('itineraryId'),
+      c.req.valid('json'),
+    );
+    if (!result) {
+      return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Saved itinerary not found' } }, 404);
+    }
+    return c.json({ success: true, data: result });
+  },
+);
+
 // DELETE /users/me/bookmarks/:itineraryId
 // Removes only the current account's saved-itinerary relation. The itinerary remains intact.
 users.delete('/me/bookmarks/:itineraryId', userAuthMiddleware, userProfileMiddleware, async (c) => {

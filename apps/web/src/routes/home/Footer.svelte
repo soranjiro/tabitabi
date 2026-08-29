@@ -1,6 +1,7 @@
 <script lang="ts">
   import IconBook from "./icons/IconBook.svelte";
   import IconGitHub from "./icons/IconGitHub.svelte";
+  import FeedbackWidget from "$lib/feedback/FeedbackWidget.svelte";
 </script>
 
 <footer class="footer">
@@ -19,6 +20,7 @@
         <IconGitHub size={18} />
         GitHub
       </a>
+      <FeedbackWidget variant="footer" />
     </div>
     <p class="footer-copy">たびたび - 旅をもっと楽しく</p>
   </div>

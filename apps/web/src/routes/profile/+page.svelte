@@ -38,6 +38,7 @@
   let editSuccess = $state<string | null>(null);
   let publishingIds = $state(new Set<string>());
   let publicationTarget = $state<UserBookmarkWithItinerary | null>(null);
+  let publicationIntent = $state<"metadata" | "publish">("metadata");
   let publicationPrefecture = $state("");
   let publicationAreas = $state("");
   let publicationTags = $state<string[]>([]);
@@ -269,8 +270,9 @@
     finally { submitting = false; }
   }
 
-  function openPublication(item: UserBookmarkWithItinerary) {
+  function openPublication(item: UserBookmarkWithItinerary, intent: "metadata" | "publish" = "metadata") {
     publicationTarget = item;
+    publicationIntent = intent;
     publicationPrefecture = item.prefecture_slugs?.[0] ?? "";
     publicationAreas = item.areas?.join("、") ?? "";
     publicationTags = item.tags ?? [];
@@ -291,13 +293,15 @@
     publishingIds = new Set([...publishingIds, target.itinerary_id]);
     publicationError = "";
     try {
-      await userApi.publishBookmark(target.itinerary_id, {
+      const metadata = {
         prefecture_slugs: [publicationPrefecture],
         areas: publicationAreas.split(/[、,]/).map((item) => item.trim()).filter(Boolean).slice(0, 3),
         tags: publicationTags,
-      });
+      };
+      if (publicationIntent === "publish") await userApi.publishBookmark(target.itinerary_id, metadata);
+      else await userApi.updateBookmarkMetadata(target.itinerary_id, metadata);
       publicationTarget = null;
-      editSuccess = target.is_visible ? "公開情報としおりの最新版を反映しました。" : "みんなのしおりに公開しました。";
+      editSuccess = publicationIntent === "publish" ? (target.is_visible ? "公開情報としおりの最新版を反映しました。" : "みんなのしおりに公開しました。") : "旅行先・タグを保存しました。";
       await loadBookmarks();
     } catch {
       publicationError = "公開に失敗しました。時間をおいてもう一度お試しください。";
@@ -339,7 +343,7 @@
     if (publishingIds.has(id)) return;
     const item = bookmarks.find((bookmark) => bookmark.itinerary_id === id);
     if (!item) return;
-    if (!item.prefecture_slugs?.length) return openPublication(item);
+    if (!item.prefecture_slugs?.length) return openPublication(item, "publish");
     publishingIds = new Set([...publishingIds, id]);
     try {
       await userApi.publishBookmark(id, {
@@ -438,7 +442,7 @@
       {#if activeTab === "map"}
         <section class="visited-map-card" aria-labelledby="visited-map-title">
           <div class="library-heading"><div><p>MY TRAVEL MAP</p><h2 id="visited-map-title">行った場所</h2></div><span>{Object.keys(visitedCounts).length}都道府県</span></div>
-          <p class="map-intro">公開情報に登録した旅行先を、しおりの件数で色分けしています。</p>
+          <p class="map-intro">アカウントに紐づくしおりの旅行先を、しおりの件数で色分けしています。</p>
           <JapanMap counts={visitedCounts} variant="visited" />
         </section>
       {:else}
@@ -451,11 +455,13 @@
             <article class:published={item.is_visible}>
               <div class="bookmark-status"><span>{item.is_visible ? "公開中" : "非公開"}</span><small>更新 {formatDate(item.itinerary_updated_at)}</small></div>
               <a class="bookmark-title" href="/itineraries/{item.itinerary_id}">{item.title}</a>
-              {#if item.is_visible}
+              {#if item.prefecture_slugs.length || item.tags.length}
                 <div class="publication-meta">
                   {#each item.prefecture_slugs ?? [] as slug}<span>{prefectureName(slug)}</span>{/each}
                   {#each item.tags ?? [] as tag}<span>#{tag}</span>{/each}
                 </div>
+              {/if}
+              {#if item.is_visible}
                 <p class="publication-note">公開用ID: <a href="/itineraries/{item.shared_itinerary_id}">{item.shared_itinerary_id}</a></p>
               {:else}
                 <p class="publication-note">公開すると、元の編集用IDとは別に閲覧専用IDを発行します。</p>
@@ -464,10 +470,11 @@
                 <a href="/itineraries/{item.itinerary_id}">編集する</a>
                 {#if item.is_visible}
                   <button onclick={() => republish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)}>{publishingIds.has(item.itinerary_id) ? "更新中…" : "最新版を反映"}</button>
-                  <button class="quiet" onclick={() => openPublication(item)}>公開情報</button>
+                  <button class="quiet" onclick={() => openPublication(item, "publish")}>公開情報</button>
                   <button class="danger" onclick={() => unpublish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)}>取り下げ</button>
                 {:else}
-                  <button class="publish-action" onclick={() => openPublication(item)}>みんなに公開</button>
+                  <button class="quiet" onclick={() => openPublication(item)}>旅行先・タグ</button>
+                  <button class="publish-action" onclick={() => openPublication(item, "publish")}>みんなに公開</button>
                   <button class="danger" onclick={() => (unlinkTarget = item)} disabled={publishingIds.has(item.itinerary_id)}>紐付けを解除</button>
                 {/if}
               </div>
@@ -481,9 +488,9 @@
         <div class="publication-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (publicationTarget = null)}>
           <div class="publication-dialog" role="dialog" aria-modal="true" aria-labelledby="publication-title">
             <button class="dialog-close" onclick={() => (publicationTarget = null)} aria-label="閉じる">×</button>
-            <p class="dialog-eyebrow">PUBLIC SETTINGS</p>
-            <h2 id="publication-title">{publicationTarget.is_visible ? "公開情報を編集" : "みんなのしおりに公開"}</h2>
-            <p class="dialog-intro">公開時点の内容を閲覧専用IDへコピーします。元のしおりや編集用URLは公開されません。</p>
+            <p class="dialog-eyebrow">TRIP METADATA</p>
+            <h2 id="publication-title">{publicationIntent === "publish" ? (publicationTarget.is_visible ? "公開情報を編集" : "みんなのしおりに公開") : "旅行先・タグを編集"}</h2>
+            <p class="dialog-intro">{publicationIntent === "publish" ? "公開時点の内容を閲覧専用IDへコピーします。元のしおりや編集用URLは公開されません。" : "旅行先とタグは非公開のまま登録できます。公開時はこの内容を公開情報にも使用します。"}</p>
             {#if publicationError}<p class="dialog-error">{publicationError}</p>{/if}
             <label for="publication-prefecture">主な旅行先 <strong>必須</strong></label>
             <select id="publication-prefecture" bind:value={publicationPrefecture}><option value="">選択してください</option>{#each explorePrefectures as item}<option value={item.slug}>{item.name}</option>{/each}</select>
@@ -492,7 +499,7 @@
             <fieldset><legend>旅のテーマ <span>任意・3件まで</span></legend>
               <div class="publication-tags">{#each travelTags as tag}<button class:selected={publicationTags.includes(tag)} onclick={() => togglePublicationTag(tag)}>{tag}</button>{/each}</div>
             </fieldset>
-            <button class="dialog-publish" onclick={savePublication} disabled={publishingIds.has(publicationTarget.itinerary_id)}>{publishingIds.has(publicationTarget.itinerary_id) ? "公開しています…" : publicationTarget.is_visible ? "変更して最新版を公開" : "この内容で公開する"}</button>
+            <button class="dialog-publish" onclick={savePublication} disabled={publishingIds.has(publicationTarget.itinerary_id)}>{publishingIds.has(publicationTarget.itinerary_id) ? (publicationIntent === "publish" ? "公開しています…" : "保存しています…") : publicationIntent === "publish" ? (publicationTarget.is_visible ? "変更して最新版を公開" : "この内容で公開する") : "保存する"}</button>
           </div>
         </div>
       {/if}

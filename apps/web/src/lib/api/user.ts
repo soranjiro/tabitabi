@@ -13,6 +13,7 @@ import type {
   UserSessionProfile,
   PublishItineraryInput,
   PublishItineraryResponse,
+  UpdateBookmarkMetadataInput,
 } from '@tabitabi/types';
 import { userAuth } from '../user-auth';
 
@@ -73,6 +74,12 @@ export const userApi = {
   publishBookmark: (itineraryId: string, data: PublishItineraryInput) =>
     request<PublishItineraryResponse>(`/users/me/bookmarks/${itineraryId}/publish`, {
       method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateBookmarkMetadata: (itineraryId: string, data: UpdateBookmarkMetadataInput) =>
+    request<UserBookmarkWithItinerary>(`/users/me/bookmarks/${itineraryId}/metadata`, {
+      method: 'PATCH',
       body: JSON.stringify(data),
     }),
 

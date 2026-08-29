@@ -40,6 +40,9 @@ export interface UserBookmark {
   is_visible: boolean;
   created_at: string;
   updated_at: string;
+  prefecture_slugs: string[];
+  areas: string[];
+  tags: string[];
 }
 
 export interface UserBookmarkWithItinerary extends UserBookmark {
@@ -50,9 +53,6 @@ export interface UserBookmarkWithItinerary extends UserBookmark {
   source_itinerary_id?: string | null;
   shared_itinerary_id?: string | null;
   shared_updated_at?: string | null;
-  prefecture_slugs?: string[];
-  areas?: string[];
-  tags?: string[];
 }
 
 export interface PublicBookmark {
@@ -82,6 +82,12 @@ export interface PublicFeedResponse {
 }
 
 export interface PublishItineraryInput {
+  prefecture_slugs: string[];
+  areas?: string[];
+  tags?: string[];
+}
+
+export interface UpdateBookmarkMetadataInput {
   prefecture_slugs: string[];
   areas?: string[];
   tags?: string[];

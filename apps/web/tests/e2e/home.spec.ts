@@ -1,14 +1,16 @@
 import { expect, test } from '@playwright/test';
 
-test('home loads and scrolls to create section', async ({ page }) => {
+test('home explains the service and scrolls to create section', async ({ page }) => {
   await page.goto('/');
 
   await expect(page).toHaveTitle(/たびたび/);
 
-  const cta = page.getByRole('button', { name: '無料でしおりを作成' });
-  await expect(cta).toBeVisible();
+  await expect(page.getByRole('heading', { name: /旅のしおりで/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'みんなのしおりを見る' })).toBeVisible();
+  await expect(page.getByText('登録不要')).toBeVisible();
 
-  await expect(page.locator('#features')).toBeVisible();
+  const cta = page.getByRole('button', { name: /無料でしおりを作る/ });
+  await expect(cta).toBeVisible();
 
   await cta.click();
 

@@ -36,10 +36,6 @@ prefix_rule(
         "git log",
         "git stash",
     ],
-    not_match = [
-        "git reset --hard",
-        "git clean -f",
-    ],
 )
 
 # Force push: block completely
@@ -71,16 +67,6 @@ prefix_rule(
     match = [
         "git reset --hard",
         "git reset --hard HEAD~1",
-    ],
-)
-
-prefix_rule(
-    pattern = ["git", "clean", "-f"],
-    decision = "prompt",
-    justification = "Require approval before deleting untracked files with git clean -f.",
-    match = [
-        "git clean -f",
-        "git clean -fd",
     ],
 )
 

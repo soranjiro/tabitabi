@@ -1,3 +1,4 @@
+# Git: common non-destructive commands
 prefix_rule(
     pattern = [
         "git",
@@ -23,46 +24,176 @@ prefix_rule(
     ],
     decision = "allow",
     justification = "Allow common Git development commands without an approval prompt.",
+    match = [
+        "git status",
+        "git diff",
+        "git add .",
+        "git commit -m test",
+        "git pull",
+        "git push",
+        "git push origin main",
+        "git fetch",
+        "git log",
+        "git stash",
+    ],
     not_match = [
-        "git push --force",
-        "git push -f",
         "git reset --hard",
         "git clean -f",
     ],
 )
 
+# Force push: block completely
+prefix_rule(
+    pattern = ["git", "push", "--force"],
+    decision = "forbidden",
+    justification = "Block force pushes to protect remote Git history.",
+    match = [
+        "git push --force",
+        "git push --force origin main",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "push", "-f"],
+    decision = "forbidden",
+    justification = "Block force pushes to protect remote Git history.",
+    match = [
+        "git push -f",
+        "git push -f origin main",
+    ],
+)
+
+# Git destructive operations: require approval
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "prompt",
+    justification = "Require approval before discarding local changes with git reset --hard.",
+    match = [
+        "git reset --hard",
+        "git reset --hard HEAD~1",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "clean", "-f"],
+    decision = "prompt",
+    justification = "Require approval before deleting untracked files with git clean -f.",
+    match = [
+        "git clean -f",
+        "git clean -fd",
+    ],
+)
+
+# GitHub CLI: common safe operations
 prefix_rule(
     pattern = [
         "gh",
         [
             "api",
-            "auth",
             "browse",
             "issue",
             "pr",
-            "repo",
             "run",
             "workflow",
         ],
     ],
     decision = "allow",
     justification = "Allow common GitHub CLI development commands without an approval prompt.",
-    not_match = [
-        "gh repo delete",
-        "gh auth logout",
+    match = [
+        "gh pr list",
+        "gh pr view 123",
+        "gh issue list",
+        "gh run list",
+        "gh workflow list",
+        "gh browse",
+    ],
+)
+
+# GitHub repo commands: allow generally, but destructive operations are handled separately
+prefix_rule(
+    pattern = ["gh", "repo"],
+    decision = "allow",
+    justification = "Allow common GitHub repository commands.",
+    match = [
+        "gh repo view",
+        "gh repo clone owner/repo",
+        "gh repo list",
     ],
 )
 
 prefix_rule(
-    pattern = ["make"],
+    pattern = ["gh", "repo", "delete"],
+    decision = "prompt",
+    justification = "Require approval before deleting a GitHub repository.",
+    match = [
+        "gh repo delete owner/repo",
+    ],
+)
+
+# GitHub auth
+prefix_rule(
+    pattern = ["gh", "auth"],
     decision = "allow",
-    justification = "Allow project Makefile targets without an approval prompt.",
-    match = ["make", "make dev", "make test", "make build"],
+    justification = "Allow common GitHub authentication inspection commands.",
+    match = [
+        "gh auth status",
+    ],
 )
 
 prefix_rule(
-    pattern = ["pnpm"],
+    pattern = ["gh", "auth", "logout"],
+    decision = "prompt",
+    justification = "Require approval before logging out of GitHub CLI.",
+    match = [
+        "gh auth logout",
+    ],
+)
+
+# Make
+prefix_rule(
+    pattern = ["make", ["dev", "test", "build"]],
     decision = "allow",
-    justification = "Allow pnpm development commands without an approval prompt.",
-    match = ["pnpm install", "pnpm test", "pnpm run build", "pnpm run dev"],
+    justification = "Allow common project Makefile targets without an approval prompt.",
+    match = [
+        "make dev",
+        "make test",
+        "make build",
+    ],
+    not_match = [
+        "make deploy",
+        "make production",
+    ],
+)
+
+# pnpm
+prefix_rule(
+    pattern = ["pnpm", "install"],
+    decision = "allow",
+    justification = "Allow pnpm dependency installation.",
+    match = [
+        "pnpm install",
+    ],
+)
+
+prefix_rule(
+    pattern = ["pnpm", "test"],
+    decision = "allow",
+    justification = "Allow pnpm tests.",
+    match = [
+        "pnpm test",
+    ],
+)
+
+prefix_rule(
+    pattern = ["pnpm", "run", ["build", "dev"]],
+    decision = "allow",
+    justification = "Allow pnpm build and development scripts.",
+    match = [
+        "pnpm run build",
+        "pnpm run dev",
+    ],
+    not_match = [
+        "pnpm run deploy",
+        "pnpm publish",
+    ],
 )

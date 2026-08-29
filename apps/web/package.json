@@ -11,6 +11,7 @@
     "check:env": "node scripts/check-public-env.mjs",
     "build:docs": "tsx scripts/build-docs.ts",
     "post-build": "tsx scripts/post-build.ts",
+    "seed:official": "tsx scripts/generate-official-season-seed.ts",
     "preview": "vite preview",
     "deploy": "pnpm build && wrangler pages deploy .svelte-kit/cloudflare",
     "test": "vitest",

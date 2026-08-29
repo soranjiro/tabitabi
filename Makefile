@@ -49,6 +49,7 @@ migrate-new:
 	pnpm exec dbmate --migrations-dir apps/db/migrations/sql new $(name)
 
 seed-local:
+	cd apps/web && pnpm run seed:official
 	cd apps/api && WRANGLER_LOG_PATH=$(CURDIR)/apps/api/.wrangler/wrangler.log pnpm run seed:local
 
 test:

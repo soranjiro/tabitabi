@@ -8,11 +8,23 @@
 
 > README内のプレビュー画像は、`tabitabi.pages.dev` のURLから自動取得しています。サイトの画面更新にあわせて、READMEでも現在の画面を確認できます。
 
-## Screenshot
+## Screenshots
+
+### Home
 
 <a href="https://tabitabi.pages.dev">
   <img src="https://s.wordpress.com/mshots/v1/https%3A%2F%2Ftabitabi.pages.dev%2F?w=1200" alt="たびたび ホーム画面" width="800" />
 </a>
+
+### 公開しおり
+
+実際に公開されている公式しおり「春休みの京都旅行」です。
+
+<a href="https://tabitabi.pages.dev/itineraries/official-spring-public">
+  <img src="https://s.wordpress.com/mshots/v1/https%3A%2F%2Ftabitabi.pages.dev%2Fitineraries%2Fofficial-spring-public?w=1200" alt="公開しおり 春休みの京都旅行" width="800" />
+</a>
+
+👉 **[公開しおりを開く](https://tabitabi.pages.dev/itineraries/official-spring-public)**
 
 ## 主な機能
 
@@ -74,4 +86,5 @@
 ## Links
 
 - **Web App:** https://tabitabi.pages.dev
+- **公開しおり:** https://tabitabi.pages.dev/itineraries/official-spring-public
 - **Repository:** https://github.com/soranjiro/tabitabi

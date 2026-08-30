@@ -1,0 +1,605 @@
+/*
+ * Homepage hero polish.
+ *
+ * Keep the landing page immersive while making the visual hierarchy explicit:
+ * headline -> primary CTA -> reassurance -> secondary CTA -> product preview.
+ * These selectors intentionally include .home-page so they override the
+ * component-scoped defaults without leaking into itinerary pages.
+ */
+.home-page {
+  --hero-serif: "Yu Mincho", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Noto Serif JP", Georgia, serif;
+  --hero-ui: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif;
+}
+
+.home-page .hero-scene .hero-shade {
+  background:
+    linear-gradient(90deg, rgba(5, 17, 28, 0.73) 0%, rgba(6, 20, 32, 0.56) 43%, rgba(7, 22, 35, 0.28) 72%, rgba(5, 17, 28, 0.38) 100%),
+    linear-gradient(180deg, rgba(3, 13, 22, 0.18) 0%, rgba(4, 15, 24, 0.06) 46%, rgba(3, 13, 22, 0.52) 100%);
+}
+
+.home-page .site-header {
+  width: min(1320px, calc(100% - 64px));
+  height: 88px;
+}
+
+.home-page .site-header .brand {
+  color: rgba(255, 255, 255, 0.98);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+}
+
+.home-page .site-header .brand-mark {
+  width: 38px;
+  height: 38px;
+  border-color: rgba(255, 255, 255, 0.62);
+  color: #fff;
+  background: rgba(9, 25, 38, 0.16);
+  backdrop-filter: blur(8px);
+}
+
+.home-page .site-header .brand strong {
+  font-family: var(--hero-serif);
+  font-size: 23px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+}
+
+.home-page .site-header nav a {
+  color: rgba(255, 255, 255, 0.94);
+  font-family: var(--hero-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
+}
+
+.home-page .site-header .account-link {
+  color: #15243c;
+  text-shadow: none;
+  border-color: rgba(255, 255, 255, 0.64);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 28px rgba(4, 18, 30, 0.14);
+}
+
+.home-page .hero-main {
+  width: min(1260px, calc(100% - 80px));
+  height: calc(100svh - 88px);
+  padding: clamp(28px, 5vh, 58px) 0 clamp(70px, 10vh, 112px);
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: clamp(56px, 7vw, 104px);
+}
+
+.home-page .hero-copy {
+  display: flex;
+  max-width: 660px;
+  padding-left: 0;
+  flex-direction: column;
+  color: #fff;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.2);
+}
+
+.home-page .hero-copy h1 {
+  font-family: var(--hero-serif);
+  font-size: clamp(54px, 5.25vw, 78px);
+  font-weight: 400;
+  line-height: 1.38;
+  letter-spacing: 0.045em;
+  text-wrap: balance;
+}
+
+.home-page .hero-copy > p {
+  margin: 24px 0 0;
+  font-family: var(--hero-serif);
+  font-size: clamp(14px, 1.2vw, 16px);
+  font-weight: 400;
+  line-height: 1.9;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Flatten the action wrapper so the reassurance line can sit between CTAs. */
+.home-page .hero-copy .hero-actions {
+  display: contents;
+}
+
+.home-page .hero-copy .primary {
+  position: relative;
+  order: 3;
+  width: min(390px, 100%);
+  min-height: 66px;
+  margin-top: 32px;
+  padding: 0 64px;
+  border-radius: 26px;
+  justify-content: center;
+  gap: 0;
+  color: #fff;
+  background: color-mix(in srgb, var(--accent) 88%, white 12%);
+  box-shadow: 0 16px 38px color-mix(in srgb, var(--accent) 28%, rgba(0, 0, 0, 0.2));
+  font-family: var(--hero-ui);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+  text-shadow: none;
+  transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease;
+}
+
+.home-page .hero-copy .primary span {
+  position: absolute;
+  right: 28px;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.home-page .hero-copy .primary:hover {
+  filter: brightness(1.035) saturate(1.02);
+  transform: translateY(-2px);
+  box-shadow: 0 19px 44px color-mix(in srgb, var(--accent) 32%, rgba(0, 0, 0, 0.2));
+}
+
+.home-page .hero-copy .quick-facts {
+  order: 4;
+  display: flex;
+  margin: 17px 0 0;
+  padding: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  list-style: none;
+  text-shadow: none;
+}
+
+.home-page .hero-copy .quick-facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-family: var(--hero-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.035em;
+}
+
+.home-page .hero-copy .quick-facts li > span {
+  display: none;
+}
+
+.home-page .hero-copy .quick-facts li + li::before {
+  width: 3px;
+  height: 3px;
+  margin-right: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.58);
+  content: "";
+}
+
+.home-page .hero-copy .text-link {
+  order: 5;
+  align-self: flex-start;
+  margin-top: 26px;
+  padding: 4px 1px 6px;
+  border-bottom-color: rgba(255, 255, 255, 0.62);
+  color: rgba(255, 255, 255, 0.94);
+  font-family: var(--hero-ui);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.025em;
+  text-shadow: none;
+}
+
+.home-page .hero-copy .text-link span {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 17px;
+  transform: translateY(1px);
+}
+
+.home-page .preview-area {
+  width: 360px;
+  transform: translateY(clamp(24px, 5vh, 58px));
+}
+
+.home-page .preview-area .shiori-preview {
+  border-color: rgba(255, 255, 255, 0.72);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 26px 64px rgba(3, 16, 28, 0.24);
+  transform: none;
+}
+
+.home-page .preview-area .shiori-preview:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 31px 74px rgba(3, 16, 28, 0.3);
+}
+
+/* The sample itinerary itself is the useful preview; a duplicate photo adds weight. */
+.home-page .preview-area .preview-photo {
+  display: none;
+}
+
+.home-page .preview-area .preview-body {
+  padding: 24px 26px 18px;
+}
+
+.home-page .preview-area .preview-label b {
+  color: #25354b;
+  font-size: 22px;
+}
+
+.home-page .preview-area .preview-body h2 {
+  margin: 9px 0 5px;
+  font-family: var(--hero-serif);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.55;
+  letter-spacing: 0.015em;
+}
+
+.home-page .preview-area .preview-body > p {
+  margin-bottom: 17px;
+  font-size: 10px;
+}
+
+.home-page .preview-area .day-label {
+  margin-bottom: 9px;
+  font-family: var(--hero-ui);
+  font-size: 11px;
+}
+
+.home-page .preview-area ol li {
+  min-height: 36px;
+  font-size: 9.5px;
+}
+
+.home-page .preview-area ol time {
+  font-size: 8.5px;
+}
+
+.home-page .preview-area .preview-tabs {
+  padding: 14px 27px 17px;
+}
+
+.home-page .preview-area .tap-note {
+  right: -44px;
+  bottom: -48px;
+  opacity: 0.82;
+}
+
+.home-page .primary:focus-visible,
+.home-page .text-link:focus-visible,
+.home-page .shiori-preview:focus-visible,
+.home-page .menu-button:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.94);
+  outline-offset: 4px;
+}
+
+@media (max-width: 1080px) {
+  .home-page .site-header {
+    width: calc(100% - 48px);
+  }
+
+  .home-page .site-header .brand-route {
+    width: 92px;
+  }
+
+  .home-page .hero-main {
+    width: calc(100% - 64px);
+    grid-template-columns: minmax(0, 1fr) minmax(285px, 32vw);
+    gap: clamp(32px, 4.5vw, 56px);
+  }
+
+  .home-page .hero-copy h1 {
+    font-size: clamp(48px, 6vw, 64px);
+  }
+
+  .home-page .hero-copy .primary {
+    width: min(360px, 100%);
+  }
+
+  .home-page .preview-area {
+    width: min(330px, 32vw);
+  }
+
+  .home-page .preview-area .preview-body {
+    padding-inline: 22px;
+  }
+
+  .home-page .preview-area .preview-body h2 {
+    font-size: 18px;
+  }
+
+  .home-page .preview-area .tap-note {
+    right: -22px;
+  }
+}
+
+@media (max-width: 760px) {
+  .home-page .hero-stage {
+    height: 158svh;
+  }
+
+  .home-page .hero-scene .hero-shade {
+    background:
+      linear-gradient(180deg, rgba(4, 16, 26, 0.28) 0%, rgba(4, 16, 26, 0.38) 34%, rgba(4, 16, 26, 0.66) 76%, rgba(3, 13, 22, 0.8) 100%),
+      linear-gradient(90deg, rgba(3, 13, 22, 0.12), rgba(3, 13, 22, 0.2));
+  }
+
+  .home-page .site-header {
+    width: calc(100% - 32px);
+    height: 70px;
+  }
+
+  .home-page .site-header .brand-mark {
+    width: 32px;
+    height: 32px;
+  }
+
+  .home-page .site-header .brand strong {
+    font-size: 19px;
+  }
+
+  .home-page .site-header .brand-route {
+    width: 82px;
+    height: 20px;
+  }
+
+  .home-page .site-header nav {
+    position: absolute;
+    top: 60px;
+    right: 0;
+    display: none;
+    width: min(210px, calc(100vw - 32px));
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.78);
+    border-radius: 16px;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 18px 45px rgba(3, 16, 28, 0.25);
+    backdrop-filter: blur(14px);
+  }
+
+  .home-page .site-header nav.open {
+    display: flex;
+  }
+
+  .home-page .site-header nav a {
+    padding: 11px 12px;
+    color: #17263d;
+    text-shadow: none;
+  }
+
+  .home-page .site-header .account-link {
+    border: 0;
+    border-radius: 10px;
+    background: #f1f5f8;
+    box-shadow: none;
+  }
+
+  .home-page .site-header .menu-button {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 50%;
+    place-items: center;
+    color: #1b2e45;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 7px 22px rgba(3, 16, 28, 0.16);
+    font-size: 17px;
+    cursor: pointer;
+  }
+
+  .home-page .hero-main {
+    display: flex;
+    width: min(560px, calc(100% - 36px));
+    height: calc(100svh - 70px);
+    margin: 0 auto;
+    padding: clamp(24px, 5vh, 48px) 0 16px;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .home-page .hero-copy {
+    width: 100%;
+    max-width: none;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.24);
+  }
+
+  .home-page .hero-copy h1 {
+    font-size: clamp(39px, 10.8vw, 52px);
+    line-height: 1.4;
+    letter-spacing: 0.04em;
+  }
+
+  .home-page .hero-copy > p {
+    margin-top: 12px;
+    font-size: 12px;
+    line-height: 1.75;
+    letter-spacing: 0.1em;
+  }
+
+  .home-page .hero-copy .primary {
+    width: 100%;
+    min-height: 64px;
+    margin-top: 24px;
+    padding-inline: 58px;
+    border-radius: 25px;
+    font-size: 15px;
+    box-shadow: 0 13px 32px rgba(3, 16, 28, 0.25);
+  }
+
+  .home-page .hero-copy .primary span {
+    right: 25px;
+  }
+
+  .home-page .hero-copy .quick-facts {
+    margin-top: 14px;
+    justify-content: center;
+    gap: 9px;
+  }
+
+  .home-page .hero-copy .quick-facts li {
+    font-size: 11px;
+  }
+
+  .home-page .hero-copy .quick-facts li + li::before {
+    margin-right: 9px;
+  }
+
+  .home-page .hero-copy .text-link {
+    align-self: center;
+    margin-top: 20px;
+    font-size: 12px;
+  }
+
+  .home-page .preview-area {
+    width: min(100%, 340px);
+    margin: auto auto 0;
+    transform: none;
+  }
+
+  .home-page .preview-area .shiori-preview {
+    border-radius: 24px 24px 20px 20px;
+    box-shadow: 0 22px 50px rgba(3, 16, 28, 0.25);
+  }
+
+  .home-page .preview-area .preview-body {
+    padding: 17px 20px 11px;
+  }
+
+  .home-page .preview-area .preview-body h2 {
+    margin-top: 6px;
+    font-size: 16px;
+  }
+
+  .home-page .preview-area .preview-body > p {
+    margin-bottom: 11px;
+  }
+
+  .home-page .preview-area ol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 8px;
+  }
+
+  .home-page .preview-area ol li {
+    min-height: 29px;
+    padding-bottom: 4px;
+    grid-template-columns: 39px minmax(0, 1fr);
+    font-size: 7.5px;
+  }
+
+  .home-page .preview-area .preview-tabs {
+    padding: 10px 25px 12px;
+  }
+
+  .home-page .preview-area .tap-note,
+  .home-page .place-label,
+  .home-page .scroll-cue,
+  .home-page .paper-reveal {
+    display: none;
+  }
+}
+
+@media (max-width: 460px) {
+  .home-page .site-header {
+    width: calc(100% - 28px);
+  }
+
+  .home-page .site-header .brand-route {
+    width: 64px;
+  }
+
+  .home-page .hero-main {
+    width: calc(100% - 30px);
+    padding-top: clamp(18px, 4vh, 34px);
+  }
+
+  .home-page .hero-copy h1 {
+    font-size: clamp(36px, 10.8vw, 46px);
+  }
+
+  .home-page .hero-copy .primary {
+    min-height: 60px;
+    margin-top: 20px;
+  }
+
+  .home-page .hero-copy .quick-facts li {
+    font-size: 10.5px;
+  }
+
+  .home-page .hero-copy .text-link {
+    margin-top: 17px;
+  }
+
+  .home-page .preview-area {
+    width: min(100%, 326px);
+  }
+}
+
+@media (max-width: 360px) {
+  .home-page .site-header .brand-route {
+    display: none;
+  }
+
+  .home-page .hero-copy h1 {
+    font-size: 35px;
+  }
+
+  .home-page .hero-copy > p {
+    font-size: 11px;
+  }
+
+  .home-page .hero-copy .quick-facts {
+    gap: 7px;
+  }
+
+  .home-page .hero-copy .quick-facts li {
+    font-size: 10px;
+  }
+
+  .home-page .hero-copy .quick-facts li + li::before {
+    margin-right: 7px;
+  }
+}
+
+@media (max-height: 720px) and (max-width: 760px) {
+  .home-page .hero-main {
+    padding-top: 10px;
+  }
+
+  .home-page .hero-copy h1 {
+    font-size: 34px;
+  }
+
+  .home-page .hero-copy > p {
+    margin-top: 5px;
+  }
+
+  .home-page .hero-copy .primary {
+    min-height: 54px;
+    margin-top: 12px;
+  }
+
+  .home-page .hero-copy .quick-facts {
+    margin-top: 9px;
+  }
+
+  .home-page .hero-copy .text-link {
+    margin-top: 11px;
+  }
+
+  .home-page .preview-area .preview-body ol li:nth-child(n + 3) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-page .hero-copy .primary,
+  .home-page .preview-area .shiori-preview {
+    transition: none;
+  }
+}

@@ -9,7 +9,7 @@
   import Footer from "./home/Footer.svelte";
   import IconAirplane from "./home/icons/IconAirplane.svelte";
 
-  type Season = {
+  type Preview = {
     id: "spring" | "summer" | "autumn" | "winter";
     itineraryId: string;
     title: string;
@@ -20,7 +20,7 @@
     steps: Array<{ time: string; title: string }>;
   };
 
-  const seasons: Season[] = [
+  const previews: Preview[] = [
     {
       id: "spring",
       itineraryId: "official-spring-public",
@@ -83,13 +83,8 @@
     },
   ];
 
-  // Deterministic so the background is present in the server-rendered first
-  // paint and remains identical while the client hydrates.
-  const month = new Date().getUTCMonth();
-  const initialSeason = seasons[
-    month >= 2 && month <= 4 ? 0 : month >= 5 && month <= 7 ? 1 : month >= 8 && month <= 10 ? 2 : 3
-  ];
-  let season = $state<Season>(initialSeason);
+  const initialPreview = previews[Math.floor(Math.random() * previews.length)];
+  let preview = $state<Preview>(initialPreview);
   let loggedIn = $state(false);
   let menuOpen = $state(false);
   let scrollProgress = $state(0);
@@ -97,7 +92,7 @@
   let recentItineraries = $state<Array<{ id: string; title: string; visitedAt: number }>>([]);
 
   const heroStyle = $derived(
-    `--accent:${season?.accent ?? "#ec858c"};--paper-y:${Math.round((1 - scrollProgress) * 190)}px;--image-scale:${1 + scrollProgress * 0.045};--content-y:${Math.round(scrollProgress * -32)}px;--content-opacity:${1 - scrollProgress * 0.28}`,
+    `--accent:${preview?.accent ?? "#ec858c"};--paper-y:${Math.round((1 - scrollProgress) * 190)}px;--image-scale:${1 + scrollProgress * 0.045};--content-y:${Math.round(scrollProgress * -32)}px;--content-opacity:${1 - scrollProgress * 0.28}`,
   );
 
   function refreshLoggedIn() { loggedIn = userAuth.isLoggedIn(); }
@@ -134,7 +129,7 @@
 
 <svelte:head>
   <title>たびたび - 旅の予定を、ひとつに。</title>
-  <link rel="preload" as="image" href="/hero/background-{season.id}.avif" type="image/avif" fetchpriority="high" />
+  <link rel="preload" as="image" href="/hero/background-{preview.id}.avif" type="image/avif" fetchpriority="high" />
   <meta name="description" content="旅の予定をひとつにまとめて、URLでかんたん共有。登録不要・無料で使える旅のしおり作成サービスです。" />
   <link rel="canonical" href="https://tabitabi.pages.dev/" />
   <meta property="og:title" content="たびたび - 旅の予定を、ひとつに。" />
@@ -151,9 +146,9 @@
   <section class="hero-stage" bind:this={heroStage} style={heroStyle}>
     <div class="hero-scene">
       <picture class="hero-picture">
-          <source srcset="/hero/background-{season.id}.avif" type="image/avif" />
-          <source srcset="/hero/background-{season.id}.webp" type="image/webp" />
-          <img src="/hero/background-{season.id}.webp" alt="{season.destination}の{season.id === 'spring' ? '春' : season.id === 'summer' ? '夏' : season.id === 'autumn' ? '秋' : '冬'}の風景" fetchpriority="high" decoding="async" style:object-position={season.imagePosition} />
+          <source srcset="/hero/background-{preview.id}.avif" type="image/avif" />
+          <source srcset="/hero/background-{preview.id}.webp" type="image/webp" />
+          <img src="/hero/background-{preview.id}.webp" alt="{preview.destination}の{preview.id === 'spring' ? '春' : preview.id === 'summer' ? '夏' : preview.id === 'autumn' ? '秋' : '冬'}の風景" fetchpriority="high" decoding="async" style:object-position={preview.imagePosition} />
       </picture>
       <div class="hero-shade"></div>
 
@@ -192,19 +187,19 @@
         </div>
 
         <div class="preview-area">
-            <a class="shiori-preview" href="/itineraries/{season.itineraryId}" aria-label="{season.title}のしおりを開く">
+            <a class="shiori-preview" href="/itineraries/{preview.itineraryId}" aria-label="{preview.title}のしおりを開く">
               <picture class="preview-photo">
-                <source srcset="/hero/background-{season.id}.avif" type="image/avif" />
-                <source srcset="/hero/background-{season.id}.webp" type="image/webp" />
-                <img src="/hero/background-{season.id}.webp" alt="" style:object-position={season.imagePosition} />
+                <source srcset="/hero/background-{preview.id}.avif" type="image/avif" />
+                <source srcset="/hero/background-{preview.id}.webp" type="image/webp" />
+                <img src="/hero/background-{preview.id}.webp" alt="" style:object-position={preview.imagePosition} />
               </picture>
               <div class="preview-body">
                 <div class="preview-label"><b aria-hidden="true">♡</b></div>
-                <h2>{season.title}</h2>
-                <p>{season.duration}・{season.destination}</p>
+                <h2>{preview.title}</h2>
+                <p>{preview.duration}・{preview.destination}</p>
                 <strong class="day-label">Day 1</strong>
                 <ol>
-                  {#each season.steps as step}
+                  {#each preview.steps as step}
                     <li><time>{step.time}</time><span>{step.title}</span></li>
                   {/each}
                 </ol>
@@ -215,7 +210,7 @@
         </div>
       </main>
 
-      <p class="place-label">⌖ {season.destination}</p>
+      <p class="place-label">⌖ {preview.destination}</p>
       <button class="scroll-cue" onclick={scrollToCreate} aria-label="下へスクロール"><span>⌄</span></button>
       <div class="paper-reveal" aria-hidden="true"><i></i><b></b></div>
     </div>

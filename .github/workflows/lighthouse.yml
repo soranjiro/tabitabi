@@ -1,0 +1,176 @@
+name: Lighthouse PR Report
+
+on:
+  workflow_call:
+    inputs:
+      pr_number:
+        description: "Pull request number to comment on"
+        required: true
+        type: number
+      preview_url:
+        description: "Deployed preview URL to audit"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  lighthouse:
+    name: Lighthouse (mobile + desktop)
+    runs-on: ubuntu-latest
+    env:
+      PREVIEW_URL: ${{ inputs.preview_url }}
+      PR_NUMBER: ${{ inputs.pr_number }}
+
+    steps:
+      - name: Wait for preview to become available
+        run: |
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --location \
+            --retry 12 \
+            --retry-all-errors \
+            --retry-delay 5 \
+            --max-time 20 \
+            "$PREVIEW_URL" > /dev/null
+
+      - name: Run Lighthouse for mobile
+        id: mobile
+        continue-on-error: true
+        run: |
+          npx --yes lighthouse@latest "$PREVIEW_URL" \
+            --quiet \
+            --chrome-flags="--headless --no-sandbox" \
+            --only-categories=performance,accessibility,best-practices,seo \
+            --output=json \
+            --output-path=./lighthouse-mobile.json
+
+      - name: Run Lighthouse for desktop
+        id: desktop
+        continue-on-error: true
+        run: |
+          npx --yes lighthouse@latest "$PREVIEW_URL" \
+            --quiet \
+            --chrome-flags="--headless --no-sandbox" \
+            --preset=desktop \
+            --only-categories=performance,accessibility,best-practices,seo \
+            --output=json \
+            --output-path=./lighthouse-desktop.json
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-pr-${{ inputs.pr_number }}
+          path: |
+            lighthouse-mobile.json
+            lighthouse-desktop.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Comment pull request with Lighthouse results
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          MOBILE_OUTCOME: ${{ steps.mobile.outcome }}
+          DESKTOP_OUTCOME: ${{ steps.desktop.outcome }}
+        with:
+          script: |
+            const fs = require('node:fs');
+
+            const marker = '<!-- tabitabi-lighthouse -->';
+            const previewUrl = process.env.PREVIEW_URL;
+            const prNumber = Number(process.env.PR_NUMBER);
+
+            function readReport(path) {
+              if (!fs.existsSync(path)) return null;
+              return JSON.parse(fs.readFileSync(path, 'utf8'));
+            }
+
+            function categoryScore(report, category) {
+              const value = report?.categories?.[category]?.score;
+              if (typeof value !== 'number') return '—';
+
+              const score = Math.round(value * 100);
+              const indicator = score >= 90 ? '🟢' : score >= 50 ? '🟠' : '🔴';
+              return `${indicator} ${score}`;
+            }
+
+            function auditValue(report, audit) {
+              return report?.audits?.[audit]?.displayValue ?? '—';
+            }
+
+            const mobile = readReport('lighthouse-mobile.json');
+            const desktop = readReport('lighthouse-desktop.json');
+
+            const rows = [
+              ['Performance', categoryScore(mobile, 'performance'), categoryScore(desktop, 'performance')],
+              ['Accessibility', categoryScore(mobile, 'accessibility'), categoryScore(desktop, 'accessibility')],
+              ['Best Practices', categoryScore(mobile, 'best-practices'), categoryScore(desktop, 'best-practices')],
+              ['SEO', categoryScore(mobile, 'seo'), categoryScore(desktop, 'seo')],
+              ['First Contentful Paint', auditValue(mobile, 'first-contentful-paint'), auditValue(desktop, 'first-contentful-paint')],
+              ['Largest Contentful Paint', auditValue(mobile, 'largest-contentful-paint'), auditValue(desktop, 'largest-contentful-paint')],
+              ['Total Blocking Time', auditValue(mobile, 'total-blocking-time'), auditValue(desktop, 'total-blocking-time')],
+              ['Cumulative Layout Shift', auditValue(mobile, 'cumulative-layout-shift'), auditValue(desktop, 'cumulative-layout-shift')],
+              ['Speed Index', auditValue(mobile, 'speed-index'), auditValue(desktop, 'speed-index')],
+            ];
+
+            const table = rows
+              .map(([metric, mobileValue, desktopValue]) => `| ${metric} | ${mobileValue} | ${desktopValue} |`)
+              .join('\n');
+
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const execution = process.env.MOBILE_OUTCOME === 'success' && process.env.DESKTOP_OUTCOME === 'success'
+              ? '✅ Both Lighthouse runs completed successfully.'
+              : `⚠️ Lighthouse execution issue: mobile=${process.env.MOBILE_OUTCOME}, desktop=${process.env.DESKTOP_OUTCOME}`;
+
+            const body = `${marker}
+            ## 🔦 Lighthouse Report
+
+            ${execution}
+
+            **Preview:** ${previewUrl}
+
+            | Metric | Mobile | Desktop |
+            | --- | ---: | ---: |
+            ${table}
+
+            Full JSON reports are attached to the [workflow run](${runUrl}) as an artifact.
+
+            _This comment is updated whenever the preview is redeployed for this pull request._`;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+
+            const existing = comments.find((comment) => comment.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
+
+      - name: Fail when Lighthouse execution failed
+        if: always() && (steps.mobile.outcome != 'success' || steps.desktop.outcome != 'success')
+        run: |
+          echo "Lighthouse failed: mobile=${{ steps.mobile.outcome }}, desktop=${{ steps.desktop.outcome }}" >&2
+          exit 1

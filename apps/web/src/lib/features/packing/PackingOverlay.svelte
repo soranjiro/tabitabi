@@ -4,7 +4,7 @@
   import { membersApi } from '$lib/api/members';
   import { demoStorage, getIsDemoMode } from '$lib/demo';
   import { movePackingGroup, orderPackingGroups, shouldPromptForPackingIdentity } from './packing';
-  import { CloseIcon } from '$lib/themes/standard-seasons/shared/components/icons/index.svelte';
+  import { CloseIcon } from '$lib/themes/standard/core/components/icons/index.svelte';
   import './packing.css';
 
   interface Props { show: boolean; itineraryId: string; canEdit: boolean; onClose: () => void; }

@@ -6,7 +6,8 @@ import { validateMemoJson } from '../utils/memo';
 import { createPublicMemoSnapshot, createPublicStepSnapshot, createPublicTextSnapshot } from '../utils/publication';
 import { hashPassword } from '../utils/password';
 
-const DEFAULT_THEME_ID = 'standard-autumn';
+const DEFAULT_THEME_ID = 'standard-accordion';
+const DEFAULT_PALETTE_ID = 'ocean';
 const DEFAULT_VIEW_MODE = 'dayCard';
 
 export class ItineraryService {
@@ -61,6 +62,7 @@ export class ItineraryService {
       id,
       title: input.title,
       theme_id: input.theme_id || DEFAULT_THEME_ID,
+      palette_id: input.palette_id || DEFAULT_PALETTE_ID,
       default_view_mode: input.default_view_mode ?? DEFAULT_VIEW_MODE,
       packing_enabled: input.packing_enabled ?? true,
       prefecture_slugs: [],
@@ -80,8 +82,8 @@ export class ItineraryService {
 
     // Insert into main table
     await this.db
-      .prepare('INSERT INTO itineraries (id, title, theme_id, default_view_mode, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.default_view_mode, itinerary.packing_enabled ? 1 : 0, '[]', '[]', '[]', 0, itinerary.memo, itinerary.password, itinerary.created_at, itinerary.updated_at)
+      .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, default_view_mode, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.palette_id, itinerary.default_view_mode, itinerary.packing_enabled ? 1 : 0, '[]', '[]', '[]', 0, itinerary.memo, itinerary.password, itinerary.created_at, itinerary.updated_at)
       .run();
 
     // Insert into secrets table if settings exist
@@ -116,6 +118,10 @@ export class ItineraryService {
     if (input.theme_id !== undefined) {
       fields.push('theme_id = ?');
       values.push(input.theme_id || DEFAULT_THEME_ID);
+    }
+    if (input.palette_id !== undefined) {
+      fields.push('palette_id = ?');
+      values.push(input.palette_id || DEFAULT_PALETTE_ID);
     }
     if (input.default_view_mode !== undefined) {
       fields.push('default_view_mode = ?');
@@ -220,8 +226,8 @@ export class ItineraryService {
 
     await this.db.batch([
       this.db
-        .prepare('INSERT INTO itineraries (id, title, theme_id, default_view_mode, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?)')
-        .bind(newId, `${source.title}（コピー）`, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), source.memo, now, now),
+        .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, default_view_mode, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?)')
+        .bind(newId, `${source.title}（コピー）`, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, source.default_view_mode ?? DEFAULT_VIEW_MODE, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), source.memo, now, now),
       ...stepStatements,
       // Upsert fork_count in the dedicated stats table
       this.db
@@ -275,8 +281,8 @@ export class ItineraryService {
       try {
         await this.db.batch([
           this.db
-          .prepare('INSERT INTO itineraries (id, title, theme_id, default_view_mode, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?, ?)')
-            .bind(newId, publicTitle, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, sourceId, now, now),
+          .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, default_view_mode, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?, ?)')
+            .bind(newId, publicTitle, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, source.default_view_mode ?? DEFAULT_VIEW_MODE, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, sourceId, now, now),
           ...stepStatements,
         ]);
         return (await this.get(newId))!;
@@ -303,8 +309,8 @@ export class ItineraryService {
 
       await this.db.batch([
         this.db
-          .prepare('UPDATE itineraries SET title = ?, theme_id = ?, default_view_mode = ?, packing_enabled = ?, prefecture_slugs = ?, areas = ?, tags = ?, metadata_initialized = 1, memo = ?, updated_at = ? WHERE id = ?')
-          .bind(publicTitle, source.theme_id, source.default_view_mode ?? DEFAULT_VIEW_MODE, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, now, sharedId),
+          .prepare('UPDATE itineraries SET title = ?, theme_id = ?, palette_id = ?, default_view_mode = ?, packing_enabled = ?, prefecture_slugs = ?, areas = ?, tags = ?, metadata_initialized = 1, memo = ?, updated_at = ? WHERE id = ?')
+          .bind(publicTitle, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, source.default_view_mode ?? DEFAULT_VIEW_MODE, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, now, sharedId),
         this.db
           .prepare('DELETE FROM steps WHERE itinerary_id = ?')
           .bind(sharedId),
@@ -330,6 +336,7 @@ export class ItineraryService {
       id: row.id as string,
       title: row.title as string,
       theme_id: row.theme_id as string,
+      palette_id: (row.palette_id as string) || DEFAULT_PALETTE_ID,
       default_view_mode: (row.default_view_mode as Itinerary['default_view_mode']) ?? DEFAULT_VIEW_MODE,
       packing_enabled: row.packing_enabled !== 0,
       prefecture_slugs: this.parseStringArray(row.prefecture_slugs),

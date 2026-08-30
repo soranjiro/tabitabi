@@ -21,6 +21,7 @@ export const createItinerarySchema = z.object({
     .min(1, 'title is required')
     .max(100, 'title must be at most 100 characters'),
   theme_id: z.string().optional(),
+  palette_id: z.string().min(1).max(32).optional(),
   default_view_mode: z.enum(['dayCard', 'list', 'month', 'week']).optional(),
   packing_enabled: z.boolean().optional(),
   memo: z.string().optional(),
@@ -38,6 +39,7 @@ export const updateItinerarySchema = z.object({
     .max(100, 'title must be at most 100 characters')
     .optional(),
   theme_id: z.string().optional(),
+  palette_id: z.string().min(1).max(32).optional(),
   default_view_mode: z.enum(['dayCard', 'list', 'month', 'week']).optional(),
   packing_enabled: z.boolean().optional(),
   prefecture_slugs: z.array(z.string().trim().min(1).max(32)).max(3).optional(),

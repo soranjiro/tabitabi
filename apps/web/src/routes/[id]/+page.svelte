@@ -8,12 +8,13 @@
   import LazyPrintStudio from "$lib/print/LazyPrintStudio.svelte";
   import { onMount } from "svelte";
   import type { Theme } from "@tabitabi/types";
+  import { getPalette } from "$lib/themes";
 
   let { data } = $props();
 
   let ItineraryView = $derived(data.theme.components.ItineraryView);
   let backgroundColor = $derived(
-    data.theme.ui.customColors?.background || "#f9fafb",
+    getPalette(data.itinerary.palette_id).colors["--theme-bg"] || data.theme.ui.customColors?.background || "#f9fafb",
   );
 
   function applyThemeCssVars(theme: Theme) {
@@ -41,9 +42,16 @@
     );
   }
 
+  function applyPaletteCssVars(paletteId?: string) {
+    for (const [key, value] of Object.entries(getPalette(paletteId).colors)) {
+      document.documentElement.style.setProperty(key, value);
+    }
+  }
+
   $effect(() => {
     if (data.theme) {
       applyThemeCssVars(data.theme);
+      applyPaletteCssVars(data.itinerary.palette_id);
     }
   });
 
@@ -119,6 +127,7 @@
   async function handleUpdateItinerary(updateData: {
     title?: string;
     theme_id?: string;
+    palette_id?: string;
     default_view_mode?: import("@tabitabi/types").ItineraryViewMode;
     packing_enabled?: boolean;
     prefecture_slugs?: string[];

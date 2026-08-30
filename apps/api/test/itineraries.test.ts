@@ -11,6 +11,7 @@ async function applyMigrations(db: D1Database) {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       theme_id TEXT NOT NULL DEFAULT 'standard-autumn',
+      palette_id TEXT NOT NULL DEFAULT 'sakura',
       default_view_mode TEXT NOT NULL DEFAULT 'dayCard',
       packing_enabled INTEGER NOT NULL DEFAULT 1,
       prefecture_slugs TEXT NOT NULL DEFAULT '[]',
@@ -135,7 +136,8 @@ describe('Itineraries API', () => {
       const { success, data } = await response.json() as any;
       expect(success).toBe(true);
       expect(data.title).toBe('Test Trip');
-      expect(data.theme_id).toBe('standard-autumn');
+      expect(data.theme_id).toBe('standard-accordion');
+      expect(data.palette_id).toBe('ocean');
       expect(data.packing_enabled).toBe(true);
       expect(data.metadata_initialized).toBe(false);
       expect(data.prefecture_slugs).toEqual([]);

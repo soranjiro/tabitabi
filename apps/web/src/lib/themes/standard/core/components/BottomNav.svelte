@@ -1,0 +1,64 @@
+<script lang="ts">
+  import { goto } from "$app/navigation";
+  import { HomeIcon } from "./icons/index.svelte";
+
+  interface Props {
+    onMoneyOpen: () => void;
+    onPackingOpen: () => void;
+    onMenuClick?: () => void;
+    packingEnabled?: boolean;
+  }
+
+  let {
+    onMoneyOpen,
+    onPackingOpen,
+    onMenuClick,
+    packingEnabled = true,
+  }: Props = $props();
+
+  const MenuIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>`;
+</script>
+
+<nav class="standard-bottom-nav" aria-label="フッターメニュー">
+  <button
+    class="standard-bottom-btn"
+    title="ホーム"
+    aria-label="ホーム"
+    onclick={() => goto("/")}
+  >
+    {@html HomeIcon}
+    <span>ホーム</span>
+  </button>
+
+  {#if packingEnabled}
+    <button
+      class="standard-bottom-btn"
+      title="持ち物リスト"
+      aria-label="持ち物リスト"
+      onclick={onPackingOpen}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3h6a2 2 0 0 1 2 2v1h2a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2V5a2 2 0 0 1 2-2Zm0 3h6V5H9v1Zm-2 5v2h10v-2H7Z"/></svg>
+      <span>持ち物</span>
+    </button>
+  {/if}
+
+  <button
+    class="standard-bottom-btn"
+    title="お金の管理"
+    aria-label="お金の管理"
+    onclick={onMoneyOpen}
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 16.93V20h-2v-1.07A4.1 4.1 0 0 1 7.8 15h2.05c.08.7.68 1.18 1.66 1.18.9 0 1.5-.38 1.5-.98 0-.54-.4-.82-1.75-1.12-1.87-.42-3.08-1.25-3.08-2.88 0-1.43 1.09-2.54 2.82-2.8V5h2v1.13A3.72 3.72 0 0 1 15.9 9h-2.02c-.1-.58-.6-.98-1.44-.98-.8 0-1.3.35-1.3.88 0 .5.42.78 1.77 1.1 1.88.43 3.05 1.3 3.05 2.94 0 1.5-1.17 2.68-2.96 2.99Z"/></svg>
+    <span>お金</span>
+  </button>
+
+  <button
+    class="standard-bottom-btn"
+    title="メニュー"
+    aria-label="メニュー"
+    onclick={onMenuClick}
+  >
+    {@html MenuIcon}
+    <span>メニュー</span>
+  </button>
+</nav>

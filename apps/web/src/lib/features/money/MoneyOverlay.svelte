@@ -3,7 +3,7 @@
   import type { MoneyData, MoneyFundTransaction, MoneyFundTransactionKind, MoneyItem, MoneyItemStatus, MoneyMember, Step } from '@tabitabi/types';
   import { moneyApi } from '$lib/api/money';
   import { demoStorage, getIsDemoMode } from '$lib/demo';
-  import { CloseIcon } from '$lib/themes/standard-seasons/shared/components/icons/index.svelte';
+  import { CloseIcon } from '$lib/themes/standard/core/components/icons/index.svelte';
   import './money.css';
 
   interface Props {

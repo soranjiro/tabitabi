@@ -10,6 +10,8 @@ export interface Itinerary {
   id: string;
   title: string;
   theme_id: string;
+  /** Color palette is independent from the selected layout preset. */
+  palette_id?: string;
   /** Opening view chosen by the itinerary owner. Older itineraries use dayCard. */
   default_view_mode?: ItineraryViewMode;
   /** Feature switches belong to the itinerary, not to a visual theme. */
@@ -48,6 +50,7 @@ export type ItineraryResponse = Omit<Itinerary, 'password'> & {
 export interface CreateItineraryInput {
   title: string;
   theme_id?: string;             // オプション、デフォルト: standard season
+  palette_id?: string;
   default_view_mode?: ItineraryViewMode;
   packing_enabled?: boolean;
   memo?: string;
@@ -61,6 +64,7 @@ export interface CreateItineraryInput {
 export interface UpdateItineraryInput {
   title?: string;
   theme_id?: string;
+  palette_id?: string;
   default_view_mode?: ItineraryViewMode;
   packing_enabled?: boolean;
   prefecture_slugs?: string[];

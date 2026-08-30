@@ -3,10 +3,14 @@ import type { Theme } from "@tabitabi/types";
 export {
   defaultThemeId,
   availableThemes,
+  defaultPaletteId,
   getAvailableThemes,
+  getAvailablePalettes,
+  getPalette,
+  getThemePreset,
   getThemePhrases,
 } from "./catalog";
-export type { AvailableTheme } from "./catalog";
+export type { AvailableTheme, PaletteId, ThemePresetOption } from "./catalog";
 
 export async function loadTheme(themeId: string): Promise<Theme> {
   switch (themeId) {
@@ -15,13 +19,15 @@ export async function loadTheme(themeId: string): Promise<Theme> {
     case "mapbox-journey":
       return (await import("./mapbox-journey")).default;
     case "standard-spring":
-      return (await import("./standard-seasons/spring")).default;
+      return (await import("./standard/presets/day-card")).default;
+    case "standard-accordion":
+      return (await import("./standard/presets/accordion")).default;
     case "standard-summer":
-      return (await import("./standard-seasons/summer")).default;
+      return (await import("./standard/presets/list")).default;
     case "standard-autumn":
-      return (await import("./standard-seasons/autumn")).default;
+      return (await import("./standard/presets/week")).default;
     case "standard-winter":
-      return (await import("./standard-seasons/winter")).default;
+      return (await import("./standard/presets/month")).default;
     case "ai-generated":
       return (await import("./ai-generated")).default;
     case "shopping":
@@ -31,7 +37,7 @@ export async function loadTheme(themeId: string): Promise<Theme> {
     case "sauna-rally":
       return (await import("./sauna-rally")).default;
     default:
-      return (await import("./standard-seasons/spring")).default;
+      return (await import("./standard/presets/accordion")).default;
   }
 }
 

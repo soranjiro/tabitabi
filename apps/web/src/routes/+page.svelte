@@ -177,9 +177,9 @@
             <a class="text-link" href="/explore">みんなのしおりを見る <span aria-hidden="true">›</span></a>
           </div>
           <ul class="quick-facts" aria-label="サービスの特徴">
-            <li><span aria-hidden="true">♙</span>登録不要</li>
+            <li><span class="plain-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20c.6-4 2.8-6.1 6.5-6.1s5.9 2.1 6.5 6.1"/></svg></span>登録不要</li>
             <li><span aria-hidden="true">¥0</span>無料</li>
-            <li><span aria-hidden="true">↗</span>URL共有</li>
+            <li><span class="plain-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9.5 14.5l5-5"/><path d="M7.2 16.8l-1.1 1.1a3.4 3.4 0 0 1-4.8-4.8l3.1-3.1a3.4 3.4 0 0 1 4.8 0"/><path d="M16.8 7.2l1.1-1.1a3.4 3.4 0 0 1 4.8 4.8L19.6 14a3.4 3.4 0 0 1-4.8 0"/></svg></span>URL共有</li>
           </ul>
         </div>
 
@@ -204,7 +204,7 @@
               </div>
               <div class="preview-tabs"><span>⌖<small>旅程</small></span><span>◇<small>マップ</small></span><span>□<small>メモ</small></span><span>▧<small>写真</small></span></div>
             </a>
-            <div class="tap-note" aria-hidden="true"><span></span><p>タップで<br />しおりを開く</p></div>
+            <div class="tap-note" aria-hidden="true"><svg viewBox="0 0 70 38"><path d="M66 30C50 31 45 13 30 14 19 15 14 24 4 19"/><path d="M58 24l8 6-8 5"/></svg><p>タップで<br />しおりを開く</p></div>
           </div>
         {/if}
       </main>
@@ -266,6 +266,8 @@
   .quick-facts { display: flex; margin: 34px 0 0; padding: 0; gap: 27px; list-style: none; }
   .quick-facts li { display: flex; align-items: center; gap: 7px; color: #22334b; font-size: 11px; font-weight: 800; }
   .quick-facts span { display: grid; width: 25px; height: 25px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: 9px; }
+  .quick-facts .plain-icon { border: 0; border-radius: 0; }
+  .quick-facts .plain-icon svg { width: 22px; height: 22px; }
   .preview-area { position: relative; width: 330px; }
   .shiori-preview { display: block; overflow: hidden; border: 1px solid rgba(255,255,255,.9); border-radius: 22px; color: #1d2a40; background: rgba(255,255,255,.96); box-shadow: 0 25px 70px rgba(10,30,45,.28); text-decoration: none; transform: rotate(1.2deg); transition: transform 180ms ease, box-shadow 180ms ease; }
   .shiori-preview:hover { transform: translateY(-6px) rotate(0); box-shadow: 0 30px 82px rgba(10,30,45,.36); }
@@ -286,8 +288,8 @@
   .preview-tabs span { display: grid; gap: 3px; place-items: center; font-size: 14px; }
   .preview-tabs small { font-size: 7px; font-weight: 800; }
   .tap-note { position: absolute; right: -56px; bottom: -50px; display: flex; align-items: center; color: rgba(255,255,255,.96); font-family: "Yu Mincho", Georgia, serif; transform: rotate(-5deg); }
-  .tap-note span { display: block; width: 48px; height: 31px; margin-right: 7px; border-top: 2px dashed currentColor; border-radius: 50%; transform: rotate(18deg); }
-  .tap-note span::after { display: block; width: 7px; height: 7px; margin: -5px 0 0 37px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; content: ""; transform: rotate(12deg); }
+  .tap-note svg { width: 64px; height: 38px; margin-right: 5px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .tap-note svg path:first-child { stroke-dasharray: 4 5 7 4; }
   .tap-note p { margin: 0; font-size: 13px; line-height: 1.6; letter-spacing: .1em; }
   .place-label { position: absolute; right: 27px; bottom: 34px; margin: 0; color: rgba(255,255,255,.9); font-size: 9px; font-weight: 700; letter-spacing: .08em; text-shadow: 0 2px 5px rgba(0,0,0,.5); }
   .scroll-cue { position: absolute; z-index: 5; bottom: 16px; left: 50%; display: grid; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%; place-items: center; color: #23354d; background: white; box-shadow: 0 4px 14px rgba(13,32,47,.17); cursor: pointer; transform: translateX(-50%); }
@@ -352,7 +354,7 @@
     ol li { min-height: 29px; padding-bottom: 4px; grid-template-columns: 39px minmax(0, 1fr); font-size: 7px; }
     .preview-tabs { padding: 9px 25px 11px; }
     .tap-note { right: -1px; bottom: -37px; color: white; }
-    .tap-note span { width: 35px; }
+    .tap-note svg { width: 45px; }
     .tap-note p { font-size: 9px; }
     .place-label { display: none; }
     .scroll-cue { display: none; }

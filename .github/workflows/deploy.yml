@@ -78,6 +78,10 @@ jobs:
         working-directory: apps/api
         run: node scripts/d1-migrate.mjs up --remote --env production
 
+      - name: Seed official itineraries
+        working-directory: apps/api
+        run: node scripts/d1-migrate.mjs seed --remote --env production
+
       - name: Deploy API (Workers)
         working-directory: apps/api
         run: pnpm wrangler deploy --env production

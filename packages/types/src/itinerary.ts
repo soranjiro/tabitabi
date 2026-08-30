@@ -12,8 +12,6 @@ export interface Itinerary {
   theme_id: string;
   /** Color palette is independent from the selected layout preset. */
   palette_id?: string;
-  /** Opening view chosen by the itinerary owner. Older itineraries use dayCard. */
-  default_view_mode?: ItineraryViewMode;
   /** Feature switches belong to the itinerary, not to a visual theme. */
   packing_enabled?: boolean;
   /** Search/discovery metadata shared by every owner and publication of this itinerary. */
@@ -51,7 +49,6 @@ export interface CreateItineraryInput {
   title: string;
   theme_id?: string;             // オプション、デフォルト: planning-draft
   palette_id?: string;
-  default_view_mode?: ItineraryViewMode;
   packing_enabled?: boolean;
   memo?: string;
   password?: string;
@@ -65,7 +62,6 @@ export interface UpdateItineraryInput {
   title?: string;
   theme_id?: string;
   palette_id?: string;
-  default_view_mode?: ItineraryViewMode;
   packing_enabled?: boolean;
   prefecture_slugs?: string[];
   areas?: string[];

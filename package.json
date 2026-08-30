@@ -11,6 +11,8 @@
     "deploy": "turbo deploy",
     "deploy:api": "pnpm --filter api deploy",
     "deploy:web": "pnpm --filter web deploy",
+    "db:schema": "node apps/db/scripts/generate-schema.mjs",
+    "db:schema:check": "pnpm run db:schema && git diff --exit-code -- apps/db/schema.sql",
     "test": "turbo test:run",
     "test:api": "pnpm --filter api test:run",
     "test:web": "pnpm --filter web test:run",

@@ -40,7 +40,6 @@
       title?: string;
       theme_id?: string;
       palette_id?: string;
-      default_view_mode?: import("@tabitabi/types").ItineraryViewMode;
       packing_enabled?: boolean;
       prefecture_slugs?: string[];
       areas?: string[];

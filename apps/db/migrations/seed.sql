@@ -1,63 +1,11 @@
--- Local development data using the same source -> public snapshot model as production.
-INSERT OR IGNORE INTO users (
-  id, username, email, password_hash, prefecture,
-  email_verified_at, created_at, updated_at
-) VALUES (
-  'local-user-aoi', 'aoi_local', 'aoi.local@example.com', '!firebase-managed!', '東京都',
-  '2026-08-12T00:00:00.000Z', '2026-08-12T00:00:00.000Z', '2026-08-12T00:00:00.000Z'
-);
-
-INSERT OR IGNORE INTO itineraries (
-  id, title, theme_id, default_view_mode, memo, password,
-  source_itinerary_id, created_at, updated_at
-) VALUES (
-  'local-kyoto-source', '朝の京都と喫茶店をめぐる2日間', 'standard-spring', 'dayCard',
-  '{"text":"朝の静かな時間を中心に、歩きすぎない日程にしました。"}', NULL,
-  NULL, '2026-08-12T00:00:00.000Z', '2026-08-12T00:00:00.000Z'
-);
-
-INSERT OR IGNORE INTO itineraries (
-  id, title, theme_id, default_view_mode, memo, password,
-  source_itinerary_id, created_at, updated_at
-) VALUES (
-  'local-kyoto-public', '朝の京都と喫茶店をめぐる2日間', 'standard-spring', 'dayCard',
-  '{"text":"朝の静かな時間を中心に、歩きすぎない日程にしました。"}', NULL,
-  'local-kyoto-source', '2026-08-12T00:00:00.000Z', '2026-08-12T00:00:00.000Z'
-);
-
-INSERT OR IGNORE INTO steps (
-  id, itinerary_id, title, start_at, end_at, location, notes,
-  link, type, is_all_day, created_at, updated_at
-) VALUES
-  ('local-public-step-1', 'local-kyoto-public', '清水寺の開門に合わせて散歩', 1791676800000, 1791680400000, '清水寺', '', NULL, 'normal:sightseeing', 0, '2026-08-12T00:00:00.000Z', '2026-08-12T00:00:00.000Z'),
-  ('local-public-step-2', 'local-kyoto-public', '東山の喫茶店で朝ごはん', 1791684000000, 1791687600000, '東山', '', NULL, 'normal:food', 0, '2026-08-12T00:00:00.000Z', '2026-08-12T00:00:00.000Z'),
-  ('local-public-step-3', 'local-kyoto-public', '鴨川沿いを歩いて宿へ', 1791712800000, 1791718200000, '鴨川', '', NULL, 'normal:sightseeing', 0, '2026-08-12T00:00:00.000Z', '2026-08-12T00:00:00.000Z');
-
-INSERT OR IGNORE INTO user_bookmarks (
-  user_id, itinerary_id, is_visible, created_at, updated_at
-) VALUES (
-  'local-user-aoi', 'local-kyoto-source', 1,
-  '2026-08-12T00:00:00.000Z', '2026-08-12T00:00:00.000Z'
-);
-
-INSERT OR REPLACE INTO itinerary_publications (
-  source_itinerary_id, shared_itinerary_id, user_id,
-  prefecture_slugs, areas, tags, published_at, updated_at
-) VALUES (
-  'local-kyoto-source', 'local-kyoto-public', 'local-user-aoi',
-  '["kyoto"]', '["東山","鴨川"]', '["寺社・歴史","カフェ"]',
-  '2026-08-12T00:00:00.000Z', '2026-08-12T00:00:00.000Z'
-);
-
-INSERT OR REPLACE INTO itinerary_fork_stats (itinerary_id, fork_count)
-VALUES ('local-kyoto-public', 3);
-
 -- Official seasonal examples shown in the public feed.
--- Generated from the four standard-seasons demo-data.ts files.
 -- Re-seeding removes the previous official examples before recreating them.
+-- Retire the obsolete local preview snapshot if it exists in an older local DB.
+DELETE FROM itineraries WHERE id = 'local-kyoto-public';
+-- Delete the old official graph first so this seed is safe to apply after every deploy.
+DELETE FROM itineraries WHERE id GLOB 'official-*-source';
+DELETE FROM itineraries WHERE id GLOB 'official-*-public';
 DELETE FROM users WHERE id = 'official-user';
-DELETE FROM itineraries WHERE id LIKE 'official-%-source';
-DELETE FROM itineraries WHERE id LIKE 'official-%-public';
 
 INSERT INTO users (
   id, username, email, password_hash, prefecture,
@@ -69,10 +17,10 @@ INSERT INTO users (
 
 -- spring: 春休みの京都旅行
 INSERT INTO itineraries (
-  id, title, theme_id, default_view_mode, memo, password, source_itinerary_id, created_at, updated_at
+  id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
 ) VALUES
-  ('official-spring-source', '春休みの京都旅行', 'standard-spring', 'dayCard', '{"text":"桜シーズンは混雑するので早めの行動を！\n\n持ち物リスト\n- カメラ\n- 日焼け止め\n- 歩きやすい靴"}', NULL, NULL, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public', '春休みの京都旅行', 'standard-spring', 'dayCard', '{"text":"桜シーズンは混雑するので早めの行動を！\n\n持ち物リスト\n- カメラ\n- 日焼け止め\n- 歩きやすい靴"}', NULL, 'official-spring-source', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
+  ('official-spring-source', '春休みの京都旅行', 'standard-spring', 'sakura', 1, '["kyoto"]', '["清水寺","祇園","嵐山"]', '["寺社・歴史","グルメ"]', 1, '{"text":"桜シーズンは混雑するので早めの行動を！\n\n持ち物リスト\n- カメラ\n- 日焼け止め\n- 歩きやすい靴"}', NULL, NULL, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
+  ('official-spring-public', '春休みの京都旅行', 'standard-spring', 'sakura', 1, '["kyoto"]', '["清水寺","祇園","嵐山"]', '["寺社・歴史","グルメ"]', 1, '{"text":"桜シーズンは混雑するので早めの行動を！\n\n持ち物リスト\n- カメラ\n- 日焼け止め\n- 歩きやすい靴"}', NULL, 'official-spring-source', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
 
 INSERT INTO steps (
   id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
@@ -124,10 +72,10 @@ VALUES ('official-spring-public', 28);
 
 -- summer: 夏休みの沖縄旅行
 INSERT INTO itineraries (
-  id, title, theme_id, default_view_mode, memo, password, source_itinerary_id, created_at, updated_at
+  id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
 ) VALUES
-  ('official-summer-source', '夏休みの沖縄旅行', 'standard-summer', 'list', '{"text":"真夏の沖縄！水分補給をこまめに\n\n持ち物リスト\n- 水着\n- 日焼け止め\n- サングラス\n- 帽子"}', NULL, NULL, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public', '夏休みの沖縄旅行', 'standard-summer', 'list', '{"text":"真夏の沖縄！水分補給をこまめに\n\n持ち物リスト\n- 水着\n- 日焼け止め\n- サングラス\n- 帽子"}', NULL, 'official-summer-source', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
+  ('official-summer-source', '夏休みの沖縄旅行', 'standard-summer', 'ocean', 1, '["okinawa"]', '["那覇","恩納村","読谷村"]', '["絶景","グルメ"]', 1, '{"text":"真夏の沖縄！水分補給をこまめに\n\n持ち物リスト\n- 水着\n- 日焼け止め\n- サングラス\n- 帽子"}', NULL, NULL, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
+  ('official-summer-public', '夏休みの沖縄旅行', 'standard-summer', 'ocean', 1, '["okinawa"]', '["那覇","恩納村","読谷村"]', '["絶景","グルメ"]', 1, '{"text":"真夏の沖縄！水分補給をこまめに\n\n持ち物リスト\n- 水着\n- 日焼け止め\n- サングラス\n- 帽子"}', NULL, 'official-summer-source', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
 
 INSERT INTO steps (
   id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
@@ -177,10 +125,10 @@ VALUES ('official-summer-public', 34);
 
 -- autumn: 日光・那須をめぐる秋の5日間
 INSERT INTO itineraries (
-  id, title, theme_id, default_view_mode, memo, password, source_itinerary_id, created_at, updated_at
+  id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
 ) VALUES
-  ('official-autumn-source', '日光・那須をめぐる秋の5日間', 'standard-autumn', 'week', '{"text":"紅葉シーズンは混雑するので早めの行動を！\n\n持ち物リスト\n- カメラ\n- 防寒具"}', NULL, NULL, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public', '日光・那須をめぐる秋の5日間', 'standard-autumn', 'week', '{"text":"紅葉シーズンは混雑するので早めの行動を！\n\n持ち物リスト\n- カメラ\n- 防寒具"}', NULL, 'official-autumn-source', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
+  ('official-autumn-source', '日光・那須をめぐる秋の5日間', 'standard-autumn', 'autumn', 1, '["tochigi"]', '["日光","中禅寺湖","那須高原"]', '["絶景","温泉","寺社・歴史"]', 1, '{"text":"紅葉シーズンは混雑するので早めの行動を！\n\n持ち物リスト\n- カメラ\n- 防寒具"}', NULL, NULL, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
+  ('official-autumn-public', '日光・那須をめぐる秋の5日間', 'standard-autumn', 'autumn', 1, '["tochigi"]', '["日光","中禅寺湖","那須高原"]', '["絶景","温泉","寺社・歴史"]', 1, '{"text":"紅葉シーズンは混雑するので早めの行動を！\n\n持ち物リスト\n- カメラ\n- 防寒具"}', NULL, 'official-autumn-source', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
 
 INSERT INTO steps (
   id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
@@ -250,10 +198,10 @@ VALUES ('official-autumn-public', 24);
 
 -- winter: 冬休みのスキー旅行
 INSERT INTO itineraries (
-  id, title, theme_id, default_view_mode, memo, password, source_itinerary_id, created_at, updated_at
+  id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
 ) VALUES
-  ('official-winter-source', '冬休みのスキー旅行', 'standard-winter', 'month', '{"text":"冬の8日間旅行プラン。雪山アクティビティと温泉、城下町観光、東京の街歩きを楽しむ。\n\n持ち物リスト\n- スキーウェア\n- 手袋\n- ゴーグル\n- カイロ"}', NULL, NULL, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public', '冬休みのスキー旅行', 'standard-winter', 'month', '{"text":"冬の8日間旅行プラン。雪山アクティビティと温泉、城下町観光、東京の街歩きを楽しむ。\n\n持ち物リスト\n- スキーウェア\n- 手袋\n- ゴーグル\n- カイロ"}', NULL, 'official-winter-source', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
+  ('official-winter-source', '冬休みのスキー旅行', 'standard-winter', 'snow', 1, '["nagano","tokyo"]', '["白馬","松本","東京"]', '["温泉","絶景","グルメ"]', 1, '{"text":"冬の8日間旅行プラン。雪山アクティビティと温泉、城下町観光、東京の街歩きを楽しむ。\n\n持ち物リスト\n- スキーウェア\n- 手袋\n- ゴーグル\n- カイロ"}', NULL, NULL, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
+  ('official-winter-public', '冬休みのスキー旅行', 'standard-winter', 'snow', 1, '["nagano","tokyo"]', '["白馬","松本","東京"]', '["温泉","絶景","グルメ"]', 1, '{"text":"冬の8日間旅行プラン。雪山アクティビティと温泉、城下町観光、東京の街歩きを楽しむ。\n\n持ち物リスト\n- スキーウェア\n- 手袋\n- ゴーグル\n- カイロ"}', NULL, 'official-winter-source', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
 
 INSERT INTO steps (
   id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at

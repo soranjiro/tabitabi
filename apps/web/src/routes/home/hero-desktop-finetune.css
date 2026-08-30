@@ -1,0 +1,62 @@
+/*
+ * Final homepage hero tuning for pointer-based desktop layouts.
+ * Keep the preview supportive of the primary CTA rather than competing with it.
+ */
+@media (min-width: 1081px) {
+  .home-page .site-header nav a {
+    font-size: 13px;
+  }
+
+  .home-page .hero-main {
+    grid-template-columns: minmax(0, 1fr) 344px;
+  }
+
+  .home-page .preview-area {
+    width: 344px;
+    transform: translateY(clamp(34px, 6vh, 68px));
+  }
+
+  .home-page .preview-area .preview-body {
+    padding: 22px 24px 16px;
+  }
+
+  .home-page .preview-area .preview-body h2 {
+    font-size: 19px;
+  }
+
+  .home-page .preview-area ol li {
+    min-height: 34px;
+  }
+
+  .home-page .preview-area .preview-tabs {
+    padding: 13px 25px 16px;
+  }
+}
+
+/* Mouse/trackpad users should get desktop language; touch users keep “tap”. */
+.home-page .preview-area .tap-note p {
+  font-size: 0;
+  line-height: 0;
+}
+
+.home-page .preview-area .tap-note p::before {
+  display: block;
+  content: "クリックで\Aしおりを開く";
+  white-space: pre-line;
+  font-size: 13px;
+  line-height: 1.6;
+  letter-spacing: 0.1em;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .home-page .preview-area .tap-note p::before {
+    content: "タップで\Aしおりを開く";
+  }
+}
+
+/* Preserve the compact menu typography used on touch/mobile navigation. */
+@media (max-width: 760px) {
+  .home-page .site-header nav a {
+    font-size: 12px;
+  }
+}

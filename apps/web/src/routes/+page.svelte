@@ -83,7 +83,13 @@
     },
   ];
 
-  let season = $state<Season | null>(null);
+  // Deterministic so the background is present in the server-rendered first
+  // paint and remains identical while the client hydrates.
+  const month = new Date().getUTCMonth();
+  const initialSeason = seasons[
+    month >= 2 && month <= 4 ? 0 : month >= 5 && month <= 7 ? 1 : month >= 8 && month <= 10 ? 2 : 3
+  ];
+  let season = $state<Season>(initialSeason);
   let loggedIn = $state(false);
   let menuOpen = $state(false);
   let scrollProgress = $state(0);
@@ -106,8 +112,6 @@
     resetDemoMode();
     refreshLoggedIn();
     recentItineraries = auth.getRecentItineraries();
-    season = seasons[Math.floor(Math.random() * seasons.length)];
-
     let frame = 0;
     const updateScroll = () => {
       cancelAnimationFrame(frame);
@@ -130,6 +134,7 @@
 
 <svelte:head>
   <title>たびたび - 旅の予定を、ひとつに。</title>
+  <link rel="preload" as="image" href="/hero/background-{season.id}.avif" type="image/avif" fetchpriority="high" />
   <meta name="description" content="旅の予定をひとつにまとめて、URLでかんたん共有。登録不要・無料で使える旅のしおり作成サービスです。" />
   <link rel="canonical" href="https://tabitabi.pages.dev/" />
   <meta property="og:title" content="たびたび - 旅の予定を、ひとつに。" />
@@ -145,13 +150,11 @@
 <div class="home-page">
   <section class="hero-stage" bind:this={heroStage} style={heroStyle}>
     <div class="hero-scene">
-      {#if season}
-        <picture class="hero-picture">
+      <picture class="hero-picture">
           <source srcset="/hero/background-{season.id}.avif" type="image/avif" />
           <source srcset="/hero/background-{season.id}.webp" type="image/webp" />
-          <img src="/hero/background-{season.id}.webp" alt="{season.destination}の{season.id === 'spring' ? '春' : season.id === 'summer' ? '夏' : season.id === 'autumn' ? '秋' : '冬'}の風景" style:object-position={season.imagePosition} />
-        </picture>
-      {/if}
+          <img src="/hero/background-{season.id}.webp" alt="{season.destination}の{season.id === 'spring' ? '春' : season.id === 'summer' ? '夏' : season.id === 'autumn' ? '秋' : '冬'}の風景" fetchpriority="high" decoding="async" style:object-position={season.imagePosition} />
+      </picture>
       <div class="hero-shade"></div>
 
       <header class="site-header">
@@ -188,8 +191,7 @@
           </ul>
         </div>
 
-        {#if season}
-          <div class="preview-area">
+        <div class="preview-area">
             <a class="shiori-preview" href="/itineraries/{season.itineraryId}" aria-label="{season.title}のしおりを開く">
               <picture class="preview-photo">
                 <source srcset="/hero/background-{season.id}.avif" type="image/avif" />
@@ -210,11 +212,10 @@
               <div class="preview-tabs"><span>⌖<small>旅程</small></span><span>◇<small>マップ</small></span><span>□<small>メモ</small></span><span>▧<small>写真</small></span></div>
             </a>
             <div class="tap-note" aria-hidden="true"><svg viewBox="0 0 70 38"><path d="M66 30C50 31 45 13 30 14 19 15 14 24 4 19"/><path d="M58 24l8 6-8 5"/></svg><p>タップで<br />しおりを開く</p></div>
-          </div>
-        {/if}
+        </div>
       </main>
 
-      <p class="place-label">{#if season}⌖ {season.destination}{/if}</p>
+      <p class="place-label">⌖ {season.destination}</p>
       <button class="scroll-cue" onclick={scrollToCreate} aria-label="下へスクロール"><span>⌄</span></button>
       <div class="paper-reveal" aria-hidden="true"><i></i><b></b></div>
     </div>
@@ -361,7 +362,8 @@
     .tap-note p { font-size: 9px; }
     .place-label { display: none; }
     .scroll-cue { display: none; }
-    .paper-reveal { bottom: -100px; height: 290px; }
+    /* The next-section paper edge must not cover the installed-PWA viewport. */
+    .paper-reveal { display: none; }
     .create-section { padding: 62px 16px 82px; }
   }
 

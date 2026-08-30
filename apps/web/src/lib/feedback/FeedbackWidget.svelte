@@ -2,9 +2,9 @@
   import { tick } from "svelte";
   import type { FeedbackCategory } from "./feedback";
 
-  let { variant = "floating" }: { variant?: "floating" | "footer" } = $props();
+  let { variant = "floating", initiallyOpen = false }: { variant?: "floating" | "footer"; initiallyOpen?: boolean } = $props();
 
-  let open = $state(false);
+  let open = $state(initiallyOpen);
   let category = $state<FeedbackCategory>("feature");
   let title = $state("");
   let description = $state("");

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('home explains the service and scrolls to create section', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
 
   await expect(page).toHaveTitle(/たびたび/);
@@ -15,4 +16,12 @@ test('home explains the service and scrolls to create section', async ({ page })
   await cta.click();
 
   await expect(page.locator('#create')).toBeInViewport();
+});
+
+test('mobile hero keeps the background unobstructed', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+
+  await expect(page.locator('.hero-picture')).toBeVisible();
+  await expect(page.locator('.paper-reveal')).toBeHidden();
 });

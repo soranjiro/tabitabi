@@ -1,7 +1,15 @@
 <script lang="ts">
   import IconBook from "./icons/IconBook.svelte";
   import IconGitHub from "./icons/IconGitHub.svelte";
-  import FeedbackWidget from "$lib/feedback/FeedbackWidget.svelte";
+
+  // The dialog is not needed for the initial page render. Loading it only
+  // after intent keeps its substantial form styles out of the hero's critical
+  // rendering path.
+  let FeedbackWidget = $state<any>(null);
+
+  async function openFeedback() {
+    FeedbackWidget = (await import("$lib/feedback/FeedbackWidget.svelte")).default;
+  }
 </script>
 
 <footer class="footer">
@@ -20,7 +28,14 @@
         <IconGitHub size={18} />
         GitHub
       </a>
-      <FeedbackWidget variant="footer" />
+      {#if FeedbackWidget}
+        <FeedbackWidget variant="footer" initiallyOpen />
+      {:else}
+        <button type="button" class="feedback-trigger footer-trigger" onclick={openFeedback} aria-haspopup="dialog">
+          <span aria-hidden="true">✦</span>
+          要望を送る
+        </button>
+      {/if}
     </div>
     <p class="footer-copy">たびたび - 旅をもっと楽しく</p>
   </div>
@@ -71,6 +86,22 @@
     color: #d1d5db;
     font-size: 0.75rem;
   }
+
+  .feedback-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    padding: 0.5rem;
+    border: 0;
+    color: #e5e7eb;
+    background: transparent;
+    font: inherit;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+
+  .feedback-trigger:hover { color: white; }
 
   @media (max-width: 560px) {
     .footer-links { flex-direction: column; align-items: center; gap: 0.2rem; }

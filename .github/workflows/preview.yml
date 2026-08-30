@@ -70,6 +70,8 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       needs.resolve-preview.outputs.head_repo == github.repository
+    outputs:
+      web_url: ${{ steps.pages-deploy.outputs.url }}
     env:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -212,3 +214,13 @@ jobs:
               issue_number: process.env.PR_NUMBER,
               body,
             });
+
+  lighthouse:
+    needs:
+      - resolve-preview
+      - deploy-preview
+    if: needs.deploy-preview.result == 'success'
+    uses: ./.github/workflows/lighthouse.yml
+    with:
+      pr_number: ${{ fromJSON(needs.resolve-preview.outputs.pr_number) }}
+      preview_url: ${{ needs.deploy-preview.outputs.web_url }}

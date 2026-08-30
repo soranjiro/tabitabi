@@ -14,6 +14,8 @@ export type { AvailableTheme, PaletteId, ThemePresetOption } from "./catalog";
 
 export async function loadTheme(themeId: string): Promise<Theme> {
   switch (themeId) {
+    case "planning-draft":
+      return (await import("./planning-draft")).default;
     case "map-only":
       return (await import("./map-only")).default;
     case "mapbox-journey":
@@ -37,7 +39,7 @@ export async function loadTheme(themeId: string): Promise<Theme> {
     case "sauna-rally":
       return (await import("./sauna-rally")).default;
     default:
-      return (await import("./standard/presets/accordion")).default;
+      return (await import("./planning-draft")).default;
   }
 }
 

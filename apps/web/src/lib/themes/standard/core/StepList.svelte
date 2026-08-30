@@ -22,6 +22,7 @@
   import { type ViewMode } from "./utils/storage";
   import { AccordionView, ListView, MonthView, WeekView } from "./views";
   import EventDetailDialog from "./components/EventDetailDialog.svelte";
+  import { getStepTimeLabel } from "$lib/planning/schedule";
 
   interface Props {
     steps: Step[];
@@ -547,11 +548,7 @@
                     use:setupTouchDrag={step.id}
                   >
                     <div class="standard-step-time">
-                      {#if step.is_all_day}
-                        <span class="all-day-badge">終日</span>
-                      {:else}
-                        {getStepTime(step)}
-                      {/if}
+                      {#if step.is_all_day}<span class="all-day-badge">終日</span>{:else}{getStepTimeLabel(step)}{/if}
                     </div>
                     <div class="standard-timeline-line"></div>
                     <div class="standard-step-dot"></div>

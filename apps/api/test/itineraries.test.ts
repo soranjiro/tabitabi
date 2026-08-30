@@ -136,8 +136,8 @@ describe('Itineraries API', () => {
       const { success, data } = await response.json() as any;
       expect(success).toBe(true);
       expect(data.title).toBe('Test Trip');
-      expect(data.theme_id).toBe('standard-accordion');
-      expect(data.palette_id).toBe('ocean');
+      expect(data.theme_id).toBe('planning-draft');
+      expect(data.palette_id).toBe('neutral');
       expect(data.packing_enabled).toBe(true);
       expect(data.metadata_initialized).toBe(false);
       expect(data.prefecture_slugs).toEqual([]);

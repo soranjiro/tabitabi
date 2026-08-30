@@ -1,8 +1,9 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
-  import { getStepDate, getStepTime } from "@tabitabi/types";
+  import { getStepDate } from "@tabitabi/types";
   import IconRenderer from "../icons/IconRenderer.svelte";
   import "../styles/AccordionView.css";
+  import { getStepTimeLabel } from "$lib/planning/schedule";
 
   interface Props {
     steps: Step[];
@@ -60,7 +61,7 @@
             {#each dateSteps as step}
               <button type="button" class="standard-accordion-event" onclick={() => onStepClick?.(step.id)}>
                 <span class="standard-accordion-dot"></span>
-                <time>{step.is_all_day ? "終日" : getStepTime(step)}</time>
+                <time>{step.is_all_day ? "終日" : getStepTimeLabel(step)}</time>
                 <span class="standard-accordion-icon"><IconRenderer type={step.type} size="sm" /></span>
                 <span class="standard-accordion-copy"><strong>{step.title}</strong>{#if step.location}<small>{step.location}</small>{/if}</span>
               </button>

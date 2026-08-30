@@ -1,10 +1,10 @@
 import type { ItineraryViewMode } from "@tabitabi/types";
 
-export const defaultThemeId = "standard-accordion" as const;
-export const defaultPaletteId = "ocean" as const;
+export const defaultThemeId = "planning-draft" as const;
+export const defaultPaletteId = "neutral" as const;
 
 export const availableThemes = [
-  "map-only", "mapbox-journey", "standard-spring", "standard-accordion",
+  "planning-draft", "map-only", "mapbox-journey", "standard-spring", "standard-accordion",
   "standard-summer", "standard-autumn", "standard-winter", "ai-generated",
   "shopping", "pixel-quest", "sauna-rally",
 ] as const;
@@ -48,6 +48,7 @@ export const PALETTES: PaletteOption[] = [
 ];
 
 const THEME_CATALOG: ThemePresetOption[] = [
+  { id: "planning-draft", name: "下書き", description: "候補から日時を決める、計画中のためのテーマ", phrase: "まだ決まっていない旅の計画", viewMode: "list", defaultPaletteId: "neutral", enabled: true },
   { id: "standard-spring", name: "日カード", description: "日付タブで切り替える、親しみやすいカード", phrase: "日ごとの旅行計画", viewMode: "dayCard", defaultPaletteId: "sakura", enabled: true },
   { id: "standard-accordion", name: "セクションカード", description: "旅程全体を見渡せるアコーディオン", phrase: "見渡せる旅行計画", viewMode: "accordion", defaultPaletteId: "ocean", enabled: true },
   { id: "standard-summer", name: "リスト", description: "予定をすっきり一覧表示", phrase: "一覧で見る旅行計画", viewMode: "list", defaultPaletteId: "ocean", enabled: true },

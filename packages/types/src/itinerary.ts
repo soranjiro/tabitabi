@@ -49,7 +49,7 @@ export type ItineraryResponse = Omit<Itinerary, 'password'> & {
 
 export interface CreateItineraryInput {
   title: string;
-  theme_id?: string;             // オプション、デフォルト: standard season
+  theme_id?: string;             // オプション、デフォルト: planning-draft
   palette_id?: string;
   default_view_mode?: ItineraryViewMode;
   packing_enabled?: boolean;

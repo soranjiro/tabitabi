@@ -1,11 +1,12 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
-  import { getStepDate, getStepTime } from "@tabitabi/types";
+  import { getStepDate } from "@tabitabi/types";
   import { renderMarkdown } from "../utils/markdown";
   import EventDetailDialog from "../components/EventDetailDialog.svelte";
   import IconRenderer from "../icons/IconRenderer.svelte";
   import { isTransportType } from "../utils/step-type";
   import "../styles/ListView.css";
+  import { getStepTimeLabel } from "$lib/planning/schedule";
 
   interface Props {
     steps: Step[];
@@ -91,7 +92,7 @@
                 {#if step.is_all_day}
                   <span class="standard-allday-badge">終日</span>
                 {:else}
-                  {getStepTime(step)}
+                  {getStepTimeLabel(step)}
                 {/if}
               </td>
               <td colspan="3" class="standard-list-title-cell">
@@ -112,7 +113,7 @@
                 {#if step.is_all_day}
                   <span class="standard-allday-badge">終日</span>
                 {:else}
-                  {getStepTime(step)}
+                  {getStepTimeLabel(step)}
                 {/if}
               </td>
               <td class="standard-list-icon">

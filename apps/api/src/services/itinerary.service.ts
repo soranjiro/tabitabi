@@ -6,8 +6,8 @@ import { validateMemoJson } from '../utils/memo';
 import { createPublicMemoSnapshot, createPublicStepSnapshot, createPublicTextSnapshot } from '../utils/publication';
 import { hashPassword } from '../utils/password';
 
-const DEFAULT_THEME_ID = 'standard-accordion';
-const DEFAULT_PALETTE_ID = 'ocean';
+const DEFAULT_THEME_ID = 'planning-draft';
+const DEFAULT_PALETTE_ID = 'neutral';
 const DEFAULT_VIEW_MODE = 'dayCard';
 
 export class ItineraryService {

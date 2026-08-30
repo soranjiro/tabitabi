@@ -90,7 +90,8 @@
     gap: clamp(66px, 8vw, 118px);
   }
 
-  .home-page .hero-copy {
+  .home-page .hero-copy,
+  .home-page .hero-copy h1 {
     color: #17263d;
     text-shadow: none;
   }
@@ -207,8 +208,9 @@
 
   .home-page .site-header .brand,
   .home-page .site-header nav a,
-  .home-page .hero-copy {
-    color: #17263d;
+  .home-page .hero-copy,
+  .home-page .hero-copy h1 {
+    color: #17263d !important;
     text-shadow: none;
   }
 
@@ -240,8 +242,9 @@
   }
 
   .home-page .site-header .brand,
-  .home-page .hero-copy {
-    color: #17263d;
+  .home-page .hero-copy,
+  .home-page .hero-copy h1 {
+    color: #17263d !important;
     text-shadow: 0 1px 0 rgba(255,255,255,.38);
   }
 

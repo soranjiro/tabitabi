@@ -1,36 +1,37 @@
 /*
- * Final homepage hero tuning for pointer-based desktop layouts.
- * Keep the preview supportive of the primary CTA rather than competing with it.
+ * Final homepage hero tuning.
+ * Keep the refreshed layout hierarchy, while restoring some of the original
+ * lightness and travel-journal character on both desktop and mobile.
  */
-@media (min-width: 1081px) {
-  .home-page .site-header nav a {
-    font-size: 13px;
-  }
 
-  .home-page .hero-main {
-    grid-template-columns: minmax(0, 1fr) 344px;
-  }
+/* Restore the quick-fact icons without bringing back their old visual weight. */
+.home-page .hero-copy .quick-facts li > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  margin-right: 7px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  place-items: center;
+  font-size: 10px;
+}
 
-  .home-page .preview-area {
-    width: 344px;
-    transform: translateY(clamp(34px, 6vh, 68px));
-  }
+.home-page .hero-copy .quick-facts li > .plain-icon {
+  border: 0;
+  border-radius: 0;
+}
 
-  .home-page .preview-area .preview-body {
-    padding: 22px 24px 16px;
-  }
+.home-page .hero-copy .quick-facts li > .plain-icon svg {
+  width: 23px;
+  height: 23px;
+}
 
-  .home-page .preview-area .preview-body h2 {
-    font-size: 19px;
-  }
+.home-page .hero-copy .quick-facts li + li::before {
+  display: none;
+}
 
-  .home-page .preview-area ol li {
-    min-height: 34px;
-  }
-
-  .home-page .preview-area .preview-tabs {
-    padding: 13px 25px 16px;
-  }
+.home-page .hero-copy .primary {
+  font-size: 17px;
 }
 
 /* Mouse/trackpad users should get desktop language; touch users keep “tap”. */
@@ -48,15 +49,233 @@
   letter-spacing: 0.1em;
 }
 
+/* Reverse the hand-drawn arrow so it starts beside the label and points to the card. */
+.home-page .preview-area .tap-note svg {
+  transform: rotate(180deg);
+  transform-origin: center;
+}
+
 @media (hover: none), (pointer: coarse) {
   .home-page .preview-area .tap-note p::before {
     content: "タップで\Aしおりを開く";
   }
 }
 
-/* Preserve the compact menu typography used on touch/mobile navigation. */
+@media (min-width: 1081px) {
+  /* A light veil keeps the photograph vivid while returning the airy original mood. */
+  .home-page .hero-scene .hero-shade {
+    background:
+      linear-gradient(90deg, rgba(255,255,255,.86) 0%, rgba(255,255,255,.64) 30%, rgba(255,255,255,.22) 54%, rgba(255,255,255,.07) 76%, rgba(7,22,35,.08) 100%),
+      linear-gradient(180deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,.03) 52%, rgba(3,13,22,.14) 100%);
+  }
+
+  .home-page .site-header .brand,
+  .home-page .site-header nav a {
+    color: #17263d;
+    text-shadow: none;
+  }
+
+  .home-page .site-header .brand-mark {
+    border-color: rgba(23,38,61,.36);
+    color: #24466c;
+    background: rgba(255,255,255,.34);
+  }
+
+  .home-page .site-header nav a {
+    font-size: 13px;
+  }
+
+  .home-page .hero-main {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: clamp(66px, 8vw, 118px);
+  }
+
+  .home-page .hero-copy {
+    color: #17263d;
+    text-shadow: none;
+  }
+
+  .home-page .hero-copy > p,
+  .home-page .hero-copy .quick-facts li,
+  .home-page .hero-copy .text-link {
+    color: #22334b;
+  }
+
+  .home-page .hero-copy > p {
+    color: rgba(23,38,61,.9);
+  }
+
+  .home-page .hero-copy .text-link {
+    border-bottom-color: rgba(23,38,61,.58);
+  }
+
+  /* Smaller than the current card, but with the original photo + slight tilt restored. */
+  .home-page .preview-area {
+    width: 300px;
+    transform: translateY(clamp(42px, 6.5vh, 72px));
+  }
+
+  .home-page .preview-area .shiori-preview {
+    border-radius: 23px;
+    box-shadow: 0 22px 54px rgba(3,16,28,.22);
+    transform: rotate(1.25deg);
+    transform-origin: center;
+  }
+
+  .home-page .preview-area .shiori-preview:hover {
+    transform: translateY(-5px) rotate(0deg);
+    box-shadow: 0 28px 64px rgba(3,16,28,.28);
+  }
+
+  .home-page .preview-area .preview-photo {
+    display: block;
+    height: 82px;
+  }
+
+  .home-page .preview-area .preview-body {
+    padding: 16px 19px 12px;
+  }
+
+  .home-page .preview-area .preview-label b {
+    font-size: 19px;
+  }
+
+  .home-page .preview-area .preview-body h2 {
+    margin: 6px 0 3px;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+
+  .home-page .preview-area .preview-body > p {
+    margin-bottom: 11px;
+    font-size: 8.5px;
+  }
+
+  .home-page .preview-area .day-label {
+    margin-bottom: 6px;
+    font-size: 9px;
+  }
+
+  .home-page .preview-area ol {
+    padding-left: 16px;
+  }
+
+  .home-page .preview-area ol li {
+    min-height: 27px;
+    padding: 2px 0 5px 7px;
+    grid-template-columns: 43px minmax(0, 1fr);
+    font-size: 7.5px;
+  }
+
+  .home-page .preview-area ol li::before {
+    left: -21px;
+    width: 6px;
+    height: 6px;
+  }
+
+  .home-page .preview-area ol time {
+    font-size: 7px;
+  }
+
+  .home-page .preview-area .preview-tabs {
+    padding: 10px 21px 12px;
+  }
+
+  .home-page .preview-area .preview-tabs span {
+    font-size: 12px;
+  }
+
+  .home-page .preview-area .preview-tabs small {
+    font-size: 6.5px;
+  }
+
+  .home-page .preview-area .tap-note {
+    right: -44px;
+    bottom: -45px;
+  }
+}
+
+@media (max-width: 1080px) and (min-width: 761px) {
+  /* Keep tablet composition compact, but lighten the scene slightly. */
+  .home-page .hero-scene .hero-shade {
+    background:
+      linear-gradient(90deg, rgba(255,255,255,.58) 0%, rgba(255,255,255,.34) 38%, rgba(7,22,35,.12) 72%, rgba(5,17,28,.2) 100%),
+      linear-gradient(180deg, rgba(255,255,255,.08), rgba(3,13,22,.2));
+  }
+}
+
 @media (max-width: 760px) {
+  /* Brighter than the previous revision, while retaining enough contrast for white type. */
+  .home-page .hero-scene .hero-shade {
+    background:
+      linear-gradient(180deg, rgba(4,16,26,.08) 0%, rgba(4,16,26,.16) 36%, rgba(4,16,26,.31) 74%, rgba(3,13,22,.48) 100%),
+      linear-gradient(90deg, rgba(255,255,255,.03), rgba(3,13,22,.08));
+  }
+
+  /* Preserve the compact menu typography used on touch/mobile navigation. */
   .home-page .site-header nav a {
     font-size: 12px;
+  }
+
+  .home-page .hero-copy .primary {
+    font-size: 17px;
+  }
+
+  .home-page .hero-copy .quick-facts {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .home-page .hero-copy .quick-facts li {
+    gap: 0;
+  }
+
+  .home-page .hero-copy .quick-facts li > span {
+    width: 26px;
+    height: 26px;
+    margin-right: 6px;
+  }
+
+  .home-page .hero-copy .quick-facts li > .plain-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Reserve room under the card so the interaction hint is no longer clipped. */
+  .home-page .preview-area {
+    margin: auto auto 42px;
+  }
+
+  .home-page .preview-area .tap-note {
+    right: 2px;
+    bottom: -40px;
+    display: flex;
+    color: rgba(255,255,255,.96);
+    opacity: .9;
+  }
+
+  .home-page .preview-area .tap-note svg {
+    width: 43px;
+    height: 34px;
+    margin-right: 3px;
+  }
+
+  .home-page .preview-area .tap-note p::before {
+    font-size: 9px;
+    line-height: 1.5;
+    letter-spacing: .08em;
+  }
+}
+
+@media (max-width: 360px) {
+  .home-page .hero-copy .quick-facts li {
+    font-size: 9.5px;
+  }
+
+  .home-page .hero-copy .quick-facts li > span {
+    width: 24px;
+    height: 24px;
+    margin-right: 4px;
   }
 }

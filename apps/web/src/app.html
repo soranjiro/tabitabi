@@ -33,6 +33,43 @@
       if('requestIdleCallback' in window){requestIdleCallback(loadAnalytics,{timeout:4000})}else{setTimeout(loadAnalytics,2000)}
     </script>
 
+    <script>
+      (() => {
+        const backgrounds = [
+          { id: 'spring', position: 'center 48%' },
+          { id: 'summer', position: 'center 52%' },
+          { id: 'autumn', position: 'center 48%' },
+          { id: 'winter', position: 'center 50%' },
+        ];
+        const randomizedPictures = new WeakSet();
+
+        const randomizeHomeHero = () => {
+          const picture = document.querySelector('.hero-picture');
+          if (!picture || randomizedPictures.has(picture)) return;
+
+          randomizedPictures.add(picture);
+          const background = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+          const sources = picture.querySelectorAll('source');
+          const image = picture.querySelector('img');
+
+          for (const source of sources) {
+            source.srcset = source.type === 'image/avif'
+              ? `/hero/background-${background.id}.avif`
+              : `/hero/background-${background.id}.webp`;
+          }
+
+          if (image) {
+            image.src = `/hero/background-${background.id}.webp`;
+            image.alt = '旅先の風景';
+            image.style.objectPosition = background.position;
+          }
+        };
+
+        document.addEventListener('DOMContentLoaded', randomizeHomeHero, { once: true });
+        new MutationObserver(randomizeHomeHero).observe(document.documentElement, { childList: true, subtree: true });
+      })();
+    </script>
+
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="tap">

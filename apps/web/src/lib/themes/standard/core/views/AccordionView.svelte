@@ -10,7 +10,8 @@
   }
 
   let { steps, onStepClick }: Props = $props();
-  let openDate = $state<string | null>(null);
+  let openDates = $state<Set<string>>(new Set());
+  let hasInitializedOpenDates = false;
 
   const groups = $derived.by(() => {
     const map = new Map<string, Step[]>();
@@ -22,7 +23,10 @@
   });
 
   $effect(() => {
-    if (!openDate && groups.length) openDate = groups[0][0];
+    if (!hasInitializedOpenDates && groups.length) {
+      openDates = new Set([groups[0][0]]);
+      hasInitializedOpenDates = true;
+    }
   });
 
   function dateLabel(value: string, index: number) {
@@ -37,11 +41,21 @@
   {:else}
     {#each groups as [date, dateSteps], index}
       {@const label = dateLabel(date, index)}
-      <section class:open={openDate === date}>
-        <button class="standard-accordion-heading" type="button" onclick={() => (openDate = openDate === date ? null : date)} aria-expanded={openDate === date}>
+      <section class:open={openDates.has(date)}>
+        <button
+          class="standard-accordion-heading"
+          type="button"
+          onclick={() => {
+            const nextOpenDates = new Set(openDates);
+            if (nextOpenDates.has(date)) nextOpenDates.delete(date);
+            else nextOpenDates.add(date);
+            openDates = nextOpenDates;
+          }}
+          aria-expanded={openDates.has(date)}
+        >
           <strong>{label.day}</strong><span>{label.title}（{label.weekday}）</span><i aria-hidden="true">⌄</i>
         </button>
-        {#if openDate === date}
+        {#if openDates.has(date)}
           <div class="standard-accordion-events">
             {#each dateSteps as step}
               <button type="button" class="standard-accordion-event" onclick={() => onStepClick?.(step.id)}>

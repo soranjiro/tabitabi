@@ -50,7 +50,10 @@
   let localThemeId = $state(selectedThemeId);
   let localPaletteId = $state(selectedPaletteId);
   let showThemeList = $state(false);
+  let showPaletteList = $state(false);
   let localPackingEnabled = $state(packingEnabled);
+  let selectedTheme = $derived(themes.find((theme) => theme.id === localThemeId));
+  let selectedPalette = $derived(palettes.find((palette) => palette.id === localPaletteId));
 
   $effect(() => {
     localSecretEnabled = secretModeEnabled;
@@ -132,6 +135,11 @@
       <p class="standard-settings-page-description">
         旅程の見せ方を選択できます。テーマを変えるとビューも切り替わります。
       </p>
+      {#if selectedTheme}
+        <div class="standard-settings-page-current" aria-label={`現在のデザインテーマ: ${selectedTheme.name}`}>
+          <span>現在の設定</span><strong>{selectedTheme.name}</strong>
+        </div>
+      {/if}
       {#if showThemeList}
         <div class="standard-settings-page-field">
           {#each themes as theme}
@@ -162,11 +170,27 @@
     <div class="standard-settings-page-divider"></div>
 
     <div class="standard-settings-page-section">
-      <div class="standard-settings-page-section-header">
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="standard-settings-page-section-header standard-settings-page-section-header-clickable"
+        onclick={() => (showPaletteList = !showPaletteList)}
+      >
         <span class="standard-settings-page-section-icon" aria-hidden="true">●</span>
         <h3>しおりの色</h3>
+        <span class="standard-collapse-icon" class:expanded={showPaletteList}>▼</span>
       </div>
       <p class="standard-settings-page-description">デザインはそのまま、色合いだけを変更できます。</p>
+      {#if selectedPalette}
+        <div class="standard-settings-page-current" aria-label={`現在のしおりの色: ${selectedPalette.name}`}>
+          <span>現在の設定</span>
+          <span class="standard-settings-page-current-palette">
+            <i style={`background:${selectedPalette.colors["--theme-primary"]}`}></i>
+            <strong>{selectedPalette.name}</strong>
+          </span>
+        </div>
+      {/if}
+      {#if showPaletteList}
       <div class="standard-settings-page-field">
         {#each palettes as palette}
           <label class="standard-settings-page-radio">
@@ -177,6 +201,7 @@
           </label>
         {/each}
       </div>
+      {/if}
     </div>
 
     <div class="standard-settings-page-divider"></div>

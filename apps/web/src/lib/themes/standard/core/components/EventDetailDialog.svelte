@@ -464,7 +464,7 @@
     delete noteData.public_location;
     delete noteData.public_text;
     delete noteData.booking_url;
-    // 標準テーマで日時を保存した時点で、下書きテーマの未定状態は完了扱いにする。
+    // 標準テーマで日時を保存した時点で、プランニングテーマの未定状態は完了扱いにする。
     delete noteData.tabitabi_schedule;
     const notes = stringifyMemoData(noteData);
     const link = editedStep.link?.trim() || null;

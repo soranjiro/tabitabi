@@ -158,7 +158,12 @@
         <a class="brand" href="/" aria-label="たびたび ホーム">
           <span class="brand-mark"><IconAirplane size={23} /></span>
           <strong>たびたび</strong>
-          <span class="brand-route" aria-hidden="true"><i></i><b>›</b></span>
+          <span class="brand-route" aria-hidden="true">
+            <svg viewBox="0 0 145 23" role="presentation">
+              <path d="M2 11C14 4 24 18 37 11S57 4 66 11c7 6 10 9 15 1 5-8 12-10 17-2 5 8 10 7 15 1 4-5 8-6 15-3" />
+              <path d="m132 5 5 3-5 4" />
+            </svg>
+          </span>
         </a>
         <nav class:open={menuOpen} aria-label="サイトナビゲーション">
           <a href="/explore">みんなのしおり</a>
@@ -247,9 +252,8 @@
   .brand-mark { display: grid; width: 35px; height: 35px; place-items: center; border: 1px solid rgba(21,39,61,.24); border-radius: 50%; color: #24466c; background: rgba(255,255,255,.32); }
   .brand strong { font-family: Georgia, "Yu Mincho", serif; font-size: 24px; font-weight: 500; letter-spacing: .09em; }
   .brand-route { position: relative; display: block; width: 145px; height: 23px; margin-left: 4px; overflow: hidden; }
-  .brand-route::before { position: absolute; top: 8px; left: 0; width: 126px; border-top: 2px dotted currentColor; opacity: .52; content: ""; transform: rotate(3deg); }
-  .brand-route i { position: absolute; top: 4px; left: 73px; width: 7px; height: 7px; border: 2px solid currentColor; border-radius: 50%; }
-  .brand-route b { position: absolute; top: -6px; right: 3px; font-size: 24px; font-weight: 400; transform: rotate(-12deg); }
+  .brand-route svg { display: block; width: 100%; height: 100%; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .58; }
+  .brand-route svg path:first-child { stroke-dasharray: 1 5; }
   nav { display: flex; align-items: center; gap: 30px; }
   nav a { color: #17263d; text-decoration: none; font-size: 12px; font-weight: 800; }
   nav a:hover { text-decoration: underline; text-underline-offset: 5px; }
@@ -311,8 +315,7 @@
   @media (max-width: 900px) {
     .site-header { width: calc(100% - 48px); }
     .brand-route { width: 90px; }
-    .brand-route::before { width: 75px; }
-    .brand-route i { left: 42px; }
+    .brand-route svg { transform: scaleX(.84); transform-origin: left center; }
     .hero-main { width: calc(100% - 60px); grid-template-columns: minmax(0, 1fr) 285px; gap: 35px; }
     h1 { font-size: clamp(42px, 7vw, 58px); }
     .preview-area { width: 285px; }

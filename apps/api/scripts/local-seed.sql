@@ -334,3 +334,16 @@ INSERT INTO itinerary_publications (
 
 INSERT INTO itinerary_fork_stats (itinerary_id, fork_count)
 VALUES ('official-winter-public', 19);
+
+-- Keep each official seasonal bookmark aligned with its season.
+UPDATE itineraries
+SET palette_id = CASE
+  WHEN id LIKE 'official-spring-%' THEN 'sakura'
+  WHEN id LIKE 'official-summer-%' THEN 'ocean'
+  WHEN id LIKE 'official-autumn-%' THEN 'autumn'
+  WHEN id LIKE 'official-winter-%' THEN 'snow'
+END
+WHERE id LIKE 'official-spring-%'
+   OR id LIKE 'official-summer-%'
+   OR id LIKE 'official-autumn-%'
+   OR id LIKE 'official-winter-%';

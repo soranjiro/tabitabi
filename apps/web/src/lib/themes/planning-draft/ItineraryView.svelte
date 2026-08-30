@@ -48,7 +48,7 @@
   let sheetOpen = $state(false);
   let editingStep = $state<Step | null>(null);
   let saving = $state(false);
-  let memoOpen = $state(false);
+  let memoOpen = $state(true);
   let memoDraft = $state("");
   let themeChoicesOpen = $state(false);
 

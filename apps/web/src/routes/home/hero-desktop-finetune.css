@@ -196,20 +196,74 @@
 }
 
 @media (max-width: 1080px) and (min-width: 761px) {
-  /* Keep tablet composition compact, but lighten the scene slightly. */
+  /* Narrow desktop/tablet: keep the bright mood but never rely on white copy. */
   .home-page .hero-scene .hero-shade {
     background:
-      linear-gradient(90deg, rgba(255,255,255,.58) 0%, rgba(255,255,255,.34) 38%, rgba(7,22,35,.12) 72%, rgba(5,17,28,.2) 100%),
-      linear-gradient(180deg, rgba(255,255,255,.08), rgba(3,13,22,.2));
+      linear-gradient(90deg, rgba(255,255,255,.72) 0%, rgba(255,255,255,.48) 42%, rgba(255,255,255,.16) 72%, rgba(5,17,28,.08) 100%),
+      linear-gradient(180deg, rgba(255,255,255,.1), rgba(3,13,22,.12));
+    -webkit-backdrop-filter: blur(1px);
+    backdrop-filter: blur(1px);
+  }
+
+  .home-page .site-header .brand,
+  .home-page .site-header nav a,
+  .home-page .hero-copy {
+    color: #17263d;
+    text-shadow: none;
+  }
+
+  .home-page .site-header .brand-mark {
+    border-color: rgba(23,38,61,.34);
+    color: #24466c;
+    background: rgba(255,255,255,.42);
+  }
+
+  .home-page .hero-copy > p,
+  .home-page .hero-copy .quick-facts li,
+  .home-page .hero-copy .text-link {
+    color: #22334b;
+  }
+
+  .home-page .hero-copy .text-link {
+    border-bottom-color: rgba(23,38,61,.55);
   }
 }
 
 @media (max-width: 760px) {
-  /* Brighter than the previous revision, while retaining enough contrast for white type. */
+  /* Mobile: a soft bright veil + subtle blur keeps every seasonal photo readable. */
   .home-page .hero-scene .hero-shade {
     background:
-      linear-gradient(180deg, rgba(4,16,26,.08) 0%, rgba(4,16,26,.16) 36%, rgba(4,16,26,.31) 74%, rgba(3,13,22,.48) 100%),
-      linear-gradient(90deg, rgba(255,255,255,.03), rgba(3,13,22,.08));
+      linear-gradient(180deg, rgba(255,255,255,.52) 0%, rgba(255,255,255,.38) 38%, rgba(255,255,255,.2) 68%, rgba(255,255,255,.08) 100%),
+      linear-gradient(90deg, rgba(255,255,255,.5) 0%, rgba(255,255,255,.18) 72%, rgba(255,255,255,.04) 100%);
+    -webkit-backdrop-filter: blur(1.5px);
+    backdrop-filter: blur(1.5px);
+  }
+
+  .home-page .site-header .brand,
+  .home-page .hero-copy {
+    color: #17263d;
+    text-shadow: 0 1px 0 rgba(255,255,255,.38);
+  }
+
+  .home-page .site-header .brand-mark {
+    border-color: rgba(23,38,61,.34);
+    color: #24466c;
+    background: rgba(255,255,255,.5);
+    text-shadow: none;
+  }
+
+  .home-page .site-header .brand-route {
+    color: #24466c;
+  }
+
+  .home-page .hero-copy > p,
+  .home-page .hero-copy .text-link {
+    color: #22334b;
+  }
+
+  .home-page .hero-copy .text-link {
+    border-bottom-color: rgba(23,38,61,.55);
+    text-shadow: none;
   }
 
   /* Preserve the compact menu typography used on touch/mobile navigation. */
@@ -219,27 +273,16 @@
 
   .home-page .hero-copy .primary {
     font-size: 17px;
+    background: color-mix(in srgb, var(--accent) 94%, white 6%);
   }
 
+  /* On phones these reassurance details add density; the CTA and secondary link are enough. */
   .home-page .hero-copy .quick-facts {
-    width: 100%;
-    justify-content: space-between;
-    gap: 8px;
+    display: none !important;
   }
 
-  .home-page .hero-copy .quick-facts li {
-    gap: 0;
-  }
-
-  .home-page .hero-copy .quick-facts li > span {
-    width: 26px;
-    height: 26px;
-    margin-right: 6px;
-  }
-
-  .home-page .hero-copy .quick-facts li > .plain-icon svg {
-    width: 22px;
-    height: 22px;
+  .home-page .hero-copy .text-link {
+    margin-top: 18px;
   }
 
   /* Reserve room under the card so the interaction hint is no longer clipped. */
@@ -253,6 +296,7 @@
     display: flex;
     color: rgba(255,255,255,.96);
     opacity: .9;
+    text-shadow: 0 1px 5px rgba(0,0,0,.28);
   }
 
   .home-page .preview-area .tap-note svg {
@@ -265,17 +309,5 @@
     font-size: 9px;
     line-height: 1.5;
     letter-spacing: .08em;
-  }
-}
-
-@media (max-width: 360px) {
-  .home-page .hero-copy .quick-facts li {
-    font-size: 9.5px;
-  }
-
-  .home-page .hero-copy .quick-facts li > span {
-    width: 24px;
-    height: 24px;
-    margin-right: 4px;
   }
 }

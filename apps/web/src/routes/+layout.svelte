@@ -1,6 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import "../app.css";
+  import "./home/hero-refresh.css";
+  import "./home/hero-desktop-finetune.css";
+  import "./home/hero-mobile-facts.css";
   import ExternalSiteOverlay from "$lib/external-site-overlay/ExternalSiteOverlay.svelte";
 
   function isIndexablePath(pathname: string) {

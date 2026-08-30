@@ -93,7 +93,6 @@ jobs:
           script: |
             const fs = require('node:fs');
 
-            const marker = '<!-- tabitabi-lighthouse -->';
             const previewUrl = process.env.PREVIEW_URL;
             const prNumber = Number(process.env.PR_NUMBER);
             const runCount = 3;
@@ -199,8 +198,7 @@ jobs:
               ? '✅ All six Lighthouse runs completed successfully.'
               : `⚠️ Lighthouse execution issue: mobile=${process.env.MOBILE_OUTCOME}, desktop=${process.env.DESKTOP_OUTCOME}`;
 
-            const body = `${marker}
-            ## 🔦 Lighthouse Report
+            const body = `## 🔦 Lighthouse Report
 
             Median of 3 runs for each device:
 
@@ -225,34 +223,14 @@ jobs:
 
             Full JSON reports are attached to the [workflow run](${runUrl}) as an artifact.
 
-            </details>
+            _A new comment is posted whenever the preview is redeployed for this pull request._`;
 
-            _This comment is updated whenever the preview is redeployed for this pull request._`;
-
-            const comments = await github.paginate(github.rest.issues.listComments, {
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              per_page: 100,
+              body,
             });
-
-            const existing = comments.find((comment) => comment.body?.includes(marker));
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body,
-              });
-            }
 
       - name: Fail when Lighthouse execution failed
         if: always() && (steps.mobile.outcome != 'success' || steps.desktop.outcome != 'success')

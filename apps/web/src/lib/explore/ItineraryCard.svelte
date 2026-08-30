@@ -12,6 +12,7 @@
   } as const;
 
   const colors = $derived(themeColors[itinerary.theme_id as keyof typeof themeColors] ?? themeColors["standard-autumn"]);
+  const authorName = $derived(itinerary.username === "tabitabi_official" ? "たびたび公式" : `@${itinerary.username}`);
   const duration = $derived.by(() => {
     if (itinerary.start_at == null || itinerary.end_at == null) return "日程未設定";
     const start = new Date(itinerary.start_at);
@@ -39,7 +40,7 @@
     </div>
   </a>
   <div class="meta">
-    <a class="author" href="/users/{itinerary.username}"><i>{itinerary.username.slice(0, 1).toUpperCase()}</i> @{itinerary.username}</a>
+    <a class="author" href="/users/{itinerary.username}"><i>{itinerary.username === "tabitabi_official" ? "旅" : itinerary.username.slice(0, 1).toUpperCase()}</i> {authorName}</a>
     <span>{itinerary.stops}件の予定 · {itinerary.copies}コピー</span>
   </div>
 </article>

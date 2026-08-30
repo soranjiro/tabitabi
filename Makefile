@@ -1,4 +1,4 @@
-.PHONY: build build-docs deploy deploy-api deploy-web dev down lighthouse migrate-status migrate-up migrate-down migrate-status-remote migrate-up-remote migrate-down-remote migrate-new seed-local test test-api test-web
+.PHONY: build build-docs deploy deploy-api deploy-web dev down lighthouse migrate-status migrate-up migrate-down migrate-status-remote migrate-up-remote migrate-down-remote migrate-new schema seed-local seed-remote test test-api test-web
 
 build: build-docs
 	pnpm run build
@@ -48,8 +48,16 @@ migrate-new:
 	@test -n "$(name)" || (echo "Usage: make migrate-new name=add_example" && exit 1)
 	pnpm exec dbmate --migrations-dir apps/db/migrations/sql new $(name)
 
+schema:
+	pnpm run db:schema
+
 seed-local:
-	cd apps/api && WRANGLER_LOG_PATH=$(CURDIR)/apps/api/.wrangler/wrangler.log pnpm run seed:local
+	$(MAKE) migrate-up
+	cd apps/api && pnpm run seed
+
+seed-remote:
+	$(MAKE) migrate-up-remote
+	cd apps/api && node scripts/d1-migrate.mjs seed --remote
 
 test:
 	pnpm run test

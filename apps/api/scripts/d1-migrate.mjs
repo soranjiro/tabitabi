@@ -10,17 +10,19 @@ const remote = process.argv.includes('--remote');
 const environment = optionValue('--env');
 const apiRoot = resolve(import.meta.dirname, '..');
 const migrationsDir = resolve(apiRoot, '..', 'db', 'migrations', 'sql');
+const seedFile = resolve(apiRoot, '..', 'db', 'migrations', 'seed.sql');
 const wranglerLogPath = join(apiRoot, '.wrangler', 'wrangler.log');
 const database = environment ? 'DB' : 'tabitabi';
 const migrationFiles = readdirSync(migrationsDir)
   .filter((name) => /^\d+_.+\.sql$/.test(name))
   .sort();
 
-if (!['status', 'up', 'down'].includes(command)) {
-  throw new Error('Usage: node scripts/d1-migrate.mjs <status|up|down> [--remote] [--env <name>]');
+if (!['status', 'up', 'down', 'seed'].includes(command)) {
+  throw new Error('Usage: node scripts/d1-migrate.mjs <status|up|down|seed> [--remote] [--env <name>]');
 }
 
 if (command === 'status') showStatus();
+else if (command === 'seed') executeSql(readFileSync(seedFile, 'utf8'));
 else {
   ensureHistory();
   importWranglerHistory();

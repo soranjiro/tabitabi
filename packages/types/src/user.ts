@@ -87,12 +87,6 @@ export interface PublishItineraryInput {
   tags?: string[];
 }
 
-export interface UpdateBookmarkMetadataInput {
-  prefecture_slugs: string[];
-  areas?: string[];
-  tags?: string[];
-}
-
 export interface BootstrapProfileInput {
   username?: string;
   prefecture?: Prefecture;

@@ -11,7 +11,12 @@ async function applyMigrations(db: D1Database) {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       theme_id TEXT NOT NULL DEFAULT 'standard-autumn',
-      default_view_mode TEXT NOT NULL DEFAULT 'dayCard',
+      palette_id TEXT NOT NULL DEFAULT 'sakura',
+      packing_enabled INTEGER NOT NULL DEFAULT 1,
+      prefecture_slugs TEXT NOT NULL DEFAULT '[]',
+      areas TEXT NOT NULL DEFAULT '[]',
+      tags TEXT NOT NULL DEFAULT '[]',
+      metadata_initialized INTEGER NOT NULL DEFAULT 0,
       memo TEXT,
       password TEXT,
       source_itinerary_id TEXT,
@@ -130,9 +135,42 @@ describe('Itineraries API', () => {
       const { success, data } = await response.json() as any;
       expect(success).toBe(true);
       expect(data.title).toBe('Test Trip');
-      expect(data.theme_id).toBe('standard-autumn');
+      expect(data.theme_id).toBe('planning-draft');
+      expect(data.palette_id).toBe('neutral');
+      expect(data.packing_enabled).toBe(true);
+      expect(data.metadata_initialized).toBe(false);
+      expect(data.prefecture_slugs).toEqual([]);
       expect(data.id).toBeDefined();
       expect(data.token).toBeDefined();
+    });
+
+    it('stores feature switches and destination metadata on the itinerary', async () => {
+      const createResponse = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Metadata trip' }),
+      }), env);
+      const { data: created } = await createResponse.json() as any;
+
+      const updateResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${created.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          packing_enabled: false,
+          prefecture_slugs: ['kyoto'],
+          areas: ['嵐山'],
+          tags: ['グルメ'],
+          metadata_initialized: true,
+        }),
+      }), env);
+
+      expect(updateResponse.status).toBe(200);
+      const { data } = await updateResponse.json() as any;
+      expect(data.packing_enabled).toBe(false);
+      expect(data.prefecture_slugs).toEqual(['kyoto']);
+      expect(data.areas).toEqual(['嵐山']);
+      expect(data.tags).toEqual(['グルメ']);
+      expect(data.metadata_initialized).toBe(true);
     });
 
     it('creates itinerary with custom theme', async () => {
@@ -147,17 +185,6 @@ describe('Itineraries API', () => {
 
       const { data } = await response.json() as any;
       expect(data.theme_id).toBe('standard');
-    });
-
-    it('creates itinerary with the standard opening view by default', async () => {
-      const response = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Default view trip' }),
-      }), env);
-
-      const { data } = await response.json() as any;
-      expect(data.default_view_mode).toBe('dayCard');
     });
 
     it('creates itinerary with memo', async () => {
@@ -260,25 +287,6 @@ describe('Itineraries API', () => {
       expect(response.status).toBe(200);
       const { data } = await response.json() as any;
       expect(data.title).toBe('Updated Title');
-    });
-
-    it('updates and returns the configured opening view', async () => {
-      const createResponse = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'View settings trip' }),
-      }), env);
-      const { data: created } = await createResponse.json() as any;
-
-      const response = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${created.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ default_view_mode: 'month' }),
-      }), env);
-
-      expect(response.status).toBe(200);
-      const { data } = await response.json() as any;
-      expect(data.default_view_mode).toBe('month');
     });
 
     it('returns 404 for non-existent itinerary', async () => {
@@ -451,7 +459,7 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
     const createRes = await app.request('/api/v1/itineraries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: '旅のしおり', theme_id: 'standard-autumn', default_view_mode: 'week' }),
+      body: JSON.stringify({ title: '旅のしおり', theme_id: 'standard-autumn' }),
     }, env);
     const { data: source } = await createRes.json() as any;
 
@@ -468,9 +476,6 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
     expect(json.data.token).toBeTruthy();
     expect(json.data.id).not.toBe(source.id);
 
-    const forkedRes = await app.request(`/api/v1/itineraries/${json.data.id}`, {}, env);
-    const { data: forked } = await forkedRes.json() as any;
-    expect(forked.default_view_mode).toBe('week');
   });
 
   it('increments fork_count on the source itinerary', async () => {
@@ -565,7 +570,7 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     const createRes = await app.request('/api/v1/itineraries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: '旅のしおり', memo: '{"text":"メモ"}', default_view_mode: 'month' }),
+      body: JSON.stringify({ title: '旅のしおり', memo: '{"text":"メモ"}' }),
     }, env);
     const { data: original } = await createRes.json() as any;
 
@@ -584,7 +589,6 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     const { data: snapshot } = await snapshotRes.json() as any;
     expect(snapshot.title).toBe('旅のしおり');
     expect(snapshot.source_itinerary_id).toBe(original.id);
-    expect(snapshot.default_view_mode).toBe('month');
   });
 
   it('masks trip member names in a shared snapshot', async () => {

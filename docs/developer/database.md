@@ -1,8 +1,8 @@
 # データベース
 
 「たびたび」は Cloudflare D1（SQLite）を使用します。スキーマの正本は
-`apps/db/migrations/sql/*.sql` です。このページは
-`202608120001_add_itinerary_publications.sql` までを反映しています。
+`apps/db/migrations/sql/*.sql` です。`apps/db/schema.sql` はこれらから自動生成する
+新規DB用のスキーマスナップショットです。
 
 ## 設計方針
 
@@ -65,7 +65,6 @@ erDiagram
 | `id` | TEXT | PRIMARY KEY、UUID |
 | `title` | TEXT | NOT NULL |
 | `theme_id` | TEXT | NOT NULL、DB既定値は `standard-autumn` |
-| `default_view_mode` | TEXT | NOT NULL、既定値 `dayCard` |
 | `memo` | TEXT | `MemoData` のJSON文字列 |
 | `password` | TEXT | 編集パスワードのbcryptハッシュ。未設定はNULL |
 | `source_itinerary_id` | TEXT | 公開スナップショットの場合の元しおりID |
@@ -269,6 +268,13 @@ make migrate-status
 make migrate-up
 make migrate-down
 
+# 新規DB向け schema.sql を生成
+make schema
+
+# 公式データを反映
+make seed-local
+make seed-remote
+
 # remote D1
 make migrate-status-remote
 make migrate-up-remote
@@ -277,5 +283,9 @@ make migrate-down-remote
 
 ローカル・remoteともに同じスクリプトがWrangler経由でup/downを適用し、`schema_migrations` で履歴を共有します。
 旧Wranglerの `d1_migrations` 履歴は初回実行時に自動で取り込まれます。
+
+`apps/db/migrations/seed.sql` はlocal・production共通の公式データです。再実行時は
+既存の公式しおりを削除して再作成します。previewでは空のDBへ `schema.sql` を一度だけ
+適用してからseedを実行します。
 
 スキーマを変更したら、共有型、Service／Route、APIテスト、およびこのページも同じ変更で更新します。

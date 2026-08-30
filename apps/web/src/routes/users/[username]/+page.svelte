@@ -8,6 +8,7 @@
   import PublicHeader from "$lib/explore/PublicHeader.svelte";
 
   const username = $derived($page.params.username);
+  const displayName = $derived(username === "tabitabi_official" ? "たびたび公式" : `@${username}`);
 
   let bookmarks: PublicBookmark[] = $state([]);
   let loading = $state(true);
@@ -37,7 +38,7 @@
 </script>
 
 <svelte:head>
-  <title>@{username} - たびたび</title>
+  <title>{displayName} - たびたび</title>
 </svelte:head>
 
 <div class="profile-page">
@@ -46,7 +47,7 @@
     <a class="back" href="/explore">← みんなのしおり</a>
     <section class="profile-hero">
       <p>TRAVELER PROFILE</p>
-      <h1>{notFound ? "ユーザーが見つかりません" : `@${username}`}</h1>
+      <h1>{notFound ? "ユーザーが見つかりません" : displayName}</h1>
       {#if !loading && !notFound}<span>公開しおり {bookmarks.length}件</span>{/if}
     </section>
 

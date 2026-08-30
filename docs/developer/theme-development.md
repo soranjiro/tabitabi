@@ -7,7 +7,8 @@
 
 | ID | 表示名 | 概要 |
 |---|---|---|
-| `standard-spring` | 標準（春） | 標準機能一式。Web画面の既定テーマ |
+| `planning-draft` | 下書き | 候補から日時を決める計画用テーマ。Web画面の既定テーマ |
+| `standard-spring` | 標準（春） | 標準機能一式 |
 | `standard-summer` | 標準（夏） | 標準機能一式、夏配色 |
 | `standard-autumn` | 標準（秋） | 標準機能一式、秋配色 |
 | `standard-winter` | 標準（冬） | 標準機能一式、冬配色 |

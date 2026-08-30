@@ -11,7 +11,12 @@ async function applyMigrations(db: D1Database) {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       theme_id TEXT NOT NULL DEFAULT 'standard-autumn',
-      default_view_mode TEXT NOT NULL DEFAULT 'dayCard',
+      palette_id TEXT NOT NULL DEFAULT 'sakura',
+      packing_enabled INTEGER NOT NULL DEFAULT 1,
+      prefecture_slugs TEXT NOT NULL DEFAULT '[]',
+      areas TEXT NOT NULL DEFAULT '[]',
+      tags TEXT NOT NULL DEFAULT '[]',
+      metadata_initialized INTEGER NOT NULL DEFAULT 0,
       memo TEXT,
       password TEXT,
       source_itinerary_id TEXT,
@@ -199,8 +204,8 @@ describe('POST /api/v1/users/me/sync-bookmarks', () => {
     const token = await registerAndGetToken('snapshotviewer', 'snapshotviewer@example.com');
     const sourceId = await createItinerary();
     await env.DB.prepare(`
-      INSERT INTO itineraries (id, title, theme_id, default_view_mode, source_itinerary_id, created_at, updated_at)
-      VALUES (?, '公開しおり', 'standard-autumn', 'dayCard', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO itineraries (id, title, theme_id, source_itinerary_id, created_at, updated_at)
+      VALUES (?, '公開しおり', 'standard-autumn', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `).bind('public-snapshot-id', sourceId).run();
 
     const res = await app.request('/api/v1/users/me/sync-bookmarks', {

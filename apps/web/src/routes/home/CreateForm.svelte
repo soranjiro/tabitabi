@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
   import { auth } from "$lib/auth";
-  import { defaultThemeId, getAvailableThemes } from "$lib/themes/catalog";
+  import { defaultThemeId, getAvailableThemes, getThemePreset } from "$lib/themes/catalog";
 
   let title = $state("");
   let password = $state("");
@@ -30,6 +30,7 @@
       const created = await itineraryApi.create({
         title: title.trim(),
         theme_id,
+        palette_id: getThemePreset(theme_id).defaultPaletteId,
         password: usePassword && password.trim() ? password.trim() : undefined,
       });
 

@@ -206,7 +206,41 @@
               </div>
               <div class="preview-tabs"><span>⌖<small>旅程</small></span><span>◇<small>マップ</small></span><span>□<small>メモ</small></span><span>▧<small>写真</small></span></div>
             </a>
-            <div class="tap-note" aria-hidden="true"><svg viewBox="0 0 70 38"><path d="M66 30C50 31 45 13 30 14 19 15 14 24 4 19"/><path d="M58 24l8 6-8 5"/></svg><p>タップで<br />しおりを開く</p></div>
+            <div class="tap-note" aria-hidden="true">
+            <svg
+              viewBox="0 0 100 90"
+              width="100"
+              height="90"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <!-- 矢印の本体 -->
+              <path
+                d="M7 13
+                  C25 5 44 7 46 17
+                  C48 27 36 32 30 25
+                  C24 18 33 12 43 16
+                  C57 21 60 39 65 51
+                  C69 60 75 67 81 72"
+                fill="none"
+                stroke="white"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+
+              <!-- 矢印の先 -->
+              <path
+                d="M67 69 L82 73 L78 58"
+                fill="none"
+                stroke="white"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+
+            <p>タップで<br>しおりを開く</p>
+          </div>
         </div>
       </main>
 

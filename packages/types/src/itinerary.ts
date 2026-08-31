@@ -12,6 +12,8 @@ export interface Itinerary {
   theme_id: string;
   /** Color palette is independent from the selected layout preset. */
   palette_id?: string;
+  /** Cover image path/URL. Presets use static paths now; uploaded photos can reuse this field later. */
+  background_image?: string | null;
   /** Feature switches belong to the itinerary, not to a visual theme. */
   packing_enabled?: boolean;
   /** Search/discovery metadata shared by every owner and publication of this itinerary. */
@@ -62,6 +64,7 @@ export interface UpdateItineraryInput {
   title?: string;
   theme_id?: string;
   palette_id?: string;
+  background_image?: string | null;
   packing_enabled?: boolean;
   prefecture_slugs?: string[];
   areas?: string[];

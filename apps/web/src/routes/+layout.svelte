@@ -4,7 +4,9 @@
   import "./home/hero-refresh.css";
   import "./home/hero-desktop-finetune.css";
   import "./home/hero-mobile-facts.css";
+  import "$lib/itinerary/background-cover.css";
   import ExternalSiteOverlay from "$lib/external-site-overlay/ExternalSiteOverlay.svelte";
+  import BackgroundControls from "$lib/itinerary/BackgroundControls.svelte";
 
   function isIndexablePath(pathname: string) {
     if (pathname === "/" || pathname === "/explore") return true;
@@ -26,4 +28,5 @@
   <slot />
 </main>
 
+<BackgroundControls />
 <ExternalSiteOverlay />

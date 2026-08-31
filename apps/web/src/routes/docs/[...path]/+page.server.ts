@@ -49,10 +49,13 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		throw error(404, 'Documentation page not found');
 	}
 
-	// Read the HTML content
-	const htmlContent = fs.readFileSync(staticDocsPath, 'utf-8');
+	// Read the HTML content and attach the app-wide documentation polish.
+	const rawHtml = fs.readFileSync(staticDocsPath, 'utf-8');
+	const stylesheet = '<link rel="stylesheet" href="/docs/docs-refresh.css">';
+	const htmlContent = rawHtml.includes('</head>')
+		? rawHtml.replace('</head>', `  ${stylesheet}\n</head>`)
+		: `${stylesheet}${rawHtml}`;
 
-	// Extract the full HTML as-is for now (we'll handle it in the component)
 	return {
 		htmlContent,
 		path: docPath

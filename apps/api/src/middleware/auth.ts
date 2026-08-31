@@ -3,6 +3,23 @@ import { Env, Variables } from '../utils';
 import { verifyToken, extractBearerToken } from '../utils/jwt';
 import { verifyFirebaseIdToken } from '../utils/firebase-token';
 
+async function resolveVerifiedUserId(
+  c: Context<{ Bindings: Env; Variables: Variables }>,
+  firebaseUserId: string,
+  email: string,
+): Promise<string> {
+  const normalizedEmail = email.toLowerCase();
+  const existing = await c.env.DB.prepare(`
+    SELECT id
+    FROM users
+    WHERE id = ? OR lower(email) = ?
+    ORDER BY CASE WHEN id = ? THEN 0 ELSE 1 END
+    LIMIT 1
+  `).bind(firebaseUserId, normalizedEmail, firebaseUserId).first<{ id: string }>();
+
+  return existing?.id ?? firebaseUserId;
+}
+
 export async function authMiddleware(c: Context<{ Bindings: Env; Variables: Variables }>, next: Next) {
   const authHeader = c.req.header('Authorization');
   const token = extractBearerToken(authHeader);
@@ -48,10 +65,11 @@ export async function optionalUserAuthMiddleware(c: Context<{ Bindings: Env; Var
   if (token) {
     const payload = await verifyFirebaseIdToken(token, c.env.FIREBASE_PROJECT_ID);
     if (payload?.email_verified) {
+      const userId = await resolveVerifiedUserId(c, payload.sub, payload.email);
       const profile = await c.env.DB.prepare('SELECT id FROM users WHERE id = ? AND email_verified_at IS NOT NULL AND prefecture IS NOT NULL')
-        .bind(payload.sub).first();
+        .bind(userId).first();
       if (profile) {
-        c.set('userId', payload.sub);
+        c.set('userId', userId);
         c.set('firebaseEmail', payload.email.toLowerCase());
       }
     }
@@ -101,7 +119,8 @@ export async function userAuthMiddleware(c: Context<{ Bindings: Env; Variables: 
     }, 403);
   }
 
-  c.set('userId', payload.sub);
+  const userId = await resolveVerifiedUserId(c, payload.sub, payload.email);
+  c.set('userId', userId);
   c.set('firebaseEmail', payload.email.toLowerCase());
   await next();
 }

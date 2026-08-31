@@ -1,8 +1,15 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { onMount } from "svelte";
   import type { PublicFeedItem } from "@tabitabi/types";
+  import { userApi } from "$lib/api/user";
+  import { userAuth } from "$lib/user-auth";
   import { prefectureName } from "./data";
 
   let { itinerary, compact = false }: { itinerary: PublicFeedItem; compact?: boolean } = $props();
+  let favorited = $state(false);
+  let favoriteBusy = $state(false);
+  let loggedIn = $state(false);
 
   const themeColors = {
     "standard-spring": ["#f8bfd0", "#fff4f7"],
@@ -20,11 +27,53 @@
     const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86_400_000) + 1);
     return days === 1 ? "日帰り" : `${days - 1}泊${days}日`;
   });
+
+  onMount(async () => {
+    loggedIn = userAuth.isLoggedIn();
+    if (!loggedIn) return;
+    try {
+      favorited = (await userApi.getFavoriteIds()).has(itinerary.itinerary_id);
+    } catch {
+      // Favorite state is non-critical; keep the feed usable if it cannot be loaded.
+    }
+  });
+
+  async function toggleFavorite(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!loggedIn) {
+      await goto("/profile");
+      return;
+    }
+    if (favoriteBusy) return;
+    favoriteBusy = true;
+    const previous = favorited;
+    favorited = !favorited;
+    try {
+      if (favorited) await userApi.addFavorite(itinerary.itinerary_id);
+      else await userApi.removeFavorite(itinerary.itinerary_id);
+    } catch {
+      favorited = previous;
+    } finally {
+      favoriteBusy = false;
+    }
+  }
 </script>
 
 <article style={`--accent:${colors[0]};--soft:${colors[1]}`}>
   <a class="card-link" href="/itineraries/{itinerary.itinerary_id}" aria-label="{itinerary.title}を読む">
-    <div class="theme-strip"><span>{duration}</span></div>
+    <div class="theme-strip">
+      <button
+        class:favorited
+        class="favorite"
+        type="button"
+        aria-label={favorited ? "お気に入りから外す" : "お気に入りに登録"}
+        aria-pressed={favorited}
+        disabled={favoriteBusy}
+        onclick={toggleFavorite}
+      >{favorited ? "♥" : "♡"}</button>
+      <span>{duration}</span>
+    </div>
     <div class="body">
       <div class="destinations">
         {#each itinerary.prefecture_slugs as slug, index}
@@ -65,15 +114,15 @@
   .theme-strip {
     display: flex;
     height: 58px;
-    padding: 12px;
+    padding: 10px 12px;
     align-items: flex-end;
-    justify-content: flex-end;
+    justify-content: space-between;
     background:
       radial-gradient(circle at 15% 20%, rgba(255,255,255,.75) 0 8px, transparent 9px),
       linear-gradient(135deg, var(--soft), color-mix(in srgb, var(--accent) 55%, white));
   }
 
-  .theme-strip span {
+  .theme-strip > span {
     padding: 4px 8px;
     border-radius: 999px;
     color: #45546b;
@@ -81,6 +130,25 @@
     font-size: 10px;
     font-weight: 800;
   }
+
+  .favorite {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    color: #55657f;
+    background: rgba(255,255,255,.9);
+    box-shadow: 0 4px 12px rgba(39,54,79,.1);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .favorite.favorited { color: #e65f76; }
+  .favorite:disabled { cursor: wait; opacity: .65; }
+  .favorite:focus-visible { outline: 2px solid #315da8; outline-offset: 2px; }
 
   .body { padding: 16px; }
   .destinations { color: #4c72bc; font-size: 11px; font-weight: 800; }

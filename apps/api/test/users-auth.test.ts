@@ -65,6 +65,17 @@ describe('Firebase account authentication', () => {
     expect(row.email_verified_at).toBeTruthy();
   });
 
+  it('maps a verified Firebase login to an existing account with the same email', async () => {
+    await env.DB.prepare(`INSERT INTO users (id, username, email, password_hash, prefecture, email_verified_at, created_at, updated_at)
+      VALUES ('official-user', 'tabitabi_official', 'official@tabitabi.jp', '!seeded!', '東京都', '2025-01-01', '2025-01-01', '2025-01-01')`).run();
+    const token = await createFirebaseToken('firebase-generated-uid', 'OFFICIAL@tabitabi.jp');
+    const response = await postBootstrap(token);
+    expect(response.status).toBe(200);
+    expect((await response.json() as any).data.username).toBe('tabitabi_official');
+    const duplicate = await env.DB.prepare('SELECT id FROM users WHERE id = ?').bind('firebase-generated-uid').first();
+    expect(duplicate).toBeNull();
+  });
+
   it('rejects tokens issued for another Firebase project', async () => {
     const token = await createFirebaseToken('wrong-project', 'wrong@example.com', true, { audience: 'other-project' });
     expect((await postBootstrap(token, { username: 'wrong', prefecture: '東京都' })).status).toBe(401);

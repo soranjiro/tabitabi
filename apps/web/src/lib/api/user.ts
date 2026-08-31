@@ -37,6 +37,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   return result.data;
 }
 
+let favoriteIdsPromise: Promise<Set<string>> | null = null;
+
+function clearFavoriteCache() {
+  favoriteIdsPromise = null;
+}
+
 export const userApi = {
   bootstrap: (data: BootstrapProfileInput = {}) =>
     request<UserSessionProfile>('/users/me/bootstrap', { method: 'POST', body: JSON.stringify(data) }),
@@ -95,4 +101,22 @@ export const userApi = {
 
   searchUsers: (query: string) =>
     request<{ users: UserSearchResult[] }>(`/users/search?q=${encodeURIComponent(query)}`),
+
+  getFavoriteIds: async () => {
+    favoriteIdsPromise ??= request<{ itinerary_ids: string[] }>('/favorites')
+      .then(({ itinerary_ids }) => new Set(itinerary_ids));
+    return favoriteIdsPromise;
+  },
+
+  addFavorite: async (itineraryId: string) => {
+    const result = await request<{ itinerary_id: string; favorited: boolean }>(`/favorites/${itineraryId}`, { method: 'PUT' });
+    clearFavoriteCache();
+    return result;
+  },
+
+  removeFavorite: async (itineraryId: string) => {
+    const result = await request<{ itinerary_id: string; favorited: boolean }>(`/favorites/${itineraryId}`, { method: 'DELETE' });
+    clearFavoriteCache();
+    return result;
+  },
 };

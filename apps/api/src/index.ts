@@ -3,6 +3,7 @@ import { Env } from './utils';
 import { corsMiddleware } from './middleware/cors';
 import auth from './routes/auth';
 import itineraries from './routes/itineraries';
+import backgrounds from './routes/backgrounds';
 import steps from './routes/steps';
 import users from './routes/users';
 import money from './routes/money';
@@ -19,6 +20,7 @@ app.get('/health', (c) => {
 
 app.route('/api/v1/auth', auth);
 app.route('/api/v1/itineraries', itineraries);
+app.route('/api/v1/backgrounds', backgrounds);
 app.route('/api/v1/steps', steps);
 app.route('/api/v1/users', users);
 app.route('/api/v1', money);

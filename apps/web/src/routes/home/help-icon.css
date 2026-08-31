@@ -1,0 +1,33 @@
+.home-page .site-header nav a[href="/docs/index"] {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  overflow: hidden;
+  color: transparent;
+  font-size: 0;
+  line-height: 1;
+}
+
+.home-page .site-header nav a[href="/docs/index"]::before {
+  content: "?";
+  color: currentColor;
+  color: white;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.home-page .site-header nav a[href="/docs/index"]:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+@media (max-width: 760px) {
+  .home-page .site-header nav a[href="/docs/index"] {
+    width: 40px;
+    height: 40px;
+    color: transparent;
+  }
+}

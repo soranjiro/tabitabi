@@ -1,3 +1,4 @@
+import { normalizeThemePresetId } from "@tabitabi/types";
 import type { Theme } from "@tabitabi/types";
 
 export {
@@ -13,22 +14,22 @@ export {
 export type { AvailableTheme, PaletteId, ThemePresetOption } from "./catalog";
 
 export async function loadTheme(themeId: string): Promise<Theme> {
-  switch (themeId) {
-    case "planning-draft":
+  switch (normalizeThemePresetId(themeId)) {
+    case "planning":
       return (await import("./planning-draft")).default;
     case "map-only":
       return (await import("./map-only")).default;
     case "mapbox-journey":
       return (await import("./mapbox-journey")).default;
-    case "standard-spring":
+    case "day-card":
       return (await import("./standard/presets/day-card")).default;
-    case "standard-accordion":
+    case "accordion":
       return (await import("./standard/presets/accordion")).default;
-    case "standard-summer":
+    case "list":
       return (await import("./standard/presets/list")).default;
-    case "standard-autumn":
+    case "week":
       return (await import("./standard/presets/week")).default;
-    case "standard-winter":
+    case "month":
       return (await import("./standard/presets/month")).default;
     case "ai-generated":
       return (await import("./ai-generated")).default;

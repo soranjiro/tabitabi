@@ -32,19 +32,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate database schema
-        run: pnpm run db:schema
-
-      - name: Upload generated database schema
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: generated-schema
-          path: apps/db/schema.sql
-          retention-days: 1
-
       - name: Verify generated database schema
-        run: git diff --exit-code -- apps/db/schema.sql
+        run: pnpm run db:schema:check
 
       - name: Run API Tests
         run: pnpm run test:api

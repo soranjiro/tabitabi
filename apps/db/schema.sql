@@ -8,7 +8,7 @@ CREATE TABLE itinerary_secrets (
   updated_at TEXT NOT NULL,
   FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
 );
-CREATE TABLE "itineraries" (
+CREATE TABLE IF NOT EXISTS "itineraries" (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   theme_id TEXT NOT NULL DEFAULT 'standard-autumn',

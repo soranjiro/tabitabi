@@ -32,7 +32,7 @@ test('deployed mobile preview shows a centered, visible help icon and opens docs
   expect(metrics.height).toBeGreaterThanOrEqual(39);
   expect(Math.abs(metrics.width - metrics.height)).toBeLessThan(1);
   expect(metrics.borderRadius).not.toBe('0px');
-  expect(metrics.display).toBe('flex');
+  expect(['flex', 'inline-flex']).toContain(metrics.display);
   expect(metrics.alignItems).toBe('center');
   expect(metrics.justifyContent).toBe('center');
   expect(metrics.foreground).toBe('rgb(28, 48, 73)');

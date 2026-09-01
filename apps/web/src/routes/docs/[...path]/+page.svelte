@@ -64,13 +64,16 @@
 <iframe
   bind:this={iframeElement}
   title="Documentation"
-  style="width: 100%; height: 100vh; border: none; display: block; margin: 0; padding: 0;"
+  class="docs-frame"
 ></iframe>
 
 <style>
-  :global(body) {
+  .docs-frame {
+    display: block;
+    width: 100%;
+    height: 100dvh;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    border: 0;
   }
 </style>

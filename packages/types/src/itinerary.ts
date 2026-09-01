@@ -64,7 +64,6 @@ export interface UpdateItineraryInput {
   title?: string;
   theme_id?: string;
   palette_id?: string;
-  background_image?: string | null;
   packing_enabled?: boolean;
   prefecture_slugs?: string[];
   areas?: string[];

@@ -114,7 +114,7 @@ jobs:
 
           DATABASE_ID=$(printf '%s\n' "$OUTPUT" | sed -nE 's/.*database_id = "([^"]+)".*/\1/p' | head -1)
           if [ -z "$DATABASE_ID" ]; then
-            DATABASE_ID=$(printf '%s\n' "$OUTPUT" | grep -Eo '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}' | head -1)
+            DATABASE_ID=$(printf '%s\n' "$OUTPUT" | grep -Eo '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}' | head -1)
           fi
 
           if [ -z "$DATABASE_ID" ]; then
@@ -198,6 +198,14 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: ${{ steps.pages-deploy.outputs.url }}
           PREVIEW_API_URL: ${{ steps.api-url.outputs.url }}
+
+      - name: Upload preview background smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-background-pr-${{ env.PR_NUMBER }}
+          path: apps/web/test-results
+          if-no-files-found: ignore
 
       - name: Comment PR with preview URLs
         uses: actions/github-script@v7

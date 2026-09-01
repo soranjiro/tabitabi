@@ -21,6 +21,7 @@ export const entries: EntryGenerator = () => {
 				const relativePath = path.join(basePath, file.slice(0, -5)); // Remove .html
 				entries.push({ path: relativePath });
 			}
+		}
 	}
 
 	if (fs.existsSync(docsDir)) {

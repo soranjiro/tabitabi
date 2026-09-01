@@ -49,12 +49,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		throw error(404, 'Documentation page not found');
 	}
 
-	// Read the HTML content and attach the app-wide documentation polish.
-	const rawHtml = fs.readFileSync(staticDocsPath, 'utf-8');
-	const stylesheet = '<link rel="stylesheet" href="/docs/docs-refresh.css">';
-	const htmlContent = rawHtml.includes('</head>')
-		? rawHtml.replace('</head>', `  ${stylesheet}\n</head>`)
-		: `${stylesheet}${rawHtml}`;
+	// Read the generated documentation HTML as-is.
+	const htmlContent = fs.readFileSync(staticDocsPath, 'utf-8');
 
 	return {
 		htmlContent,

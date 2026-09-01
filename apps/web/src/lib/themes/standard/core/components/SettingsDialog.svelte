@@ -1,6 +1,7 @@
 <script lang="ts">
   import { PaletteIcon, SecretIcon } from "./icons/index.svelte";
   import TripMembersEditor from "./TripMembersEditor.svelte";
+  import { ITINERARY_BACKGROUND_PRESETS } from "$lib/itinerary-backgrounds";
 
   interface ThemeOption {
     id: string;
@@ -16,13 +17,15 @@
     palettes: PaletteOption[];
     selectedThemeId: string;
     selectedPaletteId: string;
+    selectedBackgroundImage: string | null;
     secretModeEnabled: boolean;
     secretModeOffset: number;
     packingEnabled: boolean;
-    onThemeChange: (themeId: string) => void;
-    onPaletteChange: (paletteId: string) => void;
-    onSecretModeChange: (enabled: boolean, offset: number) => void;
-    onPackingEnabledChange: (enabled: boolean) => void;
+    onThemeChange: (themeId: string) => void | Promise<void>;
+    onPaletteChange: (paletteId: string) => void | Promise<void>;
+    onBackgroundChange: (backgroundImage: string | null) => void | Promise<void>;
+    onSecretModeChange: (enabled: boolean, offset: number) => void | Promise<void>;
+    onPackingEnabledChange: (enabled: boolean) => void | Promise<void>;
     onEditMetadata: () => void;
     onClose: () => void;
   }
@@ -34,11 +37,13 @@
     palettes,
     selectedThemeId,
     selectedPaletteId,
+    selectedBackgroundImage,
     secretModeEnabled,
     secretModeOffset,
     packingEnabled,
     onThemeChange,
     onPaletteChange,
+    onBackgroundChange,
     onSecretModeChange,
     onPackingEnabledChange,
     onEditMetadata,
@@ -49,23 +54,30 @@
   let localSecretOffset = $state(secretModeOffset);
   let localThemeId = $state(selectedThemeId);
   let localPaletteId = $state(selectedPaletteId);
+  let localBackgroundImage = $state(selectedBackgroundImage ?? "");
   let showThemeList = $state(false);
   let showPaletteList = $state(false);
+  let showBackgroundList = $state(false);
   let localPackingEnabled = $state(packingEnabled);
   let selectedTheme = $derived(themes.find((theme) => theme.id === localThemeId));
   let selectedPalette = $derived(palettes.find((palette) => palette.id === localPaletteId));
+  let selectedBackground = $derived(
+    ITINERARY_BACKGROUND_PRESETS.find((preset) => preset.url === localBackgroundImage),
+  );
 
   $effect(() => {
     localSecretEnabled = secretModeEnabled;
     localSecretOffset = secretModeOffset;
     localThemeId = selectedThemeId;
     localPaletteId = selectedPaletteId;
+    localBackgroundImage = selectedBackgroundImage ?? "";
     localPackingEnabled = packingEnabled;
   });
 
   async function handleSave() {
     await onThemeChange(localThemeId);
     await onPaletteChange(localPaletteId);
+    await onBackgroundChange(localBackgroundImage || null);
     await onSecretModeChange(localSecretEnabled, localSecretOffset);
     await onPackingEnabledChange(localPackingEnabled);
     onClose();
@@ -76,6 +88,7 @@
     localSecretOffset = secretModeOffset;
     localThemeId = selectedThemeId;
     localPaletteId = selectedPaletteId;
+    localBackgroundImage = selectedBackgroundImage ?? "";
     localPackingEnabled = packingEnabled;
     onClose();
   }
@@ -127,10 +140,7 @@
       >
         {@html PaletteIcon}
         <h3>デザインテーマ</h3>
-        <span
-          class="standard-collapse-icon"
-          class:expanded={showThemeList}>▼</span
-        >
+        <span class="standard-collapse-icon" class:expanded={showThemeList}>▼</span>
       </div>
       <p class="standard-settings-page-description">
         旅程の見せ方を選択できます。テーマを変えるとビューも切り替わります。
@@ -144,20 +154,11 @@
         <div class="standard-settings-page-field">
           {#each themes as theme}
             <label class="standard-settings-page-radio">
-              <input
-                type="radio"
-                name="theme"
-                value={theme.id}
-                bind:group={localThemeId}
-              />
+              <input type="radio" name="theme" value={theme.id} bind:group={localThemeId} />
               <div class="standard-settings-page-radio-content">
-                <span class="standard-settings-page-radio-title"
-                  >{theme.name}</span
-                >
+                <span class="standard-settings-page-radio-title">{theme.name}</span>
                 {#if theme.description}
-                  <span class="standard-settings-page-radio-desc"
-                    >{theme.description}</span
-                  >
+                  <span class="standard-settings-page-radio-desc">{theme.description}</span>
                 {/if}
               </div>
               <div class="standard-settings-page-radio-check"></div>
@@ -207,6 +208,44 @@
     <div class="standard-settings-page-divider"></div>
 
     <div class="standard-settings-page-section">
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="standard-settings-page-section-header standard-settings-page-section-header-clickable"
+        onclick={() => (showBackgroundList = !showBackgroundList)}
+      >
+        <span class="standard-settings-page-section-icon" aria-hidden="true">▧</span>
+        <h3>背景画像</h3>
+        <span class="standard-collapse-icon" class:expanded={showBackgroundList}>▼</span>
+      </div>
+      <p class="standard-settings-page-description">
+        タイトル部分のカバー画像を選べます。トップ画面の春夏秋冬の画像も利用できます。
+      </p>
+      <div class="standard-settings-page-current" aria-label={`現在の背景画像: ${selectedBackground?.name ?? "背景なし"}`}>
+        <span>現在の設定</span><strong>{selectedBackground?.name ?? "背景なし"}</strong>
+      </div>
+      {#if showBackgroundList}
+        <div class="standard-background-grid standard-settings-page-field">
+          <label class="standard-background-option">
+            <input type="radio" name="background-image" value="" bind:group={localBackgroundImage} />
+            <span class="standard-background-preview standard-background-preview-none">背景なし</span>
+            <strong>背景なし</strong>
+          </label>
+          {#each ITINERARY_BACKGROUND_PRESETS as preset}
+            <label class="standard-background-option">
+              <input type="radio" name="background-image" value={preset.url} bind:group={localBackgroundImage} />
+              <img class="standard-background-preview" src={preset.url} alt="" loading="lazy" />
+              <strong>{preset.name}</strong>
+            </label>
+          {/each}
+        </div>
+      {/if}
+      <p class="standard-settings-page-hint">将来、写真アップロードを追加しても同じ背景設定を利用できる保存形式です。</p>
+    </div>
+
+    <div class="standard-settings-page-divider"></div>
+
+    <div class="standard-settings-page-section">
       <div class="standard-settings-page-section-header">
         <span class="standard-settings-page-section-icon" aria-hidden="true">▣</span>
         <h3>持ち物管理</h3>
@@ -228,30 +267,15 @@
         サプライズのために予定を一時的に隠すことができます
       </p>
       <label class="standard-settings-page-toggle">
-        <span class="standard-settings-page-toggle-label">
-          シークレットモードを有効にする
-        </span>
-        <input
-          type="checkbox"
-          bind:checked={localSecretEnabled}
-          class="standard-toggle-input"
-        />
+        <span class="standard-settings-page-toggle-label">シークレットモードを有効にする</span>
+        <input type="checkbox" bind:checked={localSecretEnabled} class="standard-toggle-input" />
         <span class="standard-toggle-slider"></span>
       </label>
 
       {#if localSecretEnabled}
         <div class="standard-settings-page-field">
-          <label
-            for="secret-offset-select"
-            class="standard-settings-page-label"
-          >
-            予定の表示開始時刻
-          </label>
-          <select
-            id="secret-offset-select"
-            bind:value={localSecretOffset}
-            class="standard-settings-page-select"
-          >
+          <label for="secret-offset-select" class="standard-settings-page-label">予定の表示開始時刻</label>
+          <select id="secret-offset-select" bind:value={localSecretOffset} class="standard-settings-page-select">
             <option value={0}>予定時刻</option>
             <option value={15}>15分前</option>
             <option value={30}>30分前</option>
@@ -267,18 +291,8 @@
     </div>
 
     <div class="standard-settings-page-actions">
-      <button
-        onclick={handleCancel}
-        class="standard-btn standard-btn-secondary"
-      >
-        キャンセル
-      </button>
-      <button
-        onclick={handleSave}
-        class="standard-btn standard-btn-primary"
-      >
-        保存
-      </button>
+      <button onclick={handleCancel} class="standard-btn standard-btn-secondary">キャンセル</button>
+      <button onclick={handleSave} class="standard-btn standard-btn-primary">保存</button>
     </div>
     </div>
   </section>

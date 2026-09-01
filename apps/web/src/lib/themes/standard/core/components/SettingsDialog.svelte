@@ -1,8 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import { invalidateAll } from "$app/navigation";
-  import type { ItineraryResponse } from "@tabitabi/types";
-  import { itineraryApi } from "$lib/api/itinerary";
+  import { backgroundApi } from "$lib/api/background";
   import { ITINERARY_BACKGROUND_PRESETS } from "$lib/itinerary-backgrounds";
   import { PaletteIcon, SecretIcon } from "./icons/index.svelte";
   import TripMembersEditor from "./TripMembersEditor.svelte";
@@ -50,15 +47,11 @@
     onClose,
   }: Props = $props();
 
-  const pageItinerary = $derived(($page.data?.itinerary ?? null) as ItineraryResponse | null);
-  const currentBackgroundImage = $derived(
-    pageItinerary?.id === itineraryId ? (pageItinerary.background_image ?? null) : null,
-  );
-
   let localSecretEnabled = $state(secretModeEnabled);
   let localSecretOffset = $state(secretModeOffset);
   let localThemeId = $state(selectedThemeId);
   let localPaletteId = $state(selectedPaletteId);
+  let currentBackgroundImage = $state<string | null>(null);
   let localBackgroundImage = $state("");
   let showThemeList = $state(false);
   let showPaletteList = $state(false);
@@ -66,6 +59,7 @@
   let localPackingEnabled = $state(packingEnabled);
   let wasOpen = $state(false);
   let isSaving = $state(false);
+  let isLoadingBackground = $state(false);
   let saveError = $state("");
   let selectedTheme = $derived(themes.find((theme) => theme.id === localThemeId));
   let selectedPalette = $derived(palettes.find((palette) => palette.id === localPaletteId));
@@ -83,21 +77,42 @@
 
   $effect(() => {
     if (show && !wasOpen) {
-      localBackgroundImage = currentBackgroundImage ?? "";
       saveError = "";
+      void loadBackground();
     }
     wasOpen = show;
   });
 
+  async function loadBackground() {
+    isLoadingBackground = true;
+    try {
+      const result = await backgroundApi.get(itineraryId);
+      currentBackgroundImage = result.background_image;
+      localBackgroundImage = result.background_image ?? "";
+    } catch (error) {
+      console.error("Failed to load itinerary background:", error);
+      currentBackgroundImage = null;
+      localBackgroundImage = "";
+      saveError = "背景画像の現在の設定を読み込めませんでした。";
+    } finally {
+      isLoadingBackground = false;
+    }
+  }
+
   async function handleSave() {
-    if (isSaving) return;
+    if (isSaving || isLoadingBackground) return;
     isSaving = true;
     saveError = "";
     try {
       const nextBackground = localBackgroundImage || null;
       if (nextBackground !== currentBackgroundImage) {
-        await itineraryApi.update(itineraryId, { background_image: nextBackground });
-        await invalidateAll();
+        const result = await backgroundApi.update(itineraryId, nextBackground);
+        currentBackgroundImage = result.background_image;
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("tabitabi:background-changed", {
+            detail: { itineraryId, backgroundImage: result.background_image },
+          }));
+        }
       }
       await onThemeChange(localThemeId);
       await onPaletteChange(localPaletteId);
@@ -252,18 +267,18 @@
         タイトル部分のカバー画像を選べます。トップ画面の春夏秋冬の画像も利用できます。
       </p>
       <div class="standard-settings-page-current" aria-label={`現在の背景画像: ${selectedBackground?.name ?? "背景なし"}`}>
-        <span>現在の設定</span><strong>{selectedBackground?.name ?? "背景なし"}</strong>
+        <span>現在の設定</span><strong>{isLoadingBackground ? "読み込み中…" : (selectedBackground?.name ?? "背景なし")}</strong>
       </div>
       {#if showBackgroundList}
         <div class="standard-background-grid standard-settings-page-field">
           <label class="standard-background-option">
-            <input type="radio" name="background-image" value="" bind:group={localBackgroundImage} />
+            <input type="radio" name="background-image" value="" bind:group={localBackgroundImage} disabled={isLoadingBackground} />
             <span class="standard-background-preview standard-background-preview-none">背景なし</span>
             <strong>背景なし</strong>
           </label>
           {#each ITINERARY_BACKGROUND_PRESETS as preset}
             <label class="standard-background-option">
-              <input type="radio" name="background-image" value={preset.url} bind:group={localBackgroundImage} />
+              <input type="radio" name="background-image" value={preset.url} bind:group={localBackgroundImage} disabled={isLoadingBackground} />
               <img class="standard-background-preview" src={preset.url} alt="" loading="lazy" />
               <strong>{preset.name}</strong>
             </label>
@@ -326,7 +341,7 @@
 
     <div class="standard-settings-page-actions">
       <button onclick={handleCancel} class="standard-btn standard-btn-secondary" disabled={isSaving}>キャンセル</button>
-      <button onclick={handleSave} class="standard-btn standard-btn-primary" disabled={isSaving}>{isSaving ? "保存中…" : "保存"}</button>
+      <button onclick={handleSave} class="standard-btn standard-btn-primary" disabled={isSaving || isLoadingBackground}>{isSaving ? "保存中…" : "保存"}</button>
     </div>
     </div>
   </section>

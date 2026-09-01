@@ -2,6 +2,7 @@ import type {
   BootstrapProfileInput,
   UserBookmarkWithItinerary,
   PublicBookmark,
+  PublicFeedItem,
   PublicFeedResponse,
   UpdateVisibilityInput,
   UserPublicProfile,
@@ -107,6 +108,9 @@ export const userApi = {
       .then(({ itinerary_ids }) => new Set(itinerary_ids));
     return favoriteIdsPromise;
   },
+
+  getFavoriteItineraries: () =>
+    request<{ items: PublicFeedItem[] }>('/favorites/itineraries'),
 
   addFavorite: async (itineraryId: string) => {
     const result = await request<{ itinerary_id: string; favorited: boolean }>(`/favorites/${itineraryId}`, { method: 'PUT' });

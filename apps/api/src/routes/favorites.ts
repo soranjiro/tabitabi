@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { userAuthMiddleware, userProfileMiddleware } from '../middleware/auth';
+import { UserService } from '../services/user.service';
 import { Env, Variables, getCurrentTimestamp } from '../utils';
 
 const favorites = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -21,6 +22,11 @@ favorites.get('/', async (c) => {
     success: true,
     data: { itinerary_ids: (rows.results ?? []).map((row) => row.itinerary_id) },
   });
+});
+
+favorites.get('/itineraries', async (c) => {
+  const items = await new UserService(c.env.DB).getFavoriteItineraries(c.get('userId')!);
+  return c.json({ success: true, data: { items } });
 });
 
 favorites.put('/:itineraryId', async (c) => {

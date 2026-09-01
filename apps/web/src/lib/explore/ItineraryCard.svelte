@@ -6,7 +6,15 @@
   import { userAuth } from "$lib/user-auth";
   import { prefectureName } from "./data";
 
-  let { itinerary, compact = false }: { itinerary: PublicFeedItem; compact?: boolean } = $props();
+  let {
+    itinerary,
+    compact = false,
+    onFavoriteChange,
+  }: {
+    itinerary: PublicFeedItem;
+    compact?: boolean;
+    onFavoriteChange?: (itineraryId: string, favorited: boolean) => void;
+  } = $props();
   let favorited = $state(false);
   let favoriteBusy = $state(false);
   let loggedIn = $state(false);
@@ -52,6 +60,7 @@
     try {
       if (favorited) await userApi.addFavorite(itinerary.itinerary_id);
       else await userApi.removeFavorite(itinerary.itinerary_id);
+      onFavoriteChange?.(itinerary.itinerary_id, favorited);
     } catch {
       favorited = previous;
     } finally {

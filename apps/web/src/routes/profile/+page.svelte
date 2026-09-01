@@ -8,7 +8,8 @@
   import { auth } from "$lib/auth";
   import { prefectureName } from "$lib/explore/data";
   import JapanMap from "$lib/explore/JapanMap.svelte";
-  import { PREFECTURES, type Prefecture, type UserBookmarkWithItinerary, type UserSessionProfile } from "@tabitabi/types";
+  import ItineraryCard from "$lib/explore/ItineraryCard.svelte";
+  import { PREFECTURES, type Prefecture, type PublicFeedItem, type UserBookmarkWithItinerary, type UserSessionProfile } from "@tabitabi/types";
 
   type Mode = "login" | "register" | "verify" | "forgot" | "setup";
 
@@ -18,6 +19,7 @@
   let loggedIn = $state(false);
   let account = $state<UserSessionProfile | null>(null);
   let bookmarks: UserBookmarkWithItinerary[] = $state([]);
+  let favoriteItineraries: PublicFeedItem[] = $state([]);
   let error = $state<string | null>(null);
   let notice = $state<string | null>(null);
 
@@ -38,7 +40,7 @@
   let editSuccess = $state<string | null>(null);
   let publishingIds = $state(new Set<string>());
   let unlinkTarget = $state<UserBookmarkWithItinerary | null>(null);
-  let activeTab = $state<"itineraries" | "map">("itineraries");
+  let activeTab = $state<"itineraries" | "favorites" | "map">("itineraries");
   const visitedCounts = $derived.by(() => {
     const counts: Record<string, number> = {};
     for (const item of bookmarks) {
@@ -88,7 +90,7 @@
       editPrefecture = profile.prefecture ?? "";
       editEmail = profile.email;
       await syncLocalBookmarks();
-      await loadBookmarks();
+      await Promise.all([loadBookmarks(), loadFavoriteItineraries()]);
       await continuePendingAction();
     } catch (e) {
       if (errorCode(e) === "PROFILE_SETUP_REQUIRED") {
@@ -184,7 +186,7 @@
       editEmail = account.email;
       notice = "アカウントの準備が完了しました。";
       await syncLocalBookmarks();
-      await loadBookmarks();
+      await Promise.all([loadBookmarks(), loadFavoriteItineraries()]);
       await continuePendingAction();
     } catch (e) { error = apiMessage(e); }
     finally { submitting = false; }
@@ -195,6 +197,7 @@
     loggedIn = false;
     account = null;
     bookmarks = [];
+    favoriteItineraries = [];
     await goto("/");
   }
 
@@ -224,6 +227,15 @@
   async function loadBookmarks() {
     try { bookmarks = (await userApi.getMyBookmarks()).bookmarks; }
     catch { error = "しおりの読み込みに失敗しました。"; }
+  }
+
+  async function loadFavoriteItineraries() {
+    try { favoriteItineraries = (await userApi.getFavoriteItineraries()).items; }
+    catch { error = "お気に入りの読み込みに失敗しました。"; }
+  }
+
+  function handleFavoriteChange(itineraryId: string, favorited: boolean) {
+    if (!favorited) favoriteItineraries = favoriteItineraries.filter((item) => item.itinerary_id !== itineraryId);
   }
 
   async function updateProfile() {
@@ -394,6 +406,7 @@
 
       <nav class="library-tabs" aria-label="マイページの表示切り替え">
         <button class:active={activeTab === "itineraries"} onclick={() => (activeTab = "itineraries")}>保存したしおり</button>
+        <button class:active={activeTab === "favorites"} onclick={() => (activeTab = "favorites")}>お気に入り</button>
         <button class:active={activeTab === "map"} onclick={() => (activeTab = "map")}>訪問マップ</button>
       </nav>
 
@@ -403,6 +416,17 @@
           <p class="map-intro">アカウントに紐づくしおりの旅行先を、しおりの件数で色分けしています。</p>
           <JapanMap counts={visitedCounts} variant="visited" />
         </section>
+      {:else if activeTab === "favorites"}
+        <div class="library-heading"><div><p>FAVORITES</p><h2>お気に入り</h2></div><span>{favoriteItineraries.length}件</span></div>
+        {#if favoriteItineraries.length === 0}
+          <div class="library-empty"><span>♡</span><h3>お気に入りはまだありません</h3><p>みんなのしおりで気になる旅程を保存すると、ここからいつでも確認できます。</p><a href="/explore">みんなのしおりを見る</a></div>
+        {:else}
+          <div class="favorite-grid">
+            {#each favoriteItineraries as itinerary}
+              <ItineraryCard {itinerary} compact onFavoriteChange={handleFavoriteChange} />
+            {/each}
+          </div>
+        {/if}
       {:else}
         <div class="library-heading"><div><p>MY ITINERARIES</p><h2>保存したしおり</h2></div><span>{bookmarks.filter((item) => item.is_visible).length}件 公開中</span></div>
         {#if bookmarks.length === 0}
@@ -477,6 +501,7 @@
   .visited-map-card .library-heading { margin-top: 0; }
   .map-intro { margin: -.35rem 0 1rem; color: #7d899d; font-size: .72rem; }
   .bookmark-grid { display: grid; gap: .8rem; }
+  .favorite-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .8rem; }
   .bookmark-grid article { padding: 1.15rem; border: 1px solid #e1e7f0; border-left: 4px solid #d6deea; border-radius: .9rem; background: white; box-shadow: 0 7px 20px rgba(47, 67, 103, .04); }
   .bookmark-grid article.published { border-left-color: #5d8be0; }
   .bookmark-status { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }

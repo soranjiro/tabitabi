@@ -52,7 +52,7 @@ test('deployed preview can save a home hero background from itinerary settings',
     console.log('preview-background-step=choose-page-background');
     const winterOption = page.locator('label.standard-background-option').filter({ hasText: 'トップ画像・冬' });
     await winterOption.click();
-    await page.getByRole('radio', { name: /しおり全体の背景/ }).check();
+    await page.locator('label.standard-settings-page-radio').filter({ hasText: 'しおり全体の背景' }).click();
     await expect(winterOption.locator('input[type="radio"]')).toBeChecked();
     await page.getByRole('button', { name: /戻る/ }).last().click();
     await page.screenshot({ path: 'test-results/background-settings-selected.png', fullPage: false });

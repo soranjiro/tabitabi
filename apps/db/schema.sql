@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS "itineraries" (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   memo TEXT,
   password TEXT
-, source_itinerary_id TEXT, packing_enabled INTEGER NOT NULL DEFAULT 1 CHECK(packing_enabled IN (0, 1)), prefecture_slugs TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(prefecture_slugs)), areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)), tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)), metadata_initialized INTEGER NOT NULL DEFAULT 1 CHECK(metadata_initialized IN (0, 1)), palette_id TEXT NOT NULL DEFAULT 'sakura');
+, source_itinerary_id TEXT, packing_enabled INTEGER NOT NULL DEFAULT 1 CHECK(packing_enabled IN (0, 1)), prefecture_slugs TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(prefecture_slugs)), areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)), tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)), metadata_initialized INTEGER NOT NULL DEFAULT 1 CHECK(metadata_initialized IN (0, 1)), palette_id TEXT NOT NULL DEFAULT 'sakura', background_image TEXT);
 CREATE TABLE IF NOT EXISTS "steps" (
   id TEXT PRIMARY KEY,
   itinerary_id TEXT NOT NULL,
@@ -227,3 +227,21 @@ CREATE INDEX idx_money_fund_transactions_itinerary
   ON itinerary_money_fund_transactions(itinerary_id, occurred_on, created_at);
 CREATE INDEX idx_money_fund_transactions_member
   ON itinerary_money_fund_transactions(itinerary_id, member_id);
+CREATE TRIGGER sync_public_itinerary_background_after_insert
+AFTER INSERT ON itineraries
+WHEN NEW.source_itinerary_id IS NOT NULL
+BEGIN
+  UPDATE itineraries
+  SET background_image = (
+    SELECT background_image FROM itineraries WHERE id = NEW.source_itinerary_id
+  )
+  WHERE id = NEW.id;
+END;
+CREATE TRIGGER sync_public_itinerary_background_after_update
+AFTER UPDATE OF background_image ON itineraries
+WHEN NEW.source_itinerary_id IS NULL
+BEGIN
+  UPDATE itineraries
+  SET background_image = NEW.background_image
+  WHERE source_itinerary_id = NEW.id;
+END;

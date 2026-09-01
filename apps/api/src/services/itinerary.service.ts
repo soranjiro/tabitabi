@@ -1,4 +1,5 @@
 import type { Itinerary, CreateItineraryInput, UpdateItineraryInput } from '@tabitabi/types';
+import { DEFAULT_THEME_PRESET_ID, normalizeThemePresetId, toLegacyThemeId } from '@tabitabi/types';
 import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
 import type { Env } from '../utils';
@@ -56,11 +57,14 @@ export class ItineraryService {
     }
 
     const hashedPassword = input.password ? await hashPassword(input.password) : null;
+    const themePresetId = normalizeThemePresetId(input.theme_preset_id ?? input.theme_id ?? DEFAULT_THEME_PRESET_ID);
+    const legacyThemeId = toLegacyThemeId(themePresetId);
 
     const itinerary: Itinerary = {
       id,
       title: input.title,
-      theme_id: input.theme_id || DEFAULT_THEME_ID,
+      theme_id: legacyThemeId,
+      theme_preset_id: themePresetId,
       palette_id: input.palette_id || DEFAULT_PALETTE_ID,
       packing_enabled: input.packing_enabled ?? true,
       prefecture_slugs: [],
@@ -78,13 +82,14 @@ export class ItineraryService {
       updated_at: now,
     };
 
-    // Insert into main table
+    // Write the legacy column during the compatibility period. Once the migration
+    // is present, the DB trigger mirrors it into theme_preset_id. Keeping this SQL
+    // compatible with the pre-migration schema makes rolling deploys safe.
     await this.db
       .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.palette_id, itinerary.packing_enabled ? 1 : 0, '[]', '[]', '[]', 0, itinerary.memo, itinerary.password, itinerary.created_at, itinerary.updated_at)
       .run();
 
-    // Insert into secrets table if settings exist
     if (itinerary.secret_settings) {
       await this.db
         .prepare('INSERT INTO itinerary_secrets (itinerary_id, enabled, offset_minutes, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
@@ -113,9 +118,10 @@ export class ItineraryService {
       fields.push('title = ?');
       values.push(input.title);
     }
-    if (input.theme_id !== undefined) {
+    if (input.theme_preset_id !== undefined || input.theme_id !== undefined) {
+      const themePresetId = normalizeThemePresetId(input.theme_preset_id ?? input.theme_id ?? DEFAULT_THEME_PRESET_ID);
       fields.push('theme_id = ?');
-      values.push(input.theme_id || DEFAULT_THEME_ID);
+      values.push(toLegacyThemeId(themePresetId));
     }
     if (input.palette_id !== undefined) {
       fields.push('palette_id = ?');
@@ -161,16 +167,13 @@ export class ItineraryService {
         .run();
     }
 
-    // Handle secret settings update
     if (input.secret_settings !== undefined) {
       if (input.secret_settings === null) {
-        // Remove settings
         await this.db
           .prepare('DELETE FROM itinerary_secrets WHERE itinerary_id = ?')
           .bind(id)
           .run();
       } else {
-        // Upsert settings
         await this.db
           .prepare(`
             INSERT INTO itinerary_secrets (itinerary_id, enabled, offset_minutes, created_at, updated_at)
@@ -202,8 +205,6 @@ export class ItineraryService {
     const newId = generateId();
     const now = getCurrentTimestamp();
 
-    // Fetch source steps before batch to generate new IDs
-    // Feature-specific settings are intentionally excluded from forks.
     const sourceSteps = await this.db
       .prepare('SELECT id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
       .bind(sourceId)
@@ -211,19 +212,18 @@ export class ItineraryService {
 
     const rows = sourceSteps.results ?? [];
 
-    // Use batch() for atomic execution: all inserts + fork_count upsert succeed or fail together
     const stepStatements = rows.map(row =>
       this.db
         .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
         .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.link, row.type, row.is_all_day, now, now)
     );
 
+    const themePresetId = normalizeThemePresetId(source.theme_preset_id ?? source.theme_id);
     await this.db.batch([
       this.db
         .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?)')
-        .bind(newId, `${source.title}（コピー）`, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), source.memo, now, now),
+        .bind(newId, `${source.title}（コピー）`, toLegacyThemeId(themePresetId), source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), source.memo, now, now),
       ...stepStatements,
-      // Upsert fork_count in the dedicated stats table
       this.db
         .prepare(`
           INSERT INTO itinerary_fork_stats (itinerary_id, fork_count)
@@ -258,6 +258,7 @@ export class ItineraryService {
     const rows = (sourceSteps.results ?? []).map(row => createPublicStepSnapshot(row, this.env, memberNames));
     const publicTitle = createPublicTextSnapshot(source.title, memberNames) || '旅のしおり';
     const publicMemo = createPublicMemoSnapshot(source.memo, memberNames);
+    const themePresetId = normalizeThemePresetId(source.theme_preset_id ?? source.theme_id);
 
     let existing = await this.db
       .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
@@ -276,14 +277,13 @@ export class ItineraryService {
         await this.db.batch([
           this.db
           .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?, ?)')
-            .bind(newId, publicTitle, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, sourceId, now, now),
+            .bind(newId, publicTitle, toLegacyThemeId(themePresetId), source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, sourceId, now, now),
           ...stepStatements,
         ]);
         return (await this.get(newId))!;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : '';
         if (!msg.includes('UNIQUE constraint failed')) throw e;
-        // Concurrent publish race: fall through to update the snapshot created by the other request
         const concurrent = await this.db
           .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
           .bind(sourceId)
@@ -304,7 +304,7 @@ export class ItineraryService {
       await this.db.batch([
         this.db
           .prepare('UPDATE itineraries SET title = ?, theme_id = ?, palette_id = ?, packing_enabled = ?, prefecture_slugs = ?, areas = ?, tags = ?, metadata_initialized = 1, memo = ?, updated_at = ? WHERE id = ?')
-          .bind(publicTitle, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, now, sharedId),
+          .bind(publicTitle, toLegacyThemeId(themePresetId), source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, now, sharedId),
         this.db
           .prepare('DELETE FROM steps WHERE itinerary_id = ?')
           .bind(sharedId),
@@ -316,7 +316,6 @@ export class ItineraryService {
   }
 
   async delete(id: string): Promise<boolean> {
-    // Foreign keys handle dependent rows; a trigger also deletes the published snapshot.
     const result = await this.db
       .prepare('DELETE FROM itineraries WHERE id = ?')
       .bind(id)
@@ -326,10 +325,12 @@ export class ItineraryService {
   }
 
   private mapToItinerary(row: Record<string, unknown>): Itinerary {
+    const legacyThemeId = (row.theme_id as string) || DEFAULT_THEME_ID;
     const itinerary: Itinerary = {
       id: row.id as string,
       title: row.title as string,
-      theme_id: row.theme_id as string,
+      theme_id: legacyThemeId,
+      theme_preset_id: normalizeThemePresetId((row.theme_preset_id as string | undefined) ?? legacyThemeId),
       palette_id: (row.palette_id as string) || DEFAULT_PALETTE_ID,
       packing_enabled: row.packing_enabled !== 0,
       prefecture_slugs: this.parseStringArray(row.prefecture_slugs),
@@ -367,7 +368,6 @@ export class ItineraryService {
     }
   }
 
-  // フロントエンド用：パスワード除外したレスポンスを返す
   toResponseItinerary(itinerary: Itinerary) {
     const { password: _, ...rest } = itinerary;
     return {

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { normalizeThemePresetId } from "@tabitabi/types";
   import { itineraryApi } from "$lib/api/itinerary";
   import { auth } from "$lib/auth";
   import { defaultThemeId, getAvailableThemes, getThemePreset } from "$lib/themes/catalog";
@@ -7,7 +8,7 @@
   let title = $state("");
   let password = $state("");
   let usePassword = $state(false);
-  let theme_id = $state(defaultThemeId);
+  let themeSelectionId = $state(defaultThemeId);
   let creating = $state(false);
   let titleError = $state("");
 
@@ -29,8 +30,8 @@
     try {
       const created = await itineraryApi.create({
         title: title.trim(),
-        theme_id,
-        palette_id: getThemePreset(theme_id).defaultPaletteId,
+        theme_preset_id: normalizeThemePresetId(themeSelectionId),
+        palette_id: getThemePreset(themeSelectionId).defaultPaletteId,
         password: usePassword && password.trim() ? password.trim() : undefined,
       });
 
@@ -133,8 +134,8 @@
       </div>
 
       <div class="form-group">
-        <label for="theme" class="form-label">テーマ</label>
-        <select id="theme" bind:value={theme_id} class="form-select">
+        <label for="theme" class="form-label">表示</label>
+        <select id="theme" bind:value={themeSelectionId} class="form-select">
           {#each themes as theme}
             <option value={theme.id}>{theme.name}</option>
           {/each}

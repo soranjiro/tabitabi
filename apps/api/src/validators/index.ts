@@ -20,6 +20,7 @@ export const createItinerarySchema = z.object({
     .string({ error: 'title is required' })
     .min(1, 'title is required')
     .max(100, 'title must be at most 100 characters'),
+  theme_preset_id: z.string().min(1).max(64).optional(),
   theme_id: z.string().optional(),
   palette_id: z.string().min(1).max(32).optional(),
   packing_enabled: z.boolean().optional(),
@@ -37,6 +38,7 @@ export const updateItinerarySchema = z.object({
     .min(1, 'title must not be empty')
     .max(100, 'title must be at most 100 characters')
     .optional(),
+  theme_preset_id: z.string().min(1).max(64).optional(),
   theme_id: z.string().optional(),
   palette_id: z.string().min(1).max(32).optional(),
   packing_enabled: z.boolean().optional(),

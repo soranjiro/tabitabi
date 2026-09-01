@@ -9,8 +9,11 @@ export type ItineraryViewMode = 'dayCard' | 'list' | 'month' | 'week';
 export interface Itinerary {
   id: string;
   title: string;
+  /** @deprecated Legacy compatibility id. Prefer theme_preset_id. */
   theme_id: string;
-  /** Color palette is independent from the selected layout preset. */
+  /** Canonical presentation preset, independent from palette_id. */
+  theme_preset_id?: string;
+  /** Color palette is independent from the selected presentation preset. */
   palette_id?: string;
   /** Feature switches belong to the itinerary, not to a visual theme. */
   packing_enabled?: boolean;
@@ -32,7 +35,9 @@ export interface Itinerary {
 export interface ForkItineraryResponse {
   id: string;
   title: string;
+  /** @deprecated Legacy compatibility id. Prefer theme_preset_id. */
   theme_id: string;
+  theme_preset_id?: string;
   token: string;
 }
 
@@ -47,7 +52,10 @@ export type ItineraryResponse = Omit<Itinerary, 'password'> & {
 
 export interface CreateItineraryInput {
   title: string;
-  theme_id?: string;             // オプション、デフォルト: planning-draft
+  /** Canonical presentation preset. New clients should use this field. */
+  theme_preset_id?: string;
+  /** @deprecated Legacy compatibility input. */
+  theme_id?: string;
   palette_id?: string;
   packing_enabled?: boolean;
   memo?: string;
@@ -60,6 +68,9 @@ export interface CreateItineraryInput {
 
 export interface UpdateItineraryInput {
   title?: string;
+  /** Canonical presentation preset. New clients should use this field. */
+  theme_preset_id?: string;
+  /** @deprecated Legacy compatibility input. */
   theme_id?: string;
   palette_id?: string;
   packing_enabled?: boolean;

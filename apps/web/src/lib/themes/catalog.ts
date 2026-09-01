@@ -1,5 +1,7 @@
-import type { ItineraryViewMode } from "@tabitabi/types";
+import { toLegacyThemeId, type ItineraryViewMode } from "@tabitabi/types";
 
+// Legacy selector ids stay stable during the compatibility period. The API stores
+// their canonical meaning separately in itineraries.theme_preset_id.
 export const defaultThemeId = "planning-draft" as const;
 export const defaultPaletteId = "neutral" as const;
 
@@ -63,7 +65,10 @@ const THEME_CATALOG: ThemePresetOption[] = [
 ];
 
 export function getAvailableThemes() { return THEME_CATALOG.filter((theme) => theme.enabled); }
-export function getThemePreset(themeId: string) { return THEME_CATALOG.find((theme) => theme.id === themeId) ?? THEME_CATALOG[0]; }
+export function getThemePreset(themeId: string) {
+  const legacyId = toLegacyThemeId(themeId);
+  return THEME_CATALOG.find((theme) => theme.id === legacyId) ?? THEME_CATALOG[0];
+}
 export function getAvailablePalettes() { return PALETTES; }
 export function getPalette(paletteId?: string) { return PALETTES.find((item) => item.id === paletteId) ?? PALETTES[0]; }
 export function getThemePhrases() { return getAvailableThemes().map((theme) => theme.phrase); }

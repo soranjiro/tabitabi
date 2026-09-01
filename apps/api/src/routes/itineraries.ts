@@ -148,6 +148,7 @@ itineraries.post('/:id/fork', userAuthMiddleware, userProfileMiddleware, async (
       id: result.itinerary.id,
       title: result.itinerary.title,
       theme_id: result.itinerary.theme_id,
+      theme_preset_id: result.itinerary.theme_preset_id,
       token,
     }
   }, 201);

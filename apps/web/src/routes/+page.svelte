@@ -83,7 +83,9 @@
     },
   ];
 
-  const initialPreview = previews[Math.floor(Math.random() * previews.length)];
+  // Keep the initial LCP image deterministic and lightweight. Randomizing here can make
+  // mobile performance depend on which seasonal asset (35–188 KB AVIF) is selected.
+  const initialPreview = previews.find((item) => item.id === "summer") ?? previews[0];
   let preview = $state<Preview>(initialPreview);
   let loggedIn = $state(false);
   let menuOpen = $state(false);
@@ -213,7 +215,6 @@
               height="90"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <!-- 矢印の本体 -->
               <path
                 d="M7 13
                   C25 5 44 7 46 17
@@ -227,8 +228,6 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
-
-              <!-- 矢印の先 -->
               <path
                 d="M67 69 L82 73 L78 58"
                 fill="none"
@@ -391,7 +390,6 @@
     .tap-note p { font-size: 9px; }
     .place-label { display: none; }
     .scroll-cue { display: none; }
-    /* The next-section paper edge must not cover the installed-PWA viewport. */
     .paper-reveal { display: none; }
     .create-section { padding: 62px 16px 82px; }
   }

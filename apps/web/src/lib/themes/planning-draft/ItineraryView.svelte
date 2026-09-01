@@ -31,7 +31,9 @@
       title: string;
       start_at: number;
       end_at: number;
+      location?: string;
       notes?: string;
+      link?: string | null;
       type?: StepType;
       is_all_day?: boolean;
     }) => Promise<void>;
@@ -39,7 +41,9 @@
       title?: string;
       start_at?: number;
       end_at?: number;
+      location?: string | null;
       notes?: string;
+      link?: string | null;
       type?: StepType;
       is_all_day?: boolean;
     }) => Promise<void>;
@@ -77,6 +81,9 @@
     when: "undecided" as WhenChoice,
     day: 1,
     time: "",
+    endTime: "",
+    location: "",
+    link: "",
   });
 
   const otherThemes = getAvailableThemes().filter((theme) => theme.id !== "planning-draft");
@@ -212,7 +219,7 @@
 
   function openCreate() {
     editingStep = null;
-    form = { title: "", note: "", when: "undecided", day: 1, time: "" };
+    form = { title: "", note: "", when: "undecided", day: 1, time: "", endTime: "", location: "", link: "" };
     sheetOpen = true;
   }
 
@@ -228,6 +235,11 @@
       when: schedule.precision === "undecided" ? "undecided" : "day",
       day: dayForStep(step) ?? 1,
       time,
+      endTime: schedule.precision === "time"
+        ? `${String(new Date(step.end_at).getHours()).padStart(2, "0")}:${String(new Date(step.end_at).getMinutes()).padStart(2, "0")}`
+        : "",
+      location: step.location ?? "",
+      link: step.link ?? "",
     };
     sheetOpen = true;
   }
@@ -250,6 +262,13 @@
       const startAt = schedule.precision === "undecided"
         ? timestampFor(1, "12:00")
         : timestampFor(schedule.day ?? 1, form.time || "12:00");
+      const endAt = schedule.precision === "time" && form.endTime
+        ? timestampFor(schedule.day ?? 1, form.endTime)
+        : startAt + 60 * 60 * 1000;
+      if (endAt <= startAt) {
+        alert("終了時刻は開始時刻より後に設定してください");
+        return;
+      }
       const notes = updateStepSchedule(
         updateMemoText(editingStep?.notes, form.note),
         schedule,
@@ -257,13 +276,18 @@
       const data = {
         title: form.title.trim(),
         start_at: startAt,
-        end_at: startAt + 60 * 60 * 1000,
+        end_at: endAt,
         notes,
         type: editingStep?.type ?? STEP_TYPE.NORMAL_GENERAL,
         is_all_day: false,
       };
-      if (editingStep && onUpdateStep) await onUpdateStep(editingStep.id, data);
-      else if (onCreateStep) await onCreateStep(data);
+      const location = form.location.trim();
+      const link = form.link.trim();
+      if (editingStep && onUpdateStep) {
+        await onUpdateStep(editingStep.id, { ...data, location: location || null, link: link || null });
+      } else if (onCreateStep) {
+        await onCreateStep({ ...data, ...(location && { location }), ...(link && { link }) });
+      }
       sheetOpen = false;
       editingStep = null;
     } finally {
@@ -404,9 +428,11 @@
         <form onsubmit={saveStep}>
           <label>タイトル<input bind:value={form.title} placeholder="清水寺に行きたい" required /></label>
           <label>メモ<textarea bind:value={form.note} rows="3" placeholder="朝の方が空いてそう"></textarea></label>
+          <label>場所 <small>任意</small><input bind:value={form.location} placeholder="例：清水寺" autocomplete="off" /></label>
+          <label>リンク <small>任意</small><input type="url" bind:value={form.link} placeholder="https://..." /></label>
           <fieldset><legend>いつ？</legend><label class="radio"><input type="radio" bind:group={form.when} value="undecided" />まだ決めない</label><label class="radio"><input type="radio" bind:group={form.when} value="day" />日を決める</label></fieldset>
           {#if form.when === "day"}
-            <div class="date-fields"><label>日<select bind:value={form.day}>{#each Array.from({ length: dayCount + 1 }, (_, index) => index + 1) as day}<option value={day}>Day {day}</option>{/each}</select></label><label>時間<input type="time" bind:value={form.time} /><small>空欄なら未定</small></label></div>
+            <div class="date-fields"><label>日<select bind:value={form.day}>{#each Array.from({ length: dayCount + 1 }, (_, index) => index + 1) as day}<option value={day}>Day {day}</option>{/each}</select></label><div class="time-fields"><label>開始時刻 <small>任意</small><input type="time" bind:value={form.time} /></label>{#if form.time}<label>終了時刻 <small>任意</small><input type="time" bind:value={form.endTime} /><small>空欄なら1時間後</small></label>{/if}</div></div>
           {/if}
           <button class="save-button" type="submit" disabled={saving}>{saving ? "保存中…" : editingStep ? "保存" : "追加"}</button>
           {#if editingStep}<button class="delete-button" type="button" onclick={deleteStep}>この予定を削除</button>{/if}
@@ -535,7 +561,7 @@
   .theme-choices { display: grid; margin-top: 1rem; gap: .45rem; text-align: left; }
   .theme-choices button { display: grid; padding: .7rem .8rem; border: 1px solid #d9ddd9; color: #26332f; background: #fff; text-align: left; cursor: pointer; }
   .theme-choices small { margin-top: .15rem; color: #7a8581; }
-  .sheet-backdrop { position: fixed; z-index: 100; inset: 0; display: flex; align-items: end; justify-content: center; background: rgba(24,35,31,.34); }
+  .sheet-backdrop { position: fixed; z-index: 300; inset: 0; display: flex; align-items: end; justify-content: center; background: rgba(24,35,31,.34); }
   .sheet { width: min(600px, 100%); max-height: 92dvh; overflow: auto; padding: .6rem 1.2rem calc(1.2rem + env(safe-area-inset-bottom)); border-radius: 20px 20px 0 0; background: #fff; box-shadow: 0 -12px 40px rgba(0,0,0,.12); }
   .sheet-handle { width: 38px; height: 4px; margin: 0 auto .7rem; border-radius: 999px; background: #d5d9d6; }
   .sheet-title { display: flex; align-items: center; justify-content: space-between; }
@@ -548,7 +574,8 @@
   .sheet input:focus, .sheet textarea:focus, .sheet select:focus { border-color: #638076; box-shadow: 0 0 0 3px rgba(99,128,118,.1); }
   .sheet fieldset { display: flex; margin: 0; padding: .75rem; border: 1px solid #e1e4e1; gap: 1rem; }
   .sheet .radio { display: flex; align-items: center; gap: .4rem; }
-  .date-fields { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+  .date-fields { display: grid; grid-template-columns: 1fr 2fr; gap: .8rem; }
+  .time-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
   .date-fields label { display: grid; gap: .4rem; }
   .date-fields small { color: #929a96; font-size: .65rem; font-weight: 400; }
   .save-button { padding: .85rem; border: 0; border-radius: 999px; color: white; background: #2f6657; font-weight: 750; cursor: pointer; }
@@ -559,5 +586,6 @@
     .order-buttons button { width: 29px; }
     .preview-day { grid-template-columns: 56px 1fr; }
     .preview-day li { grid-template-columns: 68px 1fr; }
+    .date-fields { grid-template-columns: 1fr; }
   }
 </style>

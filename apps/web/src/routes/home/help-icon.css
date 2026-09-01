@@ -1,33 +1,60 @@
 .home-page .site-header nav a[href="/docs/index"] {
-  display: inline-grid;
+  display: inline-flex;
+  flex: 0 0 34px;
   width: 34px;
   height: 34px;
+  min-width: 34px;
+  margin: 0;
   padding: 0;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(23, 38, 61, 0.38);
   border-radius: 50%;
-  overflow: hidden;
   color: transparent;
+  background: rgba(255, 255, 255, 0.34);
   font-size: 0;
   line-height: 1;
+  text-decoration: none;
+  box-shadow: none;
 }
 
 .home-page .site-header nav a[href="/docs/index"]::before {
+  display: block;
   content: "?";
-  color: currentColor;
-  color: white;
+  color: #17263d;
+  font-family: Arial, sans-serif;
   font-size: 18px;
   font-weight: 800;
+  line-height: 1;
+  transform: translateY(-0.5px);
 }
 
 .home-page .site-header nav a[href="/docs/index"]:hover {
-  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(23, 38, 61, 0.62);
+  background: rgba(255, 255, 255, 0.56);
+  text-decoration: none;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 640px) {
   .home-page .site-header nav a[href="/docs/index"] {
+    flex: 0 0 40px;
     width: 40px;
     height: 40px;
-    color: transparent;
+    min-width: 40px;
+    margin: 2px 0 2px 10px;
+    padding: 0;
+    align-self: flex-start;
+    border-color: rgba(23, 38, 61, 0.32);
+    background: #f7f9fb;
+  }
+
+  .home-page .site-header nav a[href="/docs/index"]::before {
+    color: #17263d;
+  }
+
+  .home-page .site-header nav a[href="/docs/index"]:hover {
+    border-color: rgba(23, 38, 61, 0.52);
+    background: #eef2f6;
   }
 }

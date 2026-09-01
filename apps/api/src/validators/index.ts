@@ -15,23 +15,6 @@ export const bootstrapProfileSchema = z.object({
 
 // ── Itineraries ────────────────────────────────────────
 
-const ITINERARY_BACKGROUND_IMAGES = [
-  '/hero/background-spring.avif',
-  '/hero/background-summer.avif',
-  '/hero/background-autumn.avif',
-  '/hero/background-winter.avif',
-  '/itinerary-backgrounds/sakura.avif',
-  '/itinerary-backgrounds/seaside.avif',
-  '/itinerary-backgrounds/meadow.avif',
-  '/itinerary-backgrounds/sunset.avif',
-  '/itinerary-backgrounds/snow.avif',
-  '/itinerary-backgrounds/twilight.avif',
-  '/itinerary-backgrounds/island.avif',
-  '/itinerary-backgrounds/mountain.avif',
-  '/itinerary-backgrounds/lake.avif',
-  '/itinerary-backgrounds/town.avif',
-] as const;
-
 export const createItinerarySchema = z.object({
   title: z
     .string({ error: 'title is required' })
@@ -56,7 +39,6 @@ export const updateItinerarySchema = z.object({
     .optional(),
   theme_id: z.string().optional(),
   palette_id: z.string().min(1).max(32).optional(),
-  background_image: z.enum(ITINERARY_BACKGROUND_IMAGES).nullable().optional(),
   packing_enabled: z.boolean().optional(),
   prefecture_slugs: z.array(z.string().trim().min(1).max(32)).max(3).optional(),
   areas: z.array(z.string().trim().min(1).max(16)).max(3).optional(),

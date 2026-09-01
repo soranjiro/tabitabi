@@ -40,12 +40,10 @@ marked.use({
 });
 
 function getFiles(dir: string): string[] {
-  const dirents = fs.readdirSync(dir, { withFileTypes: true });
-  const files: (string | string[])[] = dirents.map((dirent: Dirent) => {
-    const res = path.resolve(dir, dirent.name);
-    return dirent.isDirectory() ? getFiles(res) : res;
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((dirent: Dirent) => {
+    const result = path.resolve(dir, dirent.name);
+    return dirent.isDirectory() ? getFiles(result) : [result];
   });
-  return Array.prototype.concat(...files);
 }
 
 const allFiles = getFiles(DOCS_SRC).filter(file => file.endsWith('.md'));
@@ -56,18 +54,6 @@ interface SearchItem {
   content: string;
 }
 
-const searchIndex: SearchItem[] = allFiles.map(file => {
-  const content = fs.readFileSync(file, 'utf-8');
-  const relativePath = path.relative(DOCS_SRC, file);
-  const id = relativePath.replace('.md', '');
-  const name = path.basename(file, '.md');
-  const title = name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, ' ');
-  const plainText = content.replace(/#+\s/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/`[^`]+`/g, '').replace(/\n/g, ' ').slice(0, 300);
-  return { id, title, content: plainText };
-});
-
-fs.writeFileSync(path.join(DOCS_DEST, 'search.json'), JSON.stringify(searchIndex));
-
 interface NavItem {
   name: string;
   path: string;
@@ -77,12 +63,12 @@ interface NavItem {
 }
 
 const SECTION_LABELS: Record<string, string> = {
-  'user': '🚀 使い方ガイド',
-  'developer': '🛠️ 開発者ガイド',
-  'features': '機能一覧',
-  'common': '共通機能',
-  'home': 'ホーム画面',
-  'themes': 'テーマ機能',
+  user: '使い方ガイド',
+  developer: '開発者ガイド',
+  features: '機能一覧',
+  common: '共通機能',
+  home: 'ホーム画面',
+  themes: 'テーマ機能'
 };
 
 function extractTitleFromMarkdown(filePath: string): string {
@@ -95,18 +81,34 @@ function extractTitleFromMarkdown(filePath: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, ' ');
 }
 
+const searchIndex: SearchItem[] = allFiles.map(file => {
+  const content = fs.readFileSync(file, 'utf-8');
+  const relativePath = path.relative(DOCS_SRC, file);
+  const id = relativePath.replace('.md', '');
+  const title = extractTitleFromMarkdown(file);
+  const plainText = content
+    .replace(/#+\s/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/`[^`]+`/g, '')
+    .replace(/\n/g, ' ')
+    .slice(0, 300);
+  return { id, title, content: plainText };
+});
+
+fs.writeFileSync(path.join(DOCS_DEST, 'search.json'), JSON.stringify(searchIndex));
+
 function buildNavTree(): NavItem[] {
   const tree: NavItem[] = [];
   const dirMap = new Map<string, NavItem>();
 
-  const topLevelFiles = allFiles.filter(f => path.dirname(f) === DOCS_SRC);
+  const topLevelFiles = allFiles.filter(file => path.dirname(file) === DOCS_SRC);
   topLevelFiles.forEach(file => {
     const name = path.basename(file, '.md');
     if (name === 'index') return;
     tree.push({
       name,
       path: `${name}.html`,
-      title: extractTitleFromMarkdown(file),
+      title: extractTitleFromMarkdown(file)
     });
   });
 
@@ -119,11 +121,11 @@ function buildNavTree(): NavItem[] {
       name: dir,
       path: `${dir}/index.html`,
       title: SECTION_LABELS[dir] || dir,
-      children: [],
+      children: []
     };
 
-    const filesInDir = allFiles.filter(f => {
-      const rel = path.relative(DOCS_SRC, f);
+    const filesInDir = allFiles.filter(file => {
+      const rel = path.relative(DOCS_SRC, file);
       const parts = rel.split(path.sep);
       return parts[0] === dir && parts.length === 2;
     });
@@ -134,13 +136,13 @@ function buildNavTree(): NavItem[] {
       item.children!.push({
         name,
         path: `${dir}/${name}.html`,
-        title: extractTitleFromMarkdown(file),
+        title: extractTitleFromMarkdown(file)
       });
     });
 
     const subDirs = fs.readdirSync(dirPath, { withFileTypes: true })
-      .filter((d: Dirent) => d.isDirectory())
-      .map((d: Dirent) => d.name);
+      .filter((dirent: Dirent) => dirent.isDirectory())
+      .map((dirent: Dirent) => dirent.name);
 
     subDirs.forEach((subDir: string) => {
       const subDirPath = path.join(dirPath, subDir);
@@ -148,11 +150,11 @@ function buildNavTree(): NavItem[] {
         name: subDir,
         path: `${dir}/${subDir}/index.html`,
         title: SECTION_LABELS[subDir] || subDir,
-        children: [],
+        children: []
       };
 
-      const filesInSubDir = allFiles.filter(f => {
-        const rel = path.relative(DOCS_SRC, f);
+      const filesInSubDir = allFiles.filter(file => {
+        const rel = path.relative(DOCS_SRC, file);
         const parts = rel.split(path.sep);
         return parts[0] === dir && parts[1] === subDir && parts.length === 3;
       });
@@ -163,20 +165,20 @@ function buildNavTree(): NavItem[] {
         subItem.children!.push({
           name,
           path: `${dir}/${subDir}/${name}.html`,
-          title: extractTitleFromMarkdown(file),
+          title: extractTitleFromMarkdown(file)
         });
       });
 
       const subSubDirs = fs.readdirSync(subDirPath, { withFileTypes: true })
-        .filter((d: Dirent) => d.isDirectory())
-        .map((d: Dirent) => d.name);
+        .filter((dirent: Dirent) => dirent.isDirectory())
+        .map((dirent: Dirent) => dirent.name);
 
       subSubDirs.forEach((subSubDir: string) => {
         const subSubDirPath = path.join(subDirPath, subSubDir);
         const hasIndex = fs.existsSync(path.join(subSubDirPath, 'index.md'));
 
-        const filesInSubSubDir = allFiles.filter(f => {
-          const rel = path.relative(DOCS_SRC, f);
+        const filesInSubSubDir = allFiles.filter(file => {
+          const rel = path.relative(DOCS_SRC, file);
           const parts = rel.split(path.sep);
           return parts[0] === dir && parts[1] === subDir && parts[2] === subSubDir;
         });
@@ -188,7 +190,7 @@ function buildNavTree(): NavItem[] {
           childFiles.push({
             name,
             path: `${dir}/${subDir}/${subSubDir}/${name}.html`,
-            title: extractTitleFromMarkdown(file),
+            title: extractTitleFromMarkdown(file)
           });
         });
 
@@ -201,7 +203,7 @@ function buildNavTree(): NavItem[] {
               : `${dir}/${subDir}/${subSubDir}/index.html`,
           title: SECTION_LABELS[subSubDir] || subSubDir,
           hasIndex,
-          children: childFiles,
+          children: childFiles
         };
 
         if (subSubItem.children!.length > 0) {
@@ -218,56 +220,54 @@ function buildNavTree(): NavItem[] {
   });
 
   const userItem = dirMap.get('user');
-  const devItem = dirMap.get('developer');
+  const developerItem = dirMap.get('developer');
   if (userItem) tree.unshift(userItem);
-  if (devItem) tree.splice(1, 0, devItem);
+  if (developerItem) tree.splice(userItem ? 1 : 0, 0, developerItem);
 
   return tree;
 }
 
 function toUrlPath(pathWithHtml: string): string {
-  // Remove .html extension for SvelteKit routing
-  const pathWithoutHtml = pathWithHtml.replace(/\.html$/, '');
-  return '/docs/' + pathWithoutHtml;
+  return '/docs/' + pathWithHtml.replace(/\.html$/, '');
 }
 
-function generateNavHtml(items: NavItem[], rootPath: string, currentPath: string, level: number = 0): string {
+function containsCurrent(item: NavItem, currentPath: string): boolean {
+  if (item.path === currentPath) return true;
+  return item.children?.some(child => containsCurrent(child, currentPath)) ?? false;
+}
+
+function generateNavHtml(items: NavItem[], currentPath: string): string {
   return items.map(item => {
-    const hasChildren = item.children && item.children.length > 0;
+    const hasChildren = Boolean(item.children?.length);
     const itemPath = toUrlPath(item.path);
     const isActive = currentPath === item.path;
-    const isParentOfActive = hasChildren && item.children!.some(child =>
-      currentPath === child.path ||
-      (child.children && child.children.some(c => currentPath === c.path || (c.children && c.children.some(cc => currentPath === cc.path))))
-    );
-    const isOpen = isActive || isParentOfActive;
+    const isOpen = containsCurrent(item, currentPath);
+    const title = escapeHtml(item.title);
 
     if (hasChildren) {
-      const childrenHtml = generateNavHtml(item.children!, rootPath, currentPath, level + 1);
+      const childrenHtml = generateNavHtml(item.children!, currentPath);
       const showOverview = item.hasIndex !== false;
       return `
         <li class="nav-section${isOpen ? ' open' : ''}">
-          <button class="nav-toggle" onclick="this.parentElement.classList.toggle('open')">
-            <svg class="toggle-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-            <span>${item.title}</span>
+          <button class="nav-toggle" type="button" aria-expanded="${isOpen}" onclick="const section=this.parentElement;const open=section.classList.toggle('open');this.setAttribute('aria-expanded',String(open));">
+            <svg class="toggle-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+            <span>${title}</span>
           </button>
           <ul class="nav-children">
-            ${showOverview ? `<li><a href="${itemPath}" class="${isActive ? 'active' : ''}">概要</a></li>` : ''}
+            ${showOverview ? `<li><a href="${itemPath}" class="${isActive ? 'active' : ''}"${isActive ? ' aria-current="page"' : ''}>概要</a></li>` : ''}
             ${childrenHtml}
           </ul>
         </li>
       `;
-    } else {
-      return `<li><a href="${itemPath}" class="${isActive ? 'active' : ''}">${item.title}</a></li>`;
     }
+
+    return `<li><a href="${itemPath}" class="${isActive ? 'active' : ''}"${isActive ? ' aria-current="page"' : ''}>${title}</a></li>`;
   }).join('\n');
 }
 
 function flattenNavItems(items: NavItem[]): NavItem[] {
   const result: NavItem[] = [];
   for (const item of items) {
-    // Only include items that have their own page (not folder-only items without index.html)
-    // If hasIndex is explicitly false, skip this item as it's just a container
     if (item.hasIndex !== false) {
       result.push(item);
     }
@@ -280,154 +280,616 @@ function flattenNavItems(items: NavItem[]): NavItem[] {
 
 function getPrevNext(navTree: NavItem[], currentPath: string): { prev: NavItem | null; next: NavItem | null } {
   const flat = flattenNavItems(navTree);
-  const idx = flat.findIndex(item => item.path === currentPath);
+  const index = flat.findIndex(item => item.path === currentPath);
   return {
-    prev: idx > 0 ? flat[idx - 1] : null,
-    next: idx < flat.length - 1 ? flat[idx + 1] : null,
+    prev: index > 0 ? flat[index - 1] : null,
+    next: index >= 0 && index < flat.length - 1 ? flat[index + 1] : null
   };
 }
 
-function generatePrevNextHtml(prev: NavItem | null, next: NavItem | null, rootPath: string): string {
+function generatePrevNextHtml(prev: NavItem | null, next: NavItem | null): string {
   if (!prev && !next) return '';
 
-  let html = '<nav class="page-nav">';
+  let html = '<nav class="page-nav" aria-label="前後のドキュメント">';
   if (prev) {
-    html += `<a href="${toUrlPath(prev.path)}" class="page-nav-link prev"><span class="page-nav-label">← 前へ</span><span class="page-nav-title">${prev.title}</span></a>`;
+    html += `<a href="${toUrlPath(prev.path)}" class="page-nav-link prev"><span class="page-nav-label">← 前へ</span><span class="page-nav-title">${escapeHtml(prev.title)}</span></a>`;
   } else {
     html += '<div></div>';
   }
   if (next) {
-    html += `<a href="${toUrlPath(next.path)}" class="page-nav-link next"><span class="page-nav-label">次へ →</span><span class="page-nav-title">${next.title}</span></a>`;
+    html += `<a href="${toUrlPath(next.path)}" class="page-nav-link next"><span class="page-nav-label">次へ →</span><span class="page-nav-title">${escapeHtml(next.title)}</span></a>`;
   }
   html += '</nav>';
   return html;
 }
 
-const template = (title: string, content: string, nav: string, rootPath: string, pageNav: string) => `
+const template = (title: string, content: string, nav: string, pageNav: string, currentPath: string) => `
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} - たびたび ドキュメント</title>
+  <meta name="description" content="たびたびの使い方と開発情報をまとめた公式ドキュメントです。">
+  <meta name="theme-color" content="#fffdf9">
+  <link rel="canonical" href="https://tabitabi.pages.dev${toUrlPath(currentPath)}">
+  <title>${escapeHtml(title)} - たびたび ドキュメント</title>
   <style>
     :root {
-      --primary: #3b82f6;
-      --bg: #f9fafb;
-      --sidebar-bg: #ffffff;
-      --text: #1f2937;
-      --border: #e5e7eb;
-      --header-height: 70px;
+      --ink: #15243c;
+      --ink-soft: #5f6f83;
+      --accent: #2f6385;
+      --accent-strong: #244f6d;
+      --accent-soft: #eaf2f5;
+      --canvas: #f3f1ec;
+      --paper: #fffdf9;
+      --paper-muted: #f8f7f3;
+      --border: #dde3e5;
+      --border-strong: #cbd5d9;
+      --code-bg: #18283d;
+      --code-text: #edf4f7;
+      --sidebar-width: 292px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Segoe UI", sans-serif;
+      --font-serif: Georgia, "Yu Mincho", "Hiragino Mincho ProN", serif;
     }
+
     * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: var(--text); margin: 0; display: flex; min-height: 100vh; background: var(--bg); }
+    html { scroll-behavior: smooth; background: var(--canvas); }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: var(--font-sans);
+      line-height: 1.7;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
 
-    .sidebar { width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; height: 100vh; position: sticky; top: 0; }
-    .nav-header { padding: 20px; border-bottom: 1px solid var(--border); background: var(--sidebar-bg); }
-    .nav-title { font-weight: 800; font-size: 1.2rem; color: var(--primary); text-decoration: none; display: block; margin-bottom: 12px; }
-    .search-box { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; }
-    .nav-links { list-style: none; padding: 16px; margin: 0; flex-grow: 1; overflow-y: auto; }
-    .nav-links li { margin-bottom: 2px; }
+    ::selection { background: #dbe9ef; color: var(--ink); }
+
+    .sidebar {
+      width: var(--sidebar-width);
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: var(--paper-muted);
+    }
+
+    .nav-header {
+      padding: 24px 20px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--paper-muted);
+    }
+
+    .nav-brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .nav-title {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding-bottom: 12px;
+      color: var(--ink);
+      font-family: var(--font-serif);
+      font-size: 1.08rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+
+    .nav-title::after {
+      position: absolute;
+      right: 3px;
+      bottom: 3px;
+      left: 35px;
+      border-top: 2px dotted #aebbc2;
+      content: "";
+      opacity: .8;
+    }
+
+    .nav-brand-mark {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border: 1px solid var(--border-strong);
+      border-radius: 50%;
+      color: var(--accent);
+      background: var(--paper);
+    }
+
+    .nav-brand-mark svg { width: 16px; height: 16px; }
+
+    .mobile-nav-toggle {
+      display: none;
+      min-height: 38px;
+      padding: 7px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      color: var(--ink);
+      background: var(--paper);
+      font: inherit;
+      font-size: .78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .search-wrap { position: relative; margin-top: 12px; }
+    .search-box {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 12px 9px 36px;
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      outline: none;
+      color: var(--ink);
+      background: var(--paper);
+      font: inherit;
+      font-size: .86rem;
+    }
+    .search-icon {
+      position: absolute;
+      top: 50%;
+      left: 12px;
+      width: 15px;
+      height: 15px;
+      color: var(--ink-soft);
+      pointer-events: none;
+      transform: translateY(-50%);
+    }
+    .search-box::placeholder { color: #82909f; }
+
+    .nav-links {
+      flex: 1;
+      margin: 0;
+      padding: 14px 12px 20px;
+      overflow-y: auto;
+      list-style: none;
+      scrollbar-width: thin;
+      scrollbar-color: #c7d0d4 transparent;
+    }
+    .nav-links li { margin: 2px 0; }
     .nav-links > li > a,
-    .nav-links .nav-toggle { display: flex; align-items: center; padding: 8px 12px; border-radius: 6px; color: #4b5563; text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: all 0.15s; }
+    .nav-toggle {
+      display: flex;
+      width: 100%;
+      min-height: 38px;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border: 0;
+      border-radius: 8px;
+      color: #46586d;
+      background: transparent;
+      font: inherit;
+      font-size: .86rem;
+      font-weight: 650;
+      line-height: 1.4;
+      text-align: left;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background-color 150ms ease, color 150ms ease;
+    }
     .nav-links > li > a:hover,
-    .nav-toggle:hover { background: #f3f4f6; color: #111827; }
-    .nav-links a.active { background: #eff6ff; color: var(--primary); }
+    .nav-toggle:hover { color: var(--ink); background: #eef1ef; }
+    .nav-links a.active {
+      position: relative;
+      color: var(--accent-strong);
+      background: var(--accent-soft);
+      font-weight: 750;
+    }
+    .nav-links a.active::before {
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+      left: 0;
+      width: 3px;
+      border-radius: 3px;
+      background: var(--accent);
+      content: "";
+    }
 
-    .nav-section { }
-    .nav-toggle { width: 100%; border: none; background: none; cursor: pointer; text-align: left; gap: 8px; }
-    .toggle-icon { transition: transform 0.2s; flex-shrink: 0; }
+    .toggle-icon { flex-shrink: 0; transition: transform 150ms ease; }
     .nav-section.open > .nav-toggle .toggle-icon { transform: rotate(90deg); }
-    .nav-children { list-style: none; padding-left: 20px; margin: 0; display: none; }
+    .nav-children { display: none; margin: 0; padding: 0 0 2px 18px; list-style: none; }
     .nav-section.open > .nav-children { display: block; }
-    .nav-children li { margin-bottom: 2px; }
-    .nav-children a { display: block; padding: 6px 12px; border-radius: 6px; color: #6b7280; text-decoration: none; font-size: 0.85rem; transition: all 0.15s; }
-    .nav-children a:hover { background: #f3f4f6; color: #111827; }
-    .nav-children a.active { background: #eff6ff; color: var(--primary); font-weight: 500; }
+    .nav-children a {
+      display: block;
+      position: relative;
+      padding: 7px 10px;
+      border-radius: 7px;
+      color: #66768a;
+      font-size: .82rem;
+      line-height: 1.45;
+      text-decoration: none;
+      transition: background-color 150ms ease, color 150ms ease;
+    }
+    .nav-children a:hover { color: var(--ink); background: #eef1ef; }
 
-    .nav-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
-    .back-link { color: #6b7280; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
-    .back-link:hover { color: #111827; }
+    .nav-footer { padding: 16px 20px 20px; border-top: 1px solid var(--border); }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--ink-soft);
+      font-size: .8rem;
+      font-weight: 650;
+      text-decoration: none;
+    }
+    .back-link:hover { color: var(--ink); }
 
-    main { flex-grow: 1; padding: 40px 60px; max-width: 900px; }
+    main {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      width: min(100%, 980px);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: clamp(46px, 6vw, 72px) clamp(34px, 6vw, 76px) 84px;
+      background: var(--paper);
+      box-shadow: 0 0 0 1px rgba(221, 227, 229, .45);
+    }
 
-    h1 { font-size: 2.25rem; font-weight: 800; margin-bottom: 1.5rem; color: #111827; }
-    h2 { font-size: 1.5rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 1rem; color: #1f2937; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
-    h3 { font-size: 1.15rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #374151; }
-    p { margin-bottom: 1rem; color: #4b5563; }
-    a { color: var(--primary); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    ul, ol { color: #4b5563; margin-bottom: 1rem; }
-    li { margin-bottom: 0.25rem; }
+    main::before {
+      display: block;
+      width: 74px;
+      margin-bottom: 22px;
+      border-top: 2px dotted #aebbc2;
+      content: "";
+    }
 
-    table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
-    th, td { border: 1px solid var(--border); padding: 10px 14px; text-align: left; }
-    th { background: #f9fafb; font-weight: 600; }
+    h1, h2, h3, h4 { color: var(--ink); }
+    h1 {
+      max-width: 20ch;
+      margin: 0 0 1.6rem;
+      font-family: var(--font-serif);
+      font-size: clamp(2rem, 4vw, 2.55rem);
+      font-weight: 500;
+      line-height: 1.45;
+      letter-spacing: .035em;
+    }
+    h2 {
+      margin: 3rem 0 1.15rem;
+      padding-bottom: .58rem;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-serif);
+      font-size: clamp(1.35rem, 2.5vw, 1.6rem);
+      font-weight: 600;
+      line-height: 1.5;
+      letter-spacing: .02em;
+    }
+    h3 {
+      margin: 2rem 0 .75rem;
+      font-size: 1.08rem;
+      font-weight: 750;
+      line-height: 1.55;
+    }
+    h4 { margin: 1.5rem 0 .6rem; font-size: .98rem; }
 
-    code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.9em; color: #db2777; }
-    pre { background: #1f2937; padding: 16px 20px; border-radius: 8px; overflow-x: auto; margin: 1.5rem 0; }
-    pre code { background: none; color: #e5e7eb; padding: 0; }
+    p {
+      margin: 0 0 1.08rem;
+      color: #405269;
+      font-size: 1rem;
+      line-height: 1.82;
+    }
+    ul, ol {
+      margin: 0 0 1.2rem;
+      padding-left: 1.5rem;
+      color: #405269;
+      line-height: 1.72;
+    }
+    li { margin: .34rem 0; }
+    li::marker { color: #7b8da0; }
+    strong { color: var(--ink); }
 
-    blockquote { border-left: 4px solid var(--primary); margin: 1.5rem 0; padding: 0.75rem 1rem; color: #4b5563; background: #eff6ff; border-radius: 0 8px 8px 0; }
+    a {
+      color: var(--accent-strong);
+      text-decoration-thickness: 1px;
+      text-underline-offset: .18em;
+    }
+    a:hover { text-decoration-thickness: 2px; }
 
-    hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+    blockquote {
+      margin: 1.6rem 0;
+      padding: 1rem 1.15rem;
+      border-left: 3px solid #6f96ab;
+      border-radius: 0 8px 8px 0;
+      color: #405269;
+      background: var(--accent-soft);
+    }
+    blockquote p { color: inherit; }
+    blockquote > :last-child { margin-bottom: 0; }
 
-    .guide-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 1.5rem 0; }
+    .table-scroll {
+      width: 100%;
+      margin: 1.6rem 0;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      scrollbar-width: thin;
+    }
+    table {
+      width: 100%;
+      min-width: 540px;
+      border-collapse: collapse;
+      color: #405269;
+      font-size: .92rem;
+    }
+    th, td {
+      padding: .78rem .9rem;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: 0; }
+    th:last-child, td:last-child { border-right: 0; }
+    th {
+      color: var(--ink);
+      background: #f2f5f4;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+    tbody tr:nth-child(even) { background: #fcfcfa; }
+
+    code {
+      padding: .14em .4em;
+      border-radius: 5px;
+      color: #244f6d;
+      background: #edf2f3;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: .9em;
+    }
+    pre {
+      margin: 1.6rem 0;
+      padding: 17px 20px;
+      overflow-x: auto;
+      border: 1px solid #263a52;
+      border-radius: 10px;
+      background: var(--code-bg);
+      line-height: 1.6;
+      scrollbar-width: thin;
+    }
+    pre code {
+      padding: 0;
+      color: var(--code-text);
+      background: transparent;
+      white-space: pre;
+    }
+
+    hr { margin: 2.4rem 0; border: 0; border-top: 1px solid var(--border); }
+    img { max-width: 100%; height: auto; border-radius: 10px; }
+    .mermaid {
+      margin: 1.6rem 0;
+      padding: 18px;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      text-align: center;
+    }
+
+    .guide-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin: 1.6rem 0;
+    }
     .guide-cards > h3 { grid-column: 1 / -1; margin: 0; }
 
-    #search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; margin-top: 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); display: none; z-index: 10; max-height: 300px; overflow-y: auto; }
-    .search-result-item { display: block; padding: 10px 12px; border-bottom: 1px solid #f3f4f6; text-decoration: none; }
-    .search-result-item:last-child { border-bottom: none; }
-    .search-result-item:hover { background: #f9fafb; }
-    .search-result-title { font-weight: 600; color: #111827; font-size: 0.9rem; }
-    .search-result-preview { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+    #search-results {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      left: 0;
+      z-index: 100;
+      display: none;
+      max-height: 310px;
+      overflow-y: auto;
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 18px 40px rgba(21, 36, 60, .14);
+    }
+    .search-result-item {
+      display: block;
+      padding: 10px 12px;
+      border-bottom: 1px solid #edf0f0;
+      color: inherit;
+      text-decoration: none;
+    }
+    .search-result-item:last-child { border-bottom: 0; }
+    .search-result-item:hover { background: #f4f7f7; }
+    .search-result-title { color: var(--ink); font-size: .84rem; font-weight: 750; }
+    .search-result-preview {
+      margin-top: 3px;
+      overflow: hidden;
+      color: var(--ink-soft);
+      font-size: .76rem;
+      line-height: 1.45;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .search-empty { padding: 12px; color: var(--ink-soft); font-size: .8rem; }
 
-    .page-nav { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); }
-    .page-nav-link { display: flex; flex-direction: column; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; text-decoration: none; transition: all 0.15s; max-width: 45%; }
-    .page-nav-link:hover { border-color: var(--primary); background: #eff6ff; text-decoration: none; }
-    .page-nav-link.next { align-items: flex-end; text-align: right; margin-left: auto; }
-    .page-nav-label { font-size: 0.75rem; color: #6b7280; margin-bottom: 2px; }
-    .page-nav-title { font-size: 0.9rem; font-weight: 600; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .page-nav {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px;
+      margin-top: 3.6rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+    .page-nav-link {
+      display: flex;
+      min-height: 90px;
+      flex-direction: column;
+      justify-content: center;
+      padding: 15px 17px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: inherit;
+      background: #fff;
+      text-decoration: none;
+      transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+    }
+    .page-nav-link:hover {
+      border-color: #aac0ca;
+      background: #f8fbfb;
+      text-decoration: none;
+      transform: translateY(-1px);
+    }
+    .page-nav-link.next { align-items: flex-end; text-align: right; }
+    .page-nav-label {
+      margin-bottom: 4px;
+      color: var(--ink-soft);
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+    .page-nav-title { color: var(--accent-strong); font-size: .9rem; font-weight: 750; line-height: 1.5; }
 
-    .scroll-top { position: fixed; bottom: 24px; right: 24px; width: 44px; height: 44px; border-radius: 50%; background: var(--primary); color: white; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.2s; z-index: 100; }
-    .scroll-top:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
-    .scroll-top.visible { display: flex; }
+    .scroll-top {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 120;
+      display: none;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, .65);
+      border-radius: 50%;
+      place-items: center;
+      color: white;
+      background: var(--accent-strong);
+      box-shadow: 0 8px 22px rgba(21, 36, 60, .18);
+      cursor: pointer;
+      transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+    .scroll-top:hover { transform: translateY(-2px); box-shadow: 0 11px 26px rgba(21, 36, 60, .22); }
+    .scroll-top.visible { display: grid; }
+
+    a:focus-visible,
+    button:focus-visible,
+    input:focus-visible,
+    .table-scroll:focus-visible {
+      outline: 3px solid rgba(47, 99, 133, .34);
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 1024px) {
+      :root { --sidebar-width: 260px; }
+      main { padding-right: clamp(28px, 4vw, 52px); padding-left: clamp(28px, 4vw, 52px); }
+    }
 
     @media (max-width: 768px) {
-      body { flex-direction: column; }
-      .sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--border); }
-      .nav-header { position: sticky; top: 0; z-index: 50; }
-      .nav-links { max-height: 50vh; }
-      main { padding: 24px 20px; }
-      .page-nav-link { max-width: 50%; }
+      html { background: var(--paper); }
+      body { display: block; background: var(--paper); }
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: sticky;
+        top: 0;
+        z-index: 200;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+        background: rgba(248, 247, 243, .97);
+        backdrop-filter: blur(10px);
+      }
+      .nav-header { padding: 12px 16px; }
+      .nav-title { padding-bottom: 8px; font-size: 1rem; }
+      .nav-title::after { bottom: 1px; }
+      .nav-brand-mark { width: 28px; height: 28px; }
+      .mobile-nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+      .search-wrap,
+      .nav-links,
+      .nav-footer { display: none; }
+      .sidebar.mobile-open .search-wrap { display: block; margin-top: 12px; }
+      .sidebar.mobile-open .nav-links {
+        display: block;
+        max-height: 52vh;
+        border-top: 1px solid var(--border);
+      }
+      .sidebar.mobile-open .nav-footer { display: block; }
+      main {
+        width: 100%;
+        min-height: auto;
+        padding: 34px 20px 64px;
+        box-shadow: none;
+      }
+      main::before { margin-bottom: 18px; }
+      h1 { max-width: none; font-size: clamp(1.9rem, 8vw, 2.25rem); }
+      h2 { margin-top: 2.6rem; }
+      p { line-height: 1.78; }
+      .page-nav { grid-template-columns: 1fr; }
+      .page-nav > div:empty { display: none; }
+      .page-nav-link.next { align-items: flex-start; text-align: left; }
+      .scroll-top { right: 16px; bottom: 16px; width: 42px; height: 42px; }
+    }
+
+    @media (max-width: 420px) {
+      main { padding-right: 17px; padding-left: 17px; }
+      .table-scroll { margin-right: -2px; margin-left: -2px; }
+      .page-nav-link { min-height: 82px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        scroll-behavior: auto;
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+      }
     }
   </style>
 </head>
 <body>
-  <nav class="sidebar">
+  <nav class="sidebar" id="docs-sidebar" aria-label="ドキュメントナビゲーション">
     <div class="nav-header">
-      <a href="/docs/index" class="nav-title">📘 たびたび Docs</a>
-      <div style="position: relative;">
-        <input type="text" id="search-input" class="search-box" placeholder="検索...">
-        <div id="search-results"></div>
+      <div class="nav-brand-row">
+        <a href="/docs/index" class="nav-title">
+          <span class="nav-brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h18M14 6l7 6-7 6M8 9l-3 3 3 3"/></svg>
+          </span>
+          <span>たびたび Docs</span>
+        </a>
+        <button class="mobile-nav-toggle" id="mobile-nav-toggle" type="button" aria-controls="docs-navigation" aria-expanded="false">目次</button>
+      </div>
+      <div class="search-wrap" role="search">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="search-input" class="search-box" placeholder="ドキュメントを検索" aria-label="ドキュメントを検索" autocomplete="off">
+        <div id="search-results" aria-live="polite"></div>
       </div>
     </div>
-    <ul class="nav-links">
+    <ul class="nav-links" id="docs-navigation">
       ${nav}
     </ul>
     <div class="nav-footer">
       <a href="/" class="back-link">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         アプリに戻る
       </a>
     </div>
   </nav>
-  <main>
+  <main id="doc-content">
     ${content}
     ${pageNav}
   </main>
-  <button class="scroll-top" id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+  <button class="scroll-top" id="scroll-top" type="button" aria-label="ページ上部へ戻る">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
   </button>
   <script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
@@ -435,20 +897,32 @@ const template = (title: string, content: string, nav: string, rootPath: string,
     mermaid.init(undefined, document.querySelectorAll('.mermaid'));
   </script>
   <script>
+    const sidebar = document.getElementById('docs-sidebar');
+    const mobileNavToggle = document.getElementById('mobile-nav-toggle');
     const searchInput = document.getElementById('search-input');
     const resultsContainer = document.getElementById('search-results');
+    const scrollBtn = document.getElementById('scroll-top');
     let searchIndex = [];
 
-    fetch('/docs/search.json')
-      .then(res => res.json())
-      .then(data => searchIndex = data);
+    mobileNavToggle.addEventListener('click', () => {
+      const isOpen = sidebar.classList.toggle('mobile-open');
+      mobileNavToggle.setAttribute('aria-expanded', String(isOpen));
+      mobileNavToggle.textContent = isOpen ? '閉じる' : '目次';
+    });
 
-    searchInput.addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase();
+    fetch('/docs/search.json')
+      .then(response => response.json())
+      .then(data => { searchIndex = data; })
+      .catch(() => { searchIndex = []; });
+
+    searchInput.addEventListener('input', event => {
+      const query = event.target.value.trim().toLowerCase();
       if (query.length < 2) {
         resultsContainer.style.display = 'none';
+        resultsContainer.replaceChildren();
         return;
       }
+
       const results = searchIndex.filter(item =>
         item.title.toLowerCase().includes(query) ||
         item.content.toLowerCase().includes(query)
@@ -460,72 +934,77 @@ const template = (title: string, content: string, nav: string, rootPath: string,
           link.href = '/docs/' + encodeURI(item.id);
           link.className = 'search-result-item';
 
-          const title = document.createElement('div');
-          title.className = 'search-result-title';
-          title.textContent = item.title;
+          const resultTitle = document.createElement('div');
+          resultTitle.className = 'search-result-title';
+          resultTitle.textContent = item.title;
 
           const preview = document.createElement('div');
           preview.className = 'search-result-preview';
-          preview.textContent = item.content.substring(0, 50) + '...';
+          preview.textContent = item.content.substring(0, 70) + '...';
 
-          link.append(title, preview);
+          link.append(resultTitle, preview);
           return link;
         }));
-        resultsContainer.style.display = 'block';
       } else {
         const empty = document.createElement('div');
-        empty.style.padding = '12px';
-        empty.style.color = '#6b7280';
-        empty.style.fontSize = '0.85rem';
-        empty.textContent = '見つかりませんでした';
+        empty.className = 'search-empty';
+        empty.textContent = '該当するドキュメントが見つかりません';
         resultsContainer.replaceChildren(empty);
-        resultsContainer.style.display = 'block';
+      }
+      resultsContainer.style.display = 'block';
+    });
+
+    searchInput.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        resultsContainer.style.display = 'none';
+        searchInput.blur();
       }
     });
 
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.nav-header')) {
+    document.addEventListener('click', event => {
+      if (!event.target.closest('.search-wrap')) {
         resultsContainer.style.display = 'none';
       }
     });
 
-    const scrollBtn = document.getElementById('scroll-top');
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 300) {
-        scrollBtn.classList.add('visible');
-      } else {
-        scrollBtn.classList.remove('visible');
-      }
+    const updateScrollButton = () => {
+      scrollBtn.classList.toggle('visible', window.scrollY > 320);
+    };
+
+    scrollBtn.addEventListener('click', () => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
     });
+
+    window.addEventListener('scroll', updateScrollButton, { passive: true });
+    updateScrollButton();
   </script>
 </body>
 </html>
 `;
 
 const navTree = buildNavTree();
-const flatNav = flattenNavItems(navTree);
 
 (async () => {
   for (const file of allFiles) {
-    let content = fs.readFileSync(file, 'utf-8');
+    const content = fs.readFileSync(file, 'utf-8');
     const relativePath = path.relative(DOCS_SRC, file);
-    const name = relativePath.replace('.md', '');
     const title = extractTitleFromMarkdown(file);
-
-    const depth = relativePath.split(path.sep).length - 1;
-    const rootPath = depth > 0 ? '../'.repeat(depth) : './';
     const currentPath = relativePath.replace('.md', '.html');
 
-    const navHtml = generateNavHtml(navTree, rootPath, currentPath);
+    const navHtml = generateNavHtml(navTree, currentPath);
     const { prev, next } = getPrevNext(navTree, currentPath);
-    const pageNavHtml = generatePrevNextHtml(prev, next, rootPath);
+    const pageNavHtml = generatePrevNextHtml(prev, next);
     const htmlContent = await marked(content);
-    const processedContent = htmlContent.replace(/href="([^"]+)\.md"/g, 'href="$1.html"');
+    const processedContent = htmlContent
+      .replace(/href="([^"]+)\.md"/g, 'href="$1.html"')
+      .replace(/<table>/g, '<div class="table-scroll" tabindex="0" role="region" aria-label="横スクロールできる表"><table>')
+      .replace(/<\/table>/g, '</table></div>');
 
-    const finalHtml = template(title, processedContent, navHtml, rootPath, pageNavHtml);
-
+    const finalHtml = template(title, processedContent, navHtml, pageNavHtml, currentPath);
     const destPath = path.join(DOCS_DEST, relativePath.replace('.md', '.html'));
     const destDir = path.dirname(destPath);
+
     if (!fs.existsSync(destDir)) {
       fs.mkdirSync(destDir, { recursive: true });
     }

@@ -1,4 +1,8 @@
 export const ITINERARY_BACKGROUND_PRESETS = [
+  { id: 'home-spring', name: 'トップ画像・春', url: '/hero/background-spring.avif' },
+  { id: 'home-summer', name: 'トップ画像・夏', url: '/hero/background-summer.avif' },
+  { id: 'home-autumn', name: 'トップ画像・秋', url: '/hero/background-autumn.avif' },
+  { id: 'home-winter', name: 'トップ画像・冬', url: '/hero/background-winter.avif' },
   { id: 'sakura', name: '桜の旅', url: '/itinerary-backgrounds/sakura.avif' },
   { id: 'seaside', name: '海辺の旅', url: '/itinerary-backgrounds/seaside.avif' },
   { id: 'meadow', name: '草原の旅', url: '/itinerary-backgrounds/meadow.avif' },

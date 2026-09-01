@@ -535,7 +535,7 @@
   .theme-choices { display: grid; margin-top: 1rem; gap: .45rem; text-align: left; }
   .theme-choices button { display: grid; padding: .7rem .8rem; border: 1px solid #d9ddd9; color: #26332f; background: #fff; text-align: left; cursor: pointer; }
   .theme-choices small { margin-top: .15rem; color: #7a8581; }
-  .sheet-backdrop { position: fixed; z-index: 100; inset: 0; display: flex; align-items: end; justify-content: center; background: rgba(24,35,31,.34); }
+  .sheet-backdrop { position: fixed; z-index: 300; inset: 0; display: flex; align-items: end; justify-content: center; background: rgba(24,35,31,.34); }
   .sheet { width: min(600px, 100%); max-height: 92dvh; overflow: auto; padding: .6rem 1.2rem calc(1.2rem + env(safe-area-inset-bottom)); border-radius: 20px 20px 0 0; background: #fff; box-shadow: 0 -12px 40px rgba(0,0,0,.12); }
   .sheet-handle { width: 38px; height: 4px; margin: 0 auto .7rem; border-radius: 999px; background: #d5d9d6; }
   .sheet-title { display: flex; align-items: center; justify-content: space-between; }

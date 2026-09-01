@@ -1,7 +1,11 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import { invalidateAll } from "$app/navigation";
+  import type { ItineraryResponse } from "@tabitabi/types";
+  import { itineraryApi } from "$lib/api/itinerary";
+  import { ITINERARY_BACKGROUND_PRESETS } from "$lib/itinerary-backgrounds";
   import { PaletteIcon, SecretIcon } from "./icons/index.svelte";
   import TripMembersEditor from "./TripMembersEditor.svelte";
-  import { ITINERARY_BACKGROUND_PRESETS } from "$lib/itinerary-backgrounds";
 
   interface ThemeOption {
     id: string;
@@ -17,13 +21,11 @@
     palettes: PaletteOption[];
     selectedThemeId: string;
     selectedPaletteId: string;
-    selectedBackgroundImage: string | null;
     secretModeEnabled: boolean;
     secretModeOffset: number;
     packingEnabled: boolean;
     onThemeChange: (themeId: string) => void | Promise<void>;
     onPaletteChange: (paletteId: string) => void | Promise<void>;
-    onBackgroundChange: (backgroundImage: string | null) => void | Promise<void>;
     onSecretModeChange: (enabled: boolean, offset: number) => void | Promise<void>;
     onPackingEnabledChange: (enabled: boolean) => void | Promise<void>;
     onEditMetadata: () => void;
@@ -37,28 +39,34 @@
     palettes,
     selectedThemeId,
     selectedPaletteId,
-    selectedBackgroundImage,
     secretModeEnabled,
     secretModeOffset,
     packingEnabled,
     onThemeChange,
     onPaletteChange,
-    onBackgroundChange,
     onSecretModeChange,
     onPackingEnabledChange,
     onEditMetadata,
     onClose,
   }: Props = $props();
 
+  const pageItinerary = $derived(($page.data?.itinerary ?? null) as ItineraryResponse | null);
+  const currentBackgroundImage = $derived(
+    pageItinerary?.id === itineraryId ? (pageItinerary.background_image ?? null) : null,
+  );
+
   let localSecretEnabled = $state(secretModeEnabled);
   let localSecretOffset = $state(secretModeOffset);
   let localThemeId = $state(selectedThemeId);
   let localPaletteId = $state(selectedPaletteId);
-  let localBackgroundImage = $state(selectedBackgroundImage ?? "");
+  let localBackgroundImage = $state("");
   let showThemeList = $state(false);
   let showPaletteList = $state(false);
   let showBackgroundList = $state(false);
   let localPackingEnabled = $state(packingEnabled);
+  let wasOpen = $state(false);
+  let isSaving = $state(false);
+  let saveError = $state("");
   let selectedTheme = $derived(themes.find((theme) => theme.id === localThemeId));
   let selectedPalette = $derived(palettes.find((palette) => palette.id === localPaletteId));
   let selectedBackground = $derived(
@@ -70,17 +78,38 @@
     localSecretOffset = secretModeOffset;
     localThemeId = selectedThemeId;
     localPaletteId = selectedPaletteId;
-    localBackgroundImage = selectedBackgroundImage ?? "";
     localPackingEnabled = packingEnabled;
   });
 
+  $effect(() => {
+    if (show && !wasOpen) {
+      localBackgroundImage = currentBackgroundImage ?? "";
+      saveError = "";
+    }
+    wasOpen = show;
+  });
+
   async function handleSave() {
-    await onThemeChange(localThemeId);
-    await onPaletteChange(localPaletteId);
-    await onBackgroundChange(localBackgroundImage || null);
-    await onSecretModeChange(localSecretEnabled, localSecretOffset);
-    await onPackingEnabledChange(localPackingEnabled);
-    onClose();
+    if (isSaving) return;
+    isSaving = true;
+    saveError = "";
+    try {
+      const nextBackground = localBackgroundImage || null;
+      if (nextBackground !== currentBackgroundImage) {
+        await itineraryApi.update(itineraryId, { background_image: nextBackground });
+        await invalidateAll();
+      }
+      await onThemeChange(localThemeId);
+      await onPaletteChange(localPaletteId);
+      await onSecretModeChange(localSecretEnabled, localSecretOffset);
+      await onPackingEnabledChange(localPackingEnabled);
+      onClose();
+    } catch (error) {
+      console.error("Failed to save itinerary settings:", error);
+      saveError = "設定を保存できませんでした。編集モードを確認して、もう一度お試しください。";
+    } finally {
+      isSaving = false;
+    }
   }
 
   function handleCancel() {
@@ -88,8 +117,9 @@
     localSecretOffset = secretModeOffset;
     localThemeId = selectedThemeId;
     localPaletteId = selectedPaletteId;
-    localBackgroundImage = selectedBackgroundImage ?? "";
+    localBackgroundImage = currentBackgroundImage ?? "";
     localPackingEnabled = packingEnabled;
+    saveError = "";
     onClose();
   }
 
@@ -290,9 +320,13 @@
       {/if}
     </div>
 
+    {#if saveError}
+      <p class="standard-settings-page-error" role="alert">{saveError}</p>
+    {/if}
+
     <div class="standard-settings-page-actions">
-      <button onclick={handleCancel} class="standard-btn standard-btn-secondary">キャンセル</button>
-      <button onclick={handleSave} class="standard-btn standard-btn-primary">保存</button>
+      <button onclick={handleCancel} class="standard-btn standard-btn-secondary" disabled={isSaving}>キャンセル</button>
+      <button onclick={handleSave} class="standard-btn standard-btn-primary" disabled={isSaving}>{isSaving ? "保存中…" : "保存"}</button>
     </div>
     </div>
   </section>

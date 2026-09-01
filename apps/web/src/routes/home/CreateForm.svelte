@@ -7,7 +7,7 @@
   let title = $state("");
   let password = $state("");
   let usePassword = $state(false);
-  let theme_id = $state(defaultThemeId);
+  let theme_preset_id = $state(defaultThemeId);
   let creating = $state(false);
   let titleError = $state("");
 
@@ -29,8 +29,8 @@
     try {
       const created = await itineraryApi.create({
         title: title.trim(),
-        theme_id,
-        palette_id: getThemePreset(theme_id).defaultPaletteId,
+        theme_preset_id,
+        palette_id: getThemePreset(theme_preset_id).defaultPaletteId,
         password: usePassword && password.trim() ? password.trim() : undefined,
       });
 
@@ -133,8 +133,8 @@
       </div>
 
       <div class="form-group">
-        <label for="theme" class="form-label">テーマ</label>
-        <select id="theme" bind:value={theme_id} class="form-select">
+        <label for="theme" class="form-label">表示</label>
+        <select id="theme" bind:value={theme_preset_id} class="form-select">
           {#each themes as theme}
             <option value={theme.id}>{theme.name}</option>
           {/each}

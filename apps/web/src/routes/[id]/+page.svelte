@@ -184,7 +184,7 @@
       title?: string;
       start_at?: number;
       end_at?: number;
-      location?: string;
+      location?: string | null;
       notes?: string;
       link?: string | null;
       type?: import("@tabitabi/types").StepType;

@@ -16,6 +16,8 @@ export interface Itinerary {
   background_image?: string | null;
   /** Full-page background image path/URL. */
   page_background_image?: string | null;
+  /** Where the selected background is rendered. */
+  background_display?: 'cover' | 'page';
   /** Feature switches belong to the itinerary, not to a visual theme. */
   packing_enabled?: boolean;
   /** Search/discovery metadata shared by every owner and publication of this itinerary. */

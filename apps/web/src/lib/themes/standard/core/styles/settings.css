@@ -275,6 +275,12 @@
   font-size: .95rem;
 }
 
+.standard-background-display-options {
+  display: grid;
+  gap: .65rem;
+  margin-top: .75rem;
+}
+
 .standard-background-option {
   position: relative;
   display: grid;

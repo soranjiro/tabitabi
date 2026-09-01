@@ -15,14 +15,14 @@ html[data-itinerary-cover="true"] .standard-header {
 html[data-itinerary-page-background="true"] .standard-theme {
   background-attachment: fixed;
   background-image:
-    linear-gradient(rgba(255, 255, 255, .84), rgba(255, 255, 255, .84)),
+    linear-gradient(rgba(255, 255, 255, .30), rgba(255, 255, 255, .42)),
     var(--itinerary-page-background-image);
   background-position: center;
   background-size: cover;
 }
 
 html[data-itinerary-page-background="true"] .standard-container {
-  background: color-mix(in srgb, var(--theme-bg) 90%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--theme-bg) 74%, transparent), color-mix(in srgb, var(--theme-bg) 55%, transparent), color-mix(in srgb, var(--theme-bg) 74%, transparent));
 }
 
 html[data-itinerary-cover="true"] .standard-header .standard-title-button,

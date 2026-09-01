@@ -13,6 +13,6 @@ export const backgroundApi = {
 };
 
 export interface BackgroundSettings {
-  cover_background_image: string | null;
-  page_background_image: string | null;
+  background_image: string | null;
+  background_display: 'cover' | 'page';
 }

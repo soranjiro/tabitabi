@@ -51,10 +51,10 @@
   let localSecretOffset = $state(secretModeOffset);
   let localThemeId = $state(selectedThemeId);
   let localPaletteId = $state(selectedPaletteId);
-  let currentCoverBackgroundImage = $state<string | null>(null);
-  let currentPageBackgroundImage = $state<string | null>(null);
-  let localCoverBackgroundImage = $state("");
-  let localPageBackgroundImage = $state("");
+  let currentBackgroundImage = $state<string | null>(null);
+  let currentBackgroundDisplay = $state<'cover' | 'page'>('cover');
+  let localBackgroundImage = $state("");
+  let localBackgroundDisplay = $state<'cover' | 'page'>('cover');
   let showThemeList = $state(false);
   let showPaletteList = $state(false);
   let showBackgroundList = $state(false);
@@ -65,11 +65,8 @@
   let saveError = $state("");
   let selectedTheme = $derived(themes.find((theme) => theme.id === localThemeId));
   let selectedPalette = $derived(palettes.find((palette) => palette.id === localPaletteId));
-  let selectedCoverBackground = $derived(
-    ITINERARY_BACKGROUND_PRESETS.find((preset) => preset.url === localCoverBackgroundImage),
-  );
-  let selectedPageBackground = $derived(
-    ITINERARY_BACKGROUND_PRESETS.find((preset) => preset.url === localPageBackgroundImage),
+  let selectedBackground = $derived(
+    ITINERARY_BACKGROUND_PRESETS.find((preset) => preset.url === localBackgroundImage),
   );
 
   $effect(() => {
@@ -92,16 +89,14 @@
     isLoadingBackground = true;
     try {
       const result = await backgroundApi.get(itineraryId);
-      currentCoverBackgroundImage = result.cover_background_image;
-      currentPageBackgroundImage = result.page_background_image;
-      localCoverBackgroundImage = result.cover_background_image ?? "";
-      localPageBackgroundImage = result.page_background_image ?? "";
+      currentBackgroundImage = result.background_image;
+      currentBackgroundDisplay = result.background_display;
+      localBackgroundImage = result.background_image ?? "";
+      localBackgroundDisplay = result.background_display;
     } catch (error) {
       console.error("Failed to load itinerary background:", error);
-      currentCoverBackgroundImage = null;
-      currentPageBackgroundImage = null;
-      localCoverBackgroundImage = "";
-      localPageBackgroundImage = "";
+      currentBackgroundImage = null;
+      localBackgroundImage = "";
       saveError = "背景画像の現在の設定を読み込めませんでした。";
     } finally {
       isLoadingBackground = false;
@@ -113,21 +108,20 @@
     isSaving = true;
     saveError = "";
     try {
-      const nextCoverBackground = localCoverBackgroundImage || null;
-      const nextPageBackground = localPageBackgroundImage || null;
-      if (nextCoverBackground !== currentCoverBackgroundImage || nextPageBackground !== currentPageBackgroundImage) {
+      const nextBackgroundImage = localBackgroundImage || null;
+      if (nextBackgroundImage !== currentBackgroundImage || localBackgroundDisplay !== currentBackgroundDisplay) {
         const result = await backgroundApi.update(itineraryId, {
-          cover_background_image: nextCoverBackground,
-          page_background_image: nextPageBackground,
+          background_image: nextBackgroundImage,
+          background_display: localBackgroundDisplay,
         });
-        currentCoverBackgroundImage = result.cover_background_image;
-        currentPageBackgroundImage = result.page_background_image;
+        currentBackgroundImage = result.background_image;
+        currentBackgroundDisplay = result.background_display;
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("tabitabi:background-changed", {
             detail: {
               itineraryId,
-              coverBackgroundImage: result.cover_background_image,
-              pageBackgroundImage: result.page_background_image,
+              backgroundImage: result.background_image,
+              backgroundDisplay: result.background_display,
             },
           }));
         }
@@ -150,8 +144,8 @@
     localSecretOffset = secretModeOffset;
     localThemeId = selectedThemeId;
     localPaletteId = selectedPaletteId;
-    localCoverBackgroundImage = currentCoverBackgroundImage ?? "";
-    localPageBackgroundImage = currentPageBackgroundImage ?? "";
+    localBackgroundImage = currentBackgroundImage ?? "";
+    localBackgroundDisplay = currentBackgroundDisplay;
     localPackingEnabled = packingEnabled;
     saveError = "";
     onClose();
@@ -286,11 +280,11 @@
         <h3>背景画像</h3>
       </div>
       <p class="standard-settings-page-description">
-        しおり全体とタイトル部分のカバーを、それぞれ選べます。
+        1枚の背景画像を、カバーまたはしおり全体に表示できます。
       </p>
-      <div class="standard-settings-page-current" aria-label={`現在の背景画像: カバー ${selectedCoverBackground?.name ?? "なし"}、全体 ${selectedPageBackground?.name ?? "なし"}`}>
-        <span>カバー: {isLoadingBackground ? "読み込み中…" : (selectedCoverBackground?.name ?? "なし")}</span>
-        <strong>全体: {isLoadingBackground ? "読み込み中…" : (selectedPageBackground?.name ?? "なし")}</strong>
+      <div class="standard-settings-page-current" aria-label={`現在の背景画像: ${selectedBackground?.name ?? "なし"}`}>
+        <span>{isLoadingBackground ? "読み込み中…" : (selectedBackground?.name ?? "背景なし")}</span>
+        <strong>{localBackgroundImage ? (localBackgroundDisplay === 'cover' ? 'カバーに表示' : '全体に表示') : ''}</strong>
       </div>
       <button type="button" class="standard-btn standard-btn-secondary" onclick={openBackgroundSettings} disabled={isLoadingBackground}>背景を選ぶ</button>
     </div>
@@ -360,31 +354,31 @@
         </header>
         <div class="standard-settings-page">
           <p class="standard-settings-page-description">画像を選ぶと、保存時にしおりへ反映されます。</p>
-          <h3 class="standard-background-picker-title">タイトル部分のカバー</h3>
+          <h3 class="standard-background-picker-title">背景画像を選ぶ</h3>
           <div class="standard-background-grid">
             <label class="standard-background-option">
-              <input type="radio" name="cover-background-image" value="" bind:group={localCoverBackgroundImage} />
+              <input type="radio" name="background-image" value="" bind:group={localBackgroundImage} />
               <span class="standard-background-preview standard-background-preview-none">背景なし</span><strong>背景なし</strong>
             </label>
             {#each ITINERARY_BACKGROUND_PRESETS as preset}
               <label class="standard-background-option">
-                <input type="radio" name="cover-background-image" value={preset.url} bind:group={localCoverBackgroundImage} />
+                <input type="radio" name="background-image" value={preset.url} bind:group={localBackgroundImage} />
                 <img class="standard-background-preview" src={preset.url} alt="" loading="lazy" /><strong>{preset.name}</strong>
               </label>
             {/each}
           </div>
-          <h3 class="standard-background-picker-title">しおり全体の背景</h3>
-          <div class="standard-background-grid">
-            <label class="standard-background-option">
-              <input type="radio" name="page-background-image" value="" bind:group={localPageBackgroundImage} />
-              <span class="standard-background-preview standard-background-preview-none">背景なし</span><strong>背景なし</strong>
+          <h3 class="standard-background-picker-title">どこに表示しますか？</h3>
+          <div class="standard-background-display-options">
+            <label class="standard-settings-page-radio">
+              <input type="radio" name="background-display" value="cover" bind:group={localBackgroundDisplay} disabled={!localBackgroundImage} />
+              <div class="standard-settings-page-radio-content"><span class="standard-settings-page-radio-title">タイトル部分のカバー</span><span class="standard-settings-page-radio-desc">タイトルを写真の上に表示します</span></div>
+              <div class="standard-settings-page-radio-check"></div>
             </label>
-            {#each ITINERARY_BACKGROUND_PRESETS as preset}
-              <label class="standard-background-option">
-                <input type="radio" name="page-background-image" value={preset.url} bind:group={localPageBackgroundImage} />
-                <img class="standard-background-preview" src={preset.url} alt="" loading="lazy" /><strong>{preset.name}</strong>
-              </label>
-            {/each}
+            <label class="standard-settings-page-radio">
+              <input type="radio" name="background-display" value="page" bind:group={localBackgroundDisplay} disabled={!localBackgroundImage} />
+              <div class="standard-settings-page-radio-content"><span class="standard-settings-page-radio-title">しおり全体の背景</span><span class="standard-settings-page-radio-desc">本文の後ろに写真を大きく表示します</span></div>
+              <div class="standard-settings-page-radio-check"></div>
+            </label>
           </div>
         </div>
       </section>

@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS "itineraries" (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   memo TEXT,
   password TEXT
-, source_itinerary_id TEXT, packing_enabled INTEGER NOT NULL DEFAULT 1 CHECK(packing_enabled IN (0, 1)), prefecture_slugs TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(prefecture_slugs)), areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)), tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)), metadata_initialized INTEGER NOT NULL DEFAULT 1 CHECK(metadata_initialized IN (0, 1)), palette_id TEXT NOT NULL DEFAULT 'sakura', background_image TEXT, page_background_image TEXT);
+, source_itinerary_id TEXT, packing_enabled INTEGER NOT NULL DEFAULT 1 CHECK(packing_enabled IN (0, 1)), prefecture_slugs TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(prefecture_slugs)), areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)), tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)), metadata_initialized INTEGER NOT NULL DEFAULT 1 CHECK(metadata_initialized IN (0, 1)), palette_id TEXT NOT NULL DEFAULT 'sakura', background_image TEXT, page_background_image TEXT, background_display TEXT NOT NULL DEFAULT 'cover'
+  CHECK(background_display IN ('cover', 'page')));
 CREATE TABLE IF NOT EXISTS "steps" (
   id TEXT PRIMARY KEY,
   itinerary_id TEXT NOT NULL,
@@ -261,15 +262,17 @@ WHEN NEW.source_itinerary_id IS NOT NULL
 BEGIN
   UPDATE itineraries
   SET background_image = (SELECT background_image FROM itineraries WHERE id = NEW.source_itinerary_id),
-      page_background_image = (SELECT page_background_image FROM itineraries WHERE id = NEW.source_itinerary_id)
+      background_display = (SELECT background_display FROM itineraries WHERE id = NEW.source_itinerary_id),
+      page_background_image = NULL
   WHERE id = NEW.id;
 END;
 CREATE TRIGGER sync_public_itinerary_background_after_update
-AFTER UPDATE OF background_image, page_background_image ON itineraries
+AFTER UPDATE OF background_image, background_display ON itineraries
 WHEN NEW.source_itinerary_id IS NULL
 BEGIN
   UPDATE itineraries
   SET background_image = NEW.background_image,
-      page_background_image = NEW.page_background_image
+      background_display = NEW.background_display,
+      page_background_image = NULL
   WHERE source_itinerary_id = NEW.id;
 END;

@@ -228,6 +228,37 @@ export class UserService {
     return { items, hasMore, total: Number(countResult?.total ?? 0), destinationCounts };
   }
 
+  // 自分がお気に入りに登録した、現在公開中のしおり一覧
+  async getFavoriteItineraries(userId: string): Promise<PublicFeedItem[]> {
+    const results = await this.db.prepare(`
+      SELECT
+        publication.shared_itinerary_id as itinerary_id,
+        i.title, i.theme_id, publication.published_at as created_at, u.username,
+        publication.prefecture_slugs, publication.areas, publication.tags,
+        (SELECT COUNT(*) FROM steps WHERE itinerary_id = i.id) as stops,
+        COALESCE(stats.fork_count, 0) as copies,
+        (SELECT MIN(start_at) FROM steps WHERE itinerary_id = i.id) as start_at,
+        (SELECT MAX(end_at) FROM steps WHERE itinerary_id = i.id) as end_at,
+        '' as description
+      FROM itinerary_favorites favorite
+      JOIN itineraries i ON i.id = favorite.itinerary_id
+      JOIN itinerary_publications publication
+        ON publication.shared_itinerary_id = i.id
+      JOIN users u ON u.id = publication.user_id
+      LEFT JOIN itinerary_fork_stats stats ON stats.itinerary_id = i.id
+      WHERE favorite.user_id = ?
+        AND u.email_verified_at IS NOT NULL
+        AND i.password IS NULL
+        AND i.source_itinerary_id IS NOT NULL
+      ORDER BY favorite.created_at DESC
+    `).bind(userId).all<Record<string, unknown>>();
+
+    return (results.results ?? []).map((row) => ({
+      ...this.mapPublicBookmark(row),
+      username: row.username as string,
+    } satisfies PublicFeedItem));
+  }
+
   async publishBookmark(
     userId: string,
     sourceItineraryId: string,

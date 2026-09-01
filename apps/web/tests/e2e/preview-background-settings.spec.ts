@@ -45,12 +45,18 @@ test('deployed preview can save a home hero background from itinerary settings',
     await expect(page.getByRole('heading', { name: 'しおり設定' })).toBeVisible();
     await expect(page.getByRole('button', { name: '保存' })).toBeEnabled();
 
-    console.log('preview-background-step=choose-home-winter-background');
-    await page.getByRole('heading', { name: '背景画像' }).click();
-    const winterOption = page.locator('label.standard-background-option').filter({ hasText: 'トップ画像・冬' });
-    await expect(winterOption).toBeVisible();
-    await winterOption.click();
-    await expect(winterOption.locator('input[type="radio"]')).toBeChecked();
+    console.log('preview-background-step=open-background-picker');
+    await page.getByRole('button', { name: '背景を選ぶ' }).click();
+    await expect(page.getByRole('heading', { name: '背景画像' })).toBeVisible();
+
+    console.log('preview-background-step=choose-cover-and-page-backgrounds');
+    const coverWinterOption = page.locator('label.standard-background-option').filter({ hasText: 'トップ画像・冬' }).first();
+    const pageLakeOption = page.locator('label.standard-background-option').filter({ hasText: '湖畔の旅' }).last();
+    await coverWinterOption.click();
+    await pageLakeOption.click();
+    await expect(coverWinterOption.locator('input[type="radio"]')).toBeChecked();
+    await expect(pageLakeOption.locator('input[type="radio"]')).toBeChecked();
+    await page.getByRole('button', { name: /戻る/ }).last().click();
     await page.screenshot({ path: 'test-results/background-settings-selected.png', fullPage: false });
 
     console.log('preview-background-step=save-background');
@@ -69,12 +75,16 @@ test('deployed preview can save a home hero background from itinerary settings',
     });
     expect(readResponse.ok()).toBeTruthy();
     const readBody = await readResponse.json();
-    expect(readBody.data.background_image).toBe('/hero/background-winter.avif');
+    expect(readBody.data.cover_background_image).toBe('/hero/background-winter.avif');
+    expect(readBody.data.page_background_image).toBe('/itinerary-backgrounds/lake.avif');
 
     console.log('preview-background-step=verify-live-cover');
     await expect.poll(async () => page.locator('html').evaluate((element) =>
       getComputedStyle(element).getPropertyValue('--itinerary-cover-image'),
     )).toContain('background-winter.avif');
+    await expect.poll(async () => page.locator('html').evaluate((element) =>
+      getComputedStyle(element).getPropertyValue('--itinerary-page-background-image'),
+    )).toContain('lake.avif');
     await page.screenshot({ path: 'test-results/background-cover-saved.png', fullPage: false });
 
     console.log('preview-background-step=reload-and-verify-cover');

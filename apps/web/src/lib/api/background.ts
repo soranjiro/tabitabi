@@ -2,12 +2,17 @@ import { apiClient } from './client';
 
 export const backgroundApi = {
   get: (itineraryId: string) =>
-    apiClient.get<{ background_image: string | null }>(`/backgrounds/${itineraryId}`),
+    apiClient.get<BackgroundSettings>(`/backgrounds/${itineraryId}`),
 
-  update: (itineraryId: string, backgroundImage: string | null) =>
-    apiClient.put<{ background_image: string | null }>(
+  update: (itineraryId: string, settings: BackgroundSettings) =>
+    apiClient.put<BackgroundSettings>(
       `/backgrounds/${itineraryId}`,
-      { background_image: backgroundImage },
+      settings,
       itineraryId,
     ),
 };
+
+export interface BackgroundSettings {
+  cover_background_image: string | null;
+  page_background_image: string | null;
+}

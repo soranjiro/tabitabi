@@ -11,6 +11,7 @@ async function ensureSchema(db: D1Database) {
       theme_id TEXT NOT NULL DEFAULT 'standard-autumn',
       palette_id TEXT NOT NULL DEFAULT 'sakura',
       background_image TEXT,
+      page_background_image TEXT,
       source_itinerary_id TEXT,
       password TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -22,6 +23,9 @@ async function ensureSchema(db: D1Database) {
   if (!(columns.results ?? []).some((column) => column.name === 'background_image')) {
     await db.prepare('ALTER TABLE itineraries ADD COLUMN background_image TEXT').run();
   }
+  if (!(columns.results ?? []).some((column) => column.name === 'page_background_image')) {
+    await db.prepare('ALTER TABLE itineraries ADD COLUMN page_background_image TEXT').run();
+  }
 }
 
 async function insertItinerary(options: {
@@ -29,16 +33,18 @@ async function insertItinerary(options: {
   password?: string | null;
   sourceId?: string | null;
   background?: string | null;
+  pageBackground?: string | null;
 }) {
   await env.DB.prepare(`
     INSERT INTO itineraries (
-      id, title, theme_id, palette_id, background_image, source_itinerary_id,
+      id, title, theme_id, palette_id, background_image, page_background_image, source_itinerary_id,
       password, created_at, updated_at
-    ) VALUES (?, ?, 'standard-spring', 'sakura', ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    ) VALUES (?, ?, 'standard-spring', 'sakura', ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
   `).bind(
     options.id,
     `Trip ${options.id}`,
     options.background ?? null,
+    options.pageBackground ?? null,
     options.sourceId ?? null,
     options.password ?? null,
   ).run();
@@ -57,7 +63,7 @@ describe('Itinerary backgrounds API', () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({
       success: true,
-      data: { background_image: '/hero/background-spring.avif' },
+      data: { cover_background_image: '/hero/background-spring.avif', page_background_image: null },
     });
   });
 
@@ -67,19 +73,20 @@ describe('Itinerary backgrounds API', () => {
     const response = await app.request('/api/v1/backgrounds/background-open', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ background_image: '/itinerary-backgrounds/lake.avif' }),
+      body: JSON.stringify({ cover_background_image: '/itinerary-backgrounds/lake.avif', page_background_image: '/itinerary-backgrounds/town.avif' }),
     }, env);
 
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({
       success: true,
-      data: { background_image: '/itinerary-backgrounds/lake.avif' },
+      data: { cover_background_image: '/itinerary-backgrounds/lake.avif', page_background_image: '/itinerary-backgrounds/town.avif' },
     });
 
-    const row = await env.DB.prepare('SELECT background_image FROM itineraries WHERE id = ?')
+    const row = await env.DB.prepare('SELECT background_image, page_background_image FROM itineraries WHERE id = ?')
       .bind('background-open')
-      .first<{ background_image: string | null }>();
+      .first<{ background_image: string | null; page_background_image: string | null }>();
     expect(row?.background_image).toBe('/itinerary-backgrounds/lake.avif');
+    expect(row?.page_background_image).toBe('/itinerary-backgrounds/town.avif');
   });
 
   it('accepts the existing home hero images', async () => {
@@ -88,13 +95,13 @@ describe('Itinerary backgrounds API', () => {
     const response = await app.request('/api/v1/backgrounds/background-home', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ background_image: '/hero/background-winter.avif' }),
+      body: JSON.stringify({ cover_background_image: '/hero/background-winter.avif', page_background_image: null }),
     }, env);
 
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({
       success: true,
-      data: { background_image: '/hero/background-winter.avif' },
+      data: { cover_background_image: '/hero/background-winter.avif', page_background_image: null },
     });
   });
 
@@ -108,13 +115,13 @@ describe('Itinerary backgrounds API', () => {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ background_image: '/hero/background-summer.avif' }),
+      body: JSON.stringify({ cover_background_image: '/hero/background-summer.avif', page_background_image: null }),
     }, env);
 
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({
       success: true,
-      data: { background_image: '/hero/background-summer.avif' },
+      data: { cover_background_image: '/hero/background-summer.avif', page_background_image: null },
     });
   });
 
@@ -124,7 +131,7 @@ describe('Itinerary backgrounds API', () => {
     const response = await app.request('/api/v1/backgrounds/background-protected-no-token', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ background_image: '/hero/background-summer.avif' }),
+      body: JSON.stringify({ cover_background_image: '/hero/background-summer.avif' }),
     }, env);
 
     expect(response.status).toBe(403);
@@ -137,7 +144,7 @@ describe('Itinerary backgrounds API', () => {
     const response = await app.request('/api/v1/backgrounds/background-public', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ background_image: '/hero/background-autumn.avif' }),
+      body: JSON.stringify({ cover_background_image: '/hero/background-autumn.avif' }),
     }, env);
 
     expect(response.status).toBe(403);
@@ -149,7 +156,7 @@ describe('Itinerary backgrounds API', () => {
     const response = await app.request('/api/v1/backgrounds/background-invalid', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ background_image: '/not-a-preset.jpg' }),
+      body: JSON.stringify({ cover_background_image: '/not-a-preset.jpg' }),
     }, env);
 
     expect(response.status).toBe(400);

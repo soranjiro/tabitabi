@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS "itineraries" (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   memo TEXT,
   password TEXT
-, source_itinerary_id TEXT, packing_enabled INTEGER NOT NULL DEFAULT 1 CHECK(packing_enabled IN (0, 1)), prefecture_slugs TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(prefecture_slugs)), areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)), tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)), metadata_initialized INTEGER NOT NULL DEFAULT 1 CHECK(metadata_initialized IN (0, 1)), palette_id TEXT NOT NULL DEFAULT 'sakura', background_image TEXT);
+, source_itinerary_id TEXT, packing_enabled INTEGER NOT NULL DEFAULT 1 CHECK(packing_enabled IN (0, 1)), prefecture_slugs TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(prefecture_slugs)), areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)), tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)), metadata_initialized INTEGER NOT NULL DEFAULT 1 CHECK(metadata_initialized IN (0, 1)), palette_id TEXT NOT NULL DEFAULT 'sakura', background_image TEXT, page_background_image TEXT);
 CREATE TABLE IF NOT EXISTS "steps" (
   id TEXT PRIMARY KEY,
   itinerary_id TEXT NOT NULL,
@@ -227,6 +227,16 @@ CREATE INDEX idx_money_fund_transactions_itinerary
   ON itinerary_money_fund_transactions(itinerary_id, occurred_on, created_at);
 CREATE INDEX idx_money_fund_transactions_member
   ON itinerary_money_fund_transactions(itinerary_id, member_id);
+CREATE TABLE itinerary_favorites (
+  user_id TEXT NOT NULL,
+  itinerary_id TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (user_id, itinerary_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_itinerary_favorites_user_id ON itinerary_favorites(user_id);
+CREATE INDEX idx_itinerary_favorites_itinerary_id ON itinerary_favorites(itinerary_id);
 CREATE TRIGGER set_official_itinerary_background_after_insert
 AFTER INSERT ON itineraries
 WHEN NEW.id IN (
@@ -250,16 +260,16 @@ AFTER INSERT ON itineraries
 WHEN NEW.source_itinerary_id IS NOT NULL
 BEGIN
   UPDATE itineraries
-  SET background_image = (
-    SELECT background_image FROM itineraries WHERE id = NEW.source_itinerary_id
-  )
+  SET background_image = (SELECT background_image FROM itineraries WHERE id = NEW.source_itinerary_id),
+      page_background_image = (SELECT page_background_image FROM itineraries WHERE id = NEW.source_itinerary_id)
   WHERE id = NEW.id;
 END;
 CREATE TRIGGER sync_public_itinerary_background_after_update
-AFTER UPDATE OF background_image ON itineraries
+AFTER UPDATE OF background_image, page_background_image ON itineraries
 WHEN NEW.source_itinerary_id IS NULL
 BEGIN
   UPDATE itineraries
-  SET background_image = NEW.background_image
+  SET background_image = NEW.background_image,
+      page_background_image = NEW.page_background_image
   WHERE source_itinerary_id = NEW.id;
 END;

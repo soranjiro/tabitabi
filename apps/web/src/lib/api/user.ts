@@ -2,6 +2,7 @@ import type {
   BootstrapProfileInput,
   UserBookmarkWithItinerary,
   PublicBookmark,
+  PublicFeedItem,
   PublicFeedResponse,
   UpdateVisibilityInput,
   UserPublicProfile,
@@ -35,6 +36,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const result: ApiResult<T> = await response.json();
   if (!result.success) throw new Error(result.error.message);
   return result.data;
+}
+
+let favoriteIdsPromise: Promise<Set<string>> | null = null;
+
+function clearFavoriteCache() {
+  favoriteIdsPromise = null;
 }
 
 export const userApi = {
@@ -95,4 +102,25 @@ export const userApi = {
 
   searchUsers: (query: string) =>
     request<{ users: UserSearchResult[] }>(`/users/search?q=${encodeURIComponent(query)}`),
+
+  getFavoriteIds: async () => {
+    favoriteIdsPromise ??= request<{ itinerary_ids: string[] }>('/favorites')
+      .then(({ itinerary_ids }) => new Set(itinerary_ids));
+    return favoriteIdsPromise;
+  },
+
+  getFavoriteItineraries: () =>
+    request<{ items: PublicFeedItem[] }>('/favorites/itineraries'),
+
+  addFavorite: async (itineraryId: string) => {
+    const result = await request<{ itinerary_id: string; favorited: boolean }>(`/favorites/${itineraryId}`, { method: 'PUT' });
+    clearFavoriteCache();
+    return result;
+  },
+
+  removeFavorite: async (itineraryId: string) => {
+    const result = await request<{ itinerary_id: string; favorited: boolean }>(`/favorites/${itineraryId}`, { method: 'DELETE' });
+    clearFavoriteCache();
+    return result;
+  },
 };

@@ -261,6 +261,20 @@
   gap: .75rem;
 }
 
+.standard-background-settings-screen {
+  position: fixed;
+  z-index: 1101;
+  inset: 0;
+  overflow-y: auto;
+  background: var(--theme-bg, #fff);
+}
+
+.standard-background-picker-title {
+  margin: 1.5rem 0 .75rem;
+  color: var(--theme-text);
+  font-size: .95rem;
+}
+
 .standard-background-option {
   position: relative;
   display: grid;

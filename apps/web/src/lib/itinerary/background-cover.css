@@ -12,6 +12,19 @@ html[data-itinerary-cover="true"] .standard-header {
   box-shadow: 0 12px 30px rgba(32, 49, 75, .14);
 }
 
+html[data-itinerary-page-background="true"] .standard-theme {
+  background-attachment: fixed;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .84), rgba(255, 255, 255, .84)),
+    var(--itinerary-page-background-image);
+  background-position: center;
+  background-size: cover;
+}
+
+html[data-itinerary-page-background="true"] .standard-container {
+  background: color-mix(in srgb, var(--theme-bg) 90%, transparent);
+}
+
 html[data-itinerary-cover="true"] .standard-header .standard-title-button,
 html[data-itinerary-cover="true"] .standard-header .standard-title-input,
 html[data-itinerary-cover="true"] .standard-header .standard-memo-display {
@@ -30,5 +43,9 @@ html[data-itinerary-cover="true"] .standard-header .standard-memo-display {
     min-height: 165px;
     padding: 26px 16px 22px;
     border-radius: 0 0 18px 18px;
+  }
+
+  html[data-itinerary-page-background="true"] .standard-theme {
+    background-attachment: scroll;
   }
 }

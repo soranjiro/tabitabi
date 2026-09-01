@@ -4,7 +4,8 @@
   import { backgroundApi } from "$lib/api/background";
   import type { ItineraryResponse } from "@tabitabi/types";
 
-  let current = $state<string | null>(null);
+  let coverImage = $state<string | null>(null);
+  let pageImage = $state<string | null>(null);
   let loadedId = $state<string | null>(null);
 
   const itinerary = $derived(($page.data?.itinerary ?? null) as ItineraryResponse | null);
@@ -13,31 +14,45 @@
     const id = itinerary?.id;
     if (!id) {
       loadedId = null;
-      current = null;
+      coverImage = null;
+      pageImage = null;
       return;
     }
     if (loadedId === id) return;
     loadedId = id;
-    current = null;
+    coverImage = null;
+    pageImage = null;
     void loadBackground(id);
   });
 
   $effect(() => {
     if (typeof document === "undefined") return;
-    if (itinerary?.id && current) {
+    if (itinerary?.id && coverImage) {
       document.documentElement.dataset.itineraryCover = "true";
-      document.documentElement.style.setProperty("--itinerary-cover-image", `url("${current}")`);
+      document.documentElement.style.setProperty("--itinerary-cover-image", `url("${coverImage}")`);
     } else {
       delete document.documentElement.dataset.itineraryCover;
       document.documentElement.style.removeProperty("--itinerary-cover-image");
     }
   });
 
+  $effect(() => {
+    if (typeof document === "undefined") return;
+    if (itinerary?.id && pageImage) {
+      document.documentElement.dataset.itineraryPageBackground = "true";
+      document.documentElement.style.setProperty("--itinerary-page-background-image", `url("${pageImage}")`);
+    } else {
+      delete document.documentElement.dataset.itineraryPageBackground;
+      document.documentElement.style.removeProperty("--itinerary-page-background-image");
+    }
+  });
+
   onMount(() => {
     const handleBackgroundChanged = (event: Event) => {
-      const detail = (event as CustomEvent<{ itineraryId: string; backgroundImage: string | null }>).detail;
+      const detail = (event as CustomEvent<{ itineraryId: string; coverBackgroundImage: string | null; pageBackgroundImage: string | null }>).detail;
       if (!detail || detail.itineraryId !== itinerary?.id) return;
-      current = detail.backgroundImage;
+      coverImage = detail.coverBackgroundImage;
+      pageImage = detail.pageBackgroundImage;
     };
     window.addEventListener("tabitabi:background-changed", handleBackgroundChanged);
     return () => window.removeEventListener("tabitabi:background-changed", handleBackgroundChanged);
@@ -45,9 +60,12 @@
 
   async function loadBackground(id: string) {
     try {
-      current = (await backgroundApi.get(id)).background_image;
+      const settings = await backgroundApi.get(id);
+      coverImage = settings.cover_background_image;
+      pageImage = settings.page_background_image;
     } catch {
-      current = null;
+      coverImage = null;
+      pageImage = null;
     }
   }
 </script>

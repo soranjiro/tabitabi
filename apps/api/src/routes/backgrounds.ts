@@ -24,14 +24,17 @@ const ALLOWED_BACKGROUNDS = new Set([
 backgrounds.get('/:itineraryId', async (c) => {
   const itineraryId = c.req.param('itineraryId');
   const itinerary = await c.env.DB.prepare(
-    'SELECT background_image FROM itineraries WHERE id = ?',
-  ).bind(itineraryId).first<{ background_image: string | null }>();
+    'SELECT background_image, page_background_image FROM itineraries WHERE id = ?',
+  ).bind(itineraryId).first<{ background_image: string | null; page_background_image: string | null }>();
 
   if (!itinerary) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   }
 
-  return c.json({ success: true, data: { background_image: itinerary.background_image ?? null } });
+  return c.json({ success: true, data: {
+    cover_background_image: itinerary.background_image ?? null,
+    page_background_image: itinerary.page_background_image ?? null,
+  } });
 });
 
 backgrounds.put('/:itineraryId', optionalAuthMiddleware, async (c) => {
@@ -50,23 +53,36 @@ backgrounds.put('/:itineraryId', optionalAuthMiddleware, async (c) => {
     return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'You can only edit your own itinerary' } }, 403);
   }
 
-  let body: { background_image?: unknown };
+  let body: { cover_background_image?: unknown; page_background_image?: unknown };
   try {
     body = await c.req.json();
   } catch {
     return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid JSON' } }, 400);
   }
 
-  const value = body.background_image;
-  if (value !== null && (typeof value !== 'string' || !ALLOWED_BACKGROUNDS.has(value))) {
+  const isPreset = (value: unknown) => value === null || (typeof value === 'string' && ALLOWED_BACKGROUNDS.has(value));
+  if (!Object.hasOwn(body, 'cover_background_image') && !Object.hasOwn(body, 'page_background_image')) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A background setting is required' } }, 400);
+  }
+  if (!isPreset(body.cover_background_image) || !isPreset(body.page_background_image)) {
     return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Unknown background preset' } }, 400);
   }
 
-  await c.env.DB.prepare(
-    'UPDATE itineraries SET background_image = ?, updated_at = ? WHERE id = ?',
-  ).bind(value, getCurrentTimestamp(), itineraryId).run();
+  const current = await c.env.DB.prepare(
+    'SELECT background_image, page_background_image FROM itineraries WHERE id = ?',
+  ).bind(itineraryId).first<{ background_image: string | null; page_background_image: string | null }>();
+  const coverBackgroundImage = Object.hasOwn(body, 'cover_background_image')
+    ? body.cover_background_image as string | null
+    : current?.background_image ?? null;
+  const pageBackgroundImage = Object.hasOwn(body, 'page_background_image')
+    ? body.page_background_image as string | null
+    : current?.page_background_image ?? null;
 
-  return c.json({ success: true, data: { background_image: value } });
+  await c.env.DB.prepare(
+    'UPDATE itineraries SET background_image = ?, page_background_image = ?, updated_at = ? WHERE id = ?',
+  ).bind(coverBackgroundImage, pageBackgroundImage, getCurrentTimestamp(), itineraryId).run();
+
+  return c.json({ success: true, data: { cover_background_image: coverBackgroundImage, page_background_image: pageBackgroundImage } });
 });
 
 export default backgrounds;

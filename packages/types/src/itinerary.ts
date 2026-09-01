@@ -14,6 +14,8 @@ export interface Itinerary {
   palette_id?: string;
   /** Cover image path/URL. Presets use static paths now; uploaded photos can reuse this field later. */
   background_image?: string | null;
+  /** Full-page background image path/URL. */
+  page_background_image?: string | null;
   /** Feature switches belong to the itinerary, not to a visual theme. */
   packing_enabled?: boolean;
   /** Search/discovery metadata shared by every owner and publication of this itinerary. */

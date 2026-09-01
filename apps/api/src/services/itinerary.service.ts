@@ -82,9 +82,12 @@ export class ItineraryService {
       updated_at: now,
     };
 
+    // Write the legacy column during the compatibility period. Once the migration
+    // is present, the DB trigger mirrors it into theme_preset_id. Keeping this SQL
+    // compatible with the pre-migration schema makes rolling deploys safe.
     await this.db
-      .prepare('INSERT INTO itineraries (id, title, theme_id, theme_preset_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.theme_preset_id, itinerary.palette_id, itinerary.packing_enabled ? 1 : 0, '[]', '[]', '[]', 0, itinerary.memo, itinerary.password, itinerary.created_at, itinerary.updated_at)
+      .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.palette_id, itinerary.packing_enabled ? 1 : 0, '[]', '[]', '[]', 0, itinerary.memo, itinerary.password, itinerary.created_at, itinerary.updated_at)
       .run();
 
     if (itinerary.secret_settings) {
@@ -117,8 +120,8 @@ export class ItineraryService {
     }
     if (input.theme_preset_id !== undefined || input.theme_id !== undefined) {
       const themePresetId = normalizeThemePresetId(input.theme_preset_id ?? input.theme_id ?? DEFAULT_THEME_PRESET_ID);
-      fields.push('theme_id = ?', 'theme_preset_id = ?');
-      values.push(toLegacyThemeId(themePresetId), themePresetId);
+      fields.push('theme_id = ?');
+      values.push(toLegacyThemeId(themePresetId));
     }
     if (input.palette_id !== undefined) {
       fields.push('palette_id = ?');
@@ -218,8 +221,8 @@ export class ItineraryService {
     const themePresetId = normalizeThemePresetId(source.theme_preset_id ?? source.theme_id);
     await this.db.batch([
       this.db
-        .prepare('INSERT INTO itineraries (id, title, theme_id, theme_preset_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?)')
-        .bind(newId, `${source.title}（コピー）`, toLegacyThemeId(themePresetId), themePresetId, source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), source.memo, now, now),
+        .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?)')
+        .bind(newId, `${source.title}（コピー）`, toLegacyThemeId(themePresetId), source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), source.memo, now, now),
       ...stepStatements,
       this.db
         .prepare(`
@@ -273,8 +276,8 @@ export class ItineraryService {
       try {
         await this.db.batch([
           this.db
-          .prepare('INSERT INTO itineraries (id, title, theme_id, theme_preset_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?, ?)')
-            .bind(newId, publicTitle, toLegacyThemeId(themePresetId), themePresetId, source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, sourceId, now, now),
+          .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?, ?)')
+            .bind(newId, publicTitle, toLegacyThemeId(themePresetId), source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, sourceId, now, now),
           ...stepStatements,
         ]);
         return (await this.get(newId))!;
@@ -300,8 +303,8 @@ export class ItineraryService {
 
       await this.db.batch([
         this.db
-          .prepare('UPDATE itineraries SET title = ?, theme_id = ?, theme_preset_id = ?, palette_id = ?, packing_enabled = ?, prefecture_slugs = ?, areas = ?, tags = ?, metadata_initialized = 1, memo = ?, updated_at = ? WHERE id = ?')
-          .bind(publicTitle, toLegacyThemeId(themePresetId), themePresetId, source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, now, sharedId),
+          .prepare('UPDATE itineraries SET title = ?, theme_id = ?, palette_id = ?, packing_enabled = ?, prefecture_slugs = ?, areas = ?, tags = ?, metadata_initialized = 1, memo = ?, updated_at = ? WHERE id = ?')
+          .bind(publicTitle, toLegacyThemeId(themePresetId), source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, now, sharedId),
         this.db
           .prepare('DELETE FROM steps WHERE itinerary_id = ?')
           .bind(sharedId),

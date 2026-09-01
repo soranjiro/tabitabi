@@ -112,9 +112,9 @@ jobs:
           OUTPUT=$(pnpm wrangler d1 create "${PREVIEW_DB_NAME}" 2>&1)
           echo "$OUTPUT"
 
-          DATABASE_ID=$(printf '%s\n' "$OUTPUT" | sed -nE 's/.*database_id = "([^"]+)".*/\1/p' | head -1)
+          DATABASE_ID=$(printf '%s\n' "$OUTPUT" | sed -nE 's/.*database_id["[:space:]]*[:=][[:space:]]*"([0-9a-fA-F-]{36})".*/\1/p' | sed -n '1p')
           if [ -z "$DATABASE_ID" ]; then
-            DATABASE_ID=$(printf '%s\n' "$OUTPUT" | grep -Eo '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}' | head -1)
+            DATABASE_ID=$(printf '%s\n' "$OUTPUT" | grep -Eo '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}' | sed -n '1p' || true)
           fi
 
           if [ -z "$DATABASE_ID" ]; then

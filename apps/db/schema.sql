@@ -227,6 +227,24 @@ CREATE INDEX idx_money_fund_transactions_itinerary
   ON itinerary_money_fund_transactions(itinerary_id, occurred_on, created_at);
 CREATE INDEX idx_money_fund_transactions_member
   ON itinerary_money_fund_transactions(itinerary_id, member_id);
+CREATE TRIGGER set_official_itinerary_background_after_insert
+AFTER INSERT ON itineraries
+WHEN NEW.id IN (
+  'official-spring-source',
+  'official-summer-source',
+  'official-autumn-source',
+  'official-winter-source'
+)
+BEGIN
+  UPDATE itineraries
+  SET background_image = CASE NEW.id
+    WHEN 'official-spring-source' THEN '/hero/background-spring.avif'
+    WHEN 'official-summer-source' THEN '/hero/background-summer.avif'
+    WHEN 'official-autumn-source' THEN '/hero/background-autumn.avif'
+    WHEN 'official-winter-source' THEN '/hero/background-winter.avif'
+  END
+  WHERE id = NEW.id;
+END;
 CREATE TRIGGER sync_public_itinerary_background_after_insert
 AFTER INSERT ON itineraries
 WHEN NEW.source_itinerary_id IS NOT NULL

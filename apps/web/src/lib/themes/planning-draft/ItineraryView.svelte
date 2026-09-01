@@ -3,6 +3,8 @@
   import type { ItineraryResponse, Step, StepType } from "@tabitabi/types";
   import { STEP_TYPE } from "@tabitabi/types";
   import { auth } from "$lib/auth";
+  import { authApi } from "$lib/api/auth";
+  import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { getIsDemoMode } from "$lib/demo";
   import { getMemoText, updateMemoText } from "$lib/memo";
   import { getAvailableThemes } from "$lib/themes/catalog";
@@ -12,6 +14,14 @@
     updateStepSchedule,
     type SchedulePrecision,
   } from "$lib/planning/schedule";
+  import BottomNav from "../standard/core/components/BottomNav.svelte";
+  import MoreMenu from "../standard/core/components/MoreMenu.svelte";
+  import PasswordDialog from "../standard/core/components/PasswordDialog.svelte";
+  import ShareDialog from "../standard/core/components/ShareDialog.svelte";
+  import MoneyOverlay from "$lib/features/money/MoneyOverlay.svelte";
+  import PackingOverlay from "$lib/features/packing/PackingOverlay.svelte";
+  import { openPrintStudio } from "$lib/print";
+  import "../standard/core/styles/index.css";
 
   interface Props {
     itinerary: ItineraryResponse;
@@ -51,6 +61,15 @@
   let memoOpen = $state(true);
   let memoDraft = $state("");
   let themeChoicesOpen = $state(false);
+  let showMoreMenu = $state(false);
+  let showPasswordDialog = $state(false);
+  let showShareDialog = $state(false);
+  let showMoney = $state(false);
+  let showPacking = $state(false);
+  let isAuthenticating = $state(false);
+  let showCopyMessage = $state(false);
+
+  const isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
 
   let form = $state({
     title: "",
@@ -65,11 +84,64 @@
   onMount(() => {
     titleDraft = itinerary.title;
     memoDraft = getMemoText(itinerary.memo);
-    if (!onUpdateItinerary) return;
-    hasEditPermission = getIsDemoMode()
-      || (!itinerary.source_itinerary_id
-        && (!itinerary.is_password_protected || auth.hasEditPermission(itinerary.id)));
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
+    }
+    const token = auth.extractTokenFromUrl();
+    if (token && itinerary.is_password_protected) auth.setToken(itinerary.id, itinerary.title, token);
+    hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
+    if (!hasEditPermission && !itinerary.is_password_protected && !isSharedSnapshot) hasEditPermission = true;
+    if (hasEditPermission) auth.updateAccessTime(itinerary.id, itinerary.title);
   });
+
+  async function onPasswordAuth(password: string) {
+    await handlePasswordAuth({
+      shioriId: itinerary.id,
+      title: itinerary.title,
+      password,
+      onSuccess: () => {
+        hasEditPermission = true;
+        showPasswordDialog = false;
+      },
+      onError: (message) => alert(message),
+      setAuthenticating: (value) => (isAuthenticating = value),
+    });
+  }
+
+  async function attemptEditModeActivation() {
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
+    }
+    const token = auth.getToken(itinerary.id);
+    if (token && await authApi.verifyToken(itinerary.id)) {
+      hasEditPermission = true;
+      auth.updateAccessTime(itinerary.id, itinerary.title);
+      return;
+    }
+    if (!itinerary.is_password_protected && !isSharedSnapshot) {
+      hasEditPermission = true;
+      auth.updateAccessTime(itinerary.id, itinerary.title);
+    } else {
+      showPasswordDialog = true;
+    }
+  }
+
+  function handleEditModeToggle() {
+    if (isSharedSnapshot) return;
+    if (hasEditPermission) hasEditPermission = false;
+    else void attemptEditModeActivation();
+  }
+
+  async function copyShareLink(includeToken: boolean) {
+    const token = includeToken ? auth.getToken(itinerary.id) : null;
+    const url = `${window.location.origin}${window.location.pathname}${token ? `?token=${token}` : ""}`;
+    await navigator.clipboard.writeText(url);
+    showShareDialog = false;
+    showCopyMessage = true;
+    setTimeout(() => (showCopyMessage = false), 2000);
+  }
 
   function localDateKey(value: number): string {
     const date = new Date(value);
@@ -239,6 +311,7 @@
 <svelte:head><meta name="theme-color" content="#faf9f5" /></svelte:head>
 
 <div class="draft-theme">
+  {#if showCopyMessage}<div class="copy-message">コピーしました</div>{/if}
   <header class="draft-header">
     <a class="brand" href="/">たびたび</a>
     {#if editingTitle}
@@ -341,12 +414,63 @@
       </div>
     </div>
   {/if}
+
+  <BottomNav
+    onMoneyOpen={() => (showMoney = true)}
+    onPackingOpen={() => (showPacking = true)}
+    onMenuClick={() => (showMoreMenu = true)}
+  />
+
+  <MoneyOverlay
+    show={showMoney}
+    itineraryId={itinerary.id}
+    canEdit={hasEditPermission}
+    {steps}
+    onClose={() => (showMoney = false)}
+  />
+
+  <PackingOverlay
+    show={showPacking}
+    itineraryId={itinerary.id}
+    canEdit={hasEditPermission}
+    onClose={() => (showPacking = false)}
+  />
+
+  <PasswordDialog
+    show={showPasswordDialog}
+    {isAuthenticating}
+    onAuth={onPasswordAuth}
+    onClose={() => (showPasswordDialog = false)}
+  />
+
+  <ShareDialog
+    show={showShareDialog}
+    {hasEditPermission}
+    onCopyLink={copyShareLink}
+    onClose={() => (showShareDialog = false)}
+  />
+
+  <MoreMenu
+    show={showMoreMenu}
+    canConfigure={false}
+    canRequestEdit={!isSharedSnapshot}
+    {hasEditPermission}
+    onShare={() => {
+      if (hasEditPermission) showShareDialog = true;
+      else void copyShareLink(false);
+    }}
+    onPrint={openPrintStudio}
+    onSettings={() => {}}
+    onEditModeToggle={handleEditModeToggle}
+    onClose={() => (showMoreMenu = false)}
+  />
 </div>
 
 <style>
   :global(body) { margin: 0; background: #faf9f5; }
   :global(*) { box-sizing: border-box; }
-  .draft-theme { min-height: 100vh; padding-bottom: 5rem; color: #26332f; background: #faf9f5; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; }
+  .draft-theme { min-height: 100vh; padding-bottom: 7rem; color: #26332f; background: #faf9f5; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; --theme-primary: #2f6657; --theme-text: #26332f; --theme-text-light: #7a8581; --theme-border: #d9ddd9; --theme-line-color: #d9ddd9; }
+  .copy-message { position: fixed; z-index: 1100; top: 1rem; left: 50%; padding: .6rem .9rem; border-radius: 999px; color: #fff; background: #2f6657; font-size: .8rem; font-weight: 700; transform: translateX(-50%); }
   .draft-header { width: min(680px, calc(100% - 32px)); margin: 0 auto; padding: 1.5rem 0 .8rem; }
   .brand { display: inline-block; margin-bottom: 2rem; color: #2f6657; font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-decoration: none; }
   .title-button, .title-input { display: block; width: 100%; padding: 0; border: 0; color: #26332f; background: transparent; font: inherit; font-size: clamp(1.65rem, 6vw, 2.3rem); font-weight: 750; text-align: left; }

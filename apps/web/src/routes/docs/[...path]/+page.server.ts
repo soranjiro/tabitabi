@@ -21,7 +21,6 @@ export const entries: EntryGenerator = () => {
 				const relativePath = path.join(basePath, file.slice(0, -5)); // Remove .html
 				entries.push({ path: relativePath });
 			}
-		}
 	}
 
 	if (fs.existsSync(docsDir)) {
@@ -49,9 +48,10 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		throw error(404, 'Documentation page not found');
 	}
 
-	// Read the generated documentation HTML as-is.
+	// Read the HTML content
 	const htmlContent = fs.readFileSync(staticDocsPath, 'utf-8');
 
+	// Extract the full HTML as-is for now (we'll handle it in the component)
 	return {
 		htmlContent,
 		path: docPath

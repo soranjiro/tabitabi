@@ -31,10 +31,10 @@ test('deployed preview can save a home hero background from itinerary settings',
     await expect(page.getByRole('button', { name: title })).toBeVisible();
 
     const dismissMetadata = page.getByRole('button', { name: '今はしない' });
-    if (await dismissMetadata.isVisible().catch(() => false)) {
-      console.log('preview-background-step=dismiss-metadata-onboarding');
-      await dismissMetadata.click();
-    }
+    console.log('preview-background-step=dismiss-metadata-onboarding');
+    await expect(dismissMetadata).toBeVisible();
+    await dismissMetadata.click();
+    await expect(dismissMetadata).toBeHidden();
 
     console.log('preview-background-step=verify-edit-permission');
     await expect(page.getByRole('button', { name: '＋ 予定を追加' })).toBeVisible();
@@ -47,7 +47,7 @@ test('deployed preview can save a home hero background from itinerary settings',
 
     console.log('preview-background-step=open-background-picker');
     await page.getByRole('button', { name: '背景を選ぶ' }).click();
-    await expect(page.getByRole('heading', { name: '背景画像' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '背景画像' }).last()).toBeVisible();
 
     console.log('preview-background-step=choose-cover-and-page-backgrounds');
     const coverWinterOption = page.locator('label.standard-background-option').filter({ hasText: 'トップ画像・冬' }).first();

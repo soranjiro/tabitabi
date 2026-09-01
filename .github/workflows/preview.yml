@@ -190,6 +190,23 @@ jobs:
           fi
           echo "url=${URL}" >> $GITHUB_OUTPUT
 
+      - name: Install browser for preview smoke tests
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      - name: Exercise mobile help icon on deployed preview
+        run: pnpm --filter web exec playwright test tests/e2e/preview-help-icon.spec.ts --project=chromium
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ steps.pages-deploy.outputs.url }}
+
+      - name: Upload preview smoke screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-help-icon-pr-${{ needs.resolve-preview.outputs.pr_number }}
+          path: apps/web/test-results/help-icon-mobile.png
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Comment PR with preview URLs
         uses: actions/github-script@v7
         env:

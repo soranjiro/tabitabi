@@ -4,7 +4,22 @@ import { Env, Variables, getCurrentTimestamp } from '../utils';
 
 const backgrounds = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-const PRESET_PATTERN = /^\/itinerary-backgrounds\/[a-z0-9-]+\.avif$/;
+const ALLOWED_BACKGROUNDS = new Set([
+  '/hero/background-spring.avif',
+  '/hero/background-summer.avif',
+  '/hero/background-autumn.avif',
+  '/hero/background-winter.avif',
+  '/itinerary-backgrounds/sakura.avif',
+  '/itinerary-backgrounds/seaside.avif',
+  '/itinerary-backgrounds/meadow.avif',
+  '/itinerary-backgrounds/sunset.avif',
+  '/itinerary-backgrounds/snow.avif',
+  '/itinerary-backgrounds/twilight.avif',
+  '/itinerary-backgrounds/island.avif',
+  '/itinerary-backgrounds/mountain.avif',
+  '/itinerary-backgrounds/lake.avif',
+  '/itinerary-backgrounds/town.avif',
+]);
 
 backgrounds.get('/:itineraryId', async (c) => {
   const itineraryId = c.req.param('itineraryId');
@@ -43,7 +58,7 @@ backgrounds.put('/:itineraryId', optionalAuthMiddleware, async (c) => {
   }
 
   const value = body.background_image;
-  if (value !== null && (typeof value !== 'string' || !PRESET_PATTERN.test(value))) {
+  if (value !== null && (typeof value !== 'string' || !ALLOWED_BACKGROUNDS.has(value))) {
     return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Unknown background preset' } }, 400);
   }
 

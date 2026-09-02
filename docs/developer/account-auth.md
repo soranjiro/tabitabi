@@ -1,111 +1,50 @@
-# Firebaseアカウント認証
+# アカウント認証
 
-アカウント認証はFirebase Authentication、プロフィールと保存したしおりの関連はCloudflare D1で管理します。WorkerにFirebaseの秘密鍵は置かず、Firebase IDトークンをGoogleの公開証明書で検証します。
+アカウント認証はFirebase Authenticationを利用し、プロフィールや保存したしおりとの関連はAPIとD1で管理します。
 
-> [!IMPORTANT]
-> Firebaseのアカウントパスワードと、しおりごとの編集パスワードは別の認証です。前者はマイページ・公開・コピー、後者は鍵付きしおりの編集に使用します。
+しおりごとの編集パスワード・編集トークンとは別の認証です。
 
-## 1. Firebaseの初期設定
+## 構成
 
-1. Firebase ConsoleでSparkプロジェクトとWebアプリを作成します。課金設定は不要です。
-2. **Authentication > Sign-in method** で「メール/パスワード」を有効化します。
-3. **Authentication > Settings > Password policy** で最低8文字に設定します。
-4. **Authentication > Settings > Authorized domains** に本番のPagesドメインと`localhost`を追加します。
-5. 確認メールとパスワード再設定メールのテンプレートを日本語に整えます。
+- Web: Firebase Web SDKでログイン状態とIDトークンを扱う
+- API: Firebase IDトークンを検証してアカウント向けAPIを保護する
+- D1: ユーザーのプロフィールやしおりとの関連を保存する
+- しおり編集: アカウント認証とは別の仕組みで判定する
 
-WebのCloudflare Pages環境変数へ、Firebase Webアプリに表示される次の公開値を設定します。
+同じHTTP認証ヘッダーを利用する場合でも、用途の異なるトークンを曖昧に受け取らないようにしてください。
 
-```text
-PUBLIC_FIREBASE_API_KEY
-PUBLIC_FIREBASE_AUTH_DOMAIN
-PUBLIC_FIREBASE_PROJECT_ID
-PUBLIC_FIREBASE_APP_ID
-```
+## Web設定
 
-ローカル開発・ビルドでは、`apps/web/.env.example` を参考に `apps/web/.env` を用意し、Firebase ConsoleのWebアプリ設定から4つの値を入力してください。既存の`.env`がある場合は上書きせず、4項目だけ追加します。
+Webで必要なFirebase公開設定は、`apps/web/.env.example`と環境変数チェック処理を正本として確認してください。
 
-```bash
-cd apps/web
-test -f .env || cp .env.example .env
-```
+公開設定値はクライアント識別に必要な値です。サーバー専用の秘密値を`PUBLIC_`などクライアントへ公開される変数へ入れないでください。
 
-Webの`dev`と`build`は開始前に4項目を自動チェックします。不足している場合は、ビルド途中でSvelteKitの抽象的なimportエラーになる代わりに、不足項目を一覧表示して停止します。
+## API設定
 
-GitHub Actionsからデプロイする場合は、Repository Settings > Secrets and variables > Actionsに同じ名前で4つのSecretを登録します。`deploy.yml`（本番）と`preview.yml`（PR Preview）が、WebビルドとAPIのWrangler設定へ自動的に反映します。
+API側では、トークン検証に必要なプロジェクト情報を環境ごとに設定します。
 
-Firebase ConsoleのAuthorized domainsには、本番の`tabitabi.pages.dev`に加えて、Workflowが出力するPages Previewのホストも登録してください。
+秘密値はローカル設定やデプロイ先のsecretで管理し、リポジトリへコミットしません。
 
-APIの各Wrangler環境には同じプロジェクトIDを設定します。
+## 認証フロー
 
-```toml
-[vars]
-FIREBASE_PROJECT_ID = "your-firebase-project-id"
-```
+1. Webでアカウント認証を行う
+2. WebがIDトークンを取得する
+3. アカウント向けAPIへIDトークンを送る
+4. APIが署名、期限、対象プロジェクトなどを検証する
+5. 必要に応じてD1のプロフィールや保存情報を読み書きする
 
-Firebase Web設定値はクライアント識別子であり秘密鍵ではありません。Workerでは`JWT_SECRET`を「しおり編集用トークン」にだけ使用します。
-本番・プレビュー環境の`JWT_SECRET`は設定ファイルへ直書きせず、各環境にWrangler secretとして登録します。
+## しおり編集権限との分離
 
-```bash
-cd apps/api
-pnpm wrangler secret put JWT_SECRET --env production
-pnpm wrangler secret put JWT_SECRET --env preview
-```
+アカウントにログインしていることだけでは、個別のしおりを編集できるとは限りません。
 
-## 2. 既存ユーザーの移行
+反対に、しおりの編集権限を持っていても、そのしおりが自動的に特定アカウントへ所有されるわけではありません。
 
-作業前にD1をバックアップしてください。既存のD1 `users.id`をFirebase UIDとして取り込むため、ブックマークなどの関連データは変更されません。
+新しいAPIを追加するときは、アカウント認証としおり編集認証のどちらを要求するか明確にしてください。
 
-```bash
-cd apps/api
-umask 077
-mkdir -p .auth-migration
-pnpm wrangler d1 execute tabitabi --remote --env production --json \
-  --command "SELECT id, email, username, password_hash, created_at FROM users ORDER BY created_at" \
-  > .auth-migration/d1-users.json
+## テスト
 
-pnpm auth:migration:prepare .auth-migration/d1-users.json
-pnpm dlx firebase-tools login
-pnpm dlx firebase-tools auth:import .auth-migration/firebase-users.json \
-  --hash-algo=BCRYPT --project your-firebase-project-id
-```
+認証を伴うテストでは、実利用者のアカウントや本番データを使わないでください。必要なテスト用アカウントや環境変数は、E2E設定とCI設定を正本として確認します。
 
-生成処理はUID、メール重複、bcrypt形式を検証します。既存アカウントは`emailVerified: false`で取り込まれるため、利用者は以前のパスワードでログインしたあと、一度だけメール確認と都道府県設定を行います。移行後もD1の`password_hash`カラムは互換性のため残りますが、アプリはログインや変更に使用しません。
+## ドキュメント方針
 
-インポート成功件数がD1件数と一致することをFirebase Consoleで確認し、機密ファイルを削除します。
-
-```bash
-rm .auth-migration/d1-users.json .auth-migration/firebase-users.json
-```
-
-## 3. デプロイ順序
-
-```bash
-make migrate-up-remote
-cd apps/api
-pnpm deploy -- --env production
-cd ../web
-pnpm deploy
-```
-
-順序は「D1バックアップ → Firebaseインポート → D1マイグレーション → API → Web」です。初回リリースではD1の旧`password_hash`をロールバック用に残しますが、アプリは照合・更新に使用しません。
-
-## セキュリティ仕様
-
-- Firebaseのメール確認が完了するまでマイページ、公開設定、しおりコピーなどのアカウントAPIは利用不可
-- IDトークンの署名、期限、issuer、audience、UID、確認済みメールをWorkerで検証
-- 新規登録時と既存利用者の初回移行時に都道府県を必須入力
-- メール変更は新しいアドレスの確認後に反映
-- パスワード変更は現在のパスワードによる再認証が必要
-- 都道府県は非公開プロフィール情報
-
-Firebase ID tokenは`userAuthMiddleware`、しおり編集JWTは`optionalAuthMiddleware`で検証します。同じBearer headerを使用しますが、用途を取り違えないでください。
-
-## 認証を含むE2Eテスト
-
-共有しおりのコピー操作をE2Eで確認する場合は、メール確認とプロフィール設定が完了した専用テストアカウントを指定します。未指定の場合、認証が必要なケースだけがスキップされます。
-
-```bash
-E2E_FIREBASE_EMAIL=verified-test@example.com \
-E2E_FIREBASE_PASSWORD='test-account-password' \
-pnpm --filter web test:e2e -- shared-snapshot-flow.spec.ts
-```
+アカウント移行の手順、過去の認証方式、特定リリースのデプロイ順序はこのページへ残しません。現行の認証フローと開発時に必要な設定だけを記載します。

@@ -255,6 +255,84 @@
   transition: all 0.2s;
 }
 
+.standard-background-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .75rem;
+}
+
+.standard-background-settings-screen {
+  position: fixed;
+  z-index: 1101;
+  inset: 0;
+  overflow-y: auto;
+  background: var(--theme-bg, #fff);
+}
+
+.standard-background-picker-title {
+  margin: 1.5rem 0 .75rem;
+  color: var(--theme-text);
+  font-size: .95rem;
+}
+
+.standard-background-display-options {
+  display: grid;
+  gap: .65rem;
+  margin-top: .75rem;
+}
+
+.standard-background-option {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  gap: .55rem;
+  padding: .45rem .45rem .65rem;
+  border: 2px solid var(--theme-border);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--theme-text);
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+
+.standard-background-option:hover {
+  border-color: color-mix(in srgb, var(--theme-primary) 65%, var(--theme-border));
+  transform: translateY(-1px);
+}
+
+.standard-background-option:has(input:checked) {
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-primary) 12%, transparent);
+}
+
+.standard-background-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.standard-background-preview {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 9px;
+  object-fit: cover;
+  background: #eef1f5;
+}
+
+.standard-background-preview-none {
+  display: grid;
+  place-items: center;
+  color: var(--theme-text-light);
+  font-size: .78rem;
+  background: linear-gradient(135deg, #f5f6f8, #e6e9ee);
+}
+
+.standard-background-option strong {
+  padding: 0 .15rem;
+  font-size: .8rem;
+  line-height: 1.35;
+}
 
 /* Toggle styling */
 .standard-settings-page-toggle {
@@ -324,4 +402,7 @@
     /* Prevent zoom on iOS */
   }
 
+  .standard-background-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

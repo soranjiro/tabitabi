@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS "itineraries" (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   memo TEXT,
   password TEXT
-, source_itinerary_id TEXT, packing_enabled INTEGER NOT NULL DEFAULT 1 CHECK(packing_enabled IN (0, 1)), prefecture_slugs TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(prefecture_slugs)), areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)), tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)), metadata_initialized INTEGER NOT NULL DEFAULT 1 CHECK(metadata_initialized IN (0, 1)), palette_id TEXT NOT NULL DEFAULT 'sakura');
+, source_itinerary_id TEXT, packing_enabled INTEGER NOT NULL DEFAULT 1 CHECK(packing_enabled IN (0, 1)), prefecture_slugs TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(prefecture_slugs)), areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)), tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)), metadata_initialized INTEGER NOT NULL DEFAULT 1 CHECK(metadata_initialized IN (0, 1)), palette_id TEXT NOT NULL DEFAULT 'sakura', background_image TEXT, page_background_image TEXT, background_display TEXT NOT NULL DEFAULT 'cover'
+  CHECK(background_display IN ('cover', 'page')));
 CREATE TABLE IF NOT EXISTS "steps" (
   id TEXT PRIMARY KEY,
   itinerary_id TEXT NOT NULL,
@@ -237,3 +238,41 @@ CREATE TABLE itinerary_favorites (
 );
 CREATE INDEX idx_itinerary_favorites_user_id ON itinerary_favorites(user_id);
 CREATE INDEX idx_itinerary_favorites_itinerary_id ON itinerary_favorites(itinerary_id);
+CREATE TRIGGER set_official_itinerary_background_after_insert
+AFTER INSERT ON itineraries
+WHEN NEW.id IN (
+  'official-spring-source',
+  'official-summer-source',
+  'official-autumn-source',
+  'official-winter-source'
+)
+BEGIN
+  UPDATE itineraries
+  SET background_image = CASE NEW.id
+    WHEN 'official-spring-source' THEN '/hero/background-spring.avif'
+    WHEN 'official-summer-source' THEN '/hero/background-summer.avif'
+    WHEN 'official-autumn-source' THEN '/hero/background-autumn.avif'
+    WHEN 'official-winter-source' THEN '/hero/background-winter.avif'
+  END
+  WHERE id = NEW.id;
+END;
+CREATE TRIGGER sync_public_itinerary_background_after_insert
+AFTER INSERT ON itineraries
+WHEN NEW.source_itinerary_id IS NOT NULL
+BEGIN
+  UPDATE itineraries
+  SET background_image = (SELECT background_image FROM itineraries WHERE id = NEW.source_itinerary_id),
+      background_display = (SELECT background_display FROM itineraries WHERE id = NEW.source_itinerary_id),
+      page_background_image = NULL
+  WHERE id = NEW.id;
+END;
+CREATE TRIGGER sync_public_itinerary_background_after_update
+AFTER UPDATE OF background_image, background_display ON itineraries
+WHEN NEW.source_itinerary_id IS NULL
+BEGIN
+  UPDATE itineraries
+  SET background_image = NEW.background_image,
+      background_display = NEW.background_display,
+      page_background_image = NULL
+  WHERE source_itinerary_id = NEW.id;
+END;

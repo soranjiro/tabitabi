@@ -53,7 +53,7 @@ INSERT INTO steps (
   ('official-spring-public-7', 'official-spring-public', '宇治の平等院鳳凰堂', '1788235200000', '1788242400000', '宇治市', '{"text":"世界遺産を訪問。抹茶スイーツも楽しむ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-spring-public-breakfast', 'official-spring-public', '朝食：和定食（宿泊先）', '1788132600000', '1788135300000', '京都駅前', '{"text":"ホテル宿泊時は朝食バイキング付き"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-spring-public-concurrent1', 'official-spring-public', '清水焼の絵付け体験', '1788048000000', '1788053400000', '五条坂', '{"text":"陶芸体験。予約推奨"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-concurrent2', 'official-spring-public', 'ガイディングツアー：清水寺', '1788048000000', '1788055200000', '栃木県日光市', '{"text":"別ルートでのガイド付き参拝プランも可"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
+  ('official-spring-public-concurrent2', 'official-spring-public', 'ガイディングツアー：清水寺', '1788048000000', '1788055200000', '京都市東山区', '{"text":"別ルートでのガイド付き参拝プランも可"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-spring-public-afternoon', 'official-spring-public', '京都駅でお土産購入', '1788244200000', '1788247800000', '京都駅', '{"text":"帰路前に京都限定のお菓子などを購入"}', NULL, 'normal:shopping', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
 
 INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at)
@@ -267,7 +267,7 @@ INSERT INTO steps (
   ('official-winter-public-cooking-class', 'official-winter-public', '和菓子作り体験', '1788501600000', '1788508800000', '東京', '{"text":"季節の和菓子を手作りする"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-winter-public-farewell-dinner', 'official-winter-public', '旅の締めくくりの夕食', '1788602400000', '1788607800000', '東京', '{"text":"最後のお土産話とともにディナー"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-winter-public-airport-transfer', 'official-winter-public', '羽田空港へ移動', '1788649200000', '1788654600000', '東京→羽田空港', '{"text":"最終日はゆっくり空港へ向かう"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-flight-home', 'official-winter-public', '帰りのフライト', '1788661800000', '1788669000000', '羽田空港', '{"text":"あたたかい場所へ帰路につく"}', NULL, 'transport:plane', '0', '2026-08-30T00:00:00.000Z');
+  ('official-winter-public-flight-home', 'official-winter-public', '帰りのフライト', '1788661800000', '1788669000000', '羽田空港', '{"text":"あたたかい場所へ帰路につく"}', NULL, 'transport:plane', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
 
 INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at)
 VALUES ('official-user', 'official-winter-source', 1, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');

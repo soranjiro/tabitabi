@@ -4,20 +4,11 @@
   import { backgroundApi } from "$lib/api/background";
   import type { ItineraryResponse } from "@tabitabi/types";
 
-  const FULL_PAGE_PUBLIC_ITINERARY_IDS = new Set([
-    "official-spring-public",
-    "official-summer-public",
-  ]);
-
   let backgroundImage = $state<string | null>(null);
   let backgroundDisplay = $state<'cover' | 'page'>('cover');
   let loadedId = $state<string | null>(null);
 
   const itinerary = $derived(($page.data?.itinerary ?? null) as ItineraryResponse | null);
-
-  function resolveBackgroundDisplay(id: string, display: 'cover' | 'page') {
-    return FULL_PAGE_PUBLIC_ITINERARY_IDS.has(id) ? 'page' : display;
-  }
 
   $effect(() => {
     const id = itinerary?.id;
@@ -59,7 +50,7 @@
       const detail = (event as CustomEvent<{ itineraryId: string; backgroundImage: string | null; backgroundDisplay: 'cover' | 'page' }>).detail;
       if (!detail || detail.itineraryId !== itinerary?.id) return;
       backgroundImage = detail.backgroundImage;
-      backgroundDisplay = resolveBackgroundDisplay(detail.itineraryId, detail.backgroundDisplay);
+      backgroundDisplay = detail.backgroundDisplay;
     };
     window.addEventListener("tabitabi:background-changed", handleBackgroundChanged);
     return () => window.removeEventListener("tabitabi:background-changed", handleBackgroundChanged);
@@ -69,7 +60,7 @@
     try {
       const settings = await backgroundApi.get(id);
       backgroundImage = settings.background_image;
-      backgroundDisplay = resolveBackgroundDisplay(id, settings.background_display);
+      backgroundDisplay = settings.background_display;
     } catch {
       backgroundImage = null;
     }

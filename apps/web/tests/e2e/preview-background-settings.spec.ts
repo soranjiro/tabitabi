@@ -30,11 +30,8 @@ test('deployed preview can save a home hero background from itinerary settings',
     await page.goto(`/itineraries/${itineraryId}?token=${encodeURIComponent(editToken)}`);
     await expect(page.getByRole('button', { name: title })).toBeVisible();
 
-    const dismissMetadata = page.getByRole('button', { name: '今はしない' });
-    console.log('preview-background-step=dismiss-metadata-onboarding');
-    await expect(dismissMetadata).toBeVisible();
-    await dismissMetadata.click();
-    await expect(dismissMetadata).toBeHidden();
+    console.log('preview-background-step=verify-metadata-onboarding-is-disabled');
+    await expect(page.getByRole('button', { name: '今はしない' })).toBeHidden();
 
     console.log('preview-background-step=verify-edit-permission');
     await expect(page.getByRole('button', { name: '＋ 予定を追加' })).toBeVisible();

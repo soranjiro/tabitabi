@@ -27,7 +27,8 @@
   import { MONEY_NAVIGATION_CONTEXT, type MoneyNavigationContext } from "$lib/features/money/navigation";
   import PackingOverlay from "$lib/features/packing/PackingOverlay.svelte";
   import SettingsDialog from "./components/SettingsDialog.svelte";
-  import MetadataDialog from "./components/MetadataDialog.svelte";
+  import ItineraryOnboardingPopups from "$lib/features/itinerary-onboarding/ItineraryOnboardingPopups.svelte";
+  import { itineraryCreationPopups } from "$lib/features/itinerary-onboarding/config";
   import { renderMarkdown } from "./utils/markdown";
   import { type ViewMode } from "./utils/storage";
   import { parseMemoData } from "$lib/memo";
@@ -210,7 +211,8 @@
     }
 
     const metadataRequested = new URLSearchParams(window.location.search).get("metadata") === "1";
-    if (hasEditPermission && !isSharedSnapshot && (!itinerary.metadata_initialized || metadataRequested)) {
+    const shouldShowMetadataOnboarding = itineraryCreationPopups.metadata.enabled && !itinerary.metadata_initialized;
+    if (hasEditPermission && !isSharedSnapshot && (metadataRequested || shouldShowMetadataOnboarding)) {
       showMetadataDialog = true;
       if (metadataRequested) window.history.replaceState({}, "", window.location.pathname);
     }
@@ -634,13 +636,13 @@
     onClose={() => (showSettingsDialog = false)}
   />
 
-  <MetadataDialog
-    show={showMetadataDialog}
+  <ItineraryOnboardingPopups
+    showMetadata={showMetadataDialog}
     {prefectureSlugs}
     areas={itineraryAreas}
     tags={itineraryTags}
-    onSave={saveMetadata}
-    onClose={dismissMetadata}
+    onSaveMetadata={saveMetadata}
+    onCloseMetadata={dismissMetadata}
   />
 
   <FloatingActions {hasEditPermission} onAddStep={openAddStepForm} />

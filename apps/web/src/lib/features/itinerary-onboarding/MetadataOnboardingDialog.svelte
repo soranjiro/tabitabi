@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Dialog from "./Dialog.svelte";
+  import Dialog from "$lib/themes/standard/core/components/Dialog.svelte";
   import ItineraryMetadataFields from "$lib/features/itinerary-metadata/ItineraryMetadataFields.svelte";
 
   interface Props {

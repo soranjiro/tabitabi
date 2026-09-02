@@ -290,7 +290,11 @@ SET palette_id = CASE
   WHEN id LIKE 'official-summer-%' THEN 'ocean'
   WHEN id LIKE 'official-autumn-%' THEN 'autumn'
   WHEN id LIKE 'official-winter-%' THEN 'snow'
-END
+END,
+    background_display = CASE
+      WHEN id LIKE 'official-spring-%' OR id LIKE 'official-summer-%' THEN 'page'
+      ELSE background_display
+    END
 WHERE id LIKE 'official-spring-%'
    OR id LIKE 'official-summer-%'
    OR id LIKE 'official-autumn-%'

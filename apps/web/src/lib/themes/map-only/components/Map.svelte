@@ -185,10 +185,11 @@
         style: MAP_STYLE,
         center: [139.7671, 35.6812],
         zoom: 11,
-        attributionControl: true,
+        attributionControl: false,
       });
 
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+      map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
       map.on("click", (event: any) => onMapClick?.(event.lngLat.lat, event.lngLat.lng));
       map.on("load", () => {
         loaded = true;

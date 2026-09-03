@@ -5,6 +5,7 @@ describe('theme catalog', () => {
   it('offers view-based presets', () => {
     expect(getAvailableThemes().map((theme) => theme.id)).toEqual([
       'planning-draft',
+      'map-only',
       'standard-spring',
       'standard-accordion',
       'standard-summer',
@@ -15,7 +16,7 @@ describe('theme catalog', () => {
 
   it('binds each preset to one itinerary view', () => {
     expect(getAvailableThemes().map((theme) => theme.viewMode)).toEqual([
-      'list', 'dayCard', 'accordion', 'list', 'week', 'month',
+      'list', 'list', 'dayCard', 'accordion', 'list', 'week', 'month',
     ]);
   });
 });

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getContext, onMount, tick } from "svelte";
-  import type { Step, StepType } from "@tabitabi/types";
+  import type { PlaceStructuredData, Step, StepType } from "@tabitabi/types";
   import type { MoneyData, MoneyItem } from "@tabitabi/types";
   import {
     getStepDate,
@@ -14,7 +14,9 @@
   import { renderMarkdown } from "../utils/markdown";
   import {
     getMemoText,
+    mergeMemoData,
     parseMemoData,
+    removeMemoFields,
     stringifyMemoData,
     updateMemoText,
   } from "$lib/memo";
@@ -23,6 +25,7 @@
   import { moneyApi } from "$lib/api/money";
   import { demoStorage, getIsDemoMode } from "$lib/demo";
   import { MONEY_NAVIGATION_CONTEXT, type MoneyNavigationContext } from "$lib/features/money/navigation";
+  import PlaceInput from "$lib/components/PlaceInput.svelte";
   import "../styles/EventDetailDialog.css";
 
   interface Props {
@@ -99,6 +102,7 @@
   let endUserChanged = $state(false);
   let originalDuration = $state(60);
   let editIsAllDay = $state(step?.is_all_day || false);
+  let selectedGooglePlace = $state<PlaceStructuredData | null>(null);
   let linkHelperOpen = $state(false);
   let linkBrowserUrl = $state("");
   let bookingCard = $derived(step ? getBookingCard(step) : null);
@@ -109,6 +113,13 @@
   const moneyNavigation = getContext<MoneyNavigationContext | undefined>(MONEY_NAVIGATION_CONTEXT);
   const yen = new Intl.NumberFormat("ja-JP");
   const formatYen = (value: number) => `¥${yen.format(value)}`;
+
+  function getSavedGooglePlace(notes: string | null | undefined): PlaceStructuredData | null {
+    const place = parseMemoData(notes).google_place;
+    return place && typeof place === "object" && "placeId" in place
+      ? place as PlaceStructuredData
+      : null;
+  }
 
   async function loadLinkedBudgetItems() {
     if (!step) return;
@@ -325,6 +336,7 @@
       Math.round((referenceEndAt - referenceStartAt) / 60000),
     );
     editIsAllDay = step?.is_all_day ?? false;
+    selectedGooglePlace = getSavedGooglePlace(step?.notes);
   }
 
   $effect(() => {
@@ -380,6 +392,7 @@
     editEndMinute = "00";
     startUserChanged = false;
     endUserChanged = false;
+    selectedGooglePlace = getSavedGooglePlace(step.notes);
   }
 
   $effect(() => {
@@ -466,7 +479,10 @@
     delete noteData.booking_url;
     // 標準テーマで日時を保存した時点で、プランニングテーマの未定状態は完了扱いにする。
     delete noteData.tabitabi_schedule;
-    const notes = stringifyMemoData(noteData);
+    const sanitizedNotes = stringifyMemoData(noteData);
+    const notes = selectedGooglePlace
+      ? mergeMemoData(sanitizedNotes, { google_place: selectedGooglePlace })
+      : removeMemoFields(sanitizedNotes, ["google_place"]);
     const link = editedStep.link?.trim() || null;
 
     let startAt: number;
@@ -705,12 +721,16 @@
           </div>
           <div class="standard-form-field">
             <label for="location-input" class="standard-form-label">場所</label>
-            <input
+            <PlaceInput
               id="location-input"
-              type="text"
-              bind:value={editedStep.location}
-              placeholder="場所を入力"
-              class="standard-input"
+              value={editedStep.location}
+              selectedPlace={selectedGooglePlace}
+              onValueChange={(location) => {
+                editedStep.location = location;
+              }}
+              onPlaceSelect={(place) => {
+                selectedGooglePlace = place;
+              }}
             />
           </div>
           <div class="standard-form-field standard-form-field-wide">

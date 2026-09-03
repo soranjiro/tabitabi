@@ -27,11 +27,20 @@ pnpm dev
 ### 実装
 
 | ガイド | 内容 |
+<<<<<<< HEAD
 |---|---|
 | [機能開発](feature-development.md) | データ、API、Webをまたぐ機能追加 |
 | [テーマ開発](theme-development.md) | テーマや表示の追加・変更 |
 | [テスト](testing.md) | テスト方針と実行方法 |
 | [ドキュメントデザイン](docs-design-guidelines.md) | `/docs` の情報設計と表現ルール |
+| [Google POI サジェスト計画](google-poi-place-data-plan.md) | Google Places を使った場所入力・構造化データ保存の実装計画 |
+=======
+|--------|------|
+| [機能開発](feature-development.md) | 新機能の追加方法・API連携 |
+| [テーマ開発](theme-development.md) | 新しいテーマの作り方 |
+| [テスト](testing.md) | テストの書き方・実行方法 |
+| [Google POI サジェスト計画](google-poi-place-data-plan.md) | Google Places を使った場所入力・構造化データ保存の実装計画 |
+>>>>>>> 292e9c1 (docs: plan Google POI place suggestions)
 
 ## ドキュメント更新の原則
 

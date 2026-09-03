@@ -145,13 +145,14 @@ test('deployed preview supports mobile trip-map candidate planning', async ({ pa
     await expect(page.getByRole('heading', { name: '浅草寺' })).toBeVisible();
 
     console.log('preview-trip-map-step=verify-map');
-    await expect(page.locator('.maplibregl-canvas')).toBeVisible({ timeout: 30_000 });
+    const mapCanvas = page.locator('.maplibregl-canvas');
+    await expect(mapCanvas).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('button', { name: '浅草寺' })).toBeVisible({ timeout: 30_000 });
     await page.screenshot({ path: 'test-results/trip-map-mobile-initial.png', fullPage: false });
 
     console.log('preview-trip-map-step=add-candidate');
-    const map = page.getByLabel('旅行候補マップ');
-    await map.click({ position: { x: 170, y: 250 } });
-    await expect(page.getByRole('dialog', { name: '候補を追加' })).toBeVisible();
+    await mapCanvas.click({ position: { x: 56, y: 300 } });
+    await expect(page.getByRole('dialog', { name: '候補を追加' })).toBeVisible({ timeout: 10_000 });
     await page.getByLabel('場所の名前').fill('上野公園');
     await page.getByLabel('メモ').fill('午後に散歩したい');
     await page.getByRole('button', { name: '候補に保存' }).click();

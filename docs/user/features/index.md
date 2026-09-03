@@ -1,35 +1,34 @@
 # 機能一覧
 
-## ホーム画面
+## ホーム・端末
 
 | 機能 | 説明 |
 |---|---|
-| [最近のしおり](home/recent-items.md) | 同じブラウザで最近開いたしおり |
-| [共有URLを開く](home/url-sharing.md) | 「追加」タブからURLを開く |
-| [PWA](home/pwa.md) | ホーム画面へインストール |
+| [PWA](home/pwa.md) | 推奨。ホーム画面やアプリ一覧から起動 |
+| [最近のしおり](home/recent-items.md) | 最近開いたしおりへ戻る |
+| [共有URLを開く](home/url-sharing.md) | 受け取ったしおりURLを開く |
 
-## 共通機能
+## しおりの共通機能
 
 | 機能 | 説明 |
 |---|---|
-| [編集パスワードと編集モード](common/auth.md) | しおりごとの編集権限 |
-| [アカウントとマイページ](common/account.md) | Firebaseログイン、保存、プロフィール、公開 |
+| [編集パスワードと編集モード](common/auth.md) | しおりの編集権限を管理 |
+| [アカウントとマイページ](common/account.md) | 保存、プロフィール、公開など |
 | [メモ](common/memo.md) | しおり全体のメモ |
-| [共有リンク・公開・コピー](common/sharing.md) | 閲覧・編集・公開用リンク |
-| [旅行メンバー](common/members.md) | 持ち物とお金で使うメンバー |
-| [表示モード](common/view-modes.md) | 日カード、リスト、月、週 |
-| [持ち物リスト](common/packing.md) | 自分専用、各自、共通の持ち物 |
-| [お金の管理](common/money.md) | 予算、支出予定、立替、精算 |
-| [印刷・PDF](common/print-pdf.md) | 3種類の印刷デザイン |
+| [共有リンク・公開・コピー](common/sharing.md) | 用途に合わせた共有 |
+| [旅行メンバー](common/members.md) | 旅に参加する人を管理 |
+| [表示モード](common/view-modes.md) | 旅程の見せ方を選択 |
+| [持ち物リスト](common/packing.md) | 個人・各自・共通の持ち物 |
+| [お金の管理](common/money.md) | 予算、支出、立替、精算 |
+| [印刷・PDF](common/print-pdf.md) | 印刷またはPDF保存 |
 
-表示モード、持ち物、お金、旅行メンバーは現在、標準の季節テーマで利用できます。
-印刷・PDFは標準テーマとMap Onlyに操作入口があります。
+テーマや表示によって、機能の操作入口や対応範囲が異なる場合があります。利用できる選択肢は実際のアプリ画面を基準にしてください。
 
-## テーマ機能
+## 表示に関する機能
 
 | 機能 | 説明 |
 |---|---|
-| [Markdown](themes/markdown.md) | メモと予定ノートを装飾 |
-| [シークレットモード](themes/secret-mode.md) | 開始時刻が近づくまで予定内容を隠す |
+| [Markdown](themes/markdown.md) | 対応するメモやノートを整形 |
+| [シークレットモード](themes/secret-mode.md) | 対応する画面で予定内容の表示時刻を調整 |
 
-テーマごとの全体像は[テーマの選び方](../themes.md)をご覧ください。
+全体像は[テーマと表示の選び方](../themes.md)も参照してください。

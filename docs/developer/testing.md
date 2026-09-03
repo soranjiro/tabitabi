@@ -1,124 +1,72 @@
 # テスト
 
-APIとWebの通常テストはVitest、ブラウザ操作を含むE2EはPlaywrightを使用します。
+APIとWebの通常テストはVitest、ブラウザ操作を含むE2EはPlaywrightを利用します。
 
 ## コマンド
 
 ```bash
-# APIとWebの通常テスト
 pnpm test
-
-# ワークスペース別
 pnpm test:api
 pnpm test:web
-
-# watch mode
-pnpm --filter api test
-pnpm --filter web test
-
-# E2E
 pnpm --filter web test:e2e
-pnpm --filter web test:e2e:ui
 ```
 
-特定ファイルだけを実行する例です。
+より細かいscript名や実行対象は、ルートと各workspaceの`package.json`を正本として確認してください。
 
-```bash
-pnpm --filter api exec vitest run test/money.test.ts
-pnpm --filter web exec vitest run src/lib/print/model.test.ts
-pnpm --filter web test:e2e -- shared-snapshot-flow.spec.ts
-```
+## テストの考え方
 
-## テストの配置
+### API
 
-| 種類 | 場所 | 実行環境 |
-|---|---|---|
-| API integration | `apps/api/test/*.test.ts` | `@cloudflare/vitest-pool-workers` + ローカルD1 |
-| API script | `apps/api/scripts/*.node-test.mjs` | Node test runner |
-| Web unit | `apps/web/src/**/*.test.ts` | Vitest + jsdom |
-| Web component / view | `apps/web/src/**/*.spec.ts` | Vitest + jsdom |
-| E2E | `apps/web/tests/e2e/*.spec.ts` | Playwright / Chromium |
+routeだけでなく、入力検証、認証、権限、DB制約、レスポンス変換まで確認します。
 
-APIの `test:run` はVitestのあとに `node --test scripts/*.node-test.mjs` も実行します。
+特に次を優先します。
 
-## APIテスト
+- 正常系と代表的なエラー
+- 存在しないID
+- 認証情報なし・誤った認証情報
+- 閲覧専用データへの書き込み
+- 外部キーや削除時の整合性
+- 金額、日時、URLなどの境界値
 
-`apps/api/vitest.config.ts` は `apps/api/wrangler.test.toml` とD1マイグレーションを読み込みます。
-各テストはWorkerへリクエストし、必要に応じてD1へfixtureを投入します。ルートだけでなく、
-認証、入力検証、DB制約、レスポンスからの秘密情報除外まで確認してください。
+### Web
 
-最低限確認する観点:
+計算や状態遷移は可能な限りコンポーネントから分離し、unit testで確認します。
 
-- 正常系のstatus codeと `{ success, data }`
-- Zodまたはルート固有検証による400
-- 存在しないIDの404
-- 鍵付きしおりでJWTなし／別しおりJWTを使った場合の403
-- 公開スナップショットへの書き込み拒否
-- 外部キー、CASCADE、複合主キー、機能固有の整合性
+UIテストでは、利用者が実際に行う操作と、閲覧・編集など権限による表示差を確認してください。
 
-マイグレーションを追加したら、テスト環境では先頭から全ファイルが適用されます。既存migrationを
-書き換えて通すのではなく、新しいmigrationを追加してください。
+### E2E
 
-## Webテスト
+E2Eでは、主要な利用フローをブラウザ上で確認します。テーマや機能の内部ファイル名をドキュメントへ列挙せず、対象実装の近くにあるtestと既存specを参照してください。
 
-純粋な計算や状態遷移はSvelteコンポーネントから分離し、近くの `.test.ts` で検証します。
-現在の例には次があります。
+認証が必要なE2Eでは専用のテスト設定を利用し、本番利用者のアカウントや実データを使わないでください。
 
-- APIクライアントの認証ヘッダー: `src/lib/api/client.test.ts`
-- しおり編集トークン: `src/lib/auth/auth.test.ts`
-- Markdownサニタイズ: `standard-seasons/shared/utils/markdown.test.ts`
-- 週表示の配置: `standard-seasons/shared/views/WeekView.test.ts`
-- 印刷ページ分割: `src/lib/print/model.test.ts`
-- 要望フォーム: `src/lib/feedback/feedback.test.ts`
+## PWAの確認
 
-日時テストではローカルタイムゾーンによる差を避け、入力と期待値のタイムゾーンを明示します。
+Web変更では、通常のブラウザ表示に加えてPWA利用も考慮します。
 
-## E2E
+- manifestが有効であること
+- Service Workerが登録・更新されること
+- standalone表示でレイアウトが崩れないこと
+- safe areaが必要な端末で操作領域が隠れないこと
+- キャッシュが残った状態でも更新後の画面が動くこと
+- オフライン時に誤解を招く保存操作を行わないこと
 
-Playwright設定は `apps/web/playwright.config.ts`、テストは `apps/web/tests/e2e/` にあります。
-開発サーバーを自動起動する設定に従って実行してください。テーマ別のE2Eは時間がかかるため、
-修正対象のspecを先に実行し、最後に必要な範囲を広げます。
+自動化しにくい項目は、変更の影響範囲に応じて手動確認します。
 
-Firebaseログインが必要な共有コピーのE2Eでは、メール確認とプロフィール設定が済んだ専用
-アカウントを環境変数で指定します。未指定の場合、認証必須部分はskipされます。
+## DB変更
 
-```bash
-E2E_FIREBASE_EMAIL=verified-test@example.com \
-E2E_FIREBASE_PASSWORD='test-account-password' \
-pnpm --filter web test:e2e -- shared-snapshot-flow.spec.ts
-```
+マイグレーションを追加した場合は、空のローカルDBへ先頭から適用できることを確認します。適用済みマイグレーションを書き換えてテストを通さないでください。
 
-本番利用者のアカウントや実データをE2Eに使わないでください。
+## ドキュメント
 
-## ドキュメントとビルドの確認
-
-docsだけの変更でも、変換が通ることを確認します。
+`docs/`を変更した場合は、ドキュメント生成が通ることを確認します。
 
 ```bash
 pnpm --filter web build:docs
 ```
 
-Web全体のビルドにはFirebase公開設定が必要です。
-
-```bash
-pnpm build
-```
-
-## CI
-
-`.github/workflows/ci.yml` は `main` 向けPull Requestで次を実行します。
-
-1. Node.js 22とpnpmをセットアップ
-2. `pnpm install --frozen-lockfile`
-3. APIテスト
-4. Webテスト
-5. Webを含む全体ビルド
-
-Markdownと `docs/**` だけの変更は現在CIのpaths-ignore対象です。そのため、docs生成確認は
-ローカルで実行してから提出してください。
+CIの対象条件はworkflowを正本とします。特定時点のpaths設定などをこのページへ固定しません。
 
 ## カバレッジ
 
-APIには `@vitest/coverage-v8` が入っていますが、リポジトリ共通のカバレッジscriptや固定の
-合格率はまだ定義していません。数値だけを目的にせず、権限境界、公開変換、金額計算、日時計算、
-マイグレーションのような壊れたときの影響が大きい箇所を優先します。
+固定の数値だけを目的にせず、壊れたときの影響が大きい境界を優先してテストしてください。カバレッジ設定や閾値がある場合は、テスト設定ファイルを正本とします。

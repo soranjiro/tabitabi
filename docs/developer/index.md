@@ -2,8 +2,6 @@
 
 「たびたび」の開発に参加するためのガイドです。
 
----
-
 ## クイックスタート
 
 ```bash
@@ -13,72 +11,36 @@ pnpm install
 pnpm dev
 ```
 
-詳しくは **[はじめに](getting-started.md)** をご覧ください。
+詳しくは[開発を始める](getting-started.md)を参照してください。
 
----
+## ガイド
 
-## やりたいことから探す
-
-### 環境構築・全体像を知りたい
+### 環境構築と全体像
 
 | ガイド | 内容 |
-|--------|------|
-| [はじめに](getting-started.md) | 開発環境セットアップ・起動方法 |
-| [アーキテクチャ](architecture.md) | プロジェクト構造・技術スタック |
-| [データベース](database.md) | 現行D1スキーマ・マイグレーション |
-| [アカウント認証](account-auth.md) | Firebase認証・既存アカウント移行 |
+|---|---|
+| [開発を始める](getting-started.md) | セットアップ、起動、開発時の基本ルール |
+| [アーキテクチャ](architecture.md) | Web、API、DB、PWAの構成 |
+| [データベース](database.md) | スキーマの正本と設計方針 |
+| [アカウント認証](account-auth.md) | 認証の構成と環境設定 |
 
-### 機能を追加・修正したい
+### 実装
 
 | ガイド | 内容 |
-|--------|------|
-| [機能開発](feature-development.md) | 新機能の追加方法・API連携 |
-| [テーマ開発](theme-development.md) | 新しいテーマの作り方 |
-| [テスト](testing.md) | テストの書き方・実行方法 |
+|---|---|
+| [機能開発](feature-development.md) | データ、API、Webをまたぐ機能追加 |
+| [テーマ開発](theme-development.md) | テーマや表示の追加・変更 |
+| [テスト](testing.md) | テスト方針と実行方法 |
+| [ドキュメントデザイン](docs-design-guidelines.md) | `/docs` の情報設計と表現ルール |
+
+## ドキュメント更新の原則
+
+ドキュメントには、現行仕様として必要な内容を記載します。移行履歴、過去の不具合、特定PRで修正した経緯などは原則として残しません。
+
+実装の一覧やバージョンなど変化しやすい情報は、ソースコードや設定ファイルを正本として参照し、ドキュメントへ重複して固定しすぎないようにします。
 
 ## コントリビューション
 
-プルリクエストは大歓迎です！
+変更はIssueやPull Requestで提案できます。実装変更では、必要なテストとドキュメント更新も同じ変更に含めてください。
 
-> [!TIP]
-> **ドキュメントの改善だけでも大歓迎です！** 誤字脱字の修正、説明のわかりやすさ向上、翻訳、実装変更に追従する更新など、コードを書かなくてもプロジェクトに貢献できます。
-
-### 貢献の流れ
-
-1. [GitHub Issues](https://github.com/soranjiro/tabitabi/issues)で課題を確認（または作成）
-2. リポジトリをフォーク
-3. ブランチを作成（`feature/`, `fix/`, `docs/`など）
-4. コードを書く + テストを追加（ドキュメントの場合はテスト不要）
-5. Pull Requestを作成
-
-### ブランチ命名規則
-
-| Prefix | 用途 |
-|--------|------|
-| `feature/` | 新機能 |
-| `fix/` | バグ修正 |
-| `docs/` | ドキュメント |
-| `refactor/` | リファクタリング |
-| `test/` | テスト追加 |
-
-### コミットメッセージ
-
-```
-<type>(<scope>): <subject>
-```
-
-例: `feat(theme): add winter theme`
-
-詳しくは **[コントリビューションガイド](https://github.com/soranjiro/tabitabi/blob/main/CONTRIBUTING.md)** をご覧ください。
-
----
-
-## 困ったときは
-
-- **[GitHub Discussions](https://github.com/soranjiro/tabitabi/discussions)** で質問
-- **[よくある質問](../user/faq.md)** を確認
-- Issue にコメントして相談
-
----
-
-一緒に「たびたび」をより良くしましょう！ 🚀
+詳しくは[CONTRIBUTING.md](https://github.com/soranjiro/tabitabi/blob/main/CONTRIBUTING.md)を参照してください。

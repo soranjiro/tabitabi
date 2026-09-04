@@ -49,6 +49,7 @@ export const PALETTES: PaletteOption[] = [
 
 const THEME_CATALOG: ThemePresetOption[] = [
   { id: "planning-draft", name: "プランニング", description: "候補から日時を決める、計画中のためのテーマ", phrase: "まだ決まっていない旅の計画", viewMode: "list", defaultPaletteId: "neutral", enabled: true },
+  { id: "map-only", name: "旅先マップ", description: "地図に候補をピンして、行き先を決めながら予定を作る", phrase: "地図で決める旅行計画", viewMode: "list", defaultPaletteId: "neutral", enabled: true },
   { id: "standard-spring", name: "日カード", description: "日付タブで切り替える、親しみやすいカード", phrase: "日ごとの旅行計画", viewMode: "dayCard", defaultPaletteId: "sakura", enabled: true },
   { id: "standard-accordion", name: "セクションカード", description: "旅程全体を見渡せるアコーディオン", phrase: "見渡せる旅行計画", viewMode: "accordion", defaultPaletteId: "ocean", enabled: true },
   { id: "standard-summer", name: "リスト", description: "予定をすっきり一覧表示", phrase: "一覧で見る旅行計画", viewMode: "list", defaultPaletteId: "ocean", enabled: true },
@@ -56,7 +57,6 @@ const THEME_CATALOG: ThemePresetOption[] = [
   { id: "standard-winter", name: "月ビュー", description: "月全体をカレンダーで表示", phrase: "月で見る旅行計画", viewMode: "month", defaultPaletteId: "snow", enabled: true },
   { id: "shopping", name: "買い物リスト", description: "買い物管理向け", phrase: "買い物プラン", viewMode: "list", defaultPaletteId: "neutral", enabled: false },
   { id: "pixel-quest", name: "ピクセルクエスト", description: "RPG風マップ表示", phrase: "RPGデザイン", viewMode: "list", defaultPaletteId: "neutral", enabled: false },
-  { id: "map-only", name: "Map Only", description: "地図のみを表示", phrase: "地図での計画", viewMode: "list", defaultPaletteId: "neutral", enabled: false },
   { id: "mapbox-journey", name: "Mapbox Journey", description: "3D地図・グローブ表示", phrase: "Mapboxでの旅", viewMode: "list", defaultPaletteId: "neutral", enabled: false },
   { id: "ai-generated", name: "AI Generated", description: "purple", phrase: "AI生成デザイン", viewMode: "list", defaultPaletteId: "neutral", enabled: false },
   { id: "sauna-rally", name: "サウナスタンプラリー", description: "サウナ旅を記録", phrase: "サウナ巡り", viewMode: "list", defaultPaletteId: "neutral", enabled: false },

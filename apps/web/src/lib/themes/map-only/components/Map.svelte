@@ -1,442 +1,351 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import type { Step } from "@tabitabi/types";
-  import { getStepDate, getStepTime } from "@tabitabi/types";
-  import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
+  import { onDestroy, onMount } from "svelte";
+  import type { MapCandidate, MapPoint } from "../model";
 
   interface Props {
-    steps: Step[];
-    onStepClick?: (step: Step, index: number) => void;
+    candidates: MapCandidate[];
+    scheduledPoints: MapPoint[];
+    selectedCandidateId?: string | null;
     onMapClick?: (lat: number, lng: number) => void;
-    showRoute?: boolean;
-    onOpenStreetView?: (lat: number, lng: number, title: string) => void;
-    selectedStepId?: string | null;
+    onCandidateClick?: (candidateId: string) => void;
   }
 
   let {
-    steps,
-    onStepClick,
+    candidates,
+    scheduledPoints,
+    selectedCandidateId = null,
     onMapClick,
-    showRoute = false,
-    onOpenStreetView,
-    selectedStepId = null,
+    onCandidateClick,
   }: Props = $props();
+
+  const MAPLIBRE_VERSION = "5.11.0";
+  const MAPLIBRE_SCRIPT = `https://unpkg.com/maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl.js`;
+  const MAPLIBRE_CSS = `https://unpkg.com/maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl.css`;
+  const MAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
+
   let mapElement: HTMLDivElement;
-  let map: google.maps.Map | null = null;
-  let markers: google.maps.Marker[] = [];
-  let routeRenderers: google.maps.DirectionsRenderer[] = [];
-  let errorMsg = $state("");
-  let googleApiKey = $state<string | undefined>(resolveApiKey());
-  let MarkerClass: typeof google.maps.Marker | null = null;
-  let directionsService: google.maps.DirectionsService | null = null;
-  let apiInitialized = false;
-  let mapInitTimer: ReturnType<typeof setTimeout> | null = null;
-  let mapIdleCallback: number | null = null;
+  let map: any = null;
+  let maplibregl: any = null;
+  let markers: any[] = [];
+  let loaded = $state(false);
+  let errorMessage = $state("");
 
-  async function fetchApiKeyFromServer(): Promise<string | undefined> {
-    try {
-      const res = await fetch("/api/google-maps/token");
-      if (res.ok) {
-        const data = await res.json();
-        return data.apiKey;
+  function loadMapLibre(): Promise<any> {
+    if (typeof window === "undefined") return Promise.reject(new Error("Map is browser-only"));
+    const globalWindow = window as any;
+    if (globalWindow.maplibregl) return Promise.resolve(globalWindow.maplibregl);
+    if (globalWindow.__tabitabiMapLibrePromise) return globalWindow.__tabitabiMapLibrePromise;
+
+    globalWindow.__tabitabiMapLibrePromise = new Promise((resolve, reject) => {
+      if (!document.querySelector(`link[data-tabitabi-maplibre="${MAPLIBRE_VERSION}"]`)) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = MAPLIBRE_CSS;
+        link.dataset.tabitabiMaplibre = MAPLIBRE_VERSION;
+        document.head.appendChild(link);
       }
-    } catch (e) {
-      console.error("Failed to fetch Google Maps API key from server", e);
-    }
-    return undefined;
-  }
 
-  export function openStreetViewAt(lat: number, lng: number) {
-    if (!map) return;
-    const panorama = map.getStreetView();
-    panorama.setOptions({
-      position: { lat, lng },
-      pov: { heading: 0, pitch: 0 },
-      linksControl: true,
-      clickToGo: true,
-      addressControl: true,
-      enableCloseButton: true,
-      panControl: true,
-      zoomControl: true,
-    });
-    panorama.setVisible(true);
-  }
-
-  export function closeStreetView() {
-    if (!map) return;
-    const panorama = map.getStreetView();
-    panorama.setVisible(false);
-  }
-
-  export function getLocationForStep(
-    step: Step,
-  ): google.maps.LatLngLiteral | null {
-    const cacheKey = `geo:${step.location}`;
-    const cached = sessionStorage.getItem(cacheKey);
-    if (cached) {
-      return JSON.parse(cached);
-    }
-    return null;
-  }
-
-  export function focusOnStep(stepId: string) {
-    if (!map) return;
-    const step = steps.find((s) => s.id === stepId);
-    if (!step || !step.location) return;
-
-    const location = getLocationForStep(step);
-    if (location) {
-      map.setCenter(location);
-      map.setZoom(15);
-
-      const marker = markers.find((m) => m.getTitle() === step.title);
-      if (marker) {
-        marker.setAnimation(google.maps.Animation.BOUNCE);
-        setTimeout(() => {
-          marker.setAnimation(null);
-        }, 2000);
-      }
-    }
-  }
-
-  const DATE_COLORS = [
-    "#4285F4",
-    "#EA4335",
-    "#34A853",
-    "#FBBC05",
-    "#9C27B0",
-    "#00BCD4",
-    "#FF5722",
-    "#607D8B",
-  ];
-
-  function resolveApiKey(): string | undefined {
-    const fromImport =
-      import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
-      import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (fromImport) return fromImport;
-
-    const fromProcess =
-      typeof process !== "undefined"
-        ? (process as any).env?.PUBLIC_GOOGLE_MAPS_API_KEY ||
-          (process as any).env?.VITE_GOOGLE_MAPS_API_KEY
-        : undefined;
-    if (fromProcess) return fromProcess;
-
-    if (typeof window !== "undefined") {
-      const w = window as any;
-      return (
-        w.PUBLIC_GOOGLE_MAPS_API_KEY ||
-        w.VITE_GOOGLE_MAPS_API_KEY ||
-        w.env?.PUBLIC_GOOGLE_MAPS_API_KEY ||
-        w.env?.VITE_GOOGLE_MAPS_API_KEY
+      const existingScript = document.querySelector<HTMLScriptElement>(
+        `script[data-tabitabi-maplibre="${MAPLIBRE_VERSION}"]`,
       );
-    }
+      if (existingScript) {
+        existingScript.addEventListener("load", () => resolve(globalWindow.maplibregl), { once: true });
+        existingScript.addEventListener("error", () => reject(new Error("MapLibre failed to load")), { once: true });
+        return;
+      }
 
-    return undefined;
+      const script = document.createElement("script");
+      script.src = MAPLIBRE_SCRIPT;
+      script.async = true;
+      script.dataset.tabitabiMaplibre = MAPLIBRE_VERSION;
+      script.onload = () => resolve(globalWindow.maplibregl);
+      script.onerror = () => reject(new Error("MapLibre failed to load"));
+      document.head.appendChild(script);
+    });
+
+    return globalWindow.__tabitabiMapLibrePromise;
   }
 
-  function getDateColor(date: string, uniqueDates: string[]): string {
-    const index = uniqueDates.indexOf(date);
-    return DATE_COLORS[index % DATE_COLORS.length];
+  function makeCandidateMarker(candidate: MapCandidate): HTMLElement {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `trip-map-marker candidate${candidate.id === selectedCandidateId ? " selected" : ""}`;
+    button.setAttribute("aria-label", candidate.title);
+    button.innerHTML = '<span class="trip-map-marker-dot"></span>';
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      onCandidateClick?.(candidate.id);
+    });
+    return button;
   }
 
-  function createMarkerIcon(color: string): google.maps.Symbol {
-    return {
-      path: google.maps.SymbolPath.CIRCLE,
-      fillColor: color,
-      fillOpacity: 1,
-      strokeColor: "#ffffff",
-      strokeWeight: 2,
-      scale: 16,
-    };
+  function makeScheduledMarker(point: MapPoint, index: number): HTMLElement {
+    const marker = document.createElement("div");
+    marker.className = "trip-map-marker scheduled";
+    marker.setAttribute("aria-label", point.title);
+    marker.textContent = point.label ?? String(index + 1);
+    return marker;
   }
 
-  async function initMap() {
-    if (!googleApiKey) {
-      googleApiKey = await fetchApiKeyFromServer();
-    }
+  function clearMarkers() {
+    markers.forEach((marker) => marker.remove());
+    markers = [];
+  }
 
-    if (!googleApiKey) {
-      errorMsg = "Google Maps API Key is missing.";
-      console.error(errorMsg);
+  function removeRoute() {
+    if (!map) return;
+    if (map.getLayer("tabitabi-route")) map.removeLayer("tabitabi-route");
+    if (map.getSource("tabitabi-route")) map.removeSource("tabitabi-route");
+  }
+
+  function drawRoute() {
+    removeRoute();
+    if (!map || scheduledPoints.length < 2) return;
+
+    map.addSource("tabitabi-route", {
+      type: "geojson",
+      data: {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "LineString",
+          coordinates: scheduledPoints.map((point) => [point.lng, point.lat]),
+        },
+      },
+    });
+
+    map.addLayer({
+      id: "tabitabi-route",
+      type: "line",
+      source: "tabitabi-route",
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+      },
+      paint: {
+        "line-color": "#2563eb",
+        "line-width": 3,
+        "line-opacity": 0.6,
+        "line-dasharray": [1.5, 1.5],
+      },
+    });
+  }
+
+  function fitAllPoints() {
+    if (!map || !maplibregl) return;
+    const allPoints = [
+      ...candidates.map((candidate) => ({ lat: candidate.lat, lng: candidate.lng })),
+      ...scheduledPoints,
+    ];
+    if (allPoints.length === 0) return;
+
+    if (allPoints.length === 1) {
+      map.easeTo({ center: [allPoints[0].lng, allPoints[0].lat], zoom: 14, duration: 450 });
       return;
     }
 
+    const bounds = new maplibregl.LngLatBounds();
+    allPoints.forEach((point) => bounds.extend([point.lng, point.lat]));
+    map.fitBounds(bounds, {
+      padding: { top: 72, right: 36, bottom: 180, left: 36 },
+      maxZoom: 14,
+      duration: 450,
+    });
+  }
+
+  function refreshMap() {
+    if (!loaded || !map || !maplibregl) return;
+    clearMarkers();
+
+    candidates.forEach((candidate) => {
+      const marker = new maplibregl.Marker({ element: makeCandidateMarker(candidate), anchor: "bottom" })
+        .setLngLat([candidate.lng, candidate.lat])
+        .addTo(map);
+      markers.push(marker);
+    });
+
+    scheduledPoints.forEach((point, index) => {
+      const marker = new maplibregl.Marker({ element: makeScheduledMarker(point, index), anchor: "center" })
+        .setLngLat([point.lng, point.lat])
+        .addTo(map);
+      markers.push(marker);
+    });
+
+    drawRoute();
+    fitAllPoints();
+  }
+
+  async function initializeMap() {
     try {
-      if (!apiInitialized) {
-        setOptions({ key: googleApiKey, v: "weekly" });
-        apiInitialized = true;
-      }
+      maplibregl = await loadMapLibre();
+      if (!maplibregl) throw new Error("MapLibre is unavailable");
 
-      const mapsLib = (await importLibrary("maps")) as google.maps.MapsLibrary;
-      const markerLib = (await importLibrary(
-        "marker",
-      )) as google.maps.MarkerLibrary;
-
-      const { Map } = mapsLib;
-      MarkerClass = markerLib.Marker;
-
-      map = new Map(mapElement, {
-        center: { lat: 35.6812, lng: 139.7671 },
-        zoom: 13,
-        disableDefaultUI: true,
-        zoomControl: true,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-        styles: [
-          {
-            featureType: "poi",
-            elementType: "labels",
-            stylers: [{ visibility: "off" }],
-          },
-        ],
+      map = new maplibregl.Map({
+        container: mapElement,
+        style: MAP_STYLE,
+        center: [139.7671, 35.6812],
+        zoom: 11,
+        attributionControl: false,
       });
 
-      map.addListener("click", (e: google.maps.MapMouseEvent) => {
-        if (e.latLng && onMapClick) {
-          onMapClick(e.latLng.lat(), e.latLng.lng());
-        }
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+      map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+      map.on("click", (event: any) => onMapClick?.(event.lngLat.lat, event.lngLat.lng));
+      map.on("load", () => {
+        loaded = true;
+        refreshMap();
       });
-
-      await updateMap(map, MarkerClass);
-    } catch (e: unknown) {
-      console.error("Failed to load Google Maps", e);
-      const message = e instanceof Error ? e.message : String(e);
-      errorMsg = `Failed to load Google Maps API. ${message}`;
+      map.on("error", (event: any) => {
+        if (!loaded) errorMessage = event?.error?.message ?? "地図を読み込めませんでした";
+      });
+    } catch (error) {
+      console.error("Failed to initialize trip map", error);
+      errorMessage = "地図を読み込めませんでした。候補一覧はそのまま利用できます。";
     }
   }
 
   onMount(() => {
-    // Keep the initial mobile paint independent from the Maps SDK download.
-    if (window.matchMedia("(max-width: 767px)").matches) {
-      const start = () => {
-        mapIdleCallback = null;
-        mapInitTimer = null;
-        void initMap();
-      };
+    void initializeMap();
+  });
 
-      if ("requestIdleCallback" in window) {
-        mapIdleCallback = window.requestIdleCallback(start, { timeout: 3000 });
-      } else {
-        mapInitTimer = setTimeout(start, 1500);
-      }
-    } else {
-      void initMap();
-    }
-
-    return () => {
-      if (mapIdleCallback !== null && "cancelIdleCallback" in window) {
-        window.cancelIdleCallback(mapIdleCallback);
-      }
-      if (mapInitTimer !== null) {
-        clearTimeout(mapInitTimer);
-      }
-    };
+  onDestroy(() => {
+    clearMarkers();
+    removeRoute();
+    map?.remove();
+    map = null;
   });
 
   $effect(() => {
-    if (map && steps) {
-      updateMapWithCurrentState();
-    }
+    candidates;
+    scheduledPoints;
+    if (loaded) refreshMap();
   });
 
   $effect(() => {
-    if (map && selectedStepId) {
-      focusOnStep(selectedStepId);
+    const selectedId = selectedCandidateId;
+    if (!loaded || !map || !selectedId) return;
+    const candidate = candidates.find((item) => item.id === selectedId);
+    if (candidate) {
+      map.easeTo({ center: [candidate.lng, candidate.lat], zoom: Math.max(map.getZoom(), 14), duration: 350 });
     }
+    refreshMap();
   });
-
-  async function updateMapWithCurrentState() {
-    if (!map) return;
-    if (!MarkerClass) {
-      const markerLib = (await importLibrary(
-        "marker",
-      )) as google.maps.MarkerLibrary;
-      MarkerClass = markerLib.Marker;
-    }
-    await updateMap(map, MarkerClass);
-  }
-
-  async function updateMap(
-    mapInstance: google.maps.Map,
-    Marker: typeof google.maps.Marker,
-  ) {
-    markers.forEach((m) => m.setMap(null));
-    markers = [];
-    routeRenderers.forEach((r) => r.setMap(null));
-    routeRenderers = [];
-
-    const sortedSteps = [...steps].sort((a, b) => {
-      const dateCompare = getStepDate(a).localeCompare(getStepDate(b));
-      if (dateCompare !== 0) return dateCompare;
-      return getStepTime(a).localeCompare(getStepTime(b));
-    });
-
-    const uniqueDates = [...new Set(sortedSteps.map((s) => getStepDate(s)))];
-
-    const path: google.maps.LatLngLiteral[] = [];
-    const bounds = new google.maps.LatLngBounds();
-    let hasPoints = false;
-
-    const geocoder = new google.maps.Geocoder();
-
-    let stepNumber = 1;
-    for (const step of sortedSteps) {
-      if (!step.location) {
-        stepNumber++;
-        continue;
-      }
-
-      const cacheKey = `geo:${step.location}`;
-      const cached = sessionStorage.getItem(cacheKey);
-
-      let location: google.maps.LatLngLiteral | null = null;
-
-      if (cached) {
-        location = JSON.parse(cached);
-      } else {
-        try {
-          const res = await geocoder.geocode({ address: step.location });
-          if (res.results && res.results[0]) {
-            location = {
-              lat: res.results[0].geometry.location.lat(),
-              lng: res.results[0].geometry.location.lng(),
-            };
-            sessionStorage.setItem(cacheKey, JSON.stringify(location));
-          }
-        } catch (e) {
-          console.error("Geocode failed for", step.location, e);
-        }
-      }
-
-      if (location) {
-        const color = getDateColor(getStepDate(step), uniqueDates);
-        const currentNumber = stepNumber;
-        const originalIndex = steps.findIndex((s) => s.id === step.id);
-
-        const marker = new Marker({
-          position: location,
-          map: mapInstance,
-          title: step.title,
-          icon: createMarkerIcon(color),
-          label: {
-            text: String(currentNumber),
-            color: "white",
-            fontSize: "11px",
-            fontWeight: "bold",
-          },
-        });
-
-        marker.addListener("click", () => {
-          if (onStepClick) onStepClick(step, originalIndex);
-        });
-
-        markers.push(marker);
-        path.push(location);
-        bounds.extend(location);
-        hasPoints = true;
-      }
-      stepNumber++;
-    }
-
-    if (hasPoints && showRoute && path.length > 1) {
-      await drawRouteWithDirections(mapInstance, path);
-    }
-
-    if (hasPoints) {
-      mapInstance.fitBounds(bounds, 50);
-    }
-  }
-
-  async function drawRouteWithDirections(
-    mapInstance: google.maps.Map,
-    path: google.maps.LatLngLiteral[],
-  ) {
-    if (!directionsService) {
-      const routesLib = await importLibrary("routes");
-      directionsService = new (routesLib as any).DirectionsService();
-    }
-
-    if (!directionsService) return;
-
-    const MAX_WAYPOINTS = 25;
-    for (let i = 0; i < path.length - 1; i += MAX_WAYPOINTS) {
-      const segmentEnd = Math.min(i + MAX_WAYPOINTS, path.length - 1);
-      const origin = path[i];
-      const destination = path[segmentEnd];
-      const waypoints: google.maps.DirectionsWaypoint[] = [];
-
-      for (let j = i + 1; j < segmentEnd; j++) {
-        waypoints.push({
-          location: new google.maps.LatLng(path[j].lat, path[j].lng),
-          stopover: true,
-        });
-      }
-
-      try {
-        const result = await directionsService.route({
-          origin: new google.maps.LatLng(origin.lat, origin.lng),
-          destination: new google.maps.LatLng(destination.lat, destination.lng),
-          waypoints: waypoints,
-          travelMode: google.maps.TravelMode.DRIVING,
-          optimizeWaypoints: false,
-        });
-
-        const renderer = new google.maps.DirectionsRenderer({
-          map: mapInstance,
-          directions: result,
-          suppressMarkers: true,
-          polylineOptions: {
-            strokeColor: "#4285F4",
-            strokeOpacity: 0.8,
-            strokeWeight: 4,
-          },
-        });
-        routeRenderers.push(renderer);
-      } catch (e) {
-        console.error("Directions request failed, falling back to polyline", e);
-        const polyline = new google.maps.Polyline({
-          path: path.slice(i, segmentEnd + 1),
-          geodesic: true,
-          strokeColor: "#666666",
-          strokeOpacity: 0.8,
-          strokeWeight: 3,
-        });
-        polyline.setMap(mapInstance);
-      }
-    }
-  }
 </script>
 
-<div class="map-container" bind:this={mapElement}>
-  {#if errorMsg}
-    <div class="error-overlay">
-      <p>{errorMsg}</p>
+<div class="map-shell" bind:this={mapElement} aria-label="旅行候補マップ">
+  {#if errorMessage}
+    <div class="map-error" role="status">{errorMessage}</div>
+  {/if}
+  {#if !loaded && !errorMessage}
+    <div class="map-loading" aria-live="polite">
+      <span></span>
+      地図を読み込み中
     </div>
   {/if}
 </div>
 
 <style>
-  .map-container {
-    width: 100%;
-    height: 100%;
-    min-height: 100vh;
-    position: relative;
-  }
-  .error-overlay {
+  .map-shell {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
+    min-height: 320px;
+    background: #edf1f4;
+  }
+
+  .map-loading,
+  .map-error {
+    position: absolute;
+    z-index: 5;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
-    justify-content: center;
+    max-width: min(320px, calc(100% - 48px));
     align-items: center;
-    background: #f8f9fa;
-    color: #dc3545;
-    font-weight: bold;
-    z-index: 10;
+    gap: 10px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.94);
+    padding: 12px 16px;
+    color: #475569;
+    font-size: 13px;
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.12);
+  }
+
+  .map-loading span {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #cbd5e1;
+    border-top-color: #2563eb;
+    border-radius: 999px;
+    animation: spin 0.8s linear infinite;
+  }
+
+  :global(.trip-map-marker) {
+    appearance: none;
+    border: 0;
+    font: inherit;
+    box-sizing: border-box;
+  }
+
+  :global(.trip-map-marker.candidate) {
+    position: relative;
+    width: 34px;
+    height: 42px;
+    cursor: pointer;
+    border-radius: 18px 18px 18px 4px;
+    transform: rotate(-45deg);
+    background: #ffffff;
+    border: 2px solid #2563eb;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
+  }
+
+  :global(.trip-map-marker.candidate.selected) {
+    width: 39px;
+    height: 47px;
+    border-width: 3px;
+    box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.18), 0 7px 18px rgba(15, 23, 42, 0.24);
+  }
+
+  :global(.trip-map-marker-dot) {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    left: 50%;
+    top: 50%;
+    border-radius: 999px;
+    background: #2563eb;
+    transform: translate(-50%, -50%);
+  }
+
+  :global(.trip-map-marker.scheduled) {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: #2563eb;
+    border: 3px solid #ffffff;
+    color: white;
+    font-size: 12px;
+    font-weight: 800;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+  }
+
+  :global(.maplibregl-ctrl-top-right) {
+    top: 64px;
+    right: 8px;
+  }
+
+  :global(.maplibregl-ctrl-group) {
+    border-radius: 12px !important;
+    overflow: hidden;
+  }
+
+  :global(.maplibregl-ctrl-attrib) {
+    font-size: 9px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 </style>

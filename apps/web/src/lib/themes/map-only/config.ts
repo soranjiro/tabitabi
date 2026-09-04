@@ -2,9 +2,9 @@ import type { ThemeConfig } from '@tabitabi/types';
 
 export const mapOnlyTheme: ThemeConfig = {
   id: 'map-only',
-  name: 'Map Only',
-  version: '1.0.0',
-  description: 'A minimal theme showing only a map and a menu button',
+  name: '旅先マップ',
+  version: '2.0.0',
+  description: '地図に候補をピンし、行き先を決めて予定へ追加するモバイル向けテーマ',
   author: 'Tabitabi Team',
   features: {
     steps: {
@@ -16,9 +16,9 @@ export const mapOnlyTheme: ThemeConfig = {
     layout: 'single',
     colorScheme: 'light',
     customColors: {
-      primary: '#000000',
-      background: '#FFFFFF',
-      text: '#000000'
+      primary: '#2563eb',
+      background: '#f8fafc',
+      text: '#0f172a'
     }
   }
 };

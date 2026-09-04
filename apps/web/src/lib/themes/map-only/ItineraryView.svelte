@@ -1,195 +1,157 @@
 <script lang="ts">
   import type { ItineraryResponse, Step } from "@tabitabi/types";
   import {
+    createEndTimestamp,
+    createTimestamp,
     getStepDate,
     getStepTime,
-    createTimestamp,
-    createEndTimestamp,
   } from "@tabitabi/types";
   import { onMount } from "svelte";
-  import { browser } from "$app/environment";
-  import StepList from "./StepList.svelte";
-  import AddStepForm from "./components/AddStepForm.svelte";
-  import { getAvailableThemes } from "$lib/themes";
   import { auth } from "$lib/auth";
-  import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { authApi } from "$lib/api/auth";
+  import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { getIsDemoMode } from "$lib/demo";
+  import Map from "./components/Map.svelte";
   import {
-    getMemoText,
-    parseMemoData,
-    stringifyMemoData,
-    updateMemoText,
-  } from "$lib/memo";
-  import { openPrintStudio } from "$lib/print";
-  import "./styles/index.css";
-
-  let MapComponent: any = $state(null);
+    buildExternalMapUrl,
+    extractCoordinatesFromStep,
+    readMapCandidates,
+    writeMapCandidates,
+    type MapCandidate,
+    type MapCandidateCategory,
+    type MapPoint,
+  } from "./model";
 
   interface Props {
     itinerary: ItineraryResponse;
     steps: Step[];
-    onUpdateItinerary?: (data: any) => Promise<void>;
-    onCreateStep?: (data: any) => Promise<void>;
-    onUpdateStep?: (stepId: string, data: any) => Promise<void>;
-    onDeleteStep?: (stepId: string) => Promise<void>;
+    onUpdateItinerary?: (data: {
+      title?: string;
+      theme_id?: string;
+      memo?: string;
+    }) => Promise<void>;
+    onCreateStep?: (data: {
+      title: string;
+      start_at: number;
+      end_at: number;
+      location?: string;
+      notes?: string;
+      link?: string | null;
+    }) => Promise<void>;
   }
 
-  let {
-    itinerary,
-    steps,
-    onUpdateItinerary,
-    onCreateStep,
-    onUpdateStep,
-    onDeleteStep,
-  }: Props = $props();
+  let { itinerary, steps, onUpdateItinerary, onCreateStep }: Props = $props();
 
-  let showMenu = $state(false);
-  let showAddModal = $state(false);
-  let showThemeModal = $state(false);
-  let showSecretModal = $state(false);
-  let showShareModal = $state(false);
-  let showPasswordDialog = $state(false);
-  let showSpotDetail = $state(false);
-  let showRoute = $state(false);
-  let showStreetView = $state(false);
-  let isViewMode = $state(false);
+  const categoryLabels: Record<MapCandidateCategory, string> = {
+    sightseeing: "観光",
+    food: "ごはん",
+    hotel: "宿",
+    shopping: "買い物",
+    other: "その他",
+  };
+
+  let activeTab = $state<"candidates" | "schedule">("candidates");
+  let candidates = $state<MapCandidate[]>(readMapCandidates(itinerary.memo));
+  let memoSnapshot = $state(itinerary.memo);
+  let lastParentMemo = $state(itinerary.memo);
+  let selectedCandidateId = $state<string | null>(null);
 
   let hasEditPermission = $state(false);
-  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let showPasswordDialog = $state(false);
   let password = $state("");
   let isAuthenticating = $state(false);
-  let shareUrl = $state("");
-  let copySuccess = $state(false);
 
-  let selectedStep = $state<Step | null>(null);
-  let selectedStepIndex = $state<number>(0);
-  let selectedStepIdForMap = $state<string | null>(null);
-  let isEditing = $state(false);
-  let editStepHour = $state("09");
-  let editStepMinute = $state("00");
-  let editStepId = $state<string>("");
-
-  let editingStepForm = $state({
+  let showCandidateEditor = $state(false);
+  let editingCandidateId = $state<string | null>(null);
+  let candidateForm = $state({
     title: "",
-    start_at: "",
-    end_at: "",
-    location: "",
+    category: "sightseeing" as MapCandidateCategory,
     notes: "",
+    lat: 35.6812,
+    lng: 139.7671,
   });
-  let editingStepDate = $state("");
 
-  let streetViewLocation = $state<{ lat: number; lng: number } | null>(null);
-  let mapComponent: any = $state(null);
-  let nextDirectionDeg = $state<number | null>(null);
-  let showDirectionArrow = $state(false);
-  let nextStepForDisplay = $state<Step | null>(null);
+  let candidateToSchedule = $state<MapCandidate | null>(null);
+  let scheduleDate = $state(toLocalDateInput(new Date()));
+  let scheduleTime = $state("10:00");
+  let isSaving = $state(false);
+  let notice = $state("");
 
-  let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
-  let secretModeOffset = $state(
-    itinerary.secret_settings?.offset_minutes ?? 60,
-  );
-
-  let newStep = $state({
-    title: "",
-    location: "",
-    notes: "",
-  });
-  let newStepHour = $state("09");
-  let newStepMinute = $state("00");
-  let focusedDate = $state<string | null>(null);
-
-  const DATE_COLORS = [
-    "#4285F4",
-    "#EA4335",
-    "#34A853",
-    "#FBBC05",
-    "#9C27B0",
-    "#00BCD4",
-    "#FF5722",
-    "#607D8B",
-  ];
-
-  const sortedSteps = $derived([...steps].sort((a, b) => {
-      const dateCompare = getStepDate(a).localeCompare(getStepDate(b));
-      if (dateCompare !== 0) return dateCompare;
-      return getStepTime(a).localeCompare(getStepTime(b));
-    }));
-  const uniqueDates = $derived([...new Set(sortedSteps.map((s) => getStepDate(s)))]);
-
-  function getDateColor(date: string): string {
-    const index = uniqueDates.indexOf(date);
-    return DATE_COLORS[index % DATE_COLORS.length];
+  function toLocalDateInput(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
 
-  function getStepNumber(step: Step): number {
-    return sortedSteps.findIndex((s) => s.id === step.id) + 1;
+  function makeId(): string {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+    return `candidate-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   }
 
-  function isSecretStep(step: Step): boolean {
-    if (!secretModeEnabled) return false;
-    const now = Date.now();
-    const revealTime = step.start_at - secretModeOffset * 60 * 1000;
-    return now < revealTime;
+  function toScheduledPoints(items: Step[]): MapPoint[] {
+    return [...items]
+      .sort((a, b) => a.start_at - b.start_at)
+      .map((step, index) => {
+        const point = extractCoordinatesFromStep(step);
+        if (!point) return null;
+        return {
+          id: step.id,
+          title: step.title,
+          lat: point.lat,
+          lng: point.lng,
+          label: String(index + 1),
+        } satisfies MapPoint;
+      })
+      .filter((point): point is MapPoint => point !== null);
   }
 
-  function getNextStep(basedOnTime: boolean = true): Step | null {
-    const sorted = sortedSteps;
+  const sortedSteps = $derived([...steps].sort((a, b) => a.start_at - b.start_at));
+  const scheduledPoints = $derived(toScheduledPoints(steps));
 
-    if (basedOnTime) {
-      const now = Date.now();
-      for (const s of sorted) {
-        const dt = new Date(s.start_at);
-        if (dt.getTime() >= now.getTime()) return s;
-      }
-      return sorted.length ? sorted[sorted.length - 1] : null;
-    } else if (selectedStep) {
-      const idx = sorted.findIndex((s) => s.id === selectedStep!.id);
-      if (idx >= 0 && idx + 1 < sorted.length) return sorted[idx + 1];
+  onMount(() => {
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
     }
-    return null;
-  }
 
-  onMount(async () => {
-    if (browser) {
-      const module = await import("./components/Map.svelte");
-      MapComponent = module.default;
-      if (getIsDemoMode()) {
-        hasEditPermission = true;
-      } else {
-        const token = auth.extractTokenFromUrl();
-        if (token && itinerary.is_password_protected) {
-          auth.setToken(itinerary.id, itinerary.title, token);
-        }
-        hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
-        auth.updateAccessTime(itinerary.id, itinerary.title);
-      }
+    const token = auth.extractTokenFromUrl();
+    if (token && itinerary.is_password_protected) {
+      auth.setToken(itinerary.id, itinerary.title, token);
+    }
+    hasEditPermission = !itinerary.source_itinerary_id && auth.hasEditPermission(itinerary.id);
+    auth.updateAccessTime(itinerary.id, itinerary.title);
+  });
 
-      shareUrl = window.location.href.split("?")[0];
-
-      // Load route display preference from memo
-      if (itinerary.memo) {
-        const memoData = parseMemoData(itinerary.memo);
-        if (typeof memoData.showRoute === "boolean") {
-          showRoute = memoData.showRoute;
-        }
-      }
+  $effect(() => {
+    const incomingMemo = itinerary.memo;
+    if (incomingMemo !== lastParentMemo) {
+      lastParentMemo = incomingMemo;
+      memoSnapshot = incomingMemo;
+      candidates = readMapCandidates(incomingMemo);
     }
   });
 
-  function toggleViewMode() {
-    if (!hasEditPermission) return;
-    isViewMode = !isViewMode;
-    showMenu = false;
-    showAddModal = false;
-    showSpotDetail = false;
-    if (isViewMode) {
-      // 閲覧モードではストリートビュー固定
-      showStreetView = true;
-    } else {
-      // 編集モードではマップ表示
-      showStreetView = false;
+  async function attemptEditModeActivation() {
+    if (itinerary.source_itinerary_id) return;
+    if (getIsDemoMode()) {
+      hasEditPermission = true;
+      return;
     }
+
+    const token = auth.getToken(itinerary.id);
+    if (token && (await authApi.verifyToken(itinerary.id))) {
+      hasEditPermission = true;
+      return;
+    }
+
+    if (!itinerary.is_password_protected) {
+      hasEditPermission = true;
+      auth.updateAccessTime(itinerary.id, itinerary.title);
+      return;
+    }
+
+    showPasswordDialog = true;
   }
 
   async function onPasswordAuth() {
@@ -207,1644 +169,926 @@
     });
   }
 
-  async function attemptEditModeActivation() {
-    if (isSharedSnapshot) return;
-    if (getIsDemoMode()) {
-      hasEditPermission = true;
+  async function persistCandidates(nextCandidates: MapCandidate[]) {
+    if (!onUpdateItinerary) return;
+    const nextMemo = writeMapCandidates(memoSnapshot, nextCandidates);
+    await onUpdateItinerary({ memo: nextMemo });
+    memoSnapshot = nextMemo;
+    lastParentMemo = nextMemo;
+  }
+
+  function openCandidateEditor(lat: number, lng: number, candidate?: MapCandidate) {
+    editingCandidateId = candidate?.id ?? null;
+    candidateForm = {
+      title: candidate?.title ?? "",
+      category: candidate?.category ?? "sightseeing",
+      notes: candidate?.notes ?? "",
+      lat: candidate?.lat ?? lat,
+      lng: candidate?.lng ?? lng,
+    };
+    showCandidateEditor = true;
+  }
+
+  async function handleMapClick(lat: number, lng: number) {
+    if (!hasEditPermission) {
+      await attemptEditModeActivation();
+      if (!hasEditPermission) return;
+    }
+    openCandidateEditor(lat, lng);
+  }
+
+  function handleCandidateClick(candidateId: string) {
+    selectedCandidateId = candidateId;
+    activeTab = "candidates";
+    requestAnimationFrame(() => {
+      document.getElementById(`candidate-card-${candidateId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    });
+  }
+
+  async function saveCandidate() {
+    const title = candidateForm.title.trim();
+    if (!title) {
+      notice = "場所の名前を入力してください";
       return;
     }
 
-    const token = auth.getToken(itinerary.id);
+    const previous = candidates;
+    const now = new Date().toISOString();
+    let next: MapCandidate[];
 
-    if (token) {
-      const isValid = await authApi.verifyToken(itinerary.id);
-      if (isValid) {
-        hasEditPermission = true;
-        auth.updateAccessTime(itinerary.id, itinerary.title);
-        return;
-      }
-    }
-
-    // パスワード未設定かつ共有スナップショットでなければ編集可能、設定ありならダイアログを表示
-    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
-      hasEditPermission = true;
-      auth.updateAccessTime(itinerary.id, itinerary.title);
-    } else {
-      showPasswordDialog = true;
-    }
-  }
-
-  // Auto-save route display preference to memo
-  let routeSettingChanged = $state(false);
-  $effect(() => {
-    // Skip initial mount
-    if (!routeSettingChanged && showRoute === false) {
-      routeSettingChanged = true;
-      return;
-    }
-
-    routeSettingChanged = true;
-
-    // Debounce save to avoid too many updates
-    const timer = setTimeout(async () => {
-      const memoData = parseMemoData(itinerary.memo);
-      memoData.showRoute = showRoute;
-      if (onUpdateItinerary) {
-        await onUpdateItinerary({ memo: stringifyMemoData(memoData) });
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  });
-
-  function toggleMenu() {
-    showMenu = !showMenu;
-  }
-
-  function openAddModal() {
-    showMenu = false;
-    showAddModal = true;
-    isEditing = false;
-    const today = new Date().toISOString().split("T")[0];
-    newStepDate = today;
-  }
-
-  async function handleAddSubmit() {
-    if (!newStep.title || !focusedDate || !newStepHour || !newStepMinute) {
-      alert("必須項目を入力してください");
-      return;
-    }
-    const noteText = newStep.notes.trim();
-    const notes = noteText ? updateMemoText(undefined, noteText) : undefined;
-    if (onCreateStep) {
-      const startAt = createTimestamp(
-        focusedDate,
-        `${newStepHour}:${newStepMinute}`,
+    if (editingCandidateId) {
+      next = candidates.map((candidate) =>
+        candidate.id === editingCandidateId
+          ? {
+              ...candidate,
+              title,
+              category: candidateForm.category,
+              notes: candidateForm.notes.trim(),
+              lat: candidateForm.lat,
+              lng: candidateForm.lng,
+            }
+          : candidate,
       );
+    } else {
+      const candidate: MapCandidate = {
+        id: makeId(),
+        title,
+        lat: candidateForm.lat,
+        lng: candidateForm.lng,
+        category: candidateForm.category,
+        notes: candidateForm.notes.trim(),
+        createdAt: now,
+      };
+      next = [...candidates, candidate];
+      selectedCandidateId = candidate.id;
+    }
+
+    candidates = next;
+    isSaving = true;
+    try {
+      await persistCandidates(next);
+      showCandidateEditor = false;
+      editingCandidateId = null;
+      notice = "候補を保存しました";
+      activeTab = "candidates";
+    } catch (error) {
+      console.error("Failed to save map candidate", error);
+      candidates = previous;
+      notice = "候補を保存できませんでした";
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  async function deleteCandidate(candidate: MapCandidate) {
+    if (!confirm(`「${candidate.title}」を候補から削除しますか？`)) return;
+    const previous = candidates;
+    const next = candidates.filter((item) => item.id !== candidate.id);
+    candidates = next;
+    if (selectedCandidateId === candidate.id) selectedCandidateId = null;
+    isSaving = true;
+    try {
+      await persistCandidates(next);
+      showCandidateEditor = false;
+      notice = "候補を削除しました";
+    } catch (error) {
+      console.error("Failed to delete map candidate", error);
+      candidates = previous;
+      notice = "候補を削除できませんでした";
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  function startScheduling(candidate: MapCandidate) {
+    candidateToSchedule = candidate;
+    const lastStep = sortedSteps[sortedSteps.length - 1];
+    scheduleDate = lastStep ? getStepDate(lastStep) : toLocalDateInput(new Date());
+    scheduleTime = lastStep ? getStepTime(lastStep) : "10:00";
+  }
+
+  async function scheduleCandidate() {
+    if (!candidateToSchedule || !onCreateStep || !scheduleDate || !scheduleTime) return;
+    const candidate = candidateToSchedule;
+    const startAt = createTimestamp(scheduleDate, scheduleTime);
+    isSaving = true;
+    try {
       await onCreateStep({
-        title: newStep.title.trim(),
+        title: candidate.title,
         start_at: startAt,
         end_at: createEndTimestamp(startAt, 60),
-        location: newStep.location.trim() || undefined,
-        notes: newStep.notes.trim() || undefined,
+        location: candidate.title,
+        notes: candidate.notes || undefined,
+        link: buildExternalMapUrl(candidate.lat, candidate.lng),
       });
-      closeModals();
-      resetForm();
+
+      const next = candidates.filter((item) => item.id !== candidate.id);
+      candidates = next;
+      await persistCandidates(next);
+      selectedCandidateId = null;
+      candidateToSchedule = null;
+      activeTab = "schedule";
+      notice = "予定に追加しました";
+    } catch (error) {
+      console.error("Failed to schedule map candidate", error);
+      notice = "予定に追加できませんでした";
+    } finally {
+      isSaving = false;
     }
   }
 
-  function handleStepClick(step: Step, index: number) {
-    selectedStep = step;
-    selectedStepIndex = index;
-    selectedStepIdForMap = step.id;
-    showSpotDetail = true;
-  }
-
-  function openEditModal() {
-    if (!selectedStep) return;
-    editStepId = selectedStep.id;
-    editingStepForm = {
-      title: selectedStep.title,
-      start_at: "",
-      end_at: "",
-      location: selectedStep.location || "",
-      notes: getMemoText(selectedStep.notes),
-    };
-    editingStepDate = getStepDate(selectedStep);
-    const [h, m] = getStepTime(selectedStep).split(":");
-    editStepHour = h;
-    editStepMinute = m;
-    isEditing = true;
-    showSpotDetail = false;
-    showAddModal = true;
-  }
-
-  async function handleEditSubmit() {
-    if (!editStepId || !onUpdateStep || !editingStepDate) return;
-
-    const noteText = editingStepForm.notes.trim();
-    const notes = updateMemoText(selectedStep?.notes, noteText);
-    const startAt = createTimestamp(
-      editingStepDate,
-      `${editStepHour}:${editStepMinute}`,
-    );
-
-    await onUpdateStep(editStepId, {
-      title: editingStepForm.title.trim(),
-      start_at: startAt,
-      end_at: createEndTimestamp(startAt, 60),
-      location: editingStepForm.location.trim() || undefined,
-      notes: editingStepForm.notes.trim() || undefined,
-    });
-    closeModals();
-  }
-
-  async function handleDelete() {
-    if (!editStepId || !onDeleteStep) return;
-    if (confirm("この予定を削除しますか？")) {
-      await onDeleteStep(editStepId);
-      closeModals();
-    }
-  }
-
-  function closeModals() {
-    showAddModal = false;
-    showThemeModal = false;
-    showSecretModal = false;
-    showMenu = false;
-    showShareModal = false;
-    showSpotDetail = false;
-    showPasswordDialog = false;
-    isEditing = false;
-    editStepId = "";
-    selectedStep = null;
-    selectedStepIdForMap = null;
-  }
-
-  function resetForm() {
-    newStep = { title: "", date: "", time: "", location: "", notes: "" };
-    newStepHour = "09";
-    newStepMinute = "00";
-  }
-
-  async function handleThemeChange(themeId: string) {
-    if (onUpdateItinerary) {
-      const memoData = parseMemoData(itinerary.memo);
-      delete memoData.showRoute;
-      const nextMemo = stringifyMemoData(memoData);
-
-      await onUpdateItinerary({ theme_id: themeId, memo: nextMemo });
-      window.location.reload();
-    }
-  }
-
-  function handleMapClick(lat: number, lng: number) {
-    if (hasEditPermission && !isViewMode) {
-      openAddModal();
-    }
-  }
-
-  async function copyShareUrl() {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      copySuccess = true;
-      setTimeout(() => (copySuccess = false), 2000);
-    } catch (e) {
-      console.error("Failed to copy URL", e);
-    }
-  }
-
-  function formatDate(dateStr: string): string {
-    const date = new Date(dateStr);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
-    const weekday = weekdays[date.getDay()];
-    return `${month}/${day}(${weekday})`;
-  }
-
-  function handleRouteToggle(checked: boolean) {
-    showRoute = checked;
-  }
-
-  function openStreetView() {
-    if (!selectedStep?.location || !mapComponent) return;
-
-    const location = mapComponent.getLocationForStep(selectedStep);
-    if (location) {
-      streetViewLocation = location;
-      showStreetView = true;
-      showSpotDetail = false;
-      mapComponent.openStreetViewAt(location.lat, location.lng);
-      updateNextDirection();
-    }
-  }
-
-  function closeStreetView() {
-    showStreetView = false;
-    streetViewLocation = null;
-    nextDirectionDeg = null;
-    showDirectionArrow = false;
-  }
-
-  function computeBearing(
-    from: { lat: number; lng: number },
-    to: { lat: number; lng: number },
-  ): number {
-    const toRad = (d: number) => (d * Math.PI) / 180;
-    const toDeg = (r: number) => (r * 180) / Math.PI;
-    const φ1 = toRad(from.lat);
-    const φ2 = toRad(to.lat);
-    const Δλ = toRad(to.lng - from.lng);
-    const y = Math.sin(Δλ) * Math.cos(φ2);
-    const x =
-      Math.cos(φ1) * Math.cos(φ2) * Math.cos(Δλ) + Math.sin(φ1) * Math.sin(φ2);
-    const θ = Math.atan2(y, x);
-    const bearing = (toDeg(θ) + 360) % 360;
-    return bearing;
-  }
-
-  function updateNextDirection() {
-    if (!mapComponent) return;
-    const current = streetViewLocation;
-    const next = getNextStep(true);
-    if (!current || !next || !next.location) {
-      nextDirectionDeg = null;
-      showDirectionArrow = false;
-      nextStepForDisplay = null;
-      return;
-    }
-    const nextLoc = mapComponent.getLocationForStep(next);
-    if (!nextLoc) {
-      nextDirectionDeg = null;
-      showDirectionArrow = false;
-      nextStepForDisplay = null;
-      return;
-    }
-    nextDirectionDeg = computeBearing(current, nextLoc);
-    nextStepForDisplay = next;
-    showDirectionArrow = true;
-  }
-
-  async function moveToCurrentLocation() {
-    if (!navigator.geolocation || !mapComponent) return;
-    try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
-        });
-      });
-      streetViewLocation = {
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-      };
-      mapComponent.openStreetViewAt(
-        streetViewLocation.lat,
-        streetViewLocation.lng,
-      );
-      updateNextDirection();
-    } catch (e) {
-      alert("現在地の取得に失敗しました");
-    }
-  }
-
-  function moveTowardNextStep() {
-    if (!mapComponent || !nextDirectionDeg || !streetViewLocation) return;
-    const next = getNextStep(true);
-    if (!next || !next.location) return;
-    const nextLoc = mapComponent.getLocationForStep(next);
-    if (!nextLoc) return;
-
-    const lat1 = (streetViewLocation.lat * Math.PI) / 180;
-    const lon1 = (streetViewLocation.lng * Math.PI) / 180;
-    const lat2 = (nextLoc.lat * Math.PI) / 180;
-    const lon2 = (nextLoc.lng * Math.PI) / 180;
-
-    const R = 6371000;
-    const distance =
-      Math.acos(
-        Math.sin(lat1) * Math.sin(lat2) +
-          Math.cos(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1),
-      ) * R;
-
-    const moveDistance = Math.min(distance * 0.1, 50);
-    const brng = (nextDirectionDeg * Math.PI) / 180;
-    const lat3 =
-      Math.asin(
-        Math.sin(lat1) * Math.cos(moveDistance / R) +
-          Math.cos(lat1) * Math.sin(moveDistance / R) * Math.cos(brng),
-      ) *
-      (180 / Math.PI);
-    const lon3 =
-      ((streetViewLocation.lng +
-        Math.atan2(
-          Math.sin(brng) * Math.sin(moveDistance / R) * Math.cos(lat1),
-          Math.cos(moveDistance / R) -
-            Math.sin(lat1) * Math.sin(lat3 * (Math.PI / 180)),
-        ) *
-          (180 / Math.PI) +
-        540) %
-        360) -
-      180;
-
-    streetViewLocation = { lat: lat3, lng: lon3 };
-    mapComponent.openStreetViewAt(lat3, lon3);
-    updateNextDirection();
-  }
-
-  async function handleSecretModeUpdate(enabled: boolean, offset: number) {
-    secretModeEnabled = enabled;
-    secretModeOffset = offset;
-    if (onUpdateItinerary) {
-      await onUpdateItinerary({
-        secret_settings: {
-          enabled,
-          offset_minutes: offset,
-        },
-      });
-    }
+  function formatDate(date: string): string {
+    const parsed = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) return date;
+    return new Intl.DateTimeFormat("ja-JP", {
+      month: "numeric",
+      day: "numeric",
+      weekday: "short",
+    }).format(parsed);
   }
 </script>
 
-<div class="map-theme-container">
-  <div class="map-title-display">
-    {itinerary.title}
-  </div>
-
-  <a class="home-button" href="/" aria-label="Home">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      width="20"
-      height="20"
-    >
-      <path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3l9-8z" />
-    </svg>
-  </a>
-
-  {#if MapComponent}
-    <MapComponent
-      bind:this={mapComponent}
-      {steps}
-      onStepClick={handleStepClick}
+<div class="trip-map-theme">
+  <section class="map-area">
+    <Map
+      {candidates}
+      {scheduledPoints}
+      {selectedCandidateId}
       onMapClick={handleMapClick}
-      {showRoute}
-      selectedStepId={selectedStepIdForMap}
+      onCandidateClick={handleCandidateClick}
     />
-  {:else}
-    <div class="loading">Loading Map...</div>
-  {/if}
 
-  {#if showStreetView && isViewMode}
-    <button
-      class="streetview-back-button"
-      onclick={() => {
-        if (mapComponent) mapComponent.closeStreetView();
-        showStreetView = false;
-      }}
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        width="20"
-        height="20"
-      >
-        <path
-          d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"
-        />
-      </svg>
-      地図に戻る
-    </button>
-
-    <button class="streetview-current-button" onclick={moveToCurrentLocation}>
-      現在地へ移動
-    </button>
-
-    {#if showDirectionArrow && nextDirectionDeg !== null && nextStepForDisplay}
-      <div class="direction-info">
-        <div class="direction-info-text">
-          <p class="next-destination">{nextStepForDisplay.title}</p>
-          {#if !isSecretStep(nextStepForDisplay)}
-            <p class="next-time">{getStepTime(nextStepForDisplay)}</p>
-          {/if}
-        </div>
-        <div
-          class="direction-arrow"
-          style="transform: rotate({nextDirectionDeg}deg)"
-          aria-label="次の予定の方向"
-        ></div>
-        <button
-          class="move-button"
-          onclick={moveTowardNextStep}
-          aria-label="次の目的地へ移動"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            width="20"
-            height="20"
-          >
-            <path d="M12 2L4.5 20h15L12 2z" />
-          </svg>
-        </button>
+    <header class="topbar">
+      <div class="title-wrap">
+        <span class="eyebrow">旅先マップ</span>
+        <strong>{itinerary.title}</strong>
       </div>
-    {/if}
-  {/if}
-
-  <button class="menu-button" onclick={toggleMenu} aria-label="Menu">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      width="24"
-      height="24"
-    >
-      <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
-    </svg>
-  </button>
-
-  {#if !hasEditPermission && !isSharedSnapshot}
-    <button class="edit-mode-button" onclick={attemptEditModeActivation}>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        width="16"
-        height="16"
-        style="display:inline-block;vertical-align:middle;margin-right:4px"
-      >
-        <path
-          d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-        />
-      </svg>
-      編集
-    </button>
-  {:else}
-    <button class="edit-mode-button" onclick={toggleViewMode}>
-      {#if isViewMode}
-        編集モードに戻る
-      {:else}
-        閲覧モードにする
+      {#if !itinerary.source_itinerary_id}
+        <button class:editing={hasEditPermission} class="edit-button" onclick={attemptEditModeActivation}>
+          {hasEditPermission ? "編集中" : "編集"}
+        </button>
       {/if}
-    </button>
-  {/if}
+    </header>
 
-  <div class="legend-container">
-    {#each uniqueDates as date}
-      <div class="legend-item">
-        <span class="legend-dot" style="background-color: {getDateColor(date)}"
-        ></span>
-        <span class="legend-text">{formatDate(date)}</span>
-      </div>
-    {/each}
-    <label class="route-toggle">
-      <input
-        type="checkbox"
-        bind:checked={showRoute}
-        onchange={(e) =>
-          handleRouteToggle((e.target as HTMLInputElement).checked)}
-      />
-      <button
-        type="button"
-        class="route-toggle-button"
-        onclick={() => handleRouteToggle(true)}
-      >
-        経路表示
+    {#if hasEditPermission}
+      <div class="map-hint">地図をタップして候補を追加</div>
+    {/if}
+  </section>
+
+  <section class="sheet" aria-label="旅行計画">
+    <div class="grabber" aria-hidden="true"></div>
+    <nav class="tabs" aria-label="表示切り替え">
+      <button class:active={activeTab === "candidates"} onclick={() => (activeTab = "candidates")}>
+        候補 <span>{candidates.length}</span>
       </button>
-    </label>
-  </div>
+      <button class:active={activeTab === "schedule"} onclick={() => (activeTab = "schedule")}>
+        予定 <span>{steps.length}</span>
+      </button>
+    </nav>
 
-  {#if showMenu}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div
-      class="map-theme-overlay"
-      onclick={() => (showMenu = false)}
-      role="presentation"
-    >
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <div
-        class="map-theme-menu"
-        onclick={(e) => e.stopPropagation()}
-        role="menu"
-        tabindex="0"
-      >
-        {#if hasEditPermission && !isViewMode}
-          <button class="map-theme-menu-item" onclick={openAddModal}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              width="20"
-              height="20"
-            >
-              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-            </svg>
-            新しい予定を追加
-          </button>
-        {/if}
-        <button
-          class="map-theme-menu-item"
-          onclick={() => {
-            showMenu = false;
-            showShareModal = true;
-          }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            width="20"
-            height="20"
-          >
-            <path
-              d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"
-            />
-          </svg>
-          共有
-        </button>
-        {#if hasEditPermission && !isViewMode}
-          <button
-            class="map-theme-menu-item"
-            onclick={() => {
-              showMenu = false;
-              showThemeModal = true;
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              width="20"
-              height="20"
-            >
-              <path
-                d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
-              />
-            </svg>
-            テーマ変更
-          </button>
-          <button
-            class="map-theme-menu-item"
-            onclick={() => {
-              showMenu = false;
-              showSecretModal = true;
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              width="20"
-              height="20"
-            >
-              <path
-                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"
-              />
-            </svg>
-            シークレット機能
-          </button>
-        {/if}
-        <button
-          class="map-theme-menu-item"
-          onclick={() => {
-            showMenu = false;
-            openPrintStudio();
-          }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            width="20"
-            height="20"
-          >
-            <path
-              d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"
-            />
-          </svg>
-          印刷・PDF出力
-        </button>
-      </div>
-    </div>
-  {/if}
+    {#if notice}
+      <button class="notice" onclick={() => (notice = "")}>{notice}</button>
+    {/if}
 
-  {#if showSpotDetail && selectedStep}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div class="map-theme-overlay" onclick={closeModals} role="presentation">
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_interactive_supports_focus -->
-      <div
-        class="map-theme-modal spot-detail-modal"
-        onclick={(e) => e.stopPropagation()}
-        role="dialog"
-      >
-        <div class="spot-header">
-          <div
-            class="spot-number"
-            style="background-color: {getDateColor(getStepDate(selectedStep))}"
-          >
-            {getStepNumber(selectedStep)}
-          </div>
-          <div class="spot-info">
-            <h3 class="spot-title">{selectedStep.title}</h3>
-            <p class="spot-datetime">
-              {formatDate(getStepDate(selectedStep))}
-              {getStepTime(selectedStep)}
-            </p>
-          </div>
-        </div>
-
-        {#if selectedStep.location}
-          <div class="spot-section">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              width="16"
-              height="16"
-              class="spot-icon"
-            >
-              <path
-                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-              />
-            </svg>
-            <span>{selectedStep.location}</span>
-          </div>
-        {/if}
-
-        {#if getMemoText(selectedStep.notes)}
-          <div class="spot-section spot-notes">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              width="16"
-              height="16"
-              class="spot-icon"
-            >
-              <path
-                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-              />
-            </svg>
-            <div class="spot-notes-content">
-              {getMemoText(selectedStep.notes)}
-            </div>
-          </div>
-        {/if}
-
-        <div class="spot-actions">
-          <button class="map-btn map-btn-streetview" onclick={openStreetView}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              width="16"
-              height="16"
-              style="display:inline-block;vertical-align:middle;margin-right:4px"
-            >
-              <path
-                d="M12.56 14.33c-.34.27-.56.7-.56 1.17V21h7c1.1 0 2-.9 2-2v-5.98c-.94-.33-1.95-.52-3-.52-2.03 0-3.93.7-5.44 1.83zM9 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-7 7c0 1.1.9 2 2 2h5v-5.5c0-.67.27-1.28.72-1.72l.38-.38c-1.47-1.46-3.34-2.4-5.1-2.4-2.76 0-5 2.24-5 5v3zm17-5c-1.93 0-3.5 1.57-3.5 3.5s1.57 3.5 3.5 3.5 3.5-1.57 3.5-3.5-1.57-3.5-3.5-3.5z"
-              />
-            </svg>
-            ストリートビュー
-          </button>
-          {#if hasEditPermission && !isViewMode}
-            <button class="map-btn map-btn-primary" onclick={openEditModal}>
-              編集する
-            </button>
-          {/if}
-          <button class="map-btn map-btn-secondary" onclick={closeModals}>
-            閉じる
-          </button>
-        </div>
-      </div>
-    </div>
-  {/if}
-
-  {#if showAddModal}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div class="map-theme-overlay" onclick={closeModals} role="presentation">
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_interactive_supports_focus -->
-      <div
-        class="map-theme-modal"
-        onclick={(e) => e.stopPropagation()}
-        role="dialog"
-      >
-        {#if isEditing}
-          <AddStepForm
-            bind:newStep={editingStepForm}
-            bind:newStepDate={editingStepDate}
-            bind:newStepHour={editStepHour}
-            bind:newStepMinute={editStepMinute}
-            isEditing={true}
-            onSubmit={handleEditSubmit}
-            onCancel={closeModals}
-          />
-          <div class="mt-4 pt-4 border-t border-gray-100">
-            <button
-              onclick={handleDelete}
-              class="text-red-500 text-sm w-full text-center hover:underline"
-            >
-              この予定を削除
-            </button>
+    <div class="sheet-content">
+      {#if activeTab === "candidates"}
+        {#if candidates.length === 0}
+          <div class="empty-state">
+            <div class="empty-icon">＋</div>
+            <strong>気になる場所を置いてみよう</strong>
+            <p>{hasEditPermission ? "地図をタップすると候補を追加できます。" : "編集を有効にすると、地図に候補を置けます。"}</p>
+            {#if !hasEditPermission && !itinerary.source_itinerary_id}
+              <button class="primary-action compact" onclick={attemptEditModeActivation}>編集を始める</button>
+            {/if}
           </div>
         {:else}
-          <AddStepForm
-            bind:newStep
-            bind:focusedDate
-            bind:newStepHour
-            bind:newStepMinute
-            onSubmit={handleAddSubmit}
-            onCancel={closeModals}
-          />
-        {/if}
-      </div>
-    </div>
-  {/if}
-
-  {#if showShareModal}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div class="map-theme-overlay" onclick={closeModals} role="presentation">
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_interactive_supports_focus -->
-      <div
-        class="map-theme-modal"
-        onclick={(e) => e.stopPropagation()}
-        role="dialog"
-      >
-        <h3 class="text-xl font-bold mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            width="20"
-            height="20"
-            style="display:inline-block;vertical-align:middle;margin-right:8px"
-          >
-            <path
-              d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"
-            />
-          </svg>
-          共有
-        </h3>
-        <p class="text-sm text-gray-600 mb-4">
-          このURLを共有すると、誰でも閲覧できます。
-          {#if itinerary.is_password_protected}
-            編集にはパスワードが必要です。
-          {:else}
-            パスワードが未設定のため、誰でも編集できます。
-          {/if}
-        </p>
-        <div class="share-url-container">
-          <input
-            type="text"
-            readonly
-            value={shareUrl}
-            class="map-input share-url-input"
-          />
-          <button class="copy-btn" onclick={copyShareUrl}>
-            {#if copySuccess}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                width="16"
-                height="16"
+          <div class="candidate-list">
+            {#each candidates as candidate (candidate.id)}
+              <article
+                id={`candidate-card-${candidate.id}`}
+                class:selected={selectedCandidateId === candidate.id}
+                class="candidate-card"
+                onclick={() => handleCandidateClick(candidate.id)}
               >
-                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-              </svg>
-            {:else}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                width="16"
-                height="16"
-              >
-                <path
-                  d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
-                />
-              </svg>
-            {/if}
-          </button>
-        </div>
-        <button onclick={closeModals} class="map-btn map-btn-secondary mt-4">
-          閉じる
-        </button>
-      </div>
-    </div>
-  {/if}
-
-  {#if showThemeModal}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div class="map-theme-overlay" onclick={closeModals} role="presentation">
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_interactive_supports_focus -->
-      <div
-        class="map-theme-modal"
-        onclick={(e) => e.stopPropagation()}
-        role="dialog"
-      >
-        <h3 class="text-xl font-bold mb-4">テーマを選択</h3>
-        <div class="flex flex-col gap-2">
-          {#each getAvailableThemes() as theme}
-            <button
-              class="p-3 text-left rounded hover:bg-gray-100 {itinerary.theme_id ===
-              theme.id
-                ? 'bg-blue-50 text-blue-600 font-bold'
-                : ''}"
-              onclick={() => handleThemeChange(theme.id)}
-            >
-              {theme.name}
-            </button>
-          {/each}
-        </div>
-        <button onclick={closeModals} class="mt-4 w-full p-2 text-gray-500"
-          >キャンセル</button
-        >
-      </div>
-    </div>
-  {/if}
-
-  {#if showThemeModal}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div class="map-theme-overlay" onclick={closeModals} role="presentation">
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_interactive_supports_focus -->
-      <div
-        class="map-theme-modal"
-        onclick={(e) => e.stopPropagation()}
-        role="dialog"
-      >
-        <h3 class="text-xl font-bold mb-4">テーマを選択</h3>
-        <div class="flex flex-col gap-2">
-          {#each getAvailableThemes() as theme}
-            <button
-              class="p-3 text-left rounded hover:bg-gray-100 {itinerary.theme_id ===
-              theme.id
-                ? 'bg-blue-50 text-blue-600 font-bold'
-                : ''}"
-              onclick={() => handleThemeChange(theme.id)}
-            >
-              {theme.name}
-            </button>
-          {/each}
-        </div>
-        <button onclick={closeModals} class="mt-4 w-full p-2 text-gray-500"
-          >キャンセル</button
-        >
-      </div>
-    </div>
-  {/if}
-
-  {#if showSecretModal}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div class="map-theme-overlay" onclick={closeModals} role="presentation">
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_interactive_supports_focus -->
-      <div
-        class="map-theme-modal secret-modal"
-        onclick={(e) => e.stopPropagation()}
-        role="dialog"
-      >
-        <h3 class="text-xl font-bold mb-4">🔒 シークレット機能</h3>
-        <div class="flex flex-col gap-4">
-          <label class="secret-mode-toggle">
-            <input
-              type="checkbox"
-              bind:checked={secretModeEnabled}
-              onchange={(e) => {
-                const enabled = (e.target as HTMLInputElement).checked;
-                handleSecretModeUpdate(enabled, secretModeOffset);
-              }}
-            />
-            <span>シークレット機能を有効にする</span>
-          </label>
-          {#if secretModeEnabled}
-            <div class="secret-offset-control">
-              <label for="offset-minutes">表示開始時刻 (分前):</label>
-              <input
-                type="number"
-                id="offset-minutes"
-                bind:value={secretModeOffset}
-                min="1"
-                max="1440"
-                onchange={() => {
-                  handleSecretModeUpdate(secretModeEnabled, secretModeOffset);
-                }}
-              />
-              <p class="text-sm text-gray-500 mt-2">
-                予定時刻の指定分前から表示されます。デフォルト: 60分
-              </p>
-            </div>
-          {/if}
-        </div>
-        <button onclick={closeModals} class="mt-4 w-full p-2 text-gray-500"
-          >閉じる</button
-        >
-      </div>
-    </div>
-  {/if}
-
-  {#if showPasswordDialog}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div
-      class="map-theme-overlay"
-      onclick={() => {
-        showPasswordDialog = false;
-        password = "";
-      }}
-      role="presentation"
-    >
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_interactive_supports_focus -->
-      <div
-        class="map-theme-modal"
-        onclick={(e) => e.stopPropagation()}
-        role="dialog"
-      >
-        <h3 class="text-xl font-bold mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            width="20"
-            height="20"
-            style="display:inline-block;vertical-align:middle;margin-right:8px"
-          >
-            <path
-              d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"
-            />
-          </svg>
-          編集パスワード
-        </h3>
-        <form
-          onsubmit={(e) => {
-            e.preventDefault();
-            onPasswordAuth();
-          }}
-        >
-          <input
-            type="password"
-            bind:value={password}
-            placeholder="パスワードを入力"
-            class="map-input"
-            disabled={isAuthenticating}
-          />
-          <div class="flex gap-2 mt-4">
-            <button
-              type="submit"
-              class="map-btn map-btn-primary"
-              disabled={isAuthenticating}
-            >
-              {isAuthenticating ? "認証中..." : "認証"}
-            </button>
-            <button
-              type="button"
-              onclick={() => {
-                showPasswordDialog = false;
-                password = "";
-              }}
-              class="map-btn map-btn-secondary"
-              disabled={isAuthenticating}
-            >
-              キャンセル
-            </button>
+                <div class="candidate-main">
+                  <div>
+                    <span class="category">{categoryLabels[candidate.category]}</span>
+                    <h2>{candidate.title}</h2>
+                    {#if candidate.notes}<p>{candidate.notes}</p>{/if}
+                  </div>
+                  <a
+                    class="map-link"
+                    href={buildExternalMapUrl(candidate.lat, candidate.lng)}
+                    target="_blank"
+                    rel="noreferrer"
+                    onclick={(event) => event.stopPropagation()}
+                  >地図↗</a>
+                </div>
+                {#if hasEditPermission}
+                  <div class="candidate-actions" onclick={(event) => event.stopPropagation()}>
+                    <button class="secondary-action" onclick={() => openCandidateEditor(candidate.lat, candidate.lng, candidate)}>編集</button>
+                    <button class="primary-action" onclick={() => startScheduling(candidate)}>予定に追加</button>
+                  </div>
+                {/if}
+              </article>
+            {/each}
           </div>
-        </form>
-      </div>
+        {/if}
+      {:else}
+        {#if sortedSteps.length === 0}
+          <div class="empty-state">
+            <div class="empty-icon calendar">□</div>
+            <strong>予定はまだありません</strong>
+            <p>候補から「予定に追加」を選ぶと、ここに並びます。</p>
+            <button class="secondary-action compact" onclick={() => (activeTab = "candidates")}>候補を見る</button>
+          </div>
+        {:else}
+          <div class="schedule-list">
+            {#each sortedSteps as step, index (step.id)}
+              <article class="schedule-row">
+                <div class="order-dot">{index + 1}</div>
+                <div class="schedule-time">
+                  <strong>{getStepTime(step)}</strong>
+                  <span>{formatDate(getStepDate(step))}</span>
+                </div>
+                <div class="schedule-info">
+                  <h2>{step.title}</h2>
+                  {#if step.notes}<p>{step.notes}</p>{/if}
+                </div>
+                {#if step.link}
+                  <a href={step.link} target="_blank" rel="noreferrer" class="map-link">地図↗</a>
+                {/if}
+              </article>
+            {/each}
+            <p class="route-note">地図上の線は訪問順を示す簡易表示です。実際の道路・乗換経路は計算しません。</p>
+          </div>
+        {/if}
+      {/if}
     </div>
-  {/if}
-
-  <StepList
-    {steps}
-    onStepClick={handleStepClick}
-    {secretModeEnabled}
-    {secretModeOffset}
-    {isViewMode}
-    {hasEditPermission}
-  />
+  </section>
 </div>
 
+{#if showCandidateEditor}
+  <div class="modal-backdrop" role="presentation" onclick={() => !isSaving && (showCandidateEditor = false)}>
+    <section class="bottom-dialog" role="dialog" aria-modal="true" aria-label={editingCandidateId ? "候補を編集" : "候補を追加"} onclick={(event) => event.stopPropagation()}>
+      <div class="dialog-head">
+        <div>
+          <span class="eyebrow">{editingCandidateId ? "候補を編集" : "新しい候補"}</span>
+          <strong>この場所をどうする？</strong>
+        </div>
+        <button class="close-button" aria-label="閉じる" onclick={() => (showCandidateEditor = false)}>×</button>
+      </div>
+
+      <label>
+        <span>場所の名前</span>
+        <input bind:value={candidateForm.title} placeholder="例：浅草寺" autocomplete="off" />
+      </label>
+
+      <label>
+        <span>カテゴリ</span>
+        <select bind:value={candidateForm.category}>
+          <option value="sightseeing">観光</option>
+          <option value="food">ごはん</option>
+          <option value="hotel">宿</option>
+          <option value="shopping">買い物</option>
+          <option value="other">その他</option>
+        </select>
+      </label>
+
+      <label>
+        <span>メモ</span>
+        <textarea bind:value={candidateForm.notes} rows="3" placeholder="朝に行きたい、ここでランチなど"></textarea>
+      </label>
+
+      <div class="coordinate-note">{candidateForm.lat.toFixed(5)}, {candidateForm.lng.toFixed(5)}</div>
+
+      <div class="dialog-actions">
+        {#if editingCandidateId}
+          {@const editingCandidate = candidates.find((candidate) => candidate.id === editingCandidateId)}
+          {#if editingCandidate}
+            <button class="danger-action" disabled={isSaving} onclick={() => deleteCandidate(editingCandidate)}>削除</button>
+          {/if}
+        {/if}
+        <button class="primary-action grow" disabled={isSaving} onclick={saveCandidate}>
+          {isSaving ? "保存中…" : "候補に保存"}
+        </button>
+      </div>
+    </section>
+  </div>
+{/if}
+
+{#if candidateToSchedule}
+  <div class="modal-backdrop" role="presentation" onclick={() => !isSaving && (candidateToSchedule = null)}>
+    <section class="bottom-dialog" role="dialog" aria-modal="true" aria-label="予定に追加" onclick={(event) => event.stopPropagation()}>
+      <div class="dialog-head">
+        <div>
+          <span class="eyebrow">予定に追加</span>
+          <strong>{candidateToSchedule.title}</strong>
+        </div>
+        <button class="close-button" aria-label="閉じる" onclick={() => (candidateToSchedule = null)}>×</button>
+      </div>
+
+      <div class="schedule-inputs">
+        <label>
+          <span>日付</span>
+          <input type="date" bind:value={scheduleDate} />
+        </label>
+        <label>
+          <span>時刻</span>
+          <input type="time" bind:value={scheduleTime} />
+        </label>
+      </div>
+
+      <p class="dialog-help">追加後は通常の予定として保存され、ほかのテーマからも確認できます。</p>
+      <button class="primary-action full" disabled={isSaving} onclick={scheduleCandidate}>
+        {isSaving ? "追加中…" : "この予定で追加"}
+      </button>
+    </section>
+  </div>
+{/if}
+
+{#if showPasswordDialog}
+  <div class="modal-backdrop" role="presentation" onclick={() => !isAuthenticating && (showPasswordDialog = false)}>
+    <section class="bottom-dialog password-dialog" role="dialog" aria-modal="true" aria-label="編集パスワード" onclick={(event) => event.stopPropagation()}>
+      <div class="dialog-head">
+        <div>
+          <span class="eyebrow">編集する</span>
+          <strong>パスワードを入力</strong>
+        </div>
+        <button class="close-button" aria-label="閉じる" onclick={() => (showPasswordDialog = false)}>×</button>
+      </div>
+      <label>
+        <span>編集パスワード</span>
+        <input type="password" bind:value={password} onkeydown={(event) => event.key === "Enter" && onPasswordAuth()} />
+      </label>
+      <button class="primary-action full" disabled={isAuthenticating || !password} onclick={onPasswordAuth}>
+        {isAuthenticating ? "確認中…" : "編集を有効にする"}
+      </button>
+    </section>
+  </div>
+{/if}
+
 <style>
-  .map-theme-container {
+  :global(body) {
+    background: #f8fafc;
+  }
+
+  .trip-map-theme {
+    min-height: 100dvh;
+    background: #f8fafc;
+    color: #0f172a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  .map-area {
     position: relative;
-    width: 100vw;
-    height: 100vh;
+    height: 59dvh;
+    min-height: 380px;
     overflow: hidden;
+    background: #e2e8f0;
   }
 
-  .home-button {
+  .topbar {
     position: absolute;
-    top: 24px;
-    left: 20px;
-    z-index: 1400;
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: white;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: #333;
-    text-decoration: none;
-    transition:
-      transform 0.1s,
-      box-shadow 0.2s;
-  }
-
-  .home-button:hover {
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-  }
-
-  .home-button:active {
-    transform: scale(0.97);
-  }
-
-  .loading {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    background: #f0f0f0;
-  }
-
-  .menu-button {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    z-index: 1500;
-    background: white;
-    border: none;
-    border-radius: 50%;
-    width: 48px;
-    height: 48px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: transform 0.1s;
-  }
-
-  .menu-button:active {
-    transform: scale(0.95);
-  }
-
-  .edit-mode-button {
-    position: absolute;
-    top: 80px;
-    right: 20px;
-    z-index: 1500;
-    background: white;
-    border: none;
-    border-radius: 24px;
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: 600;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    transition: transform 0.1s;
-  }
-
-  .edit-mode-button:active {
-    transform: scale(0.95);
-  }
-
-  .streetview-back-button {
-    position: absolute;
-    top: 20px;
-    left: 70px;
-    z-index: 1500;
-    background: white;
-    border: none;
-    border-radius: 24px;
-    padding: 8px 12px;
-    font-size: 14px;
-    font-weight: 600;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-  }
-
-  .streetview-current-button {
-    position: absolute;
-    top: 20px;
-    right: 80px;
-    z-index: 1500;
-    background: #4285f4;
-    color: white;
-    border: none;
-    border-radius: 24px;
-    padding: 8px 12px;
-    font-size: 14px;
-    font-weight: 600;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-  }
-
-  .direction-arrow {
-    width: 0;
-    height: 0;
-    border-left: 12px solid transparent;
-    border-right: 12px solid transparent;
-    border-bottom: 24px solid rgba(255, 0, 0, 0.9);
-    transform-origin: 50% 50%;
-  }
-
-  .streetview-back-button {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2000;
-    background: white;
-    border: none;
-    border-radius: 24px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 600;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    cursor: pointer;
+    z-index: 8;
+    top: max(12px, env(safe-area-inset-top));
+    left: 12px;
+    right: 12px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    transition:
-      transform 0.1s,
-      box-shadow 0.2s;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.94);
+    padding: 10px 10px 10px 14px;
+    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(14px);
   }
 
-  .streetview-back-button:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  }
-
-  .streetview-back-button:active {
-    transform: translateX(-50%) scale(0.95);
-  }
-
-  .legend-container {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    z-index: 900;
-    background: white;
-    border-radius: 12px;
-    padding: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  .title-wrap {
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    max-width: 200px;
-    max-height: 300px;
-    overflow-y: auto;
-    pointer-events: auto;
+    gap: 1px;
   }
 
-  @media (max-width: 768px) {
-    .legend-container {
-      max-width: 160px;
-      max-height: 200px;
-      padding: 10px;
-      bottom: 15px;
-      left: 15px;
-    }
+  .title-wrap strong,
+  .dialog-head strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 16px;
   }
 
-  @media (max-width: 480px) {
-    .legend-container {
-      max-width: 140px;
-      max-height: 150px;
-      padding: 8px;
-      gap: 6px;
-      bottom: 10px;
-      left: 10px;
-    }
+  .eyebrow {
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
-  .legend-container::-webkit-scrollbar {
-    width: 6px;
+  .edit-button {
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: 12px;
+    background: #eff6ff;
+    padding: 9px 13px;
+    color: #1d4ed8;
+    font-weight: 800;
   }
 
-  .legend-container::-webkit-scrollbar-track {
+  .edit-button.editing {
+    background: #dbeafe;
+  }
+
+  .map-hint {
+    position: absolute;
+    z-index: 7;
+    left: 50%;
+    bottom: 34px;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.84);
+    padding: 8px 13px;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+    pointer-events: none;
+  }
+
+  .sheet {
+    position: relative;
+    z-index: 10;
+    min-height: 45dvh;
+    margin-top: -20px;
+    border-radius: 24px 24px 0 0;
+    background: #ffffff;
+    box-shadow: 0 -8px 30px rgba(15, 23, 42, 0.1);
+  }
+
+  .grabber {
+    width: 38px;
+    height: 4px;
+    margin: 10px auto 6px;
+    border-radius: 999px;
+    background: #cbd5e1;
+  }
+
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 0 14px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .tabs button {
+    position: relative;
+    border: 0;
     background: transparent;
+    padding: 12px 8px 11px;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 800;
   }
 
-  .legend-container::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 3px;
+  .tabs button.active {
+    color: #1d4ed8;
   }
 
-  .legend-container::-webkit-scrollbar-thumb:hover {
-    background: #999;
+  .tabs button.active::after {
+    content: "";
+    position: absolute;
+    left: 18%;
+    right: 18%;
+    bottom: -1px;
+    height: 3px;
+    border-radius: 999px 999px 0 0;
+    background: #2563eb;
   }
 
-  .legend-item {
+  .tabs span {
+    display: inline-grid;
+    min-width: 20px;
+    height: 20px;
+    place-items: center;
+    margin-left: 4px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11px;
+  }
+
+  .notice {
+    display: block;
+    width: calc(100% - 28px);
+    margin: 10px 14px 0;
+    border: 0;
+    border-radius: 12px;
+    background: #eff6ff;
+    padding: 9px 12px;
+    color: #1d4ed8;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .sheet-content {
+    padding: 12px 14px calc(28px + env(safe-area-inset-bottom));
+  }
+
+  .candidate-list,
+  .schedule-list {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    gap: 10px;
   }
 
-  .legend-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    flex-shrink: 0;
+  .candidate-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: #ffffff;
+    padding: 13px;
+    box-shadow: 0 2px 9px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.16s ease, box-shadow 0.16s ease;
   }
 
-  .legend-text {
-    font-size: 12px;
-    color: #333;
+  .candidate-card.selected {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px #dbeafe;
   }
 
-  @media (max-width: 480px) {
-    .legend-text {
-      font-size: 10px;
-    }
-  }
-
-  .route-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: #666;
-    cursor: pointer;
-    padding-top: 8px;
-    border-top: 1px solid #eee;
-    margin-top: 4px;
-  }
-
-  @media (max-width: 480px) {
-    .route-toggle {
-      font-size: 10px;
-      gap: 6px;
-      padding-top: 6px;
-    }
-  }
-
-  .route-toggle input {
-    cursor: pointer;
-  }
-
-  .route-toggle-button {
-    border: none;
-    background: #f5f5f5;
-    padding: 6px 10px;
-    border-radius: 8px;
-    font-size: 12px;
-    cursor: pointer;
-    transition:
-      background 0.2s,
-      transform 0.1s;
-  }
-
-  .route-toggle-button:hover {
-    background: #e9e9e9;
-  }
-
-  .route-toggle-button:active {
-    transform: scale(0.98);
-  }
-
-  .spot-detail-modal {
-    max-width: 360px;
-  }
-
-  .spot-header {
+  .candidate-main {
     display: flex;
     align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .candidate-card h2,
+  .schedule-row h2 {
+    margin: 4px 0 0;
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  .candidate-card p,
+  .schedule-row p {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 5px 0 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.5;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .category {
+    display: inline-flex;
+    border-radius: 999px;
+    background: #f1f5f9;
+    padding: 3px 8px;
+    color: #475569;
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .map-link {
+    flex: 0 0 auto;
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .candidate-actions {
+    display: grid;
+    grid-template-columns: 0.7fr 1.3fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .primary-action,
+  .secondary-action,
+  .danger-action {
+    min-height: 42px;
+    border-radius: 12px;
+    padding: 0 14px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .primary-action {
+    border: 1px solid #2563eb;
+    background: #2563eb;
+    color: #ffffff;
+  }
+
+  .secondary-action {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+  }
+
+  .danger-action {
+    border: 1px solid #fecaca;
+    background: #fff1f2;
+    color: #be123c;
+  }
+
+  .primary-action:disabled,
+  .secondary-action:disabled,
+  .danger-action:disabled {
+    cursor: wait;
+    opacity: 0.55;
+  }
+
+  .compact {
+    min-height: 38px;
+    margin-top: 14px;
+  }
+
+  .full {
+    width: 100%;
+  }
+
+  .grow {
+    flex: 1;
+  }
+
+  .empty-state {
+    display: flex;
+    min-height: 220px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
+    text-align: center;
+  }
+
+  .empty-state strong {
+    margin-top: 10px;
+    font-size: 16px;
+  }
+
+  .empty-state p {
+    max-width: 300px;
+    margin: 6px 0 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .empty-icon {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background: #dbeafe;
+    color: #2563eb;
+    font-size: 28px;
+    font-weight: 300;
+  }
+
+  .empty-icon.calendar {
+    font-size: 20px;
+  }
+
+  .schedule-row {
+    display: grid;
+    grid-template-columns: 30px 68px minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 8px 0 14px;
+  }
+
+  .order-dot {
+    width: 27px;
+    height: 27px;
+    display: grid;
+    place-items: center;
+    margin-top: 1px;
+    border-radius: 999px;
+    background: #2563eb;
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .schedule-time {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .schedule-time strong {
+    font-size: 13px;
+  }
+
+  .schedule-time span {
+    color: #94a3b8;
+    font-size: 10px;
+  }
+
+  .schedule-info {
+    min-width: 0;
+  }
+
+  .schedule-info h2 {
+    margin-top: 1px;
+    font-size: 14px;
+  }
+
+  .route-note {
+    margin: 8px 4px 0;
+    color: #94a3b8;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.34);
+    backdrop-filter: blur(2px);
+  }
+
+  .bottom-dialog {
+    width: 100%;
+    max-height: min(78dvh, 680px);
+    overflow-y: auto;
+    border-radius: 24px 24px 0 0;
+    background: #ffffff;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    box-shadow: 0 -16px 50px rgba(15, 23, 42, 0.2);
+  }
+
+  .dialog-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 12px;
     margin-bottom: 16px;
   }
 
-  .spot-number {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    color: white;
-    font-weight: bold;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .spot-info {
-    flex: 1;
+  .dialog-head > div {
     min-width: 0;
-  }
-
-  .spot-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin: 0 0 4px 0;
-    word-break: break-word;
-  }
-
-  .spot-datetime {
-    font-size: 14px;
-    color: #666;
-    margin: 0;
-  }
-
-  .spot-section {
     display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 12px;
-    background: #f5f5f5;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    font-size: 14px;
-  }
-
-  .spot-icon {
-    flex-shrink: 0;
-    display: inline-block;
-    vertical-align: middle;
-  }
-
-  .spot-notes {
-    white-space: pre-wrap;
     flex-direction: column;
-    align-items: flex-start;
+    gap: 3px;
   }
 
-  .spot-notes-content {
+  .close-button {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .bottom-dialog label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .bottom-dialog label > span {
+    color: #475569;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .bottom-dialog input,
+  .bottom-dialog select,
+  .bottom-dialog textarea {
     width: 100%;
-    word-break: break-word;
-  }
-
-  .spot-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 16px;
-  }
-
-  .share-url-container {
-    display: flex;
-    gap: 8px;
-  }
-
-  .share-url-input {
-    flex: 1;
-    font-size: 12px;
-    color: #1a1a1a;
-    font-weight: 500;
-  }
-
-  .copy-btn {
-    padding: 8px 16px;
-    background: #4285f4;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
+    box-sizing: border-box;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    background: #ffffff;
+    padding: 11px 12px;
+    color: #0f172a;
+    font: inherit;
     font-size: 16px;
+    outline: none;
   }
 
-  .copy-btn:active {
-    opacity: 0.8;
+  .bottom-dialog input:focus,
+  .bottom-dialog select:focus,
+  .bottom-dialog textarea:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px #dbeafe;
   }
 
-  .mt-4 {
+  .bottom-dialog textarea {
+    resize: vertical;
+  }
+
+  .coordinate-note {
+    margin-top: 8px;
+    color: #94a3b8;
+    font-size: 10px;
+  }
+
+  .dialog-actions {
+    display: flex;
+    gap: 8px;
     margin-top: 16px;
   }
 
-  .pt-4 {
-    padding-top: 16px;
+  .schedule-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 
-  .border-t {
-    border-top-width: 1px;
-  }
-
-  .border-gray-100 {
-    border-color: #f3f4f6;
-  }
-
-  .text-red-500 {
-    color: #ef4444;
-  }
-
-  .text-sm {
-    font-size: 0.875rem;
-  }
-
-  .w-full {
-    width: 100%;
-  }
-
-  .text-center {
-    text-align: center;
-  }
-
-  .hover\:underline:hover {
-    text-decoration: underline;
-  }
-
-  .flex {
-    display: flex;
-  }
-
-  .flex-col {
-    flex-direction: column;
-  }
-
-  .gap-2 {
-    gap: 0.5rem;
-  }
-
-  .p-3 {
-    padding: 0.75rem;
-  }
-
-  .text-left {
-    text-align: left;
-  }
-
-  .rounded {
-    border-radius: 0.25rem;
-  }
-
-  .hover\:bg-gray-100:hover {
-    background-color: #f3f4f6;
-  }
-
-  .bg-blue-50 {
-    background-color: #eff6ff;
-  }
-
-  .text-blue-600 {
-    color: #2563eb;
-  }
-
-  .font-bold {
-    font-weight: 700;
-  }
-
-  .text-gray-500 {
-    color: #6b7280;
-  }
-
-  .text-gray-600 {
-    color: #4b5563;
-  }
-
-  .mb-4 {
-    margin-bottom: 1rem;
-  }
-
-  .text-xl {
-    font-size: 1.25rem;
-  }
-
-  .secret-modal {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    border: 2px solid rgba(255, 255, 255, 0.8);
-  }
-
-  .secret-mode-toggle {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 15px;
-    color: #333;
-    cursor: pointer;
-    padding: 12px;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s ease;
-  }
-
-  .secret-mode-toggle:hover {
-    background: #fafafa;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  .secret-mode-toggle input {
-    cursor: pointer;
-    width: 18px;
-    height: 18px;
-    accent-color: #4285f4;
-  }
-
-  .secret-offset-control {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
-    background: white;
-    border-radius: 10px;
-    border-left: 4px solid #4285f4;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-
-  .secret-offset-control label {
-    font-size: 14px;
-    font-weight: 600;
-    color: #1a73e8;
-  }
-
-  .secret-offset-control input {
-    padding: 10px 12px;
-    border: 2px solid #e8f0fe;
-    border-radius: 6px;
-    font-size: 14px;
-    transition: border-color 0.2s ease;
-  }
-
-  .secret-offset-control input:focus {
-    outline: none;
-    border-color: #4285f4;
-    background: #f8f9fa;
-  }
-
-  .secret-offset-control .text-sm {
-    font-size: 12px;
-    color: #5f6368;
+  .dialog-help {
+    margin: 14px 2px;
+    color: #64748b;
+    font-size: 11px;
     line-height: 1.5;
   }
 
-  .mt-2 {
-    margin-top: 8px;
-  }
-
-  .direction-info {
-    position: absolute;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1500;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    animation: slideUp 0.3s ease-out;
-  }
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateX(-50%) translateY(20px);
+  @media (min-width: 768px) {
+    .trip-map-theme {
+      display: grid;
+      height: 100dvh;
+      min-height: 620px;
+      grid-template-columns: minmax(0, 1fr) 390px;
+      overflow: hidden;
     }
-    to {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
+
+    .map-area {
+      height: 100%;
+      min-height: 0;
     }
-  }
 
-  .direction-info-text {
-    text-align: center;
-    background: rgba(255, 255, 255, 0.98);
-    border-radius: 12px;
-    padding: 12px 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(10px);
-  }
+    .sheet {
+      height: 100%;
+      min-height: 0;
+      margin-top: 0;
+      border-radius: 0;
+      overflow-y: auto;
+      box-shadow: -10px 0 30px rgba(15, 23, 42, 0.08);
+    }
 
-  .next-destination {
-    margin: 0;
-    font-weight: 700;
-    font-size: 15px;
-    color: #202124;
-    letter-spacing: 0.2px;
-  }
+    .grabber {
+      display: none;
+    }
 
-  .next-time {
-    margin: 6px 0 0 0;
-    font-size: 13px;
-    color: #5f6368;
-  }
+    .tabs {
+      padding-top: 8px;
+    }
 
-  .move-button {
-    background: linear-gradient(135deg, #ff5722 0%, #ff8a50 100%);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3);
-    transition: all 0.2s ease;
-  }
+    .modal-backdrop {
+      align-items: center;
+      padding: 24px;
+    }
 
-  .move-button:hover {
-    background: linear-gradient(135deg, #f4511e 0%, #ff7043 100%);
-    box-shadow: 0 6px 16px rgba(255, 87, 34, 0.4);
-    transform: translateY(-2px);
-  }
-
-  .move-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(255, 87, 34, 0.2);
+    .bottom-dialog {
+      width: min(440px, 100%);
+      border-radius: 22px;
+      padding: 20px;
+    }
   }
 </style>

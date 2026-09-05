@@ -79,6 +79,8 @@
   let touchStartY = $state<number | null>(null);
   let touchCurrentY = $state<number | null>(null);
 
+  const DAY_CARD_DRAG_REORDER_ENABLED = false;
+
   function computeGroupedSteps(stepList: Step[]): [string, Step[]][] {
     const groups = new Map<string, Step[]>();
     for (const step of stepList) {
@@ -362,6 +364,8 @@
 
   // Action to handle touch events with passive: false
   function setupTouchDrag(node: HTMLElement, stepId: string) {
+    if (!DAY_CARD_DRAG_REORDER_ENABLED) return {};
+
     const handleStart = (e: TouchEvent) => handleTouchDragStart(e, stepId);
     const handleMove = (e: TouchEvent) => handleTouchDragMove(e);
     const handleEnd = (e: TouchEvent) => {
@@ -539,7 +543,9 @@
                     class:drag-over={dragOverStepId === step.id}
                     class:touch-dragging={touchDragStepId === step.id}
                     role="none"
-                    draggable={hasEditPermission && !editingStepId}
+                    draggable={DAY_CARD_DRAG_REORDER_ENABLED &&
+                      hasEditPermission &&
+                      !editingStepId}
                     ondragstart={(e) => handleDragStart(e, step.id)}
                     ondragover={(e) => handleDragOver(e, step.id)}
                     ondragleave={handleDragLeave}

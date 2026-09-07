@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import type { PackingData, PackingGroup, PackingItem, PackingItemKind, TripMember } from '@tabitabi/types';
   import { packingApi } from '$lib/api/packing';
   import { membersApi } from '$lib/api/members';
@@ -29,7 +30,10 @@
   let draggingGroupId = $state<string | null>(null);
   let dragStartGroups = $state<PackingGroup[]>([]);
   let dragPointerId = $state<number | null>(null);
+  let deepLinked = $state(false);
+  let linkCopyMessage = $state('');
 
+  const isVisible = $derived(show || deepLinked);
   const isDemo = () => itineraryId === 'demo' || getIsDemoMode();
   const me = $derived(data.members.find((member) => member.id === meId));
   const personalItems = $derived(data.items.filter((item) => item.kind === 'personal'));
@@ -102,7 +106,40 @@
     } catch (e) { error = e instanceof Error ? e.message : '持ち物を読み込めませんでした'; }
     finally { loading = false; loaded = true; }
   }
-  $effect(() => { if (show) void load(); else loaded = false; });
+
+  function getPackingLink() {
+    if (typeof window === 'undefined') return '';
+    return `${window.location.origin}${window.location.pathname}#packing`;
+  }
+
+  async function copyPackingLink() {
+    const link = getPackingLink();
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link);
+      linkCopyMessage = 'リンクをコピーしました';
+    } catch {
+      linkCopyMessage = 'リンクをコピーできませんでした';
+    }
+    setTimeout(() => { linkCopyMessage = ''; }, 2000);
+  }
+
+  function closeOverlay() {
+    if (deepLinked && typeof window !== 'undefined' && window.location.hash === '#packing') {
+      deepLinked = false;
+      window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}`);
+    }
+    onClose();
+  }
+
+  onMount(() => {
+    const syncDeepLink = () => { deepLinked = window.location.hash === '#packing'; };
+    syncDeepLink();
+    window.addEventListener('hashchange', syncDeepLink);
+    return () => window.removeEventListener('hashchange', syncDeepLink);
+  });
+
+  $effect(() => { if (isVisible) void load(); else loaded = false; });
 
   function persist(next: PackingData) { data = next; demoStorage.setPackingData(next); }
   function selectMe(id: string) { meId = id; localStorage.setItem(`tabitabi:packing:me:${itineraryId}`, id); showIdentity = false; }
@@ -281,13 +318,18 @@
   }
 </script>
 
-{#if show}
-  <div class="standard-packing-overlay" role="presentation" onclick={(event) => event.target === event.currentTarget && onClose()}>
+{#if isVisible}
+  <div class="standard-packing-overlay" role="presentation" onclick={(event) => event.target === event.currentTarget && closeOverlay()}>
     <div class="standard-packing-panel" role="dialog" aria-modal="true" aria-label="持ち物リスト">
       <header class="standard-packing-header">
         <div><p>TRIP CHECKLIST</p><h2>持ち物</h2></div>
-        <button onclick={onClose} aria-label="閉じる">{@html CloseIcon}</button>
+        <button onclick={closeOverlay} aria-label="閉じる">{@html CloseIcon}</button>
       </header>
+      <div style="display:flex;align-items:center;gap:.5rem;margin:-.35rem 0 .35rem;padding:.6rem .7rem;border:1px solid #e5e0d7;border-radius:12px;background:#fff;">
+        <a href="#packing" style="flex:1;min-width:0;color:var(--theme-primary);font-size:.8rem;font-weight:700;text-decoration:none;">この持ち物を開くリンク</a>
+        <button type="button" onclick={copyPackingLink} aria-label="持ち物のリンクをコピー" title="リンクをコピー" style="width:36px;height:36px;border:1px solid #d6d2c8;border-radius:9px;background:#fff;color:#526057;font-size:1.05rem;cursor:pointer;">⧉</button>
+      </div>
+      {#if linkCopyMessage}<p style="margin:.15rem 0 .75rem;color:#52705f;font-size:.75rem;text-align:right;">{linkCopyMessage}</p>{/if}
       {#if loading}<p class="standard-packing-status">読み込み中…</p>
       {:else if error}<p class="standard-packing-status">{error}</p>
       {:else if !data.members.length}

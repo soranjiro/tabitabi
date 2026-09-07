@@ -257,7 +257,6 @@ INSERT INTO steps (
   ('official-winter-public-matsumoto-castle', 'official-winter-public', '松本城観光', '1788307200000', '1788314400000', '松本市', '{"text":"国宝の城を見学しながら歴史を感じる"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-winter-public-soba-making', 'official-winter-public', 'そば打ち体験', '1788318000000', '1788325200000', '松本市', '{"text":"自分で打ったそばを味わう"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-winter-public-sake-tour', 'official-winter-public', '地酒蔵見学', '1788328800000', '1788334200000', '松本市', '{"text":"酒蔵で冬限定の新酒を試飲"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-zenkoji-prayer', 'official-winter-public', '善光寺お参り', '1788339600000', '1788343200000', '松本市', '{"text":"静かな夜の境内で祈りを捧げる"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-winter-public-train-to-tokyo', 'official-winter-public', '東京へ新幹線移動', '1788391800000', '1788400800000', '松本駅→東京駅', '{"text":"冬の田園風景を眺めながら帰路へ"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-winter-public-ginza-shopping', 'official-winter-public', '銀座ショッピング', '1788404400000', '1788415200000', '銀座', '{"text":"冬のセールでお土産と防寒グッズを探す"}', NULL, 'normal:shopping', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-winter-public-dinner-ginza', 'official-winter-public', '銀座の和食ディナー', '1788426000000', '1788431400000', '銀座', '{"text":"名店で締めの一皿を楽しむ"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
@@ -299,3 +298,81 @@ WHERE id LIKE 'official-spring-%'
    OR id LIKE 'official-summer-%'
    OR id LIKE 'official-autumn-%'
    OR id LIKE 'official-winter-%';
+
+-- Complete editable data for the official account. Public copies intentionally
+-- contain only the distributable itinerary; money and packing stay private.
+INSERT INTO itinerary_members (id, itinerary_id, name, created_at)
+SELECT i.id || '-member-' || member.key, i.id, member.name, '2026-09-08T00:00:00.000Z'
+FROM itineraries i
+CROSS JOIN (
+  SELECT 'a' AS key, 'あおい' AS name UNION ALL
+  SELECT 'b', 'はる' UNION ALL
+  SELECT 'c', 'みなと'
+) member
+WHERE i.id GLOB 'official-*-source';
+
+INSERT INTO itinerary_money_settings (itinerary_id, budget_amount, created_at, updated_at)
+SELECT id, 150000, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries WHERE id GLOB 'official-*-source';
+
+INSERT INTO itinerary_money_items (
+  id, itinerary_id, title, amount, paid_by_member_id, paid_from_fund,
+  status, occurred_on, step_id, is_settled, created_at, updated_at
+)
+SELECT i.id || '-money-hotel', i.id, '宿泊費', 54000, i.id || '-member-a', 0,
+  'paid', '2026-09-01', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source'
+UNION ALL
+SELECT i.id || '-money-transport', i.id, '交通費', 27000, i.id || '-member-b', 0,
+  'paid', '2026-09-02', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source'
+UNION ALL
+SELECT i.id || '-money-food', i.id, '食事とカフェ', 18000, NULL, 1,
+  'planned', '2026-09-03', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source';
+
+INSERT INTO itinerary_money_item_splits (item_id, member_id, itinerary_id, amount)
+SELECT expense.id, member.id, expense.itinerary_id, expense.amount / 3
+FROM itinerary_money_items expense
+JOIN itinerary_members member ON member.itinerary_id = expense.itinerary_id
+WHERE expense.itinerary_id GLOB 'official-*-source';
+
+INSERT INTO itinerary_money_fund_transactions (
+  id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at
+)
+SELECT member.itinerary_id || '-fund-' || member.id, member.itinerary_id, member.id,
+  'contribution', 10000, '旅行前の共同費', '2026-08-28', '2026-09-08T00:00:00.000Z'
+FROM itinerary_members member WHERE member.itinerary_id GLOB 'official-*-source';
+
+INSERT INTO itinerary_packing_groups (id, itinerary_id, name, sort_order, created_at, updated_at)
+SELECT i.id || '-pack-valuables', i.id, '貴重品', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source'
+UNION ALL
+SELECT i.id || '-pack-clothes', i.id, '衣類', 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source'
+UNION ALL
+SELECT i.id || '-pack-tools', i.id, '旅の道具', 2, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source';
+
+INSERT INTO itinerary_packing_items (
+  id, itinerary_id, name, quantity, kind, group_id, assignee_member_id,
+  owner_member_id, is_packed, created_at, updated_at
+)
+SELECT i.id || '-item-wallet', i.id, '財布・身分証', 1, 'personal', i.id || '-pack-valuables', NULL, NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source'
+UNION ALL
+SELECT i.id || '-item-clothes', i.id, '着替え', 3, 'personal', i.id || '-pack-clothes', NULL, NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source'
+UNION ALL
+SELECT i.id || '-item-camera', i.id, 'カメラ', 1, 'shared', i.id || '-pack-tools', i.id || '-member-a', NULL, 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source'
+UNION ALL
+SELECT i.id || '-item-battery', i.id, 'モバイルバッテリー', 2, 'shared', i.id || '-pack-tools', i.id || '-member-b', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source'
+UNION ALL
+SELECT i.id || '-item-medicine', i.id, '常備薬', 1, 'private', i.id || '-pack-valuables', NULL, i.id || '-member-c', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source';
+
+INSERT INTO itinerary_packing_checks (item_id, member_id, itinerary_id, checked_at)
+SELECT i.id || '-item-wallet', i.id || '-member-a', i.id, '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source';

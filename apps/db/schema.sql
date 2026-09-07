@@ -60,7 +60,6 @@ CREATE TABLE itinerary_fork_stats (
   fork_count INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
 );
-CREATE UNIQUE INDEX idx_itineraries_source_id ON itineraries(source_itinerary_id) WHERE source_itinerary_id IS NOT NULL;
 CREATE TABLE itinerary_money_settings (
   itinerary_id TEXT PRIMARY KEY,
   budget_amount INTEGER,
@@ -266,13 +265,5 @@ BEGIN
       page_background_image = NULL
   WHERE id = NEW.id;
 END;
-CREATE TRIGGER sync_public_itinerary_background_after_update
-AFTER UPDATE OF background_image, background_display ON itineraries
-WHEN NEW.source_itinerary_id IS NULL
-BEGIN
-  UPDATE itineraries
-  SET background_image = NEW.background_image,
-      background_display = NEW.background_display,
-      page_background_image = NULL
-  WHERE source_itinerary_id = NEW.id;
-END;
+CREATE INDEX idx_itineraries_source_id ON itineraries(source_itinerary_id);
+CREATE UNIQUE INDEX idx_publications_shared_id ON itinerary_publications(shared_itinerary_id);

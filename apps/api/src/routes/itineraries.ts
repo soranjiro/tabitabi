@@ -7,6 +7,7 @@ import { generateToken } from '../utils/jwt';
 import { UserService } from '../services/user.service';
 import { createItinerarySchema, updateItinerarySchema } from '../validators';
 import { validationHook } from '../validators/hook';
+import { bookContentSchema } from '../services/publication.service';
 
 const itineraries = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -112,14 +113,21 @@ itineraries.post('/:id/publish', optionalAuthMiddleware, async (c) => {
   return c.json({ success: true, data: { id: snapshot.id } });
 });
 
-itineraries.post('/:id/fork', userAuthMiddleware, userProfileMiddleware, async (c) => {
+itineraries.post('/:id/fork', optionalUserAuthMiddleware, async (c) => {
   const sourceId = c.req.param('id')!;
   const userId = c.get('userId');
   const service = new ItineraryService(c.env.DB, c.env);
 
   let result: Awaited<ReturnType<typeof service.fork>>;
+  const rawBody = await c.req.text();
+  let body: unknown = {};
+  try { body = rawBody ? JSON.parse(rawBody) : {}; } catch { body = null; }
+  const parsed = body && Object.keys(body).length ? bookContentSchema.safeParse(body) : null;
+  if (body === null || (parsed && !parsed.success)) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid copy content' } }, 400);
+  }
   try {
-    result = await service.fork(sourceId);
+    result = await service.fork(sourceId, parsed?.success ? parsed.data : undefined);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : '';
     if (msg === 'NOT_FOUND') {

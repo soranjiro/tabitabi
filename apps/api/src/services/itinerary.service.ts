@@ -5,6 +5,7 @@ import type { Env } from '../utils';
 import { validateMemoJson } from '../utils/memo';
 import { createPublicMemoSnapshot, createPublicStepSnapshot, createPublicTextSnapshot } from '../utils/publication';
 import { hashPassword } from '../utils/password';
+import type { BookContent } from './publication.service';
 
 const DEFAULT_THEME_ID = 'planning-draft';
 const DEFAULT_PALETTE_ID = 'neutral';
@@ -194,10 +195,11 @@ export class ItineraryService {
     return await this.get(id);
   }
 
-  async fork(sourceId: string): Promise<{ itinerary: Itinerary; steps: number }> {
+  async fork(sourceId: string, content?: BookContent): Promise<{ itinerary: Itinerary; steps: number }> {
     const source = await this.get(sourceId);
     if (!source) throw new Error('NOT_FOUND');
     if (source.password) throw new Error('FORBIDDEN');
+    if (content) Object.assign(source, content.itinerary);
 
     const newId = generateId();
     const now = getCurrentTimestamp();
@@ -209,7 +211,8 @@ export class ItineraryService {
       .bind(sourceId)
       .all();
 
-    const rows = sourceSteps.results ?? [];
+    const rows = content ? content.steps.map(step => ({ ...step, location: step.location ?? null,
+      notes: step.notes ?? '{"text":""}', link: step.link ?? null, is_all_day: step.is_all_day ? 1 : 0 })) : sourceSteps.results ?? [];
 
     // Use batch() for atomic execution: all inserts + fork_count upsert succeed or fail together
     const stepStatements = rows.map(row =>
@@ -221,7 +224,7 @@ export class ItineraryService {
     await this.db.batch([
       this.db
         .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?)')
-        .bind(newId, `${source.title}（コピー）`, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), source.memo, now, now),
+        .bind(newId, `${source.title.slice(0, 95)}（コピー）`, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, 1, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), source.memo, now, now),
       ...stepStatements,
       // Upsert fork_count in the dedicated stats table
       this.db
@@ -237,10 +240,12 @@ export class ItineraryService {
     return { itinerary: forked!, steps: rows.length };
   }
 
-  async publish(sourceId: string): Promise<Itinerary> {
+  async publish(sourceId: string, userId?: string, metadata?: Pick<Itinerary, 'prefecture_slugs' | 'areas' | 'tags'>, content?: BookContent): Promise<Itinerary> {
     const source = await this.get(sourceId);
     if (!source) throw new Error('NOT_FOUND');
     if (source.source_itinerary_id) throw new Error('CANNOT_PUBLISH_SNAPSHOT');
+    if (content) Object.assign(source, content.itinerary);
+    if (metadata) Object.assign(source, metadata);
 
     const now = getCurrentTimestamp();
 
@@ -255,12 +260,15 @@ export class ItineraryService {
         .all<{ name: string }>(),
     ]);
     const memberNames = (sourceMembers.results ?? []).map((member) => member.name);
-    const rows = (sourceSteps.results ?? []).map(row => createPublicStepSnapshot(row, this.env, memberNames));
+    const rows = (content ? content.steps.map(step => ({ ...step, is_all_day: step.is_all_day ? 1 : 0 })) : sourceSteps.results ?? []).map(row => createPublicStepSnapshot(row, this.env, memberNames));
     const publicTitle = createPublicTextSnapshot(source.title, memberNames) || '旅のしおり';
     const publicMemo = createPublicMemoSnapshot(source.memo, memberNames);
 
-    let existing = await this.db
-      .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
+    let existing = userId ? await this.db
+      .prepare('SELECT shared_itinerary_id as id FROM itinerary_publications WHERE source_itinerary_id = ? AND user_id = ?')
+      .bind(sourceId, userId)
+      .first<{ id: string }>() : await this.db
+      .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ? LIMIT 1')
       .bind(sourceId)
       .first<{ id: string }>();
 
@@ -278,6 +286,10 @@ export class ItineraryService {
           .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?, ?)')
             .bind(newId, publicTitle, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, sourceId, now, now),
           ...stepStatements,
+          ...(userId ? [this.db.prepare(`INSERT INTO itinerary_publications
+            (source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(sourceId, newId, userId,
+              JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), now, now)] : []),
         ]);
         return (await this.get(newId))!;
       } catch (e: unknown) {
@@ -285,8 +297,8 @@ export class ItineraryService {
         if (!msg.includes('UNIQUE constraint failed')) throw e;
         // Concurrent publish race: fall through to update the snapshot created by the other request
         const concurrent = await this.db
-          .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
-          .bind(sourceId)
+          .prepare('SELECT shared_itinerary_id as id FROM itinerary_publications WHERE source_itinerary_id = ? AND user_id = ?')
+          .bind(sourceId, userId ?? '')
           .first<{ id: string }>();
         if (!concurrent) throw e;
         existing = concurrent;

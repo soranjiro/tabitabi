@@ -191,7 +191,7 @@
     };
     openFeatureFromHash();
     window.addEventListener('hashchange', openFeatureFromHash);
-    if (getIsDemoMode()) {
+    if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
       return () => window.removeEventListener('hashchange', openFeatureFromHash);
     }
@@ -557,7 +557,7 @@
   <MoneyOverlay
     show={showMoney}
     itineraryId={itinerary.id}
-    canEdit={hasEditPermission}
+    canEdit={hasEditPermission && !isSharedSnapshot}
     {steps}
     requestedEditItemId={requestedMoneyItemId}
     onEditItemOpened={() => (requestedMoneyItemId = null)}
@@ -581,7 +581,7 @@
     <PackingOverlay
       show={showPacking}
       itineraryId={itinerary.id}
-      canEdit={hasEditPermission}
+      canEdit={hasEditPermission && !isSharedSnapshot}
       onClose={() => closeFeature('packing')}
     />
   {/if}
@@ -594,6 +594,7 @@
   />
 
   <PublishDialog
+    itineraryId={itinerary.id}
     show={showPublishDialog}
     isLoggedIn={loggedInForPublish}
     sourceText={`${itinerary.title} ${steps.map((step) => step.location ?? "").join(" ")}`}
@@ -609,7 +610,7 @@
     canRequestEdit={!isSharedSnapshot}
     {hasEditPermission}
     onShare={() => {
-      if (hasEditPermission) showShareDialog = true;
+      if (hasEditPermission && !isSharedSnapshot) { loggedInForPublish = userAuth.isLoggedIn(); showPublishDialog = true; }
       else void copyViewOnlyLink();
     }}
     onPrint={openPrintPreview}

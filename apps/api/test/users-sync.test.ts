@@ -23,7 +23,7 @@ async function applyMigrations(db: D1Database) {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS idx_itineraries_source_id ON itineraries(source_itinerary_id) WHERE source_itinerary_id IS NOT NULL;`,
+    `CREATE INDEX IF NOT EXISTS idx_itineraries_source_id ON itineraries(source_itinerary_id) WHERE source_itinerary_id IS NOT NULL;`,
     `CREATE TABLE IF NOT EXISTS steps (
       id TEXT PRIMARY KEY,
       itinerary_id TEXT NOT NULL,
@@ -336,7 +336,7 @@ describe('owner publication flow', () => {
     expect(snapshot).toBeNull();
   });
 
-  it('reuses one public ID when multiple accounts publish the same itinerary', async () => {
+  it('creates an independent public ID for each publisher', async () => {
     const firstToken = await registerAndGetToken('firstpublisher', 'first@example.com');
     const secondToken = await registerAndGetToken('secondpublisher', 'second@example.com');
     const itineraryId = await createItinerary();
@@ -367,7 +367,7 @@ describe('owner publication flow', () => {
 
     const first = await firstRes.json() as { data: { id: string } };
     const second = await secondRes.json() as { data: { id: string } };
-    expect(second.data.id).toBe(first.data.id);
+    expect(second.data.id).not.toBe(first.data.id);
 
     const publications = await env.DB.prepare(`
       SELECT shared_itinerary_id, user_id
@@ -376,10 +376,10 @@ describe('owner publication flow', () => {
       ORDER BY user_id
     `).bind(itineraryId).all<{ shared_itinerary_id: string; user_id: string }>();
     expect(publications.results).toHaveLength(2);
-    expect(publications.results?.every((row) => row.shared_itinerary_id === first.data.id)).toBe(true);
+    expect(new Set(publications.results?.map((row) => row.shared_itinerary_id)).size).toBe(2);
   });
 
-  it('removes the listing but keeps the public-ID snapshot when unpublished', async () => {
+  it('removes the account publication and its shared copy when sharing stops', async () => {
     const token = await registerAndGetToken('hideuser', 'hide@example.com');
     const itineraryId = await createItinerary();
 
@@ -405,7 +405,7 @@ describe('owner publication flow', () => {
       .prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
       .bind(itineraryId)
       .first<{ id: string }>();
-    expect(snapshot).not.toBeNull();
+    expect(snapshot).toBeNull();
     const publication = await env.DB
       .prepare('SELECT 1 FROM itinerary_publications WHERE source_itinerary_id = ?')
       .bind(itineraryId)

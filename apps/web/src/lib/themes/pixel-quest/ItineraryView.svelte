@@ -420,7 +420,7 @@
   onMount(() => {
     (async () => {
       // In demo mode, skip auth checks and allow editing locally
-      if (getIsDemoMode()) {
+      if (getIsDemoMode() || isSharedSnapshot) {
         hasEditPermission = true;
       } else {
         const fromUrl = auth.extractTokenFromUrl();

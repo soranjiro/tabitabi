@@ -8,3 +8,90 @@
 @import './dialog.css';
 @import './settings.css';
 @import './print.css';
+
+/* Deep-link copy actions stay in the panel chrome instead of consuming a row. */
+.standard-money-panel,
+.standard-packing-panel {
+  position: relative;
+}
+
+.standard-money-panel > div:has(> a[href="#money"]),
+.standard-packing-panel > div:has(> a[href="#packing"]) {
+  position: absolute !important;
+  top: 1.35rem;
+  right: 4.35rem;
+  z-index: 3;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.standard-money-panel > div:has(> a[href="#money"]) > a,
+.standard-packing-panel > div:has(> a[href="#packing"]) > a {
+  display: none !important;
+}
+
+.standard-money-panel > div:has(> a[href="#money"]) > button,
+.standard-packing-panel > div:has(> a[href="#packing"]) > button {
+  width: 44px !important;
+  height: 44px !important;
+  display: grid !important;
+  place-items: center;
+  padding: 0 !important;
+  border: 1px solid #d6d2c8 !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  color: #526057 !important;
+  font-size: 0 !important;
+  line-height: 0;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(19, 27, 38, .08);
+}
+
+.standard-money-panel > div:has(> a[href="#money"]) > button::before,
+.standard-packing-panel > div:has(> a[href="#packing"]) > button::before {
+  content: "";
+  width: 22px;
+  height: 22px;
+  display: block;
+  background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23526057' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9.5 14.5 14.5 9.5'/%3E%3Cpath d='M7.2 16.8 5.8 18.2a3.3 3.3 0 0 1-4.7-4.7l3.3-3.3a3.3 3.3 0 0 1 4.7 0' transform='translate(3 0)'/%3E%3Cpath d='m16.8 7.2 1.4-1.4a3.3 3.3 0 0 1 4.7 4.7l-3.3 3.3a3.3 3.3 0 0 1-4.7 0' transform='translate(-3 0)'/%3E%3Crect x='15.2' y='15.2' width='6.1' height='6.1' rx='1.2' fill='white'/%3E%3Cpath d='M13.2 18.3v-4a1 1 0 0 1 1-1h4'/%3E%3Crect x='15.2' y='15.2' width='6.1' height='6.1' rx='1.2'/%3E%3C/svg%3E");
+}
+
+.standard-money-panel > div:has(> a[href="#money"]) > button:hover,
+.standard-packing-panel > div:has(> a[href="#packing"]) > button:hover {
+  background: #f7f4ee !important;
+}
+
+.standard-money-panel > div:has(> a[href="#money"]) > button:focus-visible,
+.standard-packing-panel > div:has(> a[href="#packing"]) > button:focus-visible {
+  outline: 3px solid rgba(70, 122, 99, .3);
+  outline-offset: 2px;
+}
+
+.standard-money-panel > div:has(> a[href="#money"]) + p,
+.standard-packing-panel > div:has(> a[href="#packing"]) + p {
+  position: absolute !important;
+  top: 4.25rem;
+  right: 1rem;
+  z-index: 4;
+  margin: 0 !important;
+  padding: .35rem .55rem !important;
+  border-radius: 999px;
+  background: #29332d;
+  color: #fff !important;
+  font-size: .7rem !important;
+  line-height: 1.3;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(19, 27, 38, .18);
+  pointer-events: none;
+}
+
+@media (max-width: 520px) {
+  .standard-money-panel > div:has(> a[href="#money"]),
+  .standard-packing-panel > div:has(> a[href="#packing"]) {
+    top: 1rem;
+    right: 3.9rem;
+  }
+}

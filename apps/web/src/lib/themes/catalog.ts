@@ -4,7 +4,7 @@ export const defaultThemeId = "planning-draft" as const;
 export const defaultPaletteId = "neutral" as const;
 
 export const availableThemes = [
-  "planning-draft", "map-only", "mapbox-journey", "standard-spring", "standard-accordion",
+  "planning-draft", "planning-map", "map-only", "mapbox-journey", "standard-spring", "standard-accordion",
   "standard-summer", "standard-autumn", "standard-winter", "ai-generated",
   "shopping", "pixel-quest", "sauna-rally",
 ] as const;
@@ -48,6 +48,7 @@ export const PALETTES: PaletteOption[] = [
 ];
 
 const THEME_CATALOG: ThemePresetOption[] = [
+  { id: "planning-map", name: "旅のアトリエ", description: "地図に候補を集め、日ごとに旅を組み立てる", phrase: "地図からはじまる旅づくり", viewMode: "list", defaultPaletteId: "neutral", enabled: true },
   { id: "planning-draft", name: "プランニング", description: "候補から日時を決める、計画中のためのテーマ", phrase: "まだ決まっていない旅の計画", viewMode: "list", defaultPaletteId: "neutral", enabled: true },
   { id: "standard-spring", name: "日カード", description: "日付タブで切り替える、親しみやすいカード", phrase: "日ごとの旅行計画", viewMode: "dayCard", defaultPaletteId: "sakura", enabled: true },
   { id: "standard-accordion", name: "セクションカード", description: "旅程全体を見渡せるアコーディオン", phrase: "見渡せる旅行計画", viewMode: "accordion", defaultPaletteId: "ocean", enabled: true },
@@ -63,7 +64,7 @@ const THEME_CATALOG: ThemePresetOption[] = [
 ];
 
 export function getAvailableThemes() { return THEME_CATALOG.filter((theme) => theme.enabled); }
-export function getThemePreset(themeId: string) { return THEME_CATALOG.find((theme) => theme.id === themeId) ?? THEME_CATALOG[0]; }
+export function getThemePreset(themeId: string) { return THEME_CATALOG.find((theme) => theme.id === themeId) ?? THEME_CATALOG.find((theme) => theme.id === defaultThemeId)!; }
 export function getAvailablePalettes() { return PALETTES; }
 export function getPalette(paletteId?: string) { return PALETTES.find((item) => item.id === paletteId) ?? PALETTES[0]; }
 export function getThemePhrases() { return getAvailableThemes().map((theme) => theme.phrase); }

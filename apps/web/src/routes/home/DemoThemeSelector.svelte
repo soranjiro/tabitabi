@@ -18,7 +18,7 @@
     demoStorage.initializeDemo(demoData);
 
     // Navigate to demo page
-    goto(`/demo?theme=${themeId}`);
+    goto(themeId === 'planning-map' ? '/demo/planning-map' : `/demo?theme=${themeId}`);
     onClose();
   }
 

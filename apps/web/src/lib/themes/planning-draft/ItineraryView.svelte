@@ -1,5 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import PlaceSearch from "$lib/planning/PlaceSearch.svelte";
+  import type { PlaceResult } from "$lib/planning/search";
+  import { getPlace, updatePlace, type Place } from '$lib/planning/places';
   import type { ItineraryResponse, Step, StepType } from "@tabitabi/types";
   import { STEP_TYPE } from "@tabitabi/types";
   import { auth } from "$lib/auth";
@@ -24,6 +27,7 @@
   import "../standard/core/styles/index.css";
 
   interface Props {
+    mapPlanning?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: { title?: string; theme_id?: string; memo?: string }) => Promise<void>;
@@ -50,7 +54,30 @@
     onDeleteStep?: (stepId: string) => Promise<void>;
   }
 
-  let { itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep }: Props = $props();
+  let { itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, mapPlanning = false }: Props = $props();
+  let placeDraft = $state<Place | null>(null);
+  let formError = $state('');
+  let descriptionExpanded = $state(false);
+  function selectPlace(place: PlaceResult) {
+    placeDraft = { lat:place.lat, lng:place.lng, priority:placeDraft?.priority };
+    if (!form.title.trim() || !editingStep) form.title = place.name;
+    form.location = `${place.name} ${place.address}`;
+  }
+
+  function focusSheet(node: HTMLElement) {
+    const previous = document.activeElement as HTMLElement | null;
+    node.querySelector<HTMLInputElement>('input')?.focus();
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !saving) { sheetOpen = false; event.preventDefault(); }
+      if (event.key !== 'Tab') return;
+      const items = Array.from(node.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),a[href]'));
+      const first = items[0], last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { last?.focus(); event.preventDefault(); }
+      else if (!event.shiftKey && document.activeElement === last) { first?.focus(); event.preventDefault(); }
+    };
+    node.addEventListener('keydown', keydown);
+    return { destroy() { node.removeEventListener('keydown', keydown); previous?.focus(); } };
+  }
 
   type ScreenMode = "plan" | "preview";
   type WhenChoice = "undecided" | "day";
@@ -86,7 +113,9 @@
     link: "",
   });
 
-  const otherThemes = getAvailableThemes().filter((theme) => theme.id !== "planning-draft");
+  const previewPin = $derived<Step[]>(placeDraft ? [{ id:'preview-pin', itinerary_id:itinerary.id, title:form.title || '選んだ場所', location:form.location, notes:updatePlace(undefined, placeDraft), start_at:0, end_at:0, created_at:'', updated_at:'' }] : []);
+
+  const otherThemes = $derived(getAvailableThemes().filter((theme) => theme.id !== itinerary.theme_id));
 
   onMount(() => {
     titleDraft = itinerary.title;
@@ -217,13 +246,19 @@
     return date.getTime();
   }
 
-  function openCreate() {
+  function openCreate(place?: Place) {
+    if (!hasEditPermission) return;
+    placeDraft = place ?? null;
+    formError = '';
     editingStep = null;
     form = { title: "", note: "", when: "undecided", day: 1, time: "", endTime: "", location: "", link: "" };
     sheetOpen = true;
   }
 
   function openEdit(step: Step) {
+    if (!hasEditPermission) return;
+    placeDraft = getPlace(step.notes);
+    formError = '';
     const schedule = getStepSchedule(step);
     const time = schedule.precision === "time"
       ? `${String(new Date(step.start_at).getHours()).padStart(2, "0")}:${String(new Date(step.start_at).getMinutes()).padStart(2, "0")}`
@@ -255,7 +290,8 @@
 
   async function saveStep(event: SubmitEvent) {
     event.preventDefault();
-    if (!form.title.trim() || saving) return;
+    if (!hasEditPermission || !form.title.trim() || saving) return;
+    formError = '';
     saving = true;
     try {
       const schedule = scheduleFromForm();
@@ -269,10 +305,11 @@
         alert("終了時刻は開始時刻より後に設定してください");
         return;
       }
-      const notes = updateStepSchedule(
+      let notes = updateStepSchedule(
         updateMemoText(editingStep?.notes, form.note),
         schedule,
       );
+      if (mapPlanning) notes = updatePlace(notes, placeDraft);
       const data = {
         title: form.title.trim(),
         start_at: startAt,
@@ -290,16 +327,22 @@
       }
       sheetOpen = false;
       editingStep = null;
+    } catch {
+      formError = '保存できませんでした。入力内容は残っています。もう一度お試しください。';
     } finally {
       saving = false;
     }
   }
 
   async function deleteStep() {
-    if (!editingStep || !onDeleteStep || !confirm(`「${editingStep.title}」を削除しますか？`)) return;
-    await onDeleteStep(editingStep.id);
-    sheetOpen = false;
-    editingStep = null;
+    if (!hasEditPermission || saving || !editingStep || !onDeleteStep || !confirm(`「${editingStep.title}」を削除しますか？`)) return;
+    saving = true;
+    try {
+      await onDeleteStep(editingStep.id);
+      sheetOpen = false;
+      editingStep = null;
+    } catch { formError = '削除できませんでした。もう一度お試しください。'; }
+    finally { saving = false; }
   }
 
   async function moveStep(step: Step, direction: -1 | 1, group: Step[]) {
@@ -334,7 +377,7 @@
 
 <svelte:head><meta name="theme-color" content="#faf9f5" /></svelte:head>
 
-<div class="draft-theme">
+<div class="draft-theme" class:map-planning={mapPlanning}>
   {#if showCopyMessage}<div class="copy-message">コピーしました</div>{/if}
   <header class="draft-header">
     <a class="brand" href="/">たびたび</a>
@@ -343,16 +386,30 @@
     {:else}
       <button class="title-button" onclick={() => hasEditPermission && (editingTitle = true)} disabled={!hasEditPermission}>{itinerary.title}</button>
     {/if}
-    <p>まだ決まっていなくても、ここから。</p>
+    <p>{mapPlanning ? '旅のアトリエ / 計画中のしおり' : 'まだ決まっていなくても、ここから。'}</p>
+    {#if mapPlanning}
+      <section class="trip-description" aria-label="しおりの説明"><strong>この旅について</strong><p class="description-copy" class:expanded={descriptionExpanded}>{getMemoText(itinerary.memo) || 'どんな旅にしたい？人数・日数の目安、好きなことを残しておきましょう。'}</p>
+        {#if getMemoText(itinerary.memo).length > 100}<button class="description-toggle" aria-expanded={descriptionExpanded} onclick={() => descriptionExpanded = !descriptionExpanded}>{descriptionExpanded ? '説明を折りたたむ' : '説明をもっと見る'}</button>{/if}
+        {#if hasEditPermission}<details><summary>しおりの説明を編集</summary><textarea aria-label="しおりの説明" bind:value={memoDraft} rows="4"></textarea><button onclick={saveMemo}>説明を保存</button></details>{/if}
+      </section>
+    {/if}
   </header>
 
   <nav class="mode-tabs" aria-label="表示切り替え">
-    <button class:active={screenMode === "plan"} onclick={() => (screenMode = "plan")}>考える</button>
+    <button class:active={screenMode === "plan"} onclick={() => (screenMode = "plan")}>{mapPlanning ? '地図で考える' : '考える'}</button>
     <button class:active={screenMode === "preview"} onclick={() => (screenMode = "preview")}>旅程を見る</button>
   </nav>
 
   <main>
-    {#if screenMode === "plan"}
+    {#if screenMode === "plan" && mapPlanning}
+      {#await import('../planning-map/PlanningBoard.svelte')}
+        <p role="status">旅のアトリエをひらいています…</p>
+      {:then module}
+        <module.default {steps} canEdit={hasEditPermission} onCreate={openCreate} onEdit={openEdit} onPreview={() => screenMode = 'preview'} />
+      {:catch}
+        <p role="alert">地図画面を読み込めませんでした。再読み込みするか、旅程を見る画面をご利用ください。</p>
+      {/await}
+    {:else if screenMode === "plan"}
       <section class="planning-intro">
         <span>候補を作る</span><i>→</i><span>日を決める</span><i>→</i><span>時間を決める</span>
       </section>
@@ -393,7 +450,7 @@
 
       {#if steps.length === 0}<div class="empty"><strong>まずは、行きたい場所をひとつ。</strong><p>日付や時間はあとで決められます。</p></div>{/if}
 
-      {#if hasEditPermission}<button class="add-button" onclick={openCreate}>＋ 予定を追加</button>{/if}
+      {#if hasEditPermission}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
       <button class="memo-button" onclick={() => (memoOpen = !memoOpen)}>旅のメモ {memoOpen ? "−" : "+"}</button>
       {#if memoOpen}
         <div class="memo-panel"><textarea bind:value={memoDraft} rows="6" placeholder={'例:\n□ 新幹線を予約\n□ ホテルを予約'} disabled={!hasEditPermission}></textarea>{#if hasEditPermission}<button onclick={saveMemo}>保存</button>{/if}</div>
@@ -401,11 +458,11 @@
     {:else}
       <div class="preview-heading"><p>旅程プレビュー</p><h2>{itinerary.title}</h2></div>
       {#if undecidedSteps.length > 0}
-        <section class="preview-unscheduled"><strong>まだ決めていない予定</strong><span>{undecidedSteps.length}件</span>{#each undecidedSteps as step}<p>{step.title}</p>{/each}</section>
+        <section class="preview-unscheduled"><strong>まだ決めていない予定</strong><span>{undecidedSteps.length}件</span>{#each undecidedSteps as step}<p>{step.title} {#if mapPlanning && hasEditPermission}<button onclick={() => openEdit(step)}>行く日を決める →</button>{/if}</p>{/each}</section>
       {/if}
       <div class="preview-days">
         {#each dayGroups.filter((group) => group.steps.length > 0) as group}
-          <section class="preview-day"><header><span>Day</span><strong>{group.day}</strong></header><ol>{#each group.steps as step}<li><time class:pending={getStepSchedule(step).precision !== "time"}>{getStepTimeLabel(step)}</time><div><strong>{step.title}</strong>{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</div></li>{/each}</ol></section>
+          <section class="preview-day"><header><span>Day</span><strong>{group.day}</strong></header><ol>{#each group.steps as step, index}<li><time class:pending={getStepSchedule(step).precision !== "time"}>{getStepTimeLabel(step)}</time><div><strong>{step.title}</strong>{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}{#if mapPlanning && hasEditPermission}<div class="preview-controls"><button onclick={() => openEdit(step)}>編集</button><button disabled={index === 0 || saving} onclick={() => moveStep(step, -1, group.steps)} aria-label={`${step.title}を上へ`}>↑</button><button disabled={index === group.steps.length - 1 || saving} onclick={() => moveStep(step, 1, group.steps)} aria-label={`${step.title}を下へ`}>↓</button></div>{/if}</div></li>{/each}</ol></section>
         {/each}
       </div>
       {#if steps.length === 0}<div class="empty"><strong>旅程はまだ空です。</strong><p>「考える」から候補を追加しましょう。</p></div>{/if}
@@ -413,7 +470,7 @@
       <aside class:complete={isComplete} class="theme-guide">
         <p>{isComplete ? "予定が整いました。" : "予定が固まってきたら、"}</p>
         <strong>見るためのテーマに着替えてみませんか？</strong>
-        <button onclick={() => (themeChoicesOpen = !themeChoicesOpen)}>ほかのテーマを試す</button>
+        {#if hasEditPermission}<button onclick={() => (themeChoicesOpen = !themeChoicesOpen)}>ほかのテーマを試す</button>{/if}
         {#if themeChoicesOpen}
           <div class="theme-choices">{#each otherThemes as theme}<button onclick={() => switchTheme(theme.id)}><strong>{theme.name}</strong><small>{theme.description}</small></button>{/each}</div>
         {/if}
@@ -423,9 +480,23 @@
 
   {#if sheetOpen}
     <div class="sheet-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (sheetOpen = false)}>
-      <div class="sheet" role="dialog" aria-modal="true" aria-label={editingStep ? "予定を編集" : "予定を追加"}>
+      <div class="sheet" use:focusSheet role="dialog" aria-modal="true" aria-label={editingStep ? "予定を編集" : "予定を追加"}>
         <div class="sheet-handle"></div><div class="sheet-title"><h2>{editingStep ? "予定を編集" : "予定を追加"}</h2><button onclick={() => (sheetOpen = false)} aria-label="閉じる">×</button></div>
         <form onsubmit={saveStep}>
+          {#if formError}<p role="alert">{formError}</p>{/if}
+          {#if mapPlanning}
+            <PlaceSearch onSelect={selectPlace} />
+            {#if placeDraft}
+              <div class="pin-fields"><strong>✓ 場所を選択済み</strong><p>{form.location || '地図で選んだ場所'} · ピンの位置を確かめてください。</p>
+                {#await import('../planning-map/PlaceMap.svelte') then module}
+                  {#key `${placeDraft.lat},${placeDraft.lng}`}
+                    <div class="pin-preview"><module.default steps={previewPin} numbers={{'preview-pin':1}} selected="preview-pin" canEdit={true} onSelect={() => {}} onPin={(place) => placeDraft = { ...place, priority:placeDraft?.priority }} /></div>
+                  {/key}
+                {/await}
+                <label class="radio"><input type="checkbox" bind:checked={placeDraft.priority} />★ 絶対行きたい</label><button type="button" onclick={() => { placeDraft = null; form.location = ''; }}>場所を外してあとで決める</button>
+              </div>
+            {:else}<p class="place-help">まだ場所が決まらないときは、下のタイトルだけで候補を保存できます。</p>{/if}
+          {/if}
           <label>タイトル<input bind:value={form.title} placeholder="清水寺に行きたい" required /></label>
           <label>メモ<textarea bind:value={form.note} rows="3" placeholder="朝の方が空いてそう"></textarea></label>
           <label>場所 <small>任意</small><input bind:value={form.location} placeholder="例：清水寺" autocomplete="off" /></label>
@@ -493,8 +564,31 @@
 </div>
 
 <style>
-  :global(body) { margin: 0; background: #faf9f5; }
-  :global(*) { box-sizing: border-box; }
+  .trip-description { max-width:760px; margin-top:20px; padding:16px 20px; background:#f0f2e9; border-left:3px solid #a3b493; border-radius:0 10px 10px 0; font-size:12px; }
+  .description-copy:not(.expanded) { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
+  .trip-description .description-toggle { padding:6px 0; background:none; color:#35695d; font-size:11px; text-decoration:underline; }
+  .trip-description p { white-space:pre-line; line-height:1.8; }
+  .trip-description summary { margin-top:10px; cursor:pointer; color:#35695d; }
+  .trip-description textarea { width:100%; margin:10px 0; padding:10px; border:1px solid #cfd8c9; border-radius:8px; font:inherit; }
+  .trip-description button { padding:8px 12px; border:0; border-radius:8px; color:white; background:#35695d; }
+  .pin-preview { height:260px; margin:12px 0; }
+  .pin-preview :global(.map-frame) { min-height:260px; }
+  .place-help { color:#78837c; font-size:12px; line-height:1.7; }
+
+  .draft-theme :global(*) { box-sizing: border-box; }
+  .map-planning .draft-header, .map-planning main { width:min(1240px, calc(100% - 48px)); }
+  .map-planning .draft-header { padding-top:24px; }
+  .map-planning .brand { margin-bottom:18px; }
+  .map-planning .title-button { font-size:24px; }
+  .map-planning .mode-tabs { width:min(1240px, calc(100% - 16px)); }
+  .map-planning .preview-days,.map-planning .preview-unscheduled,.map-planning .theme-guide { max-width:760px; margin-left:auto; margin-right:auto; }
+  .preview-controls { display:flex !important; gap:8px; }
+  .preview-controls button,.preview-unscheduled button { padding:6px 10px; border:1px solid #d9ddd9; border-radius:7px; background:#f4f6ef; color:#35695d; font-size:12px; cursor:pointer; }
+  .pin-fields { padding:14px; background:#f4f6ef; border-radius:10px; font-size:12px; }
+  .pin-fields p { font-size:11px; color:#78837c; }
+  .pin-fields input { width:100%; }
+  .pin-fields .radio input { width:auto; }
+  @media(max-width:700px) { .map-planning .draft-header,.map-planning main { width:calc(100% - 28px); } }
   .draft-theme { min-height: 100vh; padding-bottom: 7rem; color: #26332f; background: #faf9f5; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; --theme-primary: #2f6657; --theme-text: #26332f; --theme-text-light: #7a8581; --theme-border: #d9ddd9; --theme-line-color: #d9ddd9; }
   .copy-message { position: fixed; z-index: 1100; top: 1rem; left: 50%; padding: .6rem .9rem; border-radius: 999px; color: #fff; background: #2f6657; font-size: .8rem; font-weight: 700; transform: translateX(-50%); }
   .draft-header { width: min(680px, calc(100% - 32px)); margin: 0 auto; padding: 1.5rem 0 .8rem; }

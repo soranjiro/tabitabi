@@ -11,6 +11,11 @@
   padding: 0;
   line-height: 0;
 }
+.standard-packing-header-actions { display:flex; align-items:center; gap:6px; }
+.standard-packing-header-actions > button { width:40px; height:40px; }
+.standard-packing-link { border:0; border-radius:50%; background:transparent; cursor:pointer; font-size:1rem; }
+.standard-packing-link:hover,.standard-packing-link:focus-visible { background:#eeeae2; outline:0; }
+.standard-packing-copy-toast { position:fixed; z-index:1200; left:50%; bottom:max(1.5rem, env(safe-area-inset-bottom)); transform:translateX(-50%); border-radius:999px; background:#29332d; color:#fff; padding:.7rem 1rem; font-size:.82rem; box-shadow:0 8px 24px rgba(0,0,0,.25); }
 
 .standard-packing-header > button svg {
   display: block;

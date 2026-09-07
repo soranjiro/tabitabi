@@ -21,19 +21,22 @@
    the visible controls have a comfortable touch target. */
 .standard-money-close { min-width:44px; min-height:44px; display:grid; place-items:center; line-height:0; }
 .standard-money-header-actions { display:flex; align-items:center; gap:.15rem; }
+.standard-money-link-wrap { position:relative; }
 .standard-money-link { display:grid; place-items:center; width:44px; height:44px; border:0; border-radius:50%; background:transparent; cursor:pointer; font-size:1.05rem; }
 .standard-money-link:hover,.standard-money-link:focus-visible { background:#f0ede6; outline:0; }
+.standard-money-link-toast { position:absolute; top:calc(100% + .15rem); right:-.4rem; z-index:10; width:max-content; border-radius:8px; background:#29332d; color:#fff; padding:.45rem .6rem; font-size:.72rem; box-shadow:0 6px 18px rgba(0,0,0,.2); }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0, 0, 0, 0); white-space:nowrap; border:0; }
 .standard-money-add-expense { width:100%; min-height:48px; margin:.8rem 0 0; border:0; border-radius:10px; background:var(--theme-primary); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
 .standard-money-editor-heading { display:flex !important; justify-content:space-between; align-items:center; gap:.5rem; }
 .standard-money-editor-heading h3 { margin:0; }
-.standard-money-fixed-payer { margin:0; padding:.7rem .8rem; border-radius:9px; background:#fff; color:#526057; font-size:.84rem; font-weight:700; }
-.standard-money-payer-switch { min-height:44px; border:1px solid #b9d6c3; border-radius:9px; background:#e8f5ec; color:#1f6847; font:inherit; font-weight:700; cursor:pointer; }
+.standard-money-fixed-payer { margin:0; padding:.7rem .8rem; border-radius:9px; background:#fff; color:#29332d; font-size:1.15rem; font-weight:700; }
+.standard-money-payer-switch { min-height:44px; border:1px solid #b9d6c3; border-radius:9px; background:#e8f5ec; color:#1f6847; font:inherit; font-size:1.05rem; font-weight:700; cursor:pointer; }
+.standard-money-sentence-row { display:flex !important; align-items:center; gap:.65rem; color:#29332d; font-size:1.15rem; }.standard-money-sentence-row > strong { white-space:nowrap; font-size:1.12rem; }.standard-money-inline-field { display:flex; min-width:0; }.standard-money-inline-field input,.standard-money-inline-field select { width:100%; min-height:56px; border:1px solid #d6d2c8; border-radius:18px; background:#fff; padding:.65rem 1rem; color:#29332d; font:inherit; font-size:1.05rem; }.standard-money-title-field { flex:1; }.standard-money-amount-field { align-items:center; gap:.5rem; width:min(330px, 100%); padding:0 .95rem; border:1px solid #d6d2c8; border-radius:18px; background:#fff; }.standard-money-amount-field input { min-width:0; border:0; padding-left:0; }.standard-money-step-picker { display:flex; align-items:center; gap:.5rem; color:#68736a; font-size:.76rem; }.standard-money-step-picker select { min-width:0; max-width:100%; border:0; border-bottom:1px solid #d6d2c8; background:transparent; padding:.25rem 0; color:#526057; font:inherit; }.standard-money-individual-toggle { border:0; background:transparent; color:var(--theme-primary); padding:.2rem 0; font:inherit; font-size:.75rem; font-weight:700; cursor:pointer; }.standard-money-individual-toggle.active { color:#27684e; }
 .standard-money-advanced-toggle { justify-self:start; border:0; background:transparent; color:var(--theme-primary); padding:.25rem 0; font:inherit; font-size:.8rem; font-weight:700; cursor:pointer; }
 .standard-money-form-error { margin:0; color:#b33b32; font-size:.78rem; font-weight:700; }
 .standard-money-item-list article[role="button"] { cursor:pointer; border-radius:8px; }
 .standard-money-item-list article[role="button"]:focus-visible { outline:3px solid rgba(70,122,99,.35); outline-offset:2px; }
 .standard-money-item-open { color:var(--theme-primary) !important; }
-.standard-money-copy-toast { position:fixed; z-index:1200; left:50%; bottom:max(1.5rem, env(safe-area-inset-bottom)); transform:translateX(-50%); border-radius:999px; background:#29332d; color:#fff; padding:.7rem 1rem; font-size:.82rem; box-shadow:0 8px 24px rgba(0,0,0,.25); }
 .standard-money-close svg { display:block; width:24px; height:24px; }
 .standard-money-field { display:grid; gap:.3rem; color:#59645b; font-size:.78rem; font-weight:700; }
 .standard-money-field small { color:#748075; font-size:.72rem; font-weight:400; line-height:1.45; }

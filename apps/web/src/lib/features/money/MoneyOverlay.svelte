@@ -234,29 +234,9 @@
     fundEnabled = !fundEnabled;
   }
 
-  async function toggleBudgetEnabled() {
-    if (!canEdit) return;
-    if (!budgetEnabled) {
-      budgetEnabled = true;
-      return;
-    }
-    if (data.budget_amount === null) {
-      budget = '';
-      budgetEnabled = false;
-      return;
-    }
-    try {
-      if (isDemoMoney()) {
-        saveDemoData({ ...data, budget_amount: null });
-      } else {
-        await moneyApi.updateSettings(itineraryId, null);
-        data = { ...data, budget_amount: null };
-      }
-      budget = '';
-      budgetEnabled = false;
-    } catch (e) {
-      alert(e instanceof Error ? e.message : '予算を解除できませんでした');
-    }
+  function toggleBudgetEnabled() {
+    if (data.budget_amount !== null || !canEdit) return;
+    budgetEnabled = !budgetEnabled;
   }
 
   async function shareTextOutput() {
@@ -425,6 +405,10 @@
 
   async function saveBudget() {
     const enteredValue = budget.trim() ? Number(budget) : null;
+    if (enteredValue === null && data.budget_amount !== null) {
+      budget = String(budgetView === 'perPerson' && data.members.length ? Math.round(data.budget_amount / data.members.length) : data.budget_amount);
+      return alert('設定済みの予算は解除できません。金額を変更してください');
+    }
     const value = enteredValue === null ? null : budgetView === 'perPerson' && data.members.length ? enteredValue * data.members.length : enteredValue;
     if (value !== null && (!Number.isInteger(value) || value <= 0)) return alert('予算は1円以上の整数で入力してください');
     try {
@@ -600,7 +584,7 @@
             <div class="standard-money-setup-body">
               <div class="standard-money-fund-heading">
                 <div><span>旅行全体の目安</span><h3>予算を使用する</h3></div>
-                <div class="standard-money-segment"><button type="button" role="switch" aria-checked={budgetEnabled} class:active={budgetEnabled} onclick={toggleBudgetEnabled}>{budgetEnabled ? 'ON' : 'OFF'}</button></div>
+                <div class="standard-money-segment"><button type="button" role="switch" aria-checked={budgetEnabled} class:active={budgetEnabled} disabled={data.budget_amount !== null} title={data.budget_amount !== null ? '予算が設定済みのためOFFにできません' : undefined} onclick={toggleBudgetEnabled}>{budgetEnabled ? 'ON' : 'OFF'}</button></div>
               </div>
               {#if budgetEnabled}
                 <label>{budgetView === 'total' ? '全体予算' : '1人あたり予算'} <input inputmode="numeric" placeholder="未設定" bind:value={budget} onblur={saveBudget} /> 円</label>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { PageData } from "./$types";
   import { onMount } from "svelte";
   import { afterNavigate } from "$app/navigation";
   import { auth } from "$lib/auth";
@@ -8,6 +9,8 @@
   import RecentItineraries from "./home/RecentItineraries.svelte";
   import Footer from "./home/Footer.svelte";
   import IconAirplane from "./home/icons/IconAirplane.svelte";
+
+  const { data }: { data: PageData } = $props();
 
   type Preview = {
     id: "spring" | "summer" | "autumn" | "winter";
@@ -83,8 +86,7 @@
     },
   ];
 
-  const initialPreview = previews[Math.floor(Math.random() * previews.length)];
-  let preview = $state<Preview>(initialPreview);
+  const preview = $derived(previews[data.previewIndex] ?? previews[0]!);
   let loggedIn = $state(false);
   let menuOpen = $state(false);
   let scrollProgress = $state(0);

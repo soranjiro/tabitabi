@@ -234,9 +234,24 @@
     fundEnabled = !fundEnabled;
   }
 
-  function toggleBudgetEnabled() {
-    if (data.budget_amount !== null || !canEdit) return;
-    budgetEnabled = !budgetEnabled;
+  async function toggleBudgetEnabled() {
+    if (!canEdit) return;
+    if (!budgetEnabled) {
+      budgetEnabled = true;
+      return;
+    }
+    if (budget.trim()) return;
+    try {
+      if (isDemoMoney()) {
+        saveDemoData({ ...data, budget_amount: null });
+      } else {
+        await moneyApi.updateSettings(itineraryId, null);
+        data = { ...data, budget_amount: null };
+      }
+      budgetEnabled = false;
+    } catch (e) {
+      alert(e instanceof Error ? e.message : '予算を解除できませんでした');
+    }
   }
 
   async function shareTextOutput() {
@@ -404,12 +419,9 @@
   }
 
   async function saveBudget() {
-    const enteredValue = budget.trim() ? Number(budget) : null;
-    if (enteredValue === null && data.budget_amount !== null) {
-      budget = String(budgetView === 'perPerson' && data.members.length ? Math.round(data.budget_amount / data.members.length) : data.budget_amount);
-      return alert('設定済みの予算は解除できません。金額を変更してください');
-    }
-    const value = enteredValue === null ? null : budgetView === 'perPerson' && data.members.length ? enteredValue * data.members.length : enteredValue;
+    if (!budget.trim()) return;
+    const enteredValue = Number(budget);
+    const value = budgetView === 'perPerson' && data.members.length ? enteredValue * data.members.length : enteredValue;
     if (value !== null && (!Number.isInteger(value) || value <= 0)) return alert('予算は1円以上の整数で入力してください');
     try {
       if (isDemoMoney()) {
@@ -584,14 +596,14 @@
             <div class="standard-money-setup-body">
               <div class="standard-money-fund-heading">
                 <div><span>旅行全体の目安</span><h3>予算を使用する</h3></div>
-                <div class="standard-money-segment"><button type="button" role="switch" aria-checked={budgetEnabled} class:active={budgetEnabled} disabled={data.budget_amount !== null} title={data.budget_amount !== null ? '予算が設定済みのためOFFにできません' : undefined} onclick={toggleBudgetEnabled}>{budgetEnabled ? 'ON' : 'OFF'}</button></div>
+                <button type="button" class="standard-money-toggle" role="switch" aria-checked={budgetEnabled} aria-label="予算を使用する" disabled={budgetEnabled && Boolean(budget.trim())} title={budgetEnabled && budget.trim() ? '予算額を空欄にするとOFFにできます' : undefined} onclick={toggleBudgetEnabled}></button>
               </div>
               {#if budgetEnabled}
                 <label>{budgetView === 'total' ? '全体予算' : '1人あたり予算'} <input inputmode="numeric" placeholder="未設定" bind:value={budget} onblur={saveBudget} /> 円</label>
               {/if}
               <div class="standard-money-fund-heading" style="margin-top:.8rem; padding-top:.8rem; border-top:1px solid #d9e5da;">
                 <div><span>みんなで使うお金</span><h3>共同基金を使用する</h3></div>
-                <div class="standard-money-segment"><button type="button" role="switch" aria-checked={fundEnabled} class:active={fundEnabled} disabled={hasFundData} title={hasFundData ? '共同基金のデータがあるためOFFにできません' : undefined} onclick={toggleFundEnabled}>{fundEnabled ? 'ON' : 'OFF'}</button></div>
+                <button type="button" class="standard-money-toggle" role="switch" aria-checked={fundEnabled} aria-label="共同基金を使用する" disabled={hasFundData} title={hasFundData ? '共同基金のデータがあるためOFFにできません' : undefined} onclick={toggleFundEnabled}></button>
               </div>
               <small>旅行メンバーは、しおり設定でまとめて管理できます。</small>
             </div>

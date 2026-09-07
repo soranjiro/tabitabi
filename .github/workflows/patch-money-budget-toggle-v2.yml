@@ -1,0 +1,106 @@
+name: Patch money budget toggle v2
+
+on:
+  push:
+    branches: ["chatgpt/money-settings-toggles"]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/money-settings-toggles
+      - name: Refine budget toggle behavior
+        run: |
+          cat > /tmp/patch.py <<'PY'
+          from pathlib import Path
+
+          svelte = Path('apps/web/src/lib/features/money/MoneyOverlay.svelte')
+          text = svelte.read_text()
+
+          old = """  function toggleBudgetEnabled() {
+            if (data.budget_amount !== null || !canEdit) return;
+            budgetEnabled = !budgetEnabled;
+          }
+          """
+          new = """  async function toggleBudgetEnabled() {
+            if (!canEdit) return;
+            if (!budgetEnabled) {
+              budgetEnabled = true;
+              return;
+            }
+            if (budget.trim()) return;
+            try {
+              if (isDemoMoney()) {
+                saveDemoData({ ...data, budget_amount: null });
+              } else {
+                await moneyApi.updateSettings(itineraryId, null);
+                data = { ...data, budget_amount: null };
+              }
+              budgetEnabled = false;
+            } catch (e) {
+              alert(e instanceof Error ? e.message : '予算を解除できませんでした');
+            }
+          }
+          """
+          assert old in text, 'toggleBudgetEnabled block not found'
+          text = text.replace(old, new, 1)
+
+          old = """  async function saveBudget() {
+            const enteredValue = budget.trim() ? Number(budget) : null;
+            if (enteredValue === null && data.budget_amount !== null) {
+              budget = String(budgetView === 'perPerson' && data.members.length ? Math.round(data.budget_amount / data.members.length) : data.budget_amount);
+              return alert('設定済みの予算は解除できません。金額を変更してください');
+            }
+            const value = enteredValue === null ? null : budgetView === 'perPerson' && data.members.length ? enteredValue * data.members.length : enteredValue;
+          """
+          new = """  async function saveBudget() {
+            if (!budget.trim()) return;
+            const enteredValue = Number(budget);
+            const value = budgetView === 'perPerson' && data.members.length ? enteredValue * data.members.length : enteredValue;
+          """
+          assert old in text, 'saveBudget header not found'
+          text = text.replace(old, new, 1)
+
+          old = """                <div class=\"standard-money-segment\"><button type=\"button\" role=\"switch\" aria-checked={budgetEnabled} class:active={budgetEnabled} disabled={data.budget_amount !== null} title={data.budget_amount !== null ? '予算が設定済みのためOFFにできません' : undefined} onclick={toggleBudgetEnabled}>{budgetEnabled ? 'ON' : 'OFF'}</button></div>
+          """
+          new = """                <button type=\"button\" class=\"standard-money-toggle\" role=\"switch\" aria-checked={budgetEnabled} aria-label=\"予算を使用する\" disabled={budgetEnabled && Boolean(budget.trim())} title={budgetEnabled && budget.trim() ? '予算額を空欄にするとOFFにできます' : undefined} onclick={toggleBudgetEnabled}></button>
+          """
+          assert old in text, 'budget toggle markup not found'
+          text = text.replace(old, new, 1)
+
+          old = """                <div class=\"standard-money-segment\"><button type=\"button\" role=\"switch\" aria-checked={fundEnabled} class:active={fundEnabled} disabled={hasFundData} title={hasFundData ? '共同基金のデータがあるためOFFにできません' : undefined} onclick={toggleFundEnabled}>{fundEnabled ? 'ON' : 'OFF'}</button></div>
+          """
+          new = """                <button type=\"button\" class=\"standard-money-toggle\" role=\"switch\" aria-checked={fundEnabled} aria-label=\"共同基金を使用する\" disabled={hasFundData} title={hasFundData ? '共同基金のデータがあるためOFFにできません' : undefined} onclick={toggleFundEnabled}></button>
+          """
+          assert old in text, 'fund toggle markup not found'
+          text = text.replace(old, new, 1)
+
+          svelte.write_text(text)
+
+          css = Path('apps/web/src/lib/features/money/money.css')
+          css_text = css.read_text()
+          anchor = ".standard-money-budget-card { background:#fff; border:1px solid #e8e3da; border-radius:15px; padding:.85rem; }"
+          toggle_css = """.standard-money-toggle { position:relative; flex:0 0 auto; width:46px; height:26px; border:0; border-radius:999px; background:#c7cec8; padding:3px; cursor:pointer; transition:background .16s ease, opacity .16s ease; }
+          .standard-money-toggle::after { content:\"\"; display:block; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.22); transition:transform .16s ease; }
+          .standard-money-toggle[aria-checked=\"true\"] { background:var(--theme-primary); }
+          .standard-money-toggle[aria-checked=\"true\"]::after { transform:translateX(20px); }
+          .standard-money-toggle:focus-visible { outline:3px solid rgba(70, 122, 99, .35); outline-offset:2px; }
+          .standard-money-toggle:disabled { opacity:.55; cursor:not-allowed; }
+          """
+          assert anchor in css_text, 'CSS anchor not found'
+          css_text = css_text.replace(anchor, toggle_css + anchor, 1)
+          css.write_text(css_text)
+          PY
+          python /tmp/patch.py
+          rm .github/workflows/patch-money-budget-toggle-v2.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/web/src/lib/features/money/MoneyOverlay.svelte apps/web/src/lib/features/money/money.css .github/workflows/patch-money-budget-toggle-v2.yml
+          git commit -m "fix: refine budget toggle behavior"
+          git push origin HEAD:chatgpt/money-settings-toggles

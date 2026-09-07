@@ -18,62 +18,21 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           path = Path('apps/web/src/lib/features/money/MoneyOverlay.svelte')
           text = path.read_text()
-
-          old = """  async function toggleBudgetEnabled() {
-    if (!canEdit) return;
-    if (!budgetEnabled) {
-      budgetEnabled = true;
-      return;
-    }
-    if (data.budget_amount === null) {
-      budget = '';
-      budgetEnabled = false;
-      return;
-    }
-    try {
-      if (isDemoMoney()) {
-        saveDemoData({ ...data, budget_amount: null });
-      } else {
-        await moneyApi.updateSettings(itineraryId, null);
-        data = { ...data, budget_amount: null };
-      }
-      budget = '';
-      budgetEnabled = false;
-    } catch (e) {
-      alert(e instanceof Error ? e.message : '予算を解除できませんでした');
-    }
-  }
-"""
-          new = """  function toggleBudgetEnabled() {
-    if (data.budget_amount !== null || !canEdit) return;
-    budgetEnabled = !budgetEnabled;
-  }
-"""
-          assert old in text, 'toggleBudgetEnabled block not found'
-          text = text.replace(old, new, 1)
-
-          old = """  async function saveBudget() {
-    const enteredValue = budget.trim() ? Number(budget) : null;
-    const value = enteredValue === null ? null : budgetView === 'perPerson' && data.members.length ? enteredValue * data.members.length : enteredValue;
-"""
-          new = """  async function saveBudget() {
-    const enteredValue = budget.trim() ? Number(budget) : null;
-    if (enteredValue === null && data.budget_amount !== null) {
-      budget = String(budgetView === 'perPerson' && data.members.length ? Math.round(data.budget_amount / data.members.length) : data.budget_amount);
-      return alert('設定済みの予算は解除できません。金額を変更してください');
-    }
-    const value = enteredValue === null ? null : budgetView === 'perPerson' && data.members.length ? enteredValue * data.members.length : enteredValue;
-"""
+          pattern = r"  async function toggleBudgetEnabled\(\) \{.*?\n  \}\n\n  async function shareTextOutput"
+          replacement = "  function toggleBudgetEnabled() {\n    if (data.budget_amount !== null || !canEdit) return;\n    budgetEnabled = !budgetEnabled;\n  }\n\n  async function shareTextOutput"
+          text, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+          assert count == 1, 'toggleBudgetEnabled block not found'
+          old = "  async function saveBudget() {\n    const enteredValue = budget.trim() ? Number(budget) : null;\n    const value = enteredValue === null ? null : budgetView === 'perPerson' && data.members.length ? enteredValue * data.members.length : enteredValue;"
+          new = "  async function saveBudget() {\n    const enteredValue = budget.trim() ? Number(budget) : null;\n    if (enteredValue === null && data.budget_amount !== null) {\n      budget = String(budgetView === 'perPerson' && data.members.length ? Math.round(data.budget_amount / data.members.length) : data.budget_amount);\n      return alert('設定済みの予算は解除できません。金額を変更してください');\n    }\n    const value = enteredValue === null ? null : budgetView === 'perPerson' && data.members.length ? enteredValue * data.members.length : enteredValue;"
           assert old in text, 'saveBudget header not found'
           text = text.replace(old, new, 1)
-
-          old = """<div class=\"standard-money-segment\"><button type=\"button\" role=\"switch\" aria-checked={budgetEnabled} class:active={budgetEnabled} onclick={toggleBudgetEnabled}>{budgetEnabled ? 'ON' : 'OFF'}</button></div>"""
-          new = """<div class=\"standard-money-segment\"><button type=\"button\" role=\"switch\" aria-checked={budgetEnabled} class:active={budgetEnabled} disabled={data.budget_amount !== null} title={data.budget_amount !== null ? '予算が設定済みのためOFFにできません' : undefined} onclick={toggleBudgetEnabled}>{budgetEnabled ? 'ON' : 'OFF'}</button></div>"""
+          old = '<div class="standard-money-segment"><button type="button" role="switch" aria-checked={budgetEnabled} class:active={budgetEnabled} onclick={toggleBudgetEnabled}>{budgetEnabled ? \'ON\' : \'OFF\'}</button></div>'
+          new = '<div class="standard-money-segment"><button type="button" role="switch" aria-checked={budgetEnabled} class:active={budgetEnabled} disabled={data.budget_amount !== null} title={data.budget_amount !== null ? \'予算が設定済みのためOFFにできません\' : undefined} onclick={toggleBudgetEnabled}>{budgetEnabled ? \'ON\' : \'OFF\'}</button></div>'
           assert old in text, 'budget toggle button not found'
           text = text.replace(old, new, 1)
-
           path.write_text(text)
           PY
           git config user.name "github-actions[bot]"

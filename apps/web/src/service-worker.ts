@@ -1,16 +1,15 @@
 /// <reference lib="webworker" />
 
-import { build, files, version } from "$service-worker";
+import { build, version } from "$service-worker";
 
 const worker = self as unknown as ServiceWorkerGlobalScope;
 const CACHE_NAME = `tabitabi-cache-${version}`;
-const ASSETS = [
-  ...build,
-  ...files,
-];
+// Precache only versioned build assets. Static assets (hero images, OG images, etc.)
+// are cached on demand so first-load bandwidth stays focused on the current page.
+const ASSETS = [...build];
 
 worker.addEventListener("install", (event: ExtendableEvent) => {
-  // Create a new cache and add all files to it
+  // Create a new cache and add the application build assets to it.
   async function addFilesToCache() {
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(ASSETS);
@@ -43,19 +42,20 @@ worker.addEventListener("fetch", (event: FetchEvent) => {
     const cache = await caches.open(CACHE_NAME);
 
     // Ignore non-http(s) schemes (extensions, chrome-extension://, etc.)
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
       return fetch(event.request);
     }
 
-    // ASSETS: Cache-First
-    // If the request is for an asset (build files or static files), serve from cache
+    // BUILD ASSETS: Cache-First
+    // Versioned application assets are safe to serve directly from the precache.
     if (ASSETS.includes(url.pathname)) {
       const cachedResponse = await cache.match(event.request);
       if (cachedResponse) return cachedResponse;
     }
 
-    // DATA & NAVIGATION: Network-First
-    // For everything else (HTML pages, API data), try the network first
+    // STATIC, DATA & NAVIGATION: Network-First
+    // Cache resources only after the page actually requests them. This avoids
+    // downloading every static image during service-worker installation.
     try {
       const response = await fetch(event.request);
 
@@ -64,9 +64,9 @@ worker.addEventListener("fetch", (event: FetchEvent) => {
         try {
           await cache.put(event.request, response.clone());
         } catch (e) {
-          // Some requests (e.g. chrome-extension://) may be unsupported by Cache API
-          // or otherwise fail to be stored. Ignore caching failures.
-          console.warn('Failed to cache request:', event.request.url, e);
+          // Some requests may be unsupported by Cache API or otherwise fail to
+          // be stored. Ignore caching failures.
+          console.warn("Failed to cache request:", event.request.url, e);
         }
       }
 

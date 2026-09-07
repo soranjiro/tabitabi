@@ -36,7 +36,6 @@
   let settingsOpen = $state(false);
   let activeTab = $state<'expenses' | 'settlement'>('expenses');
   let editorOpen = $state(false);
-  let advancedMode = $state(false);
   let formError = $state('');
   let copied = $state(false);
   let editingItemId = $state<string | null>(null);
@@ -328,7 +327,16 @@
   }
 
   onMount(() => { if (show) load(); });
-  $effect(() => { if (show && !hasLoaded) load(); else if (!show) hasLoaded = false; });
+  $effect(() => {
+    if (show && !hasLoaded) load();
+    else if (!show) {
+      hasLoaded = false;
+      activeTab = 'expenses';
+      editorOpen = false;
+      editingItemId = null;
+      formError = '';
+    }
+  });
   $effect(() => {
     if (!requestedEditItemId) {
       handledEditItemId = null;
@@ -351,21 +359,6 @@
       ? participantIds.filter((id) => id !== memberId)
       : [...participantIds, memberId];
     if (!(memberId in customAmounts)) customAmounts = { ...customAmounts, [memberId]: '' };
-  }
-
-  function setStatus(nextStatus: MoneyItemStatus) {
-    status = nextStatus;
-    if (nextStatus === 'planned') {
-      payerId = 'individual';
-      isSettled = false;
-    }
-  }
-
-  function setPaymentMethod(nextPayerId: string) {
-    payerId = nextPayerId;
-    if (nextPayerId && nextPayerId !== 'individual') {
-      status = 'paid';
-    }
   }
 
   function payerLabel(item: MoneyItem) {
@@ -476,41 +469,36 @@
     }
   }
 
+  function selectAmountEntryMode(mode: 'total' | 'perPerson' | 'custom') {
+    if (mode === 'custom') {
+      selectSplitMode('custom');
+      return;
+    }
+    selectSplitMode('equal');
+    selectAmountInputMode(mode);
+  }
+
   function buildSplits(total: number) {
     if (splitMode === 'equal') return equalSplits(total, participantIds);
     return participantIds.map((memberId) => ({ member_id: memberId, amount: Number(customAmounts[memberId]) }));
   }
 
   const customSplitTotal = $derived(participantIds.reduce((sum, id) => sum + (Number(customAmounts[id]) || 0), 0));
-  const customAmountGroups = $derived.by(() => {
-    const groups = new Map<string, { amount: string; members: MoneyMember[] }>();
-    for (const member of data.members.filter((current) => participantIds.includes(current.id))) {
-      const rawAmount = customAmounts[member.id]?.trim() ?? '';
-      const numericAmount = Number(rawAmount);
-      const key = rawAmount && Number.isFinite(numericAmount) ? `amount:${numericAmount}` : `member:${member.id}`;
-      const group = groups.get(key) ?? { amount: rawAmount, members: [] };
-      group.members.push(member);
-      groups.set(key, group);
-    }
-    return [...groups.values()];
-  });
-
-  function setCustomGroupAmount(memberIds: string[], nextAmount: string) {
-    customAmounts = { ...customAmounts, ...Object.fromEntries(memberIds.map((memberId) => [memberId, nextAmount])) };
-  }
-
-  function detachCustomMember(memberId: string) {
-    customAmounts = { ...customAmounts, [memberId]: '' };
+  const enteredAmount = $derived(Number(amount) || 0);
+  const expenseTotal = $derived(amountInputMode === 'perPerson' ? enteredAmount * participantIds.length : enteredAmount);
+  const perPersonPreview = $derived(participantIds.length && amountInputMode === 'total' ? Math.floor(expenseTotal / participantIds.length) : enteredAmount);
+  function setCustomAmount(memberId: string, nextAmount: string) {
+    customAmounts = { ...customAmounts, [memberId]: nextAmount };
   }
 
   async function addItem() {
     const enteredValue = Number(amount);
     formError = '';
-    if (!title.trim() || !Number.isInteger(enteredValue) || enteredValue <= 0 || !participantIds.length) {
+    if (!title.trim() || !participantIds.length || (splitMode === 'equal' && (!Number.isInteger(enteredValue) || enteredValue <= 0))) {
       formError = '内容・金額（1円以上）・負担する人を入力してください。';
       return;
     }
-    const value = amountInputMode === 'perPerson' ? enteredValue * participantIds.length : enteredValue;
+    const value = splitMode === 'custom' ? customSplitTotal : amountInputMode === 'perPerson' ? enteredValue * participantIds.length : enteredValue;
     const splits = buildSplits(value);
     if (splits.some((split) => !Number.isInteger(split.amount) || split.amount <= 0)) { formError = '一人ずつの負担額を1円以上の整数で入力してください。'; return; }
     if (splits.reduce((sum, split) => sum + split.amount, 0) !== value) { formError = '一人ずつの負担額の合計を総額と一致させてください。'; return; }
@@ -545,17 +533,12 @@
   }
 
   function resetForm() {
-    title = ''; amount = ''; amountInputMode = 'total'; splitMode = 'equal'; customAmounts = {}; payerId = data.members[0]?.id ?? ''; isSettled = false; linkedStepId = steps[0]?.id ?? ''; editingItemId = null; advancedMode = false; formError = '';
+    title = ''; amount = ''; amountInputMode = 'total'; splitMode = 'equal'; customAmounts = {}; status = 'paid'; payerId = data.members[0]?.id ?? ''; isSettled = false; linkedStepId = steps[0]?.id ?? ''; editingItemId = null; formError = '';
     participantIds = data.members.map((member) => member.id);
   }
 
   function openNewExpense() { resetForm(); editorOpen = true; }
   function cancelEditor() { resetForm(); editorOpen = false; }
-  function toggleTwoPersonPayer() {
-    if (data.members.length !== 2) return;
-    payerId = payerId === data.members[0].id ? data.members[1].id : data.members[0].id;
-  }
-
   async function editItem(item: MoneyItem) {
     editingItemId = item.id; title = item.title; amount = String(item.amount); amountInputMode = 'total'; status = item.status;
     payerId = item.paid_from_fund ? 'fund' : item.paid_by_member_id ?? 'individual'; isSettled = item.is_settled;
@@ -564,7 +547,6 @@
     splitMode = splits.every((split) => split.amount === splits[0]?.amount) ? 'equal' : 'custom';
     customAmounts = Object.fromEntries(splits.map((split) => [split.member_id, String(split.amount)]));
     activeTab = 'expenses';
-    advancedMode = false;
     editorOpen = true;
     await tick();
     itemFormElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -685,40 +667,19 @@
           {/if}
         {:else}
           {#if canEdit && data.members.length && !editorOpen}
-            <button class="standard-money-add-expense" onclick={openNewExpense}>＋ 立て替えを追加</button>
+            <button class="standard-money-add-expense" onclick={openNewExpense}>＋ 立て替えを登録</button>
           {/if}
           {#if canEdit && data.members.length && editorOpen}
             <section class="standard-money-form" bind:this={itemFormElement}>
-              <div class="standard-money-editor-heading"><h3>{editingItemId ? '立て替えを編集' : '立て替えを追加'}</h3><button class="standard-money-cancel" onclick={cancelEditor}>一覧に戻る</button></div>
-              <div class="standard-money-sentence-row">
-                {#if data.members.length === 1}
-                  <p class="standard-money-fixed-payer">{data.members[0].name}</p>
-                {:else if data.members.length === 2}
-                  <button class="standard-money-payer-switch" onclick={toggleTwoPersonPayer} aria-label="支払者を入れ替える">{memberName(payerId)}　⇄</button>
-                {:else}
-                  <label class="standard-money-inline-field"><span class="sr-only">誰が払った？</span><select aria-label="誰が払った？" bind:value={payerId}>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select></label>
-                {/if}
-                <strong>が</strong>
-              </div>
-              <div class="standard-money-sentence-row">
-                <label class="standard-money-inline-field standard-money-title-field"><span class="sr-only">何を払った？</span><input aria-label="支出の内容" placeholder="タクシー代" bind:value={title} /></label>
-                <strong>を払って、</strong>
-              </div>
-              {#if steps.length}
-                <label class="standard-money-step-picker"><span>予定に紐づける</span><select bind:value={linkedStepId}><option value="">紐づけない</option>{#each steps as step}<option value={step.id}>{step.title}</option>{/each}</select></label>
-              {/if}
-              <div class="standard-money-sentence-row">
-                <label class="standard-money-inline-field standard-money-amount-field"><span class="sr-only">金額</span><b>¥</b><input aria-label={amountInputMode === 'total' ? '総額（円）' : '1人あたり金額（円）'} inputmode="numeric" placeholder={amountInputMode === 'total' ? '4,800' : '1人あたり'} bind:value={amount} /></label>
-                <strong>かかった。</strong>
-              </div>
-              <div class="standard-money-amount-segment" role="group" aria-label="金額の入力方法">
-                <button type="button" class:active={amountInputMode === 'total'} onclick={() => selectAmountInputMode('total')}>合計で入力</button>
-                <button type="button" class:active={amountInputMode === 'perPerson'} onclick={() => selectAmountInputMode('perPerson')}>1人あたりで入力</button>
-              </div>
+              <div class="standard-money-editor-heading"><h3>{editingItemId ? '立て替えを編集' : '立て替えを登録'}</h3></div>
+              <label class="standard-money-field">
+                <span>支払った人</span>
+                <select aria-label="支払った人" bind:value={payerId}>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>
+              </label>
               <fieldset class="standard-money-checks">
                 <div class="standard-money-split-heading">
-                  <legend>誰の分？</legend>
-                  <button type="button" class="standard-money-individual-toggle" class:active={splitMode === 'custom'} onclick={() => selectSplitMode(splitMode === 'custom' ? 'equal' : 'custom')}>{splitMode === 'custom' ? '均等に戻す' : '個別に金額を設定'}</button>
+                  <legend>負担する人</legend>
+                  <div class="standard-money-member-actions"><button type="button" onclick={() => participantIds = data.members.map((member) => member.id)}>全員選択</button><button type="button" onclick={() => participantIds = data.members.filter((member) => member.id !== payerId).map((member) => member.id)}>自分以外</button></div>
                 </div>
                 <div>
                   {#each data.members as member}
@@ -729,25 +690,39 @@
                     </label>
                   {/each}
                 </div>
+              </fieldset>
+              <label class="standard-money-field"><span class="sr-only">内容</span><input aria-label="支出の内容" placeholder="内容（例：夕食（イタリアン））" bind:value={title} /></label>
+              <label class="standard-money-field"><span>紐づく予定 <small>任意</small></span><select aria-label="紐づく予定" bind:value={linkedStepId}><option value="">紐づけない</option>{#each steps as step}<option value={step.id}>{step.title}</option>{/each}</select></label>
+              <section class="standard-money-amount-entry" aria-label="金額">
+                <span class="standard-money-field-label">金額の入力方法</span>
+                <div class="standard-money-amount-segment" role="group" aria-label="金額の入力方法">
+                  <button type="button" class:active={splitMode === 'equal' && amountInputMode === 'total'} onclick={() => selectAmountEntryMode('total')}>合計</button>
+                  <button type="button" class:active={splitMode === 'equal' && amountInputMode === 'perPerson'} onclick={() => selectAmountEntryMode('perPerson')}>1人あたり</button>
+                  <button type="button" class:active={splitMode === 'custom'} onclick={() => selectAmountEntryMode('custom')}>それぞれ</button>
+                </div>
                 {#if splitMode === 'custom' && participantIds.length}
                   <div class="standard-money-custom-splits">
-                    {#each customAmountGroups as group}
+                    {#each data.members.filter((member) => participantIds.includes(member.id)) as member}
                       <div class="standard-money-custom-group">
-                        <div class="standard-money-custom-members">
-                          {#each group.members as member}
-                            <span>{member.name}{#if group.members.length > 1}<button type="button" aria-label={`${member.name}を別の負担額にする`} onclick={() => detachCustomMember(member.id)}>別額</button>{/if}</span>
-                          {/each}
-                        </div>
-                        <label class="standard-money-custom-input"><span>{group.members.length > 1 ? `${group.members.length}人とも` : '負担額'}</span><input aria-label={`${group.members.map((member) => member.name).join('・')}の負担額（円）`} inputmode="numeric" placeholder="0" value={group.amount} oninput={(event) => setCustomGroupAmount(group.members.map((member) => member.id), event.currentTarget.value)} /> 円</label>
+                        <span class="standard-money-custom-member">{member.name}</span>
+                        <label class="standard-money-custom-input"><span class="sr-only">{member.name}の負担額</span><input aria-label={`${member.name}の負担額（円）`} inputmode="numeric" placeholder="0" value={customAmounts[member.id] ?? ''} oninput={(event) => setCustomAmount(member.id, event.currentTarget.value)} /> 円</label>
                       </div>
                     {/each}
-                    <p class:invalid={Number(amount) !== customSplitTotal}>
+                    <p>
                       <span>入力合計</span><b>{formatYen(customSplitTotal)}</b>
-                      {#if Number(amount) !== customSplitTotal}<small>総額まで {formatYen(Number(amount) - customSplitTotal)}</small>{/if}
                     </p>
                   </div>
+                {:else}
+                  <label class="standard-money-field"><span>金額</span><span class="standard-money-amount-input"><b>¥</b><input aria-label={amountInputMode === 'total' ? '総額（円）' : '1人あたり金額（円）'} inputmode="numeric" placeholder={amountInputMode === 'total' ? '例：4,800' : '例：1,600'} bind:value={amount} /><span>円</span></span></label>
                 {/if}
-              </fieldset>
+              </section>
+              {#if participantIds.length && enteredAmount > 0 && splitMode === 'equal'}
+                <p class="standard-money-expense-preview" aria-live="polite"><span>この立て替え</span><b>{formatYen(expenseTotal)}</b><small>{participantIds.length}人で負担 · 1人 {formatYen(perPersonPreview)}</small></p>
+              {/if}
+              <div class="standard-money-status-options">
+                <label><input type="checkbox" bind:checked={isSettled} disabled={status === 'planned'} /> 精算済みにする</label>
+                <label><input type="checkbox" checked={status === 'planned'} onchange={(event) => { status = event.currentTarget.checked ? 'planned' : 'paid'; if (status === 'planned') isSettled = false; }} /> 予定支出</label>
+              </div>
               {#if formError}<p class="standard-money-form-error" role="alert">{formError}</p>{/if}
               <div class="standard-money-form-actions">
                 {#if editingItem && editingItem.status === 'planned'}<button class="standard-money-cancel" onclick={() => startMarkAsPaid(editingItem!)}>支払い済みにする</button>{/if}

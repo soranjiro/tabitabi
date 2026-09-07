@@ -14,7 +14,7 @@
 .standard-money-fund-card { margin-top:.9rem; padding:.9rem; border:1px solid #d9e5da; border-radius:14px; background:#f4faf5; }.standard-money-fund-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; }.standard-money-fund-heading > div:last-child { display:grid; justify-items:end; }.standard-money-fund-heading span,.standard-money-fund-heading small { color:#68736a; font-size:.72rem; }.standard-money-fund-heading h3 { margin:.08rem 0 0; font-size:1rem; }.standard-money-fund-heading strong { font-size:1.15rem; }.standard-money-fund-stats { display:flex; flex-wrap:wrap; gap:.4rem .8rem; margin-top:.6rem; color:#68736a; font-size:.75rem; }.standard-money-fund-stats b { color:#29332d; }.standard-money-fund-members { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.65rem; }.standard-money-fund-members span { border:1px solid #cfe1d3; border-radius:999px; background:#fff; padding:.28rem .5rem; color:#526057; font-size:.72rem; }.standard-money-fund-members b { color:#27684e; }.standard-money-fund-details { margin-top:.7rem; border-top:1px solid #d9e5da; }.standard-money-fund-details > summary { padding-top:.7rem; color:#27684e; cursor:pointer; font-size:.8rem; font-weight:700; }.standard-money-fund-form { display:grid; grid-template-columns:1fr 1fr 1.2fr; gap:.45rem; margin-top:.7rem; }.standard-money-fund-form input,.standard-money-fund-form select { min-width:0; min-height:42px; box-sizing:border-box; border:1px solid #d6d2c8; border-radius:8px; background:#fff; padding:.5rem; font:inherit; font-size:.78rem; }.standard-money-fund-kind { display:flex; grid-column:1 / -1; overflow:hidden; border:1px solid #cfd9d1; border-radius:8px; background:#fff; }.standard-money-fund-kind button { flex:1; min-height:40px; border:0; border-left:1px solid #cfd9d1; background:#fff; color:#526057; font:inherit; font-size:.76rem; cursor:pointer; }.standard-money-fund-kind button:first-child { border-left:0; }.standard-money-fund-kind button.active { background:#dff2e6; color:#1f6847; font-weight:700; }.standard-money-fund-form > .standard-money-submit { grid-column:1 / -1; min-height:42px; }.standard-money-fund-list { margin-top:.65rem; }.standard-money-fund-list article { display:flex; align-items:center; gap:.55rem; padding:.5rem 0; border-top:1px solid #e1e9e2; font-size:.78rem; }.standard-money-fund-list article > div { display:grid; flex:1; }.standard-money-fund-list strong em { margin-left:.25rem; border-radius:999px; background:#dff2e6; padding:.12rem .32rem; color:#27684e; font-style:normal; font-size:.62rem; }.standard-money-fund-list strong em.refund { background:#f8e5e2; color:#a83a34; }.standard-money-fund-list small,.standard-money-fund-empty { color:#748075; font-size:.7rem; }.standard-money-fund-list button { border:1px solid #d6d2c8; border-radius:7px; background:#fff; color:#a83a34; padding:.3rem .45rem; cursor:pointer; font:inherit; font-size:.7rem; }.standard-money-fund-empty { margin:.7rem 0 0; }
 .standard-money-person-list,.standard-money-item-list { margin-top:.8rem; }.standard-money-person-list article,.standard-money-item-list article { display:flex; align-items:center; justify-content:space-between; gap:.7rem; padding:.75rem 0; border-bottom:1px solid #ece7de; }.standard-money-person-list article > div,.standard-money-item-list article div:first-child { display:grid; gap:.2rem; min-width:0; }.standard-money-person-list span,.standard-money-item-list small { font-size:.76rem; color:#748075; }.standard-money-trip-total { display:flex; align-items:baseline; gap:.35rem; white-space:nowrap; }.standard-money-trip-total b { color:#29332d; font-size:.9rem; }.standard-money-person-list article > b { flex:0 0 auto; white-space:nowrap; }.positive { color:#20744f; }.negative { color:#b33b32; }
 .standard-money-settlements { margin-top:1rem; padding: .9rem; background:#eef5ef; border-radius:14px; }.standard-money-settlements h3,.standard-money-form h3 { margin:0 0 .55rem; font-size:.9rem; }.standard-money-settlements p { display:flex; align-items:center; gap:.45rem; margin:.4rem 0; font-size:.85rem; }.standard-money-settlements p strong { margin-left:auto; }.standard-money-settlements small { color:#68736a; font-size:.72rem; }
-.standard-money-form { margin-top:.9rem; padding:.9rem; background:#f3f0e8; border-radius:14px; display:grid; gap:.55rem; scroll-margin-top:.75rem; }.standard-money-form > div:not(.standard-money-checks):not(.standard-money-form-actions) { display:flex; gap:.55rem; }.standard-money-form > div:not(.standard-money-checks):not(.standard-money-form-actions) > * { flex:1; }.standard-money-checks { display:flex; flex-wrap:wrap; gap:.35rem .7rem; font-size:.8rem; }.standard-money-form-actions { display:flex; justify-content:flex-end; gap:.45rem; }.standard-money-cancel { border:1px solid #d6d2c8; background:#fff; border-radius:8px; padding:.55rem .85rem; font:inherit; cursor:pointer; }.standard-money-item-list article > div:last-child { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:.4rem; }.standard-money-item-list span { color:#257451; background:#e8f5ec; width:max-content; border-radius:999px; padding:.15rem .4rem; font-size:.68rem; font-weight:700; }.standard-money-item-list span.planned { color:#9b611b; background:#fff0d5; }.standard-money-item-list button { background:#fff; border:1px solid #d6d2c8; border-radius:7px; padding:.35rem .5rem; cursor:pointer; font:inherit; font-size:.72rem; }.standard-money-step-link { width:max-content; text-align:left; color:var(--theme-primary); padding:0 !important; border:0 !important; background:transparent !important; }.standard-money-item-list button.delete { color:#a83a34; }.standard-money-empty,.standard-money-status { color:#748075; text-align:center; padding:1.5rem .5rem; }
+.standard-money-form { margin-top:.9rem; padding:.9rem; background:#f3f0e8; border-radius:14px; display:grid; gap:.55rem; scroll-margin-top:.75rem; }.standard-money-form > div:not(.standard-money-checks):not(.standard-money-form-actions):not(.standard-money-amount-segment) { display:flex; gap:.55rem; }.standard-money-form > div:not(.standard-money-checks):not(.standard-money-form-actions):not(.standard-money-amount-segment) > * { flex:1; }.standard-money-checks { display:flex; flex-wrap:wrap; gap:.35rem .7rem; font-size:.8rem; }.standard-money-form-actions { display:flex; justify-content:flex-end; gap:.45rem; }.standard-money-cancel { border:1px solid #d6d2c8; background:#fff; border-radius:8px; padding:.55rem .85rem; font:inherit; cursor:pointer; }.standard-money-item-list article > div:last-child { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:.4rem; }.standard-money-item-list span { color:#257451; background:#e8f5ec; width:max-content; border-radius:999px; padding:.15rem .4rem; font-size:.68rem; font-weight:700; }.standard-money-item-list span.planned { color:#9b611b; background:#fff0d5; }.standard-money-item-list button { background:#fff; border:1px solid #d6d2c8; border-radius:7px; padding:.35rem .5rem; cursor:pointer; font:inherit; font-size:.72rem; }.standard-money-step-link { width:max-content; text-align:left; color:var(--theme-primary); padding:0 !important; border:0 !important; background:transparent !important; }.standard-money-item-list button.delete { color:#a83a34; }.standard-money-empty,.standard-money-status { color:#748075; text-align:center; padding:1.5rem .5rem; }
 @media (max-width: 520px) { .standard-money-panel { border-radius:18px; padding:1rem; }.standard-money-item-list article { align-items:flex-start; }.standard-money-item-list article > div:last-child { max-width:118px; }.standard-money-setup label { flex-wrap:wrap; }.standard-money-person-list article { align-items:flex-start; }.standard-money-person-list article > b { margin-top:.15rem; }.standard-money-trip-total { flex-direction:column; align-items:flex-start; gap:.05rem; } }
 
 /* Expense form: native inputs retain keyboard and screen-reader semantics while
@@ -24,7 +24,7 @@
 .standard-money-link-wrap { position:relative; }
 .standard-money-link { display:grid; place-items:center; width:44px; height:44px; border:0; border-radius:50%; background:transparent; cursor:pointer; font-size:1.05rem; }
 .standard-money-link:hover,.standard-money-link:focus-visible { background:#f0ede6; outline:0; }
-.standard-money-link-toast { position:absolute; top:calc(100% + .15rem); right:-.4rem; z-index:10; width:max-content; border-radius:8px; background:#29332d; color:#fff; padding:.45rem .6rem; font-size:.72rem; box-shadow:0 6px 18px rgba(0,0,0,.2); }
+.standard-money-link-toast { position:fixed; top:calc(env(safe-area-inset-top) + .9rem); left:50%; z-index:520; width:max-content; transform:translateX(-50%); border-radius:999px; background:#29332d; color:#fff; padding:.5rem .8rem; font-size:.76rem; box-shadow:0 6px 18px rgba(0,0,0,.2); }
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0, 0, 0, 0); white-space:nowrap; border:0; }
 .standard-money-add-expense { width:100%; min-height:48px; margin:.8rem 0 0; border:0; border-radius:10px; background:var(--theme-primary); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
 .standard-money-editor-heading { display:flex !important; justify-content:space-between; align-items:center; gap:.5rem; }
@@ -41,9 +41,9 @@
 .standard-money-field { display:grid; gap:.3rem; color:#59645b; font-size:.78rem; font-weight:700; }
 .standard-money-field small { color:#748075; font-size:.72rem; font-weight:400; line-height:1.45; }
 .standard-money-amount-heading { display:flex; align-items:center; justify-content:space-between; gap:.4rem; }
-.standard-money-amount-segment { display:flex; overflow:hidden; border:1px solid #d6d2c8; border-radius:7px; background:#fff; }
-.standard-money-amount-segment button { min-height:28px; border:0; border-left:1px solid #d6d2c8; padding:.2rem .45rem; background:#fff; color:#68736a; font:inherit; font-size:.68rem; cursor:pointer; }
-.standard-money-amount-segment button:first-child { border-left:0; }
+.standard-money-amount-segment { position:relative; display:flex; gap:0 !important; overflow:hidden; border:1px solid #d6d2c8; border-radius:7px; background:#fff; }
+.standard-money-amount-segment::after { content:""; position:absolute; top:0; bottom:0; left:50%; width:1px; background:#d6d2c8; pointer-events:none; }
+.standard-money-amount-segment button { flex:1 1 50%; min-height:28px; border:0; padding:.2rem .45rem; background:#fff; color:#68736a; font:inherit; font-size:.68rem; cursor:pointer; }
 .standard-money-amount-segment button.active { background:var(--theme-primary); color:#fff; }
 .standard-money-form-row { display:grid !important; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:.55rem; }
 .standard-money-form-row > * { min-width:0; }
@@ -68,6 +68,12 @@
 .standard-money-custom-splits p small { color:#748075; }
 .standard-money-custom-splits p.invalid,.standard-money-custom-splits p.invalid b,.standard-money-custom-splits p.invalid small { color:#b33b32; }
 .standard-money-form-actions button { min-height:44px; }
+.standard-money-amount-entry { display:grid; gap:.5rem; }
+.standard-money-amount-entry .standard-money-amount-segment { width:fit-content; max-width:100%; }
+.standard-money-amount-entry .standard-money-amount-segment::after { display:none; }
+.standard-money-amount-entry .standard-money-amount-segment button { flex:0 0 auto; min-height:36px; padding:.3rem .7rem; border-left:1px solid #d6d2c8; font-size:.76rem; }
+.standard-money-amount-entry .standard-money-amount-segment button:first-child { border-left:0; }
+.standard-money-editor-heading > div { min-width:0; }.standard-money-editor-heading p { margin:.18rem 0 0; color:#748075; font-size:.74rem; font-weight:400; line-height:1.45; }.standard-money-fixed-payer { display:flex; align-items:center; min-height:44px; box-sizing:border-box; padding:.55rem .7rem; border:1px solid #d6d2c8; border-radius:8px; background:#fff; color:#29332d; font-size:1rem; font-weight:500; }.standard-money-expense-sentence { gap:.45rem; font-size:1rem; line-height:1.35; }.standard-money-expense-sentence > strong { color:#526057; font-size:.95rem; font-weight:500; }.standard-money-payer-field { flex:0 1 138px; }.standard-money-expense-sentence .standard-money-title-field { flex:1 1 180px; }.standard-money-expense-sentence .standard-money-inline-field input,.standard-money-expense-sentence .standard-money-inline-field select { min-height:48px; border-radius:10px; font-size:1rem; }.standard-money-amount-input { display:flex; align-items:center; min-height:48px; box-sizing:border-box; gap:.55rem; width:min(280px, 100%); padding:0 .8rem; border:1px solid #d6d2c8; border-radius:10px; background:#fff; }.standard-money-amount-input b { color:#526057; font-size:1rem; }.standard-money-amount-input input { width:100%; min-width:0; min-height:42px !important; border:0 !important; padding:0 !important; font-size:1.05rem; font-weight:600; }.standard-money-amount-input input:focus { outline:0; }.standard-money-amount-input:focus-within { border-color:var(--theme-primary); box-shadow:0 0 0 3px rgba(70,122,99,.13); }.standard-money-amount-input span { color:#748075; font-size:.82rem; }.standard-money-expense-preview { display:flex; flex-wrap:wrap; align-items:baseline; gap:.3rem .55rem; margin:0; padding:.65rem .7rem; border:1px solid #d9e8de; border-radius:9px; background:#f5faf6; color:#27684e; font-size:.78rem; }.standard-money-expense-preview b { color:#1f6847; font-size:1rem; }.standard-money-expense-preview small { color:#68736a; }
 .standard-money-item-badges { display:flex; flex-wrap:wrap; gap:.35rem; }
 .standard-money-item-list .standard-money-item-badges .settled { color:#27684e; background:#dff2e6; }
 .standard-money-item-meta { display:grid; gap:.13rem; }
@@ -75,6 +81,31 @@
 .standard-money-item-actions { min-width:128px; }
 .standard-money-item-per-person { width:100%; text-align:right; white-space:nowrap; }
 .standard-money-item-list button.active { border-color:#4d8b6c; background:#e8f5ec; color:#27684e; }
+
+/* Expense editor: each decision gets its own labeled control. */
+.standard-money-form { padding:1rem; gap:.9rem; background:#f7f5ef; }
+.standard-money-editor-heading { padding-bottom:.15rem; border-bottom:1px solid #e4dfd5; }
+.standard-money-editor-heading h3 { font-size:1.05rem; }
+.standard-money-field { gap:.42rem; color:#39443d; font-size:.84rem; }
+.standard-money-field > span:first-child { display:flex; align-items:center; gap:.35rem; font-weight:700; }
+.standard-money-field small { color:#879087; font-size:.72rem; font-weight:400; }
+.standard-money-field input,.standard-money-field select { width:100%; min-height:50px; border:1px solid #d8d5ce; border-radius:10px; background:#fff; padding:.6rem .75rem; font:inherit; font-size:1rem; }
+.standard-money-field select { appearance:auto; }
+.standard-money-checks { gap:.5rem; }
+.standard-money-checks legend,.standard-money-field-label { color:#39443d; font-size:.84rem; font-weight:700; }
+.standard-money-split-heading { align-items:baseline; }
+.standard-money-member-actions { display:flex; gap:.7rem; margin-left:auto; }
+.standard-money-member-actions button { border:0; background:transparent; color:var(--theme-primary); padding:0; font:inherit; font-size:.76rem; cursor:pointer; }
+.standard-money-checks > div:not(.standard-money-split-heading):not(.standard-money-custom-splits) > label { min-height:40px; padding:.38rem .65rem; border-radius:999px; }
+.standard-money-amount-entry { gap:.48rem; }
+.standard-money-amount-entry .standard-money-amount-segment { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); width:100%; }
+.standard-money-amount-entry .standard-money-amount-segment button { min-height:44px; padding:.35rem; }
+.standard-money-amount-input { width:100%; min-height:56px; border-radius:10px; padding:0 .9rem; }
+.standard-money-amount-input input { font-size:1.4rem; }
+.standard-money-status-options { display:grid; gap:.5rem; padding-top:.1rem; }
+.standard-money-status-options label { display:flex; align-items:center; gap:.5rem; color:#526057; font-size:.82rem; cursor:pointer; }
+.standard-money-status-options input { width:20px; height:20px; margin:0; accent-color:var(--theme-primary); }
+.standard-money-status-options input:disabled { opacity:.45; }
 
 .standard-money-fund-history-toggle { margin-top:.7rem; border:0; background:transparent; color:#27684e; padding:0; font:inherit; font-size:.8rem; font-weight:700; cursor:pointer; }
 .standard-money-fund-list button[aria-label="入出金履歴を編集"] { color:#27684e; }
@@ -98,12 +129,20 @@
   .standard-money-tabs button { flex:1; min-height:44px; padding:.55rem .35rem; }
   .standard-money-form { scroll-margin-top:7rem; }
   .standard-money-form-row { grid-template-columns:1fr; }
+  .standard-money-editor-heading { align-items:flex-start; }
+  .standard-money-expense-sentence { align-items:center; gap:.35rem; }.standard-money-expense-sentence .standard-money-payer-field { flex:1 1 116px; }.standard-money-expense-sentence .standard-money-title-field { flex:1 1 150px; }.standard-money-expense-sentence > strong { font-size:.86rem; }.standard-money-expense-sentence .standard-money-amount-input { width:min(220px, calc(100% - 5.2rem)); }
+  .standard-money-amount-entry .standard-money-amount-segment { width:100%; }.standard-money-amount-entry .standard-money-amount-segment button { flex:1 1 0; min-height:40px; padding:.3rem .25rem; font-size:.75rem; }
+  .standard-money-expense-preview { display:grid; grid-template-columns:auto 1fr; gap:.15rem .55rem; }.standard-money-expense-preview small { grid-column:1 / -1; }
+  .standard-money-form-actions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.45rem; }.standard-money-form-actions .standard-money-submit { grid-column:1 / -1; grid-row:1; }.standard-money-form-actions button { min-width:0; padding:.55rem .45rem; }.standard-money-form-actions .delete { color:#a83a34; }
   .standard-money-fund-form { grid-template-columns:1fr 1fr; }
   .standard-money-fund-kind,.standard-money-fund-form > .standard-money-submit { grid-column:1 / -1; }
   .standard-money-fund-form input[aria-label="共同基金のメモ"] { grid-column:1 / -1; }
   .standard-money-fund-form button { min-height:40px; }
   .standard-money-checks > div:not(.standard-money-split-heading):not(.standard-money-custom-splits) { gap:.4rem; }
-  .standard-money-checks > div:not(.standard-money-split-heading):not(.standard-money-custom-splits) > label { flex:1 0 calc(50% - .4rem); justify-content:center; }
+  .standard-money-checks > div:not(.standard-money-split-heading):not(.standard-money-custom-splits) > label { flex:0 0 auto; min-height:36px; padding:.32rem .55rem; font-size:.76rem; }
+  .standard-money-checkmark { width:16px; height:16px; font-size:.62rem; }
+  .standard-money-member-actions { gap:.5rem; }
+  .standard-money-member-actions button { font-size:.72rem; }
   .standard-money-custom-input input { width:96px; }
   .standard-money-custom-group { grid-template-columns:1fr; }
   .standard-money-custom-input { justify-content:flex-end; }

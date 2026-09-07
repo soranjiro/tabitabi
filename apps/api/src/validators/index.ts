@@ -110,6 +110,11 @@ export const moneyFundTransactionSchema = z.object({
   occurred_on: z.string().date().optional(),
 });
 
+export const moneyFundTransactionsSchema = moneyFundTransactionSchema.omit({ member_id: true }).extend({
+  member_ids: z.array(z.string().min(1)).min(1).max(50)
+    .refine((memberIds) => new Set(memberIds).size === memberIds.length, 'members must be unique'),
+});
+
 export const updateMoneyFundTransactionSchema = moneyFundTransactionSchema.partial().refine(
   (data) => Object.keys(data).length > 0,
   { message: 'at least one field is required' },

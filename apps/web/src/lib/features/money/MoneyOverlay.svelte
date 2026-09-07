@@ -45,6 +45,7 @@
   let itemFormElement = $state<HTMLElement | undefined>(undefined);
   let fundMemberId = $state('');
   let fundKind = $state<MoneyFundTransactionKind>('contribution');
+  let fundContributionMode = $state<'individual' | 'equal'>('individual');
   let fundAmount = $state('');
   let fundNote = $state('');
   let fundOccurredOn = $state('');
@@ -143,6 +144,7 @@
   const fundRefunded = $derived(data.fund_transactions.filter((transaction) => transaction.kind === 'refund').reduce((sum, transaction) => sum + transaction.amount, 0));
   const fundSpent = $derived(paidItems.filter((item) => item.paid_from_fund).reduce((sum, item) => sum + item.amount, 0));
   const fundBalance = $derived(fundContributed - fundRefunded - fundSpent);
+  const equalFundContributionTotal = $derived((Number(fundAmount) || 0) * data.members.length);
   const hasFundData = $derived(data.fund_transactions.length > 0 || data.items.some((item) => item.paid_from_fund));
   const fundByMember = $derived(data.members.map((member) => ({
     ...member,
@@ -328,7 +330,10 @@
 
   onMount(() => { if (show) load(); });
   $effect(() => {
-    if (show && !hasLoaded) load();
+    if (show && !hasLoaded) {
+      activeTab = window.location.hash === '#money' ? 'settlement' : 'expenses';
+      load();
+    }
     else if (!show) {
       hasLoaded = false;
       activeTab = 'expenses';
@@ -374,17 +379,26 @@
 
   async function addFundTransaction() {
     const value = Number(fundAmount);
-    if (!fundMemberId || !Number.isInteger(value) || value <= 0) return alert('メンバーと1円以上の金額を入力してください');
+    const addEqualContributions = !editingFundTransactionId && fundKind === 'contribution' && fundContributionMode === 'equal';
+    if ((!addEqualContributions && !fundMemberId) || !Number.isInteger(value) || value <= 0) return alert('メンバーと1円以上の金額を入力してください');
     const input = { member_id: fundMemberId, kind: fundKind, amount: value, note: fundNote.trim() || null, occurred_on: fundOccurredOn || undefined };
     try {
-      if (editingFundTransactionId && isDemoMoney()) {
+      if (addEqualContributions && isDemoMoney()) {
+        const now = new Date().toISOString();
+        const occurredOn = input.occurred_on ?? now.slice(0, 10);
+        const transactions = data.members.map((member) => ({ id: `demo-fund-${Date.now()}-${member.id}`, itinerary_id: itineraryId, member_id: member.id, kind: 'contribution' as const, amount: value, note: input.note, occurred_on: occurredOn, created_at: now }));
+        saveDemoData({ ...data, fund_transactions: [...transactions, ...data.fund_transactions] });
+      } else if (addEqualContributions) {
+        const transactions = await moneyApi.addFundTransactions(itineraryId, { member_ids: data.members.map((member) => member.id), kind: 'contribution', amount: value, note: input.note, occurred_on: input.occurred_on });
+        data = { ...data, fund_transactions: [...transactions, ...data.fund_transactions] };
+      } else if (editingFundTransactionId && isDemoMoney()) {
         saveDemoData({ ...data, fund_transactions: data.fund_transactions.map((transaction) => transaction.id === editingFundTransactionId ? { ...transaction, ...input, occurred_on: input.occurred_on ?? transaction.occurred_on } : transaction) });
       } else if (editingFundTransactionId) {
         const transaction = await moneyApi.updateFundTransaction(itineraryId, editingFundTransactionId, input);
         data = { ...data, fund_transactions: data.fund_transactions.map((current) => current.id === transaction.id ? transaction : current) };
       } else if (isDemoMoney()) {
         const now = new Date().toISOString();
-        saveDemoData({ ...data, fund_transactions: [{ id: `demo-fund-${Date.now()}`, itinerary_id: itineraryId, ...input, occurred_on: now.slice(0, 10), created_at: now }, ...data.fund_transactions] });
+        saveDemoData({ ...data, fund_transactions: [{ id: `demo-fund-${Date.now()}`, itinerary_id: itineraryId, ...input, occurred_on: input.occurred_on ?? now.slice(0, 10), created_at: now }, ...data.fund_transactions] });
       } else {
         const transaction = await moneyApi.addFundTransaction(itineraryId, input);
         data = { ...data, fund_transactions: [transaction, ...data.fund_transactions] };
@@ -411,6 +425,11 @@
   }
 
   function cancelFundEdit() { editingFundTransactionId = null; fundAmount = ''; fundNote = ''; fundOccurredOn = ''; }
+
+  function selectFundKind(kind: MoneyFundTransactionKind) {
+    fundKind = kind;
+    if (kind === 'refund') fundContributionMode = 'individual';
+  }
 
   async function deleteFundTransaction(transactionId: string) {
     if (!confirm('この入出金履歴を削除しますか？')) return;
@@ -629,10 +648,13 @@
             {/if}
             <div class="standard-money-budget-legend"><span><i class="paid"></i>確定支出 <b>{formatYen(displayPaid)}</b></span><span><i class="planned"></i>予定支出 <b>{formatYen(displayPlanned)}</b></span><span class:standard-money-over={remainingBudget !== null && remainingBudget < 0}>残り <b>{remainingBudget === null ? '—' : formatYen(budgetView === 'perPerson' && data.members.length ? Math.round(remainingBudget / data.members.length) : remainingBudget)}</b></span></div>
           </section>
-        {/if}
+      {/if}
 
-        <div class="standard-money-tabs" role="tablist"><button class:active={activeTab === 'expenses'} onclick={() => activeTab = 'expenses'} role="tab">立て替え</button><button class:active={activeTab === 'settlement'} onclick={() => activeTab = 'settlement'} role="tab">精算</button></div>
+      <div class="standard-money-tabs" role="tablist"><button class:active={activeTab === 'expenses'} onclick={() => activeTab = 'expenses'} role="tab">立て替え</button><button class:active={activeTab === 'settlement'} onclick={() => activeTab = 'settlement'} role="tab">精算</button></div>
         {#if activeTab === 'settlement'}
+          {#if data.members.length}
+            <section class="standard-money-settlements"><div class="standard-money-settlements-heading"><div><h3>いま精算するなら</h3><small>予定支出と精算済みの支出は、精算額に含めていません。</small></div><button class="standard-money-share-button" onclick={() => { shareMessage = ''; shareSheetOpen = true; }}>共有</button></div>{#if settlements.length}{#each settlements as settlement}<p><b>{settlement.from}</b> → <b>{settlement.to}</b><strong>{formatYen(settlement.amount)}</strong></p>{/each}{:else}<p>精算は不要です</p>{/if}</section>
+          {/if}
           {#if fundEnabled}
             <section class="standard-money-fund-card">
               <div class="standard-money-fund-heading"><div><span>みんなで使うお金</span><h3>共同基金</h3></div><div><small>現在の残高</small><strong class:negative={fundBalance < 0}>{formatYen(fundBalance)}</strong></div></div>
@@ -642,13 +664,21 @@
                 <summary>＋ 入金・返金を記録</summary>
                 {#if data.members.length}
                   <div class="standard-money-fund-form" bind:this={fundFormElement}>
-                    <div class="standard-money-fund-kind" role="group" aria-label="共同基金の入出金区分"><button type="button" class:active={fundKind === 'contribution'} onclick={() => fundKind = 'contribution'}>基金に入金</button><button type="button" class:active={fundKind === 'refund'} onclick={() => fundKind = 'refund'}>基金から返金</button></div>
-                    <select aria-label={fundKind === 'contribution' ? '入金するメンバー' : '返金するメンバー'} bind:value={fundMemberId}>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>
-                    <input aria-label="共同基金の金額（円）" inputmode="numeric" placeholder="例：10,000円" bind:value={fundAmount} />
+                    <div class="standard-money-fund-kind" role="group" aria-label="共同基金の入出金区分"><button type="button" class:active={fundKind === 'contribution'} onclick={() => selectFundKind('contribution')}>基金に入金</button><button type="button" class:active={fundKind === 'refund'} onclick={() => selectFundKind('refund')}>基金から返金</button></div>
+                    {#if fundKind === 'contribution' && !editingFundTransactionId}
+                      <div class="standard-money-fund-entry-mode" role="group" aria-label="入金する人"><span>入金する人</span><div><button type="button" class:active={fundContributionMode === 'individual'} onclick={() => fundContributionMode = 'individual'}>1人ずつ</button><button type="button" class:active={fundContributionMode === 'equal'} onclick={() => fundContributionMode = 'equal'}>全員から同額</button></div></div>
+                    {/if}
+                    {#if fundContributionMode === 'individual' || fundKind === 'refund' || editingFundTransactionId}
+                      <label class="standard-money-fund-field"><span>{fundKind === 'contribution' ? '入金する人' : '返金する人'}</span><select aria-label={fundKind === 'contribution' ? '入金するメンバー' : '返金するメンバー'} bind:value={fundMemberId}>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select></label>
+                    {/if}
+                    <label class="standard-money-fund-field"><span>{fundKind === 'contribution' && fundContributionMode === 'equal' && !editingFundTransactionId ? '1人あたりの入金額' : '金額'}</span><input aria-label="共同基金の金額（円）" inputmode="numeric" placeholder="例：10,000円" bind:value={fundAmount} /></label>
                     <input aria-label="共同基金のメモ" placeholder="例：旅行前の集金" bind:value={fundNote} />
                     <input aria-label="共同基金の取引日" type="date" bind:value={fundOccurredOn} />
+                    {#if fundKind === 'contribution' && fundContributionMode === 'equal' && !editingFundTransactionId}
+                      <p class="standard-money-fund-equal-summary" aria-live="polite"><b>{data.members.length}人 × {formatYen(Number(fundAmount) || 0)}</b><span>合計 {formatYen(equalFundContributionTotal)} を共同基金へ</span></p>
+                    {/if}
                     {#if editingFundTransactionId}<button type="button" class="standard-money-cancel" onclick={cancelFundEdit}>編集をやめる</button>{/if}
-                    <button class="standard-money-submit" onclick={addFundTransaction}>{editingFundTransactionId ? '取引を保存' : fundKind === 'contribution' ? '共同基金に入金' : '返金を記録'}</button>
+                    <button class="standard-money-submit" onclick={addFundTransaction}>{editingFundTransactionId ? '取引を保存' : fundKind === 'contribution' && fundContributionMode === 'equal' ? `全員から入金する（合計 ${formatYen(equalFundContributionTotal)}）` : fundKind === 'contribution' ? '共同基金に入金' : '返金を記録'}</button>
                   </div>
                 {/if}
               </details>{/if}
@@ -663,7 +693,6 @@
           {#if !data.members.length}<p class="standard-money-empty">メンバーを追加すると、立替と精算額を自動で計算します。</p>
           {:else}
             <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><button class="standard-money-member-history" onclick={() => openMemberHistory(member.id)} aria-label={`${member.name}の旅行中の取引履歴を見る`}><strong>{member.name}</strong><span>履歴を見る</span></button><span class="standard-money-trip-total">旅行での支出合計 <b>{formatYen(member.tripTotal)}</b></span></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>
-            <section class="standard-money-settlements"><div class="standard-money-settlements-heading"><div><h3>いま精算するなら</h3><small>予定支出と精算済みの支出は、精算額に含めていません。</small></div><button class="standard-money-share-button" onclick={() => { shareMessage = ''; shareSheetOpen = true; }}>共有</button></div>{#if settlements.length}{#each settlements as settlement}<p><b>{settlement.from}</b> → <b>{settlement.to}</b><strong>{formatYen(settlement.amount)}</strong></p>{/each}{:else}<p>精算は不要です</p>{/if}</section>
           {/if}
         {:else}
           {#if canEdit && data.members.length && !editorOpen}
@@ -674,7 +703,11 @@
               <div class="standard-money-editor-heading"><h3>{editingItemId ? '立て替えを編集' : '立て替えを登録'}</h3></div>
               <label class="standard-money-field">
                 <span>支払った人</span>
-                <select aria-label="支払った人" bind:value={payerId}>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>
+                <select aria-label="支払った人" bind:value={payerId}>
+                  <option value="individual">各自</option>
+                  {#if fundEnabled}<option value="fund">共同基金</option>{/if}
+                  {#each data.members as member}<option value={member.id}>{member.name}</option>{/each}
+                </select>
               </label>
               <fieldset class="standard-money-checks">
                 <div class="standard-money-split-heading">

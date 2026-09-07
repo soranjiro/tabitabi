@@ -75,4 +75,8 @@ export interface CreateMoneyFundTransactionInput {
   occurred_on?: string;
 }
 
+export interface CreateMoneyFundTransactionsInput extends Omit<CreateMoneyFundTransactionInput, 'member_id'> {
+  member_ids: string[];
+}
+
 export interface UpdateMoneyFundTransactionInput extends Partial<CreateMoneyFundTransactionInput> {}

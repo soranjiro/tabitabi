@@ -15,7 +15,7 @@
     <meta name="google-site-verification" content="Xdfjc_OP5gOA4OTSCDjN38wuIU2SbvsLsXK4Ta1MKao" />
 
     <!-- 基本 -->
-    <link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="%sveltekit.assets%/icons/icon-192.png" type="image/png" sizes="192x192" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
@@ -26,11 +26,19 @@
 
     <script>
       window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
+      var analyticsLoaded=false;
       function loadAnalytics(){
+        if(analyticsLoaded)return;analyticsLoaded=true;
         var s=document.createElement('script');s.src='https://www.googletagmanager.com/gtag/js?id=G-T80SMS1MXE';s.async=true;document.head.appendChild(s);
         gtag('js',new Date());gtag('config','G-T80SMS1MXE')
       }
-      if('requestIdleCallback' in window){requestIdleCallback(loadAnalytics,{timeout:4000})}else{setTimeout(loadAnalytics,2000)}
+      var analyticsEvents=['pointerdown','keydown'];
+      function loadAnalyticsOnInteraction(){
+        analyticsEvents.forEach(function(eventName){window.removeEventListener(eventName,loadAnalyticsOnInteraction)});
+        loadAnalytics();
+      }
+      analyticsEvents.forEach(function(eventName){window.addEventListener(eventName,loadAnalyticsOnInteraction,{once:true,passive:true})});
+      window.addEventListener('load',function(){setTimeout(loadAnalytics,8000)},{once:true});
     </script>
 
     %sveltekit.head%

@@ -55,7 +55,11 @@
   let shareSettlements = $state(true);
   let shareTransactions = $state(false);
   let shareMessage = $state('');
+  let deepLinked = $state(false);
+  let linkCopyMessage = $state('');
+  let deepLinkUrl = $state('');
 
+  const isVisible = $derived(show || deepLinked);
   const isDemoMoney = () => itineraryId === 'demo' || getIsDemoMode();
 
   function demoMoneyData(): MoneyData {
@@ -218,6 +222,7 @@
       sections.push(['【精算】', settlements.length
         ? settlements.map((settlement) => `${settlement.from} → ${settlement.to}　${formatYen(settlement.amount)}`).join('\n')
         : '精算は不要です'].join('\n'));
+      if (deepLinkUrl) sections.push(['【お金のリンク】', deepLinkUrl].join('\n'));
     }
     if (shareTransactions) {
       sections.push(['【取引の詳細】', data.items.length
@@ -231,6 +236,31 @@
   function toggleFundEnabled() {
     if (hasFundData || !canEdit) return;
     fundEnabled = !fundEnabled;
+  }
+
+  function getMoneyLink() {
+    if (typeof window === 'undefined') return '';
+    return `${window.location.origin}${window.location.pathname}#money`;
+  }
+
+  async function copyMoneyLink() {
+    const link = deepLinkUrl || getMoneyLink();
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link);
+      linkCopyMessage = 'リンクをコピーしました';
+    } catch {
+      linkCopyMessage = 'リンクをコピーできませんでした';
+    }
+    setTimeout(() => { linkCopyMessage = ''; }, 2000);
+  }
+
+  function closeOverlay() {
+    if (deepLinked && typeof window !== 'undefined' && window.location.hash === '#money') {
+      deepLinked = false;
+      window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}`);
+    }
+    onClose();
   }
 
   async function shareTextOutput() {
@@ -290,14 +320,20 @@
     }
   }
 
-  onMount(() => { if (show) load(); });
-  $effect(() => { if (show && !hasLoaded) load(); else if (!show) hasLoaded = false; });
+  onMount(() => {
+    const syncDeepLink = () => { deepLinked = window.location.hash === '#money'; };
+    deepLinkUrl = getMoneyLink();
+    syncDeepLink();
+    window.addEventListener('hashchange', syncDeepLink);
+    return () => window.removeEventListener('hashchange', syncDeepLink);
+  });
+  $effect(() => { if (isVisible && !hasLoaded) load(); else if (!isVisible) hasLoaded = false; });
   $effect(() => {
     if (!requestedEditItemId) {
       handledEditItemId = null;
       return;
     }
-    if (!show || !hasLoaded || handledEditItemId === requestedEditItemId) return;
+    if (!isVisible || !hasLoaded || handledEditItemId === requestedEditItemId) return;
     handledEditItemId = requestedEditItemId;
     const requestedItem = data.items.find((item) => item.id === requestedEditItemId);
     if (requestedItem) void editItem(requestedItem).finally(() => onEditItemOpened?.());
@@ -553,13 +589,18 @@
   }
 </script>
 
-{#if show}
-  <div class="standard-money-overlay" role="presentation" onclick={(event) => event.target === event.currentTarget && onClose()}>
+{#if isVisible}
+  <div class="standard-money-overlay" role="presentation" onclick={(event) => event.target === event.currentTarget && closeOverlay()}>
     <div class="standard-money-panel" role="dialog" aria-modal="true" aria-label="お金の管理" tabindex="-1">
       <header class="standard-money-header">
         <div><p>旅の会計</p><h2>お金の管理</h2></div>
-        <button class="standard-money-close" onclick={onClose} aria-label="閉じる">{@html CloseIcon}</button>
+        <button class="standard-money-close" onclick={closeOverlay} aria-label="閉じる">{@html CloseIcon}</button>
       </header>
+      <div style="display:flex;align-items:center;gap:.5rem;margin:-.35rem 0 .35rem;padding:.6rem .7rem;border:1px solid #e5e0d7;border-radius:12px;background:#fff;">
+        <a href="#money" style="flex:1;min-width:0;color:var(--theme-primary);font-size:.8rem;font-weight:700;text-decoration:none;">このお金を開くリンク</a>
+        <button type="button" onclick={copyMoneyLink} aria-label="お金のリンクをコピー" title="リンクをコピー" style="width:36px;height:36px;border:1px solid #d6d2c8;border-radius:9px;background:#fff;color:#526057;font-size:1.05rem;cursor:pointer;">⧉</button>
+      </div>
+      {#if linkCopyMessage}<p style="margin:.15rem 0 .75rem;color:#52705f;font-size:.75rem;text-align:right;">{linkCopyMessage}</p>{/if}
 
       {#if loading}<p class="standard-money-status">読み込み中…</p>
       {:else if error}<p class="standard-money-status">{error}</p>

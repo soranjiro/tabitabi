@@ -31,6 +31,7 @@
   let isSettled = $state(false);
   let participantIds = $state<string[]>([]);
   let budget = $state('');
+  let budgetEnabled = $state(false);
   let budgetView = $state<'total' | 'perPerson'>('total');
   let settingsOpen = $state(false);
   let activeTab = $state<'summary' | 'items'>('summary');
@@ -233,6 +234,26 @@
     fundEnabled = !fundEnabled;
   }
 
+  async function toggleBudgetEnabled() {
+    if (!canEdit) return;
+    if (!budgetEnabled) {
+      budgetEnabled = true;
+      return;
+    }
+    if (budget.trim()) return;
+    try {
+      if (isDemoMoney()) {
+        saveDemoData({ ...data, budget_amount: null });
+      } else {
+        await moneyApi.updateSettings(itineraryId, null);
+        data = { ...data, budget_amount: null };
+      }
+      budgetEnabled = false;
+    } catch (e) {
+      alert(e instanceof Error ? e.message : '予算を解除できませんでした');
+    }
+  }
+
   async function shareTextOutput() {
     if (!shareText) return;
     try {
@@ -274,6 +295,7 @@
         participantIds = data.members.map((member) => member.id);
         fundMemberId ||= data.members[0]?.id ?? '';
         fundEnabled = hasFundData;
+        budgetEnabled = data.budget_amount !== null;
         return;
       }
 
@@ -282,6 +304,7 @@
       participantIds = data.members.map((member) => member.id);
       fundMemberId ||= data.members[0]?.id ?? '';
       fundEnabled = hasFundData;
+      budgetEnabled = data.budget_amount !== null;
     } catch (e) {
       error = e instanceof Error ? e.message : 'お金の管理データを読み込めませんでした';
     } finally {
@@ -396,16 +419,19 @@
   }
 
   async function saveBudget() {
-    const enteredValue = budget.trim() ? Number(budget) : null;
-    const value = enteredValue === null ? null : budgetView === 'perPerson' && data.members.length ? enteredValue * data.members.length : enteredValue;
+    if (!budget.trim()) return;
+    const enteredValue = Number(budget);
+    const value = budgetView === 'perPerson' && data.members.length ? enteredValue * data.members.length : enteredValue;
     if (value !== null && (!Number.isInteger(value) || value <= 0)) return alert('予算は1円以上の整数で入力してください');
     try {
       if (isDemoMoney()) {
         saveDemoData({ ...data, budget_amount: value });
+        budgetEnabled = value !== null;
         return;
       }
       await moneyApi.updateSettings(itineraryId, value);
       data = { ...data, budget_amount: value };
+      budgetEnabled = value !== null;
     } catch (e) { alert(e instanceof Error ? e.message : '予算を保存できませんでした'); }
   }
 
@@ -564,34 +590,45 @@
       {#if loading}<p class="standard-money-status">読み込み中…</p>
       {:else if error}<p class="standard-money-status">{error}</p>
       {:else}
-        <div class="standard-money-budget-heading">
-          <div><span>予算の表示</span><div class="standard-money-segment"><button class:active={budgetView === 'total'} onclick={() => selectBudgetView('total')}>全体</button><button class:active={budgetView === 'perPerson'} onclick={() => selectBudgetView('perPerson')} disabled={!data.members.length}>1人あたり</button></div></div>
-          {#if budgetView === 'perPerson' && data.members.length}<small>{data.members.length}人で均等に計算</small>{/if}
-        </div>
-        <section class="standard-money-budget-card">
-          <div class="standard-money-budget-label"><span>{budgetView === 'total' ? '全体予算' : '1人あたり予算'}</span><strong>{displayBudget === null ? '未設定' : formatYen(displayBudget)}</strong></div>
-          {#if displayBudget !== null}
-            <div class="standard-money-budget-bar" aria-label="予算の使用状況"><i class="paid" style={`width: ${paidPercent}%`}></i><i class="planned" style={`width: ${plannedPercent}%`}></i></div>
-          {/if}
-          <div class="standard-money-budget-legend"><span><i class="paid"></i>確定支出 <b>{formatYen(displayPaid)}</b></span><span><i class="planned"></i>予定支出 <b>{formatYen(displayPlanned)}</b></span><span class:standard-money-over={remainingBudget !== null && remainingBudget < 0}>残り <b>{remainingBudget === null ? '—' : formatYen(budgetView === 'perPerson' && data.members.length ? Math.round(remainingBudget / data.members.length) : remainingBudget)}</b></span></div>
-        </section>
-
         {#if canEdit}
-          <details class="standard-money-setup" bind:open={settingsOpen}><summary>詳細設定 <small>予算</small></summary><div class="standard-money-setup-body">
-            <label>{budgetView === 'total' ? '全体予算' : '1人あたり予算'} <input inputmode="numeric" placeholder="未設定" bind:value={budget} onblur={saveBudget} /> 円</label>
-            <small>旅行メンバーは、しおり設定でまとめて管理できます。</small>
-          </div></details>
+          <details class="standard-money-setup" bind:open={settingsOpen}>
+            <summary>お金の設定 <small>予算・共同基金</small></summary>
+            <div class="standard-money-setup-body">
+              <div class="standard-money-fund-heading">
+                <div><span>旅行全体の目安</span><h3>予算を使用する</h3></div>
+                <button type="button" class="standard-money-toggle" role="switch" aria-checked={budgetEnabled} aria-label="予算を使用する" disabled={budgetEnabled && Boolean(budget.trim())} title={budgetEnabled && budget.trim() ? '予算額を空欄にするとOFFにできます' : undefined} onclick={toggleBudgetEnabled}></button>
+              </div>
+              {#if budgetEnabled}
+                <label>{budgetView === 'total' ? '全体予算' : '1人あたり予算'} <input inputmode="numeric" placeholder="未設定" bind:value={budget} onblur={saveBudget} /> 円</label>
+              {/if}
+              <div class="standard-money-fund-heading" style="margin-top:.8rem; padding-top:.8rem; border-top:1px solid #d9e5da;">
+                <div><span>みんなで使うお金</span><h3>共同基金を使用する</h3></div>
+                <button type="button" class="standard-money-toggle" role="switch" aria-checked={fundEnabled} aria-label="共同基金を使用する" disabled={hasFundData} title={hasFundData ? '共同基金のデータがあるためOFFにできません' : undefined} onclick={toggleFundEnabled}></button>
+              </div>
+              <small>旅行メンバーは、しおり設定でまとめて管理できます。</small>
+            </div>
+          </details>
+        {/if}
+
+        {#if budgetEnabled}
+          <div class="standard-money-budget-heading">
+            <div><span>予算の表示</span><div class="standard-money-segment"><button class:active={budgetView === 'total'} onclick={() => selectBudgetView('total')}>全体</button><button class:active={budgetView === 'perPerson'} onclick={() => selectBudgetView('perPerson')} disabled={!data.members.length}>1人あたり</button></div></div>
+            {#if budgetView === 'perPerson' && data.members.length}<small>{data.members.length}人で均等に計算</small>{/if}
+          </div>
+          <section class="standard-money-budget-card">
+            <div class="standard-money-budget-label"><span>{budgetView === 'total' ? '全体予算' : '1人あたり予算'}</span><strong>{displayBudget === null ? '未設定' : formatYen(displayBudget)}</strong></div>
+            {#if displayBudget !== null}
+              <div class="standard-money-budget-bar" aria-label="予算の使用状況"><i class="paid" style={`width: ${paidPercent}%`}></i><i class="planned" style={`width: ${plannedPercent}%`}></i></div>
+            {/if}
+            <div class="standard-money-budget-legend"><span><i class="paid"></i>確定支出 <b>{formatYen(displayPaid)}</b></span><span><i class="planned"></i>予定支出 <b>{formatYen(displayPlanned)}</b></span><span class:standard-money-over={remainingBudget !== null && remainingBudget < 0}>残り <b>{remainingBudget === null ? '—' : formatYen(budgetView === 'perPerson' && data.members.length ? Math.round(remainingBudget / data.members.length) : remainingBudget)}</b></span></div>
+          </section>
         {/if}
 
         <div class="standard-money-tabs"><button class:active={activeTab === 'summary'} onclick={() => activeTab = 'summary'}>精算・内訳</button><button class:active={activeTab === 'items'} onclick={() => activeTab = 'items'}>支出一覧</button></div>
         {#if activeTab === 'summary'}
-          <section class="standard-money-fund-card">
-            <div class="standard-money-fund-heading">
-              <div><span>みんなで使うお金</span><h3>共同基金を使用する</h3></div>
-              <div class="standard-money-segment"><button type="button" role="switch" aria-checked={fundEnabled} class:active={fundEnabled} disabled={!canEdit || hasFundData} title={hasFundData ? '共同基金のデータがあるためOFFにできません' : undefined} onclick={toggleFundEnabled}>{fundEnabled ? 'ON' : 'OFF'}</button></div>
-            </div>
-            {#if fundEnabled}
-              <div class="standard-money-fund-heading" style="margin-top:.8rem; padding-top:.8rem; border-top:1px solid #d9e5da;"><div><span>みんなで使うお金</span><h3>共同基金</h3></div><div><small>現在の残高</small><strong class:negative={fundBalance < 0}>{formatYen(fundBalance)}</strong></div></div>
+          {#if fundEnabled}
+            <section class="standard-money-fund-card">
+              <div class="standard-money-fund-heading"><div><span>みんなで使うお金</span><h3>共同基金</h3></div><div><small>現在の残高</small><strong class:negative={fundBalance < 0}>{formatYen(fundBalance)}</strong></div></div>
               <div class="standard-money-fund-stats"><span>入金 <b>{formatYen(fundContributed)}</b></span><span>基金払い <b>{formatYen(fundSpent)}</b></span>{#if fundRefunded}<span>返金 <b>{formatYen(fundRefunded)}</b></span>{/if}</div>
               {#if fundByMember.length}<div class="standard-money-fund-members">{#each fundByMember as member}<span>{member.name} <b>{formatYen(member.amount)}</b></span>{/each}</div>{/if}
               {#if canEdit}<details class="standard-money-fund-details" bind:this={fundDetailsElement} bind:open={fundEntryOpen}>
@@ -614,8 +651,8 @@
                   <div class="standard-money-fund-list">{#each fundHistoryEntries as entry (entry.id)}<article><div><strong>{entry.title} <em class:refund={entry.kind === '返金'} class:expense={entry.kind === '支出'}>{entry.kind}</em></strong><small>{entry.date}{entry.note ? ` · ${entry.note}` : ''}</small></div><b class:negative={!entry.isIncome}>{entry.isIncome ? '+' : '-'}{formatYen(entry.amount)}</b>{#if canEdit && entry.id.startsWith('fund-')}<button aria-label="入出金履歴を編集" onclick={() => editFundTransaction(data.fund_transactions.find((transaction) => `fund-${transaction.id}` === entry.id)!)}>編集</button><button aria-label="入出金履歴を削除" onclick={() => deleteFundTransaction(entry.id.slice(5))}>削除</button>{/if}</article>{/each}</div>
                 {:else}<p class="standard-money-fund-empty">まだ共同基金の取引はありません。</p>{/if}
               {/if}
-            {/if}
-          </section>
+            </section>
+          {/if}
           {#if !data.members.length}<p class="standard-money-empty">メンバーを追加すると、立替と精算額を自動で計算します。</p>
           {:else}
             <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><button class="standard-money-member-history" onclick={() => openMemberHistory(member.id)} aria-label={`${member.name}の旅行中の取引履歴を見る`}><strong>{member.name}</strong><span>履歴を見る</span></button><span class="standard-money-trip-total">旅行での支出合計 <b>{formatYen(member.tripTotal)}</b></span></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>

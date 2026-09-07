@@ -21,6 +21,7 @@ jobs:
   lighthouse:
     name: Lighthouse (mobile + desktop)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       PREVIEW_URL: ${{ inputs.preview_url }}
       PR_NUMBER: ${{ inputs.pr_number }}
@@ -39,13 +40,13 @@ jobs:
             --max-time 20 \
             "$PREVIEW_URL" > /dev/null
 
-      - name: Run Lighthouse for mobile (3 times)
+      - name: Run Lighthouse for mobile (5 times)
         id: mobile
         continue-on-error: true
         run: |
           status=0
-          for run in 1 2 3; do
-            echo "Running mobile Lighthouse (${run}/3)"
+          for run in 1 2 3 4 5; do
+            echo "Running mobile Lighthouse (${run}/5)"
             npx --yes lighthouse@latest "$PREVIEW_URL" \
               --quiet \
               --chrome-flags="--headless --no-sandbox" \
@@ -55,13 +56,13 @@ jobs:
           done
           exit "$status"
 
-      - name: Run Lighthouse for desktop (3 times)
+      - name: Run Lighthouse for desktop (5 times)
         id: desktop
         continue-on-error: true
         run: |
           status=0
-          for run in 1 2 3; do
-            echo "Running desktop Lighthouse (${run}/3)"
+          for run in 1 2 3 4 5; do
+            echo "Running desktop Lighthouse (${run}/5)"
             npx --yes lighthouse@latest "$PREVIEW_URL" \
               --quiet \
               --chrome-flags="--headless --no-sandbox" \
@@ -95,7 +96,7 @@ jobs:
 
             const previewUrl = process.env.PREVIEW_URL;
             const prNumber = Number(process.env.PR_NUMBER);
-            const runCount = 3;
+            const runCount = 5;
 
             function readReport(path) {
               if (!fs.existsSync(path)) return null;
@@ -108,10 +109,12 @@ jobs:
               );
             }
 
-            function median(values) {
+            function trimmedMean(values) {
               const numbers = values.filter((value) => typeof value === 'number' && Number.isFinite(value));
               if (numbers.length !== runCount) return null;
-              return [...numbers].sort((a, b) => a - b)[1];
+              const sorted = [...numbers].sort((a, b) => a - b);
+              const trimmed = sorted.slice(1, -1);
+              return trimmed.reduce((sum, value) => sum + value, 0) / trimmed.length;
             }
 
             function scoreIndicator(score) {
@@ -125,8 +128,8 @@ jobs:
               return `${scoreIndicator(score)} ${score}`;
             }
 
-            function medianCategoryScore(reports, category) {
-              const value = median(reports.map((report) => report?.categories?.[category]?.score));
+            function trimmedCategoryScore(reports, category) {
+              const value = trimmedMean(reports.map((report) => report?.categories?.[category]?.score));
               if (value === null) return '—';
               const score = Math.round(value * 100);
               return `${scoreIndicator(score)} ${score}`;
@@ -136,17 +139,15 @@ jobs:
               return report?.audits?.[audit]?.displayValue ?? '—';
             }
 
-            function medianAuditValue(reports, audit) {
-              const candidates = reports
-                .map((report) => ({
-                  numericValue: report?.audits?.[audit]?.numericValue,
-                  displayValue: report?.audits?.[audit]?.displayValue,
-                }))
-                .filter(({ numericValue }) => typeof numericValue === 'number' && Number.isFinite(numericValue));
+            function formatAuditValue(audit, value) {
+              if (audit === 'total-blocking-time') return `${Math.round(value)} ms`;
+              if (audit === 'cumulative-layout-shift') return value.toFixed(3);
+              return `${(value / 1000).toFixed(1)} s`;
+            }
 
-              if (candidates.length !== runCount) return '—';
-              candidates.sort((a, b) => a.numericValue - b.numericValue);
-              return candidates[1].displayValue ?? String(candidates[1].numericValue);
+            function trimmedAuditValue(reports, audit) {
+              const value = trimmedMean(reports.map((report) => report?.audits?.[audit]?.numericValue));
+              return value === null ? '—' : formatAuditValue(audit, value);
             }
 
             const mobileReports = readReports('mobile');
@@ -170,20 +171,20 @@ jobs:
                 : auditValue(report, metric.key);
             }
 
-            function medianMetricValue(reports, metric) {
+            function trimmedMetricValue(reports, metric) {
               return metric.type === 'category'
-                ? medianCategoryScore(reports, metric.key)
-                : medianAuditValue(reports, metric.key);
+                ? trimmedCategoryScore(reports, metric.key)
+                : trimmedAuditValue(reports, metric.key);
             }
 
-            const medianRows = metrics
+            const trimmedRows = metrics
               .map((metric) =>
-                `| ${metric.label} | ${medianMetricValue(mobileReports, metric)} | ${medianMetricValue(desktopReports, metric)} |`,
+                `| ${metric.label} | ${trimmedMetricValue(mobileReports, metric)} | ${trimmedMetricValue(desktopReports, metric)} |`,
               )
               .join('\n');
 
             function detailTable(reports) {
-              const header = `| Metric | Run 1 | Run 2 | Run 3 |\n| --- | ---: | ---: | ---: |`;
+              const header = `| Metric | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 |\n| --- | ---: | ---: | ---: | ---: | ---: |`;
               const rows = metrics
                 .map((metric) => {
                   const values = reports.map((report) => metricValue(report, metric));
@@ -195,16 +196,16 @@ jobs:
 
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const execution = process.env.MOBILE_OUTCOME === 'success' && process.env.DESKTOP_OUTCOME === 'success'
-              ? '✅ All six Lighthouse runs completed successfully.'
+              ? '✅ All ten Lighthouse runs completed successfully.'
               : `⚠️ Lighthouse execution issue: mobile=${process.env.MOBILE_OUTCOME}, desktop=${process.env.DESKTOP_OUTCOME}`;
 
             const body = `## 🔦 Lighthouse Report
 
-            Median of 3 runs for each device:
+            Trimmed mean of 5 runs for each device (drop the minimum and maximum, then average the remaining 3):
 
             | Metric | Mobile | Desktop |
             | --- | ---: | ---: |
-            ${medianRows}
+            ${trimmedRows}
 
             <details>
             <summary>Details</summary>

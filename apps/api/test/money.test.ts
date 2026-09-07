@@ -159,6 +159,29 @@ describe('Money API', () => {
     expect(deleteMember.status).toBe(409);
   });
 
+  it('records an equal contribution from every member in one request', async () => {
+    const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '一括入金テスト' }),
+    }), env);
+    const { data: itinerary } = await create.json() as any;
+    const addMember = async (name: string) => {
+      const response = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/members`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+      }), env);
+      return (await response.json() as any).data;
+    };
+    const members = await Promise.all(['Alice', 'Bob', 'Chris'].map(addMember));
+    const response = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/fund-transactions/bulk`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ member_ids: members.map((member) => member.id), kind: 'contribution', amount: 5000, note: '旅行前の集金', occurred_on: '2026-08-01' }),
+    }), env);
+
+    expect(response.status).toBe(201);
+    const { data: transactions } = await response.json() as any;
+    expect(transactions).toHaveLength(3);
+    expect(transactions).toEqual(expect.arrayContaining(members.map((member) => expect.objectContaining({ member_id: member.id, kind: 'contribution', amount: 5000, occurred_on: '2026-08-01' }))));
+  });
+
   it('renames an unused member and allows deleting them', async () => {
     const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'メンバー編集テスト' }),

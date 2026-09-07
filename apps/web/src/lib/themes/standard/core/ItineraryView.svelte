@@ -185,9 +185,15 @@
   }
 
   onMount(() => {
+    const openFeatureFromHash = () => {
+      showMoney = window.location.hash === '#money';
+      showPacking = window.location.hash === '#packing';
+    };
+    openFeatureFromHash();
+    window.addEventListener('hashchange', openFeatureFromHash);
     if (getIsDemoMode()) {
       hasEditPermission = true;
-      return;
+      return () => window.removeEventListener('hashchange', openFeatureFromHash);
     }
 
     const token = auth.extractTokenFromUrl();
@@ -216,7 +222,14 @@
       showMetadataDialog = true;
       if (metadataRequested) window.history.replaceState({}, "", window.location.pathname);
     }
+    return () => window.removeEventListener('hashchange', openFeatureFromHash);
   });
+
+  function closeFeature(feature: 'money' | 'packing') {
+    if (window.location.hash === `#${feature}`) window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
+    if (feature === 'money') { showMoney = false; requestedMoneyItemId = null; }
+    else showPacking = false;
+  }
 
   async function onPasswordAuth(password: string) {
     await handlePasswordAuth({
@@ -549,10 +562,7 @@
     requestedEditItemId={requestedMoneyItemId}
     onEditItemOpened={() => (requestedMoneyItemId = null)}
     onViewStep={openStepFromMoney}
-    onClose={() => {
-      showMoney = false;
-      requestedMoneyItemId = null;
-    }}
+    onClose={() => closeFeature('money')}
   />
 
   {#if stepOpenedFromMoney}
@@ -572,7 +582,7 @@
       show={showPacking}
       itineraryId={itinerary.id}
       canEdit={hasEditPermission}
-      onClose={() => (showPacking = false)}
+      onClose={() => closeFeature('packing')}
     />
   {/if}
 

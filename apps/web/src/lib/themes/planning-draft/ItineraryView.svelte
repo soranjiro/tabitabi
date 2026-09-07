@@ -89,18 +89,31 @@
   const otherThemes = getAvailableThemes().filter((theme) => theme.id !== "planning-draft");
 
   onMount(() => {
+    const openFeatureFromHash = () => {
+      showMoney = window.location.hash === '#money';
+      showPacking = window.location.hash === '#packing';
+    };
+    openFeatureFromHash();
+    window.addEventListener('hashchange', openFeatureFromHash);
     titleDraft = itinerary.title;
     memoDraft = getMemoText(itinerary.memo);
     if (getIsDemoMode()) {
       hasEditPermission = true;
-      return;
+      return () => window.removeEventListener('hashchange', openFeatureFromHash);
     }
     const token = auth.extractTokenFromUrl();
     if (token && itinerary.is_password_protected) auth.setToken(itinerary.id, itinerary.title, token);
     hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
     if (!hasEditPermission && !itinerary.is_password_protected && !isSharedSnapshot) hasEditPermission = true;
     if (hasEditPermission) auth.updateAccessTime(itinerary.id, itinerary.title);
+    return () => window.removeEventListener('hashchange', openFeatureFromHash);
   });
+
+  function closeFeature(feature: 'money' | 'packing') {
+    if (window.location.hash === `#${feature}`) window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
+    if (feature === 'money') showMoney = false;
+    else showPacking = false;
+  }
 
   async function onPasswordAuth(password: string) {
     await handlePasswordAuth({
@@ -452,14 +465,14 @@
     itineraryId={itinerary.id}
     canEdit={hasEditPermission}
     {steps}
-    onClose={() => (showMoney = false)}
+    onClose={() => closeFeature('money')}
   />
 
   <PackingOverlay
     show={showPacking}
     itineraryId={itinerary.id}
     canEdit={hasEditPermission}
-    onClose={() => (showPacking = false)}
+    onClose={() => closeFeature('packing')}
   />
 
   <PasswordDialog

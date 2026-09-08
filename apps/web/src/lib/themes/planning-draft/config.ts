@@ -2,9 +2,9 @@ import type { ThemeConfig } from "@tabitabi/types";
 
 export const planningDraftTheme: ThemeConfig = {
   id: "planning-draft",
-  name: "プランニング",
+  name: "プラン",
   version: "1.0.0",
-  description: "候補から日、時間の順に予定を決めるためのシンプルなテーマ",
+  description: "候補を日ごとに並べて予定を決める",
   author: "Tabitabi Team",
   features: {
     steps: { enabled: true, required: true },

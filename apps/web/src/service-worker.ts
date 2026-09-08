@@ -26,6 +26,8 @@ worker.addEventListener("activate", (event: ExtendableEvent) => {
 
 worker.addEventListener("fetch", (event: FetchEvent) => {
   if (event.request.method !== "GET") return;
+  // External maps use their provider's HTTP cache policy, never our offline cache.
+  if (new URL(event.request.url).origin !== worker.location.origin) return;
 
   async function respond() {
     const url = new URL(event.request.url);

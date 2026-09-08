@@ -95,6 +95,9 @@ importers:
       firebase:
         specifier: ^12.4.0
         version: 12.17.1
+      leaflet:
+        specifier: 1.9.4
+        version: 1.9.4
       mapbox-gl:
         specifier: ^3.17.0
         version: 3.17.0
@@ -123,6 +126,9 @@ importers:
       '@types/google.maps':
         specifier: ^3.58.1
         version: 3.58.1
+      '@types/leaflet':
+        specifier: ^1.9.22
+        version: 1.9.22
       '@types/mapbox-gl':
         specifier: ^3.4.1
         version: 3.4.1
@@ -1464,6 +1470,9 @@ packages:
   '@types/google.maps@3.58.1':
     resolution: {integrity: sha512-X9QTSvGJ0nCfMzYOnaVs/k6/4L+7F5uCS+4iUmkLEls6J9S/Phv+m/i3mDeyc49ZBgwab3EFO1HEoBY7k98EGQ==}
 
+  '@types/leaflet@1.9.22':
+    resolution: {integrity: sha512-h3lhECYEKDasG7LFHu+GiHqAvsgLuQvlJvVZzJDGONo3sEL+wUOqSFLnwkZlK0qVxnxbuGFW8iBlJNYs5wgndA==}
+
   '@types/mapbox-gl@3.4.1':
     resolution: {integrity: sha512-NsGKKtgW93B+UaLPti6B7NwlxYlES5DpV5Gzj9F75rK5ALKsqSk15CiEHbOnTr09RGbr6ZYiCdI+59NNNcAImg==}
 
@@ -2196,6 +2205,9 @@ packages:
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
+
+  leaflet@1.9.4:
+    resolution: {integrity: sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA==}
 
   legacy-javascript@0.0.1:
     resolution: {integrity: sha512-lPyntS4/aS7jpuvOlitZDFifBCb4W8L/3QU0PLbUTUj+zYah8rfVjYic88yG7ZKTxhS5h9iz7duT8oUXKszLhg==}
@@ -4421,6 +4433,10 @@ snapshots:
 
   '@types/google.maps@3.58.1': {}
 
+  '@types/leaflet@1.9.22':
+    dependencies:
+      '@types/geojson': 7946.0.16
+
   '@types/mapbox-gl@3.4.1':
     dependencies:
       '@types/geojson': 7946.0.16
@@ -5192,6 +5208,8 @@ snapshots:
   kdbush@4.0.2: {}
 
   kleur@4.1.5: {}
+
+  leaflet@1.9.4: {}
 
   legacy-javascript@0.0.1: {}
 

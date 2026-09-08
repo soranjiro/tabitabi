@@ -4,6 +4,7 @@ import type { DemoDataSet } from '../themes/types';
 type DemoDataLoader = () => Promise<{ getDemoData: () => DemoDataSet }>;
 
 const demoDataLoaders: Partial<Record<AvailableTheme, DemoDataLoader>> = {
+  'planning-map': () => import('$lib/themes/planning-map/demo-data'),
   'map-only': () => import('$lib/themes/map-only/demo-data'),
   'mapbox-journey': () => import('$lib/themes/mapbox-journey/demo-data'),
   'ai-generated': () => import('$lib/themes/ai-generated/demo-data'),

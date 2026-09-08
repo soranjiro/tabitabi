@@ -14,6 +14,8 @@ export type { AvailableTheme, PaletteId, ThemePresetOption } from "./catalog";
 
 export async function loadTheme(themeId: string): Promise<Theme> {
   switch (themeId) {
+    case "planning-map":
+      return (await import("./planning-map")).default;
     case "planning-draft":
       return (await import("./planning-draft")).default;
     case "map-only":

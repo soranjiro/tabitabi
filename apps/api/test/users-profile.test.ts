@@ -20,6 +20,7 @@ async function applyMigrations(db: D1Database) {
       memo TEXT,
       password TEXT,
       source_itinerary_id TEXT,
+      background_image TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,

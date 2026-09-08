@@ -475,6 +475,8 @@
         <span>候補を作る</span><i>→</i><span>日を決める</span><i>→</i><span>時間を決める</span>
       </section>
 
+      {#if hasEditPermission}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
+
       {#if undecidedSteps.length > 0}
         <section class="draft-section">
           <div class="section-heading"><div><h2>まだ決めていない</h2><p>{undecidedSteps.length}件の候補</p></div></div>

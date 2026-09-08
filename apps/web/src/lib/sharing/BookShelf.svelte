@@ -5,6 +5,7 @@
   import { itineraryApi } from '$lib/api/itinerary';
   import { stepApi } from '$lib/api/step';
   import Dialog from '$lib/themes/standard/core/components/Dialog.svelte';
+  import PublishDialog from '$lib/themes/standard/core/components/PublishDialog.svelte';
   let { bookmarks, onRefresh, onUnlink }: { bookmarks: UserBookmarkWithItinerary[]; onRefresh: () => Promise<void>; onUnlink: (item: UserBookmarkWithItinerary) => void } = $props();
   let shared = $state(false);
   let target = $state<UserBookmarkWithItinerary | null>(null);
@@ -14,6 +15,7 @@
   let snapshot = $state<BookContent | null>(null);
   let busy = $state(false);
   let message = $state('');
+  let publishingTarget = $state<UserBookmarkWithItinerary | null>(null);
   const publications = $derived(bookmarks.filter(item => item.is_visible && item.shared_itinerary_id));
   const books = $derived(shared ? publications : bookmarks);
   const from = $derived(direction === 'restore' ? snapshot : source);
@@ -48,6 +50,14 @@
       await onRefresh(); target = null;
     } catch { message = '変更できませんでした。もう一度お試しください'; }
     finally { busy = false; }
+  }
+  function startPublication(item: UserBookmarkWithItinerary) {
+    target = null;
+    publishingTarget = item;
+  }
+  async function closePublication() {
+    publishingTarget = null;
+    await onRefresh();
   }
 </script>
 
@@ -99,11 +109,24 @@
       {#if managing}<button class="sheet-action danger" onclick={() => direction = 'stop'} disabled={busy}>共有をやめる</button>
       {:else}<button class="sheet-action" onclick={() => managing = true}>共有版を管理</button>{/if}
     {:else if target}
-      <a class="sheet-action" href="/itineraries/{target.itinerary_id}?publish=1">共有版を作る</a>
+      <button class="sheet-action primary" onclick={() => startPublication(target!)}>共有版を作る</button>
       <button class="sheet-action" onclick={() => { onUnlink(target!); target = null; }}>紐付けを解除</button>
     {/if}
   {/snippet}
 </Dialog>
+
+{#if publishingTarget}
+  <PublishDialog
+    show
+    itineraryId={publishingTarget.itinerary_id}
+    isLoggedIn={true}
+    sourceText={publishingTarget.title}
+    initialMetadata={{ prefectureSlugs: publishingTarget.prefecture_slugs ?? [], areas: publishingTarget.areas ?? [], tags: publishingTarget.tags ?? [] }}
+    onLogin={() => {}}
+    onPublish={async (metadata) => (await userApi.publishBookmark(publishingTarget!.itinerary_id, { prefecture_slugs: metadata.prefectureSlugs, areas: metadata.areas, tags: metadata.tags })).id}
+    onClose={closePublication}
+  />
+{/if}
 
 <style>
   .shelf-tabs { display: flex; gap: 1.5rem; margin: 1.5rem 0 2rem; } .shelf-tabs button { padding: .7rem 0; border: 0; border-bottom: 2px solid transparent; color: #899087; background: none; font: inherit; cursor: pointer; } .shelf-tabs button.active { color: #355f50; border-color: #355f50; } small { font-size: .7rem; font-weight: 400; }

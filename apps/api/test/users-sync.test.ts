@@ -319,6 +319,25 @@ describe('owner publication flow', () => {
     expect(JSON.parse(publication!.prefecture_slugs)).toEqual(['tokyo']);
   });
 
+  it('publishes the editable preview content', async () => {
+    const token = await registerAndGetToken('previewuser', 'preview@example.com');
+    const itineraryId = await createItinerary();
+    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+
+    await app.request('/api/v1/users/me/sync-bookmarks', {
+      method: 'POST', headers, body: JSON.stringify({ itinerary_ids: [itineraryId] }),
+    }, env);
+    const preview = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/preview`, { headers }, env);
+    expect(preview.status).toBe(200);
+    const { data: content } = await preview.json() as { data: unknown };
+
+    const published = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
+      method: 'POST', headers,
+      body: JSON.stringify({ prefecture_slugs: ['tokyo'], content }),
+    }, env);
+    expect(published.status).toBe(200);
+  });
+
   it('does not create a snapshot when the itinerary is not saved by the account', async () => {
     const token = await registerAndGetToken('notowner', 'notowner@example.com');
     const itineraryId = await createItinerary();

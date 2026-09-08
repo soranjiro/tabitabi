@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto, invalidateAll } from "$app/navigation";
+  import { invalidateAll } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
   import { userApi } from "$lib/api/user";
   import { stepApi } from "$lib/api/step";
@@ -10,9 +10,6 @@
   import type { Theme } from "@tabitabi/types";
   import { getPalette } from "$lib/themes";
   import SharedBook from '$lib/sharing/SharedBook.svelte';
-  import PublishDialog from '$lib/themes/standard/core/components/PublishDialog.svelte';
-  let showPublish = $state(false);
-  let loggedInForPublish = $state(false);
   let copiedNotice = $state(false);
 
   let { data } = $props();
@@ -118,10 +115,6 @@
 
     void init();
     const params = new URLSearchParams(window.location.search);
-    if (!data.itinerary.source_itinerary_id && params.get('publish') === '1') {
-      loggedInForPublish = userAuth.isLoggedIn(); showPublish = true;
-      window.history.replaceState({}, '', window.location.pathname);
-    }
     copiedNotice = params.get('copied') === '1';
     const noticeTimer = setTimeout(() => copiedNotice = false, 4000);
 
@@ -223,19 +216,6 @@
     }
   }
 
-  async function handlePublishItinerary(metadata: {
-    prefectureSlugs: string[];
-    areas: string[];
-    tags: string[];
-  }) {
-    const result = await userApi.publishBookmark(data.itinerary.id, {
-      prefecture_slugs: metadata.prefectureSlugs,
-      areas: metadata.areas,
-      tags: metadata.tags,
-    });
-    return result.id;
-  }
-
   let isViewOnly = $derived(!!data.itinerary.source_itinerary_id);
 
 
@@ -273,13 +253,7 @@
 {#if isViewOnly}
   <SharedBook content={{ itinerary: data.itinerary, steps: data.steps }} />
 {:else}
-  <div class="book-tools"><a href="/profile">旅の本棚</a><button onclick={() => { loggedInForPublish = userAuth.isLoggedIn(); showPublish = true; }}>共有</button></div>
   {#if copiedNotice}<p class="copy-notice" role="status">✓ 自分のしおりを作りました</p>{/if}
-  <PublishDialog show={showPublish} itineraryId={data.itinerary.id} isLoggedIn={loggedInForPublish}
-    sourceText={data.itinerary.title}
-    initialMetadata={{ prefectureSlugs: data.itinerary.prefecture_slugs ?? [], areas: data.itinerary.areas ?? [], tags: data.itinerary.tags ?? [] }}
-    onLogin={() => { sessionStorage.setItem('tabitabi_pending_publish', data.itinerary.id); void goto('/profile'); }}
-    onPublish={handlePublishItinerary} onClose={() => showPublish = false} />
 
 {#key data.itinerary.theme_id}
   <ItineraryView
@@ -289,7 +263,6 @@
     onCreateStep={isViewOnly ? undefined : handleCreateStep}
     onUpdateStep={isViewOnly ? undefined : handleUpdateStep}
     onDeleteStep={isViewOnly ? undefined : handleDeleteStep}
-    onPublishItinerary={isViewOnly ? undefined : handlePublishItinerary}
   />
 {/key}
 
@@ -298,7 +271,5 @@
 
 
 <style>
-  .book-tools { display: flex; justify-content: space-between; padding: .5rem 1rem; background: #faf9f5; font-size: .75rem; color: #526455; }
-  .book-tools button { border: 0; background: transparent; color: inherit; cursor: pointer; }
   .copy-notice { position: fixed; z-index: 3000; top: 3rem; left: 50%; transform: translateX(-50%); padding: .8rem 1rem; background: #355f50; color: white; border-radius: .5rem; font-size: .8rem; }
 </style>

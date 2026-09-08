@@ -210,13 +210,6 @@
   }
 
   async function continuePendingAction() {
-    const publishId = sessionStorage.getItem("tabitabi_pending_publish");
-    if (publishId) {
-      sessionStorage.removeItem("tabitabi_pending_publish");
-      await goto(`/itineraries/${publishId}?publish=1`);
-      return;
-    }
-
     const itineraryId = sessionStorage.getItem("tabitabi_pending_fork");
     if (!itineraryId) return;
     sessionStorage.removeItem("tabitabi_pending_fork");

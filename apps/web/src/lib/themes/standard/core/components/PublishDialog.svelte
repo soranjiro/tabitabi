@@ -76,12 +76,12 @@
     else if (tags.length < 3) tags = [...tags, tag];
   }
 
-  async function publish(approved?: BookContent) {
+  async function publish(approved?: BookContent): Promise<true | string> {
     if (!selectedPrefectures.length) {
       validationMessage = "旅行先を1件以上選んでください";
-      return;
+      return validationMessage;
     }
-    if (publishing) return;
+    if (publishing) return "公開処理中です。完了するまでお待ちください";
     publishing = true;
     validationMessage = "";
     try {
@@ -89,9 +89,10 @@
         ? (await userApi.publishBookmark(itineraryId, { prefecture_slugs: selectedPrefectures, areas, tags, content: approved })).id
         : await onPublish({ prefectureSlugs: selectedPrefectures, areas, tags });
       preview = null;
+      return true;
     } catch {
       validationMessage = "公開できませんでした。時間をおいてもう一度お試しください";
-      throw new Error(validationMessage);
+      return validationMessage;
     } finally {
       publishing = false;
     }

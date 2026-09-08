@@ -15,9 +15,11 @@
 
 ### 2. 様々な機能
 
-テーマによって見た目を変えたり、旅行であると助かる機能を搭載しています。
+テーマによって見た目を変えたり、旅行にあると助かる機能を搭載しています。
 
 
 <a href="https://tabitabi.pages.dev/itineraries/official-spring-public"><img src="./docs/assets/theme/daycard.png" alt="day-card" width="400"/></a> <a href="https://tabitabi.pages.dev/itineraries/official-summer-public"><img src="./docs/assets/theme/list.png" alt="list" width="400"/></a>
 
-<a href="https://tabitabi.pages.dev/itineraries/official-autumn-public"><img src="./docs/assets/theme/section2.png" alt="section" width="400"/></a> <a href="https://tabitabi.pages.dev"><img src="./docs/assets/theme/planning.png" alt="planning" width="400"/></a>
+<a href="https://tabitabi.pages.dev/itineraries/official-autumn-public"><img src="./docs/assets/theme/week.png" alt="week" width="400"/> <a href="https://tabitabi.pages.dev/itineraries/official-autumn-public"><img src="./docs/assets/theme/month.png" alt="month" width="400"/></a>
+
+<a href="https://tabitabi.pages.dev/itineraries/official-map-public"><img src="./docs/assets/theme/plan-map.png" alt="plan-map" width="400"/> </a><a href="https://tabitabi.pages.dev/itineraries/official-plan-public"><img src="./docs/assets/theme/plan-draft.png" alt="plan-draft" width="400"/></a>

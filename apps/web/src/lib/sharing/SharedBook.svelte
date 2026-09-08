@@ -71,6 +71,14 @@
     {#if preview}<button onclick={onBack} aria-label="公開情報に戻る">←</button>{/if}
     <span>{preview ? 'プレビュー' : editingPublication ? '共有版を編集' : '共有されたしおり'}</span>
     {#if preview}<details><summary>共有される情報について ⓘ</summary><p>ここに表示される内容が共有されます。共有版は元のしおりと自動同期しません。</p></details>{/if}
+    {#if !preview}
+      <nav class="header-actions" aria-label="共有されたしおりの操作">
+        <a href="/explore">共有されたしおり一覧に戻る</a>
+        {#if !editingPublication}
+          <button class="copy" onclick={act} disabled={busy}>{busy ? '保存中…' : 'コピー'}</button>
+        {/if}
+      </nav>
+    {/if}
   </header>
   {#if notice}<div class="notice" role="status">{notice}</div>{/if}
   {#if theme}
@@ -79,14 +87,16 @@
       <View {itinerary} {steps} onUpdateItinerary={updateItinerary} onCreateStep={createStep} onUpdateStep={updateStep} onDeleteStep={deleteStep} />
     {/key}
   {:else}<p class="loading">しおりを開いています…</p>{/if}
-  <footer class:emphasized={edited || preview || editingPublication}>
-    <button onclick={act} disabled={busy}>{busy ? '保存中…' : preview ? 'この内容で共有する' : editingPublication ? '共有版を保存' : edited ? '変更した内容で自分のしおりを作る' : '自分用にコピー'}</button>
-  </footer>
 </div>
 
 <style>
   .shared-book > header { position: relative; z-index: 90; display: flex; align-items: center; gap: 1rem; min-height: 42px; padding: .4rem 1rem; background: #faf9f5; border-bottom: 1px solid #e2dfd5; color: #686d63; font-size: .75rem; }
   header button { border: 0; padding: .5rem; background: transparent; font-size: 1rem; }
+  .header-actions { display: flex; align-items: center; gap: .5rem; margin-left: auto; }
+  .header-actions a, .header-actions .copy { padding: .45rem .65rem; border: 1px solid #d5d8d0; border-radius: 99px; color: #355f50; background: #fff; font: inherit; font-size: .75rem; text-decoration: none; white-space: nowrap; cursor: pointer; }
+  .header-actions .copy { border-color: #355f50; color: #fff; background: #355f50; }
+  .header-actions .copy:disabled { cursor: wait; opacity: .7; }
+  @media (max-width: 540px) { .shared-book > header { gap: .5rem; padding: .4rem .65rem; } .header-actions { gap: .3rem; } .header-actions a, .header-actions .copy { padding: .4rem .5rem; font-size: .65rem; } }
   details { margin-left: auto; } details p { position: absolute; right: 1rem; max-width: 260px; padding: 1rem; background: white; border: 1px solid #ddd; }
   .preview { position: fixed; inset: 0; z-index: 2000; overflow: auto; background: #faf9f5; }
   .preview > header { position: sticky; top: 0; }

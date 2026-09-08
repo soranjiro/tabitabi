@@ -63,6 +63,8 @@ export interface PublicBookmark {
   itinerary_id: string;
   title: string;
   theme_id: string;
+  /** The cover selected for the shared itinerary, when one is set. */
+  background_image?: string | null;
   created_at: string;
   prefecture_slugs: string[];
   areas: string[];

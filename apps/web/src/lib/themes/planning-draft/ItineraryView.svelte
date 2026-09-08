@@ -10,7 +10,7 @@
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { getIsDemoMode } from "$lib/demo";
   import { getMemoText, updateMemoText } from "$lib/memo";
-  import { getAvailableThemes } from "$lib/themes/catalog";
+  import { getAvailablePalettes, getAvailableThemes, getPalette } from "$lib/themes/catalog";
   import {
     getStepSchedule,
     getStepTimeLabel,
@@ -19,6 +19,8 @@
   } from "$lib/planning/schedule";
   import BottomNav from "../standard/core/components/BottomNav.svelte";
   import MoreMenu from "../standard/core/components/MoreMenu.svelte";
+  import SettingsDialog from "../standard/core/components/SettingsDialog.svelte";
+  import ItineraryOnboardingPopups from "$lib/features/itinerary-onboarding/ItineraryOnboardingPopups.svelte";
   import PasswordDialog from "../standard/core/components/PasswordDialog.svelte";
   import ShareDialog from "../standard/core/components/ShareDialog.svelte";
   import MoneyOverlay from "$lib/features/money/MoneyOverlay.svelte";
@@ -30,7 +32,11 @@
     mapPlanning?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
-    onUpdateItinerary?: (data: { title?: string; theme_id?: string; memo?: string }) => Promise<void>;
+    onUpdateItinerary?: (data: {
+      title?: string; theme_id?: string; palette_id?: string; packing_enabled?: boolean;
+      prefecture_slugs?: string[]; areas?: string[]; tags?: string[]; metadata_initialized?: boolean;
+      memo?: string; secret_settings?: { enabled: boolean; offset_minutes: number } | null;
+    }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
       start_at: number;
@@ -99,6 +105,15 @@
   let showPacking = $state(false);
   let isAuthenticating = $state(false);
   let showCopyMessage = $state(false);
+  let showSettingsDialog = $state(false);
+  let showMetadataDialog = $state(false);
+  let selectedPaletteId = $state(itinerary.palette_id ?? "neutral");
+  let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
+  let secretModeOffset = $state(itinerary.secret_settings?.offset_minutes ?? 60);
+  let packingEnabled = $state(itinerary.packing_enabled ?? true);
+  let prefectureSlugs = $state([...(itinerary.prefecture_slugs ?? [])]);
+  let itineraryAreas = $state([...(itinerary.areas ?? [])]);
+  let itineraryTags = $state([...(itinerary.tags ?? [])]);
 
   const isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
 
@@ -116,6 +131,8 @@
   const previewPin = $derived<Step[]>(placeDraft ? [{ id:'preview-pin', itinerary_id:itinerary.id, title:form.title || '選んだ場所', location:form.location, notes:updatePlace(undefined, placeDraft), start_at:0, end_at:0, created_at:'', updated_at:'' }] : []);
 
   const otherThemes = $derived(getAvailableThemes().filter((theme) => theme.id !== itinerary.theme_id));
+  const palettes = getAvailablePalettes();
+  const paletteStyle = $derived(Object.entries(getPalette(selectedPaletteId).colors).map(([name, value]) => `${name}:${value}`).join(";"));
 
   onMount(() => {
     const openFeatureFromHash = () => {
@@ -387,11 +404,36 @@
   async function switchTheme(themeId: string) {
     if (onUpdateItinerary) await onUpdateItinerary({ theme_id: themeId });
   }
+
+  async function saveMetadata(metadata: { prefectureSlugs: string[]; areas: string[]; tags: string[] }) {
+    prefectureSlugs = metadata.prefectureSlugs;
+    itineraryAreas = metadata.areas;
+    itineraryTags = metadata.tags;
+    await onUpdateItinerary?.({ prefecture_slugs: metadata.prefectureSlugs, areas: metadata.areas, tags: metadata.tags, metadata_initialized: true });
+    showMetadataDialog = false;
+  }
+
+  async function handlePaletteChange(paletteId: string) {
+    selectedPaletteId = paletteId;
+    await onUpdateItinerary?.({ palette_id: paletteId });
+  }
+
+  async function handleSecretModeChange(enabled: boolean, offset: number) {
+    secretModeEnabled = enabled;
+    secretModeOffset = offset;
+    await onUpdateItinerary?.({ secret_settings: { enabled, offset_minutes: offset } });
+  }
+
+  async function handlePackingEnabledChange(enabled: boolean) {
+    packingEnabled = enabled;
+    if (!enabled) showPacking = false;
+    await onUpdateItinerary?.({ packing_enabled: enabled });
+  }
 </script>
 
 <svelte:head><meta name="theme-color" content="#faf9f5" /></svelte:head>
 
-<div class="draft-theme" class:map-planning={mapPlanning}>
+<div class="draft-theme" style={paletteStyle} class:map-planning={mapPlanning}>
   {#if showCopyMessage}<div class="copy-message">コピーしました</div>{/if}
   <header class="draft-header">
     <a class="brand" href="/">たびたび</a>
@@ -568,7 +610,7 @@
 
   <MoreMenu
     show={showMoreMenu}
-    canConfigure={false}
+    canConfigure={hasEditPermission}
     canRequestEdit={!isSharedSnapshot}
     {hasEditPermission}
     onShare={() => {
@@ -576,9 +618,36 @@
       else void copyShareLink(false);
     }}
     onPrint={openPrintStudio}
-    onSettings={() => {}}
+    onSettings={() => (showSettingsDialog = true)}
     onEditModeToggle={handleEditModeToggle}
     onClose={() => (showMoreMenu = false)}
+  />
+
+  <SettingsDialog
+    show={showSettingsDialog}
+    itineraryId={itinerary.id}
+    themes={getAvailableThemes()}
+    {palettes}
+    selectedThemeId={itinerary.theme_id}
+    {selectedPaletteId}
+    {secretModeEnabled}
+    {secretModeOffset}
+    {packingEnabled}
+    onThemeChange={switchTheme}
+    onPaletteChange={handlePaletteChange}
+    onSecretModeChange={handleSecretModeChange}
+    onPackingEnabledChange={handlePackingEnabledChange}
+    onEditMetadata={() => (showMetadataDialog = true)}
+    onClose={() => (showSettingsDialog = false)}
+  />
+
+  <ItineraryOnboardingPopups
+    showMetadata={showMetadataDialog}
+    {prefectureSlugs}
+    areas={itineraryAreas}
+    tags={itineraryTags}
+    onSaveMetadata={saveMetadata}
+    onCloseMetadata={() => (showMetadataDialog = false)}
   />
 </div>
 

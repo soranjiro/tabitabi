@@ -12,11 +12,42 @@ html[data-itinerary-cover="true"] .standard-header {
   box-shadow: 0 12px 30px rgba(32, 49, 75, .14);
 }
 
+html[data-itinerary-cover="true"] .draft-header {
+  padding: 2rem 1.5rem;
+  border-radius: 0 0 20px 20px;
+  color: white;
+  background-image: linear-gradient(180deg, rgba(19, 39, 35, .22), rgba(19, 39, 35, .68)), var(--itinerary-cover-image);
+  background-position: center;
+  background-size: cover;
+}
+
+html[data-itinerary-cover="true"] .draft-header .brand,
+html[data-itinerary-cover="true"] .draft-header .title-button,
+html[data-itinerary-cover="true"] .draft-header .title-input,
+html[data-itinerary-cover="true"] .draft-header > p,
+html[data-itinerary-cover="true"] .draft-header .description-copy {
+  color: white !important;
+  text-shadow: 0 2px 10px rgba(10, 25, 22, .45);
+}
+
+html[data-itinerary-cover="true"] .draft-header .trip-description {
+  border-color: rgba(255, 255, 255, .3);
+  background: rgba(16, 39, 32, .3);
+  backdrop-filter: blur(6px);
+}
+
 html[data-itinerary-page-background="true"] .standard-theme {
   background-attachment: fixed;
   background-image:
     linear-gradient(rgba(255, 255, 255, .30), rgba(255, 255, 255, .42)),
     var(--itinerary-page-background-image);
+  background-position: center;
+  background-size: cover;
+}
+
+html[data-itinerary-page-background="true"] .draft-theme {
+  background-attachment: fixed;
+  background-image: linear-gradient(rgba(250, 249, 245, .8), rgba(250, 249, 245, .84)), var(--itinerary-page-background-image);
   background-position: center;
   background-size: cover;
 }

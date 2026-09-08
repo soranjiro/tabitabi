@@ -13,9 +13,9 @@ INSERT INTO users (
 
 WITH itinerary_seed(season, title, theme_id, palette_id, prefecture_slugs, areas, tags, memo) AS (
   VALUES
-    ('spring', '桜の京都・宇治 3日間', 'standard-spring', 'sakura', '["kyoto"]', '["東山","嵐山","宇治","伏見"]', '["桜","寺社・歴史","グルメ"]', '{"text":"4月2日（金）から2泊3日。朝は早めに出発し、混みやすい名所は午前中へ。宿は京都駅近くなので、到着日と最終日の荷物はホテルに預ける。歩く時間が長いため、履き慣れた靴で集合。"}'),
-    ('summer', '沖縄・やんばる 夏の4日間', 'standard-summer', 'ocean', '["okinawa"]', '["恩納村","本部町","やんばる","那覇"]', '["海","自然","グルメ"]', '{"text":"7月16日（金）から3泊4日。那覇空港でレンタカーを受け取り、恩納村に3連泊する。海の予定は天候と海況を見て変更し、雨天時は水族館や首里城公園を先に回る。運転は1〜2時間ごとに交代する。"}'),
-    ('autumn', '日光・会津 紅葉と温泉の7日間', 'standard-autumn', 'autumn', '["tochigi","fukushima"]', '["日光","奥日光","中禅寺湖","鬼怒川","会津若松"]', '["紅葉","温泉","自然","寺社・歴史"]', '{"text":"10月19日（月）から6泊7日。日光駅までは鉄道、その先はバスと会津鬼怒川線で移動する。奥日光は朝晩冷え込むため薄手のダウンを持参。宿は日光1泊、中禅寺温泉2泊、鬼怒川温泉1泊、会津若松2泊。"}'),
+    ('spring', '桜の京都・宇治', 'standard-spring', 'sakura', '["kyoto"]', '["東山","嵐山","宇治","伏見"]', '["桜","寺社・歴史","グルメ"]', '{"text":"4月2日（金）から2泊3日。朝は早めに出発し、混みやすい名所は午前中へ。宿は京都駅近くなので、到着日と最終日の荷物はホテルに預ける。歩く時間が長いため、履き慣れた靴で集合。"}'),
+    ('summer', '夏休みの沖縄旅行', 'standard-summer', 'ocean', '["okinawa"]', '["恩納村","本部町","やんばる","那覇"]', '["海","自然","グルメ"]', '{"text":"7月16日（金）から3泊4日。那覇空港でレンタカーを受け取り、恩納村に3連泊する。海の予定は天候と海況を見て変更し、雨天時は水族館や首里城公園を先に回る。運転は1〜2時間ごとに交代する。"}'),
+    ('autumn', '日光・会津 紅葉と温泉', 'standard-autumn', 'autumn', '["tochigi","fukushima"]', '["日光","奥日光","中禅寺湖","鬼怒川","会津若松"]', '["紅葉","温泉","自然","寺社・歴史"]', '{"text":"10月19日（月）から6泊7日。日光駅までは鉄道、その先はバスと会津鬼怒川線で移動する。奥日光は朝晩冷え込むため薄手のダウンを持参。宿は日光1泊、中禅寺温泉2泊、鬼怒川温泉1泊、会津若松2泊。"}'),
     ('winter', '冬の北海道 湯めぐり18日間', 'standard-winter', 'snow', '["hokkaido"]', '["札幌","小樽","余市","ニセコ","洞爺湖","登別","函館"]', '["雪景色","温泉","グルメ","長期旅行"]', '{"text":"2月1日（月）から17泊18日。札幌から函館へ鉄道と送迎バスで南下する。吹雪で移動が遅れる場合に備え、各滞在地に予備時間を確保。防水の滑りにくい靴、防寒手袋、モバイルバッテリーを忘れずに。"}')
 )
 INSERT INTO itineraries (
@@ -288,8 +288,17 @@ INSERT INTO itinerary_fork_stats (itinerary_id, fork_count) VALUES ('official-ma
 INSERT INTO itineraries (
   id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
 ) VALUES
-  ('official-plan-source', '紫陽花の鎌倉・江の島 1泊2日', 'planning-draft', 'neutral', 1, '["kanagawa"]', '["北鎌倉","鎌倉","長谷","江の島"]', '["紫陽花","寺社・歴史","カフェ","街歩き"]', 1, '{"text":"6月12日（土）から1泊2日。北鎌倉駅に8時集合。寺院は朝から回り、午後は江ノ電で長谷へ移動する。雨天でも実施するので、歩きやすい防水靴と折りたたみ傘を持参。宿は鎌倉駅近く、朝食なし。"}', NULL, NULL, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
-  ('official-plan-public', '紫陽花の鎌倉・江の島 1泊2日', 'planning-draft', 'neutral', 1, '["kanagawa"]', '["北鎌倉","鎌倉","長谷","江の島"]', '["紫陽花","寺社・歴史","カフェ","街歩き"]', 1, '{"text":"6月12日（土）から1泊2日。北鎌倉駅に8時集合。寺院は朝から回り、午後は江ノ電で長谷へ移動する。雨天でも実施するので、歩きやすい防水靴と折りたたみ傘を持参。宿は鎌倉駅近く、朝食なし。"}', NULL, 'official-plan-source', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+  ('official-plan-source', '紫陽花の鎌倉・江の島', 'planning-draft', 'neutral', 1, '["kanagawa"]', '["北鎌倉","鎌倉","長谷","江の島"]', '["紫陽花","寺社・歴史","カフェ","街歩き"]', 1, '{"text":"6月12日（土）から1泊2日。北鎌倉駅に8時集合。寺院は朝から回り、午後は江ノ電で長谷へ移動する。雨天でも実施するので、歩きやすい防水靴と折りたたみ傘を持参。宿は鎌倉駅近く、朝食なし。"}', NULL, NULL, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-public', '紫陽花の鎌倉・江の島', 'planning-draft', 'neutral', 1, '["kanagawa"]', '["北鎌倉","鎌倉","長谷","江の島"]', '["紫陽花","寺社・歴史","カフェ","街歩き"]', 1, '{"text":"6月12日（土）から1泊2日。北鎌倉駅に8時集合。寺院は朝から回り、午後は江ノ電で長谷へ移動する。雨天でも実施するので、歩きやすい防水靴と折りたたみ傘を持参。宿は鎌倉駅近く、朝食なし。"}', NULL, 'official-plan-source', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+
+-- Covers are shared by the editable and public copies, and match each trip's character.
+UPDATE itineraries
+SET background_image = CASE
+  WHEN id GLOB 'official-plan-*' THEN '/itinerary-backgrounds/coastal-drive.avif'
+  WHEN id GLOB 'official-map-*' THEN '/itinerary-backgrounds/japanese.avif'
+END,
+background_display = 'cover'
+WHERE id GLOB 'official-plan-*' OR id GLOB 'official-map-*';
 
 INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES
   ('official-plan-source-meigetsu', 'official-plan-source', '明月院の紫陽花', CAST(strftime('%s', '2027-06-12T08:30:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-12T10:00:00+09:00') AS INTEGER) * 1000, '鎌倉市山ノ内189', '{"text":"開門後の早い時間に入り、本堂後庭園までゆっくり見る。","tabitabi_schedule":{"precision":"time","day":1,"order":1}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),

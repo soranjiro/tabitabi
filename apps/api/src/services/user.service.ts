@@ -138,7 +138,7 @@ export class UserService {
       .prepare(`
         SELECT
           publication.shared_itinerary_id as itinerary_id,
-          i.title, i.theme_id, publication.published_at as created_at,
+          i.title, i.theme_id, i.background_image, publication.published_at as created_at,
           publication.prefecture_slugs, publication.areas, publication.tags,
           (SELECT COUNT(*) FROM steps WHERE itinerary_id = i.id) as stops,
           COALESCE(stats.fork_count, 0) as copies,
@@ -187,7 +187,7 @@ export class UserService {
       .prepare(`
         SELECT
           publication.shared_itinerary_id as itinerary_id,
-          i.title, i.theme_id, publication.published_at as created_at, u.username,
+          i.title, i.theme_id, i.background_image, publication.published_at as created_at, u.username,
           publication.prefecture_slugs, publication.areas, publication.tags,
           (SELECT COUNT(*) FROM steps WHERE itinerary_id = i.id) as stops,
           COALESCE(stats.fork_count, 0) as copies,
@@ -241,7 +241,7 @@ export class UserService {
     const results = await this.db.prepare(`
       SELECT
         publication.shared_itinerary_id as itinerary_id,
-        i.title, i.theme_id, publication.published_at as created_at, u.username,
+        i.title, i.theme_id, i.background_image, publication.published_at as created_at, u.username,
         publication.prefecture_slugs, publication.areas, publication.tags,
         (SELECT COUNT(*) FROM steps WHERE itinerary_id = i.id) as stops,
         COALESCE(stats.fork_count, 0) as copies,
@@ -513,6 +513,7 @@ export class UserService {
       itinerary_id: row.itinerary_id as string,
       title: row.title as string,
       theme_id: row.theme_id as string,
+      background_image: (row.background_image as string | null) ?? null,
       created_at: row.created_at as string,
       prefecture_slugs: this.parseStringArray(row.prefecture_slugs),
       areas: this.parseStringArray(row.areas),

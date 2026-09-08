@@ -154,7 +154,7 @@
     if (browser) {
       const module = await import("./components/Map.svelte");
       MapComponent = module.default;
-      if (getIsDemoMode()) {
+      if (getIsDemoMode() || isSharedSnapshot) {
         hasEditPermission = true;
       } else {
         const token = auth.extractTokenFromUrl();

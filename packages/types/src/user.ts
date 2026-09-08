@@ -46,6 +46,10 @@ export interface UserBookmark {
 }
 
 export interface UserBookmarkWithItinerary extends UserBookmark {
+  palette_id?: string;
+  start_at?: number | null;
+  end_at?: number | null;
+  shared_title?: string | null;
   title: string;
   theme_id: string;
   is_password_protected: boolean;
@@ -82,6 +86,7 @@ export interface PublicFeedResponse {
 }
 
 export interface PublishItineraryInput {
+  content?: { itinerary: import('./itinerary').ItineraryResponse; steps: import('./step').Step[] };
   prefecture_slugs: string[];
   areas?: string[];
   tags?: string[];

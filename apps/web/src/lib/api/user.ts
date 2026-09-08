@@ -16,6 +16,9 @@ import type {
   PublishItineraryResponse,
 } from '@tabitabi/types';
 import { userAuth } from '../user-auth';
+import { auth } from '../auth';
+import type { ItineraryResponse, Step } from '@tabitabi/types';
+export interface BookContent { itinerary: ItineraryResponse; steps: Step[] }
 
 const API_BASE_URL =
   (import.meta.env.PUBLIC_API_URL as string | undefined) ||
@@ -24,11 +27,14 @@ const API_BASE_URL =
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = await userAuth.getToken();
+  const itineraryId = endpoint.match(/\/bookmarks\/([^/]+)/)?.[1];
+  const itineraryToken = itineraryId ? auth.getToken(itineraryId) : null;
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(itineraryToken ? { 'X-Itinerary-Token': itineraryToken } : {}),
       ...options.headers,
     },
   });
@@ -45,6 +51,9 @@ function clearFavoriteCache() {
 }
 
 export const userApi = {
+  previewPublication: (id: string) => request<BookContent>(`/users/me/bookmarks/${id}/preview`),
+  savePublication: (id: string, content: BookContent) => request<{ id: string }>(`/users/me/bookmarks/${id}/publication/content`, { method: 'POST', body: JSON.stringify(content) }),
+  restorePublication: (id: string) => request<{ id: string }>(`/users/me/bookmarks/${id}/publication/restore`, { method: 'POST' }),
   bootstrap: (data: BootstrapProfileInput = {}) =>
     request<UserSessionProfile>('/users/me/bootstrap', { method: 'POST', body: JSON.stringify(data) }),
 

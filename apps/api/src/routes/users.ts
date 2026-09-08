@@ -6,8 +6,37 @@ import { ItineraryService } from '../services/itinerary.service';
 import { userAuthMiddleware, userProfileMiddleware } from '../middleware/auth';
 import { bootstrapProfileSchema, publishItinerarySchema, syncBookmarksSchema, updateProfileSchema, updateVisibilitySchema } from '../validators';
 import { validationHook } from '../validators/hook';
+import { PublicationService, bookContentSchema } from '../services/publication.service';
 
 const users = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+users.get('/me/bookmarks/:itineraryId/preview', userAuthMiddleware, userProfileMiddleware, async c => {
+  const id = c.req.param('itineraryId');
+  if (!await new UserService(c.env.DB).hasBookmark(c.get('userId')!, id)) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Saved itinerary not found' } }, 404);
+  }
+  return c.json({ success: true, data: await new PublicationService(c.env.DB, c.env).read(id, true) });
+});
+
+users.post('/me/bookmarks/:itineraryId/publication/content', userAuthMiddleware, userProfileMiddleware,
+  zValidator('json', bookContentSchema, validationHook), async c => {
+    const service = new PublicationService(c.env.DB, c.env);
+    const publication = await service.owned(c.req.param('itineraryId'), c.get('userId')!);
+    if (!publication) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Publication not found' } }, 404);
+    await service.replace(publication.id, c.req.valid('json'));
+    return c.json({ success: true, data: { id: publication.id } });
+  });
+
+users.post('/me/bookmarks/:itineraryId/publication/restore', userAuthMiddleware, userProfileMiddleware, async c => {
+  const service = new PublicationService(c.env.DB, c.env);
+  const id = c.req.param('itineraryId');
+  const publication = await service.owned(id, c.get('userId')!);
+  if (!publication || !await new UserService(c.env.DB).hasBookmark(c.get('userId')!, id)) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Publication not found' } }, 404);
+  }
+  await service.replace(id, bookContentSchema.parse(await service.read(publication.id)), publication.id);
+  return c.json({ success: true, data: { id } });
+});
 
 // GET /users/search?q=:query (認証不要 - username 部分一致検索)
 users.get('/search', async (c) => {
@@ -124,7 +153,7 @@ users.post(
   '/me/bookmarks/:itineraryId/publish',
   userAuthMiddleware,
   userProfileMiddleware,
-  zValidator('json', publishItinerarySchema, validationHook),
+  zValidator('json', publishItinerarySchema.extend({ content: bookContentSchema.optional() }), validationHook),
   async (c) => {
     const userId = c.get('userId')!;
     const itineraryId = c.req.param('itineraryId');
@@ -136,13 +165,9 @@ users.post(
       if (!await userService.hasBookmark(userId, itineraryId)) {
         return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Saved itinerary not found' } }, 404);
       }
-      await itineraryService.update(itineraryId, {
-        prefecture_slugs: input.prefecture_slugs,
-        areas: input.areas,
-        tags: input.tags,
-        metadata_initialized: true,
-      });
-      const snapshot = await itineraryService.publish(itineraryId);
+      const snapshot = await itineraryService.publish(itineraryId, userId, {
+        prefecture_slugs: input.prefecture_slugs, areas: input.areas ?? [], tags: input.tags ?? [],
+      }, input.content);
       await userService.publishBookmark(userId, itineraryId, snapshot.id);
       return c.json({ success: true, data: { id: snapshot.id } });
     } catch (error) {

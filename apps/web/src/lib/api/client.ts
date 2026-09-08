@@ -1,6 +1,5 @@
 import type { ApiResult } from '@tabitabi/types';
 import { auth } from '../auth';
-import { getIsDemoMode } from '../demo';
 
 // Prefer PUBLIC_ for Cloudflare Pages, fallback to VITE_
 const API_BASE_URL =
@@ -35,11 +34,6 @@ export class ApiClient {
     options: RequestInit = {},
     shioriId?: string
   ): Promise<T> {
-    // In demo mode, throw error to prevent any backend calls
-    if (getIsDemoMode()) {
-      throw new Error('Backend API calls are not allowed in demo mode');
-    }
-
     const url = `${this.baseUrl}${endpoint}`;
 
     const response = await fetch(url, {

@@ -4,6 +4,5 @@
   export let itinerary; export let steps; export let onUpdateItinerary = undefined;
   export let onCreateStep = undefined; export let onUpdateStep = undefined;
   export let onDeleteStep = undefined; export let onReorderSteps = undefined;
-  export let onPublishItinerary = undefined;
 </script>
-<SharedItineraryView {itinerary} {steps} {onUpdateItinerary} {onCreateStep} {onUpdateStep} {onDeleteStep} {onReorderSteps} {onPublishItinerary} />
+<SharedItineraryView {itinerary} {steps} {onUpdateItinerary} {onCreateStep} {onUpdateStep} {onDeleteStep} {onReorderSteps} />

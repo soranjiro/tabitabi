@@ -27,6 +27,16 @@
   } as const;
 
   const colors = $derived(themeColors[itinerary.theme_id as keyof typeof themeColors] ?? themeColors["standard-autumn"]);
+  const coverImages: Record<string, string> = {
+    'standard-spring': '/hero/background-spring.avif',
+    'standard-summer': '/hero/background-summer.avif',
+    'standard-autumn': '/hero/background-autumn.avif',
+    'standard-winter': '/hero/background-winter.avif',
+    'map-only': '/itinerary-backgrounds/coastal-drive.avif',
+    'mapbox-journey': '/itinerary-backgrounds/sky.avif',
+    'shopping': '/itinerary-backgrounds/food.webp',
+  };
+  const coverImage = $derived(coverImages[itinerary.theme_id] ?? '/itinerary-backgrounds/japanese.avif');
   const authorName = $derived(itinerary.username === "tabitabi_official" ? "たびたび公式" : `@${itinerary.username}`);
   const duration = $derived.by(() => {
     if (itinerary.start_at == null || itinerary.end_at == null) return "日程未設定";
@@ -71,7 +81,7 @@
 
 <article style={`--accent:${colors[0]};--soft:${colors[1]}`}>
   <a class="card-link" href="/itineraries/{itinerary.itinerary_id}" aria-label="{itinerary.title}を読む">
-    <div class="theme-strip">
+    <div class="theme-strip" style={`background-image:url(${coverImage})`}>
       <button
         class:favorited
         class="favorite"
@@ -126,9 +136,8 @@
     padding: 10px 12px;
     align-items: flex-end;
     justify-content: space-between;
-    background:
-      radial-gradient(circle at 15% 20%, rgba(255,255,255,.75) 0 8px, transparent 9px),
-      linear-gradient(135deg, var(--soft), color-mix(in srgb, var(--accent) 55%, white));
+    background-position: center;
+    background-size: cover;
   }
 
   .theme-strip > span {
@@ -199,7 +208,13 @@
   .author i { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; color: #4c72bc; background: #eef4ff; font-style: normal; font-weight: 900; }
 
   @media (max-width: 420px) {
-    .body { padding: 14px; }
-    .meta { align-items: flex-start; flex-direction: column; }
+    article { border-radius: 8px; }
+    .theme-strip { height: 86px; padding: 7px; }
+    .theme-strip > span { padding: 3px 5px; font-size: 8px; }
+    .favorite { width: 27px; height: 27px; font-size: 16px; }
+    .body { padding: 10px; }
+    h3 { min-height: 2.7em; margin: 5px 0; font-size: 13px; }
+    .destinations, .chips { font-size: 9px; }
+    .description, .meta { display: none; }
   }
 </style>

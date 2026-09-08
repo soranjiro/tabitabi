@@ -4,7 +4,6 @@
   import { afterNavigate } from "$app/navigation";
   import { auth } from "$lib/auth";
   import { userAuth } from "$lib/user-auth";
-  import { resetDemoMode } from "$lib/demo";
   import CreateForm from "./home/CreateForm.svelte";
   import RecentItineraries from "./home/RecentItineraries.svelte";
   import Footer from "./home/Footer.svelte";
@@ -106,7 +105,6 @@
 
   afterNavigate(refreshLoggedIn);
   onMount(() => {
-    resetDemoMode();
     refreshLoggedIn();
     recentItineraries = auth.getRecentItineraries();
     let frame = 0;

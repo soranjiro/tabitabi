@@ -97,7 +97,7 @@
     window.addEventListener('hashchange', openFeatureFromHash);
     titleDraft = itinerary.title;
     memoDraft = getMemoText(itinerary.memo);
-    if (getIsDemoMode()) {
+    if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
       return () => window.removeEventListener('hashchange', openFeatureFromHash);
     }
@@ -463,7 +463,7 @@
   <MoneyOverlay
     show={showMoney}
     itineraryId={itinerary.id}
-    canEdit={hasEditPermission}
+    canEdit={hasEditPermission && !isSharedSnapshot}
     {steps}
     onClose={() => closeFeature('money')}
   />
@@ -471,7 +471,7 @@
   <PackingOverlay
     show={showPacking}
     itineraryId={itinerary.id}
-    canEdit={hasEditPermission}
+    canEdit={hasEditPermission && !isSharedSnapshot}
     onClose={() => closeFeature('packing')}
   />
 

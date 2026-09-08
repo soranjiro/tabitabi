@@ -1,6 +1,8 @@
 <script lang="ts">
   import Dialog from "./Dialog.svelte";
   import { prefectures, travelTags } from "$lib/explore/data";
+  import SharedBook from '$lib/sharing/SharedBook.svelte';
+  import { userApi, type BookContent } from '$lib/api/user';
 
   export interface PublishMetadata {
     prefectureSlugs: string[];
@@ -10,6 +12,7 @@
 
   interface Props {
     show: boolean;
+    itineraryId: string;
     isLoggedIn: boolean;
     sourceText?: string;
     initialMetadata?: PublishMetadata;
@@ -18,7 +21,8 @@
     onClose: () => void;
   }
 
-  let { show, isLoggedIn, sourceText = "", initialMetadata, onLogin, onPublish, onClose }: Props = $props();
+  let { show, itineraryId, isLoggedIn, sourceText = "", initialMetadata, onLogin, onPublish, onClose }: Props = $props();
+  let preview = $state<BookContent | null>(null);
   let selectedPrefectures = $state<string[]>([]);
   let prefectureCandidate = $state("");
   let areas = $state<string[]>([]);
@@ -72,25 +76,40 @@
     else if (tags.length < 3) tags = [...tags, tag];
   }
 
-  async function publish() {
+  async function publish(approved?: BookContent): Promise<true | string> {
     if (!selectedPrefectures.length) {
       validationMessage = "旅行先を1件以上選んでください";
-      return;
+      return validationMessage;
     }
-    if (publishing) return;
+    if (publishing) return "公開処理中です。完了するまでお待ちください";
     publishing = true;
     validationMessage = "";
     try {
-      publishedId = await onPublish({ prefectureSlugs: selectedPrefectures, areas, tags });
+      publishedId = approved
+        ? (await userApi.publishBookmark(itineraryId, { prefecture_slugs: selectedPrefectures, areas, tags, content: approved })).id
+        : await onPublish({ prefectureSlugs: selectedPrefectures, areas, tags });
+      preview = null;
+      return true;
     } catch {
       validationMessage = "公開できませんでした。時間をおいてもう一度お試しください";
+      return validationMessage;
     } finally {
       publishing = false;
     }
   }
+  async function openPreview() {
+    if (!selectedPrefectures.length) { validationMessage = '旅行先を1件以上選んでください'; return; }
+    publishing = true;
+    try { preview = await userApi.previewPublication(itineraryId); }
+    catch { validationMessage = 'プレビューを開けませんでした。元のしおりの認証を確認してください'; }
+    finally { publishing = false; }
+  }
 </script>
 
-<Dialog {show} title={publishedId ? "公開しました" : "しおりを公開"} {onClose}>
+{#if show && preview}
+  <SharedBook content={preview} preview onBack={() => { preview = null; validationMessage = ""; }} onConfirm={publish} />
+{/if}
+<Dialog show={show && !preview} title={publishedId ? "共有しました" : "公開情報"} {onClose}>
   {#snippet children()}
     {#if publishedId}
       <div class="publish-success">
@@ -136,9 +155,8 @@
         <div class="tag-options">{#each travelTags as tag}<button type="button" class:selected={tags.includes(tag)} onclick={() => toggleTag(tag)}>{tag}</button>{/each}</div>
       </section>
 
-      <p class="privacy-check">公開前に、旅程やメモに個人情報が含まれていないか確認してください。</p>
       {#if validationMessage}<p class="validation" role="alert">{validationMessage}</p>{/if}
-      <button type="button" class="publish-button" onclick={publish} disabled={publishing}>{publishing ? "公開しています…" : "みんなに公開する"}</button>
+      <button type="button" class="publish-button" onclick={openPreview} disabled={publishing}>{publishing ? "読み込み中…" : "プレビューへ"}</button>
       <button type="button" class="cancel-button" onclick={onClose}>キャンセル</button>
     {/if}
   {/snippet}

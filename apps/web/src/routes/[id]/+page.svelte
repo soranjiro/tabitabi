@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto, invalidateAll } from "$app/navigation";
+  import { invalidateAll } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
   import { userApi } from "$lib/api/user";
   import { stepApi } from "$lib/api/step";
@@ -9,6 +9,8 @@
   import { onMount } from "svelte";
   import type { Theme } from "@tabitabi/types";
   import { getPalette } from "$lib/themes";
+  import SharedBook from '$lib/sharing/SharedBook.svelte';
+  let copiedNotice = $state(false);
 
   let { data } = $props();
 
@@ -111,9 +113,13 @@
       }
     };
 
-    init();
+    void init();
+    const params = new URLSearchParams(window.location.search);
+    copiedNotice = params.get('copied') === '1';
+    const noticeTimer = setTimeout(() => copiedNotice = false, 4000);
 
     return () => {
+      clearTimeout(noticeTimer);
       document.body.style.backgroundColor = "";
       document.documentElement.style.backgroundColor = "";
     };
@@ -210,44 +216,9 @@
     }
   }
 
-  async function handlePublishItinerary(metadata: {
-    prefectureSlugs: string[];
-    areas: string[];
-    tags: string[];
-  }) {
-    const result = await userApi.publishBookmark(data.itinerary.id, {
-      prefecture_slugs: metadata.prefectureSlugs,
-      areas: metadata.areas,
-      tags: metadata.tags,
-    });
-    return result.id;
-  }
-
   let isViewOnly = $derived(!!data.itinerary.source_itinerary_id);
 
-  let forking = $state(false);
 
-  async function handleFork() {
-    if (forking) return;
-    if (!userAuth.isLoggedIn()) {
-      sessionStorage.setItem("tabitabi_pending_fork", data.itinerary.id);
-      await goto("/profile");
-      return;
-    }
-    forking = true;
-    try {
-      const result = await itineraryApi.fork(data.itinerary.id);
-      auth.setToken(result.id, result.title, result.token);
-      // 同じ動的ルート内の遷移では、テーマコンポーネントの編集状態が残ることがあるため、
-      // コピー先は新しいページとして開いて確実に自分用のしおりだけを表示する。
-      window.location.assign(`/itineraries/${result.id}`);
-    } catch (error) {
-      console.error("Failed to fork itinerary:", error);
-      alert("コピーに失敗しました");
-    } finally {
-      forking = false;
-    }
-  }
 </script>
 
 <svelte:head>
@@ -280,19 +251,9 @@
 </svelte:head>
 
 {#if isViewOnly}
-  <header class="shared-snapshot-header">
-    <a class="shared-snapshot-back" href="/explore" aria-label="共有されたしおり一覧に戻る">
-      <span aria-hidden="true">←</span> 共有されたしおり一覧
-    </a>
-    <div class="shared-snapshot-header-copy">
-      <span class="shared-snapshot-eyebrow">共有されたしおり</span>
-      <span class="shared-snapshot-copy">閲覧専用</span>
-    </div>
-    <button onclick={handleFork} disabled={forking} class="shared-snapshot-button">
-      {forking ? "コピー中..." : "コピーして編集"}
-    </button>
-  </header>
-{/if}
+  <SharedBook content={{ itinerary: data.itinerary, steps: data.steps }} />
+{:else}
+  {#if copiedNotice}<p class="copy-notice" role="status">✓ 自分のしおりを作りました</p>{/if}
 
 {#key data.itinerary.theme_id}
   <ItineraryView
@@ -302,39 +263,13 @@
     onCreateStep={isViewOnly ? undefined : handleCreateStep}
     onUpdateStep={isViewOnly ? undefined : handleUpdateStep}
     onDeleteStep={isViewOnly ? undefined : handleDeleteStep}
-    onPublishItinerary={isViewOnly ? undefined : handlePublishItinerary}
   />
 {/key}
 
 <LazyPrintStudio {itinerary} {steps} />
+{/if}
 
 
 <style>
-  .shared-snapshot-header {
-    position: relative;
-    z-index: 60;
-    display: flex;
-    min-height: 58px;
-    width: 100%;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.65rem max(1rem, env(safe-area-inset-right)) 0.65rem max(1rem, env(safe-area-inset-left));
-    border-bottom: 1px solid #dbeafe;
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 4px 18px rgba(30, 64, 175, 0.1);
-    backdrop-filter: blur(10px);
-  }
-  .shared-snapshot-back { flex: none; color: #1d4ed8; font-size: 0.78rem; font-weight: 700; text-decoration: none; }
-  .shared-snapshot-back:hover { text-decoration: underline; text-underline-offset: 3px; }
-  .shared-snapshot-header-copy { display: flex; min-width: 0; flex: 1; align-items: baseline; gap: 0.6rem; }
-  .shared-snapshot-eyebrow { color: #1d4ed8; font-size: 0.75rem; font-weight: 700; }
-  .shared-snapshot-copy { color: #64748b; font-size: 0.72rem; }
-  .shared-snapshot-button { flex: none; border: 0; border-radius: 0.7rem; padding: 0.65rem 0.85rem; background: #2563eb; color: white; font-size: 0.82rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
-  .shared-snapshot-button:hover { background: #1d4ed8; }
-  .shared-snapshot-button:disabled { cursor: wait; opacity: 0.65; }
-  @media (max-width: 540px) {
-    .shared-snapshot-header { gap: 0.65rem; }
-    .shared-snapshot-header-copy { display: none; }
-    .shared-snapshot-back { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  }
+  .copy-notice { position: fixed; z-index: 3000; top: 3rem; left: 50%; transform: translateX(-50%); padding: .8rem 1rem; background: #355f50; color: white; border-radius: .5rem; font-size: .8rem; }
 </style>

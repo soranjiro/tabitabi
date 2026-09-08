@@ -6,7 +6,7 @@
   import { userAuth } from "$lib/user-auth";
   import PageShell from "$lib/PageShell.svelte";
   import { auth } from "$lib/auth";
-  import { prefectureName } from "$lib/explore/data";
+  import BookShelf from "$lib/sharing/BookShelf.svelte";
   import JapanMap from "$lib/explore/JapanMap.svelte";
   import ItineraryCard from "$lib/explore/ItineraryCard.svelte";
   import { PREFECTURES, type Prefecture, type PublicFeedItem, type UserBookmarkWithItinerary, type UserSessionProfile } from "@tabitabi/types";
@@ -40,6 +40,7 @@
   let editSuccess = $state<string | null>(null);
   let publishingIds = $state(new Set<string>());
   let unlinkTarget = $state<UserBookmarkWithItinerary | null>(null);
+  let showAccount = $state(false);
   let activeTab = $state<"itineraries" | "favorites" | "map">("itineraries");
   const visitedCounts = $derived.by(() => {
     const counts: Record<string, number> = {};
@@ -209,13 +210,6 @@
   }
 
   async function continuePendingAction() {
-    const publishId = sessionStorage.getItem("tabitabi_pending_publish");
-    if (publishId) {
-      sessionStorage.removeItem("tabitabi_pending_publish");
-      await goto(`/itineraries/${publishId}?publish=1`);
-      return;
-    }
-
     const itineraryId = sessionStorage.getItem("tabitabi_pending_fork");
     if (!itineraryId) return;
     sessionStorage.removeItem("tabitabi_pending_fork");
@@ -388,14 +382,14 @@
       </section>
     {:else}
       <section class="dashboard-hero">
-        <div class="avatar">{account?.username.slice(0, 1).toUpperCase()}</div>
-        <div><p>TRAVEL LIBRARY</p><h2>@{account?.username} のしおり</h2><span>旅の編集・公開・更新を、ここからまとめて管理できます。</span></div>
-        <div class="dashboard-links"><a href="/users/{account?.username}">公開プロフィール</a><a href="/explore">みんなのしおり</a><button onclick={handleLogout}>ログアウト</button></div>
+        <button class="avatar" aria-label="アカウント設定" aria-expanded={showAccount} onclick={() => showAccount = !showAccount}>{account?.username.slice(0, 1).toUpperCase()}</button>
+        <div><p>旅の本棚</p><h2>こんにちは、{account?.username}さん</h2><span>{bookmarks.length}の旅　{bookmarks.filter(item => item.is_visible).length}つの共有</span></div>
+        <div class="dashboard-links"><a href="/#create">＋ しおりを作る</a></div>
       </section>
       {#if editSuccess}<p class="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm" role="status">{editSuccess}</p>{/if}
       {#if error}<p class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</p>{/if}
 
-      <section class="account-card">
+      {#if showAccount}<section class="account-card">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"><div><div class="flex items-center gap-2"><h2 class="font-semibold text-gray-900">アカウント設定</h2><span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">メール確認済み</span></div><p class="text-sm text-gray-500 mt-1">{account?.email} · {account?.prefecture}</p></div>{#if editSection === "none"}<div class="flex flex-wrap gap-2"><button onclick={() => editSection = "profile"} class="secondary compact">プロフィール</button><button onclick={() => { editEmail = account?.email ?? ""; editSection = "email"; }} class="secondary compact">メール変更</button><button onclick={() => editSection = "password"} class="secondary compact">パスワード</button></div>{/if}</div>
         {#if editSection !== "none"}<div class="mt-5 pt-5 border-t">{#if editError}<p class="mb-3 text-sm text-red-600">{editError}</p>{/if}
           {#if editSection === "profile"}<form onsubmit={(event) => { event.preventDefault(); updateProfile(); }} class="space-y-3"><label for="edit-username">ユーザー名</label><input id="edit-username" bind:value={editUsername} minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" required /><label for="edit-prefecture">お住まいの都道府県</label><select id="edit-prefecture" bind:value={editPrefecture} required>{#each PREFECTURES as item}<option value={item}>{item}</option>{/each}</select><div class="actions"><button type="button" onclick={() => editSection = "none"} class="secondary compact">キャンセル</button><button type="submit" disabled={submitting} class="primary compact">保存</button></div></form>
@@ -404,8 +398,10 @@
         </div>{/if}
       </section>
 
+      <div class="dashboard-links"><a href="/users/{account?.username}">公開プロフィール</a><button onclick={handleLogout}>ログアウト</button></div>{/if}
+
       <nav class="library-tabs" aria-label="マイページの表示切り替え">
-        <button class:active={activeTab === "itineraries"} onclick={() => (activeTab = "itineraries")}>保存したしおり</button>
+        <button class:active={activeTab === "itineraries"} onclick={() => (activeTab = "itineraries")}>しおり</button>
         <button class:active={activeTab === "favorites"} onclick={() => (activeTab = "favorites")}>お気に入り</button>
         <button class:active={activeTab === "map"} onclick={() => (activeTab = "map")}>訪問マップ</button>
       </nav>
@@ -428,40 +424,7 @@
           </div>
         {/if}
       {:else}
-        <div class="library-heading"><div><p>MY ITINERARIES</p><h2>保存したしおり</h2></div><span>{bookmarks.filter((item) => item.is_visible).length}件 公開中</span></div>
-        {#if bookmarks.length === 0}
-        <div class="library-empty"><span>✈</span><h3>最初のしおりを作りましょう</h3><p>作成したしおりは自動でここに保存され、完成後に公開できます。</p><a href="/#create">しおりを作る</a></div>
-        {:else}
-        <div class="bookmark-grid">
-          {#each bookmarks as item}
-            <article class:published={item.is_visible}>
-              <div class="bookmark-status"><span>{item.is_visible ? "公開中" : "非公開"}</span><small>更新 {formatDate(item.itinerary_updated_at)}</small></div>
-              <a class="bookmark-title" href="/itineraries/{item.itinerary_id}">{item.title}</a>
-              {#if item.prefecture_slugs.length || item.tags.length}
-                <div class="publication-meta">
-                  {#each item.prefecture_slugs ?? [] as slug}<span>{prefectureName(slug)}</span>{/each}
-                  {#each item.tags ?? [] as tag}<span>#{tag}</span>{/each}
-                </div>
-              {/if}
-              {#if item.is_visible}
-                <p class="publication-note">公開用ID: <a href="/itineraries/{item.shared_itinerary_id}">{item.shared_itinerary_id}</a></p>
-              {:else}
-                <p class="publication-note">公開すると、元の編集用IDとは別に閲覧専用IDを発行します。</p>
-              {/if}
-              <div class="bookmark-actions">
-                <a href="/itineraries/{item.itinerary_id}">編集する</a>
-                {#if item.is_visible}
-                  <button onclick={() => republish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)}>{publishingIds.has(item.itinerary_id) ? "更新中…" : "最新版を反映"}</button>
-                  <button class="danger" onclick={() => unpublish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)}>取り下げ</button>
-                {:else}
-                  <button class="publish-action" onclick={() => republish(item.itinerary_id)} disabled={publishingIds.has(item.itinerary_id)}>みんなに公開</button>
-                  <button class="danger" onclick={() => (unlinkTarget = item)} disabled={publishingIds.has(item.itinerary_id)}>紐付けを解除</button>
-                {/if}
-              </div>
-            </article>
-          {/each}
-        </div>
-        {/if}
+        <BookShelf {bookmarks} onRefresh={loadBookmarks} onUnlink={(item) => unlinkTarget = item} />
       {/if}
 
       {#if unlinkTarget}
@@ -483,7 +446,7 @@
 </PageShell>
 
 <style>
-  .dashboard-hero { display: grid; grid-template-columns: auto 1fr auto; margin-bottom: 1.25rem; padding: 1.35rem; border: 1px solid #dce7f7; border-radius: 1.1rem; align-items: center; gap: 1rem; background: linear-gradient(135deg, #f3f8ff, #f3f1ff); }
+  .dashboard-hero { display: grid; grid-template-columns: auto 1fr auto; margin-bottom: 1.25rem; padding: 1.35rem; border: 1px solid #dce7f7; border-radius: 1.1rem; align-items: center; gap: 1rem; background: #faf9f5; }
   .avatar { display: grid; width: 3.25rem; height: 3.25rem; border-radius: 1rem; place-items: center; color: white; background: linear-gradient(135deg, #5ca4ee, #7b88ec); font-size: 1.2rem; font-weight: 900; }
   .dashboard-hero p, .library-heading p { margin: 0 0 .2rem; color: #718dc5; font-size: .65rem; font-weight: 900; letter-spacing: .14em; }
   .dashboard-hero h2 { margin: 0; color: #293b5c; font-size: 1.2rem; }

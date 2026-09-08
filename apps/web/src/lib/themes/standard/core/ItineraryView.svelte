@@ -12,8 +12,6 @@
   import { handlePasswordAuth } from "$lib/auth/handle-password-auth";
   import { getIsDemoMode } from "$lib/demo";
   import { onMount, setContext } from "svelte";
-  import { goto } from "$app/navigation";
-  import { userAuth } from "$lib/user-auth";
   import StepList from "./StepList.svelte";
   import EventDetailDialog from "./components/EventDetailDialog.svelte";
   import BottomNav from "./components/BottomNav.svelte";
@@ -21,7 +19,6 @@
   import MemoDialog from "./components/MemoDialog.svelte";
   import PasswordDialog from "./components/PasswordDialog.svelte";
   import ShareDialog from "./components/ShareDialog.svelte";
-  import PublishDialog from "./components/PublishDialog.svelte";
   import MoreMenu from "./components/MoreMenu.svelte";
   import MoneyOverlay from "$lib/features/money/MoneyOverlay.svelte";
   import { MONEY_NAVIGATION_CONTEXT, type MoneyNavigationContext } from "$lib/features/money/navigation";
@@ -78,11 +75,6 @@
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
     onReorderSteps?: (...args: unknown[]) => Promise<void> | void;
-    onPublishItinerary?: (metadata?: {
-      prefectureSlugs: string[];
-      areas: string[];
-      tags: string[];
-    }) => Promise<string>;
   }
 
   let {
@@ -93,7 +85,6 @@
     onUpdateStep,
     onDeleteStep,
     onReorderSteps: _onReorderSteps,
-    onPublishItinerary,
   }: Props = $props();
 
   const themes = getAvailableThemes();
@@ -105,8 +96,6 @@
   let createStepTemplate = $state<Step | null>(null);
   let showCopyMessage = $state(false);
   let showShareDialog = $state(false);
-  let showPublishDialog = $state(false);
-  let loggedInForPublish = $state(false);
   let showMoreMenu = $state(false);
   let hasEditPermission = $state(false);
   let showPasswordDialog = $state(false);
@@ -185,9 +174,15 @@
   }
 
   onMount(() => {
-    if (getIsDemoMode()) {
+    const openFeatureFromHash = () => {
+      showMoney = window.location.hash === '#money';
+      showPacking = window.location.hash === '#packing';
+    };
+    openFeatureFromHash();
+    window.addEventListener('hashchange', openFeatureFromHash);
+    if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
-      return;
+      return () => window.removeEventListener('hashchange', openFeatureFromHash);
     }
 
     const token = auth.extractTokenFromUrl();
@@ -204,19 +199,20 @@
       auth.updateAccessTime(itinerary.id, itinerary.title);
     }
 
-    if (onPublishItinerary && new URLSearchParams(window.location.search).get("publish") === "1") {
-      loggedInForPublish = userAuth.isLoggedIn();
-      showPublishDialog = true;
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-
     const metadataRequested = new URLSearchParams(window.location.search).get("metadata") === "1";
     const shouldShowMetadataOnboarding = itineraryCreationPopups.metadata.enabled && !itinerary.metadata_initialized;
     if (hasEditPermission && !isSharedSnapshot && (metadataRequested || shouldShowMetadataOnboarding)) {
       showMetadataDialog = true;
       if (metadataRequested) window.history.replaceState({}, "", window.location.pathname);
     }
+    return () => window.removeEventListener('hashchange', openFeatureFromHash);
   });
+
+  function closeFeature(feature: 'money' | 'packing') {
+    if (window.location.hash === `#${feature}`) window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
+    if (feature === 'money') { showMoney = false; requestedMoneyItemId = null; }
+    else showPacking = false;
+  }
 
   async function onPasswordAuth(password: string) {
     await handlePasswordAuth({
@@ -322,21 +318,6 @@
     } catch (err) {
       console.error("Failed to copy:", err);
     }
-  }
-
-  function goToPublishLogin() {
-    sessionStorage.setItem("tabitabi_pending_publish", itinerary.id);
-    void goto("/profile");
-  }
-
-  async function publishToExplore(metadata: {
-    prefectureSlugs: string[];
-    areas: string[];
-    tags: string[];
-  }) {
-    if (!onPublishItinerary) throw new Error("PUBLISH_UNAVAILABLE");
-    await saveMetadata(metadata);
-    return onPublishItinerary(metadata);
   }
 
   async function saveMetadata(metadata: { prefectureSlugs: string[]; areas: string[]; tags: string[] }) {
@@ -544,15 +525,12 @@
   <MoneyOverlay
     show={showMoney}
     itineraryId={itinerary.id}
-    canEdit={hasEditPermission}
+    canEdit={hasEditPermission && !isSharedSnapshot}
     {steps}
     requestedEditItemId={requestedMoneyItemId}
     onEditItemOpened={() => (requestedMoneyItemId = null)}
     onViewStep={openStepFromMoney}
-    onClose={() => {
-      showMoney = false;
-      requestedMoneyItemId = null;
-    }}
+    onClose={() => closeFeature('money')}
   />
 
   {#if stepOpenedFromMoney}
@@ -571,8 +549,8 @@
     <PackingOverlay
       show={showPacking}
       itineraryId={itinerary.id}
-      canEdit={hasEditPermission}
-      onClose={() => (showPacking = false)}
+      canEdit={hasEditPermission && !isSharedSnapshot}
+      onClose={() => closeFeature('packing')}
     />
   {/if}
 
@@ -583,25 +561,12 @@
     onClose={() => (showShareDialog = false)}
   />
 
-  <PublishDialog
-    show={showPublishDialog}
-    isLoggedIn={loggedInForPublish}
-    sourceText={`${itinerary.title} ${steps.map((step) => step.location ?? "").join(" ")}`}
-    initialMetadata={{ prefectureSlugs, areas: itineraryAreas, tags: itineraryTags }}
-    onLogin={goToPublishLogin}
-    onPublish={publishToExplore}
-    onClose={() => (showPublishDialog = false)}
-  />
-
   <MoreMenu
     show={showMoreMenu}
     canConfigure={hasEditPermission}
     canRequestEdit={!isSharedSnapshot}
     {hasEditPermission}
-    onShare={() => {
-      if (hasEditPermission) showShareDialog = true;
-      else void copyViewOnlyLink();
-    }}
+    onShare={() => hasEditPermission && !isSharedSnapshot ? (showShareDialog = true) : void copyViewOnlyLink()}
     onPrint={openPrintPreview}
     onSettings={() => (showSettingsDialog = true)}
     onEditModeToggle={handleEditModeToggle}

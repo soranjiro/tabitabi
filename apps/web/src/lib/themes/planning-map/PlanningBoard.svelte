@@ -1,103 +1,135 @@
 <script lang="ts">
   import type { Step } from '@tabitabi/types';
   import { getMemoText } from '$lib/memo';
-  import { getPlace, distanceKm, type Place } from '$lib/planning/places';
+  import { getPlace, type Place } from '$lib/planning/places';
   import { getStepSchedule } from '$lib/planning/schedule';
   import PlaceMap from './PlaceMap.svelte';
-  let { steps, canEdit, onCreate, onEdit, onPreview }: { steps: Step[]; canEdit: boolean; onCreate: (place?: Place) => void; onEdit: (step: Step) => void; onPreview: () => void } = $props();
+
+  let { steps, canEdit, onCreate, onEdit, onPreview }: {
+    steps: Step[];
+    canEdit: boolean;
+    onCreate: (place?: Place) => void;
+    onEdit: (step: Step) => void;
+    onPreview: () => void;
+  } = $props();
+
   let selected = $state<string | null>(null);
   let query = $state('');
-  let filter = $state('all');
-  const numbers = $derived(Object.fromEntries(steps.map((s,i) => [s.id,i+1])));
-  const candidateCount = $derived(steps.filter(s => getStepSchedule(s).precision === 'undecided').length);
-  const selectedStep = $derived(steps.find(s => s.id === selected));
-  const origin = $derived(getPlace(selectedStep?.notes));
-  const visible = $derived(steps.filter(s => {
-    const schedule = getStepSchedule(s);
-    return (filter === 'all' || (filter === 'idea' && schedule.precision === 'undecided') || (filter === 'priority' && getPlace(s.notes)?.priority)) &&
-      `${s.title} ${s.location || ''} ${getMemoText(s.notes)}`.toLowerCase().includes(query.toLowerCase());
+  let filter = $state<'all' | 'idea' | 'priority'>('all');
+  const numbers = $derived(Object.fromEntries(steps.map((step, index) => [step.id, index + 1])));
+  const candidateCount = $derived(steps.filter((step) => getStepSchedule(step).precision === 'undecided').length);
+  const selectedStep = $derived(steps.find((step) => step.id === selected));
+  const visible = $derived(steps.filter((step) => {
+    const schedule = getStepSchedule(step);
+    const matchesFilter = filter === 'all'
+      || (filter === 'idea' && schedule.precision === 'undecided')
+      || (filter === 'priority' && getPlace(step.notes)?.priority);
+    return matchesFilter && `${step.title} ${step.location || ''} ${getMemoText(step.notes)}`.toLowerCase().includes(query.toLowerCase());
   }));
-  const nearby = $derived(origin ? steps.filter(s => s.id !== selected && getPlace(s.notes)).map(s => ({ step: s, distance: distanceKm(origin!, getPlace(s.notes)!) })).sort((a,b) => a.distance-b.distance).slice(0,3) : []);
 </script>
-<section class="atelier-intro">
-  <div><span class="eyebrow">TRAVEL ATELIER</span><h2>「行きたい」から、旅を描こう。</h2><p>日付も、順番も、まだ決めなくて大丈夫。</p></div>
-  <div class="process"><span class="current"><b>01</b> 集める</span><span><b>02</b> 近くを見比べる</span><button onclick={onPreview}><b>03</b> 日に分ける ↗</button></div>
+
+<section class="board-header">
+  <div><h2>地図から予定を決める</h2><p>{steps.length}件の候補 · {candidateCount}件は日程未定</p></div>
+  <div class="header-actions">
+    <button class="preview" onclick={onPreview}>旅程を見る</button>
+    {#if canEdit}<button class="add-place" onclick={() => onCreate()}>＋ 場所を追加</button>{/if}
+  </div>
 </section>
-<details class="how-to"><summary>このしおりの使い方 — 予定が未定でも、ここから始められます</summary><ol><li><strong>場所名で探す。</strong> 施設名や「地域＋場所名」で検索し、住所とピンを確かめて候補に追加。まだ日時は不要です。</li><li><strong>行きたい理由を残す。</strong> 「晴れたら」「予約を調べる」などのメモと、絶対行きたい場所の★を付けます。</li><li><strong>近くをまとめる。</strong> 候補を選ぶと近い場所を比較できます。同じエリアを同じ日に仮置きしましょう。</li><li><strong>少しずつ旅程にする。</strong> 「旅程を見る」で日・順番・時間を編集。未定の候補は残しておけます。</li></ol><p>地図上をタップして追加することもできます。検索結果の住所・営業時間・予約の要否は、訪問前に公式情報を確認しましょう。</p></details>
-{#if canEdit}<button class="find-place" onclick={() => onCreate()}>⌕ 場所名から探して追加 <span>施設名・お店・駅など</span></button>{/if}
+
 <div class="workspace">
-  <aside class="ideas">
-    <div class="ideas-heading"><div><span class="eyebrow">MY WISHLIST</span><h3>行きたいリスト <small>{steps.length}</small></h3></div>{#if canEdit}<button class="add" onclick={() => onCreate()} aria-label="候補を追加">＋</button>{/if}</div>
-    <label class="search"><span>⌕</span><input aria-label="保存した候補を検索" placeholder="保存した候補を検索" bind:value={query} /></label>
-    <div class="filters" aria-label="候補の絞り込み"><button class:active={filter === 'all'} onclick={() => filter = 'all'}>すべて</button><button class:active={filter === 'idea'} onclick={() => filter = 'idea'}>未定 {candidateCount}</button><button class:active={filter === 'priority'} onclick={() => filter = 'priority'}>★ 行きたい</button></div>
+  <aside class="ideas" aria-label="行きたい場所">
+    <label class="search"><span aria-hidden="true">⌕</span><input aria-label="候補を検索" placeholder="候補を検索" bind:value={query} /></label>
+    <div class="filters" aria-label="候補の絞り込み">
+      <button class:active={filter === 'all'} onclick={() => filter = 'all'}>すべて</button>
+      <button class:active={filter === 'idea'} onclick={() => filter = 'idea'}>日程未定 {candidateCount}</button>
+      <button class:active={filter === 'priority'} onclick={() => filter = 'priority'}>★ 優先</button>
+    </div>
     <div class="cards">
       {#each visible as step}
         {@const place = getPlace(step.notes)}
         {@const schedule = getStepSchedule(step)}
-        <button class="idea" class:selected={selected === step.id} onclick={() => selected = step.id}>
-          <span class="number">{steps.indexOf(step)+1}</span><div><span class="status">{schedule.precision === 'undecided' ? 'まだ候補' : schedule.day ? `Day ${schedule.day}` : '日時設定済み'}{place?.priority ? ' · ★ 絶対行きたい' : ''}</span><strong>{step.title}</strong><p>{getMemoText(step.notes) || '気になった理由をメモしておこう'}</p><small>{place ? (step.location || '地図にピンあり') : '○ 場所はあとで'}</small></div><span class="arrow">↗</span>
-        </button>
+        <article class:selected={selected === step.id}>
+          <button class="idea" onclick={() => canEdit ? onEdit(step) : selected = step.id} onmouseenter={() => selected = step.id} onfocus={() => selected = step.id} aria-label={canEdit ? `${step.title}を編集` : step.title}>
+            <span class="number">{steps.indexOf(step) + 1}</span>
+            <span class="content">
+              <span class="topline"><span>{schedule.precision === 'undecided' ? '日程未定' : schedule.day ? `Day ${schedule.day}` : '日時設定済み'}</span>{#if place?.priority}<span class="priority">★ 優先</span>{/if}</span>
+              <strong>{step.title}</strong>
+              {#if getMemoText(step.notes)}<span class="memo">{getMemoText(step.notes)}</span>{/if}
+              <span class="location">{step.location || (place ? '地図にピンあり' : '場所未定')}</span>
+            </span>
+            {#if canEdit}<span class="edit-label">編集</span>{/if}
+          </button>
+        </article>
       {/each}
-      {#if !visible.length}<div class="empty"><strong>{steps.length ? '一致する候補がありません' : '最初の「行きたい」を置こう'}</strong><p>{steps.length ? '検索条件を変えてみましょう。' : '地図にピンを刺すか、＋から名前だけでも追加できます。'}</p></div>{/if}
+      {#if !visible.length}<div class="empty"><strong>{steps.length ? '候補が見つかりません' : '候補はまだありません'}</strong><p>{steps.length ? '検索や絞り込みを変更してください。' : '場所を追加して、地図に並べましょう。'}</p></div>{/if}
     </div>
-    <div class="note"><span>✎</span><p>まずは気になる場所を集めよう。<br/>全部まわらなくても、いい旅になる。</p></div>
   </aside>
-  <div class="map-area"><PlaceMap steps={visible} {numbers} {selected} {canEdit} onSelect={(id) => selected = id} onPin={onCreate} /></div>
+
+  <div class="map-column">
+    <div class="map-area"><PlaceMap steps={visible} {numbers} {selected} {canEdit} onSelect={(id) => selected = id} onPin={onCreate} /></div>
+    {#if selectedStep}
+      <section class="map-selection" aria-live="polite">
+        <button class="close" onclick={() => selected = null} aria-label="選択を閉じる">×</button>
+        <span class="selection-number">{numbers[selectedStep.id]}</span>
+        <div><strong>{selectedStep.title}</strong><p>{getMemoText(selectedStep.notes) || selectedStep.location || 'メモはありません'}</p></div>
+        {#if canEdit}<button class="selection-edit" onclick={() => onEdit(selectedStep!)}>編集</button>{/if}
+      </section>
+    {/if}
+  </div>
 </div>
-{#if selectedStep}
-  <section class="detail" aria-label="選んだ候補">
-    <div><span class="eyebrow">PICKED PLACE</span><h3>{selectedStep.title}</h3><p>{getMemoText(selectedStep.notes) || '行きたい理由や、調べたいことを残しておこう。'}</p></div>
-    <div class="nearby"><strong>近くの候補 <small>直線距離・移動時間ではありません</small></strong>{#if nearby.length}{#each nearby as item}<button onclick={() => selected = item.step.id}>{item.step.title}<span>{item.distance.toFixed(1)} km</span></button>{/each}{:else}<p>ピンのある候補が増えると、近い場所を比べられます。</p>{/if}</div>
-    {#if canEdit}<button class="edit" onclick={() => onEdit(selectedStep!)}>メモ・場所・行く日を編集 ↗</button>{/if}
-  </section>
-{/if}
-<div class="next"><div><strong>{steps.length - candidateCount} 件を仮決め。まだ {candidateCount} 件の可能性。</strong><p>近い場所を同じ日にまとめると、余白のある旅に。</p></div><button onclick={onPreview}>日ごとに組み立てる →</button></div>
+
 <style>
-  .how-to { padding:14px 18px; margin-bottom:18px; border:1px solid #dde3d5; border-radius:12px; background:#f4f5ee; font-size:12px; line-height:1.9; }
-  .how-to summary { cursor:pointer; color:#35695d; font-weight:650; }
-  .how-to ol { padding-left:20px; }.how-to li { margin:8px 0; }
-  .find-place { display:flex; gap:20px; align-items:center; padding:14px 20px; margin:0 0 18px; border-radius:12px; background:#35695d; color:white; font-size:14px; }
-  .find-place span { color:#e0ecdb; font-size:11px; }
-  .atelier-intro { display:flex; justify-content:space-between; align-items:center; gap:20px; padding:32px 0 26px; }
-  .eyebrow { color:#9a7755; font-size:10px; letter-spacing:.18em; font-weight:750; }
-  h2 { margin:9px 0; font-family:serif; font-size:clamp(22px,3vw,31px); font-weight:600; letter-spacing:.035em; }
-  p { color:#78837c; font-size:12px; line-height:1.8; margin:5px 0; }
-  .process { display:flex; gap:8px; font-size:11px; white-space:nowrap; }
-  .process span,.process button { padding:12px; background:#eeeee7; border-radius:8px; }
-  .process .current { background:#e0e9df; color:#35695d; }
-  .process b { margin-right:6px; font-family:serif; }
-  button { font:inherit; color:inherit; cursor:pointer; border:0; background:none; }
-  .workspace { display:grid; grid-template-columns:330px minmax(0,1fr); gap:20px; min-height:530px; }
-  .ideas { display:flex; flex-direction:column; padding:22px 18px 14px; background:#fffefa; border:1px solid #e5e5dc; border-radius:20px; min-width:0; }
-  .ideas-heading { display:flex; justify-content:space-between; align-items:center; }
-  h3 { margin:7px 0 15px; font-size:18px; }
-  h3 small { margin-left:8px; font-size:12px; color:#879187; }
-  .add { width:38px; height:38px; background:#35695d; color:white; border-radius:12px; font-size:22px; }
-  .search { display:flex; align-items:center; gap:8px; padding:10px 12px; background:#f4f4ed; border-radius:10px; }
-  input { width:100%; background:none; border:0; outline:none; font:inherit; font-size:12px; }
-  .filters { display:flex; gap:5px; margin:14px 0; }
-  .filters button { padding:7px 9px; font-size:11px; border-radius:7px; color:#78837c; }
-  .filters .active { background:#e9eee5; color:#35695d; }
-  .cards { max-height:370px; overflow:auto; }
-  .idea { display:flex; width:100%; align-items:start; gap:10px; padding:15px 8px; border-top:1px solid #eeeee7; text-align:left; }
-  .idea.selected { background:#eef3e9; border-radius:10px; }
-  .number { flex-shrink:0; display:grid; place-items:center; width:24px; height:24px; margin-top:5px; background:#e6ede4; color:#35695d; border-radius:50%; font-size:10px; }
-  .idea div { min-width:0; flex:1; }
-  .status { display:block; color:#9a7755; font-size:9px; margin-bottom:5px; }
-  .idea strong { font-size:14px; overflow-wrap:anywhere; }
-  .idea p { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; }
-  .idea small { color:#758476; font-size:10px; }
-  .arrow { color:#8e9a8d; }
-  .note { display:flex; gap:10px; align-items:center; margin-top:auto; padding:16px 8px 0; }
-  .note p { font-size:10px; }
-  .note>span { font-size:24px; color:#ad9878; }
-  .detail { display:grid; grid-template-columns:1fr 1fr auto; align-items:center; gap:24px; margin-top:20px; padding:24px; border:1px solid #dfe4d9; background:#fffefa; border-radius:16px; }
-  .detail p { white-space:pre-line; overflow-wrap:anywhere; }
-  .nearby strong { font-size:12px; }.nearby small { display:block; font-size:9px; font-weight:400; color:#7c867e; }
-  .nearby button { display:flex; width:100%; justify-content:space-between; padding:6px 0; font-size:12px; }.nearby span { color:#8d947e; }
-  .edit,.next button { background:#35695d; color:white; padding:13px 18px; border-radius:10px; font-size:12px; }
-  .next { display:flex; justify-content:space-between; gap:16px; align-items:center; margin:24px 0 36px; padding:0 6px; }.next strong { font-size:13px; }
-  .empty { padding:24px 6px; font-size:13px; }
-  @media(max-width:1000px) { .atelier-intro { align-items:start; flex-direction:column; }.detail { grid-template-columns:1fr 1fr; }.detail .edit { grid-column:1/-1; } }
-  @media(max-width:700px) { .workspace { display:flex; flex-direction:column; gap:14px; }.map-area { order:-1; height:360px; }.atelier-intro { padding:22px 0 18px; gap:12px; }.process { gap:5px; font-size:10px; }.process span,.process button { padding:9px; }.ideas { padding:18px 14px; }.cards { max-height:330px; }.detail { grid-template-columns:1fr; padding:20px; gap:16px; }.next { align-items:start; flex-direction:column; }.next button { width:100%; } }
+  button, input { font: inherit; }
+  button { border: 0; color: inherit; background: none; cursor: pointer; }
+  .board-header { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding: 28px 0 18px; }
+  h2 { margin: 0 0 6px; color: #25342f; font-size: clamp(20px, 2.4vw, 28px); letter-spacing: -.02em; }
+  p { margin: 0; color: #748078; font-size: 12px; line-height: 1.65; }
+  .header-actions { display: flex; gap: 8px; }
+  .header-actions button { min-height: 42px; padding: 0 16px; border-radius: 10px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .preview { border: 1px solid #d7ddd7; background: #fff; }
+  .add-place { color: #fff; background: #35695d; }
+  .workspace { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); align-items: start; gap: 20px; }
+  .ideas { min-width: 0; padding: 16px; border: 1px solid #e1e4de; border-radius: 16px; background: #fff; }
+  .search { display: flex; align-items: center; gap: 8px; padding: 11px 12px; border: 1px solid #e1e4de; border-radius: 10px; background: #f8f8f4; color: #748078; }
+  .search input { width: 100%; border: 0; outline: 0; background: transparent; font-size: 13px; }
+  .filters { display: flex; gap: 5px; padding: 12px 0; }
+  .filters button { padding: 7px 10px; border-radius: 999px; color: #6f7d75; font-size: 11px; }
+  .filters button.active { color: #28594d; background: #e7eee8; font-weight: 700; }
+  .cards { display: grid; gap: 6px; }
+  article { border: 1px solid transparent; border-radius: 12px; }
+  article:hover, article.selected { border-color: #cbd9cf; background: #f1f5ef; }
+  .idea { display: grid; width: 100%; padding: 13px 10px; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: start; gap: 10px; text-align: left; }
+  .number, .selection-number { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 50%; color: #fff; background: #35695d; font-size: 10px; font-weight: 750; }
+  .content { display: grid; min-width: 0; gap: 5px; }
+  .topline { display: flex; flex-wrap: wrap; gap: 6px; color: #7c887f; font-size: 10px; }
+  .priority { color: #986c38; }
+  .content strong { color: #26332f; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+  .memo { padding: 8px 9px; border-radius: 7px; color: #56635c; background: #fff; font-size: 11px; line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; }
+  .location { color: #79857d; font-size: 10px; overflow-wrap: anywhere; }
+  .edit-label { align-self: center; color: #35695d; font-size: 11px; font-weight: 700; }
+  .map-column { position: sticky; top: 68px; min-width: 0; }
+  .map-area { height: min(70vh, 680px); min-height: 500px; }
+  .map-selection { position: absolute; z-index: 4; right: 14px; bottom: 42px; left: 14px; display: grid; padding: 13px 14px; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 11px; border: 1px solid #dce2dc; border-radius: 12px; background: rgba(255,255,255,.96); box-shadow: 0 8px 26px rgba(35,55,46,.16); backdrop-filter: blur(8px); }
+  .map-selection strong { display: block; margin-bottom: 2px; color: #26332f; font-size: 13px; }
+  .map-selection p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+  .selection-edit { min-height: 38px; padding: 0 14px; border-radius: 9px; color: #fff; background: #35695d; font-size: 12px; font-weight: 700; }
+  .close { position: absolute; top: -11px; right: -7px; width: 28px; height: 28px; border: 1px solid #dce2dc; border-radius: 50%; background: #fff; color: #68746d; }
+  .empty { padding: 30px 12px; text-align: center; }
+  .empty strong { font-size: 13px; }
+  .empty p { margin-top: 5px; }
+  @media (max-width: 760px) {
+    .board-header { align-items: stretch; padding: 20px 0 12px; flex-direction: column; gap: 12px; }
+    .header-actions { display: grid; grid-template-columns: 1fr 1fr; }
+    .workspace { display: flex; flex-direction: column; gap: 12px; }
+    .map-column { position: relative; top: auto; width: 100%; order: -1; }
+    .map-area { height: 52vh; min-height: 340px; max-height: 480px; }
+    .ideas { width: 100%; padding: 12px; }
+    .idea { min-height: 76px; padding: 12px 8px; }
+    .memo { font-size: 12px; }
+    .map-selection { bottom: 34px; }
+  }
+  @media (max-width: 420px) {
+    .map-selection { grid-template-columns: 24px minmax(0, 1fr); }
+    .selection-edit { grid-column: 1 / -1; }
+  }
 </style>

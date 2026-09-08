@@ -257,7 +257,6 @@ INSERT INTO steps (
   ('official-winter-public-matsumoto-castle', 'official-winter-public', '松本城観光', '1788307200000', '1788314400000', '松本市', '{"text":"国宝の城を見学しながら歴史を感じる"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-winter-public-soba-making', 'official-winter-public', 'そば打ち体験', '1788318000000', '1788325200000', '松本市', '{"text":"自分で打ったそばを味わう"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-winter-public-sake-tour', 'official-winter-public', '地酒蔵見学', '1788328800000', '1788334200000', '松本市', '{"text":"酒蔵で冬限定の新酒を試飲"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-zenkoji-prayer', 'official-winter-public', '善光寺お参り', '1788339600000', '1788343200000', '松本市', '{"text":"静かな夜の境内で祈りを捧げる"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-winter-public-train-to-tokyo', 'official-winter-public', '東京へ新幹線移動', '1788391800000', '1788400800000', '松本駅→東京駅', '{"text":"冬の田園風景を眺めながら帰路へ"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-winter-public-ginza-shopping', 'official-winter-public', '銀座ショッピング', '1788404400000', '1788415200000', '銀座', '{"text":"冬のセールでお土産と防寒グッズを探す"}', NULL, 'normal:shopping', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
   ('official-winter-public-dinner-ginza', 'official-winter-public', '銀座の和食ディナー', '1788426000000', '1788431400000', '銀座', '{"text":"名店で締めの一皿を楽しむ"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
@@ -283,6 +282,54 @@ INSERT INTO itinerary_publications (
 INSERT INTO itinerary_fork_stats (itinerary_id, fork_count)
 VALUES ('official-winter-public', 19);
 
+-- map planning: 地図で考える金沢の週末
+INSERT INTO itineraries (
+  id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
+) VALUES
+  ('official-map-source', '地図で考える、金沢1泊2日', 'planning-map', 'neutral', 1, '["ishikawa"]', '["金沢","ひがし茶屋街","兼六園"]', '["グルメ","街歩き","アート"]', 1, '{"text":"友人とめぐる金沢の週末。歩く距離を見ながら、茶屋街・市場・美術館を無理なく組み合わせたい。"}', NULL, NULL, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-public', '地図で考える、金沢1泊2日', 'planning-map', 'neutral', 1, '["ishikawa"]', '["金沢","ひがし茶屋街","兼六園"]', '["グルメ","街歩き","アート"]', 1, '{"text":"友人とめぐる金沢の週末。歩く距離を見ながら、茶屋街・市場・美術館を無理なく組み合わせたい。"}', NULL, 'official-map-source', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+
+INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES
+  ('official-map-source-market', 'official-map-source', '近江町市場', 1788051600000, 1788055200000, '石川県金沢市上近江町50', '{"text":"朝ごはんと食べ歩き。混む前に行きたい。","tabitabi_schedule":{"precision":"day","day":1,"order":1},"tabitabi_place":{"lat":36.5717,"lng":136.6561,"priority":true}}', NULL, 'normal:food', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-castle', 'official-map-source', '金沢城公園', 1788062400000, 1788066000000, '石川県金沢市丸の内1-1', '{"text":"市場から歩いて移動。石川門を見たい。","tabitabi_schedule":{"precision":"day","day":1,"order":2},"tabitabi_place":{"lat":36.564,"lng":136.6596}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-museum', 'official-map-source', '金沢21世紀美術館', 1788073200000, 1788078600000, '石川県金沢市広坂1-2-1', '{"text":"企画展を確認。予約が必要なら先に取る。","tabitabi_schedule":{"precision":"undecided","order":3},"tabitabi_place":{"lat":36.5609,"lng":136.6581,"priority":true}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-garden', 'official-map-source', '兼六園', 1788138000000, 1788143400000, '石川県金沢市兼六町1', '{"text":"朝の静かな時間に歩く候補。","tabitabi_schedule":{"precision":"day","day":2,"order":4},"tabitabi_place":{"lat":36.5621,"lng":136.6627}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-chaya', 'official-map-source', 'ひがし茶屋街', 1788150600000, 1788156000000, '石川県金沢市東山', '{"text":"町家カフェで休憩。お店は当日の混み具合で決める。","tabitabi_schedule":{"precision":"undecided","order":5},"tabitabi_place":{"lat":36.5726,"lng":136.666}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+
+INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at)
+SELECT replace(id, 'official-map-source-', 'official-map-public-'), 'official-map-public', title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
+FROM steps WHERE itinerary_id = 'official-map-source';
+
+INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at)
+VALUES ('official-user', 'official-map-source', 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+INSERT INTO itinerary_publications (source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at)
+VALUES ('official-map-source', 'official-map-public', 'official-user', '["ishikawa"]', '["金沢","ひがし茶屋街","兼六園"]', '["グルメ","街歩き","アート"]', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+INSERT INTO itinerary_fork_stats (itinerary_id, fork_count) VALUES ('official-map-public', 12);
+
+-- simple planning: 候補から組み立てる鎌倉の週末
+INSERT INTO itineraries (
+  id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
+) VALUES
+  ('official-plan-source', '候補からつくる、鎌倉1泊2日', 'planning-draft', 'neutral', 1, '["kanagawa"]', '["鎌倉","長谷","北鎌倉"]', '["寺社・歴史","カフェ","街歩き"]', 1, '{"text":"紫陽花の季節に鎌倉へ。混雑を避けながら、寺院とカフェを1日3か所ほどめぐる。雨の日は予定を詰めすぎない。"}', NULL, NULL, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-public', '候補からつくる、鎌倉1泊2日', 'planning-draft', 'neutral', 1, '["kanagawa"]', '["鎌倉","長谷","北鎌倉"]', '["寺社・歴史","カフェ","街歩き"]', 1, '{"text":"紫陽花の季節に鎌倉へ。混雑を避けながら、寺院とカフェを1日3か所ほどめぐる。雨の日は予定を詰めすぎない。"}', NULL, 'official-plan-source', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+
+INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES
+  ('official-plan-source-meigetsu', 'official-plan-source', '明月院', 1788048000000, 1788053400000, '鎌倉市山ノ内189', '{"text":"開門に合わせて紫陽花を見たい。","tabitabi_schedule":{"precision":"time","day":1,"order":1}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-enkaku', 'official-plan-source', '円覚寺', 1788057000000, 1788062400000, '鎌倉市山ノ内409', '{"text":"北鎌倉駅の近く。境内をゆっくり歩く。","tabitabi_schedule":{"precision":"day","day":1,"order":2}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-komachi', 'official-plan-source', '小町通りで夕食', 1788082200000, 1788087600000, '鎌倉市小町', '{"text":"予約できる店を探す。","tabitabi_schedule":{"precision":"day","day":1,"order":3}}', NULL, 'normal:food', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-hase', 'official-plan-source', '長谷寺', 1788138000000, 1788143400000, '鎌倉市長谷3-11-2', '{"text":"雨でも楽しめそう。混雑状況を見て時間を決める。","tabitabi_schedule":{"precision":"day","day":2,"order":4}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-cafe', 'official-plan-source', '海の見えるカフェ', 1788152400000, 1788157800000, '鎌倉・長谷周辺', '{"text":"長谷寺のあとに寄れる店を当日選ぶ。","tabitabi_schedule":{"precision":"undecided","order":5}}', NULL, 'normal:food', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+
+INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at)
+SELECT replace(id, 'official-plan-source-', 'official-plan-public-'), 'official-plan-public', title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
+FROM steps WHERE itinerary_id = 'official-plan-source';
+
+INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at)
+VALUES ('official-user', 'official-plan-source', 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+INSERT INTO itinerary_publications (source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at)
+VALUES ('official-plan-source', 'official-plan-public', 'official-user', '["kanagawa"]', '["鎌倉","長谷","北鎌倉"]', '["寺社・歴史","カフェ","街歩き"]', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+INSERT INTO itinerary_fork_stats (itinerary_id, fork_count) VALUES ('official-plan-public', 9);
+
 -- Keep each official seasonal bookmark aligned with its season.
 UPDATE itineraries
 SET palette_id = CASE
@@ -299,3 +346,81 @@ WHERE id LIKE 'official-spring-%'
    OR id LIKE 'official-summer-%'
    OR id LIKE 'official-autumn-%'
    OR id LIKE 'official-winter-%';
+
+-- Include complete sample data in both the editable source and public itinerary.
+INSERT INTO itinerary_members (id, itinerary_id, name, created_at)
+SELECT i.id || '-member-' || member.key, i.id, member.name, '2026-09-08T00:00:00.000Z'
+FROM itineraries i
+CROSS JOIN (
+  SELECT 'a' AS key, 'あおい' AS name UNION ALL
+  SELECT 'b', 'はる' UNION ALL
+  SELECT 'c', 'みなと'
+) member
+WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
+
+INSERT INTO itinerary_money_settings (itinerary_id, budget_amount, created_at, updated_at)
+SELECT id, 150000, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries WHERE id GLOB 'official-*-source' OR id GLOB 'official-*-public';
+
+INSERT INTO itinerary_money_items (
+  id, itinerary_id, title, amount, paid_by_member_id, paid_from_fund,
+  status, occurred_on, step_id, is_settled, created_at, updated_at
+)
+SELECT i.id || '-money-hotel', i.id, '宿泊費', 54000, i.id || '-member-a', 0,
+  'paid', '2026-09-01', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
+UNION ALL
+SELECT i.id || '-money-transport', i.id, '交通費', 27000, i.id || '-member-b', 0,
+  'paid', '2026-09-02', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
+UNION ALL
+SELECT i.id || '-money-food', i.id, '食事とカフェ', 18000, NULL, 1,
+  'planned', '2026-09-03', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
+
+INSERT INTO itinerary_money_item_splits (item_id, member_id, itinerary_id, amount)
+SELECT expense.id, member.id, expense.itinerary_id, expense.amount / 3
+FROM itinerary_money_items expense
+JOIN itinerary_members member ON member.itinerary_id = expense.itinerary_id
+WHERE expense.itinerary_id GLOB 'official-*-source' OR expense.itinerary_id GLOB 'official-*-public';
+
+INSERT INTO itinerary_money_fund_transactions (
+  id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at
+)
+SELECT member.itinerary_id || '-fund-' || member.id, member.itinerary_id, member.id,
+  'contribution', 10000, '旅行前の共同費', '2026-08-28', '2026-09-08T00:00:00.000Z'
+FROM itinerary_members member
+WHERE member.itinerary_id GLOB 'official-*-source' OR member.itinerary_id GLOB 'official-*-public';
+
+INSERT INTO itinerary_packing_groups (id, itinerary_id, name, sort_order, created_at, updated_at)
+SELECT i.id || '-pack-valuables', i.id, '貴重品', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
+UNION ALL
+SELECT i.id || '-pack-clothes', i.id, '衣類', 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
+UNION ALL
+SELECT i.id || '-pack-tools', i.id, '旅の道具', 2, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
+
+INSERT INTO itinerary_packing_items (
+  id, itinerary_id, name, quantity, kind, group_id, assignee_member_id,
+  owner_member_id, is_packed, created_at, updated_at
+)
+SELECT i.id || '-item-wallet', i.id, '財布・身分証', 1, 'personal', i.id || '-pack-valuables', NULL, NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
+UNION ALL
+SELECT i.id || '-item-clothes', i.id, '着替え', 3, 'personal', i.id || '-pack-clothes', NULL, NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
+UNION ALL
+SELECT i.id || '-item-camera', i.id, 'カメラ', 1, 'shared', i.id || '-pack-tools', i.id || '-member-a', NULL, 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
+UNION ALL
+SELECT i.id || '-item-battery', i.id, 'モバイルバッテリー', 2, 'shared', i.id || '-pack-tools', i.id || '-member-b', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
+UNION ALL
+SELECT i.id || '-item-medicine', i.id, '常備薬', 1, 'private', i.id || '-pack-valuables', NULL, i.id || '-member-c', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
+
+INSERT INTO itinerary_packing_checks (item_id, member_id, itinerary_id, checked_at)
+SELECT i.id || '-item-wallet', i.id || '-member-a', i.id, '2026-09-08T00:00:00.000Z'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';

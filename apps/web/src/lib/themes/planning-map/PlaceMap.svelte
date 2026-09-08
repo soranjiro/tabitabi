@@ -73,7 +73,6 @@
   {#if adding}<div class="map-hint" role="status">行きたい場所をタップ。<button onclick={() => { const p = map?.getCenter(); if (p) { onPin({ lat: p.lat, lng: p.wrap().lng }); adding = false; } }}>地図の中心に追加</button></div>{/if}
   {#if failed}<div class="map-error" role="status">地図を読み込めません。候補リストから計画を続けられます。<button onclick={() => { failed = false; tiles?.redraw(); }}>再試行</button></div>{/if}
   {#if !ready && !failed}<div class="map-hint">地図をひらいています…</div>{/if}
-  <div class="legend"><span>● 候補</span><span>● 日を仮決め</span></div>
 </div>
 <style>
   .map-frame { position:relative; height:100%; min-height:460px; background:#e7ece1; isolation:isolate; border-radius:20px; overflow:hidden; }
@@ -84,8 +83,6 @@
   button.active { background:#35695d; color:white; }
   .map-hint,.map-error { position:absolute; top:75px; left:50%; transform:translateX(-50%); width:max-content; max-width:85%; padding:12px 16px; background:white; border-radius:12px; z-index:3; font-size:12px; box-shadow:0 3px 15px #0002; }
   .map-error { background:#fff5e5; }
-  .legend { position:absolute; bottom:30px; left:16px; display:flex; gap:15px; padding:8px 12px; background:#fffffff0; border-radius:8px; font-size:11px; color:#35695d; }
-  .legend span+span { color:#556ca1; }
   :global(.atelier-marker span) { display:grid; place-items:center; width:34px; height:34px; border:3px solid white; border-radius:50% 50% 50% 4px; color:white; box-shadow:0 3px 10px #213b3440; font-size:12px; font-weight:bold; }
   @media(max-width:700px) { .map-frame { min-height:360px; border-radius:14px; } .map-tools { top:12px; right:10px; gap:4px; } button { padding:8px; font-size:11px; } }
 </style>

@@ -29,6 +29,7 @@
   let draggingGroupId = $state<string | null>(null);
   let dragStartGroups = $state<PackingGroup[]>([]);
   let dragPointerId = $state<number | null>(null);
+  let copied = $state(false);
 
   const isDemo = () => itineraryId === 'demo' || getIsDemoMode();
   const me = $derived(data.members.find((member) => member.id === meId));
@@ -41,6 +42,14 @@
   const doneAssigned = $derived(myAssigned.filter((item) => item.is_packed).length);
   const doneShared = $derived(sharedItems.filter((item) => item.is_packed).length);
   const orderedGroups = $derived(orderPackingGroups(data.groups));
+
+  async function copyPackingLink() {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}#packing`);
+      copied = true;
+      setTimeout(() => copied = false, 2200);
+    } catch { error = 'リンクをコピーできませんでした'; }
+  }
 
   function demoMembers(): TripMember[] {
     const created_at = '2026-08-01T09:00:00.000Z';
@@ -286,7 +295,7 @@
     <div class="standard-packing-panel" role="dialog" aria-modal="true" aria-label="持ち物リスト">
       <header class="standard-packing-header">
         <div><p>TRIP CHECKLIST</p><h2>持ち物</h2></div>
-        <button onclick={onClose} aria-label="閉じる">{@html CloseIcon}</button>
+        <div class="standard-packing-header-actions"><div class="standard-packing-link-wrap"><button class="standard-packing-link" onclick={copyPackingLink} aria-label="持ち物画面へのリンクをコピー" title="この画面へのリンクをコピー">🔗</button>{#if copied}<div class="standard-packing-link-toast" role="status" aria-live="polite">リンクをコピーしました</div>{/if}</div><button onclick={onClose} aria-label="閉じる">{@html CloseIcon}</button></div>
       </header>
       {#if loading}<p class="standard-packing-status">読み込み中…</p>
       {:else if error}<p class="standard-packing-status">{error}</p>
@@ -315,8 +324,8 @@
               <div class="standard-packing-groups">{#each orderedGroups as group (group.id)}{@const items = sharedItems.filter((item) => item.group_id === group.id)}{#if items.length}<div class="standard-packing-group"><h4>{group.name}<small>{items.filter((item) => item.is_packed).length} / {items.length}</small></h4><div class="standard-packing-list">{#each items as item}<div class:done={item.is_packed} class="standard-packing-row shared"><button class="check" onclick={() => toggle(item)}>{item.is_packed ? '✓' : ''}</button><span>{itemLabel(item)}</span><select class:undecided={!item.assignee_member_id} value={item.assignee_member_id ?? ''} disabled={!canEdit} aria-label={`${item.name}の担当者`} onchange={(event) => changeAssignee(item, event.currentTarget.value)}><option value="">未定</option>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>{#if canEdit}<button class="more" onclick={() => openEdit(item)}>•••</button>{/if}</div>{/each}</div></div>{/if}{/each}</div>
             </section>
           </div>
-        {/if}
-      {/if}
+  {/if}
+  {/if}
     </div>
 
     {#if showIdentity}<div class="standard-packing-sheet-backdrop" onclick={() => meId && (showIdentity = false)}><div class="standard-packing-sheet" onclick={(event) => event.stopPropagation()}><span class="handle"></span><h3>この旅では誰ですか？</h3><p>この端末で表示する「自分」を選んでください。</p>{#each data.members as member}<button class:active={member.id === meId} onclick={() => selectMe(member.id)}><i>{member.id === meId ? '✓' : ''}</i><span>{member.name.slice(0, 1)}</span>{member.name}</button>{/each}{#if canEdit}<div class="standard-packing-member-add"><input placeholder="メンバー名" bind:value={newMemberName} onkeydown={(event) => event.key === 'Enter' && addMember()} /><button onclick={addMember}>＋ メンバーを追加</button></div>{/if}<small>あとから画面上部で変更できます</small></div></div>{/if}

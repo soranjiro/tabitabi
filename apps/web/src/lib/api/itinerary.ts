@@ -20,10 +20,10 @@ export const itineraryApi = {
 
   delete: (id: string) => apiClient.delete(`/itineraries/${id}`, id),
 
-  fork: async (id: string) => {
+  fork: async (id: string, content?: { itinerary: ItineraryResponse; steps: import('@tabitabi/types').Step[] }) => {
     const userToken = await userAuth.getToken();
-    if (!userToken) throw new Error('Not logged in');
-    return apiClient.postWithUserToken<ForkItineraryResponse>(`/itineraries/${id}/fork`, {}, userToken);
+    if (!userToken) return apiClient.post<ForkItineraryResponse>(`/itineraries/${id}/fork`, content ?? {});
+    return apiClient.postWithUserToken<ForkItineraryResponse>(`/itineraries/${id}/fork`, content ?? {}, userToken);
   },
 
   publish: (id: string) =>

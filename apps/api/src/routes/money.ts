@@ -4,7 +4,7 @@ import type { MoneyData, MoneyFundTransaction, MoneyItem, MoneyItemSplit, MoneyM
 import { Env, Variables, generateId, getCurrentTimestamp } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
 import { optionalAuthMiddleware } from '../middleware/auth';
-import { moneyFundTransactionSchema, moneyItemSchema, moneyMemberSchema, moneySettingsSchema, updateMoneyFundTransactionSchema, updateMoneyItemSchema } from '../validators';
+import { moneyFundTransactionsSchema, moneyFundTransactionSchema, moneyItemSchema, moneyMemberSchema, moneySettingsSchema, updateMoneyFundTransactionSchema, updateMoneyItemSchema } from '../validators';
 import { validationHook } from '../validators/hook';
 
 const money = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -264,6 +264,26 @@ money.post('/itineraries/:id/money/fund-transactions', optionalAuthMiddleware, z
     (id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(transaction.id, itineraryId, transaction.member_id, transaction.kind, transaction.amount, transaction.note, transaction.occurred_on, now).run();
   return c.json({ success: true, data: transaction }, 201);
+});
+
+money.post('/itineraries/:id/money/fund-transactions/bulk', optionalAuthMiddleware, zValidator('json', moneyFundTransactionsSchema, validationHook), async (c) => {
+  const itineraryId = c.req.param('id')!;
+  const denied = await canEdit(c, itineraryId);
+  if (denied) return denied;
+  const input = c.req.valid('json');
+  if (!await assertMembersBelongToItinerary(c.env.DB, itineraryId, input.member_ids)) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Members must belong to this itinerary' } }, 400);
+  }
+  const now = getCurrentTimestamp();
+  const occurredOn = input.occurred_on ?? now.slice(0, 10);
+  const transactions: MoneyFundTransaction[] = input.member_ids.map((memberId) => ({
+    id: generateId(), itinerary_id: itineraryId, member_id: memberId, kind: input.kind,
+    amount: input.amount, note: input.note || null, occurred_on: occurredOn, created_at: now,
+  }));
+  await c.env.DB.batch(transactions.map((transaction) => c.env.DB.prepare(`INSERT INTO itinerary_money_fund_transactions
+    (id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(transaction.id, itineraryId, transaction.member_id, transaction.kind, transaction.amount, transaction.note, transaction.occurred_on, now)));
+  return c.json({ success: true, data: transactions }, 201);
 });
 
 money.put('/itineraries/:id/money/fund-transactions/:transactionId', optionalAuthMiddleware, zValidator('json', updateMoneyFundTransactionSchema, validationHook), async (c) => {

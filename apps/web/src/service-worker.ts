@@ -1,28 +1,19 @@
 /// <reference lib="webworker" />
 
-import { build, files, version } from "$service-worker";
+import { build, version } from "$service-worker";
 
 const worker = self as unknown as ServiceWorkerGlobalScope;
 const CACHE_NAME = `tabitabi-cache-${version}`;
-const ASSETS = [
-  ...build,
-  ...files,
-];
+const BUILD_ASSETS = new Set(build);
 
-worker.addEventListener("install", (event: ExtendableEvent) => {
-  // Create a new cache and add all files to it
-  async function addFilesToCache() {
-    const cache = await caches.open(CACHE_NAME);
-    await cache.addAll(ASSETS);
-  }
-
-  event.waitUntil(addFilesToCache());
-  // Force the waiting service worker to become the active service worker.
+worker.addEventListener("install", () => {
+  // Do not precache the whole application bundle during first load. Fetching all
+  // route chunks here competes with the hero image on constrained mobile links.
+  // Versioned build assets are cached on first use instead.
   worker.skipWaiting();
 });
 
 worker.addEventListener("activate", (event: ExtendableEvent) => {
-  // Remove previous cached data from disk
   async function deleteOldCaches() {
     for (const key of await caches.keys()) {
       if (key !== CACHE_NAME) await caches.delete(key);
@@ -30,51 +21,55 @@ worker.addEventListener("activate", (event: ExtendableEvent) => {
   }
 
   event.waitUntil(deleteOldCaches());
-  // Tell the active service worker to take control of the page immediately.
   event.waitUntil(worker.clients.claim());
 });
 
 worker.addEventListener("fetch", (event: FetchEvent) => {
-  // ignore POST requests etc
   if (event.request.method !== "GET") return;
   // External maps use their provider's HTTP cache policy, never our offline cache.
   if (new URL(event.request.url).origin !== worker.location.origin) return;
 
   async function respond() {
     const url = new URL(event.request.url);
-    const cache = await caches.open(CACHE_NAME);
 
-    // Ignore non-http(s) schemes (extensions, chrome-extension://, etc.)
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
       return fetch(event.request);
     }
 
-    // ASSETS: Cache-First
-    // If the request is for an asset (build files or static files), serve from cache
-    if (ASSETS.includes(url.pathname)) {
+    const cache = await caches.open(CACHE_NAME);
+
+    // Hashed application assets are immutable for this build. Serve a previously
+    // visited asset from cache, otherwise fetch it once and cache that response.
+    if (BUILD_ASSETS.has(url.pathname)) {
       const cachedResponse = await cache.match(event.request);
       if (cachedResponse) return cachedResponse;
-    }
 
-    // DATA & NAVIGATION: Network-First
-    // For everything else (HTML pages, API data), try the network first
-    try {
       const response = await fetch(event.request);
-
-      // If successful, clone and cache for offline use later
       if (response.status === 200) {
         try {
           await cache.put(event.request, response.clone());
         } catch (e) {
-          // Some requests (e.g. chrome-extension://) may be unsupported by Cache API
-          // or otherwise fail to be stored. Ignore caching failures.
-          console.warn('Failed to cache request:', event.request.url, e);
+          console.warn("Failed to cache build asset:", event.request.url, e);
+        }
+      }
+      return response;
+    }
+
+    // Navigation, API data and static assets stay network-first. Resources that
+    // have actually been used remain available as an offline fallback.
+    try {
+      const response = await fetch(event.request);
+
+      if (response.status === 200) {
+        try {
+          await cache.put(event.request, response.clone());
+        } catch (e) {
+          console.warn("Failed to cache request:", event.request.url, e);
         }
       }
 
       return response;
     } catch {
-      // If network fails, fall back to cache
       const cachedResponse = await cache.match(event.request);
       if (cachedResponse) return cachedResponse;
 

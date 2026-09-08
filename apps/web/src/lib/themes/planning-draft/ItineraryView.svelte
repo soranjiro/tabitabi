@@ -57,7 +57,7 @@
   let { itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, mapPlanning = false }: Props = $props();
   let placeDraft = $state<Place | null>(null);
   let formError = $state('');
-  let descriptionExpanded = $state(false);
+  let descriptionEditing = $state(false);
   function selectPlace(place: PlaceResult) {
     placeDraft = { lat:place.lat, lng:place.lng, priority:placeDraft?.priority };
     if (!form.title.trim() || !editingStep) form.title = place.name;
@@ -118,18 +118,31 @@
   const otherThemes = $derived(getAvailableThemes().filter((theme) => theme.id !== itinerary.theme_id));
 
   onMount(() => {
+    const openFeatureFromHash = () => {
+      showMoney = window.location.hash === '#money';
+      showPacking = window.location.hash === '#packing';
+    };
+    openFeatureFromHash();
+    window.addEventListener('hashchange', openFeatureFromHash);
     titleDraft = itinerary.title;
     memoDraft = getMemoText(itinerary.memo);
-    if (getIsDemoMode()) {
+    if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
-      return;
+      return () => window.removeEventListener('hashchange', openFeatureFromHash);
     }
     const token = auth.extractTokenFromUrl();
     if (token && itinerary.is_password_protected) auth.setToken(itinerary.id, itinerary.title, token);
     hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
     if (!hasEditPermission && !itinerary.is_password_protected && !isSharedSnapshot) hasEditPermission = true;
     if (hasEditPermission) auth.updateAccessTime(itinerary.id, itinerary.title);
+    return () => window.removeEventListener('hashchange', openFeatureFromHash);
   });
+
+  function closeFeature(feature: 'money' | 'packing') {
+    if (window.location.hash === `#${feature}`) window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
+    if (feature === 'money') showMoney = false;
+    else showPacking = false;
+  }
 
   async function onPasswordAuth(password: string) {
     await handlePasswordAuth({
@@ -368,6 +381,7 @@
   async function saveMemo() {
     if (onUpdateItinerary) await onUpdateItinerary({ memo: updateMemoText(itinerary.memo, memoDraft) });
     memoOpen = false;
+    descriptionEditing = false;
   }
 
   async function switchTheme(themeId: string) {
@@ -386,24 +400,29 @@
     {:else}
       <button class="title-button" onclick={() => hasEditPermission && (editingTitle = true)} disabled={!hasEditPermission}>{itinerary.title}</button>
     {/if}
-    <p>{mapPlanning ? '旅のアトリエ / 計画中のしおり' : 'まだ決まっていなくても、ここから。'}</p>
+    <p>{mapPlanning ? '地図を見ながら、行きたい場所と日程をまとめる' : 'まだ決まっていなくても、ここから。'}</p>
     {#if mapPlanning}
-      <section class="trip-description" aria-label="しおりの説明"><strong>この旅について</strong><p class="description-copy" class:expanded={descriptionExpanded}>{getMemoText(itinerary.memo) || 'どんな旅にしたい？人数・日数の目安、好きなことを残しておきましょう。'}</p>
-        {#if getMemoText(itinerary.memo).length > 100}<button class="description-toggle" aria-expanded={descriptionExpanded} onclick={() => descriptionExpanded = !descriptionExpanded}>{descriptionExpanded ? '説明を折りたたむ' : '説明をもっと見る'}</button>{/if}
-        {#if hasEditPermission}<details><summary>しおりの説明を編集</summary><textarea aria-label="しおりの説明" bind:value={memoDraft} rows="4"></textarea><button onclick={saveMemo}>説明を保存</button></details>{/if}
+      <section class="trip-description" aria-label="旅のメモ">
+        <div class="description-heading"><strong>旅のメモ</strong>{#if hasEditPermission && !descriptionEditing}<button onclick={() => descriptionEditing = true}>編集</button>{/if}</div>
+        {#if descriptionEditing}
+          <textarea aria-label="旅のメモ" bind:value={memoDraft} rows="5"></textarea>
+          <div class="description-actions"><button class="cancel" onclick={() => { memoDraft = getMemoText(itinerary.memo); descriptionEditing = false; }}>キャンセル</button><button onclick={saveMemo}>保存</button></div>
+        {:else}
+          <p class="description-copy">{getMemoText(itinerary.memo) || '旅の目的や、忘れたくないことをメモできます。'}</p>
+        {/if}
       </section>
     {/if}
   </header>
 
   <nav class="mode-tabs" aria-label="表示切り替え">
-    <button class:active={screenMode === "plan"} onclick={() => (screenMode = "plan")}>{mapPlanning ? '地図で考える' : '考える'}</button>
-    <button class:active={screenMode === "preview"} onclick={() => (screenMode = "preview")}>旅程を見る</button>
+    <button class:active={screenMode === "plan"} onclick={() => (screenMode = "plan")}>{mapPlanning ? '地図' : '予定を決める'}</button>
+    <button class:active={screenMode === "preview"} onclick={() => (screenMode = "preview")}>日程</button>
   </nav>
 
   <main>
     {#if screenMode === "plan" && mapPlanning}
       {#await import('../planning-map/PlanningBoard.svelte')}
-        <p role="status">旅のアトリエをひらいています…</p>
+        <p role="status">地図を読み込んでいます…</p>
       {:then module}
         <module.default {steps} canEdit={hasEditPermission} onCreate={openCreate} onEdit={openEdit} onPreview={() => screenMode = 'preview'} />
       {:catch}
@@ -521,16 +540,16 @@
   <MoneyOverlay
     show={showMoney}
     itineraryId={itinerary.id}
-    canEdit={hasEditPermission}
+    canEdit={hasEditPermission && !isSharedSnapshot}
     {steps}
-    onClose={() => (showMoney = false)}
+    onClose={() => closeFeature('money')}
   />
 
   <PackingOverlay
     show={showPacking}
     itineraryId={itinerary.id}
-    canEdit={hasEditPermission}
-    onClose={() => (showPacking = false)}
+    canEdit={hasEditPermission && !isSharedSnapshot}
+    onClose={() => closeFeature('packing')}
   />
 
   <PasswordDialog
@@ -564,13 +583,14 @@
 </div>
 
 <style>
-  .trip-description { max-width:760px; margin-top:20px; padding:16px 20px; background:#f0f2e9; border-left:3px solid #a3b493; border-radius:0 10px 10px 0; font-size:12px; }
-  .description-copy:not(.expanded) { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
-  .trip-description .description-toggle { padding:6px 0; background:none; color:#35695d; font-size:11px; text-decoration:underline; }
-  .trip-description p { white-space:pre-line; line-height:1.8; }
-  .trip-description summary { margin-top:10px; cursor:pointer; color:#35695d; }
-  .trip-description textarea { width:100%; margin:10px 0; padding:10px; border:1px solid #cfd8c9; border-radius:8px; font:inherit; }
-  .trip-description button { padding:8px 12px; border:0; border-radius:8px; color:white; background:#35695d; }
+  .trip-description { max-width:760px; margin-top:20px; padding:16px 18px; border:1px solid #dfe4dc; border-radius:12px; background:#fff; font-size:12px; }
+  .description-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .description-heading strong { color:#42514a; font-size:11px; }
+  .description-copy { margin-top:9px !important; color:#394740 !important; white-space:pre-line; overflow-wrap:anywhere; line-height:1.85 !important; }
+  .trip-description textarea { width:100%; margin:12px 0 8px; padding:11px; border:1px solid #cfd8c9; border-radius:8px; font:inherit; line-height:1.7; resize:vertical; }
+  .trip-description button { padding:7px 11px; border:0; border-radius:8px; color:white; background:#35695d; font-size:11px; cursor:pointer; }
+  .description-actions { display:flex; justify-content:flex-end; gap:7px; }
+  .trip-description .cancel { color:#5f6a64; background:#eef0ed; }
   .pin-preview { height:260px; margin:12px 0; }
   .pin-preview :global(.map-frame) { min-height:260px; }
   .place-help { color:#78837c; font-size:12px; line-height:1.7; }

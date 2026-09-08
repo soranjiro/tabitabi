@@ -23,7 +23,7 @@ async function applyMigrations(db: D1Database) {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS idx_itineraries_source_id ON itineraries(source_itinerary_id) WHERE source_itinerary_id IS NOT NULL;`,
+    `CREATE INDEX IF NOT EXISTS idx_itineraries_source_id ON itineraries(source_itinerary_id) WHERE source_itinerary_id IS NOT NULL;`,
     `CREATE TABLE IF NOT EXISTS steps (
       id TEXT PRIMARY KEY,
       itinerary_id TEXT NOT NULL,
@@ -438,7 +438,7 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
     await env.DB.prepare('DELETE FROM users').run();
   });
 
-  it('returns 401 without user auth token', async () => {
+  it('allows copying without an account', async () => {
     const createRes = await app.request('/api/v1/itineraries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -450,7 +450,7 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     }, env);
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(201);
   });
 
   it('forks a public itinerary and returns new itinerary with token', async () => {

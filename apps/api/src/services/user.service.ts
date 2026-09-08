@@ -87,8 +87,12 @@ export class UserService {
           CASE WHEN i.password IS NOT NULL THEN 1 ELSE 0 END as is_password_protected,
           i.updated_at as itinerary_updated_at,
           i.source_itinerary_id,
-          (SELECT id FROM itineraries WHERE source_itinerary_id = ub.itinerary_id LIMIT 1) as shared_itinerary_id,
-          (SELECT updated_at FROM itineraries WHERE source_itinerary_id = ub.itinerary_id LIMIT 1) as shared_updated_at,
+          publication.shared_itinerary_id,
+          (SELECT updated_at FROM itineraries WHERE id = publication.shared_itinerary_id) as shared_updated_at,
+          i.palette_id,
+          (SELECT MIN(start_at) FROM steps WHERE itinerary_id = i.id) as start_at,
+          (SELECT MAX(end_at) FROM steps WHERE itinerary_id = i.id) as end_at,
+          (SELECT title FROM itineraries WHERE id = publication.shared_itinerary_id) as shared_title,
           i.prefecture_slugs,
           i.areas,
           i.tags,
@@ -113,6 +117,10 @@ export class UserService {
       updated_at: row.updated_at as string,
       title: row.title as string,
       theme_id: row.theme_id as string,
+      palette_id: row.palette_id as string,
+      start_at: row.start_at as number | null,
+      end_at: row.end_at as number | null,
+      shared_title: row.shared_title as string | null,
       is_password_protected: row.is_password_protected === 1,
       itinerary_updated_at: row.itinerary_updated_at as string,
       source_itinerary_id: (row.source_itinerary_id as string | null) ?? null,
@@ -271,7 +279,7 @@ export class UserService {
 
     const metadata = await this.db.prepare(
       'SELECT prefecture_slugs, areas, tags FROM itineraries WHERE id = ?',
-    ).bind(sourceItineraryId).first<Record<string, unknown>>();
+    ).bind(sharedItineraryId).first<Record<string, unknown>>();
     if (!metadata) throw new Error('BOOKMARK_NOT_FOUND');
     const now = getCurrentTimestamp();
     const prefectureSlugs = String(metadata.prefecture_slugs ?? '[]');
@@ -339,10 +347,15 @@ export class UserService {
 
   async unpublishBookmark(userId: string, sourceItineraryId: string): Promise<boolean> {
     const now = getCurrentTimestamp();
+    const publication = await this.db.prepare(
+      'SELECT shared_itinerary_id FROM itinerary_publications WHERE user_id = ? AND source_itinerary_id = ?',
+    ).bind(userId, sourceItineraryId).first<{ shared_itinerary_id: string }>();
+    if (!publication) return false;
     const [deleted] = await this.db.batch([
       this.db.prepare(
         'DELETE FROM itinerary_publications WHERE user_id = ? AND source_itinerary_id = ?',
       ).bind(userId, sourceItineraryId),
+      this.db.prepare('DELETE FROM itineraries WHERE id = ?').bind(publication.shared_itinerary_id),
       this.db.prepare(
         'UPDATE user_bookmarks SET is_visible = 0, updated_at = ? WHERE user_id = ? AND itinerary_id = ?',
       ).bind(now, userId, sourceItineraryId),

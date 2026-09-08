@@ -98,7 +98,7 @@
   }
 
   onMount(() => {
-    if (getIsDemoMode()) {
+    if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
       return;
     }

@@ -34,7 +34,7 @@
     await refresh();
   }
 </script>
-<svelte:head><title>旅のアトリエを試す | たびたび</title><meta name="robots" content="noindex" /></svelte:head>
+<svelte:head><title>地図プランを試す | たびたび</title><meta name="robots" content="noindex" /></svelte:head>
 <div class="demo-banner">候補はサンプル · 地図と場所検索は実サービス · 変更はこのブラウザだけに保存 <button onclick={reset}>最初に戻す</button><a href="/#create">しおりを作る ↗</a></div>
 {#if error}<p role="alert">{error}</p>{/if}
 {#if itinerary && theme}

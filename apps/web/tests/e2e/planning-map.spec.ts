@@ -21,7 +21,7 @@ test('finds a place by name, confirms its address and saves its pin without coor
     return route.fulfill({json:{features:[{properties:{name:'京都駅',osm_type:'N',osm_id:123,country:'日本',state:'京都府',city:'京都市'},geometry:{coordinates:[135.7588,34.9858]}}]}});
   });
   await page.goto('/demo/planning-map');
-  await page.getByRole('button', {name:'⌕ 場所名から探して追加 施設名・お店・駅など'}).click();
+  await page.getByRole('button', {name:'＋ 場所を追加'}).click();
   await expect(page.getByLabel('緯度', {exact:true})).toHaveCount(0);
   await page.getByLabel('場所名・施設名から探す').fill('京都駅');
   expect(searches).toHaveLength(0);
@@ -39,18 +39,18 @@ test('finds a place by name, confirms its address and saves its pin without coor
 test('failed place search allows a name-only candidate and explanation can be edited', async ({ page }) => {
   await page.route('https://photon.komoot.io/api/**', route => route.fulfill({status:503,body:'unavailable'}));
   await page.goto('/demo/planning-map');
-  await page.getByText('しおりの説明を編集',{exact:true}).click();
-  await page.getByRole('textbox',{name:'しおりの説明',exact:true}).fill('雨なら美術館にする旅。');
-  await page.getByRole('button',{name:'説明を保存'}).click();
+  await page.locator('.trip-description').getByRole('button',{name:'編集',exact:true}).click();
+  await page.getByRole('textbox',{name:'旅のメモ',exact:true}).fill('雨なら美術館にする旅。');
+  await page.locator('.trip-description').getByRole('button',{name:'保存',exact:true}).click();
   await page.reload();
   await expect(page.locator('.trip-description')).toContainText('雨なら美術館にする旅。');
-  await page.getByRole('button',{name:'候補を追加',exact:true}).click();
+  await page.getByRole('button',{name:'＋ 場所を追加',exact:true}).click();
   await page.getByLabel('場所名・施設名から探す').fill('喫茶店');
   await page.getByRole('button',{name:'場所を検索',exact:true}).click();
   await expect(page.getByRole('alert')).toContainText('場所を検索できませんでした');
   await page.getByLabel('タイトル',{exact:true}).fill('あとで探す喫茶店');
   await page.getByRole('button',{name:'追加',exact:true}).click();
-  await expect(page.locator('.idea').filter({hasText:'あとで探す喫茶店'})).toContainText('場所はあとで');
+  await expect(page.locator('.idea').filter({hasText:'あとで探す喫茶店'})).toContainText('場所未定');
 });
 
 test.beforeEach(async ({ page }) => {
@@ -61,22 +61,20 @@ test('collect a pin, assign a day, preserve it on reload, and delete', async ({ 
   const writes: string[] = [];
   page.on('request', r => { if (['POST','PUT','PATCH','DELETE'].includes(r.method()) && /\/v1\//.test(r.url())) writes.push(r.url()); });
   await page.goto('/demo/planning-map');
-  await expect(page.getByRole('heading', {name:'「行きたい」から、旅を描こう。'})).toBeVisible();
+  await expect(page.getByRole('heading', {name:'地図から予定を決める'})).toBeVisible();
   await page.getByRole('button', {name:'＋ 地図にピンを刺す'}).click();
   await page.getByRole('button', {name:'地図の中心に追加'}).click();
   await page.getByLabel('タイトル', {exact:true}).fill('気になる喫茶店');
   await page.getByLabel('メモ', {exact:true}).fill('雨の日の休憩候補');
   await page.getByRole('button', {name:'追加', exact:true}).click();
-  await page.getByRole('button').filter({hasText:'気になる喫茶店'}).first().click();
-  await page.getByRole('button', {name:'メモ・場所・行く日を編集 ↗'}).click();
+  await page.getByRole('button', {name:'気になる喫茶店を編集'}).click();
   await expect(page.getByText('✓ 場所を選択済み', {exact:true})).toBeVisible();
   await page.getByLabel('日を決める', {exact:true}).check();
   await page.locator('.date-fields select').selectOption('2');
   await page.getByRole('button', {name:'保存', exact:true}).click();
   await page.reload();
   await expect(page.getByRole('button').filter({hasText:'気になる喫茶店'}).first()).toContainText('Day 2');
-  await page.getByRole('button').filter({hasText:'気になる喫茶店'}).first().click();
-  await page.getByRole('button', {name:'メモ・場所・行く日を編集 ↗'}).click();
+  await page.getByRole('button', {name:'気になる喫茶店を編集'}).click();
   page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', {name:'この予定を削除'}).click();
   await expect(page.locator('.idea').filter({hasText:'気になる喫茶店'})).toHaveCount(0);
@@ -87,15 +85,15 @@ test('mobile candidates, filtering and theme switch', async ({ page }) => {
   await page.setViewportSize({width:390,height:844});
   await page.goto('/demo/planning-map');
   await expect(page.locator('.leaflet-marker-icon')).toHaveCount(5);
-  await page.getByLabel('保存した候補を検索').fill('南禅寺');
+  await page.getByLabel('候補を検索').fill('南禅寺');
   await expect(page.locator('.idea')).toHaveCount(1);
   await expect(page.locator('.leaflet-marker-icon')).toHaveCount(1);
-  await page.getByLabel('保存した候補を検索').fill('');
+  await page.getByLabel('候補を検索').fill('');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({path:'../../.tmp/planning-map-mobile.png',fullPage:true});
   await page.getByRole('button', {name:'旅程を見る',exact:true}).click();
   await page.getByRole('button', {name:'ほかのテーマを試す'}).click();
-  await page.locator('.theme-choices button').filter({hasText:'プランニング'}).click();
+  await page.locator('.theme-choices button').filter({hasText:'プラン'}).click();
   await expect(page.locator('.map-planning')).toHaveCount(0);
   await expect(page.locator('.map-frame')).toHaveCount(0);
 });
@@ -104,10 +102,10 @@ test('map failure keeps candidate editing available', async ({ page }) => {
   await page.route('https://tile.openstreetmap.org/**', route => route.abort());
   await page.goto('/demo/planning-map');
   await expect(page.getByText('地図を読み込めません。候補リストから計画を続けられます。')).toBeVisible();
-  await page.getByRole('button', {name:'候補を追加',exact:true}).click();
+  await page.getByRole('button', {name:'＋ 場所を追加',exact:true}).click();
   await page.getByLabel('タイトル', {exact:true}).fill('場所はあとで決める');
   await page.getByRole('button', {name:'追加',exact:true}).click();
-  await expect(page.locator('.idea').filter({hasText:'場所はあとで決める'})).toContainText('場所はあとで');
+  await expect(page.locator('.idea').filter({hasText:'場所はあとで決める'})).toContainText('場所未定');
 });
 
 test('desktop preview and read only mode', async ({ page }) => {
@@ -117,6 +115,6 @@ test('desktop preview and read only mode', async ({ page }) => {
   await page.screenshot({path:'../../.tmp/planning-map-desktop.png',fullPage:true});
   await page.getByRole('button', {name:'メニュー',exact:true}).click();
   await page.getByRole('button').filter({hasText:'閲覧モード'}).click();
-  await expect(page.getByRole('button', {name:'候補を追加',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button', {name:'＋ 場所を追加',exact:true})).toHaveCount(0);
   await expect(page.getByRole('button', {name:'＋ 地図にピンを刺す'})).toHaveCount(0);
 });

@@ -299,8 +299,7 @@ WHERE id LIKE 'official-spring-%'
    OR id LIKE 'official-autumn-%'
    OR id LIKE 'official-winter-%';
 
--- Complete editable data for the official account. Public copies intentionally
--- contain only the distributable itinerary; money and packing stay private.
+-- Include complete sample data in both the editable source and public itinerary.
 INSERT INTO itinerary_members (id, itinerary_id, name, created_at)
 SELECT i.id || '-member-' || member.key, i.id, member.name, '2026-09-08T00:00:00.000Z'
 FROM itineraries i
@@ -309,11 +308,11 @@ CROSS JOIN (
   SELECT 'b', 'はる' UNION ALL
   SELECT 'c', 'みなと'
 ) member
-WHERE i.id GLOB 'official-*-source';
+WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
 
 INSERT INTO itinerary_money_settings (itinerary_id, budget_amount, created_at, updated_at)
 SELECT id, 150000, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries WHERE id GLOB 'official-*-source';
+FROM itineraries WHERE id GLOB 'official-*-source' OR id GLOB 'official-*-public';
 
 INSERT INTO itinerary_money_items (
   id, itinerary_id, title, amount, paid_by_member_id, paid_from_fund,
@@ -321,58 +320,59 @@ INSERT INTO itinerary_money_items (
 )
 SELECT i.id || '-money-hotel', i.id, '宿泊費', 54000, i.id || '-member-a', 0,
   'paid', '2026-09-01', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
 UNION ALL
 SELECT i.id || '-money-transport', i.id, '交通費', 27000, i.id || '-member-b', 0,
   'paid', '2026-09-02', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
 UNION ALL
 SELECT i.id || '-money-food', i.id, '食事とカフェ', 18000, NULL, 1,
   'planned', '2026-09-03', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source';
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
 
 INSERT INTO itinerary_money_item_splits (item_id, member_id, itinerary_id, amount)
 SELECT expense.id, member.id, expense.itinerary_id, expense.amount / 3
 FROM itinerary_money_items expense
 JOIN itinerary_members member ON member.itinerary_id = expense.itinerary_id
-WHERE expense.itinerary_id GLOB 'official-*-source';
+WHERE expense.itinerary_id GLOB 'official-*-source' OR expense.itinerary_id GLOB 'official-*-public';
 
 INSERT INTO itinerary_money_fund_transactions (
   id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at
 )
 SELECT member.itinerary_id || '-fund-' || member.id, member.itinerary_id, member.id,
   'contribution', 10000, '旅行前の共同費', '2026-08-28', '2026-09-08T00:00:00.000Z'
-FROM itinerary_members member WHERE member.itinerary_id GLOB 'official-*-source';
+FROM itinerary_members member
+WHERE member.itinerary_id GLOB 'official-*-source' OR member.itinerary_id GLOB 'official-*-public';
 
 INSERT INTO itinerary_packing_groups (id, itinerary_id, name, sort_order, created_at, updated_at)
 SELECT i.id || '-pack-valuables', i.id, '貴重品', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
 UNION ALL
 SELECT i.id || '-pack-clothes', i.id, '衣類', 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
 UNION ALL
 SELECT i.id || '-pack-tools', i.id, '旅の道具', 2, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source';
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
 
 INSERT INTO itinerary_packing_items (
   id, itinerary_id, name, quantity, kind, group_id, assignee_member_id,
   owner_member_id, is_packed, created_at, updated_at
 )
 SELECT i.id || '-item-wallet', i.id, '財布・身分証', 1, 'personal', i.id || '-pack-valuables', NULL, NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
 UNION ALL
 SELECT i.id || '-item-clothes', i.id, '着替え', 3, 'personal', i.id || '-pack-clothes', NULL, NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
 UNION ALL
 SELECT i.id || '-item-camera', i.id, 'カメラ', 1, 'shared', i.id || '-pack-tools', i.id || '-member-a', NULL, 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
 UNION ALL
 SELECT i.id || '-item-battery', i.id, 'モバイルバッテリー', 2, 'shared', i.id || '-pack-tools', i.id || '-member-b', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source'
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
 UNION ALL
 SELECT i.id || '-item-medicine', i.id, '常備薬', 1, 'private', i.id || '-pack-valuables', NULL, i.id || '-member-c', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source';
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
 
 INSERT INTO itinerary_packing_checks (item_id, member_id, itinerary_id, checked_at)
 SELECT i.id || '-item-wallet', i.id || '-member-a', i.id, '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source';
+FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';

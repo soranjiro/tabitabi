@@ -12,7 +12,8 @@
   const { data }: { data: PageData } = $props();
 
   type Preview = {
-    id: "spring" | "summer" | "autumn" | "winter";
+    id: string;
+    image: string;
     itineraryId: string;
     title: string;
     duration: string;
@@ -25,8 +26,9 @@
   const previews: Preview[] = [
     {
       id: "spring",
+      image: "/hero/background-spring.avif",
       itineraryId: "official-spring-public",
-      title: "春休みの京都旅行",
+      title: "春の京都・宇治",
       duration: "2泊3日",
       destination: "京都",
       accent: "#ec858c",
@@ -40,6 +42,7 @@
     },
     {
       id: "summer",
+      image: "/hero/background-summer.avif",
       itineraryId: "official-summer-public",
       title: "夏休みの沖縄旅行",
       duration: "2泊3日",
@@ -55,9 +58,10 @@
     },
     {
       id: "autumn",
+      image: "/hero/background-autumn.avif",
       itineraryId: "official-autumn-public",
-      title: "日光・那須をめぐる秋の5日間",
-      duration: "4泊5日",
+      title: "日光・会津 紅葉と温泉",
+      duration: "6泊7日",
       destination: "栃木",
       accent: "#c77145",
       imagePosition: "center 48%",
@@ -70,9 +74,10 @@
     },
     {
       id: "winter",
+      image: "/hero/background-winter.avif",
       itineraryId: "official-winter-public",
-      title: "冬休みのスキー旅行",
-      duration: "7泊8日",
+      title: "冬の北海道 湯めぐり18日間",
+      duration: "17泊18日",
       destination: "長野・東京",
       accent: "#7592b7",
       imagePosition: "center 50%",
@@ -81,6 +86,38 @@
         { time: "11:30", title: "長野駅から白馬へバス移動" },
         { time: "13:30", title: "スキー用具レンタル" },
         { time: "14:45", title: "スキー初心者レッスン" },
+      ],
+    },
+    {
+      id: "plan",
+      image: "/itinerary-backgrounds/coastal-drive.avif",
+      itineraryId: "official-plan-public",
+      title: "紫陽花の鎌倉・江の島",
+      duration: "1泊2日",
+      destination: "鎌倉・江の島",
+      accent: "#668fb2",
+      imagePosition: "center 48%",
+      steps: [
+        { time: "08:30", title: "明月院の紫陽花" },
+        { time: "10:15", title: "円覚寺を拝観" },
+        { time: "13:30", title: "鶴岡八幡宮を参拝" },
+        { time: "16:30", title: "鎌倉駅近くのホテルに宿泊" },
+      ],
+    },
+    {
+      id: "map",
+      image: "/itinerary-backgrounds/japanese.avif",
+      itineraryId: "official-map-public",
+      title: "秋の金沢 王道まち歩き",
+      duration: "1泊2日",
+      destination: "金沢",
+      accent: "#a96845",
+      imagePosition: "center 52%",
+      steps: [
+        { time: "09:50", title: "金沢駅に到着" },
+        { time: "11:00", title: "近江町市場で海鮮ランチ" },
+        { time: "13:00", title: "金沢城公園" },
+        { time: "15:00", title: "金沢21世紀美術館" },
       ],
     },
   ];
@@ -129,7 +166,7 @@
 
 <svelte:head>
   <title>たびたび - 旅の予定を、ひとつに。</title>
-  <link rel="preload" as="image" href="/hero/background-{preview.id}.avif" type="image/avif" fetchpriority="high" />
+  <link rel="preload" as="image" href={preview.image} fetchpriority="high" />
   <meta name="description" content="旅の予定をひとつにまとめて、URLでかんたん共有。登録不要・無料で使える旅のしおり作成サービスです。" />
   <link rel="canonical" href="https://tabitabi.pages.dev/" />
   <meta property="og:title" content="たびたび - 旅の予定を、ひとつに。" />
@@ -146,9 +183,7 @@
   <section class="hero-stage" bind:this={heroStage} style={heroStyle}>
     <div class="hero-scene">
       <picture class="hero-picture">
-          <source srcset="/hero/background-{preview.id}.avif" type="image/avif" />
-          <source srcset="/hero/background-{preview.id}.webp" type="image/webp" />
-          <img src="/hero/background-{preview.id}.webp" alt="{preview.destination}の{preview.id === 'spring' ? '春' : preview.id === 'summer' ? '夏' : preview.id === 'autumn' ? '秋' : '冬'}の風景" fetchpriority="high" decoding="async" style:object-position={preview.imagePosition} />
+          <img src={preview.image} alt={`${preview.destination}の風景`} fetchpriority="high" decoding="async" style:object-position={preview.imagePosition} />
       </picture>
       <div class="hero-shade"></div>
 
@@ -189,9 +224,7 @@
         <div class="preview-area">
             <a class="shiori-preview" href="/itineraries/{preview.itineraryId}" aria-label="{preview.title}のしおりを開く">
               <picture class="preview-photo">
-                <source srcset="/hero/background-{preview.id}.avif" type="image/avif" />
-                <source srcset="/hero/background-{preview.id}.webp" type="image/webp" />
-                <img src="/hero/background-{preview.id}.webp" alt="" style:object-position={preview.imagePosition} />
+                <img src={preview.image} alt="" style:object-position={preview.imagePosition} />
               </picture>
               <div class="preview-body">
                 <div class="preview-label"><b aria-hidden="true">♡</b></div>

@@ -36,7 +36,7 @@
     'mapbox-journey': '/itinerary-backgrounds/sky.avif',
     'shopping': '/itinerary-backgrounds/food.webp',
   };
-  const coverImage = $derived(coverImages[itinerary.theme_id] ?? '/itinerary-backgrounds/japanese.avif');
+  const coverImage = $derived(itinerary.background_image ?? coverImages[itinerary.theme_id] ?? '/itinerary-backgrounds/japanese.avif');
   const authorName = $derived(itinerary.username === "tabitabi_official" ? "たびたび公式" : `@${itinerary.username}`);
   const duration = $derived.by(() => {
     if (itinerary.start_at == null || itinerary.end_at == null) return "日程未設定";

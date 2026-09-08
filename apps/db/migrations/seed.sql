@@ -1,300 +1,278 @@
 -- Official seasonal examples shown in the public feed.
--- Re-seeding removes the previous official examples before recreating them.
--- Retire the obsolete local preview snapshot if it exists in an older local DB.
+-- Re-seeding replaces the previous official graph so deploys stay deterministic.
 DELETE FROM itineraries WHERE id = 'local-kyoto-public';
--- Delete the old official graph first so this seed is safe to apply after every deploy.
 DELETE FROM itineraries WHERE id GLOB 'official-*-source';
 DELETE FROM itineraries WHERE id GLOB 'official-*-public';
 DELETE FROM users WHERE id = 'official-user';
 
 INSERT INTO users (
-  id, username, email, password_hash, prefecture,
-  email_verified_at, created_at, updated_at
+  id, username, email, password_hash, prefecture, email_verified_at, created_at, updated_at
 ) VALUES (
-  'official-user', 'tabitabi_official', 'official@tabitabi.jp', '!firebase-managed!', '東京都',
-  '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'
+  'official-user', 'tabitabi_official', 'official@tabitabi.jp', '!firebase-managed!', '東京都', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
 );
 
--- spring: 春休みの京都旅行
+WITH itinerary_seed(season, title, theme_id, palette_id, prefecture_slugs, areas, tags, memo) AS (
+  VALUES
+    ('spring', '桜の京都・宇治', 'standard-spring', 'sakura', '["kyoto"]', '["東山","嵐山","宇治","伏見"]', '["桜","寺社・歴史","グルメ"]', '{"text":"4月2日（金）から2泊3日。朝は早めに出発し、混みやすい名所は午前中へ。宿は京都駅近くなので、到着日と最終日の荷物はホテルに預ける。歩く時間が長いため、履き慣れた靴で集合。"}'),
+    ('summer', '夏休みの沖縄旅行', 'standard-summer', 'ocean', '["okinawa"]', '["恩納村","本部町","やんばる","那覇"]', '["海","自然","グルメ"]', '{"text":"7月16日（金）から3泊4日。那覇空港でレンタカーを受け取り、恩納村に3連泊する。海の予定は天候と海況を見て変更し、雨天時は水族館や首里城公園を先に回る。運転は1〜2時間ごとに交代する。"}'),
+    ('autumn', '日光・会津 紅葉と温泉', 'standard-autumn', 'autumn', '["tochigi","fukushima"]', '["日光","奥日光","中禅寺湖","鬼怒川","会津若松"]', '["紅葉","温泉","自然","寺社・歴史"]', '{"text":"10月19日（月）から6泊7日。日光駅までは鉄道、その先はバスと会津鬼怒川線で移動する。奥日光は朝晩冷え込むため薄手のダウンを持参。宿は日光1泊、中禅寺温泉2泊、鬼怒川温泉1泊、会津若松2泊。"}'),
+    ('winter', '冬の北海道 湯めぐり18日間', 'standard-winter', 'snow', '["hokkaido"]', '["札幌","小樽","余市","ニセコ","洞爺湖","登別","函館"]', '["雪景色","温泉","グルメ","長期旅行"]', '{"text":"2月1日（月）から17泊18日。札幌から函館へ鉄道と送迎バスで南下する。吹雪で移動が遅れる場合に備え、各滞在地に予備時間を確保。防水の滑りにくい靴、防寒手袋、モバイルバッテリーを忘れずに。"}')
+)
 INSERT INTO itineraries (
   id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
-) VALUES
-  ('official-spring-source', '春休みの京都旅行', 'standard-spring', 'sakura', 1, '["kyoto"]', '["清水寺","祇園","嵐山"]', '["寺社・歴史","グルメ"]', 1, '{"text":"桜シーズンは混雑するので早めの行動を！\n\n持ち物リスト\n- カメラ\n- 日焼け止め\n- 歩きやすい靴"}', NULL, NULL, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public', '春休みの京都旅行', 'standard-spring', 'sakura', 1, '["kyoto"]', '["清水寺","祇園","嵐山"]', '["寺社・歴史","グルメ"]', 1, '{"text":"桜シーズンは混雑するので早めの行動を！\n\n持ち物リスト\n- カメラ\n- 日焼け止め\n- 歩きやすい靴"}', NULL, 'official-spring-source', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
+)
+SELECT 'official-' || season || '-source', title, theme_id, palette_id, 1, prefecture_slugs, areas, tags, 1, memo, NULL, NULL,
+  '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itinerary_seed;
+
+-- Public itinerary copies intentionally mirror the editable sources.
+INSERT INTO itineraries (
+  id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
+)
+SELECT REPLACE(id, '-source', '-public'), title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, NULL, id, created_at, updated_at
+FROM itineraries WHERE id GLOB 'official-*-source';
+
+WITH step_seed(season, slug, title, start_iso, end_iso, location, notes, type, is_all_day) AS (
+  VALUES
+    ('spring', 'train-kyoto', '東京から京都へ', '2027-04-02T08:00:00+09:00', '2027-04-02T10:15:00+09:00', '東京駅→京都駅', '{"text":"朝の新幹線で移動。到着後は駅周辺に荷物を預ける。"}', 'transport:train', 0),
+    ('spring', 'hotel-bag', 'ホテルに荷物を預ける', '2027-04-02T10:30:00+09:00', '2027-04-02T10:50:00+09:00', '京都駅前', '{"text":"改札前で集合し、3人分の荷物をまとめて預ける。"}', 'normal:hotel', 0),
+    ('spring', 'kiyomizu', '清水寺と産寧坂を散策', '2027-04-02T11:30:00+09:00', '2027-04-02T13:30:00+09:00', '清水寺・産寧坂', '{"text":"京都駅から市バスで五条坂へ。清水の舞台を見たあと、産寧坂から二寧坂へ下る。"}', 'normal:sightseeing', 0),
+    ('spring', 'lunch', '二寧坂で湯豆腐ランチ', '2027-04-02T13:40:00+09:00', '2027-04-02T14:40:00+09:00', '二寧坂周辺', '{"text":"予約名は「あおい」、3名。"}', 'normal:meal', 0),
+    ('spring', 'gion', '祇園白川から円山公園へ', '2027-04-02T16:00:00+09:00', '2027-04-02T17:30:00+09:00', '祇園白川・円山公園', '{"text":"花見小路は通り抜けるだけにし、白川沿いと円山公園を歩く。"}', 'normal:sightseeing', 0),
+    ('spring', 'dinner', '祇園で京料理', '2027-04-02T18:00:00+09:00', '2027-04-02T20:00:00+09:00', '祇園', '{"text":"予約は18時。食後はタクシーでホテルへ戻る。"}', 'normal:meal', 0),
+    ('spring', 'hotel-1', '京都駅前のホテルに宿泊', '2027-04-02T20:30:00+09:00', '2027-04-03T07:15:00+09:00', '京都駅前', '{"text":"朝食なし。7時20分にロビー集合。"}', 'normal:hotel', 0),
+    ('spring', 'arashiyama', '朝の嵐山・竹林と渡月橋', '2027-04-03T08:00:00+09:00', '2027-04-03T10:00:00+09:00', '嵐山', '{"text":"JR嵯峨嵐山駅から竹林の小径、天龍寺北門、渡月橋の順に歩く。"}', 'normal:sightseeing', 0),
+    ('spring', 'tenryuji', '天龍寺の庭園を拝観', '2027-04-03T10:00:00+09:00', '2027-04-03T11:00:00+09:00', '天龍寺', '{"text":"曹源池庭園を中心に拝観。11時にJR嵯峨嵐山駅へ向かう。"}', 'normal:sightseeing', 0),
+    ('spring', 'uji-train', '嵐山から宇治へ移動', '2027-04-03T11:30:00+09:00', '2027-04-03T13:00:00+09:00', '嵐山→宇治', '{"text":"JRを中心に移動。途中で軽く昼食を取る。"}', 'transport:train', 0),
+    ('spring', 'uji', '平等院と宇治茶の街歩き', '2027-04-03T13:30:00+09:00', '2027-04-03T16:30:00+09:00', '宇治', '{"text":"平等院を見学し、宇治川沿いと茶店をゆっくり歩く。"}', 'normal:sightseeing', 0),
+    ('spring', 'hotel-2', '京都駅前のホテルに宿泊', '2027-04-03T18:30:00+09:00', '2027-04-04T07:00:00+09:00', '京都駅前', '{"text":"夕食は駅ビルで各自。7時10分にロビー集合。"}', 'normal:hotel', 0),
+    ('spring', 'fushimi', '朝の伏見稲荷大社', '2027-04-04T07:30:00+09:00', '2027-04-04T09:30:00+09:00', '伏見稲荷大社', '{"text":"千本鳥居は朝の静かな時間に。無理に山頂までは行かない。"}', 'normal:sightseeing', 0),
+    ('spring', 'nishiki', '錦市場で昼ごはんと買い物', '2027-04-04T10:30:00+09:00', '2027-04-04T12:15:00+09:00', '錦市場', '{"text":"通行の妨げにならないよう、買ったものは店内か指定場所で食べる。12時15分に四条通側へ集合。"}', 'normal:shopping', 0),
+    ('spring', 'return', '京都駅から帰路へ', '2027-04-04T14:00:00+09:00', '2027-04-04T16:15:00+09:00', '京都駅→東京駅', '{"text":"駅で荷物を受け取り、新幹線で帰宅。"}', 'transport:train', 0),
+    ('summer', 'flight-out', '羽田から那覇へ', '2027-07-16T08:00:00+09:00', '2027-07-16T10:45:00+09:00', '羽田空港→那覇空港', '{"text":"午前便で移動。到着後にレンタカーを受け取る。"}', 'transport:plane', 0),
+    ('summer', 'rental-car', 'レンタカーを受け取る', '2027-07-16T11:00:00+09:00', '2027-07-16T12:00:00+09:00', '那覇空港周辺', '{"text":"代表者が受付。全員分の荷物を積み、傷とガソリン残量を確認する。"}', 'transport:car', 0),
+    ('summer', 'drive-onna', '恩納村へドライブ', '2027-07-16T12:00:00+09:00', '2027-07-16T13:15:00+09:00', '那覇空港→恩納村', '{"text":"高速道路を使い、途中で軽く昼食。"}', 'transport:car', 0),
+    ('summer', 'snorkel', '青の洞窟周辺でシュノーケリング', '2027-07-16T15:00:00+09:00', '2027-07-16T17:00:00+09:00', '恩納村', '{"text":"海況が悪い場合はビーチ散策に切り替える。"}', 'normal:sightseeing', 0),
+    ('summer', 'hotel-1', '恩納村のホテルに宿泊', '2027-07-16T18:00:00+09:00', '2027-07-17T07:30:00+09:00', '恩納村', '{"text":"朝食付き。水着とタオルを部屋で乾かす。"}', 'normal:hotel', 0),
+    ('summer', 'aquarium', '沖縄美ら海水族館', '2027-07-17T09:00:00+09:00', '2027-07-17T12:00:00+09:00', '本部町', '{"text":"午前中に館内をゆっくり見学。"}', 'normal:sightseeing', 0),
+    ('summer', 'bise', '備瀬のフクギ並木を散歩', '2027-07-17T13:30:00+09:00', '2027-07-17T15:00:00+09:00', '本部町・備瀬', '{"text":"木陰の多い道を中心に歩く。"}', 'normal:sightseeing', 0),
+    ('summer', 'kouri', '古宇利島で夕景を見る', '2027-07-17T17:00:00+09:00', '2027-07-17T18:30:00+09:00', '古宇利島', '{"text":"橋を渡って短時間の散策。日没前に宿方面へ戻る。"}', 'normal:sightseeing', 0),
+    ('summer', 'hotel-2', '恩納村のホテルに宿泊', '2027-07-17T20:00:00+09:00', '2027-07-18T07:30:00+09:00', '恩納村', '{"text":"夕食は名護で済ませてから戻る。8時に車寄せへ集合。"}', 'normal:hotel', 0),
+    ('summer', 'yanbaru', 'やんばるの森でカヌー体験', '2027-07-18T09:00:00+09:00', '2027-07-18T12:00:00+09:00', '沖縄本島北部・やんばる', '{"text":"暑さを避けて午前中に自然体験。"}', 'normal:sightseeing', 0),
+    ('summer', 'ogimi', '大宜味のカフェで遅めの昼食', '2027-07-18T13:00:00+09:00', '2027-07-18T14:30:00+09:00', '大宜味村', '{"text":"移動を兼ねてしっかり休憩する。"}', 'normal:meal', 0),
+    ('summer', 'sunset', '万座毛で夕方散歩', '2027-07-18T17:00:00+09:00', '2027-07-18T18:00:00+09:00', '恩納村・万座毛', '{"text":"日差しが弱まる時間に短めの散策。"}', 'normal:sightseeing', 0),
+    ('summer', 'hotel-3', '恩納村のホテルに宿泊', '2027-07-18T19:00:00+09:00', '2027-07-19T07:30:00+09:00', '恩納村', '{"text":"最後の夜に荷造り。8時までにチェックアウトする。"}', 'normal:hotel', 0),
+    ('summer', 'shuri', '首里城公園を見学', '2027-07-19T09:00:00+09:00', '2027-07-19T11:00:00+09:00', '那覇市首里', '{"text":"最終日は那覇市内で移動距離を抑える。"}', 'normal:sightseeing', 0),
+    ('summer', 'market', '牧志公設市場周辺で昼ごはん', '2027-07-19T12:00:00+09:00', '2027-07-19T13:30:00+09:00', '那覇市・牧志', '{"text":"沖縄料理を食べて最後のお土産を選ぶ。"}', 'normal:meal', 0),
+    ('summer', 'flight-home', '那覇空港から帰路へ', '2027-07-19T16:00:00+09:00', '2027-07-19T18:30:00+09:00', '那覇空港→羽田空港', '{"text":"レンタカー返却後、余裕を持って空港へ。"}', 'transport:plane', 0),
+    ('autumn', 'train-nikko', '浅草から東武日光へ', '2026-10-19T07:30:00+09:00', '2026-10-19T09:20:00+09:00', '浅草駅→東武日光駅', '{"text":"7時15分に浅草駅正面改札前へ集合。駅で荷物を預けてからバスに乗る。"}', 'transport:train', 0),
+    ('autumn', 'tosho', '日光東照宮をゆっくり参拝', '2026-10-19T10:00:00+09:00', '2026-10-19T12:30:00+09:00', '日光東照宮', '{"text":"表門から陽明門、御本社、眠り猫、奥宮の順に回る。石段が多いので休憩を挟む。"}', 'normal:sightseeing', 0),
+    ('autumn', 'lunch-nikko', '西参道で湯波ランチ', '2026-10-19T12:45:00+09:00', '2026-10-19T14:00:00+09:00', '日光西参道', '{"text":"3名で予約済み。"}', 'normal:meal', 0),
+    ('autumn', 'shinkyo', '神橋から西参道を散歩', '2026-10-19T15:00:00+09:00', '2026-10-19T16:30:00+09:00', '神橋・西参道', '{"text":"夕方の紅葉を見ながら短く歩く。"}', 'normal:sightseeing', 0),
+    ('autumn', 'hotel-nikko', '日光駅近くのホテルに宿泊', '2026-10-19T17:00:00+09:00', '2026-10-20T08:00:00+09:00', '東武日光駅周辺', '{"text":"夕食・朝食付き。8時10分にロビー集合。"}', 'normal:hotel', 0),
+    ('autumn', 'bus-chuzenji', 'いろは坂を通って中禅寺温泉へ', '2026-10-20T08:30:00+09:00', '2026-10-20T09:30:00+09:00', '東武日光駅→中禅寺温泉', '{"text":"紅葉期は渋滞しやすいため、到着が遅れたら遊覧船を午後へ回す。"}', 'transport:bus', 0),
+    ('autumn', 'kegon', '華厳滝を見学', '2026-10-20T09:45:00+09:00', '2026-10-20T10:45:00+09:00', '華厳滝', '{"text":"エレベーターで観瀑台へ。霧が濃い場合は翌朝に変更する。"}', 'normal:sightseeing', 0),
+    ('autumn', 'chuzenji', '中禅寺湖遊覧船', '2026-10-20T11:30:00+09:00', '2026-10-20T12:30:00+09:00', '中禅寺湖', '{"text":"乗船前に当日の運航状況を確認。昼食は船のあと湖畔で取る。"}', 'normal:sightseeing', 0),
+    ('autumn', 'embassy', '英国・イタリア大使館別荘記念公園', '2026-10-20T14:00:00+09:00', '2026-10-20T16:00:00+09:00', '中禅寺湖畔', '{"text":"湖畔園地を歩いて2館を見学。閉館時刻の30分前には退出する。"}', 'normal:sightseeing', 0),
+    ('autumn', 'hotel-chuzenji-1', '中禅寺温泉に宿泊', '2026-10-20T16:30:00+09:00', '2026-10-21T08:00:00+09:00', '中禅寺温泉', '{"text":"夕食・朝食付き。翌朝のバス時刻をフロントで確認する。"}', 'normal:hotel', 0),
+    ('autumn', 'senjogahara', '赤沼から戦場ヶ原を歩く', '2026-10-21T09:00:00+09:00', '2026-10-21T12:30:00+09:00', '赤沼→戦場ヶ原→湯滝', '{"text":"木道を湯滝方面へ歩く。雨天や凍結時は低公害バスと路線バスで移動する。"}', 'normal:sightseeing', 0),
+    ('autumn', 'yudaki', '湯滝で昼食と休憩', '2026-10-21T12:30:00+09:00', '2026-10-21T14:00:00+09:00', '湯滝', '{"text":"滝を見たあと、バスで中禅寺温泉へ戻る。"}', 'normal:meal', 0),
+    ('autumn', 'hotel-chuzenji-2', '中禅寺温泉にもう1泊', '2026-10-21T16:00:00+09:00', '2026-10-22T08:30:00+09:00', '中禅寺温泉', '{"text":"濡れた上着と靴を乾かし、翌日の移動に備える。"}', 'normal:hotel', 0),
+    ('autumn', 'akechidaira', '明智平から紅葉を眺める', '2026-10-22T09:30:00+09:00', '2026-10-22T11:30:00+09:00', '明智平', '{"text":"展望を楽しんだら鬼怒川方面へ移動する。"}', 'normal:sightseeing', 0),
+    ('autumn', 'to-kinugawa', '鬼怒川温泉へ移動', '2026-10-22T12:30:00+09:00', '2026-10-22T14:30:00+09:00', '明智平→鬼怒川温泉', '{"text":"日光駅で昼食を買い、東武線で鬼怒川温泉へ。"}', 'transport:train', 0),
+    ('autumn', 'onsen-town', '鬼怒川温泉街と楯岩大吊橋', '2026-10-22T15:00:00+09:00', '2026-10-22T16:30:00+09:00', '鬼怒川温泉', '{"text":"荷物を宿に置き、川沿いを短く散歩する。"}', 'normal:sightseeing', 0),
+    ('autumn', 'hotel-kinugawa', '鬼怒川温泉の旅館に宿泊', '2026-10-22T17:00:00+09:00', '2026-10-23T08:30:00+09:00', '鬼怒川温泉', '{"text":"夕食・朝食付き。露天風呂は夕食前に入る。"}', 'normal:hotel', 0),
+    ('autumn', 'ryuokyo', '龍王峡を散策', '2026-10-23T09:00:00+09:00', '2026-10-23T11:30:00+09:00', '龍王峡', '{"text":"虹見橋までの往復を基本にし、足元が悪ければ散策時間を短くする。"}', 'normal:sightseeing', 0),
+    ('autumn', 'aizu-train', '会津鬼怒川線で会津若松へ', '2026-10-23T12:30:00+09:00', '2026-10-23T15:30:00+09:00', '龍王峡駅→会津若松駅', '{"text":"途中駅で昼食を購入。乗り換え時間は余裕を持つ。"}', 'transport:train', 0),
+    ('autumn', 'nanukamachi', '七日町通りを散歩', '2026-10-23T16:00:00+09:00', '2026-10-23T17:30:00+09:00', '会津若松・七日町通り', '{"text":"酒蔵と会津木綿の店を見ながらホテルへ向かう。"}', 'normal:shopping', 0),
+    ('autumn', 'hotel-aizu-1', '会津若松駅前に宿泊', '2026-10-23T18:00:00+09:00', '2026-10-24T08:30:00+09:00', '会津若松駅前', '{"text":"夕食は市内で会津の郷土料理。"}', 'normal:hotel', 0),
+    ('autumn', 'tsurugajo', '鶴ヶ城と茶室麟閣', '2026-10-24T09:00:00+09:00', '2026-10-24T11:30:00+09:00', '鶴ヶ城', '{"text":"天守閣を見学し、茶室で休憩する。"}', 'normal:sightseeing', 0),
+    ('autumn', 'sazaedo', '飯盛山とさざえ堂', '2026-10-24T13:30:00+09:00', '2026-10-24T15:30:00+09:00', '会津若松・飯盛山', '{"text":"石段を避ける場合はスロープコンベアを利用する。"}', 'normal:sightseeing', 0),
+    ('autumn', 'higashiyama', '東山温泉で日帰り入浴', '2026-10-24T16:00:00+09:00', '2026-10-24T18:00:00+09:00', '会津東山温泉', '{"text":"タオルを持参。入浴後はバスで市街地へ戻る。"}', 'normal:sightseeing', 0),
+    ('autumn', 'hotel-aizu-2', '会津若松駅前にもう1泊', '2026-10-24T19:00:00+09:00', '2026-10-25T09:00:00+09:00', '会津若松駅前', '{"text":"朝食後に荷物をまとめ、フロントへ預ける。"}', 'normal:hotel', 0),
+    ('autumn', 'market-aizu', '野口英世青春通りで買い物', '2026-10-25T09:30:00+09:00', '2026-10-25T11:00:00+09:00', '会津若松市街', '{"text":"起き上がり小法師と地酒を購入。"}', 'normal:shopping', 0),
+    ('autumn', 'return', '会津若松から東京へ', '2026-10-25T12:00:00+09:00', '2026-10-25T15:30:00+09:00', '会津若松駅→東京駅', '{"text":"郡山で東北新幹線に乗り換える。昼食は車内で取る。"}', 'transport:train', 0),
+    ('winter', 'flight-sapporo', '羽田から新千歳へ', '2027-02-01T08:00:00+09:00', '2027-02-01T09:35:00+09:00', '羽田空港→新千歳空港', '{"text":"出発の1時間前に保安検査場前へ集合。到着後は快速列車で札幌へ。"}', 'transport:plane', 0),
+    ('winter', 'sapporo-stay', '札幌に4泊', '2027-02-01T15:00:00+09:00', '2027-02-05T09:00:00+09:00', '札幌駅周辺', '{"text":"朝食付き。大雪の日は無理に郊外へ出ず、市内の予定へ変更する。"}', 'normal:hotel', 0),
+    ('winter', 'odori', '大通公園と札幌市時計台', '2027-02-01T13:00:00+09:00', '2027-02-01T16:30:00+09:00', '札幌・大通', '{"text":"ホテルに荷物を預けてから徒歩で回る。夕食は狸小路周辺。"}', 'normal:sightseeing', 0),
+    ('winter', 'market', '二条市場で朝ごはん', '2027-02-02T08:00:00+09:00', '2027-02-02T09:30:00+09:00', '札幌二条市場', '{"text":"海鮮丼を食べ、地下鉄で円山公園へ移動する。"}', 'normal:meal', 0),
+    ('winter', 'maruyama', '北海道神宮と円山公園', '2027-02-02T10:30:00+09:00', '2027-02-02T13:00:00+09:00', '北海道神宮', '{"text":"除雪された参道を歩く。足元が悪ければ往復とも地下鉄を使う。"}', 'normal:sightseeing', 0),
+    ('winter', 'museum', '北海道博物館', '2027-02-03T10:00:00+09:00', '2027-02-03T13:00:00+09:00', '北海道博物館', '{"text":"屋内で北海道の自然と歴史を見る。昼食後はホテルで休憩。"}', 'normal:sightseeing', 0),
+    ('winter', 'sapporo-free', '札幌で予備日', '2027-02-04T10:00:00+09:00', '2027-02-04T16:00:00+09:00', '札幌市内', '{"text":"天候が良ければ藻岩山、荒天なら札幌駅周辺の買い物に変更する。"}', 'normal:general', 0),
+    ('winter', 'to-otaru', '札幌から小樽へ', '2027-02-05T09:30:00+09:00', '2027-02-05T10:20:00+09:00', '札幌駅→小樽駅', '{"text":"海側の指定席を予約。ホテルに荷物を預ける。"}', 'transport:train', 0),
+    ('winter', 'otaru-stay', '小樽に2泊', '2027-02-05T15:00:00+09:00', '2027-02-07T08:30:00+09:00', '小樽駅周辺', '{"text":"朝食付き。夜の運河散策用に滑り止めを携帯する。"}', 'normal:hotel', 0),
+    ('winter', 'otaru-walk', '小樽運河と堺町通り', '2027-02-05T11:00:00+09:00', '2027-02-05T16:00:00+09:00', '小樽運河・堺町通り', '{"text":"運河沿いから堺町通りへ歩き、途中で昼食とカフェ休憩を取る。"}', 'normal:sightseeing', 0),
+    ('winter', 'yoichi', '余市へ日帰り', '2027-02-06T09:30:00+09:00', '2027-02-06T15:30:00+09:00', '余市', '{"text":"鉄道で往復。蒸溜所見学は事前予約し、試飲する人は身分証を持参する。"}', 'normal:sightseeing', 0),
+    ('winter', 'to-niseko', '小樽からニセコへ', '2027-02-07T09:00:00+09:00', '2027-02-07T12:00:00+09:00', '小樽駅→ニセコ', '{"text":"倶知安で宿の送迎車に乗り換える。昼食は駅周辺で取る。"}', 'transport:train', 0),
+    ('winter', 'niseko-stay', 'ニセコに4泊', '2027-02-07T15:00:00+09:00', '2027-02-11T09:00:00+09:00', 'ニセコ', '{"text":"朝夕食付き。レンタル用品は初日にサイズを確認する。"}', 'normal:hotel', 0),
+    ('winter', 'ski-1', 'スキー・スノーボード初日', '2027-02-08T09:00:00+09:00', '2027-02-08T15:00:00+09:00', 'ニセコのスキー場', '{"text":"午前はレッスン、午後は無理のないコースへ。15時までに切り上げる。"}', 'normal:sightseeing', 0),
+    ('winter', 'snowshoe', '半日スノーシューツアー', '2027-02-09T09:00:00+09:00', '2027-02-09T12:30:00+09:00', 'ニセコ', '{"text":"ガイド付き。午後は温泉と休憩に充てる。"}', 'normal:sightseeing', 0),
+    ('winter', 'niseko-free', 'ニセコで予備日', '2027-02-10T09:30:00+09:00', '2027-02-10T15:00:00+09:00', 'ニセコ', '{"text":"晴れればもう一度滑り、荒天なら温泉とカフェで過ごす。"}', 'normal:general', 0),
+    ('winter', 'to-toya', 'ニセコから洞爺湖温泉へ', '2027-02-11T10:00:00+09:00', '2027-02-11T13:30:00+09:00', 'ニセコ→洞爺湖温泉', '{"text":"宿の送迎と路線バスを利用。乗り換え前に昼食を取る。"}', 'transport:bus', 0),
+    ('winter', 'toya-stay', '洞爺湖温泉に2泊', '2027-02-11T15:00:00+09:00', '2027-02-13T09:30:00+09:00', '洞爺湖温泉', '{"text":"夕食・朝食付き。大浴場は混雑を避けて早めに利用する。"}', 'normal:hotel', 0),
+    ('winter', 'toya-walk', '洞爺湖畔と洞爺湖ビジターセンター', '2027-02-12T10:00:00+09:00', '2027-02-12T14:30:00+09:00', '洞爺湖温泉', '{"text":"湖畔は短く歩き、火山科学館と屋内展示を中心に見る。"}', 'normal:sightseeing', 0),
+    ('winter', 'to-noboribetsu', '洞爺から登別温泉へ', '2027-02-13T10:00:00+09:00', '2027-02-13T12:30:00+09:00', '洞爺駅→登別温泉', '{"text":"特急と路線バスで移動。登別駅で接続時間を確認する。"}', 'transport:train', 0),
+    ('winter', 'noboribetsu-stay', '登別温泉に3泊', '2027-02-13T15:00:00+09:00', '2027-02-16T09:00:00+09:00', '登別温泉', '{"text":"夕食・朝食付き。湯冷めしないよう夜の外出は短めにする。"}', 'normal:hotel', 0),
+    ('winter', 'jigokudani', '地獄谷と大湯沼川天然足湯', '2027-02-14T09:30:00+09:00', '2027-02-14T13:00:00+09:00', '登別地獄谷', '{"text":"冬季通行止めの区間を避け、開放中の遊歩道だけを歩く。"}', 'normal:sightseeing', 0),
+    ('winter', 'upopoy', 'ウポポイへ日帰り', '2027-02-15T09:30:00+09:00', '2027-02-15T16:00:00+09:00', '白老・ウポポイ', '{"text":"登別から鉄道で往復。入場時刻を予約し、屋内展示と伝統芸能を中心に見る。"}', 'normal:sightseeing', 0),
+    ('winter', 'to-hakodate', '登別から函館へ', '2027-02-16T09:30:00+09:00', '2027-02-16T13:00:00+09:00', '登別駅→函館駅', '{"text":"特急の指定席を予約。昼食は車内で取る。"}', 'transport:train', 0),
+    ('winter', 'hakodate-stay', '函館に2泊', '2027-02-16T15:00:00+09:00', '2027-02-18T10:00:00+09:00', '函館駅周辺', '{"text":"朝食付き。帰る日の荷物はチェックアウト後も預ける。"}', 'normal:hotel', 0),
+    ('winter', 'motomachi', '元町の教会群と函館山', '2027-02-16T14:30:00+09:00', '2027-02-16T19:00:00+09:00', '函館・元町', '{"text":"坂道をゆっくり歩き、運行していればロープウェイで夜景を見る。"}', 'normal:sightseeing', 0),
+    ('winter', 'morning-market', '函館朝市で朝ごはん', '2027-02-17T07:30:00+09:00', '2027-02-17T09:00:00+09:00', '函館朝市', '{"text":"食後は市電で五稜郭へ移動する。"}', 'normal:meal', 0),
+    ('winter', 'goryokaku', '五稜郭公園とタワー', '2027-02-17T10:00:00+09:00', '2027-02-17T12:30:00+09:00', '五稜郭', '{"text":"タワーから雪の星形を見て、公園は除雪された道だけ歩く。"}', 'normal:sightseeing', 0),
+    ('winter', 'bay', '赤レンガ倉庫で買い物', '2027-02-17T14:00:00+09:00', '2027-02-17T16:30:00+09:00', '函館ベイエリア', '{"text":"お土産をまとめて購入し、ホテルへ戻って荷造りする。"}', 'normal:shopping', 0),
+    ('winter', 'flight-home', '函館から羽田へ', '2027-02-18T12:30:00+09:00', '2027-02-18T14:00:00+09:00', '函館空港→羽田空港', '{"text":"ホテル前から空港連絡バスを利用し、出発の1時間前までに到着する。"}', 'transport:plane', 0)
+)
+INSERT INTO steps (
+  id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
+)
+SELECT 'official-' || season || '-source-' || slug, 'official-' || season || '-source', title,
+  CAST(strftime('%s', start_iso) AS INTEGER) * 1000, CAST(strftime('%s', end_iso) AS INTEGER) * 1000,
+  location, notes, NULL, type, is_all_day, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM step_seed;
+
+-- Pin almost every scheduled stop to a concrete OpenStreetMap location.
+WITH seasonal_place_seed(season, slug, location, lat, lng) AS (VALUES
+  ('spring', 'train-kyoto', '京都駅（京都府京都市下京区東塩小路釜殿町）', 34.985849, 135.758767),
+  ('spring', 'hotel-bag', '京都駅（京都府京都市下京区東塩小路釜殿町）', 34.985849, 135.758767),
+  ('spring', 'kiyomizu', '清水寺（京都府京都市東山区清水1丁目294）', 34.994303, 135.784439),
+  ('spring', 'lunch', '二寧坂（京都府京都市東山区桝屋町）', 34.998190, 135.780730),
+  ('spring', 'gion', '祇園白川（京都府京都市東山区元吉町）', 35.005120, 135.775090),
+  ('spring', 'dinner', '祇園四条駅（京都府京都市東山区四条大橋東詰）', 35.003770, 135.772250),
+  ('spring', 'hotel-1', '京都駅（京都府京都市下京区東塩小路釜殿町）', 34.985849, 135.758767),
+  ('spring', 'arashiyama', '竹林の小径（京都府京都市右京区嵯峨小倉山田淵山町）', 35.017040, 135.671300),
+  ('spring', 'tenryuji', '天龍寺（京都府京都市右京区嵯峨天龍寺芒ノ馬場町68）', 35.015780, 135.674120),
+  ('spring', 'uji-train', '宇治駅（京都府宇治市宇治宇文字）', 34.890330, 135.800740),
+  ('spring', 'uji', '平等院（京都府宇治市宇治蓮華116）', 34.889300, 135.807680),
+  ('spring', 'hotel-2', '京都駅（京都府京都市下京区東塩小路釜殿町）', 34.985849, 135.758767),
+  ('spring', 'fushimi', '伏見稲荷大社（京都府京都市伏見区深草薮之内町68）', 34.967140, 135.772670),
+  ('spring', 'nishiki', '錦市場（京都府京都市中京区西大文字町609）', 35.005010, 135.764810),
+  ('spring', 'return', '京都駅（京都府京都市下京区東塩小路釜殿町）', 34.985849, 135.758767),
+  ('summer', 'flight-out', '那覇空港（沖縄県那覇市鏡水150）', 26.206520, 127.646100),
+  ('summer', 'rental-car', '那覇空港（沖縄県那覇市鏡水150）', 26.206520, 127.646100),
+  ('summer', 'drive-onna', '恩納村役場（沖縄県国頭郡恩納村恩納2451）', 26.497400, 127.853500),
+  ('summer', 'snorkel', '真栄田岬（沖縄県国頭郡恩納村真栄田469-1）', 26.443890, 127.771470),
+  ('summer', 'hotel-1', '恩納村海浜公園ナビービーチ（沖縄県国頭郡恩納村恩納419-4）', 26.497600, 127.850800),
+  ('summer', 'aquarium', '沖縄美ら海水族館（沖縄県国頭郡本部町石川424）', 26.694370, 127.877920),
+  ('summer', 'bise', '備瀬のフクギ並木（沖縄県国頭郡本部町備瀬）', 26.703660, 127.880170),
+  ('summer', 'kouri', '古宇利ビーチ（沖縄県国頭郡今帰仁村古宇利）', 26.696870, 128.018650),
+  ('summer', 'hotel-2', '恩納村海浜公園ナビービーチ（沖縄県国頭郡恩納村恩納419-4）', 26.497600, 127.850800),
+  ('summer', 'yanbaru', '東村ふれあいヒルギ公園（沖縄県国頭郡東村慶佐次54-1）', 26.653680, 128.076420),
+  ('summer', 'ogimi', '道の駅おおぎみ やんばるの森ビジターセンター（沖縄県国頭郡大宜味村津波95）', 26.691020, 128.117330),
+  ('summer', 'sunset', '万座毛（沖縄県国頭郡恩納村恩納）', 26.505080, 127.850350),
+  ('summer', 'hotel-3', '恩納村海浜公園ナビービーチ（沖縄県国頭郡恩納村恩納419-4）', 26.497600, 127.850800),
+  ('summer', 'shuri', '首里城公園（沖縄県那覇市首里金城町1丁目2）', 26.217040, 127.719430),
+  ('summer', 'market', '第一牧志公設市場（沖縄県那覇市松尾2丁目10-1）', 26.214650, 127.688710),
+  ('summer', 'flight-home', '那覇空港（沖縄県那覇市鏡水150）', 26.206520, 127.646100),
+  ('autumn', 'train-nikko', '東武日光駅（栃木県日光市松原町4-3）', 36.748200, 139.619430),
+  ('autumn', 'tosho', '日光東照宮（栃木県日光市山内2301）', 36.758060, 139.598850),
+  ('autumn', 'lunch-nikko', '西参道茶屋（栃木県日光市安川町10-20）', 36.754640, 139.595030),
+  ('autumn', 'shinkyo', '神橋（栃木県日光市上鉢石町）', 36.753590, 139.604300),
+  ('autumn', 'hotel-nikko', '東武日光駅（栃木県日光市松原町4-3）', 36.748200, 139.619430),
+  ('autumn', 'bus-chuzenji', '中禅寺温泉バスターミナル（栃木県日光市中宮祠）', 36.738000, 139.495500),
+  ('autumn', 'kegon', '華厳滝（栃木県日光市中宮祠2479-2）', 36.738080, 139.503180),
+  ('autumn', 'chuzenji', '中禅寺湖遊覧船 船の駅中禅寺（栃木県日光市中宮祠2478）', 36.737800, 139.493800),
+  ('autumn', 'embassy', '英国大使館別荘記念公園（栃木県日光市中宮祠2482）', 36.724900, 139.483700),
+  ('autumn', 'hotel-chuzenji-1', '中禅寺温泉バスターミナル（栃木県日光市中宮祠）', 36.738000, 139.495500),
+  ('autumn', 'senjogahara', '赤沼自然情報センター（栃木県日光市中宮祠2494）', 36.777000, 139.446000),
+  ('autumn', 'yudaki', '湯滝（栃木県日光市湯元）', 36.807300, 139.430400),
+  ('autumn', 'hotel-chuzenji-2', '中禅寺温泉バスターミナル（栃木県日光市中宮祠）', 36.738000, 139.495500),
+  ('autumn', 'akechidaira', '明智平ロープウェイ（栃木県日光市細尾町）', 36.737500, 139.532500),
+  ('autumn', 'to-kinugawa', '鬼怒川温泉駅（栃木県日光市鬼怒川温泉大原1390）', 36.822400, 139.716800),
+  ('autumn', 'onsen-town', '鬼怒楯岩大吊橋（栃木県日光市鬼怒川温泉大原）', 36.819200, 139.713600),
+  ('autumn', 'hotel-kinugawa', '鬼怒川温泉駅（栃木県日光市鬼怒川温泉大原1390）', 36.822400, 139.716800),
+  ('autumn', 'ryuokyo', '龍王峡駅（栃木県日光市藤原）', 36.852000, 139.771000),
+  ('autumn', 'aizu-train', '会津若松駅（福島県会津若松市駅前町1-1）', 37.508900, 139.930200),
+  ('autumn', 'nanukamachi', '七日町駅（福島県会津若松市七日町）', 37.500800, 139.920600),
+  ('autumn', 'hotel-aizu-1', '会津若松駅（福島県会津若松市駅前町1-1）', 37.508900, 139.930200),
+  ('autumn', 'tsurugajo', '鶴ヶ城（福島県会津若松市追手町1-1）', 37.487700, 139.929800),
+  ('autumn', 'sazaedo', '会津さざえ堂（福島県会津若松市一箕町八幡滝沢155）', 37.504800, 139.948000),
+  ('autumn', 'higashiyama', '会津東山温泉観光協会（福島県会津若松市東山町湯本滝ノ湯110）', 37.480400, 139.962500),
+  ('autumn', 'hotel-aizu-2', '会津若松駅（福島県会津若松市駅前町1-1）', 37.508900, 139.930200),
+  ('autumn', 'market-aizu', '野口英世青春館（福島県会津若松市中町4-18）', 37.495600, 139.926700),
+  ('autumn', 'return', '会津若松駅（福島県会津若松市駅前町1-1）', 37.508900, 139.930200),
+  ('winter', 'flight-sapporo', '新千歳空港（北海道千歳市美々）', 42.775200, 141.692300),
+  ('winter', 'odori', '大通公園（北海道札幌市中央区大通西1丁目）', 43.060500, 141.354400),
+  ('winter', 'sapporo-stay', '札幌駅（北海道札幌市北区北6条西4丁目）', 43.068700, 141.350800),
+  ('winter', 'market', '二条市場（北海道札幌市中央区南3条東1丁目）', 43.059000, 141.358600),
+  ('winter', 'maruyama', '北海道神宮（北海道札幌市中央区宮ケ丘474）', 43.054300, 141.307400),
+  ('winter', 'museum', '北海道博物館（北海道札幌市厚別区厚別町小野幌53-2）', 43.053000, 141.497400),
+  ('winter', 'sapporo-free', '札幌駅（北海道札幌市北区北6条西4丁目）', 43.068700, 141.350800),
+  ('winter', 'to-otaru', '小樽駅（北海道小樽市稲穂2丁目22-15）', 43.197300, 140.993700),
+  ('winter', 'otaru-walk', '小樽運河（北海道小樽市港町5）', 43.198500, 141.003100),
+  ('winter', 'otaru-stay', '小樽駅（北海道小樽市稲穂2丁目22-15）', 43.197300, 140.993700),
+  ('winter', 'yoichi', 'ニッカウヰスキー余市蒸溜所（北海道余市郡余市町黒川町7丁目6）', 43.000300, 140.788400),
+  ('winter', 'to-niseko', '倶知安駅（北海道虻田郡倶知安町南3条西4丁目）', 42.901700, 140.745500),
+  ('winter', 'niseko-stay', 'ひらふウェルカムセンター（北海道虻田郡倶知安町ニセコひらふ1条3丁目）', 42.862200, 140.704300),
+  ('winter', 'ski-1', 'ニセコ東急 グラン・ヒラフ（北海道虻田郡倶知安町ニセコひらふ1条2丁目）', 42.864800, 140.704200),
+  ('winter', 'snowshoe', 'ひらふウェルカムセンター（北海道虻田郡倶知安町ニセコひらふ1条3丁目）', 42.862200, 140.704300),
+  ('winter', 'niseko-free', 'ひらふウェルカムセンター（北海道虻田郡倶知安町ニセコひらふ1条3丁目）', 42.862200, 140.704300),
+  ('winter', 'to-toya', '洞爺湖温泉バスターミナル（北海道虻田郡洞爺湖町洞爺湖温泉）', 42.566600, 140.822500),
+  ('winter', 'toya-stay', '洞爺湖温泉バスターミナル（北海道虻田郡洞爺湖町洞爺湖温泉）', 42.566600, 140.822500),
+  ('winter', 'toya-walk', '洞爺湖ビジターセンター（北海道虻田郡洞爺湖町洞爺湖温泉142-5）', 42.564900, 140.820600),
+  ('winter', 'to-noboribetsu', '登別温泉バスターミナル（北海道登別市登別温泉町）', 42.493200, 141.144200),
+  ('winter', 'noboribetsu-stay', '登別温泉バスターミナル（北海道登別市登別温泉町）', 42.493200, 141.144200),
+  ('winter', 'jigokudani', '登別地獄谷（北海道登別市登別温泉町）', 42.497000, 141.145000),
+  ('winter', 'upopoy', 'ウポポイ（北海道白老郡白老町若草町2丁目3）', 42.553500, 141.362800),
+  ('winter', 'to-hakodate', '函館駅（北海道函館市若松町12）', 41.773700, 140.726500),
+  ('winter', 'motomachi', '函館山ロープウェイ山麓駅（北海道函館市元町19-7）', 41.759800, 140.711800),
+  ('winter', 'hakodate-stay', '函館駅（北海道函館市若松町12）', 41.773700, 140.726500),
+  ('winter', 'morning-market', '函館朝市（北海道函館市若松町9-19）', 41.772700, 140.726300),
+  ('winter', 'goryokaku', '五稜郭タワー（北海道函館市五稜郭町43-9）', 41.796900, 140.756800),
+  ('winter', 'bay', '金森赤レンガ倉庫（北海道函館市末広町14-12）', 41.766900, 140.718600),
+  ('winter', 'flight-home', '函館空港（北海道函館市高松町511）', 41.770000, 140.822400)
+)
+UPDATE steps
+SET location = (
+      SELECT place.location FROM seasonal_place_seed place
+      WHERE steps.id = 'official-' || place.season || '-source-' || place.slug
+    ),
+    notes = json_set(notes, '$.tabitabi_place', json_object(
+      'lat', (SELECT place.lat FROM seasonal_place_seed place WHERE steps.id = 'official-' || place.season || '-source-' || place.slug),
+      'lng', (SELECT place.lng FROM seasonal_place_seed place WHERE steps.id = 'official-' || place.season || '-source-' || place.slug)
+    ))
+WHERE EXISTS (
+  SELECT 1 FROM seasonal_place_seed place
+  WHERE steps.id = 'official-' || place.season || '-source-' || place.slug
+);
 
 INSERT INTO steps (
   id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
-) VALUES
-  ('official-spring-source-allday', 'official-spring-source', '祇園白川桜祭り（終日）', '1788015600000', '1788101940000', '祇園白川', '{"text":"一日中桜のイベントが開催。夜桜ライトアップも"}', NULL, 'normal:general', '1', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-1', 'official-spring-source', '清水寺参拝', '1788048000000', '1788055200000', '京都市東山区', '{"text":"桜の名所。清水の舞台からの眺めは絶景。"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-2', 'official-spring-source', '祇園で懐石料理', '1788058800000', '1788064200000', '祇園', '{"text":"京料理を堪能"}', NULL, 'normal:food', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-2-transport', 'official-spring-source', '祇園から嵐山へ移動', '1788064200000', '1788067800000', '京都市内', '{"text":"移動中：電車での移動を想定"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-3', 'official-spring-source', '嵐山の桜散策', '1788069600000', '1788080400000', '嵐山', '{"text":"竹林の小径と渡月橋を歩く"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-hotel', 'official-spring-source', '京都駅前ホテル宿泊', '1788087600000', '1788134400000', '京都駅前', '{"text":"2日目の朝まで宿泊。朝食バイキング付き", "booking_url":"https://www.jalan.net/yad362380"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-4', 'official-spring-source', '貴船神社の川沿い歩き', '1788138000000', '1788145200000', '貴船', '{"text":"縁結びの神社。新緑と桜のコントラスト"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-transport2', 'official-spring-source', '貴船から哲学の道へ移動', '1788147000000', '1788152400000', '京都市内', '{"text":"バスと徒歩での移動"}', NULL, 'transport:bus', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-5', 'official-spring-source', '哲学の道散歩', '1788152400000', '1788157800000', '左京区', '{"text":"桜のトンネルを歩く"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-6', 'official-spring-source', '伏見稲荷大社', '1788220800000', '1788229800000', '伏見区', '{"text":"千本鳥居を散策"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-7', 'official-spring-source', '宇治の平等院鳳凰堂', '1788235200000', '1788242400000', '宇治市', '{"text":"世界遺産を訪問。抹茶スイーツも楽しむ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-breakfast', 'official-spring-source', '朝食：和定食（宿泊先）', '1788132600000', '1788135300000', '京都駅前', '{"text":"ホテル宿泊時は朝食バイキング付き"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-concurrent1', 'official-spring-source', '清水焼の絵付け体験', '1788048000000', '1788053400000', '五条坂', '{"text":"陶芸体験。予約推奨"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-concurrent2', 'official-spring-source', 'ガイディングツアー：清水寺', '1788048000000', '1788055200000', '京都市東山区', '{"text":"別ルートでのガイド付き参拝プランも可"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-source-afternoon', 'official-spring-source', '京都駅でお土産購入', '1788244200000', '1788247800000', '京都駅', '{"text":"帰路前に京都限定のお菓子などを購入"}', NULL, 'normal:shopping', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-allday', 'official-spring-public', '祇園白川桜祭り（終日）', '1788015600000', '1788101940000', '祇園白川', '{"text":"一日中桜のイベントが開催。夜桜ライトアップも"}', NULL, 'normal:general', '1', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-1', 'official-spring-public', '清水寺参拝', '1788048000000', '1788055200000', '京都市東山区', '{"text":"桜の名所。清水の舞台からの眺めは絶景。"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-2', 'official-spring-public', '祇園で懐石料理', '1788058800000', '1788064200000', '祇園', '{"text":"京料理を堪能"}', NULL, 'normal:food', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-2-transport', 'official-spring-public', '祇園から嵐山へ移動', '1788064200000', '1788067800000', '京都市内', '{"text":"移動中：電車での移動を想定"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-3', 'official-spring-public', '嵐山の桜散策', '1788069600000', '1788080400000', '嵐山', '{"text":"竹林の小径と渡月橋を歩く"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-hotel', 'official-spring-public', '京都駅前ホテル宿泊', '1788087600000', '1788134400000', '京都駅前', '{"text":"2日目の朝まで宿泊。朝食バイキング付き", "booking_url":"https://www.jalan.net/yad362380"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-4', 'official-spring-public', '貴船神社の川沿い歩き', '1788138000000', '1788145200000', '貴船', '{"text":"縁結びの神社。新緑と桜のコントラスト"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-transport2', 'official-spring-public', '貴船から哲学の道へ移動', '1788147000000', '1788152400000', '京都市内', '{"text":"バスと徒歩での移動"}', NULL, 'transport:bus', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-5', 'official-spring-public', '哲学の道散歩', '1788152400000', '1788157800000', '左京区', '{"text":"桜のトンネルを歩く"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-6', 'official-spring-public', '伏見稲荷大社', '1788220800000', '1788229800000', '伏見区', '{"text":"千本鳥居を散策"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-7', 'official-spring-public', '宇治の平等院鳳凰堂', '1788235200000', '1788242400000', '宇治市', '{"text":"世界遺産を訪問。抹茶スイーツも楽しむ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-breakfast', 'official-spring-public', '朝食：和定食（宿泊先）', '1788132600000', '1788135300000', '京都駅前', '{"text":"ホテル宿泊時は朝食バイキング付き"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-concurrent1', 'official-spring-public', '清水焼の絵付け体験', '1788048000000', '1788053400000', '五条坂', '{"text":"陶芸体験。予約推奨"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-concurrent2', 'official-spring-public', 'ガイディングツアー：清水寺', '1788048000000', '1788055200000', '京都市東山区', '{"text":"別ルートでのガイド付き参拝プランも可"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-spring-public-afternoon', 'official-spring-public', '京都駅でお土産購入', '1788244200000', '1788247800000', '京都駅', '{"text":"帰路前に京都限定のお菓子などを購入"}', NULL, 'normal:shopping', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
+)
+SELECT REPLACE(id, '-source-', '-public-'), REPLACE(itinerary_id, '-source', '-public'), title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
+FROM steps WHERE itinerary_id GLOB 'official-*-source';
 
 INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at)
-VALUES ('official-user', 'official-spring-source', 1, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
+SELECT 'official-user', id, 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z' FROM itineraries WHERE id GLOB 'official-*-source';
 
 INSERT INTO itinerary_publications (
   source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at
-) VALUES (
-  'official-spring-source', 'official-spring-public', 'official-user',
-  '["kyoto"]', '["清水寺","祇園","嵐山"]', '["寺社・歴史","グルメ"]',
-  '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'
-);
+)
+SELECT id, REPLACE(id, '-source', '-public'), 'official-user', prefecture_slugs, areas, tags, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries WHERE id GLOB 'official-*-source';
 
+WITH fork_seed(season, fork_count) AS (VALUES
+  ('spring', 31), ('summer', 36), ('autumn', 27), ('winter', 22)
+)
 INSERT INTO itinerary_fork_stats (itinerary_id, fork_count)
-VALUES ('official-spring-public', 28);
+SELECT 'official-' || season || '-public', fork_count FROM fork_seed;
 
--- summer: 夏休みの沖縄旅行
+-- map planning: 秋の金沢の週末
 INSERT INTO itineraries (
   id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
 ) VALUES
-  ('official-summer-source', '夏休みの沖縄旅行', 'standard-summer', 'ocean', 1, '["okinawa"]', '["那覇","恩納村","読谷村"]', '["絶景","グルメ"]', 1, '{"text":"真夏の沖縄！水分補給をこまめに\n\n持ち物リスト\n- 水着\n- 日焼け止め\n- サングラス\n- 帽子"}', NULL, NULL, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public', '夏休みの沖縄旅行', 'standard-summer', 'ocean', 1, '["okinawa"]', '["那覇","恩納村","読谷村"]', '["絶景","グルメ"]', 1, '{"text":"真夏の沖縄！水分補給をこまめに\n\n持ち物リスト\n- 水着\n- 日焼け止め\n- サングラス\n- 帽子"}', NULL, 'official-summer-source', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
-
-INSERT INTO steps (
-  id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
-) VALUES
-  ('official-summer-source-allday', 'official-summer-source', 'エイサー祭り（終日）', '1788015600000', '1788101940000', '那覇市国際通り', '{"text":"一日中沖縄の伝統芸能エイサーを楽しめる"}', NULL, 'normal:general', '1', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-source-1', 'official-summer-source', '那覇空港到着', '1788051600000', '1788055200000', '那覇市', '{"text":"レンタカーを借りて出発！"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-source-1-transport', 'official-summer-source', '空港からビーチへ移動', '1788056100000', '1788061500000', '恩納村へ移動', '{"text":"レンタカーでの移動を想定"}', NULL, 'transport:car', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-source-2', 'official-summer-source', 'ビーチでシュノーケリング', '1788066000000', '1788076800000', '恩納村', '{"text":"青い海でカラフルな魚を見る"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-source-hotel', 'official-summer-source', '恩納村リゾートホテル宿泊', '1788084000000', '1788132600000', '恩納村', '{"text":"オーシャンビューのリゾートホテル。朝食とプール付き"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-source-3', 'official-summer-source', 'やちむん（陶芸）体験', '1788138000000', '1788145200000', '読谷村', '{"text":"沖縄の伝統陶器を作る"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-source-lunch', 'official-summer-source', 'タコライス＆ソーキそば', '1788147000000', '1788150600000', '北谷町', '{"text":"沖縄グルメを堪能"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-source-4', 'official-summer-source', 'グラスボート', '1788152400000', '1788157800000', '恩納村', '{"text":"海底のサンゴ礁を観察"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-source-transport2', 'official-summer-source', '恩納村から首里城へ移動', '1788220800000', '1788224400000', '那覇市へ移動', '{"text":"最終日の観光スポットへ"}', NULL, 'transport:car', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-source-5', 'official-summer-source', '首里城見学', '1788224400000', '1788233400000', '那覇市', '{"text":"琉球王国の歴史を学ぶ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-source-breakfast', 'official-summer-source', 'ホテルの朝食ビュッフェ', '1788132600000', '1788135300000', '恩納村', '{"text":"リゾートホテル宿泊時の朝食"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-source-concurrent1', 'official-summer-source', 'アクティビティ：バナナボート', '1788066000000', '1788071400000', '恩納村', '{"text":"スリル満点のマリンスポーツ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-source-concurrent2', 'official-summer-source', '別プラン：自由時間・荷物整理', '1788066000000', '1788073200000', '恩納村', '{"text":"ビーチでのんびり過ごす"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-source-exit', 'official-summer-source', '那覇空港から帰路', '1788246000000', '1788253200000', '那覇空港', '{"text":"帰宅便出発"}', NULL, 'transport:plane', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-allday', 'official-summer-public', 'エイサー祭り（終日）', '1788015600000', '1788101940000', '那覇市国際通り', '{"text":"一日中沖縄の伝統芸能エイサーを楽しめる"}', NULL, 'normal:general', '1', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-1', 'official-summer-public', '那覇空港到着', '1788051600000', '1788055200000', '那覇市', '{"text":"レンタカーを借りて出発！"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-1-transport', 'official-summer-public', '空港からビーチへ移動', '1788056100000', '1788061500000', '恩納村へ移動', '{"text":"レンタカーでの移動を想定"}', NULL, 'transport:car', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-2', 'official-summer-public', 'ビーチでシュノーケリング', '1788066000000', '1788076800000', '恩納村', '{"text":"青い海でカラフルな魚を見る"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-hotel', 'official-summer-public', '恩納村リゾートホテル宿泊', '1788084000000', '1788132600000', '恩納村', '{"text":"オーシャンビューのリゾートホテル。朝食とプール付き"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-3', 'official-summer-public', 'やちむん（陶芸）体験', '1788138000000', '1788145200000', '読谷村', '{"text":"沖縄の伝統陶器を作る"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-lunch', 'official-summer-public', 'タコライス＆ソーキそば', '1788147000000', '1788150600000', '北谷町', '{"text":"沖縄グルメを堪能"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-4', 'official-summer-public', 'グラスボート', '1788152400000', '1788157800000', '恩納村', '{"text":"海底のサンゴ礁を観察"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-transport2', 'official-summer-public', '恩納村から首里城へ移動', '1788220800000', '1788224400000', '那覇市へ移動', '{"text":"最終日の観光スポットへ"}', NULL, 'transport:car', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-5', 'official-summer-public', '首里城見学', '1788224400000', '1788233400000', '那覇市', '{"text":"琉球王国の歴史を学ぶ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-breakfast', 'official-summer-public', 'ホテルの朝食ビュッフェ', '1788132600000', '1788135300000', '恩納村', '{"text":"リゾートホテル宿泊時の朝食"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-concurrent1', 'official-summer-public', 'アクティビティ：バナナボート', '1788066000000', '1788071400000', '恩納村', '{"text":"スリル満点のマリンスポーツ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-concurrent2', 'official-summer-public', '別プラン：自由時間・荷物整理', '1788066000000', '1788073200000', '恩納村', '{"text":"ビーチでのんびり過ごす"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-summer-public-exit', 'official-summer-public', '那覇空港から帰路', '1788246000000', '1788253200000', '那覇空港', '{"text":"帰宅便出発"}', NULL, 'transport:plane', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
-
-INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at)
-VALUES ('official-user', 'official-summer-source', 1, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
-
-INSERT INTO itinerary_publications (
-  source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at
-) VALUES (
-  'official-summer-source', 'official-summer-public', 'official-user',
-  '["okinawa"]', '["那覇","恩納村","読谷村"]', '["絶景","グルメ"]',
-  '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'
-);
-
-INSERT INTO itinerary_fork_stats (itinerary_id, fork_count)
-VALUES ('official-summer-public', 34);
-
--- autumn: 日光・那須をめぐる秋の5日間
-INSERT INTO itineraries (
-  id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
-) VALUES
-  ('official-autumn-source', '日光・那須をめぐる秋の5日間', 'standard-autumn', 'autumn', 1, '["tochigi"]', '["日光","中禅寺湖","那須高原"]', '["絶景","温泉","寺社・歴史"]', 1, '{"text":"紅葉シーズンは混雑するので早めの行動を！\n\n持ち物リスト\n- カメラ\n- 防寒具"}', NULL, NULL, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public', '日光・那須をめぐる秋の5日間', 'standard-autumn', 'autumn', 1, '["tochigi"]', '["日光","中禅寺湖","那須高原"]', '["絶景","温泉","寺社・歴史"]', 1, '{"text":"紅葉シーズンは混雑するので早めの行動を！\n\n持ち物リスト\n- カメラ\n- 防寒具"}', NULL, 'official-autumn-source', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
-
-INSERT INTO steps (
-  id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
-) VALUES
-  ('official-autumn-source-allday', 'official-autumn-source', '紅葉祭り（終日）', '1788015600000', '1788101940000', '日光市内各所', '{"text":"終日イベント開催中"}', NULL, 'normal:general', '1', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-1', 'official-autumn-source', '日光東照宮参拝', '1788048000000', '1788057000000', '栃木県日光市', '{"text":"世界遺産。紅葉と歴史的建築の組み合わせが美しい。"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-2', 'official-autumn-source', '湯滝観瀑', '1788058800000', '1788064200000', '奥日光', '{"text":"紅葉に囲まれた滝の絶景"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-2-transport', 'official-autumn-source', '湯滝から華厳滝へ移動', '1788064200000', '1788067800000', '中禅寺湖周辺', '{"text":"バスでの移動を想定"}', NULL, 'transport:bus', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-3', 'official-autumn-source', '華厳滝', '1788069600000', '1788073200000', '中禅寺湖畔', '{"text":"日本三大名瀑のひとつ"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-multiday', 'official-autumn-source', '温泉旅館宿泊', '1788080400000', '1788138000000', '日光温泉郷', '{"text":"2日目の朝まで温泉宿でゆっくり"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-4', 'official-autumn-source', '中禅寺湖散策', '1788138000000', '1788145200000', '中禅寺湖', '{"text":"遊覧船で紅葉を楽しむ"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-5', 'official-autumn-source', '豆腐懐石料理', '1788148800000', '1788154200000', '日光市内', '{"text":"日光名物の湯波料理を堪能"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-breakfast', 'official-autumn-source', '旅館の朝食', '1788132600000', '1788135300000', '日光温泉郷', '{"text":"温泉宿泊時の朝食"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-concurrent1', 'official-autumn-source', '日光自然博物館', '1788048000000', '1788053400000', '奥日光', '{"text":"大人向けの自然史展示"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-concurrent2', 'official-autumn-source', 'ガイドツアー：東照宮', '1788048000000', '1788055200000', '栃木県日光市', '{"text":"別コースのガイド付きツアーオプション"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-ending', 'official-autumn-source', '帰路：日光から東京へ', '1788156000000', '1788163200000', '日光駅～東京駅', '{"text":"電車で帰宅"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-day3-checkout', 'official-autumn-source', '旅館をチェックアウト', '1788222600000', '1788224400000', '日光温泉郷', '{"text":"荷物を預けて奥日光へ"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-day3-transport', 'official-autumn-source', '那須高原へ移動', '1788226200000', '1788235200000', '日光駅〜那須塩原駅', '{"text":"電車とレンタカーで移動"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-day3-lunch', 'official-autumn-source', '高原レストランでランチ', '1788237000000', '1788241500000', '那須高原', '{"text":"地元野菜を使ったランチ"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-day3-ropeway', 'official-autumn-source', '那須ロープウェイと紅葉散策', '1788243300000', '1788251400000', '那須岳', '{"text":"山頂駅から姥ヶ平まで散策"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-day3-hotel', 'official-autumn-source', '高原ホテルにチェックイン', '1788255000000', '1788309000000', '那須湯本', '{"text":"露天風呂から星空を楽しむ"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-day4-morning', 'official-autumn-source', '朝の森を散歩', '1788301800000', '1788304500000', '那須平成の森', '{"text":"静かな森の朝を散歩"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-day4-art', 'official-autumn-source', '美術館めぐり', '1788312600000', '1788321600000', '那須高原', '{"text":"企画展と建築を楽しむ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-day4-cafe', 'official-autumn-source', 'カフェで休憩', '1788323400000', '1788327000000', '那須高原', '{"text":"焼き菓子とコーヒー"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-day4-dinner', 'official-autumn-source', '地元食材のコースディナー', '1788339600000', '1788346800000', '那須湯本', '{"text":"旅の終盤をゆっくり楽しむ夕食"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-day5-checkout', 'official-autumn-source', 'ホテルをチェックアウト', '1788395400000', '1788397200000', '那須湯本', '{"text":"お土産を確認して出発"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-day5-market', 'official-autumn-source', '道の駅でお土産選び', '1788399000000', '1788402600000', '那須高原', '{"text":"地元のジャムと焼き菓子を購入"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-source-day5-home', 'official-autumn-source', '東京へ帰宅', '1788408000000', '1788417000000', '那須塩原駅〜東京駅', '{"text":"新幹線で東京へ"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-allday', 'official-autumn-public', '紅葉祭り（終日）', '1788015600000', '1788101940000', '日光市内各所', '{"text":"終日イベント開催中"}', NULL, 'normal:general', '1', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-1', 'official-autumn-public', '日光東照宮参拝', '1788048000000', '1788057000000', '栃木県日光市', '{"text":"世界遺産。紅葉と歴史的建築の組み合わせが美しい。"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-2', 'official-autumn-public', '湯滝観瀑', '1788058800000', '1788064200000', '奥日光', '{"text":"紅葉に囲まれた滝の絶景"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-2-transport', 'official-autumn-public', '湯滝から華厳滝へ移動', '1788064200000', '1788067800000', '中禅寺湖周辺', '{"text":"バスでの移動を想定"}', NULL, 'transport:bus', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-3', 'official-autumn-public', '華厳滝', '1788069600000', '1788073200000', '中禅寺湖畔', '{"text":"日本三大名瀑のひとつ"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-multiday', 'official-autumn-public', '温泉旅館宿泊', '1788080400000', '1788138000000', '日光温泉郷', '{"text":"2日目の朝まで温泉宿でゆっくり"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-4', 'official-autumn-public', '中禅寺湖散策', '1788138000000', '1788145200000', '中禅寺湖', '{"text":"遊覧船で紅葉を楽しむ"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-5', 'official-autumn-public', '豆腐懐石料理', '1788148800000', '1788154200000', '日光市内', '{"text":"日光名物の湯波料理を堪能"}', NULL, 'normal:general', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-breakfast', 'official-autumn-public', '旅館の朝食', '1788132600000', '1788135300000', '日光温泉郷', '{"text":"温泉宿泊時の朝食"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-concurrent1', 'official-autumn-public', '日光自然博物館', '1788048000000', '1788053400000', '奥日光', '{"text":"大人向けの自然史展示"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-concurrent2', 'official-autumn-public', 'ガイドツアー：東照宮', '1788048000000', '1788055200000', '栃木県日光市', '{"text":"別コースのガイド付きツアーオプション"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-ending', 'official-autumn-public', '帰路：日光から東京へ', '1788156000000', '1788163200000', '日光駅～東京駅', '{"text":"電車で帰宅"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-day3-checkout', 'official-autumn-public', '旅館をチェックアウト', '1788222600000', '1788224400000', '日光温泉郷', '{"text":"荷物を預けて奥日光へ"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-day3-transport', 'official-autumn-public', '那須高原へ移動', '1788226200000', '1788235200000', '日光駅〜那須塩原駅', '{"text":"電車とレンタカーで移動"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-day3-lunch', 'official-autumn-public', '高原レストランでランチ', '1788237000000', '1788241500000', '那須高原', '{"text":"地元野菜を使ったランチ"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-day3-ropeway', 'official-autumn-public', '那須ロープウェイと紅葉散策', '1788243300000', '1788251400000', '那須岳', '{"text":"山頂駅から姥ヶ平まで散策"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-day3-hotel', 'official-autumn-public', '高原ホテルにチェックイン', '1788255000000', '1788309000000', '那須湯本', '{"text":"露天風呂から星空を楽しむ"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-day4-morning', 'official-autumn-public', '朝の森を散歩', '1788301800000', '1788304500000', '那須平成の森', '{"text":"静かな森の朝を散歩"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-day4-art', 'official-autumn-public', '美術館めぐり', '1788312600000', '1788321600000', '那須高原', '{"text":"企画展と建築を楽しむ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-day4-cafe', 'official-autumn-public', 'カフェで休憩', '1788323400000', '1788327000000', '那須高原', '{"text":"焼き菓子とコーヒー"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-day4-dinner', 'official-autumn-public', '地元食材のコースディナー', '1788339600000', '1788346800000', '那須湯本', '{"text":"旅の終盤をゆっくり楽しむ夕食"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-day5-checkout', 'official-autumn-public', 'ホテルをチェックアウト', '1788395400000', '1788397200000', '那須湯本', '{"text":"お土産を確認して出発"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-day5-market', 'official-autumn-public', '道の駅でお土産選び', '1788399000000', '1788402600000', '那須高原', '{"text":"地元のジャムと焼き菓子を購入"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-autumn-public-day5-home', 'official-autumn-public', '東京へ帰宅', '1788408000000', '1788417000000', '那須塩原駅〜東京駅', '{"text":"新幹線で東京へ"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
-
-INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at)
-VALUES ('official-user', 'official-autumn-source', 1, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
-
-INSERT INTO itinerary_publications (
-  source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at
-) VALUES (
-  'official-autumn-source', 'official-autumn-public', 'official-user',
-  '["tochigi"]', '["日光","中禅寺湖","那須高原"]', '["絶景","温泉","寺社・歴史"]',
-  '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'
-);
-
-INSERT INTO itinerary_fork_stats (itinerary_id, fork_count)
-VALUES ('official-autumn-public', 24);
-
--- winter: 冬休みのスキー旅行
-INSERT INTO itineraries (
-  id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
-) VALUES
-  ('official-winter-source', '冬休みのスキー旅行', 'standard-winter', 'snow', 1, '["nagano","tokyo"]', '["白馬","松本","東京"]', '["温泉","絶景","グルメ"]', 1, '{"text":"冬の8日間旅行プラン。雪山アクティビティと温泉、城下町観光、東京の街歩きを楽しむ。\n\n持ち物リスト\n- スキーウェア\n- 手袋\n- ゴーグル\n- カイロ"}', NULL, NULL, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public', '冬休みのスキー旅行', 'standard-winter', 'snow', 1, '["nagano","tokyo"]', '["白馬","松本","東京"]', '["温泉","絶景","グルメ"]', 1, '{"text":"冬の8日間旅行プラン。雪山アクティビティと温泉、城下町観光、東京の街歩きを楽しむ。\n\n持ち物リスト\n- スキーウェア\n- 手袋\n- ゴーグル\n- カイロ"}', NULL, 'official-winter-source', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
-
-INSERT INTO steps (
-  id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
-) VALUES
-  ('official-winter-source-train-outbound', 'official-winter-source', '東京駅から長野駅へ移動', '1788044400000', '1788053400000', '東京駅', '{"text":"北陸新幹線で冬景色を楽しみながら移動"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-bus-to-hakuba', 'official-winter-source', '長野駅から白馬へバス移動', '1788057000000', '1788062400000', '白馬村', '{"text":"バスで雪山の麓まで移動"}', NULL, 'transport:bus', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-ski-rental', 'official-winter-source', 'スキー用具レンタル', '1788064200000', '1788067800000', '白馬スキー場', '{"text":"ウェアと板を借りて準備完了"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-ski-lesson', 'official-winter-source', 'スキー初心者レッスン', '1788068700000', '1788079500000', '白馬スキー場', '{"text":"インストラクターと一緒に基礎を学ぶ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-dinner-izakaya', 'official-winter-source', '地元居酒屋で夕食', '1788085800000', '1788091200000', '白馬村', '{"text":"雪山のあとに温かい郷土料理を味わう"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-hotel-stay', 'official-winter-source', '温泉宿にチェックイン', '1788091200000', '1788224400000', '白馬温泉宿', '{"text":"雪見露天風呂つきの宿でゆっくり過ごす"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-snow-festival', 'official-winter-source', '雪まつり（終日）', '1788102000000', '1788188340000', '白馬村', '{"text":"雪像や花火が楽しめる冬のお祭り"}', NULL, 'normal:general', '1', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-snowshoe-hike', 'official-winter-source', 'スノーシューで雪原散策', '1788136200000', '1788145200000', '白馬高原', '{"text":"ふかふかの雪の上を歩く自然体験"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-lunch-soba', 'official-winter-source', '信州そばランチ', '1788147000000', '1788152400000', '白馬村', '{"text":"名物そばと温かい汁でほっと一息"}', NULL, 'normal:food', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-onsen-relax', 'official-winter-source', '雪見温泉', '1788156000000', '1788162000000', '白馬温泉宿', '{"text":"湯気と雪景色をながめながら休憩"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-illumination', 'official-winter-source', '冬のイルミネーション', '1788170400000', '1788177600000', '白馬村', '{"text":"光のトンネルを歩いて夜景を楽しむ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-breakfast-winter', 'official-winter-source', '温泉宿の朝食', '1788217200000', '1788219900000', '白馬温泉宿', '{"text":"和朝食で翌日のアクティビティに備える"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-snowboard', 'official-winter-source', 'スノーボードチャレンジ', '1788222600000', '1788233400000', '白馬スキー場', '{"text":"初心者から中級者まで楽しめるゲレンデ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-snack-cafe', 'official-winter-source', '雪見カフェで休憩', '1788236100000', '1788240600000', '白馬村', '{"text":"暖炉のそばでホットドリンクを味わう"}', NULL, 'normal:food', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-shopping-gear', 'official-winter-source', 'アウトドア用品ショッピング', '1788244200000', '1788249600000', '長野市', '{"text":"防寒小物やお土産を探す"}', NULL, 'normal:shopping', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-bus-matsumoto', 'official-winter-source', '松本へバス移動', '1788251400000', '1788258600000', '松本市', '{"text":"冬の山あいを眺めながら移動"}', NULL, 'transport:bus', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-hotel-matsumoto', 'official-winter-source', '松本の旅館に宿泊', '1788264000000', '1788397200000', '松本市', '{"text":"城下町の風情ある宿でのんびり"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-matsumoto-castle', 'official-winter-source', '松本城観光', '1788307200000', '1788314400000', '松本市', '{"text":"国宝の城を見学しながら歴史を感じる"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-soba-making', 'official-winter-source', 'そば打ち体験', '1788318000000', '1788325200000', '松本市', '{"text":"自分で打ったそばを味わう"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-sake-tour', 'official-winter-source', '地酒蔵見学', '1788328800000', '1788334200000', '松本市', '{"text":"酒蔵で冬限定の新酒を試飲"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-zenkoji-prayer', 'official-winter-source', '善光寺お参り', '1788339600000', '1788343200000', '松本市', '{"text":"静かな夜の境内で祈りを捧げる"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-train-to-tokyo', 'official-winter-source', '東京へ新幹線移動', '1788391800000', '1788400800000', '松本駅→東京駅', '{"text":"冬の田園風景を眺めながら帰路へ"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-ginza-shopping', 'official-winter-source', '銀座ショッピング', '1788404400000', '1788415200000', '銀座', '{"text":"冬のセールでお土産と防寒グッズを探す"}', NULL, 'normal:shopping', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-dinner-ginza', 'official-winter-source', '銀座の和食ディナー', '1788426000000', '1788431400000', '銀座', '{"text":"名店で締めの一皿を楽しむ"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-tokyo-hotel', 'official-winter-source', '東京のホテルに宿泊', '1788440400000', '1788656400000', '東京', '{"text":"旅の最終夜をゆっくり過ごす"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-urban-breakfast', 'official-winter-source', 'ホテル朝食', '1788478200000', '1788480900000', '東京', '{"text":"街の景色を見ながらゆったり朝食"}', NULL, 'normal:food', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-museum-visit', 'official-winter-source', '美術館で冬の展覧会', '1788487200000', '1788496200000', '東京', '{"text":"芸術作品をゆっくり鑑賞する"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-cooking-class', 'official-winter-source', '和菓子作り体験', '1788501600000', '1788508800000', '東京', '{"text":"季節の和菓子を手作りする"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-farewell-dinner', 'official-winter-source', '旅の締めくくりの夕食', '1788602400000', '1788607800000', '東京', '{"text":"最後のお土産話とともにディナー"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-airport-transfer', 'official-winter-source', '羽田空港へ移動', '1788649200000', '1788654600000', '東京→羽田空港', '{"text":"最終日はゆっくり空港へ向かう"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-source-flight-home', 'official-winter-source', '帰りのフライト', '1788661800000', '1788669000000', '羽田空港', '{"text":"あたたかい場所へ帰路につく"}', NULL, 'transport:plane', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-train-outbound', 'official-winter-public', '東京駅から長野駅へ移動', '1788044400000', '1788053400000', '東京駅', '{"text":"北陸新幹線で冬景色を楽しみながら移動"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-bus-to-hakuba', 'official-winter-public', '長野駅から白馬へバス移動', '1788057000000', '1788062400000', '白馬村', '{"text":"バスで雪山の麓まで移動"}', NULL, 'transport:bus', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-ski-rental', 'official-winter-public', 'スキー用具レンタル', '1788064200000', '1788067800000', '白馬スキー場', '{"text":"ウェアと板を借りて準備完了"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-ski-lesson', 'official-winter-public', 'スキー初心者レッスン', '1788068700000', '1788079500000', '白馬スキー場', '{"text":"インストラクターと一緒に基礎を学ぶ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-dinner-izakaya', 'official-winter-public', '地元居酒屋で夕食', '1788085800000', '1788091200000', '白馬村', '{"text":"雪山のあとに温かい郷土料理を味わう"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-hotel-stay', 'official-winter-public', '温泉宿にチェックイン', '1788091200000', '1788224400000', '白馬温泉宿', '{"text":"雪見露天風呂つきの宿でゆっくり過ごす"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-snow-festival', 'official-winter-public', '雪まつり（終日）', '1788102000000', '1788188340000', '白馬村', '{"text":"雪像や花火が楽しめる冬のお祭り"}', NULL, 'normal:general', '1', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-snowshoe-hike', 'official-winter-public', 'スノーシューで雪原散策', '1788136200000', '1788145200000', '白馬高原', '{"text":"ふかふかの雪の上を歩く自然体験"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-lunch-soba', 'official-winter-public', '信州そばランチ', '1788147000000', '1788152400000', '白馬村', '{"text":"名物そばと温かい汁でほっと一息"}', NULL, 'normal:food', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-onsen-relax', 'official-winter-public', '雪見温泉', '1788156000000', '1788162000000', '白馬温泉宿', '{"text":"湯気と雪景色をながめながら休憩"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-illumination', 'official-winter-public', '冬のイルミネーション', '1788170400000', '1788177600000', '白馬村', '{"text":"光のトンネルを歩いて夜景を楽しむ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-breakfast-winter', 'official-winter-public', '温泉宿の朝食', '1788217200000', '1788219900000', '白馬温泉宿', '{"text":"和朝食で翌日のアクティビティに備える"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-snowboard', 'official-winter-public', 'スノーボードチャレンジ', '1788222600000', '1788233400000', '白馬スキー場', '{"text":"初心者から中級者まで楽しめるゲレンデ"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-snack-cafe', 'official-winter-public', '雪見カフェで休憩', '1788236100000', '1788240600000', '白馬村', '{"text":"暖炉のそばでホットドリンクを味わう"}', NULL, 'normal:food', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-shopping-gear', 'official-winter-public', 'アウトドア用品ショッピング', '1788244200000', '1788249600000', '長野市', '{"text":"防寒小物やお土産を探す"}', NULL, 'normal:shopping', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-bus-matsumoto', 'official-winter-public', '松本へバス移動', '1788251400000', '1788258600000', '松本市', '{"text":"冬の山あいを眺めながら移動"}', NULL, 'transport:bus', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-hotel-matsumoto', 'official-winter-public', '松本の旅館に宿泊', '1788264000000', '1788397200000', '松本市', '{"text":"城下町の風情ある宿でのんびり"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-matsumoto-castle', 'official-winter-public', '松本城観光', '1788307200000', '1788314400000', '松本市', '{"text":"国宝の城を見学しながら歴史を感じる"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-soba-making', 'official-winter-public', 'そば打ち体験', '1788318000000', '1788325200000', '松本市', '{"text":"自分で打ったそばを味わう"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-sake-tour', 'official-winter-public', '地酒蔵見学', '1788328800000', '1788334200000', '松本市', '{"text":"酒蔵で冬限定の新酒を試飲"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-train-to-tokyo', 'official-winter-public', '東京へ新幹線移動', '1788391800000', '1788400800000', '松本駅→東京駅', '{"text":"冬の田園風景を眺めながら帰路へ"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-ginza-shopping', 'official-winter-public', '銀座ショッピング', '1788404400000', '1788415200000', '銀座', '{"text":"冬のセールでお土産と防寒グッズを探す"}', NULL, 'normal:shopping', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-dinner-ginza', 'official-winter-public', '銀座の和食ディナー', '1788426000000', '1788431400000', '銀座', '{"text":"名店で締めの一皿を楽しむ"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-tokyo-hotel', 'official-winter-public', '東京のホテルに宿泊', '1788440400000', '1788656400000', '東京', '{"text":"旅の最終夜をゆっくり過ごす"}', NULL, 'normal:hotel', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-urban-breakfast', 'official-winter-public', 'ホテル朝食', '1788478200000', '1788480900000', '東京', '{"text":"街の景色を見ながらゆったり朝食"}', NULL, 'normal:food', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-museum-visit', 'official-winter-public', '美術館で冬の展覧会', '1788487200000', '1788496200000', '東京', '{"text":"芸術作品をゆっくり鑑賞する"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-cooking-class', 'official-winter-public', '和菓子作り体験', '1788501600000', '1788508800000', '東京', '{"text":"季節の和菓子を手作りする"}', NULL, 'normal:sightseeing', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-farewell-dinner', 'official-winter-public', '旅の締めくくりの夕食', '1788602400000', '1788607800000', '東京', '{"text":"最後のお土産話とともにディナー"}', NULL, 'normal:meal', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-airport-transfer', 'official-winter-public', '羽田空港へ移動', '1788649200000', '1788654600000', '東京→羽田空港', '{"text":"最終日はゆっくり空港へ向かう"}', NULL, 'transport:train', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'),
-  ('official-winter-public-flight-home', 'official-winter-public', '帰りのフライト', '1788661800000', '1788669000000', '羽田空港', '{"text":"あたたかい場所へ帰路につく"}', NULL, 'transport:plane', '0', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
-
-INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at)
-VALUES ('official-user', 'official-winter-source', 1, '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z');
-
-INSERT INTO itinerary_publications (
-  source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at
-) VALUES (
-  'official-winter-source', 'official-winter-public', 'official-user',
-  '["nagano","tokyo"]', '["白馬","松本","東京"]', '["温泉","絶景","グルメ"]',
-  '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z'
-);
-
-INSERT INTO itinerary_fork_stats (itinerary_id, fork_count)
-VALUES ('official-winter-public', 19);
-
--- map planning: 地図で考える金沢の週末
-INSERT INTO itineraries (
-  id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
-) VALUES
-  ('official-map-source', '地図で考える、金沢1泊2日', 'planning-map', 'neutral', 1, '["ishikawa"]', '["金沢","ひがし茶屋街","兼六園"]', '["グルメ","街歩き","アート"]', 1, '{"text":"友人とめぐる金沢の週末。歩く距離を見ながら、茶屋街・市場・美術館を無理なく組み合わせたい。"}', NULL, NULL, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
-  ('official-map-public', '地図で考える、金沢1泊2日', 'planning-map', 'neutral', 1, '["ishikawa"]', '["金沢","ひがし茶屋街","兼六園"]', '["グルメ","街歩き","アート"]', 1, '{"text":"友人とめぐる金沢の週末。歩く距離を見ながら、茶屋街・市場・美術館を無理なく組み合わせたい。"}', NULL, 'official-map-source', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+  ('official-map-source', '秋の金沢 王道まち歩き1泊2日', 'planning-map', 'neutral', 1, '["ishikawa"]', '["金沢","近江町市場","兼六園","ひがし茶屋街"]', '["グルメ","街歩き","アート"]', 1, '{"text":"10月17日（土）から1泊2日。金沢駅からバスで近江町市場へ向かい、中心部は徒歩で回る。大きな荷物は駅前ホテルに預け、雨に備えて折りたたみ傘を持参。2日目は茶屋街から駅へ戻るバスが混むため、帰りの30分前には移動を始める。"}', NULL, NULL, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-public', '秋の金沢 王道まち歩き1泊2日', 'planning-map', 'neutral', 1, '["ishikawa"]', '["金沢","近江町市場","兼六園","ひがし茶屋街"]', '["グルメ","街歩き","アート"]', 1, '{"text":"10月17日（土）から1泊2日。金沢駅からバスで近江町市場へ向かい、中心部は徒歩で回る。大きな荷物は駅前ホテルに預け、雨に備えて折りたたみ傘を持参。2日目は茶屋街から駅へ戻るバスが混むため、帰りの30分前には移動を始める。"}', NULL, 'official-map-source', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
 
 INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES
-  ('official-map-source-market', 'official-map-source', '近江町市場', 1788051600000, 1788055200000, '石川県金沢市上近江町50', '{"text":"朝ごはんと食べ歩き。混む前に行きたい。","tabitabi_schedule":{"precision":"day","day":1,"order":1},"tabitabi_place":{"lat":36.5717,"lng":136.6561,"priority":true}}', NULL, 'normal:food', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
-  ('official-map-source-castle', 'official-map-source', '金沢城公園', 1788062400000, 1788066000000, '石川県金沢市丸の内1-1', '{"text":"市場から歩いて移動。石川門を見たい。","tabitabi_schedule":{"precision":"day","day":1,"order":2},"tabitabi_place":{"lat":36.564,"lng":136.6596}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
-  ('official-map-source-museum', 'official-map-source', '金沢21世紀美術館', 1788073200000, 1788078600000, '石川県金沢市広坂1-2-1', '{"text":"企画展を確認。予約が必要なら先に取る。","tabitabi_schedule":{"precision":"undecided","order":3},"tabitabi_place":{"lat":36.5609,"lng":136.6581,"priority":true}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
-  ('official-map-source-garden', 'official-map-source', '兼六園', 1788138000000, 1788143400000, '石川県金沢市兼六町1', '{"text":"朝の静かな時間に歩く候補。","tabitabi_schedule":{"precision":"day","day":2,"order":4},"tabitabi_place":{"lat":36.5621,"lng":136.6627}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
-  ('official-map-source-chaya', 'official-map-source', 'ひがし茶屋街', 1788150600000, 1788156000000, '石川県金沢市東山', '{"text":"町家カフェで休憩。お店は当日の混み具合で決める。","tabitabi_schedule":{"precision":"undecided","order":5},"tabitabi_place":{"lat":36.5726,"lng":136.666}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+  ('official-map-source-arrival', 'official-map-source', '東京から金沢へ', CAST(strftime('%s', '2026-10-17T07:20:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2026-10-17T09:50:00+09:00') AS INTEGER) * 1000, '東京駅→金沢駅', '{"text":"7時に東京駅の新幹線南のりかえ口へ集合。到着後、駅前ホテルに荷物を預ける。","tabitabi_schedule":{"precision":"time","day":1,"order":1},"tabitabi_place":{"lat":36.5781,"lng":136.6486}}', NULL, 'transport:train', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-market', 'official-map-source', '近江町市場で海鮮ランチ', CAST(strftime('%s', '2026-10-17T11:00:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2026-10-17T12:30:00+09:00') AS INTEGER) * 1000, '石川県金沢市上近江町50', '{"text":"市場を一周してから昼食。食後は徒歩で金沢城へ向かう。","tabitabi_schedule":{"precision":"time","day":1,"order":2},"tabitabi_place":{"lat":36.5717,"lng":136.6561,"priority":true}}', NULL, 'normal:food', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-castle', 'official-map-source', '金沢城公園', CAST(strftime('%s', '2026-10-17T13:00:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2026-10-17T14:30:00+09:00') AS INTEGER) * 1000, '石川県金沢市丸の内1-1', '{"text":"河北門、菱櫓、五十間長屋を回り、玉泉院丸庭園へ抜ける。","tabitabi_schedule":{"precision":"time","day":1,"order":3},"tabitabi_place":{"lat":36.564,"lng":136.6596}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-museum', 'official-map-source', '金沢21世紀美術館', CAST(strftime('%s', '2026-10-17T15:00:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2026-10-17T17:00:00+09:00') AS INTEGER) * 1000, '石川県金沢市広坂1-2-1', '{"text":"交流ゾーンと予約済みの展覧会を鑑賞。17時に正面入口へ集合する。","tabitabi_schedule":{"precision":"time","day":1,"order":4},"tabitabi_place":{"lat":36.5609,"lng":136.6581,"priority":true}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-hotel', 'official-map-source', '金沢駅前のホテルに宿泊', CAST(strftime('%s', '2026-10-17T18:30:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2026-10-18T08:00:00+09:00') AS INTEGER) * 1000, '金沢駅前', '{"text":"夕食は香林坊で取ってからチェックイン。朝食付き、8時15分にロビー集合。","tabitabi_schedule":{"precision":"time","day":1,"order":5},"tabitabi_place":{"lat":36.5775,"lng":136.648}}', NULL, 'normal:hotel', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-garden', 'official-map-source', '朝の兼六園', CAST(strftime('%s', '2026-10-18T09:00:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2026-10-18T10:30:00+09:00') AS INTEGER) * 1000, '石川県金沢市兼六町1', '{"text":"桂坂口から入り、徽軫灯籠、霞ヶ池、時雨亭の順に歩く。","tabitabi_schedule":{"precision":"time","day":2,"order":6},"tabitabi_place":{"lat":36.5621,"lng":136.6627,"priority":true}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-chaya', 'official-map-source', 'ひがし茶屋街と主計町', CAST(strftime('%s', '2026-10-18T11:00:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2026-10-18T14:00:00+09:00') AS INTEGER) * 1000, '石川県金沢市東山', '{"text":"茶屋街を散策し、町家で昼食。浅野川を渡って主計町まで歩く。","tabitabi_schedule":{"precision":"time","day":2,"order":7},"tabitabi_place":{"lat":36.5726,"lng":136.666,"priority":true}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-return', 'official-map-source', '金沢から東京へ', CAST(strftime('%s', '2026-10-18T15:30:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2026-10-18T18:00:00+09:00') AS INTEGER) * 1000, '金沢駅→東京駅', '{"text":"14時30分に茶屋街を出発。駅で荷物とお土産を受け取って乗車する。","tabitabi_schedule":{"precision":"time","day":2,"order":8},"tabitabi_place":{"lat":36.5781,"lng":136.6486}}', NULL, 'transport:train', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
 
 INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at)
 SELECT replace(id, 'official-map-source-', 'official-map-public-'), 'official-map-public', title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
@@ -303,22 +281,64 @@ FROM steps WHERE itinerary_id = 'official-map-source';
 INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at)
 VALUES ('official-user', 'official-map-source', 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
 INSERT INTO itinerary_publications (source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at)
-VALUES ('official-map-source', 'official-map-public', 'official-user', '["ishikawa"]', '["金沢","ひがし茶屋街","兼六園"]', '["グルメ","街歩き","アート"]', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+VALUES ('official-map-source', 'official-map-public', 'official-user', '["ishikawa"]', '["金沢","近江町市場","兼六園","ひがし茶屋街"]', '["グルメ","街歩き","アート"]', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
 INSERT INTO itinerary_fork_stats (itinerary_id, fork_count) VALUES ('official-map-public', 12);
 
--- simple planning: 候補から組み立てる鎌倉の週末
+-- simple planning: 紫陽花の鎌倉の週末
 INSERT INTO itineraries (
   id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
 ) VALUES
-  ('official-plan-source', '候補からつくる、鎌倉1泊2日', 'planning-draft', 'neutral', 1, '["kanagawa"]', '["鎌倉","長谷","北鎌倉"]', '["寺社・歴史","カフェ","街歩き"]', 1, '{"text":"紫陽花の季節に鎌倉へ。混雑を避けながら、寺院とカフェを1日3か所ほどめぐる。雨の日は予定を詰めすぎない。"}', NULL, NULL, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
-  ('official-plan-public', '候補からつくる、鎌倉1泊2日', 'planning-draft', 'neutral', 1, '["kanagawa"]', '["鎌倉","長谷","北鎌倉"]', '["寺社・歴史","カフェ","街歩き"]', 1, '{"text":"紫陽花の季節に鎌倉へ。混雑を避けながら、寺院とカフェを1日3か所ほどめぐる。雨の日は予定を詰めすぎない。"}', NULL, 'official-plan-source', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+  ('official-plan-source', '紫陽花の鎌倉・江の島', 'planning-draft', 'neutral', 1, '["kanagawa"]', '["北鎌倉","鎌倉","長谷","江の島"]', '["紫陽花","寺社・歴史","カフェ","街歩き"]', 1, '{"text":"6月12日（土）から1泊2日。北鎌倉駅に8時集合。寺院は朝から回り、午後は江ノ電で長谷へ移動する。雨天でも実施するので、歩きやすい防水靴と折りたたみ傘を持参。宿は鎌倉駅近く、朝食なし。"}', NULL, NULL, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-public', '紫陽花の鎌倉・江の島', 'planning-draft', 'neutral', 1, '["kanagawa"]', '["北鎌倉","鎌倉","長谷","江の島"]', '["紫陽花","寺社・歴史","カフェ","街歩き"]', 1, '{"text":"6月12日（土）から1泊2日。北鎌倉駅に8時集合。寺院は朝から回り、午後は江ノ電で長谷へ移動する。雨天でも実施するので、歩きやすい防水靴と折りたたみ傘を持参。宿は鎌倉駅近く、朝食なし。"}', NULL, 'official-plan-source', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+
+-- Covers are shared by the editable and public copies, and match each trip's character.
+UPDATE itineraries
+SET background_image = CASE
+  WHEN id GLOB 'official-plan-*' THEN '/itinerary-backgrounds/coastal-drive.avif'
+  WHEN id GLOB 'official-map-*' THEN '/itinerary-backgrounds/japanese.avif'
+END,
+background_display = 'cover'
+WHERE id GLOB 'official-plan-*' OR id GLOB 'official-map-*';
 
 INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES
-  ('official-plan-source-meigetsu', 'official-plan-source', '明月院', 1788048000000, 1788053400000, '鎌倉市山ノ内189', '{"text":"開門に合わせて紫陽花を見たい。","tabitabi_schedule":{"precision":"time","day":1,"order":1}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
-  ('official-plan-source-enkaku', 'official-plan-source', '円覚寺', 1788057000000, 1788062400000, '鎌倉市山ノ内409', '{"text":"北鎌倉駅の近く。境内をゆっくり歩く。","tabitabi_schedule":{"precision":"day","day":1,"order":2}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
-  ('official-plan-source-komachi', 'official-plan-source', '小町通りで夕食', 1788082200000, 1788087600000, '鎌倉市小町', '{"text":"予約できる店を探す。","tabitabi_schedule":{"precision":"day","day":1,"order":3}}', NULL, 'normal:food', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
-  ('official-plan-source-hase', 'official-plan-source', '長谷寺', 1788138000000, 1788143400000, '鎌倉市長谷3-11-2', '{"text":"雨でも楽しめそう。混雑状況を見て時間を決める。","tabitabi_schedule":{"precision":"day","day":2,"order":4}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
-  ('official-plan-source-cafe', 'official-plan-source', '海の見えるカフェ', 1788152400000, 1788157800000, '鎌倉・長谷周辺', '{"text":"長谷寺のあとに寄れる店を当日選ぶ。","tabitabi_schedule":{"precision":"undecided","order":5}}', NULL, 'normal:food', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+  ('official-plan-source-meigetsu', 'official-plan-source', '明月院の紫陽花', CAST(strftime('%s', '2027-06-12T08:30:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-12T10:00:00+09:00') AS INTEGER) * 1000, '鎌倉市山ノ内189', '{"text":"開門後の早い時間に入り、本堂後庭園までゆっくり見る。","tabitabi_schedule":{"precision":"time","day":1,"order":1}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-enkaku', 'official-plan-source', '円覚寺を拝観', CAST(strftime('%s', '2027-06-12T10:15:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-12T11:45:00+09:00') AS INTEGER) * 1000, '鎌倉市山ノ内409', '{"text":"明月院から徒歩で移動。山門、仏殿、舎利殿周辺を歩く。","tabitabi_schedule":{"precision":"time","day":1,"order":2}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-lunch', 'official-plan-source', '北鎌倉で昼食', CAST(strftime('%s', '2027-06-12T12:00:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-12T13:00:00+09:00') AS INTEGER) * 1000, '北鎌倉駅周辺', '{"text":"3名で予約済み。食後は横須賀線で鎌倉駅へ移動する。","tabitabi_schedule":{"precision":"time","day":1,"order":3}}', NULL, 'normal:meal', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-tsurugaoka', 'official-plan-source', '鶴岡八幡宮を参拝', CAST(strftime('%s', '2027-06-12T13:30:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-12T15:00:00+09:00') AS INTEGER) * 1000, '鎌倉市雪ノ下2-1-31', '{"text":"若宮大路から入り、本宮を参拝して源平池を回る。","tabitabi_schedule":{"precision":"time","day":1,"order":4}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-komachi', 'official-plan-source', '小町通りで買い物', CAST(strftime('%s', '2027-06-12T15:15:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-12T16:30:00+09:00') AS INTEGER) * 1000, '鎌倉市小町', '{"text":"夕食前にお土産を購入。食べ歩きは店の指定場所で。","tabitabi_schedule":{"precision":"time","day":1,"order":5}}', NULL, 'normal:shopping', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-hotel', 'official-plan-source', '鎌倉駅近くのホテルに宿泊', CAST(strftime('%s', '2027-06-12T18:30:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-13T07:30:00+09:00') AS INTEGER) * 1000, '鎌倉駅周辺', '{"text":"夕食後にチェックイン。朝食は長谷へ移動してから取る。","tabitabi_schedule":{"precision":"time","day":1,"order":6}}', NULL, 'normal:hotel', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-hase', 'official-plan-source', '長谷寺の紫陽花路', CAST(strftime('%s', '2027-06-13T08:00:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-13T10:00:00+09:00') AS INTEGER) * 1000, '鎌倉市長谷3-11-2', '{"text":"拝観受付後、紫陽花路の案内に従う。混雑時は先に本堂と海景色を見る。","tabitabi_schedule":{"precision":"time","day":2,"order":7}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-buddha', 'official-plan-source', '鎌倉大仏を拝観', CAST(strftime('%s', '2027-06-13T10:20:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-13T11:20:00+09:00') AS INTEGER) * 1000, '鎌倉市長谷4-2-28', '{"text":"長谷寺から徒歩で移動。雨が強ければ大仏拝観後すぐ江ノ電へ。","tabitabi_schedule":{"precision":"time","day":2,"order":8}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-lunch-hase', 'official-plan-source', '長谷でしらすランチ', CAST(strftime('%s', '2027-06-13T11:30:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-13T12:30:00+09:00') AS INTEGER) * 1000, '長谷駅周辺', '{"text":"禁漁や入荷状況により釜揚げしらすへ変更する。","tabitabi_schedule":{"precision":"time","day":2,"order":9}}', NULL, 'normal:meal', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-enoshima', 'official-plan-source', '江の島を散策', CAST(strftime('%s', '2027-06-13T13:30:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-13T16:00:00+09:00') AS INTEGER) * 1000, '藤沢市江の島', '{"text":"江島神社まで参拝し、天候が良ければシーキャンドルへ。16時に弁天橋へ集合。","tabitabi_schedule":{"precision":"time","day":2,"order":10}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-return', 'official-plan-source', '片瀬江ノ島から帰路へ', CAST(strftime('%s', '2027-06-13T16:30:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-13T17:45:00+09:00') AS INTEGER) * 1000, '片瀬江ノ島駅→新宿駅', '{"text":"小田急線で帰宅。乗車前に飲み物を購入する。","tabitabi_schedule":{"precision":"time","day":2,"order":11}}', NULL, 'transport:train', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+
+WITH plan_place_seed(slug, location, lat, lng) AS (VALUES
+  ('meigetsu', '明月院（神奈川県鎌倉市山ノ内189）', 35.334830, 139.551050),
+  ('enkaku', '円覚寺（神奈川県鎌倉市山ノ内409）', 35.337190, 139.547960),
+  ('lunch', '北鎌倉駅（神奈川県鎌倉市山ノ内501）', 35.337300, 139.545000),
+  ('tsurugaoka', '鶴岡八幡宮（神奈川県鎌倉市雪ノ下2丁目1-31）', 35.325800, 139.556400),
+  ('komachi', '小町通り（神奈川県鎌倉市小町）', 35.321100, 139.551500),
+  ('hotel', '鎌倉駅（神奈川県鎌倉市小町1丁目1）', 35.319000, 139.550300),
+  ('hase', '長谷寺（神奈川県鎌倉市長谷3丁目11-2）', 35.312550, 139.533050),
+  ('buddha', '高徳院 鎌倉大仏（神奈川県鎌倉市長谷4丁目2-28）', 35.316700, 139.535700),
+  ('lunch-hase', '長谷駅（神奈川県鎌倉市長谷2丁目14）', 35.311300, 139.536200),
+  ('enoshima', '江島神社 辺津宮（神奈川県藤沢市江の島2丁目3-8）', 35.300000, 139.480900),
+  ('return', '片瀬江ノ島駅（神奈川県藤沢市片瀬海岸2丁目15-3）', 35.308000, 139.482500)
+)
+UPDATE steps
+SET location = (
+      SELECT place.location FROM plan_place_seed place
+      WHERE steps.id = 'official-plan-source-' || place.slug
+    ),
+    notes = json_set(notes, '$.tabitabi_place', json_object(
+      'lat', (SELECT place.lat FROM plan_place_seed place WHERE steps.id = 'official-plan-source-' || place.slug),
+      'lng', (SELECT place.lng FROM plan_place_seed place WHERE steps.id = 'official-plan-source-' || place.slug)
+    ))
+WHERE EXISTS (
+  SELECT 1 FROM plan_place_seed place
+  WHERE steps.id = 'official-plan-source-' || place.slug
+);
 
 INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at)
 SELECT replace(id, 'official-plan-source-', 'official-plan-public-'), 'official-plan-public', title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
@@ -327,7 +347,7 @@ FROM steps WHERE itinerary_id = 'official-plan-source';
 INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at)
 VALUES ('official-user', 'official-plan-source', 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
 INSERT INTO itinerary_publications (source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at)
-VALUES ('official-plan-source', 'official-plan-public', 'official-user', '["kanagawa"]', '["鎌倉","長谷","北鎌倉"]', '["寺社・歴史","カフェ","街歩き"]', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+VALUES ('official-plan-source', 'official-plan-public', 'official-user', '["kanagawa"]', '["北鎌倉","鎌倉","長谷","江の島"]', '["紫陽花","寺社・歴史","カフェ","街歩き"]', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
 INSERT INTO itinerary_fork_stats (itinerary_id, fork_count) VALUES ('official-plan-public', 9);
 
 -- Keep each official seasonal bookmark aligned with its season.
@@ -337,79 +357,124 @@ SET palette_id = CASE
   WHEN id LIKE 'official-summer-%' THEN 'ocean'
   WHEN id LIKE 'official-autumn-%' THEN 'autumn'
   WHEN id LIKE 'official-winter-%' THEN 'snow'
+  ELSE palette_id
 END,
-    background_display = CASE
-      WHEN id LIKE 'official-spring-%' OR id LIKE 'official-summer-%' THEN 'page'
-      ELSE background_display
-    END
-WHERE id LIKE 'official-spring-%'
-   OR id LIKE 'official-summer-%'
-   OR id LIKE 'official-autumn-%'
-   OR id LIKE 'official-winter-%';
+background_display = CASE
+  WHEN id LIKE 'official-spring-%' OR id LIKE 'official-summer-%' THEN 'page'
+  ELSE background_display
+END
+WHERE id GLOB 'official-*-source' OR id GLOB 'official-*-public';
 
--- Include complete sample data in both the editable source and public itinerary.
+-- Include complete sample data in both editable and public itineraries.
 INSERT INTO itinerary_members (id, itinerary_id, name, created_at)
-SELECT i.id || '-member-' || member.key, i.id, member.name, '2026-09-08T00:00:00.000Z'
+SELECT i.id || '-member-' || m.key, i.id, m.name, '2026-09-08T00:00:00.000Z'
 FROM itineraries i
-CROSS JOIN (
-  SELECT 'a' AS key, 'あおい' AS name UNION ALL
-  SELECT 'b', 'はる' UNION ALL
-  SELECT 'c', 'みなと'
-) member
+CROSS JOIN (SELECT 'a' AS key, 'あおい' AS name UNION ALL SELECT 'b', 'はる' UNION ALL SELECT 'c', 'みなと') m
 WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
 
 INSERT INTO itinerary_money_settings (itinerary_id, budget_amount, created_at, updated_at)
-SELECT id, 150000, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+SELECT id, CASE
+  WHEN id LIKE 'official-spring-%' THEN 240000
+  WHEN id LIKE 'official-summer-%' THEN 450000
+  WHEN id LIKE 'official-autumn-%' THEN 450000
+  WHEN id LIKE 'official-winter-%' THEN 1400000
+  WHEN id LIKE 'official-map-%' THEN 150000
+  WHEN id LIKE 'official-plan-%' THEN 80000
+END, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
 FROM itineraries WHERE id GLOB 'official-*-source' OR id GLOB 'official-*-public';
 
-INSERT INTO itinerary_money_items (
-  id, itinerary_id, title, amount, paid_by_member_id, paid_from_fund,
-  status, occurred_on, step_id, is_settled, created_at, updated_at
+WITH expense_seed(kind, title, payer, paid_from_fund, status) AS (VALUES
+  ('hotel', '宿泊費', 'a', 0, 'paid'),
+  ('transport', '交通費', 'b', 0, 'paid'),
+  ('food', '食事とカフェ', NULL, 1, 'planned')
 )
-SELECT i.id || '-money-hotel', i.id, '宿泊費', 54000, i.id || '-member-a', 0,
-  'paid', '2026-09-01', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
-UNION ALL
-SELECT i.id || '-money-transport', i.id, '交通費', 27000, i.id || '-member-b', 0,
-  'paid', '2026-09-02', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
-UNION ALL
-SELECT i.id || '-money-food', i.id, '食事とカフェ', 18000, NULL, 1,
-  'planned', '2026-09-03', NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
+INSERT INTO itinerary_money_items (
+  id, itinerary_id, title, amount, paid_by_member_id, paid_from_fund, status, occurred_on, step_id, is_settled, created_at, updated_at
+)
+SELECT i.id || '-money-' || e.kind, i.id, e.title,
+  CASE
+    WHEN i.id LIKE 'official-spring-%' AND e.kind='hotel' THEN 72000
+    WHEN i.id LIKE 'official-spring-%' AND e.kind='transport' THEN 84000
+    WHEN i.id LIKE 'official-spring-%' THEN 60000
+    WHEN i.id LIKE 'official-summer-%' AND e.kind='hotel' THEN 150000
+    WHEN i.id LIKE 'official-summer-%' AND e.kind='transport' THEN 175000
+    WHEN i.id LIKE 'official-summer-%' THEN 90000
+    WHEN i.id LIKE 'official-autumn-%' AND e.kind='hotel' THEN 210000
+    WHEN i.id LIKE 'official-autumn-%' AND e.kind='transport' THEN 105000
+    WHEN i.id LIKE 'official-autumn-%' THEN 105000
+    WHEN i.id LIKE 'official-winter-%' AND e.kind='hotel' THEN 650000
+    WHEN i.id LIKE 'official-winter-%' AND e.kind='transport' THEN 300000
+    WHEN i.id LIKE 'official-winter-%' THEN 360000
+    WHEN i.id LIKE 'official-map-%' AND e.kind='hotel' THEN 30000
+    WHEN i.id LIKE 'official-map-%' AND e.kind='transport' THEN 75000
+    WHEN i.id LIKE 'official-map-%' THEN 30000
+    WHEN i.id LIKE 'official-plan-%' AND e.kind='hotel' THEN 27000
+    WHEN i.id LIKE 'official-plan-%' AND e.kind='transport' THEN 9000
+    ELSE 30000
+  END,
+  CASE WHEN e.payer IS NULL THEN NULL ELSE i.id || '-member-' || e.payer END,
+  e.paid_from_fund, e.status,
+  CASE
+    WHEN i.id LIKE 'official-spring-%' AND e.kind='food' THEN '2027-04-03'
+    WHEN i.id LIKE 'official-spring-%' THEN '2027-04-02'
+    WHEN i.id LIKE 'official-summer-%' AND e.kind='food' THEN '2027-07-18'
+    WHEN i.id LIKE 'official-summer-%' THEN '2027-07-16'
+    WHEN i.id LIKE 'official-autumn-%' AND e.kind='transport' THEN '2026-10-22'
+    WHEN i.id LIKE 'official-autumn-%' AND e.kind='food' THEN '2026-10-23'
+    WHEN i.id LIKE 'official-autumn-%' THEN '2026-10-19'
+    WHEN i.id LIKE 'official-winter-%' AND e.kind='transport' THEN '2027-02-07'
+    WHEN i.id LIKE 'official-winter-%' AND e.kind='food' THEN '2027-02-14'
+    WHEN i.id LIKE 'official-winter-%' THEN '2027-02-01'
+    WHEN i.id LIKE 'official-map-%' AND e.kind='food' THEN '2026-10-18'
+    WHEN i.id LIKE 'official-map-%' THEN '2026-10-17'
+    WHEN i.id LIKE 'official-plan-%' AND e.kind='food' THEN '2027-06-13'
+    ELSE '2027-06-12'
+  END,
+  NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i CROSS JOIN expense_seed e
+WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
 
 INSERT INTO itinerary_money_item_splits (item_id, member_id, itinerary_id, amount)
 SELECT expense.id, member.id, expense.itinerary_id, expense.amount / 3
-FROM itinerary_money_items expense
-JOIN itinerary_members member ON member.itinerary_id = expense.itinerary_id
+FROM itinerary_money_items expense JOIN itinerary_members member ON member.itinerary_id = expense.itinerary_id
 WHERE expense.itinerary_id GLOB 'official-*-source' OR expense.itinerary_id GLOB 'official-*-public';
 
-INSERT INTO itinerary_money_fund_transactions (
-  id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at
-)
-SELECT member.itinerary_id || '-fund-' || member.id, member.itinerary_id, member.id,
-  'contribution', 10000, '旅行前の共同費', '2026-08-28', '2026-09-08T00:00:00.000Z'
-FROM itinerary_members member
-WHERE member.itinerary_id GLOB 'official-*-source' OR member.itinerary_id GLOB 'official-*-public';
+INSERT INTO itinerary_money_fund_transactions (id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at)
+SELECT m.itinerary_id || '-fund-' || m.id, m.itinerary_id, m.id, 'contribution', CASE
+    WHEN m.itinerary_id LIKE 'official-spring-%' THEN 20000
+    WHEN m.itinerary_id LIKE 'official-summer-%' THEN 30000
+    WHEN m.itinerary_id LIKE 'official-autumn-%' THEN 35000
+    WHEN m.itinerary_id LIKE 'official-winter-%' THEN 80000
+    ELSE 10000
+  END, '旅行前の共同費',
+  CASE
+    WHEN m.itinerary_id LIKE 'official-spring-%' THEN '2027-03-28'
+    WHEN m.itinerary_id LIKE 'official-summer-%' THEN '2027-07-10'
+    WHEN m.itinerary_id LIKE 'official-autumn-%' THEN '2026-10-12'
+    WHEN m.itinerary_id LIKE 'official-winter-%' THEN '2027-01-25'
+    WHEN m.itinerary_id LIKE 'official-map-%' THEN '2026-10-10'
+    ELSE '2027-06-05'
+  END,
+  '2026-09-08T00:00:00.000Z'
+FROM itinerary_members m WHERE m.itinerary_id GLOB 'official-*-source' OR m.itinerary_id GLOB 'official-*-public';
 
 INSERT INTO itinerary_packing_groups (id, itinerary_id, name, sort_order, created_at, updated_at)
-SELECT i.id || '-pack-valuables', i.id, '貴重品', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
-UNION ALL
-SELECT i.id || '-pack-clothes', i.id, '衣類', 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
-UNION ALL
-SELECT i.id || '-pack-tools', i.id, '旅の道具', 2, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
-FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
+SELECT i.id || '-pack-' || g.key, i.id, g.name, g.sort_order, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i
+CROSS JOIN (SELECT 'valuables' AS key, '貴重品' AS name, 0 AS sort_order UNION ALL SELECT 'clothes','衣類',1 UNION ALL SELECT 'tools','旅の道具',2) g
+WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
 
 INSERT INTO itinerary_packing_items (
-  id, itinerary_id, name, quantity, kind, group_id, assignee_member_id,
-  owner_member_id, is_packed, created_at, updated_at
+  id, itinerary_id, name, quantity, kind, group_id, assignee_member_id, owner_member_id, is_packed, created_at, updated_at
 )
 SELECT i.id || '-item-wallet', i.id, '財布・身分証', 1, 'personal', i.id || '-pack-valuables', NULL, NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
 FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
 UNION ALL
-SELECT i.id || '-item-clothes', i.id, '着替え', 3, 'personal', i.id || '-pack-clothes', NULL, NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+SELECT i.id || '-item-clothes', i.id, '着替え', CASE
+  WHEN i.id LIKE 'official-spring-%' THEN 3 WHEN i.id LIKE 'official-summer-%' THEN 4
+  WHEN i.id LIKE 'official-autumn-%' THEN 7 WHEN i.id LIKE 'official-winter-%' THEN 8
+  ELSE 2 END,
+  'personal', i.id || '-pack-clothes', NULL, NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
 FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public'
 UNION ALL
 SELECT i.id || '-item-camera', i.id, 'カメラ', 1, 'shared', i.id || '-pack-tools', i.id || '-member-a', NULL, 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
@@ -420,6 +485,32 @@ FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-
 UNION ALL
 SELECT i.id || '-item-medicine', i.id, '常備薬', 1, 'private', i.id || '-pack-valuables', NULL, i.id || '-member-c', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
 FROM itineraries i WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
+
+WITH seasonal_item(kind, name, quantity, assignee) AS (VALUES
+  ('spring', '薄手の上着', 1, NULL),
+  ('spring', '御朱印帳', 1, 'c'),
+  ('summer', '水着とラッシュガード', 1, NULL),
+  ('summer', '日焼け止め', 2, 'a'),
+  ('autumn', '薄手のダウン', 1, NULL),
+  ('autumn', 'ハイキング用レインウェア', 1, NULL),
+  ('winter', '防水防寒ブーツ', 1, NULL),
+  ('winter', '携帯用滑り止め', 3, 'b'),
+  ('map', '折りたたみ傘', 3, 'a'),
+  ('map', '美術館の予約画面', 1, 'c'),
+  ('plan', '防水の歩きやすい靴', 1, NULL),
+  ('plan', '折りたたみ傘', 3, 'b')
+)
+INSERT INTO itinerary_packing_items (
+  id, itinerary_id, name, quantity, kind, group_id, assignee_member_id, owner_member_id, is_packed, created_at, updated_at
+)
+SELECT i.id || '-item-trip-' || row_number() OVER (PARTITION BY i.id ORDER BY s.name),
+  i.id, s.name, s.quantity, CASE WHEN s.assignee IS NULL THEN 'personal' ELSE 'shared' END,
+  i.id || CASE WHEN s.name LIKE '%上着%' OR s.name LIKE '%靴%' OR s.name LIKE '%ブーツ%' THEN '-pack-clothes' ELSE '-pack-tools' END,
+  CASE WHEN s.assignee IS NULL THEN NULL ELSE i.id || '-member-' || s.assignee END,
+  NULL, 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
+FROM itineraries i
+JOIN seasonal_item s ON i.id LIKE 'official-' || s.kind || '-%'
+WHERE i.id GLOB 'official-*-source' OR i.id GLOB 'official-*-public';
 
 INSERT INTO itinerary_packing_checks (item_id, member_id, itinerary_id, checked_at)
 SELECT i.id || '-item-wallet', i.id || '-member-a', i.id, '2026-09-08T00:00:00.000Z'

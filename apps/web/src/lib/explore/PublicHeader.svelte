@@ -5,11 +5,11 @@
 <header class="site-header">
   <div class="inner">
     <a class="brand" href="/" aria-label="たびたび ホーム">
-      <span class="plane" aria-hidden="true">✈</span>
-      <strong>たびたび</strong>
+      <strong>tabitabi</strong>
     </a>
 
     <nav aria-label="メインナビゲーション">
+      <a href="/">ホーム</a>
       <a class:active={active === "explore"} href="/explore">みんなのしおり</a>
       <a class="profile" href="/profile">マイページ</a>
       <a class="create" class:active={active === "create"} href="/#create">しおりを作る</a>
@@ -97,9 +97,8 @@
       height: 60px;
     }
 
-    .profile {
-      display: none;
-    }
+    nav a:not(.active) { display: none; }
+    nav::after { content: '⌕　☰'; color: #18333a; font-size: 18px; letter-spacing: .5rem; }
 
     nav a {
       padding: 8px;

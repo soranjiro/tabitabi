@@ -131,6 +131,111 @@ SELECT 'official-' || season || '-source-' || slug, 'official-' || season || '-s
   location, notes, NULL, type, is_all_day, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'
 FROM step_seed;
 
+-- Pin almost every scheduled stop to a concrete OpenStreetMap location.
+WITH seasonal_place_seed(season, slug, location, lat, lng) AS (VALUES
+  ('spring', 'train-kyoto', '京都駅（京都府京都市下京区東塩小路釜殿町）', 34.985849, 135.758767),
+  ('spring', 'hotel-bag', '京都駅（京都府京都市下京区東塩小路釜殿町）', 34.985849, 135.758767),
+  ('spring', 'kiyomizu', '清水寺（京都府京都市東山区清水1丁目294）', 34.994303, 135.784439),
+  ('spring', 'lunch', '二寧坂（京都府京都市東山区桝屋町）', 34.998190, 135.780730),
+  ('spring', 'gion', '祇園白川（京都府京都市東山区元吉町）', 35.005120, 135.775090),
+  ('spring', 'dinner', '祇園四条駅（京都府京都市東山区四条大橋東詰）', 35.003770, 135.772250),
+  ('spring', 'hotel-1', '京都駅（京都府京都市下京区東塩小路釜殿町）', 34.985849, 135.758767),
+  ('spring', 'arashiyama', '竹林の小径（京都府京都市右京区嵯峨小倉山田淵山町）', 35.017040, 135.671300),
+  ('spring', 'tenryuji', '天龍寺（京都府京都市右京区嵯峨天龍寺芒ノ馬場町68）', 35.015780, 135.674120),
+  ('spring', 'uji-train', '宇治駅（京都府宇治市宇治宇文字）', 34.890330, 135.800740),
+  ('spring', 'uji', '平等院（京都府宇治市宇治蓮華116）', 34.889300, 135.807680),
+  ('spring', 'hotel-2', '京都駅（京都府京都市下京区東塩小路釜殿町）', 34.985849, 135.758767),
+  ('spring', 'fushimi', '伏見稲荷大社（京都府京都市伏見区深草薮之内町68）', 34.967140, 135.772670),
+  ('spring', 'nishiki', '錦市場（京都府京都市中京区西大文字町609）', 35.005010, 135.764810),
+  ('spring', 'return', '京都駅（京都府京都市下京区東塩小路釜殿町）', 34.985849, 135.758767),
+  ('summer', 'flight-out', '那覇空港（沖縄県那覇市鏡水150）', 26.206520, 127.646100),
+  ('summer', 'rental-car', '那覇空港（沖縄県那覇市鏡水150）', 26.206520, 127.646100),
+  ('summer', 'drive-onna', '恩納村役場（沖縄県国頭郡恩納村恩納2451）', 26.497400, 127.853500),
+  ('summer', 'snorkel', '真栄田岬（沖縄県国頭郡恩納村真栄田469-1）', 26.443890, 127.771470),
+  ('summer', 'hotel-1', '恩納村海浜公園ナビービーチ（沖縄県国頭郡恩納村恩納419-4）', 26.497600, 127.850800),
+  ('summer', 'aquarium', '沖縄美ら海水族館（沖縄県国頭郡本部町石川424）', 26.694370, 127.877920),
+  ('summer', 'bise', '備瀬のフクギ並木（沖縄県国頭郡本部町備瀬）', 26.703660, 127.880170),
+  ('summer', 'kouri', '古宇利ビーチ（沖縄県国頭郡今帰仁村古宇利）', 26.696870, 128.018650),
+  ('summer', 'hotel-2', '恩納村海浜公園ナビービーチ（沖縄県国頭郡恩納村恩納419-4）', 26.497600, 127.850800),
+  ('summer', 'yanbaru', '東村ふれあいヒルギ公園（沖縄県国頭郡東村慶佐次54-1）', 26.653680, 128.076420),
+  ('summer', 'ogimi', '道の駅おおぎみ やんばるの森ビジターセンター（沖縄県国頭郡大宜味村津波95）', 26.691020, 128.117330),
+  ('summer', 'sunset', '万座毛（沖縄県国頭郡恩納村恩納）', 26.505080, 127.850350),
+  ('summer', 'hotel-3', '恩納村海浜公園ナビービーチ（沖縄県国頭郡恩納村恩納419-4）', 26.497600, 127.850800),
+  ('summer', 'shuri', '首里城公園（沖縄県那覇市首里金城町1丁目2）', 26.217040, 127.719430),
+  ('summer', 'market', '第一牧志公設市場（沖縄県那覇市松尾2丁目10-1）', 26.214650, 127.688710),
+  ('summer', 'flight-home', '那覇空港（沖縄県那覇市鏡水150）', 26.206520, 127.646100),
+  ('autumn', 'train-nikko', '東武日光駅（栃木県日光市松原町4-3）', 36.748200, 139.619430),
+  ('autumn', 'tosho', '日光東照宮（栃木県日光市山内2301）', 36.758060, 139.598850),
+  ('autumn', 'lunch-nikko', '西参道茶屋（栃木県日光市安川町10-20）', 36.754640, 139.595030),
+  ('autumn', 'shinkyo', '神橋（栃木県日光市上鉢石町）', 36.753590, 139.604300),
+  ('autumn', 'hotel-nikko', '東武日光駅（栃木県日光市松原町4-3）', 36.748200, 139.619430),
+  ('autumn', 'bus-chuzenji', '中禅寺温泉バスターミナル（栃木県日光市中宮祠）', 36.738000, 139.495500),
+  ('autumn', 'kegon', '華厳滝（栃木県日光市中宮祠2479-2）', 36.738080, 139.503180),
+  ('autumn', 'chuzenji', '中禅寺湖遊覧船 船の駅中禅寺（栃木県日光市中宮祠2478）', 36.737800, 139.493800),
+  ('autumn', 'embassy', '英国大使館別荘記念公園（栃木県日光市中宮祠2482）', 36.724900, 139.483700),
+  ('autumn', 'hotel-chuzenji-1', '中禅寺温泉バスターミナル（栃木県日光市中宮祠）', 36.738000, 139.495500),
+  ('autumn', 'senjogahara', '赤沼自然情報センター（栃木県日光市中宮祠2494）', 36.777000, 139.446000),
+  ('autumn', 'yudaki', '湯滝（栃木県日光市湯元）', 36.807300, 139.430400),
+  ('autumn', 'hotel-chuzenji-2', '中禅寺温泉バスターミナル（栃木県日光市中宮祠）', 36.738000, 139.495500),
+  ('autumn', 'akechidaira', '明智平ロープウェイ（栃木県日光市細尾町）', 36.737500, 139.532500),
+  ('autumn', 'to-kinugawa', '鬼怒川温泉駅（栃木県日光市鬼怒川温泉大原1390）', 36.822400, 139.716800),
+  ('autumn', 'onsen-town', '鬼怒楯岩大吊橋（栃木県日光市鬼怒川温泉大原）', 36.819200, 139.713600),
+  ('autumn', 'hotel-kinugawa', '鬼怒川温泉駅（栃木県日光市鬼怒川温泉大原1390）', 36.822400, 139.716800),
+  ('autumn', 'ryuokyo', '龍王峡駅（栃木県日光市藤原）', 36.852000, 139.771000),
+  ('autumn', 'aizu-train', '会津若松駅（福島県会津若松市駅前町1-1）', 37.508900, 139.930200),
+  ('autumn', 'nanukamachi', '七日町駅（福島県会津若松市七日町）', 37.500800, 139.920600),
+  ('autumn', 'hotel-aizu-1', '会津若松駅（福島県会津若松市駅前町1-1）', 37.508900, 139.930200),
+  ('autumn', 'tsurugajo', '鶴ヶ城（福島県会津若松市追手町1-1）', 37.487700, 139.929800),
+  ('autumn', 'sazaedo', '会津さざえ堂（福島県会津若松市一箕町八幡滝沢155）', 37.504800, 139.948000),
+  ('autumn', 'higashiyama', '会津東山温泉観光協会（福島県会津若松市東山町湯本滝ノ湯110）', 37.480400, 139.962500),
+  ('autumn', 'hotel-aizu-2', '会津若松駅（福島県会津若松市駅前町1-1）', 37.508900, 139.930200),
+  ('autumn', 'market-aizu', '野口英世青春館（福島県会津若松市中町4-18）', 37.495600, 139.926700),
+  ('autumn', 'return', '会津若松駅（福島県会津若松市駅前町1-1）', 37.508900, 139.930200),
+  ('winter', 'flight-sapporo', '新千歳空港（北海道千歳市美々）', 42.775200, 141.692300),
+  ('winter', 'odori', '大通公園（北海道札幌市中央区大通西1丁目）', 43.060500, 141.354400),
+  ('winter', 'sapporo-stay', '札幌駅（北海道札幌市北区北6条西4丁目）', 43.068700, 141.350800),
+  ('winter', 'market', '二条市場（北海道札幌市中央区南3条東1丁目）', 43.059000, 141.358600),
+  ('winter', 'maruyama', '北海道神宮（北海道札幌市中央区宮ケ丘474）', 43.054300, 141.307400),
+  ('winter', 'museum', '北海道博物館（北海道札幌市厚別区厚別町小野幌53-2）', 43.053000, 141.497400),
+  ('winter', 'sapporo-free', '札幌駅（北海道札幌市北区北6条西4丁目）', 43.068700, 141.350800),
+  ('winter', 'to-otaru', '小樽駅（北海道小樽市稲穂2丁目22-15）', 43.197300, 140.993700),
+  ('winter', 'otaru-walk', '小樽運河（北海道小樽市港町5）', 43.198500, 141.003100),
+  ('winter', 'otaru-stay', '小樽駅（北海道小樽市稲穂2丁目22-15）', 43.197300, 140.993700),
+  ('winter', 'yoichi', 'ニッカウヰスキー余市蒸溜所（北海道余市郡余市町黒川町7丁目6）', 43.000300, 140.788400),
+  ('winter', 'to-niseko', '倶知安駅（北海道虻田郡倶知安町南3条西4丁目）', 42.901700, 140.745500),
+  ('winter', 'niseko-stay', 'ひらふウェルカムセンター（北海道虻田郡倶知安町ニセコひらふ1条3丁目）', 42.862200, 140.704300),
+  ('winter', 'ski-1', 'ニセコ東急 グラン・ヒラフ（北海道虻田郡倶知安町ニセコひらふ1条2丁目）', 42.864800, 140.704200),
+  ('winter', 'snowshoe', 'ひらふウェルカムセンター（北海道虻田郡倶知安町ニセコひらふ1条3丁目）', 42.862200, 140.704300),
+  ('winter', 'niseko-free', 'ひらふウェルカムセンター（北海道虻田郡倶知安町ニセコひらふ1条3丁目）', 42.862200, 140.704300),
+  ('winter', 'to-toya', '洞爺湖温泉バスターミナル（北海道虻田郡洞爺湖町洞爺湖温泉）', 42.566600, 140.822500),
+  ('winter', 'toya-stay', '洞爺湖温泉バスターミナル（北海道虻田郡洞爺湖町洞爺湖温泉）', 42.566600, 140.822500),
+  ('winter', 'toya-walk', '洞爺湖ビジターセンター（北海道虻田郡洞爺湖町洞爺湖温泉142-5）', 42.564900, 140.820600),
+  ('winter', 'to-noboribetsu', '登別温泉バスターミナル（北海道登別市登別温泉町）', 42.493200, 141.144200),
+  ('winter', 'noboribetsu-stay', '登別温泉バスターミナル（北海道登別市登別温泉町）', 42.493200, 141.144200),
+  ('winter', 'jigokudani', '登別地獄谷（北海道登別市登別温泉町）', 42.497000, 141.145000),
+  ('winter', 'upopoy', 'ウポポイ（北海道白老郡白老町若草町2丁目3）', 42.553500, 141.362800),
+  ('winter', 'to-hakodate', '函館駅（北海道函館市若松町12）', 41.773700, 140.726500),
+  ('winter', 'motomachi', '函館山ロープウェイ山麓駅（北海道函館市元町19-7）', 41.759800, 140.711800),
+  ('winter', 'hakodate-stay', '函館駅（北海道函館市若松町12）', 41.773700, 140.726500),
+  ('winter', 'morning-market', '函館朝市（北海道函館市若松町9-19）', 41.772700, 140.726300),
+  ('winter', 'goryokaku', '五稜郭タワー（北海道函館市五稜郭町43-9）', 41.796900, 140.756800),
+  ('winter', 'bay', '金森赤レンガ倉庫（北海道函館市末広町14-12）', 41.766900, 140.718600),
+  ('winter', 'flight-home', '函館空港（北海道函館市高松町511）', 41.770000, 140.822400)
+)
+UPDATE steps
+SET location = (
+      SELECT place.location FROM seasonal_place_seed place
+      WHERE steps.id = 'official-' || place.season || '-source-' || place.slug
+    ),
+    notes = json_set(notes, '$.tabitabi_place', json_object(
+      'lat', (SELECT place.lat FROM seasonal_place_seed place WHERE steps.id = 'official-' || place.season || '-source-' || place.slug),
+      'lng', (SELECT place.lng FROM seasonal_place_seed place WHERE steps.id = 'official-' || place.season || '-source-' || place.slug)
+    ))
+WHERE EXISTS (
+  SELECT 1 FROM seasonal_place_seed place
+  WHERE steps.id = 'official-' || place.season || '-source-' || place.slug
+);
+
 INSERT INTO steps (
   id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
 )
@@ -198,6 +303,33 @@ INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, l
   ('official-plan-source-lunch-hase', 'official-plan-source', '長谷でしらすランチ', CAST(strftime('%s', '2027-06-13T11:30:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-13T12:30:00+09:00') AS INTEGER) * 1000, '長谷駅周辺', '{"text":"禁漁や入荷状況により釜揚げしらすへ変更する。","tabitabi_schedule":{"precision":"time","day":2,"order":9}}', NULL, 'normal:meal', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
   ('official-plan-source-enoshima', 'official-plan-source', '江の島を散策', CAST(strftime('%s', '2027-06-13T13:30:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-13T16:00:00+09:00') AS INTEGER) * 1000, '藤沢市江の島', '{"text":"江島神社まで参拝し、天候が良ければシーキャンドルへ。16時に弁天橋へ集合。","tabitabi_schedule":{"precision":"time","day":2,"order":10}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
   ('official-plan-source-return', 'official-plan-source', '片瀬江ノ島から帰路へ', CAST(strftime('%s', '2027-06-13T16:30:00+09:00') AS INTEGER) * 1000, CAST(strftime('%s', '2027-06-13T17:45:00+09:00') AS INTEGER) * 1000, '片瀬江ノ島駅→新宿駅', '{"text":"小田急線で帰宅。乗車前に飲み物を購入する。","tabitabi_schedule":{"precision":"time","day":2,"order":11}}', NULL, 'transport:train', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+
+WITH plan_place_seed(slug, location, lat, lng) AS (VALUES
+  ('meigetsu', '明月院（神奈川県鎌倉市山ノ内189）', 35.334830, 139.551050),
+  ('enkaku', '円覚寺（神奈川県鎌倉市山ノ内409）', 35.337190, 139.547960),
+  ('lunch', '北鎌倉駅（神奈川県鎌倉市山ノ内501）', 35.337300, 139.545000),
+  ('tsurugaoka', '鶴岡八幡宮（神奈川県鎌倉市雪ノ下2丁目1-31）', 35.325800, 139.556400),
+  ('komachi', '小町通り（神奈川県鎌倉市小町）', 35.321100, 139.551500),
+  ('hotel', '鎌倉駅（神奈川県鎌倉市小町1丁目1）', 35.319000, 139.550300),
+  ('hase', '長谷寺（神奈川県鎌倉市長谷3丁目11-2）', 35.312550, 139.533050),
+  ('buddha', '高徳院 鎌倉大仏（神奈川県鎌倉市長谷4丁目2-28）', 35.316700, 139.535700),
+  ('lunch-hase', '長谷駅（神奈川県鎌倉市長谷2丁目14）', 35.311300, 139.536200),
+  ('enoshima', '江島神社 辺津宮（神奈川県藤沢市江の島2丁目3-8）', 35.300000, 139.480900),
+  ('return', '片瀬江ノ島駅（神奈川県藤沢市片瀬海岸2丁目15-3）', 35.308000, 139.482500)
+)
+UPDATE steps
+SET location = (
+      SELECT place.location FROM plan_place_seed place
+      WHERE steps.id = 'official-plan-source-' || place.slug
+    ),
+    notes = json_set(notes, '$.tabitabi_place', json_object(
+      'lat', (SELECT place.lat FROM plan_place_seed place WHERE steps.id = 'official-plan-source-' || place.slug),
+      'lng', (SELECT place.lng FROM plan_place_seed place WHERE steps.id = 'official-plan-source-' || place.slug)
+    ))
+WHERE EXISTS (
+  SELECT 1 FROM plan_place_seed place
+  WHERE steps.id = 'official-plan-source-' || place.slug
+);
 
 INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at)
 SELECT replace(id, 'official-plan-source-', 'official-plan-public-'), 'official-plan-public', title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at

@@ -56,7 +56,11 @@
     try {
       if (preview) {
         const published = await onConfirm?.({ itinerary, steps });
-        if (typeof published === 'string') notice = published;
+        if (typeof published === 'string') {
+          notice = published;
+          clearTimeout(timer);
+          timer = setTimeout(() => notice = '', 5000);
+        }
         return;
       }
       if (editingPublication && ownerSource) {

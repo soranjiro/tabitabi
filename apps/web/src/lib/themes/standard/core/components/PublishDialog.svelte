@@ -107,7 +107,7 @@
 </script>
 
 {#if show && preview}
-  <SharedBook content={preview} preview onBack={() => preview = null} onConfirm={publish} />
+  <SharedBook content={preview} preview onBack={() => { preview = null; validationMessage = ""; }} onConfirm={publish} />
 {/if}
 <Dialog show={show && !preview} title={publishedId ? "共有しました" : "公開情報"} {onClose}>
   {#snippet children()}

@@ -105,6 +105,54 @@ WITH fork_seed(season, fork_count) AS (VALUES
 INSERT INTO itinerary_fork_stats (itinerary_id, fork_count)
 SELECT 'official-' || season || '-public', fork_count FROM fork_seed;
 
+-- map planning: 地図で考える金沢の週末
+INSERT INTO itineraries (
+  id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
+) VALUES
+  ('official-map-source', '地図で考える、金沢1泊2日', 'planning-map', 'neutral', 1, '["ishikawa"]', '["金沢","ひがし茶屋街","兼六園"]', '["グルメ","街歩き","アート"]', 1, '{"text":"友人とめぐる金沢の週末。歩く距離を見ながら、茶屋街・市場・美術館を無理なく組み合わせたい。"}', NULL, NULL, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-public', '地図で考える、金沢1泊2日', 'planning-map', 'neutral', 1, '["ishikawa"]', '["金沢","ひがし茶屋街","兼六園"]', '["グルメ","街歩き","アート"]', 1, '{"text":"友人とめぐる金沢の週末。歩く距離を見ながら、茶屋街・市場・美術館を無理なく組み合わせたい。"}', NULL, 'official-map-source', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+
+INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES
+  ('official-map-source-market', 'official-map-source', '近江町市場', 1788051600000, 1788055200000, '石川県金沢市上近江町50', '{"text":"朝ごはんと食べ歩き。混む前に行きたい。","tabitabi_schedule":{"precision":"day","day":1,"order":1},"tabitabi_place":{"lat":36.5717,"lng":136.6561,"priority":true}}', NULL, 'normal:food', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-castle', 'official-map-source', '金沢城公園', 1788062400000, 1788066000000, '石川県金沢市丸の内1-1', '{"text":"市場から歩いて移動。石川門を見たい。","tabitabi_schedule":{"precision":"day","day":1,"order":2},"tabitabi_place":{"lat":36.564,"lng":136.6596}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-museum', 'official-map-source', '金沢21世紀美術館', 1788073200000, 1788078600000, '石川県金沢市広坂1-2-1', '{"text":"企画展を確認。予約が必要なら先に取る。","tabitabi_schedule":{"precision":"undecided","order":3},"tabitabi_place":{"lat":36.5609,"lng":136.6581,"priority":true}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-garden', 'official-map-source', '兼六園', 1788138000000, 1788143400000, '石川県金沢市兼六町1', '{"text":"朝の静かな時間に歩く候補。","tabitabi_schedule":{"precision":"day","day":2,"order":4},"tabitabi_place":{"lat":36.5621,"lng":136.6627}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-map-source-chaya', 'official-map-source', 'ひがし茶屋街', 1788150600000, 1788156000000, '石川県金沢市東山', '{"text":"町家カフェで休憩。お店は当日の混み具合で決める。","tabitabi_schedule":{"precision":"undecided","order":5},"tabitabi_place":{"lat":36.5726,"lng":136.666}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+
+INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at)
+SELECT replace(id, 'official-map-source-', 'official-map-public-'), 'official-map-public', title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
+FROM steps WHERE itinerary_id = 'official-map-source';
+
+INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at)
+VALUES ('official-user', 'official-map-source', 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+INSERT INTO itinerary_publications (source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at)
+VALUES ('official-map-source', 'official-map-public', 'official-user', '["ishikawa"]', '["金沢","ひがし茶屋街","兼六園"]', '["グルメ","街歩き","アート"]', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+INSERT INTO itinerary_fork_stats (itinerary_id, fork_count) VALUES ('official-map-public', 12);
+
+-- simple planning: 候補から組み立てる鎌倉の週末
+INSERT INTO itineraries (
+  id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at
+) VALUES
+  ('official-plan-source', '候補からつくる、鎌倉1泊2日', 'planning-draft', 'neutral', 1, '["kanagawa"]', '["鎌倉","長谷","北鎌倉"]', '["寺社・歴史","カフェ","街歩き"]', 1, '{"text":"紫陽花の季節に鎌倉へ。混雑を避けながら、寺院とカフェを1日3か所ほどめぐる。雨の日は予定を詰めすぎない。"}', NULL, NULL, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-public', '候補からつくる、鎌倉1泊2日', 'planning-draft', 'neutral', 1, '["kanagawa"]', '["鎌倉","長谷","北鎌倉"]', '["寺社・歴史","カフェ","街歩き"]', 1, '{"text":"紫陽花の季節に鎌倉へ。混雑を避けながら、寺院とカフェを1日3か所ほどめぐる。雨の日は予定を詰めすぎない。"}', NULL, 'official-plan-source', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+
+INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES
+  ('official-plan-source-meigetsu', 'official-plan-source', '明月院', 1788048000000, 1788053400000, '鎌倉市山ノ内189', '{"text":"開門に合わせて紫陽花を見たい。","tabitabi_schedule":{"precision":"time","day":1,"order":1}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-enkaku', 'official-plan-source', '円覚寺', 1788057000000, 1788062400000, '鎌倉市山ノ内409', '{"text":"北鎌倉駅の近く。境内をゆっくり歩く。","tabitabi_schedule":{"precision":"day","day":1,"order":2}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-komachi', 'official-plan-source', '小町通りで夕食', 1788082200000, 1788087600000, '鎌倉市小町', '{"text":"予約できる店を探す。","tabitabi_schedule":{"precision":"day","day":1,"order":3}}', NULL, 'normal:food', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-hase', 'official-plan-source', '長谷寺', 1788138000000, 1788143400000, '鎌倉市長谷3-11-2', '{"text":"雨でも楽しめそう。混雑状況を見て時間を決める。","tabitabi_schedule":{"precision":"day","day":2,"order":4}}', NULL, 'normal:sightseeing', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z'),
+  ('official-plan-source-cafe', 'official-plan-source', '海の見えるカフェ', 1788152400000, 1788157800000, '鎌倉・長谷周辺', '{"text":"長谷寺のあとに寄れる店を当日選ぶ。","tabitabi_schedule":{"precision":"undecided","order":5}}', NULL, 'normal:food', 0, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+
+INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at)
+SELECT replace(id, 'official-plan-source-', 'official-plan-public-'), 'official-plan-public', title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at
+FROM steps WHERE itinerary_id = 'official-plan-source';
+
+INSERT INTO user_bookmarks (user_id, itinerary_id, is_visible, created_at, updated_at)
+VALUES ('official-user', 'official-plan-source', 1, '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+INSERT INTO itinerary_publications (source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at)
+VALUES ('official-plan-source', 'official-plan-public', 'official-user', '["kanagawa"]', '["鎌倉","長谷","北鎌倉"]', '["寺社・歴史","カフェ","街歩き"]', '2026-09-08T00:00:00.000Z', '2026-09-08T00:00:00.000Z');
+INSERT INTO itinerary_fork_stats (itinerary_id, fork_count) VALUES ('official-plan-public', 9);
+
 -- Keep each official seasonal bookmark aligned with its season.
 UPDATE itineraries
 SET palette_id = CASE

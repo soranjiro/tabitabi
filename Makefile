@@ -67,3 +67,12 @@ test-api:
 
 test-web:
 	pnpm run test:web
+
+check-web:
+	cd apps/web && pnpm exec svelte-check --tsconfig ./tsconfig.json
+
+create-planning-example:
+	node tools/create-planning-example.mjs
+
+test-planning-map:
+	cd apps/web && pnpm exec playwright test tests/e2e/planning-map.spec.ts --reporter=list

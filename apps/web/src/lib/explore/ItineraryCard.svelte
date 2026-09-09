@@ -9,12 +9,10 @@
   let {
     itinerary,
     compact = false,
-    eager = false,
     onFavoriteChange,
   }: {
     itinerary: PublicFeedItem;
     compact?: boolean;
-    eager?: boolean;
     onFavoriteChange?: (itineraryId: string, favorited: boolean) => void;
   } = $props();
   let favorited = $state(false);
@@ -81,7 +79,7 @@
   }
 </script>
 
-<article style={`--accent:${colors[0]};--soft:${colors[1]}`} data-priority-card={eager || undefined}>
+<article style={`--accent:${colors[0]};--soft:${colors[1]}`}>
   <a class="card-link" href="/itineraries/{itinerary.itinerary_id}" aria-label="{itinerary.title}を読む">
     <div class="theme-strip">
       <img
@@ -89,7 +87,6 @@
         src={coverImage}
         alt=""
         loading="lazy"
-        fetchpriority="auto"
         decoding="async"
         width="640"
         height="180"

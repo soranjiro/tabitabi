@@ -15,6 +15,19 @@ on:
       - "docs/**"
 
 jobs:
+  migration-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check migration policy
+        run: node apps/db/scripts/check-migrations.mjs origin/main
+
+      - name: Verify migrations preserve existing data
+        run: node apps/db/scripts/test-migrations.mjs
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -43,7 +56,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: test
+    needs:
+      - migration-safety
+      - test
     steps:
       - uses: actions/checkout@v4
 

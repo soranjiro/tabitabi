@@ -14,6 +14,10 @@ const config = {
     alias: {
       $lib: './src/lib'
     },
+    // Public pages are edge-cached and CSS is relatively small. Inlining route
+    // styles removes a render-blocking stylesheet round trip on throttled mobile
+    // connections, improving FCP and keeping the hero image as the main request.
+    inlineStyleThreshold: 100_000,
     prerender: {
       handleMissingId: 'warn',
       handleHttpError: ({ status, path, referrer, referenceType }) => {

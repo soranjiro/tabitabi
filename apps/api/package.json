@@ -18,7 +18,7 @@
     "@hono/zod-validator": "^0.7.6",
     "@tsndr/cloudflare-worker-jwt": "^3.2.0",
     "bcryptjs": "^2.4.3",
-    "hono": "^4.13.1",
+    "hono": "^4.13.7",
     "jose": "^6.1.0",
     "zod": "^4.3.6"
   },
@@ -27,9 +27,9 @@
     "@cloudflare/workers-types": "^5.20260808.1",
     "@tabitabi/types": "workspace:*",
     "@types/bcryptjs": "^3.0.0",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "typescript": "^5.6.3",
-    "vitest": "^4.1.10",
+    "vitest": "^4.1.11",
     "wrangler": "^4.120.0"
   }
 }

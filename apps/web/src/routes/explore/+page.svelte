@@ -92,23 +92,12 @@
   <title>みんなのしおり - たびたび</title>
   <meta name="description" content="誰かの旅から、次の旅を見つけよう。行き先やテーマから公開された旅行しおりを探せます。" />
   <link rel="canonical" href="https://tabitabi.pages.dev/explore" />
-  <link rel="preload" as="image" href="/itinerary-backgrounds/coastal-drive.avif" fetchpriority="high" />
 </svelte:head>
 
 <div class="page">
   <PublicHeader active="explore" />
   <main>
     <section class="hero">
-      <img
-        class="hero-image"
-        src="/itinerary-backgrounds/coastal-drive.avif"
-        alt=""
-        width="1600"
-        height="900"
-        loading="eager"
-        fetchpriority="high"
-        decoding="async"
-      />
       <div class="hero-copy"><h1>みんなのしおり</h1><p>誰かの旅から、次の旅を見つけよう。</p></div>
       <button class="search-launch" onclick={() => filterOpen = true}>⌕ <span>行き先・テーマで探す</span></button>
       <div class="quick-links">
@@ -131,8 +120,8 @@
         <div class="state"><p>{error}</p><button onclick={load}>もう一度試す</button></div>
       {:else if visible.length}
         <div class="cards">
-          {#each visible as itinerary, index}
-            <ItineraryCard {itinerary} compact eager={index < 2} />
+          {#each visible as itinerary}
+            <ItineraryCard {itinerary} compact />
           {/each}
         </div>
         {#if hasMore}<button class="more" onclick={more} disabled={loadingMore}>{loadingMore ? '読み込み中…' : 'もっと見る'}</button>{/if}
@@ -177,11 +166,9 @@
 <style>
   :global(body){margin:0;color:#132d32;background:#fff;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
   .page{min-height:100vh}
-  .hero{position:relative;display:grid;min-height:300px;padding:45px 20px 28px;place-content:center;overflow:hidden}
-  .hero-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-  .hero::before{content:'';position:absolute;z-index:1;inset:0;background:linear-gradient(rgba(239,249,252,.3),rgba(255,255,255,.28))}
-  .hero::after{content:'';position:absolute;z-index:1;inset:auto 0 0;height:70px;background:linear-gradient(transparent,#fff)}
-  .hero-copy,.search-launch,.quick-links{position:relative;z-index:2}
+  .hero{position:relative;display:grid;min-height:300px;padding:45px 20px 28px;place-content:center;overflow:hidden;background:linear-gradient(rgba(239,249,252,.3),rgba(255,255,255,.28)),url('/itinerary-backgrounds/coastal-drive.avif') center/cover}
+  .hero::after{content:'';position:absolute;inset:auto 0 0;height:70px;background:linear-gradient(transparent,#fff)}
+  .hero-copy,.search-launch,.quick-links{position:relative;z-index:1}
   .hero-copy{text-align:center;text-shadow:0 1px 12px white}
   .hero h1{margin:0;font-family:"Yu Mincho",serif;font-size:clamp(2rem,5vw,3.5rem);letter-spacing:.08em}
   .hero p{margin:.65rem 0 1.4rem;font-family:serif;font-weight:700}

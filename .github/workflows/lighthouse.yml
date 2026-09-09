@@ -19,106 +19,116 @@ permissions:
 
 jobs:
   lighthouse:
-    name: Lighthouse (mobile + desktop)
+    name: Lighthouse (${{ matrix.page }} / ${{ matrix.device }})
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - page: home
+            path: /
+            device: mobile
+          - page: home
+            path: /
+            device: desktop
+          - page: explore
+            path: /explore
+            device: mobile
+          - page: explore
+            path: /explore
+            device: desktop
     env:
       PREVIEW_URL: ${{ inputs.preview_url }}
-      PR_NUMBER: ${{ inputs.pr_number }}
 
     steps:
-      - name: Wait for preview pages to become available
+      - name: Wait for preview page to become available
         run: |
-          for path in / /explore; do
-            target_url="${PREVIEW_URL%/}${path}"
-            echo "Waiting for ${target_url}"
-            curl \
-              --fail \
-              --silent \
-              --show-error \
-              --location \
-              --retry 12 \
-              --retry-all-errors \
-              --retry-delay 5 \
-              --max-time 20 \
-              "$target_url" > /dev/null
-          done
+          target_url="${PREVIEW_URL%/}${{ matrix.path }}"
+          echo "Waiting for ${target_url}"
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --location \
+            --retry 12 \
+            --retry-all-errors \
+            --retry-delay 5 \
+            --max-time 20 \
+            "$target_url" > /dev/null
 
-      - name: Run Lighthouse for mobile (2 pages x 5 times)
-        id: mobile
-        continue-on-error: true
+      - name: Run Lighthouse 5 times
+        id: lighthouse
         run: |
           status=0
-          for entry in "home:/" "explore:/explore"; do
-            page="${entry%%:*}"
-            path="${entry#*:}"
-            target_url="${PREVIEW_URL%/}${path}"
-            for run in 1 2 3 4 5; do
-              echo "Running mobile Lighthouse for ${path} (${run}/5)"
-              npx --yes lighthouse@latest "$target_url" \
-                --quiet \
-                --chrome-flags="--headless --no-sandbox" \
-                --only-categories=performance,accessibility,best-practices,seo \
-                --output=json \
-                --output-path="./lighthouse-${page}-mobile-${run}.json" || status=1
-            done
-          done
-          exit "$status"
+          target_url="${PREVIEW_URL%/}${{ matrix.path }}"
+          extra_args=()
+          if [ "${{ matrix.device }}" = "desktop" ]; then
+            extra_args+=(--preset=desktop)
+          fi
 
-      - name: Run Lighthouse for desktop (2 pages x 5 times)
-        id: desktop
-        continue-on-error: true
-        run: |
-          status=0
-          for entry in "home:/" "explore:/explore"; do
-            page="${entry%%:*}"
-            path="${entry#*:}"
-            target_url="${PREVIEW_URL%/}${path}"
-            for run in 1 2 3 4 5; do
-              echo "Running desktop Lighthouse for ${path} (${run}/5)"
-              npx --yes lighthouse@latest "$target_url" \
-                --quiet \
-                --chrome-flags="--headless --no-sandbox" \
-                --preset=desktop \
-                --only-categories=performance,accessibility,best-practices,seo \
-                --output=json \
-                --output-path="./lighthouse-${page}-desktop-${run}.json" || status=1
-            done
+          for run in 1 2 3 4 5; do
+            echo "Running ${{ matrix.device }} Lighthouse for ${{ matrix.path }} (${run}/5)"
+            npx --yes lighthouse@latest "$target_url" \
+              --quiet \
+              --chrome-flags="--headless --no-sandbox" \
+              "${extra_args[@]}" \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --output=json \
+              --output-path="./lighthouse-${{ matrix.page }}-${{ matrix.device }}-${run}.json" || status=1
           done
+
           exit "$status"
 
       - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: lighthouse-pr-${{ inputs.pr_number }}
-          path: |
-            lighthouse-*-mobile-*.json
-            lighthouse-*-desktop-*.json
+          name: lighthouse-pr-${{ inputs.pr_number }}-${{ matrix.page }}-${{ matrix.device }}
+          path: lighthouse-${{ matrix.page }}-${{ matrix.device }}-*.json
           if-no-files-found: ignore
           retention-days: 14
+
+  aggregate:
+    name: Lighthouse report
+    needs: lighthouse
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PREVIEW_URL: ${{ inputs.preview_url }}
+      PR_NUMBER: ${{ inputs.pr_number }}
+      LIGHTHOUSE_RESULT: ${{ needs.lighthouse.result }}
+
+    steps:
+      - name: Download Lighthouse reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: lighthouse-pr-${{ inputs.pr_number }}-*
+          merge-multiple: true
+          path: lighthouse-reports
 
       - name: Comment pull request with Lighthouse results
         if: always()
         uses: actions/github-script@v7
-        env:
-          MOBILE_OUTCOME: ${{ steps.mobile.outcome }}
-          DESKTOP_OUTCOME: ${{ steps.desktop.outcome }}
         with:
           script: |
             const fs = require('node:fs');
+            const path = require('node:path');
 
             const previewUrl = process.env.PREVIEW_URL;
             const prNumber = Number(process.env.PR_NUMBER);
             const runCount = 5;
+            const reportsDir = 'lighthouse-reports';
             const pages = [
               { key: 'home', label: 'Home', path: '/' },
               { key: 'explore', label: 'Explore', path: '/explore' },
             ];
 
-            function readReport(path) {
-              if (!fs.existsSync(path)) return null;
-              return JSON.parse(fs.readFileSync(path, 'utf8'));
+            function readReport(fileName) {
+              const reportPath = path.join(reportsDir, fileName);
+              if (!fs.existsSync(reportPath)) return null;
+              return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
             }
 
             function readReports(page, device) {
@@ -237,9 +247,9 @@ jobs:
             }).join('\n\n');
 
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const execution = process.env.MOBILE_OUTCOME === 'success' && process.env.DESKTOP_OUTCOME === 'success'
+            const execution = process.env.LIGHTHOUSE_RESULT === 'success'
               ? '✅ All twenty Lighthouse runs completed successfully.'
-              : `⚠️ Lighthouse execution issue: mobile=${process.env.MOBILE_OUTCOME}, desktop=${process.env.DESKTOP_OUTCOME}`;
+              : `⚠️ Lighthouse execution issue: matrix=${process.env.LIGHTHOUSE_RESULT}`;
 
             const body = `## 🔦 Lighthouse Report
 
@@ -251,7 +261,7 @@ jobs:
 
             **Preview base:** ${previewUrl}
 
-            Full JSON reports are attached to the [workflow run](${runUrl}) as an artifact.
+            Full JSON reports are attached to the [workflow run](${runUrl}) as artifacts.
 
             _A new comment is posted whenever the preview is redeployed for this pull request._`;
 
@@ -263,7 +273,7 @@ jobs:
             });
 
       - name: Fail when Lighthouse execution failed
-        if: always() && (steps.mobile.outcome != 'success' || steps.desktop.outcome != 'success')
+        if: always() && needs.lighthouse.result != 'success'
         run: |
-          echo "Lighthouse failed: mobile=${{ steps.mobile.outcome }}, desktop=${{ steps.desktop.outcome }}" >&2
+          echo "Lighthouse matrix failed: ${{ needs.lighthouse.result }}" >&2
           exit 1

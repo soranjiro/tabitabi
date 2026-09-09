@@ -25,8 +25,8 @@ const API_BASE_URL =
   (import.meta.env.VITE_API_URL as string | undefined) ||
   'http://localhost:8787/api/v1';
 
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = await userAuth.getToken();
+async function request<T>(endpoint: string, options: RequestInit = {}, authRequired = true): Promise<T> {
+  const token = authRequired ? await userAuth.getToken() : null;
   const itineraryId = endpoint.match(/\/bookmarks\/([^/]+)/)?.[1];
   const itineraryToken = itineraryId ? auth.getToken(itineraryId) : null;
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -60,10 +60,10 @@ export const userApi = {
   getAccount: () => request<UserSessionProfile>('/users/me/account'),
 
   getPublicProfile: (username: string) =>
-    request<UserPublicProfile>(`/users/${username}/profile`),
+    request<UserPublicProfile>(`/users/${username}/profile`, {}, false),
 
   getPublicBookmarks: (username: string) =>
-    request<{ username: string; bookmarks: PublicBookmark[] }>(`/users/${username}/bookmarks`),
+    request<{ username: string; bookmarks: PublicBookmark[] }>(`/users/${username}/bookmarks`, {}, false),
 
   getMyBookmarks: () =>
     request<{ bookmarks: UserBookmarkWithItinerary[] }>('/users/me/bookmarks'),
@@ -106,11 +106,11 @@ export const userApi = {
     const params = new URLSearchParams({ offset: String(offset) });
     if (filters.prefecture) params.set('prefecture', filters.prefecture);
     if (filters.tag) params.set('tag', filters.tag);
-    return request<PublicFeedResponse>(`/users?${params}`);
+    return request<PublicFeedResponse>(`/users?${params}`, {}, false);
   },
 
   searchUsers: (query: string) =>
-    request<{ users: UserSearchResult[] }>(`/users/search?q=${encodeURIComponent(query)}`),
+    request<{ users: UserSearchResult[] }>(`/users/search?q=${encodeURIComponent(query)}`, {}, false),
 
   getFavoriteIds: async () => {
     favoriteIdsPromise ??= request<{ itinerary_ids: string[] }>('/favorites')

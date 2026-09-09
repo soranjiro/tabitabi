@@ -21,55 +21,69 @@ jobs:
   lighthouse:
     name: Lighthouse (mobile + desktop)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       PREVIEW_URL: ${{ inputs.preview_url }}
       PR_NUMBER: ${{ inputs.pr_number }}
 
     steps:
-      - name: Wait for preview to become available
+      - name: Wait for preview pages to become available
         run: |
-          curl \
-            --fail \
-            --silent \
-            --show-error \
-            --location \
-            --retry 12 \
-            --retry-all-errors \
-            --retry-delay 5 \
-            --max-time 20 \
-            "$PREVIEW_URL" > /dev/null
+          for path in / /explore; do
+            target_url="${PREVIEW_URL%/}${path}"
+            echo "Waiting for ${target_url}"
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --location \
+              --retry 12 \
+              --retry-all-errors \
+              --retry-delay 5 \
+              --max-time 20 \
+              "$target_url" > /dev/null
+          done
 
-      - name: Run Lighthouse for mobile (5 times)
+      - name: Run Lighthouse for mobile (2 pages x 5 times)
         id: mobile
         continue-on-error: true
         run: |
           status=0
-          for run in 1 2 3 4 5; do
-            echo "Running mobile Lighthouse (${run}/5)"
-            npx --yes lighthouse@latest "$PREVIEW_URL" \
-              --quiet \
-              --chrome-flags="--headless --no-sandbox" \
-              --only-categories=performance,accessibility,best-practices,seo \
-              --output=json \
-              --output-path="./lighthouse-mobile-${run}.json" || status=1
+          for entry in "home:/" "explore:/explore"; do
+            page="${entry%%:*}"
+            path="${entry#*:}"
+            target_url="${PREVIEW_URL%/}${path}"
+            for run in 1 2 3 4 5; do
+              echo "Running mobile Lighthouse for ${path} (${run}/5)"
+              npx --yes lighthouse@latest "$target_url" \
+                --quiet \
+                --chrome-flags="--headless --no-sandbox" \
+                --only-categories=performance,accessibility,best-practices,seo \
+                --output=json \
+                --output-path="./lighthouse-${page}-mobile-${run}.json" || status=1
+            done
           done
           exit "$status"
 
-      - name: Run Lighthouse for desktop (5 times)
+      - name: Run Lighthouse for desktop (2 pages x 5 times)
         id: desktop
         continue-on-error: true
         run: |
           status=0
-          for run in 1 2 3 4 5; do
-            echo "Running desktop Lighthouse (${run}/5)"
-            npx --yes lighthouse@latest "$PREVIEW_URL" \
-              --quiet \
-              --chrome-flags="--headless --no-sandbox" \
-              --preset=desktop \
-              --only-categories=performance,accessibility,best-practices,seo \
-              --output=json \
-              --output-path="./lighthouse-desktop-${run}.json" || status=1
+          for entry in "home:/" "explore:/explore"; do
+            page="${entry%%:*}"
+            path="${entry#*:}"
+            target_url="${PREVIEW_URL%/}${path}"
+            for run in 1 2 3 4 5; do
+              echo "Running desktop Lighthouse for ${path} (${run}/5)"
+              npx --yes lighthouse@latest "$target_url" \
+                --quiet \
+                --chrome-flags="--headless --no-sandbox" \
+                --preset=desktop \
+                --only-categories=performance,accessibility,best-practices,seo \
+                --output=json \
+                --output-path="./lighthouse-${page}-desktop-${run}.json" || status=1
+            done
           done
           exit "$status"
 
@@ -79,8 +93,8 @@ jobs:
         with:
           name: lighthouse-pr-${{ inputs.pr_number }}
           path: |
-            lighthouse-mobile-*.json
-            lighthouse-desktop-*.json
+            lighthouse-*-mobile-*.json
+            lighthouse-*-desktop-*.json
           if-no-files-found: ignore
           retention-days: 14
 
@@ -97,15 +111,19 @@ jobs:
             const previewUrl = process.env.PREVIEW_URL;
             const prNumber = Number(process.env.PR_NUMBER);
             const runCount = 5;
+            const pages = [
+              { key: 'home', label: 'Home', path: '/' },
+              { key: 'explore', label: 'Explore', path: '/explore' },
+            ];
 
             function readReport(path) {
               if (!fs.existsSync(path)) return null;
               return JSON.parse(fs.readFileSync(path, 'utf8'));
             }
 
-            function readReports(device) {
+            function readReports(page, device) {
               return Array.from({ length: runCount }, (_, index) =>
-                readReport(`lighthouse-${device}-${index + 1}.json`),
+                readReport(`lighthouse-${page}-${device}-${index + 1}.json`),
               );
             }
 
@@ -150,9 +168,6 @@ jobs:
               return value === null ? '—' : formatAuditValue(audit, value);
             }
 
-            const mobileReports = readReports('mobile');
-            const desktopReports = readReports('desktop');
-
             const metrics = [
               { label: 'Performance', type: 'category', key: 'performance' },
               { label: 'Accessibility', type: 'category', key: 'accessibility' },
@@ -177,11 +192,14 @@ jobs:
                 : trimmedAuditValue(reports, metric.key);
             }
 
-            const trimmedRows = metrics
-              .map((metric) =>
-                `| ${metric.label} | ${trimmedMetricValue(mobileReports, metric)} | ${trimmedMetricValue(desktopReports, metric)} |`,
-              )
-              .join('\n');
+            function summaryTable(mobileReports, desktopReports) {
+              const rows = metrics
+                .map((metric) =>
+                  `| ${metric.label} | ${trimmedMetricValue(mobileReports, metric)} | ${trimmedMetricValue(desktopReports, metric)} |`,
+                )
+                .join('\n');
+              return `| Metric | Mobile | Desktop |\n| --- | ---: | ---: |\n${rows}`;
+            }
 
             function detailTable(reports) {
               const header = `| Metric | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 |\n| --- | ---: | ---: | ---: | ---: | ---: |`;
@@ -194,33 +212,44 @@ jobs:
               return `${header}\n${rows}`;
             }
 
+            const pageSections = pages.map((page) => {
+              const mobileReports = readReports(page.key, 'mobile');
+              const desktopReports = readReports(page.key, 'desktop');
+              const pageUrl = `${previewUrl.replace(/\/$/, '')}${page.path}`;
+              return `### ${page.label} \`${page.path}\`
+
+            ${summaryTable(mobileReports, desktopReports)}
+
+            <details>
+            <summary>Details for ${page.path}</summary>
+
+            **URL:** ${pageUrl}
+
+            #### Mobile runs
+
+            ${detailTable(mobileReports)}
+
+            #### Desktop runs
+
+            ${detailTable(desktopReports)}
+
+            </details>`;
+            }).join('\n\n');
+
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const execution = process.env.MOBILE_OUTCOME === 'success' && process.env.DESKTOP_OUTCOME === 'success'
-              ? '✅ All ten Lighthouse runs completed successfully.'
+              ? '✅ All twenty Lighthouse runs completed successfully.'
               : `⚠️ Lighthouse execution issue: mobile=${process.env.MOBILE_OUTCOME}, desktop=${process.env.DESKTOP_OUTCOME}`;
 
             const body = `## 🔦 Lighthouse Report
 
-            Trimmed mean of 5 runs for each device (drop the minimum and maximum, then average the remaining 3):
+            Trimmed mean of 5 runs for each page/device (drop the minimum and maximum, then average the remaining 3):
 
-            | Metric | Mobile | Desktop |
-            | --- | ---: | ---: |
-            ${trimmedRows}
-
-            <details>
-            <summary>Details</summary>
+            ${pageSections}
 
             ${execution}
 
-            **Preview:** ${previewUrl}
-
-            ### Mobile runs
-
-            ${detailTable(mobileReports)}
-
-            ### Desktop runs
-
-            ${detailTable(desktopReports)}
+            **Preview base:** ${previewUrl}
 
             Full JSON reports are attached to the [workflow run](${runUrl}) as an artifact.
 

@@ -9,10 +9,12 @@
   let {
     itinerary,
     compact = false,
+    eager = false,
     onFavoriteChange,
   }: {
     itinerary: PublicFeedItem;
     compact?: boolean;
+    eager?: boolean;
     onFavoriteChange?: (itineraryId: string, favorited: boolean) => void;
   } = $props();
   let favorited = $state(false);
@@ -82,16 +84,16 @@
 <article style={`--accent:${colors[0]};--soft:${colors[1]}`}>
   <a class="card-link" href="/itineraries/{itinerary.itinerary_id}" aria-label="{itinerary.title}を読む">
     <div class="theme-strip">
-      <img class="cover" src={coverImage} alt="" loading="lazy" decoding="async" />
-      <button
-        class:favorited
-        class="favorite"
-        type="button"
-        aria-label={favorited ? "お気に入りから外す" : "お気に入りに登録"}
-        aria-pressed={favorited}
-        disabled={favoriteBusy}
-        onclick={toggleFavorite}
-      >{favorited ? "♥" : "♡"}</button>
+      <img
+        class="cover"
+        src={coverImage}
+        alt=""
+        loading={eager ? "eager" : "lazy"}
+        fetchpriority={eager ? "high" : "auto"}
+        decoding="async"
+        width="640"
+        height="180"
+      />
       <span>{duration}</span>
     </div>
     <div class="body">
@@ -108,14 +110,24 @@
       </div>
     </div>
   </a>
+  <button
+    class:favorited
+    class="favorite"
+    type="button"
+    aria-label={favorited ? "お気に入りから外す" : "お気に入りに登録"}
+    aria-pressed={favorited}
+    disabled={favoriteBusy}
+    onclick={toggleFavorite}
+  >{favorited ? "♥" : "♡"}</button>
   <div class="meta">
-    <a class="author" href="/users/{itinerary.username}"><i>{itinerary.username === "tabitabi_official" ? "旅" : itinerary.username.slice(0, 1).toUpperCase()}</i> {authorName}</a>
+    <a class="author" href="/users/{itinerary.username}"><i aria-hidden="true">{itinerary.username === "tabitabi_official" ? "旅" : itinerary.username.slice(0, 1).toUpperCase()}</i> {authorName}</a>
     <span>{itinerary.stops}件の予定 · {itinerary.copies}コピー</span>
   </div>
 </article>
 
 <style>
   article {
+    position: relative;
     overflow: hidden;
     border: 1px solid #e4eaf4;
     border-radius: 16px;
@@ -129,7 +141,7 @@
     box-shadow: 0 13px 32px rgba(51, 77, 123, 0.1);
   }
 
-  .card-link { color: inherit; text-decoration: none; }
+  .card-link { display: block; color: inherit; text-decoration: none; }
 
   .theme-strip {
     position: relative;
@@ -138,7 +150,7 @@
     padding: 10px 12px;
     overflow: hidden;
     align-items: flex-end;
-    justify-content: space-between;
+    justify-content: flex-end;
     background: var(--soft);
   }
 
@@ -150,22 +162,22 @@
     object-fit: cover;
   }
 
-  .theme-strip > span,
-  .favorite {
+  .theme-strip > span {
     position: relative;
     z-index: 1;
-  }
-
-  .theme-strip > span {
     padding: 4px 8px;
     border-radius: 999px;
     color: #45546b;
-    background: rgba(255,255,255,.84);
+    background: rgba(255,255,255,.9);
     font-size: 10px;
     font-weight: 800;
   }
 
   .favorite {
+    position: absolute;
+    z-index: 2;
+    top: 12px;
+    left: 12px;
     display: grid;
     width: 34px;
     height: 34px;
@@ -173,20 +185,20 @@
     place-items: center;
     border: 0;
     border-radius: 50%;
-    color: #55657f;
-    background: rgba(255,255,255,.9);
+    color: #45546b;
+    background: rgba(255,255,255,.94);
     box-shadow: 0 4px 12px rgba(39,54,79,.1);
     font-size: 20px;
     line-height: 1;
     cursor: pointer;
   }
-  .favorite.favorited { color: #e65f76; }
+  .favorite.favorited { color: #b72f4d; }
   .favorite:disabled { cursor: wait; opacity: .65; }
   .favorite:focus-visible { outline: 2px solid #315da8; outline-offset: 2px; }
 
   .body { padding: 16px; }
-  .destinations { color: #4c72bc; font-size: 11px; font-weight: 800; }
-  .destinations i { font-style: normal; color: #aab4c5; }
+  .destinations { color: #3f65aa; font-size: 11px; font-weight: 800; }
+  .destinations i { font-style: normal; color: #68768a; }
 
   h3 {
     min-height: 2.9em;
@@ -199,13 +211,13 @@
   .description {
     min-height: 3.3em;
     margin: 0 0 12px;
-    color: #6b778c;
+    color: #56647a;
     font-size: 12px;
     line-height: 1.65;
   }
 
   .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-  .chips span { padding: 4px 7px; border-radius: 6px; color: #60708a; background: #f5f7fb; font-size: 10px; }
+  .chips span { padding: 4px 7px; border-radius: 6px; color: #53627a; background: #f5f7fb; font-size: 10px; }
 
   .meta {
     display: flex;
@@ -215,19 +227,19 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    color: #8a95a7;
+    color: #5f6b7d;
     font-size: 10px;
   }
 
   .author { display: inline-flex; align-items: center; gap: 5px; color: inherit; text-decoration: none; }
-  .author:hover { color: #4c72bc; }
-  .author i { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; color: #4c72bc; background: #eef4ff; font-style: normal; font-weight: 900; }
+  .author:hover { color: #365995; }
+  .author i { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; color: #365995; background: #eef4ff; font-style: normal; font-weight: 900; }
 
   @media (max-width: 420px) {
     article { border-radius: 8px; }
     .theme-strip { height: 86px; padding: 7px; }
     .theme-strip > span { padding: 3px 5px; font-size: 8px; }
-    .favorite { width: 27px; height: 27px; font-size: 16px; }
+    .favorite { top: 7px; left: 7px; width: 27px; height: 27px; font-size: 16px; }
     .body { padding: 10px; }
     h3 { min-height: 2.7em; margin: 5px 0; font-size: 13px; }
     .destinations, .chips { font-size: 9px; }

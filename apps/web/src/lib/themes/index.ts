@@ -22,15 +22,15 @@ export async function loadTheme(themeId: string): Promise<Theme> {
       return (await import("./map-only")).default;
     case "mapbox-journey":
       return (await import("./mapbox-journey")).default;
-    case "standard-spring":
+    case "daycard":
       return (await import("./standard/presets/day-card")).default;
-    case "standard-accordion":
+    case "accordion":
       return (await import("./standard/presets/accordion")).default;
-    case "standard-summer":
+    case "list":
       return (await import("./standard/presets/list")).default;
-    case "standard-autumn":
+    case "week":
       return (await import("./standard/presets/week")).default;
-    case "standard-winter":
+    case "month":
       return (await import("./standard/presets/month")).default;
     case "ai-generated":
       return (await import("./ai-generated")).default;

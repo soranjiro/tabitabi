@@ -4,8 +4,8 @@ export const defaultThemeId = "planning-draft" as const;
 export const defaultPaletteId = "neutral" as const;
 
 export const availableThemes = [
-  "planning-draft", "planning-map", "map-only", "mapbox-journey", "standard-spring", "standard-accordion",
-  "standard-summer", "standard-autumn", "standard-winter", "ai-generated",
+  "planning-draft", "planning-map", "map-only", "mapbox-journey", "daycard", "accordion",
+  "list", "week", "month", "ai-generated",
   "shopping", "pixel-quest", "sauna-rally",
 ] as const;
 export type AvailableTheme = (typeof availableThemes)[number];
@@ -50,11 +50,11 @@ export const PALETTES: PaletteOption[] = [
 const THEME_CATALOG: ThemePresetOption[] = [
   { id: "planning-map", name: "地図プラン", description: "地図を見ながら予定を決める", phrase: "地図でつくる旅の予定", viewMode: "list", defaultPaletteId: "neutral", enabled: true },
   { id: "planning-draft", name: "プラン", description: "候補を日ごとに並べて予定を決める", phrase: "シンプルに旅を計画", viewMode: "list", defaultPaletteId: "neutral", enabled: true },
-  { id: "standard-spring", name: "日カード", description: "日付タブで切り替える、親しみやすいカード", phrase: "日ごとの旅行計画", viewMode: "dayCard", defaultPaletteId: "sakura", enabled: true },
-  { id: "standard-accordion", name: "セクションカード", description: "旅程全体を見渡せるアコーディオン", phrase: "見渡せる旅行計画", viewMode: "accordion", defaultPaletteId: "ocean", enabled: true },
-  { id: "standard-summer", name: "リスト", description: "予定をすっきり一覧表示", phrase: "一覧で見る旅行計画", viewMode: "list", defaultPaletteId: "ocean", enabled: true },
-  { id: "standard-autumn", name: "週ビュー", description: "一週間の流れをまとめて表示", phrase: "週で見る旅行計画", viewMode: "week", defaultPaletteId: "autumn", enabled: true },
-  { id: "standard-winter", name: "月ビュー", description: "月全体をカレンダーで表示", phrase: "月で見る旅行計画", viewMode: "month", defaultPaletteId: "snow", enabled: true },
+  { id: "daycard", name: "日カード", description: "日付タブで切り替える、親しみやすいカード", phrase: "日ごとの旅行計画", viewMode: "dayCard", defaultPaletteId: "sakura", enabled: true },
+  { id: "accordion", name: "セクションカード", description: "旅程全体を見渡せるアコーディオン", phrase: "見渡せる旅行計画", viewMode: "accordion", defaultPaletteId: "ocean", enabled: true },
+  { id: "list", name: "リスト", description: "予定をすっきり一覧表示", phrase: "一覧で見る旅行計画", viewMode: "list", defaultPaletteId: "ocean", enabled: true },
+  { id: "week", name: "週ビュー", description: "一週間の流れをまとめて表示", phrase: "週で見る旅行計画", viewMode: "week", defaultPaletteId: "autumn", enabled: true },
+  { id: "month", name: "月ビュー", description: "月全体をカレンダーで表示", phrase: "月で見る旅行計画", viewMode: "month", defaultPaletteId: "snow", enabled: true },
   { id: "shopping", name: "買い物リスト", description: "買い物管理向け", phrase: "買い物プラン", viewMode: "list", defaultPaletteId: "neutral", enabled: false },
   { id: "pixel-quest", name: "ピクセルクエスト", description: "RPG風マップ表示", phrase: "RPGデザイン", viewMode: "list", defaultPaletteId: "neutral", enabled: false },
   { id: "map-only", name: "Map Only", description: "地図のみを表示", phrase: "地図での計画", viewMode: "list", defaultPaletteId: "neutral", enabled: false },

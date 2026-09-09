@@ -111,7 +111,7 @@
   let pendingDates = $state<Record<string, string>>({});
   let applyingDates = $state(false);
 
-  let selectedThemeId = $state(itinerary.theme_id || "standard-accordion");
+  let selectedThemeId = $state(itinerary.theme_id || "accordion");
   let selectedPaletteId = $state(itinerary.palette_id || getThemePreset(selectedThemeId).defaultPaletteId);
   let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
   let secretModeOffset = $state(
@@ -458,9 +458,10 @@
   class="standard-theme"
   style={paletteStyle}
   class:standard-week-mode={currentViewMode === "week"}
-  class:standard-spring-theme={selectedThemeId === "standard-spring"}
-  class:standard-summer-theme={selectedThemeId === "standard-summer"}
-  class:standard-winter-theme={selectedThemeId === "standard-winter"}
+  class:standard-spring-theme={selectedThemeId === "daycard"}
+  class:standard-summer-theme={selectedThemeId === "list"}
+  class:standard-autumn-theme={selectedThemeId === "week"}
+  class:standard-winter-theme={selectedThemeId === "month"}
 >
   <div class="standard-container">
     <header class="standard-header">

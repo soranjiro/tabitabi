@@ -472,7 +472,7 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
     const json = await res.json() as { success: boolean; data: { id: string; title: string; theme_id: string; token: string } };
     expect(json.success).toBe(true);
     expect(json.data.title).toBe('旅のしおり（コピー）');
-    expect(json.data.theme_id).toBe('standard-autumn');
+    expect(json.data.theme_id).toBe('week');
     expect(json.data.token).toBeTruthy();
     expect(json.data.id).not.toBe(source.id);
 

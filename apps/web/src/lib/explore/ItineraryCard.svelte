@@ -20,18 +20,18 @@
   let loggedIn = $state(false);
 
   const themeColors = {
-    "standard-spring": ["#f8bfd0", "#fff4f7"],
-    "standard-summer": ["#74b8e8", "#eff8ff"],
-    "standard-autumn": ["#d6a363", "#fff8ed"],
-    "standard-winter": ["#8fa8d6", "#f2f5ff"],
+    daycard: ["#f8bfd0", "#fff4f7"],
+    list: ["#74b8e8", "#eff8ff"],
+    week: ["#d6a363", "#fff8ed"],
+    month: ["#8fa8d6", "#f2f5ff"],
   } as const;
 
-  const colors = $derived(themeColors[itinerary.theme_id as keyof typeof themeColors] ?? themeColors["standard-autumn"]);
+  const colors = $derived(themeColors[itinerary.theme_id as keyof typeof themeColors] ?? themeColors.week);
   const coverImages: Record<string, string> = {
-    'standard-spring': '/hero/background-spring.avif',
-    'standard-summer': '/hero/background-summer.avif',
-    'standard-autumn': '/hero/background-autumn.avif',
-    'standard-winter': '/hero/background-winter.avif',
+    daycard: '/hero/background-spring.avif',
+    list: '/hero/background-summer.avif',
+    week: '/hero/background-autumn.avif',
+    month: '/hero/background-winter.avif',
     'map-only': '/itinerary-backgrounds/coastal-drive.avif',
     'mapbox-journey': '/itinerary-backgrounds/sky.avif',
     'shopping': '/itinerary-backgrounds/food.webp',

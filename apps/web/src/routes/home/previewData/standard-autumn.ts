@@ -2,7 +2,7 @@ import type { PreviewItinerary } from "./types";
 
 export const standardAutumnPreview: PreviewItinerary = {
   title: "京都紅葉旅行",
-  themeId: "standard-autumn",
+  themeId: "week",
   themeName: "標準（秋）",
   description: "紅葉の週次予定",
   phrase: "秋の旅行計画",

@@ -2,7 +2,7 @@ import type { PreviewItinerary } from "./types";
 
 export const standardSpringPreview: PreviewItinerary = {
   title: "桜見物の旅",
-  themeId: "standard-spring",
+  themeId: "daycard",
   themeName: "標準（春）",
   description: "やさしく、かわいらしい",
   phrase: "春の旅行計画",

@@ -5,6 +5,7 @@ import { ItineraryService } from './itinerary.service';
 import { StepService } from './step.service';
 import { generateId, getCurrentTimestamp, type Env } from '../utils';
 import { createPublicMemoSnapshot, createPublicStepSnapshot, createPublicTextSnapshot } from '../utils/publication';
+import { normalizeThemeId } from '../utils/theme';
 
 export const bookContentSchema = z.object({
   itinerary: updateItinerarySchema.omit({ password: true, secret_settings: true }).extend({
@@ -54,7 +55,7 @@ export class PublicationService {
     await this.db.batch([
       this.db.prepare(`UPDATE itineraries SET title = ?, theme_id = COALESCE(?, theme_id), palette_id = COALESCE(?, palette_id),
         memo = ?, packing_enabled = ?, prefecture_slugs = ?, areas = ?, tags = ?, updated_at = ? WHERE id = ?`)
-        .bind(book.title, book.theme_id ?? null, book.palette_id ?? null, book.memo, book.packing_enabled === false ? 0 : 1,
+        .bind(book.title, book.theme_id ? normalizeThemeId(book.theme_id) : null, book.palette_id ?? null, book.memo, book.packing_enabled === false ? 0 : 1,
           JSON.stringify(book.prefecture_slugs ?? []), JSON.stringify(book.areas ?? []), JSON.stringify(book.tags ?? []), now, id),
       this.db.prepare('DELETE FROM steps WHERE itinerary_id = ?').bind(id),
       ...content.steps.map(step => this.db.prepare(`INSERT INTO steps

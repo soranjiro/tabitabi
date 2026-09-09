@@ -1,8 +1,8 @@
 import type { ThemeConfig } from "@tabitabi/types";
 
 export const seasonWinterTheme: ThemeConfig = {
-  id: "standard-winter",
-  name: "標準（冬）",
+  id: "month",
+  name: "月ビュー",
   version: "1.0.0",
   description: "静寂と凛とした雰囲気の冬のテーマ",
   author: "Tabitabi Team",

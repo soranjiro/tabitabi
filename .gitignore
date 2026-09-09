@@ -172,4 +172,8 @@ chrome/
 
 .pnpm-store
 
+# AI agent
+.codex/
+.claude/
+.agent/
 TASK.md

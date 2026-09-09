@@ -97,6 +97,8 @@
   let sheetOpen = $state(false);
   let editingStep = $state<Step | null>(null);
   let saving = $state(false);
+  let editingDayDate = $state<number | null>(null);
+  let dayDateDraft = $state('');
   let memoOpen = $state(true);
   let memoDraft = $state("");
   let themeChoicesOpen = $state(false);
@@ -407,6 +409,11 @@
     } finally { saving = false; }
   }
 
+  function openDayDateEditor(group: { day: number; steps: Step[] }) {
+    dayDateDraft = localDateKey(group.steps[0].start_at);
+    editingDayDate = group.day;
+  }
+
   async function saveTitle() {
     const value = titleDraft.trim();
     if (value && value !== itinerary.title && onUpdateItinerary) await onUpdateItinerary({ title: value });
@@ -514,7 +521,8 @@
 
       {#each dayGroups as group}
         <section class="draft-section">
-          <div class="section-heading"><div><h2>Day {group.day}</h2><p>{group.steps.length ? `${group.steps.length}件` : "予定なし"}</p></div>{#if hasEditPermission && group.steps.length}<label class="day-date">この日の日時<input type="date" value={localDateKey(group.steps[0].start_at)} onchange={(event) => void moveDay(group, (event.currentTarget as HTMLInputElement).value)} /></label>{/if}</div>
+          <div class="section-heading"><div><h2>Day {group.day}</h2><p>{group.steps.length ? `${group.steps.length}件` : "予定なし"}</p></div>{#if hasEditPermission && group.steps.length}<button class="day-date-trigger" type="button" onclick={() => openDayDateEditor(group)}>日付を変更</button>{/if}</div>
+          {#if editingDayDate === group.day}<div class="day-date-editor"><span>Day {group.day} の予定をまとめて移動</span><input type="date" bind:value={dayDateDraft} /><button type="button" onclick={() => { void moveDay(group, dayDateDraft); editingDayDate = null; }} disabled={saving || dayDateDraft === localDateKey(group.steps[0].start_at)}>{saving ? '変更中…' : '変更する'}</button><button type="button" class="cancel" onclick={() => editingDayDate = null}>キャンセル</button></div>{/if}
           {#if group.steps.length}
             <div class="step-list">
               {#each group.steps as step, index}
@@ -566,7 +574,7 @@
         <div class="sheet-handle"></div><div class="sheet-title"><h2>{editingStep ? "予定を編集" : "予定を追加"}</h2><button onclick={() => (sheetOpen = false)} aria-label="閉じる">×</button></div>
         <form onsubmit={saveStep}>
           {#if formError}<p role="alert">{formError}</p>{/if}
-          <PlaceSearch onSelect={selectPlace} />
+          <div class="location-field"><span>場所 <small>任意</small></span><PlaceSearch bind:value={form.location} onSelect={selectPlace} /></div>
           {#if mapPlanning}
             {#if placeDraft}
               <div class="pin-fields"><strong>✓ 場所を選択済み</strong><p>{form.location || '地図で選んだ場所'} · ピンの位置を確かめてください。</p>
@@ -581,7 +589,6 @@
           {/if}
           <label>タイトル<input bind:value={form.title} placeholder="清水寺に行きたい" required /></label>
           <label>メモ<textarea bind:value={form.note} rows="3" placeholder="朝の方が空いてそう"></textarea></label>
-          <label>場所 <small>任意</small><input bind:value={form.location} placeholder="例：清水寺" autocomplete="off" /></label>
           <div class="type-picker"><span>予定のアイコン</span><TypePicker value={form.type} onSelect={(type: StepType) => form.type = type} /></div>
           <label>リンク <small>任意</small><input type="url" bind:value={form.link} placeholder="https://..." /></label>
           <fieldset><legend>いつ？</legend><label class="radio"><input type="radio" bind:group={form.when} value="undecided" />まだ決めない</label><label class="radio"><input type="radio" bind:group={form.when} value="day" />日を決める</label></fieldset>
@@ -719,6 +726,12 @@
   .section-heading { display: flex; min-height: 46px; align-items: end; justify-content: space-between; border-bottom: 1px solid #cfd5d1; }
   .section-heading h2 { margin: 0 0 .35rem; font-size: .98rem; }
   .section-heading p { margin: 0 0 .35rem; color: #9aa29e; font-size: .66rem; }
+  .day-date-trigger { margin-bottom: .45rem; padding: .35rem .55rem; border: 1px solid #d9ddd9; border-radius: 999px; color: #52645d; background: #fff; font-size: .68rem; font-weight: 700; cursor: pointer; }
+  .day-date-editor { display:flex; flex-wrap:wrap; align-items:center; padding:.65rem 0; border-bottom:1px solid #e5e6e3; gap:.45rem .6rem; color:#66716d; font-size:.7rem; }
+  .day-date-editor span { flex:1 1 100%; }
+  .day-date-editor input { width:9.4rem; padding:.45rem .5rem; font-size:.78rem; }
+  .day-date-editor button { padding:.46rem .65rem; border:0; border-radius:7px; color:#fff; background:#2f6657; font-size:.72rem; font-weight:700; cursor:pointer; }
+  .day-date-editor button.cancel { color:#66716d; background:#eef0ed; }
   .step-list { border-bottom: 1px solid #e5e6e3; }
   .step-row { display: grid; min-height: 68px; border-bottom: 1px solid #e5e6e3; grid-template-columns: 1fr auto; align-items: stretch; }
   .step-row:last-child { border-bottom: 0; }
@@ -773,6 +786,7 @@
   .sheet-title h2 { margin: .25rem 0 1rem; font-size: 1.05rem; }
   .sheet-title button { width: 38px; height: 38px; border: 0; border-radius: 50%; color: #66716d; background: #f3f4f2; font-size: 1.25rem; cursor: pointer; }
   .sheet form, .sheet form > label { display: grid; gap: .5rem; }
+  .location-field { display:grid; gap:.5rem; color:#53605b; font-size:.75rem; font-weight:700; }
   .sheet form { gap: 1rem; }
   .sheet label, .sheet legend { color: #53605b; font-size: .75rem; font-weight: 700; }
   .sheet input, .sheet textarea, .sheet select, .memo-panel textarea { padding: .8rem; border: 1px solid #d9ddd9; border-radius: 8px; color: #26332f; background: #fff; font: inherit; font-size: .9rem; outline: none; }

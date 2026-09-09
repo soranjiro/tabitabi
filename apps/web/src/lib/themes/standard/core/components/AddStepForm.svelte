@@ -127,7 +127,6 @@
 <form class="standard-form" onsubmit={handleSubmit}>
   <h3 class="standard-form-title">新しい予定を追加</h3>
   <div class="standard-form-grid">
-    <PlaceSearch onSelect={selectPlace} />
     <input
       type="text"
       bind:value={newStep.title}
@@ -222,12 +221,7 @@
         </div>
       {/if}
     </div>
-    <input
-      type="text"
-      bind:value={newStep.location}
-      placeholder="場所 (任意)"
-      class="standard-input"
-    />
+    <div class="standard-form-field"><span class="standard-form-label">場所</span><PlaceSearch bind:value={newStep.location} onSelect={selectPlace} /></div>
     <div class="standard-form-field">
       <div class="standard-form-label">予定の種類</div>
       <TypePicker

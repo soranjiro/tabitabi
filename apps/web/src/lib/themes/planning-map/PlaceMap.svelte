@@ -5,6 +5,7 @@
   import type * as Leaflet from 'leaflet';
   import { getPlace, type Place } from '$lib/planning/places';
   import { getStepSchedule } from '$lib/planning/schedule';
+  import { getStepTypeIcon } from '../standard/core/utils/step-type';
   import 'leaflet/dist/leaflet.css';
   let { steps, numbers, selected, canEdit, onSelect, onPin }: { steps: Step[]; numbers: Record<string, number>; selected: string | null; canEdit: boolean; onSelect: (id: string) => void; onPin: (place: Place) => void } = $props();
   let container: HTMLDivElement;
@@ -51,7 +52,7 @@
       const day = getStepSchedule(step);
       const marker = L.marker([place.lat, place.lng], {
         title: step.title, keyboard: true,
-        icon: L.divIcon({ className: 'atelier-marker', html: `<span style="background:${selected === step.id ? '#b75b38' : day.precision === 'undecided' ? '#35695d' : '#556ca1'}">${numbers[step.id]}</span>`, iconSize: [34, 42], iconAnchor: [17, 42] }),
+        icon: L.divIcon({ className: 'atelier-marker', html: `<span style="background:${selected === step.id ? '#b75b38' : day.precision === 'undecided' ? '#35695d' : '#556ca1'}">${getStepTypeIcon(step.type)}</span>`, iconSize: [38, 46], iconAnchor: [19, 46] }),
       }).addTo(layer);
       const label = document.createElement('span'); label.textContent = step.title;
       marker.bindTooltip(label, { direction: 'top', offset: [0, -35] });
@@ -83,6 +84,6 @@
   button.active { background:#35695d; color:white; }
   .map-hint,.map-error { position:absolute; top:75px; left:50%; transform:translateX(-50%); width:max-content; max-width:85%; padding:12px 16px; background:white; border-radius:12px; z-index:3; font-size:12px; box-shadow:0 3px 15px #0002; }
   .map-error { background:#fff5e5; }
-  :global(.atelier-marker span) { display:grid; place-items:center; width:34px; height:34px; border:3px solid white; border-radius:50% 50% 50% 4px; color:white; box-shadow:0 3px 10px #213b3440; font-size:12px; font-weight:bold; }
+  :global(.atelier-marker span) { display:grid; place-items:center; width:38px; height:38px; border:3px solid white; border-radius:50% 50% 50% 4px; box-shadow:0 3px 10px #213b3440; font-size:17px; line-height:1; }
   @media(max-width:700px) { .map-frame { min-height:360px; border-radius:14px; } .map-tools { top:12px; right:10px; gap:4px; } button { padding:8px; font-size:11px; } }
 </style>

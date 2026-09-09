@@ -108,6 +108,8 @@
   let isAuthenticating = $state(false);
   let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
   let bulkDateOpen = $state(false);
+  let pendingDates = $state<Record<string, string>>({});
+  let applyingDates = $state(false);
 
   let selectedThemeId = $state(itinerary.theme_id || "standard-accordion");
   let selectedPaletteId = $state(itinerary.palette_id || getThemePreset(selectedThemeId).defaultPaletteId);
@@ -143,16 +145,31 @@
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
   });
 
-  async function moveDateGroup(sourceDate: string, targetDate: string) {
-    if (!targetDate || targetDate === sourceDate || !onBatchUpdateDates) return;
-    const group = datedGroups.find(([date]) => date === sourceDate)?.[1] ?? [];
-    await onBatchUpdateDates(group.map((step) => {
-      const start = new Date(step.start_at);
-      const target = new Date(`${targetDate}T00:00:00`);
-      target.setHours(start.getHours(), start.getMinutes(), start.getSeconds(), start.getMilliseconds());
-      const duration = step.end_at - step.start_at;
-      return { id: step.id, start_at: target.getTime(), end_at: target.getTime() + duration };
-    }));
+  const dateChangeCount = $derived(datedGroups.filter(([date]) => pendingDates[date] && pendingDates[date] !== date).length);
+
+  function openBulkDateEditor() {
+    pendingDates = Object.fromEntries(datedGroups.map(([date]) => [date, date]));
+    bulkDateOpen = true;
+  }
+
+  async function applyDateChanges() {
+    if (!onBatchUpdateDates || !dateChangeCount || applyingDates) return;
+    applyingDates = true;
+    try {
+      const updates = datedGroups.flatMap(([date, group]) => {
+        const targetDate = pendingDates[date];
+        if (!targetDate || targetDate === date) return [];
+        return group.map((step) => {
+          const start = new Date(step.start_at);
+          const target = new Date(`${targetDate}T00:00:00`);
+          target.setHours(start.getHours(), start.getMinutes(), start.getSeconds(), start.getMilliseconds());
+          const duration = step.end_at - step.start_at;
+          return { id: step.id, start_at: target.getTime(), end_at: target.getTime() + duration };
+        });
+      });
+      await onBatchUpdateDates(updates);
+      bulkDateOpen = false;
+    } finally { applyingDates = false; }
   }
 
   function openMoneyItem(itemId: string) {
@@ -506,14 +523,15 @@
             class="standard-btn-add"
             disabled={!hasEditPermission}>＋ 予定を追加</button
           >
-          {#if datedGroups.length > 0}<button type="button" class="standard-btn standard-btn-edit" onclick={() => bulkDateOpen = !bulkDateOpen}>日付をまとめて変更</button>{/if}
+          {#if datedGroups.length > 0}<button type="button" class="standard-btn standard-btn-edit" onclick={openBulkDateEditor}>日付をまとめて変更</button>{/if}
         </div>
         {#if bulkDateOpen}
           <section class="standard-bulk-date" aria-label="日付をまとめて変更">
-            <strong>同じ日に登録された予定をまとめて移動</strong>
+            <header><div><strong>日付をまとめて変更</strong><small>時刻と所要時間はそのままです</small></div><button type="button" aria-label="閉じる" onclick={() => bulkDateOpen = false}>×</button></header>
             {#each datedGroups as [date, dateSteps]}
-              <label>{date}（{dateSteps.length}件）<input type="date" value={date} onchange={(event) => void moveDateGroup(date, (event.currentTarget as HTMLInputElement).value)} /></label>
+              <label><span><strong>{date}</strong><small>{dateSteps.length}件の予定</small></span><span class="standard-bulk-date-arrow">→</span><input type="date" bind:value={pendingDates[date]} /></label>
             {/each}
+            <footer><button type="button" class="standard-btn standard-btn-secondary" onclick={() => bulkDateOpen = false}>キャンセル</button><button type="button" class="standard-btn standard-btn-primary" disabled={!dateChangeCount || applyingDates} onclick={applyDateChanges}>{applyingDates ? '変更中…' : `${dateChangeCount}日分を変更`}</button></footer>
           </section>
         {/if}
       {/if}

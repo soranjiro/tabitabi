@@ -710,15 +710,8 @@
             </div>
           </div>
           <div class="standard-form-field">
-            <label for="location-input" class="standard-form-label">場所</label>
-            <PlaceSearch onSelect={selectPlace} />
-            <input
-              id="location-input"
-              type="text"
-              bind:value={editedStep.location}
-              placeholder="場所を入力"
-              class="standard-input"
-            />
+            <span class="standard-form-label">場所</span>
+            <PlaceSearch bind:value={editedStep.location} onSelect={selectPlace} />
           </div>
           <div class="standard-form-field standard-form-field-wide">
             <div class="standard-form-label">予定の種類</div>

@@ -97,8 +97,8 @@
   let sheetOpen = $state(false);
   let editingStep = $state<Step | null>(null);
   let saving = $state(false);
-  let editingDayDate = $state<number | null>(null);
-  let dayDateDraft = $state('');
+  let batchDayOpen = $state(false);
+  let dayDateDrafts = $state<Record<number, string>>({});
   let memoOpen = $state(true);
   let memoDraft = $state("");
   let themeChoicesOpen = $state(false);
@@ -409,9 +409,27 @@
     } finally { saving = false; }
   }
 
-  function openDayDateEditor(group: { day: number; steps: Step[] }) {
-    dayDateDraft = localDateKey(group.steps[0].start_at);
-    editingDayDate = group.day;
+  function openBatchDayEditor() {
+    dayDateDrafts = Object.fromEntries(dayGroups.map((group) => [group.day, localDateKey(group.steps[0].start_at)]));
+    batchDayOpen = true;
+  }
+
+  async function applyBatchDayChanges() {
+    if (!onBatchUpdateDates || saving) return;
+    const updates = dayGroups.flatMap((group) => {
+      const value = dayDateDrafts[group.day];
+      if (!value || value === localDateKey(group.steps[0].start_at)) return [];
+      return group.steps.map((step) => {
+        const start = new Date(step.start_at);
+        const target = new Date(`${value}T00:00:00`);
+        target.setHours(start.getHours(), start.getMinutes(), start.getSeconds(), start.getMilliseconds());
+        const duration = step.end_at - step.start_at;
+        return { id: step.id, start_at: target.getTime(), end_at: target.getTime() + duration };
+      });
+    });
+    if (!updates.length) return;
+    saving = true;
+    try { await onBatchUpdateDates(updates); batchDayOpen = false; } finally { saving = false; }
   }
 
   async function saveTitle() {
@@ -521,8 +539,7 @@
 
       {#each dayGroups as group}
         <section class="draft-section">
-          <div class="section-heading"><div><h2>Day {group.day}</h2><p>{group.steps.length ? `${group.steps.length}件` : "予定なし"}</p></div>{#if hasEditPermission && group.steps.length}<button class="day-date-trigger" type="button" onclick={() => openDayDateEditor(group)}>日付を変更</button>{/if}</div>
-          {#if editingDayDate === group.day}<div class="day-date-editor"><span>Day {group.day} の予定をまとめて移動</span><input type="date" bind:value={dayDateDraft} /><button type="button" onclick={() => { void moveDay(group, dayDateDraft); editingDayDate = null; }} disabled={saving || dayDateDraft === localDateKey(group.steps[0].start_at)}>{saving ? '変更中…' : '変更する'}</button><button type="button" class="cancel" onclick={() => editingDayDate = null}>キャンセル</button></div>{/if}
+          <div class="section-heading"><div><h2>Day {group.day}</h2><p>{group.steps.length ? `${group.steps.length}件` : "予定なし"}</p></div></div>
           {#if group.steps.length}
             <div class="step-list">
               {#each group.steps as step, index}
@@ -557,6 +574,7 @@
       </div>
       {#if steps.length === 0}<div class="empty"><strong>旅程はまだ空です。</strong><p>「考える」から候補を追加しましょう。</p></div>{/if}
 
+      {#if hasEditPermission && dayGroups.length}<button class="batch-day-button" onclick={openBatchDayEditor}>日程をまとめて変更</button>{/if}
       <aside class:complete={isComplete} class="theme-guide">
         <p>{isComplete ? "予定が整いました。" : "予定が固まってきたら、"}</p>
         <strong>見るためのテーマに着替えてみませんか？</strong>
@@ -601,6 +619,8 @@
       </div>
     </div>
   {/if}
+
+  {#if batchDayOpen}<div class="batch-day-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (batchDayOpen = false)}><section class="batch-day-modal" role="dialog" aria-modal="true" aria-label="日程をまとめて変更"><header><div><strong>日程をまとめて変更</strong><small>時刻と所要時間はそのままです</small></div><button onclick={() => batchDayOpen = false} aria-label="閉じる">×</button></header>{#each dayGroups as group}<label><span>Day {group.day}<small>{group.steps.length}件の予定</small></span><input type="date" bind:value={dayDateDrafts[group.day]} /></label>{/each}<footer><button class="cancel" onclick={() => batchDayOpen = false}>キャンセル</button><button onclick={() => void applyBatchDayChanges()} disabled={saving}>{saving ? '変更中…' : '変更する'}</button></footer></section></div>{/if}
 
   <BottomNav
     onMoneyOpen={() => (showMoney = true)}
@@ -726,12 +746,12 @@
   .section-heading { display: flex; min-height: 46px; align-items: end; justify-content: space-between; border-bottom: 1px solid #cfd5d1; }
   .section-heading h2 { margin: 0 0 .35rem; font-size: .98rem; }
   .section-heading p { margin: 0 0 .35rem; color: #9aa29e; font-size: .66rem; }
-  .day-date-trigger { margin-bottom: .45rem; padding: .35rem .55rem; border: 1px solid #d9ddd9; border-radius: 999px; color: #52645d; background: #fff; font-size: .68rem; font-weight: 700; cursor: pointer; }
-  .day-date-editor { display:flex; flex-wrap:wrap; align-items:center; padding:.65rem 0; border-bottom:1px solid #e5e6e3; gap:.45rem .6rem; color:#66716d; font-size:.7rem; }
-  .day-date-editor span { flex:1 1 100%; }
-  .day-date-editor input { width:9.4rem; padding:.45rem .5rem; font-size:.78rem; }
-  .day-date-editor button { padding:.46rem .65rem; border:0; border-radius:7px; color:#fff; background:#2f6657; font-size:.72rem; font-weight:700; cursor:pointer; }
-  .day-date-editor button.cancel { color:#66716d; background:#eef0ed; }
+  .batch-day-button { display:block; width:100%; margin:2rem 0 0; padding:.75rem 1rem; border:1px solid #cfd5d1; border-radius:10px; color:#2f6657; background:#fff; font-size:.8rem; font-weight:750; cursor:pointer; }
+  .batch-day-backdrop { position:fixed; z-index:1000; inset:0; display:grid; padding:16px; place-items:center; background:rgba(24,35,31,.36); backdrop-filter:blur(2px); }
+  .batch-day-modal { width:min(480px,100%); max-height:calc(100dvh - 32px); overflow:auto; padding:1rem; border-radius:16px; background:#fff; box-shadow:0 16px 48px rgba(0,0,0,.2); }
+  .batch-day-modal header,.batch-day-modal footer,.batch-day-modal label { display:flex; align-items:center; }
+  .batch-day-modal header { justify-content:space-between; margin-bottom:.7rem; }.batch-day-modal header small,.batch-day-modal label small { display:block; margin-top:.15rem; color:#89928d; font-size:.68rem; }.batch-day-modal header > button { width:30px; height:30px; border:0; border-radius:50%; background:#eef0ed; font-size:1.1rem; cursor:pointer; }
+  .batch-day-modal label { justify-content:space-between; padding:.65rem 0; border-top:1px solid #e5e6e3; color:#53605b; font-size:.8rem; font-weight:700; }.batch-day-modal input { width:9.5rem; padding:.5rem; font-size:.8rem; }.batch-day-modal footer { justify-content:flex-end; margin-top:.8rem; gap:.5rem; }.batch-day-modal footer button { padding:.6rem .8rem; border:0; border-radius:8px; color:#fff; background:#2f6657; font-size:.75rem; font-weight:700; cursor:pointer; }.batch-day-modal footer button.cancel { color:#66716d; background:#eef0ed; }
   .step-list { border-bottom: 1px solid #e5e6e3; }
   .step-row { display: grid; min-height: 68px; border-bottom: 1px solid #e5e6e3; grid-template-columns: 1fr auto; align-items: stretch; }
   .step-row:last-child { border-bottom: 0; }

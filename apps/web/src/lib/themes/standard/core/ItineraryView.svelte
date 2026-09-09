@@ -523,16 +523,16 @@
             class="standard-btn-add"
             disabled={!hasEditPermission}>＋ 予定を追加</button
           >
-          {#if datedGroups.length > 0}<button type="button" class="standard-btn standard-btn-edit" onclick={openBulkDateEditor}>日付をまとめて変更</button>{/if}
+          {#if datedGroups.length > 0 && (currentViewMode === 'accordion' || currentViewMode === 'month')}<button type="button" class="standard-btn standard-btn-edit" onclick={openBulkDateEditor}>日付をまとめて変更</button>{/if}
         </div>
         {#if bulkDateOpen}
-          <section class="standard-bulk-date" aria-label="日付をまとめて変更">
+          <div class="standard-bulk-date-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (bulkDateOpen = false)}><section class="standard-bulk-date" role="dialog" aria-modal="true" aria-label="日付をまとめて変更">
             <header><div><strong>日付をまとめて変更</strong><small>時刻と所要時間はそのままです</small></div><button type="button" aria-label="閉じる" onclick={() => bulkDateOpen = false}>×</button></header>
             {#each datedGroups as [date, dateSteps]}
               <label><span><strong>{date}</strong><small>{dateSteps.length}件の予定</small></span><span class="standard-bulk-date-arrow">→</span><input type="date" bind:value={pendingDates[date]} /></label>
             {/each}
             <footer><button type="button" class="standard-btn standard-btn-secondary" onclick={() => bulkDateOpen = false}>キャンセル</button><button type="button" class="standard-btn standard-btn-primary" disabled={!dateChangeCount || applyingDates} onclick={applyDateChanges}>{applyingDates ? '変更中…' : `${dateChangeCount}日分を変更`}</button></footer>
-          </section>
+          </section></div>
         {/if}
       {/if}
 
@@ -546,6 +546,7 @@
         {secretModeOffset}
         viewMode={currentViewMode}
         bind:focusedDate
+        onOpenDateEditor={openBulkDateEditor}
       />
 
       {#if itinerary.source_itinerary_id && publicNotice}

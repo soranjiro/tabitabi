@@ -166,6 +166,8 @@
   background: color-mix(in srgb, #fff 92%, var(--theme-bg));
   box-shadow: var(--theme-shadow-sm);
 }
+.standard-bulk-date-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; padding: 1rem; place-items: center; background: rgba(34, 42, 38, .35); backdrop-filter: blur(2px); }
+.standard-bulk-date-backdrop .standard-bulk-date { width: min(100%, 32rem); max-height: min(42rem, calc(100dvh - 2rem)); margin: 0; overflow: auto; }
 
 .standard-bulk-date header,
 .standard-bulk-date footer,

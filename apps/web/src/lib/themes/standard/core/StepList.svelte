@@ -45,6 +45,7 @@
       },
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
+    onOpenDateEditor?: () => void;
   }
 
   let {
@@ -56,6 +57,7 @@
     viewMode = "dayCard",
     onUpdateStep,
     onDeleteStep,
+    onOpenDateEditor,
   }: Props = $props();
 
   function isSecretStep(step: Step): boolean {
@@ -415,6 +417,7 @@
     {onUpdateStep}
     {onDeleteStep}
     onStepClick={handleStepClick}
+    {onOpenDateEditor}
   />
 {:else if viewMode === "accordion"}
   <AccordionView {steps} onStepClick={handleStepClick} />
@@ -448,6 +451,7 @@
     {onUpdateStep}
     {onDeleteStep}
     onStepClick={handleStepClick}
+    {onOpenDateEditor}
   />
 {:else if steps.length === 0}
   <div class="standard-empty">予定がまだ登録されていません</div>
@@ -530,7 +534,7 @@
               <button
                 type="button"
                 class="standard-card-header"
-                onclick={() => handleCardClick(idx)}
+                onclick={() => hasEditPermission ? onOpenDateEditor?.() : handleCardClick(idx)}
                 tabindex={idx === activeIndex ? 0 : -1}
               >
                 {formatDate(date)}

@@ -216,6 +216,17 @@
     }
   }
 
+  async function handleBatchUpdateDates(updates: import("@tabitabi/types").BatchStepDateUpdate[]) {
+    try {
+      await stepApi.updateDates(data.itinerary.id, updates);
+      await invalidateAll();
+    } catch (error) {
+      console.error("Failed to update step dates:", error);
+      alert("予定の日付更新に失敗しました");
+      throw error;
+    }
+  }
+
   let isViewOnly = $derived(!!data.itinerary.source_itinerary_id);
 
 
@@ -262,6 +273,7 @@
     onUpdateItinerary={isViewOnly ? undefined : handleUpdateItinerary}
     onCreateStep={isViewOnly ? undefined : handleCreateStep}
     onUpdateStep={isViewOnly ? undefined : handleUpdateStep}
+    onBatchUpdateDates={isViewOnly ? undefined : handleBatchUpdateDates}
     onDeleteStep={isViewOnly ? undefined : handleDeleteStep}
   />
 {/key}

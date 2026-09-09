@@ -24,6 +24,7 @@
       data: Record<string, unknown>,
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
+    onOpenDateEditor?: () => void;
   }
 
   let {
@@ -34,6 +35,7 @@
     onStepClick,
     onUpdateStep,
     onDeleteStep,
+    onOpenDateEditor,
   }: Props = $props();
 
   let selectedStep = $state<Step | null>(null);
@@ -112,18 +114,18 @@
         <div class="standard-week-header">
           <div class="standard-week-corner"></div>
           {#each weekDates() as date}
-            <div
+            <button type="button"
               class="standard-week-day-header"
               class:has-events={utilGetOverlappingStepsForDay(
                 timedSteps(),
                 formatDateKey(date),
               ).length > 0 || getAllDayStepsForDate(date).length > 0}
-            >
+              onclick={() => hasEditPermission && onOpenDateEditor?.()}>
               <div class="standard-week-day-name">{getDayName(date)}</div>
               <div class="standard-week-day-date">
                 {getDateDisplay(date)}
               </div>
-            </div>
+            </button>
           {/each}
         </div>
       </div>

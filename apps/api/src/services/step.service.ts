@@ -183,6 +183,15 @@ export class StepService {
     return await this.get(stepId);
   }
 
+  async updateDates(itineraryId: string, updates: Array<{ id: string; start_at: number; end_at: number }>): Promise<Step[]> {
+    const now = getCurrentTimestamp();
+    await this.db.batch(updates.map((update) => this.db
+      .prepare('UPDATE steps SET start_at = ?, end_at = ?, updated_at = ? WHERE id = ? AND itinerary_id = ?')
+      .bind(update.start_at, update.end_at, now, update.id, itineraryId)));
+    const result = await Promise.all(updates.map((update) => this.get(update.id)));
+    return result.filter((step): step is Step => !!step);
+  }
+
   async delete(stepId: string): Promise<boolean> {
     const result = await this.db
       .prepare('DELETE FROM steps WHERE id = ?')

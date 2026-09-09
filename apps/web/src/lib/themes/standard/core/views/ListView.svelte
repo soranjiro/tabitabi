@@ -19,6 +19,7 @@
       data: Record<string, unknown>,
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
+    onOpenDateEditor?: () => void;
   }
 
   let {
@@ -29,6 +30,7 @@
     onStepClick,
     onUpdateStep,
     onDeleteStep,
+    onOpenDateEditor,
   }: Props = $props();
 
   let selectedStep = $state<Step | null>(null);
@@ -74,14 +76,14 @@
           {#if idx === 0 || getStepDate(sortedSteps[idx - 1]) !== getStepDate(step)}
             <tr class="standard-list-date-header">
               <td colspan="4" class="standard-list-date-header-cell">
-                <div class="standard-list-date-header-content">
+                <button type="button" class="standard-list-date-header-content" onclick={() => hasEditPermission && onOpenDateEditor?.()}>
                   <span class="standard-list-date-header-date"
                     >{formatDate(getStepDate(step))}</span
                   >
                   <span class="standard-list-date-header-day"
                     >({getDayOfWeek(getStepDate(step))})</span
                   >
-                </div>
+                </button>
               </td>
             </tr>
           {/if}

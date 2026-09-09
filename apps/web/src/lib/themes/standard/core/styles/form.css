@@ -157,6 +157,41 @@
   text-align: center;
 }
 
+.standard-bulk-date {
+  width: min(100% - 2rem, 42rem);
+  margin: 0 auto 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--theme-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, #fff 92%, var(--theme-bg));
+  box-shadow: var(--theme-shadow-sm);
+}
+.standard-bulk-date-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; padding: 1rem; place-items: center; background: rgba(34, 42, 38, .35); backdrop-filter: blur(2px); }
+.standard-bulk-date-backdrop .standard-bulk-date { width: min(100%, 32rem); max-height: min(42rem, calc(100dvh - 2rem)); margin: 0; overflow: auto; }
+
+.standard-bulk-date header,
+.standard-bulk-date footer,
+.standard-bulk-date label {
+  display: flex;
+  align-items: center;
+}
+
+.standard-bulk-date header { justify-content: space-between; margin-bottom: .75rem; }
+.standard-bulk-date header strong, .standard-bulk-date label strong { display: block; color: var(--theme-text); font-size: .88rem; }
+.standard-bulk-date small { display: block; margin-top: .15rem; color: var(--theme-text-light); font-size: .7rem; }
+.standard-bulk-date header > button { width: 28px; height: 28px; border: 0; border-radius: 50%; color: var(--theme-text-light); background: transparent; font-size: 1.15rem; cursor: pointer; }
+.standard-bulk-date label { min-height: 54px; padding: .55rem 0; border-top: 1px solid var(--theme-border); gap: .55rem; }
+.standard-bulk-date label > span:first-child { flex: 1; min-width: 0; }
+.standard-bulk-date-arrow { color: var(--theme-text-light); }
+.standard-bulk-date input { width: 9.25rem; padding: .45rem .5rem; border: 1px solid var(--theme-border); border-radius: 8px; color: var(--theme-text); background: #fff; font: inherit; font-size: .82rem; }
+.standard-bulk-date footer { justify-content: flex-end; margin-top: .8rem; gap: .5rem; }
+.standard-bulk-date footer .standard-btn { padding: .6rem .9rem; font-size: .78rem; }
+
+@media (max-width: 420px) {
+  .standard-bulk-date { width: calc(100% - 1.5rem); padding: .8rem; }
+  .standard-bulk-date input { width: 8.35rem; }
+}
+
 .standard-btn-add {
   background: #fff;
   color: var(--theme-primary);

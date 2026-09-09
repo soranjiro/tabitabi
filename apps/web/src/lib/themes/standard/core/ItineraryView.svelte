@@ -3,6 +3,7 @@
   import {
     createTimestamp,
     createEndTimestamp,
+    getStepDate,
     STEP_TYPE,
   } from "@tabitabi/types";
   import type { StepType } from "@tabitabi/types";
@@ -74,6 +75,7 @@
       },
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
+    onBatchUpdateDates?: (updates: import("@tabitabi/types").BatchStepDateUpdate[]) => Promise<void>;
     onReorderSteps?: (...args: unknown[]) => Promise<void> | void;
   }
 
@@ -84,6 +86,7 @@
     onCreateStep,
     onUpdateStep,
     onDeleteStep,
+    onBatchUpdateDates,
     onReorderSteps: _onReorderSteps,
   }: Props = $props();
 
@@ -104,6 +107,9 @@
   let showMetadataDialog = $state(false);
   let isAuthenticating = $state(false);
   let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let bulkDateOpen = $state(false);
+  let pendingDates = $state<Record<string, string>>({});
+  let applyingDates = $state(false);
 
   let selectedThemeId = $state(itinerary.theme_id || "standard-accordion");
   let selectedPaletteId = $state(itinerary.palette_id || getThemePreset(selectedThemeId).defaultPaletteId);
@@ -129,6 +135,42 @@
 
   let focusedDate = $state<string | null>(null);
   let stepListRef: any = undefined;
+
+  const datedGroups = $derived.by(() => {
+    const groups = new Map<string, Step[]>();
+    for (const step of steps) {
+      const date = getStepDate(step);
+      groups.set(date, [...(groups.get(date) ?? []), step]);
+    }
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+  });
+
+  const dateChangeCount = $derived(datedGroups.filter(([date]) => pendingDates[date] && pendingDates[date] !== date).length);
+
+  function openBulkDateEditor() {
+    pendingDates = Object.fromEntries(datedGroups.map(([date]) => [date, date]));
+    bulkDateOpen = true;
+  }
+
+  async function applyDateChanges() {
+    if (!onBatchUpdateDates || !dateChangeCount || applyingDates) return;
+    applyingDates = true;
+    try {
+      const updates = datedGroups.flatMap(([date, group]) => {
+        const targetDate = pendingDates[date];
+        if (!targetDate || targetDate === date) return [];
+        return group.map((step) => {
+          const start = new Date(step.start_at);
+          const target = new Date(`${targetDate}T00:00:00`);
+          target.setHours(start.getHours(), start.getMinutes(), start.getSeconds(), start.getMilliseconds());
+          const duration = step.end_at - step.start_at;
+          return { id: step.id, start_at: target.getTime(), end_at: target.getTime() + duration };
+        });
+      });
+      await onBatchUpdateDates(updates);
+      bulkDateOpen = false;
+    } finally { applyingDates = false; }
+  }
 
   function openMoneyItem(itemId: string) {
     stepOpenedFromMoney = null;
@@ -481,7 +523,17 @@
             class="standard-btn-add"
             disabled={!hasEditPermission}>＋ 予定を追加</button
           >
+          {#if datedGroups.length > 0 && (currentViewMode === 'accordion' || currentViewMode === 'month')}<button type="button" class="standard-btn standard-btn-edit" onclick={openBulkDateEditor}>日付をまとめて変更</button>{/if}
         </div>
+        {#if bulkDateOpen}
+          <div class="standard-bulk-date-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (bulkDateOpen = false)}><section class="standard-bulk-date" role="dialog" aria-modal="true" aria-label="日付をまとめて変更">
+            <header><div><strong>日付をまとめて変更</strong><small>時刻と所要時間はそのままです</small></div><button type="button" aria-label="閉じる" onclick={() => bulkDateOpen = false}>×</button></header>
+            {#each datedGroups as [date, dateSteps]}
+              <label><span><strong>{date}</strong><small>{dateSteps.length}件の予定</small></span><span class="standard-bulk-date-arrow">→</span><input type="date" bind:value={pendingDates[date]} /></label>
+            {/each}
+            <footer><button type="button" class="standard-btn standard-btn-secondary" onclick={() => bulkDateOpen = false}>キャンセル</button><button type="button" class="standard-btn standard-btn-primary" disabled={!dateChangeCount || applyingDates} onclick={applyDateChanges}>{applyingDates ? '変更中…' : `${dateChangeCount}日分を変更`}</button></footer>
+          </section></div>
+        {/if}
       {/if}
 
       <StepList
@@ -494,6 +546,7 @@
         {secretModeOffset}
         viewMode={currentViewMode}
         bind:focusedDate
+        onOpenDateEditor={openBulkDateEditor}
       />
 
       {#if itinerary.source_itinerary_id && publicNotice}

@@ -114,6 +114,37 @@ steps.post('/', async (c) => {
   return c.json({ success: true, data }, 201);
 });
 
+steps.put('/batch-date', async (c) => {
+  const raw = await c.req.json<{ itinerary_id?: unknown; updates?: unknown }>();
+  if (typeof raw.itinerary_id !== 'string' || !Array.isArray(raw.updates) || raw.updates.length === 0) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'itinerary_id and one or more date updates are required' } }, 400);
+  }
+  const updates = raw.updates.map((update: any) => ({
+    id: typeof update?.id === 'string' ? update.id : '',
+    start_at: parseToUnixMs(update?.start_at),
+    end_at: parseToUnixMs(update?.end_at),
+  }));
+  if (updates.some((update) => !update.id || update.start_at === null || update.end_at === null || update.end_at < update.start_at)) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Each update needs a valid id, start_at and end_at' } }, 400);
+  }
+  const itineraryService = new ItineraryService(c.env.DB);
+  const itinerary = await itineraryService.get(raw.itinerary_id);
+  if (!itinerary) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+  if (itinerary.source_itinerary_id) return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot modify steps of a shared snapshot' } }, 403);
+  if (itinerary.password) {
+    const token = extractBearerToken(c.req.header('Authorization'));
+    const payload = token ? await verifyToken(token, c.env.JWT_SECRET) : null;
+    if (!payload || payload.shioriId !== itinerary.id) return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'You can only edit steps in your own password-protected itinerary' } }, 403);
+  }
+  const service = new StepService(c.env.DB);
+  const existing = await Promise.all(updates.map((update) => service.get(update.id)));
+  if (existing.some((step) => !step || step.itinerary_id !== itinerary.id)) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'All steps must belong to this itinerary' } }, 400);
+  }
+  const data = await service.updateDates(itinerary.id, updates as Array<{ id: string; start_at: number; end_at: number }>);
+  return c.json({ success: true, data });
+});
+
 steps.put('/:stepId', async (c) => {
   const stepId = c.req.param('stepId');
   const raw = await c.req.json();

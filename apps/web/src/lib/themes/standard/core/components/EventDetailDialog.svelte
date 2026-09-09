@@ -19,6 +19,8 @@
     updateMemoText,
   } from "$lib/memo";
   import TypePicker from "./TypePicker.svelte";
+  import PlaceSearch from "$lib/planning/PlaceSearch.svelte";
+  import type { PlaceResult } from "$lib/planning/search";
   import { getBookingCard } from "../utils/booking-card";
   import { moneyApi } from "$lib/api/money";
   import { demoStorage, getIsDemoMode } from "$lib/demo";
@@ -273,6 +275,10 @@
     if (type === STEP_TYPE.NORMAL_SIGHTSEEING) return "観光・体験リンク";
     if (type === STEP_TYPE.NORMAL_SHOPPING) return "買い物リンク";
     return "関連リンク";
+  }
+
+  function selectPlace(place: PlaceResult) {
+    editedStep.location = `${place.name} ${place.address}`.trim();
   }
 
   function getLinkPlaceholder(type: StepType | undefined): string {
@@ -704,14 +710,8 @@
             </div>
           </div>
           <div class="standard-form-field">
-            <label for="location-input" class="standard-form-label">場所</label>
-            <input
-              id="location-input"
-              type="text"
-              bind:value={editedStep.location}
-              placeholder="場所を入力"
-              class="standard-input"
-            />
+            <span class="standard-form-label">場所</span>
+            <PlaceSearch bind:value={editedStep.location} onSelect={selectPlace} />
           </div>
           <div class="standard-form-field standard-form-field-wide">
             <div class="standard-form-label">予定の種類</div>

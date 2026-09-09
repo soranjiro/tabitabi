@@ -1,11 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import "../app.css";
-  import "./home/hero-refresh.css";
-  import "./home/hero-desktop-finetune.css";
-  import "./home/hero-preview-responsive.css";
-  import "./home/hero-mobile-facts.css";
-  import "$lib/itinerary/background-cover.css";
 
   function isIndexablePath(pathname: string) {
     if (pathname === "/" || pathname === "/explore") return true;

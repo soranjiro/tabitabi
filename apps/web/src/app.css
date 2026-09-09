@@ -8,17 +8,17 @@ body {
 }
 
 /* Keep the landing-page accent styling while meeting WCAG AA contrast. */
-.home-page .primary {
-  background: color-mix(in srgb, var(--accent) 62%, #162b43);
+.home-page .hero-actions .primary {
+  background: color-mix(in srgb, var(--accent) 62%, #162b43) !important;
 }
 .home-page .preview-body > p {
-  color: #59677c;
+  color: #59677c !important;
 }
 .home-page ol time {
-  color: #56667d;
+  color: #56667d !important;
 }
 .home-page .create-heading p {
-  color: #506987;
+  color: #506987 !important;
 }
 
 /*

@@ -13,6 +13,8 @@
     "deploy:web": "pnpm --filter web deploy",
     "db:schema": "node apps/db/scripts/generate-schema.mjs",
     "db:schema:check": "pnpm run db:schema && git diff --exit-code -- apps/db/schema.sql",
+    "db:migrations:check": "node apps/db/scripts/check-migrations.mjs",
+    "db:migrations:test": "node apps/db/scripts/test-migrations.mjs",
     "test": "turbo test:run",
     "test:api": "pnpm --filter api test:run",
     "test:web": "pnpm --filter web test:run",

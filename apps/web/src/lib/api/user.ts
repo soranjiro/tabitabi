@@ -15,8 +15,6 @@ import type {
   PublishItineraryInput,
   PublishItineraryResponse,
 } from '@tabitabi/types';
-import { userAuth } from '../user-auth';
-import { auth } from '../auth';
 import type { ItineraryResponse, Step } from '@tabitabi/types';
 export interface BookContent { itinerary: ItineraryResponse; steps: Step[] }
 
@@ -26,9 +24,19 @@ const API_BASE_URL =
   'http://localhost:8787/api/v1';
 
 async function request<T>(endpoint: string, options: RequestInit = {}, authRequired = true): Promise<T> {
-  const token = authRequired ? await userAuth.getToken() : null;
+  let token: string | null = null;
+  if (authRequired) {
+    const { userAuth } = await import('../user-auth');
+    token = await userAuth.getToken();
+  }
+
   const itineraryId = endpoint.match(/\/bookmarks\/([^/]+)/)?.[1];
-  const itineraryToken = itineraryId ? auth.getToken(itineraryId) : null;
+  let itineraryToken: string | null = null;
+  if (itineraryId) {
+    const { auth } = await import('../auth');
+    itineraryToken = auth.getToken(itineraryId);
+  }
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {

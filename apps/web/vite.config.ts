@@ -30,8 +30,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
+          // Keep the very large map renderer isolated, but otherwise let
+          // Rollup/SvelteKit create route-aware chunks. A catch-all vendor
+          // chunk makes public pages download code used only by other routes.
           if (id.includes('mapbox-gl')) return 'mapbox';
-          if (id.includes('node_modules')) return 'vendor';
         }
       }
     }

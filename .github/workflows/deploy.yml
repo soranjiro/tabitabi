@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      run_seed:
+        description: "Re-seed official itineraries"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -28,6 +34,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
@@ -74,11 +82,68 @@ jobs:
         working-directory: apps/api
         run: pnpm wrangler d1 create tabitabi --remote || echo "Database may already exist"
 
+      - name: Check pending D1 migrations
+        id: migrations
+        working-directory: apps/api
+        run: |
+          STATUS=$(node scripts/d1-migrate.mjs status --remote --env production)
+          printf '%s\n' "$STATUS"
+          if printf '%s\n' "$STATUS" | grep -q '^\[ \]'; then
+            echo "pending=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pending=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Capture D1 rollback bookmark
+        if: steps.migrations.outputs.pending == 'true'
+        id: bookmark
+        working-directory: apps/api
+        run: |
+          JSON=$(pnpm wrangler d1 time-travel info DB --env production --json)
+          printf '%s\n' "$JSON"
+          BOOKMARK=$(printf '%s' "$JSON" | node -e '
+            const fs = require("node:fs");
+            const value = JSON.parse(fs.readFileSync(0, "utf8"));
+            function findBookmark(node) {
+              if (!node || typeof node !== "object") return null;
+              if (typeof node.bookmark === "string") return node.bookmark;
+              for (const child of Object.values(node)) {
+                const found = findBookmark(child);
+                if (found) return found;
+              }
+              return null;
+            }
+            const bookmark = findBookmark(value);
+            if (!bookmark) process.exit(2);
+            process.stdout.write(bookmark);
+          ')
+          echo "bookmark=${BOOKMARK}" >> "$GITHUB_OUTPUT"
+          echo "### D1 migration rollback point" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`${BOOKMARK}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Restore command: \`pnpm wrangler d1 time-travel restore DB --env production --bookmark=${BOOKMARK}\`" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Apply D1 migrations (api)
+        if: steps.migrations.outputs.pending == 'true'
         working-directory: apps/api
         run: node scripts/d1-migrate.mjs up --remote --env production
 
+      - name: Verify D1 after migrations
+        working-directory: apps/api
+        run: node scripts/d1-migrate.mjs verify --remote --env production
+
+      - name: Detect seed changes
+        id: seed
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "changed=${{ inputs.run_seed }}" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "${{ github.event.before }}" "${GITHUB_SHA}" -- apps/db/migrations/seed.sql; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Seed official itineraries
+        if: steps.seed.outputs.changed == 'true'
         working-directory: apps/api
         run: node scripts/d1-migrate.mjs seed --remote --env production
 

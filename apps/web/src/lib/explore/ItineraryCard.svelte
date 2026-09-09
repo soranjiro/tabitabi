@@ -87,6 +87,7 @@
         src={coverImage}
         alt=""
         loading="lazy"
+        fetchpriority="low"
         decoding="async"
         width="640"
         height="180"

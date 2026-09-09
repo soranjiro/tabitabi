@@ -92,6 +92,7 @@
   <title>みんなのしおり - たびたび</title>
   <meta name="description" content="誰かの旅から、次の旅を見つけよう。行き先やテーマから公開された旅行しおりを探せます。" />
   <link rel="canonical" href="https://tabitabi.pages.dev/explore" />
+  <link rel="preload" as="image" href="/itinerary-backgrounds/coastal-drive.avif" fetchpriority="high" />
 </svelte:head>
 
 <div class="page">

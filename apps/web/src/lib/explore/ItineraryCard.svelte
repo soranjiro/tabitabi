@@ -81,15 +81,15 @@
   }
 </script>
 
-<article style={`--accent:${colors[0]};--soft:${colors[1]}`}>
+<article style={`--accent:${colors[0]};--soft:${colors[1]}`} data-priority-card={eager || undefined}>
   <a class="card-link" href="/itineraries/{itinerary.itinerary_id}" aria-label="{itinerary.title}を読む">
     <div class="theme-strip">
       <img
         class="cover"
         src={coverImage}
         alt=""
-        loading={eager ? "eager" : "lazy"}
-        fetchpriority={eager ? "high" : "auto"}
+        loading="lazy"
+        fetchpriority="auto"
         decoding="async"
         width="640"
         height="180"

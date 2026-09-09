@@ -168,7 +168,7 @@
     padding: 4px 8px;
     border-radius: 999px;
     color: #45546b;
-    background: rgba(255,255,255,.9);
+    background: rgba(255,255,255,.84);
     font-size: 10px;
     font-weight: 800;
   }
@@ -185,20 +185,20 @@
     place-items: center;
     border: 0;
     border-radius: 50%;
-    color: #45546b;
-    background: rgba(255,255,255,.94);
+    color: #55657f;
+    background: rgba(255,255,255,.9);
     box-shadow: 0 4px 12px rgba(39,54,79,.1);
     font-size: 20px;
     line-height: 1;
     cursor: pointer;
   }
-  .favorite.favorited { color: #b72f4d; }
+  .favorite.favorited { color: #e65f76; }
   .favorite:disabled { cursor: wait; opacity: .65; }
   .favorite:focus-visible { outline: 2px solid #315da8; outline-offset: 2px; }
 
   .body { padding: 16px; }
-  .destinations { color: #3f65aa; font-size: 11px; font-weight: 800; }
-  .destinations i { font-style: normal; color: #68768a; }
+  .destinations { color: #4c72bc; font-size: 11px; font-weight: 800; }
+  .destinations i { font-style: normal; color: #aab4c5; }
 
   h3 {
     min-height: 2.9em;
@@ -211,13 +211,13 @@
   .description {
     min-height: 3.3em;
     margin: 0 0 12px;
-    color: #56647a;
+    color: #6b778c;
     font-size: 12px;
     line-height: 1.65;
   }
 
   .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-  .chips span { padding: 4px 7px; border-radius: 6px; color: #53627a; background: #f5f7fb; font-size: 10px; }
+  .chips span { padding: 4px 7px; border-radius: 6px; color: #60708a; background: #f5f7fb; font-size: 10px; }
 
   .meta {
     display: flex;
@@ -227,13 +227,13 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    color: #5f6b7d;
+    color: #8a95a7;
     font-size: 10px;
   }
 
   .author { display: inline-flex; align-items: center; gap: 5px; color: inherit; text-decoration: none; }
-  .author:hover { color: #365995; }
-  .author i { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; color: #365995; background: #eef4ff; font-style: normal; font-weight: 900; }
+  .author:hover { color: #4c72bc; }
+  .author i { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; color: #4c72bc; background: #eef4ff; font-style: normal; font-weight: 900; }
 
   @media (max-width: 420px) {
     article { border-radius: 8px; }

@@ -26,6 +26,7 @@
   import MoneyOverlay from "$lib/features/money/MoneyOverlay.svelte";
   import PackingOverlay from "$lib/features/packing/PackingOverlay.svelte";
   import { openPrintStudio } from "$lib/print";
+  import TypePicker from "../standard/core/components/TypePicker.svelte";
   import "../standard/core/styles/index.css";
 
   interface Props {
@@ -58,9 +59,10 @@
       is_all_day?: boolean;
     }) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
+    onBatchUpdateDates?: (updates: import("@tabitabi/types").BatchStepDateUpdate[]) => Promise<void>;
   }
 
-  let { itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, mapPlanning = false }: Props = $props();
+  let { itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, onBatchUpdateDates, mapPlanning = false }: Props = $props();
   let placeDraft = $state<Place | null>(null);
   let formError = $state('');
   let descriptionEditing = $state(false);
@@ -126,6 +128,7 @@
     endTime: "",
     location: "",
     link: "",
+    type: STEP_TYPE.NORMAL_GENERAL as StepType,
   });
 
   const previewPin = $derived<Step[]>(placeDraft ? [{ id:'preview-pin', itinerary_id:itinerary.id, title:form.title || '選んだ場所', location:form.location, notes:updatePlace(undefined, placeDraft), start_at:0, end_at:0, created_at:'', updated_at:'' }] : []);
@@ -281,7 +284,7 @@
     placeDraft = place ?? null;
     formError = '';
     editingStep = null;
-    form = { title: "", note: "", when: "undecided", day: 1, time: "", endTime: "", location: "", link: "" };
+    form = { title: "", note: "", when: "undecided", day: 1, time: "", endTime: "", location: "", link: "", type: STEP_TYPE.NORMAL_GENERAL as StepType };
     sheetOpen = true;
   }
 
@@ -305,6 +308,7 @@
         : "",
       location: step.location ?? "",
       link: step.link ?? "",
+      type: step.type ?? STEP_TYPE.NORMAL_GENERAL,
     };
     sheetOpen = true;
   }
@@ -345,7 +349,7 @@
         start_at: startAt,
         end_at: endAt,
         notes,
-        type: editingStep?.type ?? STEP_TYPE.NORMAL_GENERAL,
+        type: form.type,
         is_all_day: false,
       };
       const location = form.location.trim();
@@ -386,6 +390,21 @@
     const targetOrder = targetSchedule.order ?? currentIndex + direction;
     await onUpdateStep(step.id, { notes: updateStepSchedule(step.notes, { ...stepSchedule, day: dayForStep(step) ?? undefined, order: targetOrder }) });
     await onUpdateStep(target.id, { notes: updateStepSchedule(target.notes, { ...targetSchedule, day: dayForStep(target) ?? undefined, order: currentOrder }) });
+  }
+
+  async function moveDay(group: { steps: Step[] }, value: string) {
+    if (!value || !onBatchUpdateDates || saving) return;
+    saving = true;
+    try {
+      const updates = group.steps.map((step) => {
+        const start = new Date(step.start_at);
+        const target = new Date(`${value}T00:00:00`);
+        target.setHours(start.getHours(), start.getMinutes(), start.getSeconds(), start.getMilliseconds());
+        const duration = step.end_at - step.start_at;
+        return { id: step.id, start_at: target.getTime(), end_at: target.getTime() + duration };
+      });
+      await onBatchUpdateDates(updates);
+    } finally { saving = false; }
   }
 
   async function saveTitle() {
@@ -495,7 +514,7 @@
 
       {#each dayGroups as group}
         <section class="draft-section">
-          <div class="section-heading"><div><h2>Day {group.day}</h2><p>{group.steps.length ? `${group.steps.length}件` : "予定なし"}</p></div></div>
+          <div class="section-heading"><div><h2>Day {group.day}</h2><p>{group.steps.length ? `${group.steps.length}件` : "予定なし"}</p></div>{#if hasEditPermission && group.steps.length}<label class="day-date">この日の日時<input type="date" value={localDateKey(group.steps[0].start_at)} onchange={(event) => void moveDay(group, (event.currentTarget as HTMLInputElement).value)} /></label>{/if}</div>
           {#if group.steps.length}
             <div class="step-list">
               {#each group.steps as step, index}
@@ -547,8 +566,8 @@
         <div class="sheet-handle"></div><div class="sheet-title"><h2>{editingStep ? "予定を編集" : "予定を追加"}</h2><button onclick={() => (sheetOpen = false)} aria-label="閉じる">×</button></div>
         <form onsubmit={saveStep}>
           {#if formError}<p role="alert">{formError}</p>{/if}
+          <PlaceSearch onSelect={selectPlace} />
           {#if mapPlanning}
-            <PlaceSearch onSelect={selectPlace} />
             {#if placeDraft}
               <div class="pin-fields"><strong>✓ 場所を選択済み</strong><p>{form.location || '地図で選んだ場所'} · ピンの位置を確かめてください。</p>
                 {#await import('../planning-map/PlaceMap.svelte') then module}
@@ -563,10 +582,11 @@
           <label>タイトル<input bind:value={form.title} placeholder="清水寺に行きたい" required /></label>
           <label>メモ<textarea bind:value={form.note} rows="3" placeholder="朝の方が空いてそう"></textarea></label>
           <label>場所 <small>任意</small><input bind:value={form.location} placeholder="例：清水寺" autocomplete="off" /></label>
+          <div class="type-picker"><span>予定のアイコン</span><TypePicker value={form.type} onSelect={(type: StepType) => form.type = type} /></div>
           <label>リンク <small>任意</small><input type="url" bind:value={form.link} placeholder="https://..." /></label>
           <fieldset><legend>いつ？</legend><label class="radio"><input type="radio" bind:group={form.when} value="undecided" />まだ決めない</label><label class="radio"><input type="radio" bind:group={form.when} value="day" />日を決める</label></fieldset>
           {#if form.when === "day"}
-            <div class="date-fields"><label>日<select bind:value={form.day}>{#each Array.from({ length: dayCount + 1 }, (_, index) => index + 1) as day}<option value={day}>Day {day}</option>{/each}</select></label><div class="time-fields"><label>開始時刻 <small>任意</small><input type="time" bind:value={form.time} /></label>{#if form.time}<label>終了時刻 <small>任意</small><input type="time" bind:value={form.endTime} /><small>空欄なら1時間後</small></label>{/if}</div></div>
+            <div class="date-fields"><label>日<select bind:value={form.day}>{#each Array.from({ length: dayCount + 1 }, (_, index) => index + 1) as day}<option value={day}>Day {day}</option>{/each}</select></label><div class="time-fields"><label>開始時刻 <small>任意</small><input type="time" bind:value={form.time} /></label>{#if form.time}<label>終了時刻 <small>任意</small><input type="time" bind:value={form.endTime} /></label>{/if}</div></div>
           {/if}
           <button class="save-button" type="submit" disabled={saving}>{saving ? "保存中…" : editingStep ? "保存" : "追加"}</button>
           {#if editingStep}<button class="delete-button" type="button" onclick={deleteStep}>この予定を削除</button>{/if}

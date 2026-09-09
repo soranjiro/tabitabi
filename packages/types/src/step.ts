@@ -78,6 +78,13 @@ export interface UpdateStepInput {
   is_all_day?: boolean;
 }
 
+/** Date-only updates; the client preserves each event's local time and duration. */
+export interface BatchStepDateUpdate {
+  id: string;
+  start_at: number;
+  end_at: number;
+}
+
 export function getStepDate(step: Step): string {
   const d = new Date(step.start_at);
   const y = d.getFullYear();

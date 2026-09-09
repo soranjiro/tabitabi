@@ -2,7 +2,7 @@
   import SharedItineraryView from "../../core/ItineraryView.svelte";
   import "../../core/styles/index.css";
   export let itinerary; export let steps; export let onUpdateItinerary = undefined;
-  export let onCreateStep = undefined; export let onUpdateStep = undefined;
+  export let onCreateStep = undefined; export let onUpdateStep = undefined; export let onBatchUpdateDates = undefined;
   export let onDeleteStep = undefined; export let onReorderSteps = undefined;
 </script>
-<SharedItineraryView {itinerary} {steps} {onUpdateItinerary} {onCreateStep} {onUpdateStep} {onDeleteStep} {onReorderSteps} />
+<SharedItineraryView {itinerary} {steps} {onUpdateItinerary} {onCreateStep} {onUpdateStep} {onDeleteStep} {onBatchUpdateDates} {onReorderSteps} />

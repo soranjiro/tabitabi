@@ -7,7 +7,7 @@ export * from './money';
 export * from './trip-member';
 export * from './packing';
 export { STEP_TYPE, STEP_TYPE_CATEGORIES, STEP_TYPE_DEFAULT } from './step';
-export type { Step, CreateStepInput, UpdateStepInput, StepType } from './step';
+export type { Step, CreateStepInput, UpdateStepInput, BatchStepDateUpdate, StepType } from './step';
 export { getStepDate, getStepTime, getStepEndTime, getStepEndDate, createTimestamp, createEndTimestamp } from './step';
 export * from './theme';
 export * from './timeline';

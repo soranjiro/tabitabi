@@ -6,6 +6,8 @@
     STEP_TYPE_CONFIGS,
   } from "../utils/step-type";
   import TypePicker from "./TypePicker.svelte";
+  import PlaceSearch from "$lib/planning/PlaceSearch.svelte";
+  import type { PlaceResult } from "$lib/planning/search";
 
   interface Props {
     newStep: {
@@ -116,11 +118,16 @@
       is_all_day: isAllDay,
     });
   }
+
+  function selectPlace(place: PlaceResult) {
+    newStep.location = `${place.name} ${place.address}`.trim();
+  }
 </script>
 
 <form class="standard-form" onsubmit={handleSubmit}>
   <h3 class="standard-form-title">新しい予定を追加</h3>
   <div class="standard-form-grid">
+    <PlaceSearch onSelect={selectPlace} />
     <input
       type="text"
       bind:value={newStep.title}

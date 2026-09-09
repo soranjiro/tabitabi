@@ -1,4 +1,4 @@
-import type { Step, CreateStepInput, UpdateStepInput } from '@tabitabi/types';
+import type { Step, CreateStepInput, UpdateStepInput, BatchStepDateUpdate } from '@tabitabi/types';
 import { apiClient } from './client';
 
 export const stepApi = {
@@ -13,6 +13,9 @@ export const stepApi = {
 
   update: (stepId: string, data: UpdateStepInput, itineraryId: string) =>
     apiClient.put<Step>(`/steps/${stepId}`, data, itineraryId),
+
+  updateDates: (itineraryId: string, updates: BatchStepDateUpdate[]) =>
+    apiClient.put<Step[]>('/steps/batch-date', { itinerary_id: itineraryId, updates }, itineraryId),
 
   delete: (stepId: string, itineraryId: string) =>
     apiClient.delete(`/steps/${stepId}`, itineraryId),

@@ -3,6 +3,7 @@
   import {
     createTimestamp,
     createEndTimestamp,
+    getStepDate,
     STEP_TYPE,
   } from "@tabitabi/types";
   import type { StepType } from "@tabitabi/types";
@@ -74,6 +75,7 @@
       },
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
+    onBatchUpdateDates?: (updates: import("@tabitabi/types").BatchStepDateUpdate[]) => Promise<void>;
     onReorderSteps?: (...args: unknown[]) => Promise<void> | void;
   }
 
@@ -84,6 +86,7 @@
     onCreateStep,
     onUpdateStep,
     onDeleteStep,
+    onBatchUpdateDates,
     onReorderSteps: _onReorderSteps,
   }: Props = $props();
 
@@ -104,6 +107,7 @@
   let showMetadataDialog = $state(false);
   let isAuthenticating = $state(false);
   let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let bulkDateOpen = $state(false);
 
   let selectedThemeId = $state(itinerary.theme_id || "standard-accordion");
   let selectedPaletteId = $state(itinerary.palette_id || getThemePreset(selectedThemeId).defaultPaletteId);
@@ -129,6 +133,27 @@
 
   let focusedDate = $state<string | null>(null);
   let stepListRef: any = undefined;
+
+  const datedGroups = $derived.by(() => {
+    const groups = new Map<string, Step[]>();
+    for (const step of steps) {
+      const date = getStepDate(step);
+      groups.set(date, [...(groups.get(date) ?? []), step]);
+    }
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+  });
+
+  async function moveDateGroup(sourceDate: string, targetDate: string) {
+    if (!targetDate || targetDate === sourceDate || !onBatchUpdateDates) return;
+    const group = datedGroups.find(([date]) => date === sourceDate)?.[1] ?? [];
+    await onBatchUpdateDates(group.map((step) => {
+      const start = new Date(step.start_at);
+      const target = new Date(`${targetDate}T00:00:00`);
+      target.setHours(start.getHours(), start.getMinutes(), start.getSeconds(), start.getMilliseconds());
+      const duration = step.end_at - step.start_at;
+      return { id: step.id, start_at: target.getTime(), end_at: target.getTime() + duration };
+    }));
+  }
 
   function openMoneyItem(itemId: string) {
     stepOpenedFromMoney = null;
@@ -481,7 +506,16 @@
             class="standard-btn-add"
             disabled={!hasEditPermission}>＋ 予定を追加</button
           >
+          {#if datedGroups.length > 0}<button type="button" class="standard-btn standard-btn-edit" onclick={() => bulkDateOpen = !bulkDateOpen}>日付をまとめて変更</button>{/if}
         </div>
+        {#if bulkDateOpen}
+          <section class="standard-bulk-date" aria-label="日付をまとめて変更">
+            <strong>同じ日に登録された予定をまとめて移動</strong>
+            {#each datedGroups as [date, dateSteps]}
+              <label>{date}（{dateSteps.length}件）<input type="date" value={date} onchange={(event) => void moveDateGroup(date, (event.currentTarget as HTMLInputElement).value)} /></label>
+            {/each}
+          </section>
+        {/if}
       {/if}
 
       <StepList

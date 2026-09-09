@@ -8,6 +8,7 @@
   export let onCreateStep = undefined;
   export let onUpdateStep = undefined;
   export let onDeleteStep = undefined;
+  export let onBatchUpdateDates = undefined;
   export let onReorderSteps = undefined;
 </script>
 
@@ -18,5 +19,6 @@
   {onCreateStep}
   {onUpdateStep}
   {onDeleteStep}
+  {onBatchUpdateDates}
   {onReorderSteps}
 />

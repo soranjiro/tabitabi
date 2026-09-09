@@ -5,6 +5,7 @@ import type { Env } from '../utils';
 import { validateMemoJson } from '../utils/memo';
 import { createPublicMemoSnapshot, createPublicStepSnapshot, createPublicTextSnapshot } from '../utils/publication';
 import { hashPassword } from '../utils/password';
+import { normalizeThemeId } from '../utils/theme';
 import type { BookContent } from './publication.service';
 
 const DEFAULT_THEME_ID = 'planning-draft';
@@ -61,7 +62,7 @@ export class ItineraryService {
     const itinerary: Itinerary = {
       id,
       title: input.title,
-      theme_id: input.theme_id || DEFAULT_THEME_ID,
+      theme_id: normalizeThemeId(input.theme_id || DEFAULT_THEME_ID),
       palette_id: input.palette_id || DEFAULT_PALETTE_ID,
       packing_enabled: input.packing_enabled ?? true,
       prefecture_slugs: [],
@@ -116,7 +117,7 @@ export class ItineraryService {
     }
     if (input.theme_id !== undefined) {
       fields.push('theme_id = ?');
-      values.push(input.theme_id || DEFAULT_THEME_ID);
+      values.push(normalizeThemeId(input.theme_id || DEFAULT_THEME_ID));
     }
     if (input.palette_id !== undefined) {
       fields.push('palette_id = ?');
@@ -341,7 +342,7 @@ export class ItineraryService {
     const itinerary: Itinerary = {
       id: row.id as string,
       title: row.title as string,
-      theme_id: row.theme_id as string,
+      theme_id: normalizeThemeId(row.theme_id as string),
       palette_id: (row.palette_id as string) || DEFAULT_PALETTE_ID,
       packing_enabled: row.packing_enabled !== 0,
       prefecture_slugs: this.parseStringArray(row.prefecture_slugs),

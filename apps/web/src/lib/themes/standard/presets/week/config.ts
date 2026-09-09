@@ -1,8 +1,8 @@
 import type { ThemeConfig } from "@tabitabi/types";
 
 export const seasonAutumnTheme: ThemeConfig = {
-  id: "standard-autumn",
-  name: "標準（秋）",
+  id: "week",
+  name: "週ビュー",
   version: "1.0.0",
   description: "温かみと落ち着きのある秋のテーマ",
   author: "Tabitabi Team",

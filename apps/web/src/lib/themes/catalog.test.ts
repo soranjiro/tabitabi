@@ -6,11 +6,11 @@ describe('theme catalog', () => {
     expect(getAvailableThemes().map((theme) => theme.id)).toEqual([
       'planning-map',
       'planning-draft',
-      'standard-spring',
-      'standard-accordion',
-      'standard-summer',
-      'standard-autumn',
-      'standard-winter',
+      'daycard',
+      'accordion',
+      'list',
+      'week',
+      'month',
     ]);
   });
 

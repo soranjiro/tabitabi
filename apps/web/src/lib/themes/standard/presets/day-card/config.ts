@@ -1,8 +1,8 @@
 import type { ThemeConfig } from "@tabitabi/types";
 
 export const seasonSpringTheme: ThemeConfig = {
-  id: "standard-spring",
-  name: "標準（春）",
+  id: "daycard",
+  name: "日カード",
   version: "1.0.0",
   description: "桜をモチーフにした優しい薄ピンクのテーマ",
   author: "Tabitabi Team",

@@ -1,8 +1,8 @@
 import type { ThemeConfig } from "@tabitabi/types";
 
 export const seasonSummerTheme: ThemeConfig = {
-  id: "standard-summer",
-  name: "標準（夏）",
+  id: "list",
+  name: "リスト",
   version: "1.0.0",
   description: "爽やかで涼しい夏のテーマ",
   author: "Tabitabi Team",

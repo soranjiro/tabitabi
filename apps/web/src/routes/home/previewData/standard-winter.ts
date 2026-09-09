@@ -2,7 +2,7 @@ import type { PreviewItinerary } from "./types";
 
 export const standardWinterPreview: PreviewItinerary = {
   title: "雪の北海道",
-  themeId: "standard-winter",
+  themeId: "month",
   themeName: "標準（冬）",
   description: "2週間で凛とした雪の旅",
   phrase: "冬の旅行計画",

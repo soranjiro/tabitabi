@@ -8,16 +8,6 @@ CREATE TABLE itinerary_secrets (
   updated_at TEXT NOT NULL,
   FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
 );
-CREATE TABLE IF NOT EXISTS "itineraries" (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  theme_id TEXT NOT NULL DEFAULT 'standard-autumn',
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  memo TEXT,
-  password TEXT
-, source_itinerary_id TEXT, packing_enabled INTEGER NOT NULL DEFAULT 1 CHECK(packing_enabled IN (0, 1)), prefecture_slugs TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(prefecture_slugs)), areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)), tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)), metadata_initialized INTEGER NOT NULL DEFAULT 1 CHECK(metadata_initialized IN (0, 1)), palette_id TEXT NOT NULL DEFAULT 'sakura', background_image TEXT, page_background_image TEXT, background_display TEXT NOT NULL DEFAULT 'cover'
-  CHECK(background_display IN ('cover', 'page')));
 CREATE TABLE IF NOT EXISTS "steps" (
   id TEXT PRIMARY KEY,
   itinerary_id TEXT NOT NULL,
@@ -54,7 +44,6 @@ CREATE TABLE user_bookmarks (
 );
 CREATE INDEX idx_user_bookmarks_user_id ON user_bookmarks(user_id);
 CREATE INDEX idx_user_bookmarks_itinerary_id ON user_bookmarks(itinerary_id);
-CREATE INDEX idx_itineraries_created_at ON itineraries(created_at DESC);
 CREATE TABLE itinerary_fork_stats (
   itinerary_id TEXT PRIMARY KEY,
   fork_count INTEGER NOT NULL DEFAULT 0,
@@ -172,26 +161,6 @@ CREATE TABLE itinerary_packing_checks (
   FOREIGN KEY (member_id, itinerary_id)
     REFERENCES itinerary_members(id, itinerary_id) ON DELETE CASCADE
 );
-CREATE TRIGGER validate_itinerary_snapshot_insert
-BEFORE INSERT ON itineraries
-WHEN NEW.source_itinerary_id IS NOT NULL
- AND NOT EXISTS (SELECT 1 FROM itineraries WHERE id = NEW.source_itinerary_id)
-BEGIN
-  SELECT RAISE(ABORT, 'source itinerary does not exist');
-END;
-CREATE TRIGGER validate_itinerary_snapshot_update
-BEFORE UPDATE OF source_itinerary_id ON itineraries
-WHEN NEW.source_itinerary_id IS NOT NULL
- AND NOT EXISTS (SELECT 1 FROM itineraries WHERE id = NEW.source_itinerary_id)
-BEGIN
-  SELECT RAISE(ABORT, 'source itinerary does not exist');
-END;
-CREATE TRIGGER delete_published_snapshot_with_source
-BEFORE DELETE ON itineraries
-WHEN OLD.source_itinerary_id IS NULL
-BEGIN
-  DELETE FROM itineraries WHERE source_itinerary_id = OLD.id;
-END;
 CREATE TABLE itinerary_money_fund_transactions (
   id TEXT PRIMARY KEY,
   itinerary_id TEXT NOT NULL,
@@ -219,14 +188,67 @@ CREATE TABLE itinerary_favorites (
 );
 CREATE INDEX idx_itinerary_favorites_user_id ON itinerary_favorites(user_id);
 CREATE INDEX idx_itinerary_favorites_itinerary_id ON itinerary_favorites(itinerary_id);
+CREATE TABLE IF NOT EXISTS "itinerary_publications" (
+  source_itinerary_id TEXT NOT NULL,
+  shared_itinerary_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  prefecture_slugs TEXT NOT NULL CHECK(json_valid(prefecture_slugs)),
+  areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)),
+  tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)),
+  published_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (source_itinerary_id, user_id),
+  FOREIGN KEY (source_itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE,
+  FOREIGN KEY (shared_itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_itinerary_publications_user ON itinerary_publications(user_id, published_at DESC);
+CREATE INDEX idx_itinerary_publications_published ON itinerary_publications(published_at DESC);
+CREATE UNIQUE INDEX idx_publications_shared_id ON itinerary_publications(shared_itinerary_id);
+CREATE TABLE IF NOT EXISTS "itineraries" (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  theme_id TEXT NOT NULL DEFAULT 'daycard',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  memo TEXT,
+  password TEXT,
+  source_itinerary_id TEXT,
+  packing_enabled INTEGER NOT NULL DEFAULT 1 CHECK(packing_enabled IN (0, 1)),
+  prefecture_slugs TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(prefecture_slugs)),
+  areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)),
+  tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)),
+  metadata_initialized INTEGER NOT NULL DEFAULT 1 CHECK(metadata_initialized IN (0, 1)),
+  palette_id TEXT NOT NULL DEFAULT 'sakura',
+  background_image TEXT,
+  page_background_image TEXT,
+  background_display TEXT NOT NULL DEFAULT 'cover' CHECK(background_display IN ('cover', 'page'))
+);
+CREATE INDEX idx_itineraries_created_at ON itineraries(created_at DESC);
+CREATE INDEX idx_itineraries_source_id ON itineraries(source_itinerary_id);
+CREATE TRIGGER validate_itinerary_snapshot_insert
+BEFORE INSERT ON itineraries
+WHEN NEW.source_itinerary_id IS NOT NULL
+ AND NOT EXISTS (SELECT 1 FROM itineraries WHERE id = NEW.source_itinerary_id)
+BEGIN
+  SELECT RAISE(ABORT, 'source itinerary does not exist');
+END;
+CREATE TRIGGER validate_itinerary_snapshot_update
+BEFORE UPDATE OF source_itinerary_id ON itineraries
+WHEN NEW.source_itinerary_id IS NOT NULL
+ AND NOT EXISTS (SELECT 1 FROM itineraries WHERE id = NEW.source_itinerary_id)
+BEGIN
+  SELECT RAISE(ABORT, 'source itinerary does not exist');
+END;
+CREATE TRIGGER delete_published_snapshot_with_source
+BEFORE DELETE ON itineraries
+WHEN OLD.source_itinerary_id IS NULL
+BEGIN
+  DELETE FROM itineraries WHERE source_itinerary_id = OLD.id;
+END;
 CREATE TRIGGER set_official_itinerary_background_after_insert
 AFTER INSERT ON itineraries
-WHEN NEW.id IN (
-  'official-spring-source',
-  'official-summer-source',
-  'official-autumn-source',
-  'official-winter-source'
-)
+WHEN NEW.id IN ('official-spring-source', 'official-summer-source', 'official-autumn-source', 'official-winter-source')
 BEGIN
   UPDATE itineraries
   SET background_image = CASE NEW.id
@@ -247,21 +269,3 @@ BEGIN
       page_background_image = NULL
   WHERE id = NEW.id;
 END;
-CREATE INDEX idx_itineraries_source_id ON itineraries(source_itinerary_id);
-CREATE TABLE IF NOT EXISTS "itinerary_publications" (
-  source_itinerary_id TEXT NOT NULL,
-  shared_itinerary_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  prefecture_slugs TEXT NOT NULL CHECK(json_valid(prefecture_slugs)),
-  areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)),
-  tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)),
-  published_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  PRIMARY KEY (source_itinerary_id, user_id),
-  FOREIGN KEY (source_itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE,
-  FOREIGN KEY (shared_itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_itinerary_publications_user ON itinerary_publications(user_id, published_at DESC);
-CREATE INDEX idx_itinerary_publications_published ON itinerary_publications(published_at DESC);
-CREATE UNIQUE INDEX idx_publications_shared_id ON itinerary_publications(shared_itinerary_id);

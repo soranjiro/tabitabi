@@ -7,20 +7,6 @@ body {
   background-color: #f9fafb;
 }
 
-/* Keep the landing-page accent styling while meeting WCAG AA contrast. */
-.home-page .hero-actions .primary {
-  background: color-mix(in srgb, var(--accent) 62%, #162b43) !important;
-}
-.home-page .preview-body > p {
-  color: #59677c !important;
-}
-.home-page ol time {
-  color: #56667d !important;
-}
-.home-page .create-heading p {
-  color: #506987 !important;
-}
-
 /*
  * iOS Safari zooms the page when a form control with text smaller than 16px
  * receives focus. Keep text-entry controls at the no-zoom threshold on touch

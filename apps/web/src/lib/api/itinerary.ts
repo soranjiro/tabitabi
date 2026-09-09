@@ -1,6 +1,10 @@
 import type { Itinerary, CreateItineraryInput, UpdateItineraryInput, ItineraryResponse, ForkItineraryResponse, PublishItineraryResponse } from '@tabitabi/types';
 import { apiClient } from './client';
-import { userAuth } from '../user-auth';
+
+async function getUserToken() {
+  const { userAuth } = await import('../user-auth');
+  return userAuth.getToken();
+}
 
 export const itineraryApi = {
   list: () => apiClient.get<ItineraryResponse[]>('/itineraries'),
@@ -8,7 +12,7 @@ export const itineraryApi = {
   get: (id: string) => apiClient.get<ItineraryResponse>(`/itineraries/${id}`),
 
   create: async (data: CreateItineraryInput) => {
-    const userToken = await userAuth.getToken();
+    const userToken = await getUserToken();
     if (userToken) {
       return apiClient.postWithUserToken<ItineraryResponse & { token: string }>('/itineraries', data, userToken);
     }
@@ -21,7 +25,7 @@ export const itineraryApi = {
   delete: (id: string) => apiClient.delete(`/itineraries/${id}`, id),
 
   fork: async (id: string, content?: { itinerary: ItineraryResponse; steps: import('@tabitabi/types').Step[] }) => {
-    const userToken = await userAuth.getToken();
+    const userToken = await getUserToken();
     if (!userToken) return apiClient.post<ForkItineraryResponse>(`/itineraries/${id}/fork`, content ?? {});
     return apiClient.postWithUserToken<ForkItineraryResponse>(`/itineraries/${id}/fork`, content ?? {}, userToken);
   },

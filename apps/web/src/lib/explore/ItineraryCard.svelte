@@ -81,7 +81,8 @@
 
 <article style={`--accent:${colors[0]};--soft:${colors[1]}`}>
   <a class="card-link" href="/itineraries/{itinerary.itinerary_id}" aria-label="{itinerary.title}を読む">
-    <div class="theme-strip" style={`background-image:url(${coverImage})`}>
+    <div class="theme-strip">
+      <img class="cover" src={coverImage} alt="" loading="lazy" decoding="async" />
       <button
         class:favorited
         class="favorite"
@@ -131,13 +132,28 @@
   .card-link { color: inherit; text-decoration: none; }
 
   .theme-strip {
+    position: relative;
     display: flex;
     height: 58px;
     padding: 10px 12px;
+    overflow: hidden;
     align-items: flex-end;
     justify-content: space-between;
-    background-position: center;
-    background-size: cover;
+    background: var(--soft);
+  }
+
+  .cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .theme-strip > span,
+  .favorite {
+    position: relative;
+    z-index: 1;
   }
 
   .theme-strip > span {

@@ -177,7 +177,7 @@
 <style>
   :global(body){margin:0;color:#132d32;background:#fff;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
   .page{min-height:100vh}
-  .hero{position:relative;display:grid;min-height:300px;padding:45px 20px 28px;place-content:center;overflow:hidden;background:#eef8f9}
+  .hero{position:relative;display:grid;min-height:300px;padding:45px 20px 28px;place-content:center;overflow:hidden}
   .hero-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .hero::before{content:'';position:absolute;z-index:1;inset:0;background:linear-gradient(rgba(239,249,252,.3),rgba(255,255,255,.28))}
   .hero::after{content:'';position:absolute;z-index:1;inset:auto 0 0;height:70px;background:linear-gradient(transparent,#fff)}
@@ -220,7 +220,7 @@
   .cta div{padding:2.3rem}
   .cta p{font-family:serif;font-size:1.7rem;line-height:1.6}
   .cta a{display:inline-block;padding:.8rem 1.5rem;border-radius:99px;background:#076455;color:#fff;text-decoration:none;font-size:.8rem}
-  .state{text-align:center;padding:3rem;color:#5d6d6b}
+  .state{text-align:center;padding:3rem;color:#71807e}
   .filter-backdrop{position:fixed;z-index:2000;inset:0;display:flex;justify-content:flex-end;background:rgba(12,31,32,.35)}
   .filter{width:min(390px,100%);height:100%;box-sizing:border-box;padding:2rem 1.4rem;overflow:auto;background:#fff}
   .filter h2{font-family:serif}
@@ -234,7 +234,7 @@
   .filter fieldset button.active{border-color:#176656;background:#eaf5f1;color:#075a4c}
   .submit,.reset{width:100%;padding:.9rem;border:0;font-weight:700}
   .submit{border-radius:99px;background:#126754;color:white}
-  .reset{margin-top:.5rem;background:none;color:#3d5d58}
+  .reset{margin-top:.5rem;background:none;color:#4b6963}
 
   @media(max-width:700px){
     .hero{min-height:240px;padding-top:25px;place-content:start}

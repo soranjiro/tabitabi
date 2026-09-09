@@ -82,16 +82,16 @@
 <article style={`--accent:${colors[0]};--soft:${colors[1]}`}>
   <a class="card-link" href="/itineraries/{itinerary.itinerary_id}" aria-label="{itinerary.title}を読む">
     <div class="theme-strip">
-      <img class="cover" src={coverImage} alt="" loading="lazy" decoding="async" />
-      <button
-        class:favorited
-        class="favorite"
-        type="button"
-        aria-label={favorited ? "お気に入りから外す" : "お気に入りに登録"}
-        aria-pressed={favorited}
-        disabled={favoriteBusy}
-        onclick={toggleFavorite}
-      >{favorited ? "♥" : "♡"}</button>
+      <img
+        class="cover"
+        src={coverImage}
+        alt=""
+        loading="lazy"
+        fetchpriority="low"
+        decoding="async"
+        width="640"
+        height="180"
+      />
       <span>{duration}</span>
     </div>
     <div class="body">
@@ -108,14 +108,24 @@
       </div>
     </div>
   </a>
+  <button
+    class:favorited
+    class="favorite"
+    type="button"
+    aria-label={favorited ? "お気に入りから外す" : "お気に入りに登録"}
+    aria-pressed={favorited}
+    disabled={favoriteBusy}
+    onclick={toggleFavorite}
+  >{favorited ? "♥" : "♡"}</button>
   <div class="meta">
-    <a class="author" href="/users/{itinerary.username}"><i>{itinerary.username === "tabitabi_official" ? "旅" : itinerary.username.slice(0, 1).toUpperCase()}</i> {authorName}</a>
+    <a class="author" href="/users/{itinerary.username}"><i aria-hidden="true">{itinerary.username === "tabitabi_official" ? "旅" : itinerary.username.slice(0, 1).toUpperCase()}</i> {authorName}</a>
     <span>{itinerary.stops}件の予定 · {itinerary.copies}コピー</span>
   </div>
 </article>
 
 <style>
   article {
+    position: relative;
     overflow: hidden;
     border: 1px solid #e4eaf4;
     border-radius: 16px;
@@ -129,7 +139,7 @@
     box-shadow: 0 13px 32px rgba(51, 77, 123, 0.1);
   }
 
-  .card-link { color: inherit; text-decoration: none; }
+  .card-link { display: block; color: inherit; text-decoration: none; }
 
   .theme-strip {
     position: relative;
@@ -138,7 +148,7 @@
     padding: 10px 12px;
     overflow: hidden;
     align-items: flex-end;
-    justify-content: space-between;
+    justify-content: flex-end;
     background: var(--soft);
   }
 
@@ -150,13 +160,9 @@
     object-fit: cover;
   }
 
-  .theme-strip > span,
-  .favorite {
+  .theme-strip > span {
     position: relative;
     z-index: 1;
-  }
-
-  .theme-strip > span {
     padding: 4px 8px;
     border-radius: 999px;
     color: #45546b;
@@ -166,6 +172,10 @@
   }
 
   .favorite {
+    position: absolute;
+    z-index: 2;
+    top: 12px;
+    left: 12px;
     display: grid;
     width: 34px;
     height: 34px;
@@ -227,7 +237,7 @@
     article { border-radius: 8px; }
     .theme-strip { height: 86px; padding: 7px; }
     .theme-strip > span { padding: 3px 5px; font-size: 8px; }
-    .favorite { width: 27px; height: 27px; font-size: 16px; }
+    .favorite { top: 7px; left: 7px; width: 27px; height: 27px; font-size: 16px; }
     .body { padding: 10px; }
     h3 { min-height: 2.7em; margin: 5px 0; font-size: 13px; }
     .destinations, .chips { font-size: 9px; }

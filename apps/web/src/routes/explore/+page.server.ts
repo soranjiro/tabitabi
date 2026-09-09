@@ -8,7 +8,14 @@ const API_BASE_URL =
 
 export const prerender = false;
 
-export const load: PageServerLoad = async ({ fetch }) => {
+export const load: PageServerLoad = async ({ fetch, setHeaders }) => {
+  // The explore feed is public and changes much less often than it is read.
+  // A short edge TTL removes the API/D1 round-trip from repeat document loads
+  // while stale-while-revalidate keeps the page responsive during refreshes.
+  setHeaders({
+    'cache-control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=600',
+  });
+
   try {
     const response = await fetch(`${API_BASE_URL}/users?offset=0`);
     if (!response.ok) return { feed: null };

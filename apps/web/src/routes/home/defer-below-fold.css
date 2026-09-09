@@ -1,0 +1,7 @@
+/* Keep below-the-fold landing content out of the initial rendering work.
+ * The section remains in the DOM and becomes fully rendered as it approaches
+ * the viewport, so its layout and appearance are unchanged when visible. */
+.home-page .create-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1000px;
+}

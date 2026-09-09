@@ -17,8 +17,8 @@ const migrationFiles = readdirSync(migrationsDir)
   .filter((name) => /^\d+_.+\.sql$/.test(name))
   .sort();
 
-if (!['status', 'up', 'down', 'seed'].includes(command)) {
-  throw new Error('Usage: node scripts/d1-migrate.mjs <status|up|down|seed> [--remote] [--env <name>]');
+if (!['status', 'up', 'down', 'seed', 'verify'].includes(command)) {
+  throw new Error('Usage: node scripts/d1-migrate.mjs <status|up|down|seed|verify> [--remote] [--env <name>]');
 }
 
 if (command === 'status') showStatus();
@@ -27,7 +27,8 @@ else {
   ensureHistory();
   importWranglerHistory();
   if (command === 'up') migrateUp();
-  else migrateDown();
+  else if (command === 'down') migrateDown();
+  else verifyDatabase();
 }
 
 function showStatus() {
@@ -62,6 +63,32 @@ function migrateDown() {
   }
   executeSql(`${down}\nDELETE FROM schema_migrations WHERE version = '${sqlString(idOf(file))}';\n`);
   process.stdout.write(`Rolled back: ${file}\n`);
+}
+
+function verifyDatabase() {
+  const requiredTables = ['itineraries', 'steps', 'users', 'schema_migrations'];
+  const missingTables = requiredTables.filter((name) => !tableExists(name));
+  if (missingTables.length > 0) {
+    throw new Error(`Database verification failed: missing tables: ${missingTables.join(', ')}`);
+  }
+
+  const violations = query('PRAGMA foreign_key_check;');
+  if (violations.length > 0) {
+    throw new Error(`Database verification failed: foreign key violations: ${JSON.stringify(violations)}`);
+  }
+
+  const quickCheck = query('PRAGMA quick_check;');
+  if (!quickCheck.some((row) => Object.values(row).includes('ok'))) {
+    throw new Error(`Database verification failed: quick_check returned ${JSON.stringify(quickCheck)}`);
+  }
+
+  const applied = appliedMigrations();
+  const pending = migrationFiles.filter((file) => !applied.has(idOf(file)));
+  if (pending.length > 0) {
+    throw new Error(`Database verification failed: pending migrations remain: ${pending.join(', ')}`);
+  }
+
+  process.stdout.write('Database verification passed.\n');
 }
 
 function ensureHistory() {

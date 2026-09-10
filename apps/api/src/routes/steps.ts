@@ -23,15 +23,9 @@ steps.get('/', async (c) => {
     }, 400);
   }
 
-  const authHeader = c.req.header('Authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
-  let isEditMode = false;
-  if (token) {
-    const { verifyToken } = await import('../utils/jwt');
-    const payload = await verifyToken(token, c.env.JWT_SECRET);
-    isEditMode = !!payload;
-  }
+  const token = extractBearerToken(c.req.header('Authorization'));
+  const payload = token ? await verifyToken(token, c.env.JWT_SECRET) : null;
+  const isEditMode = payload?.shioriId === itineraryId;
 
   const stepService = new StepService(c.env.DB);
   const itineraryService = new ItineraryService(c.env.DB);

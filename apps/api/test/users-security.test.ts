@@ -20,6 +20,13 @@ beforeEach(async () => {
     metadata_initialized INTEGER NOT NULL DEFAULT 0, memo TEXT, password TEXT, source_itinerary_id TEXT,
     created_at TEXT NOT NULL, updated_at TEXT NOT NULL
   )`).run();
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS itinerary_secrets (
+    itinerary_id TEXT PRIMARY KEY, enabled BOOLEAN DEFAULT FALSE, offset_minutes INTEGER DEFAULT 60,
+    created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+  )`).run();
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS itinerary_fork_stats (
+    itinerary_id TEXT PRIMARY KEY, fork_count INTEGER NOT NULL DEFAULT 0
+  )`).run();
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS user_bookmarks (
     user_id TEXT NOT NULL, itinerary_id TEXT NOT NULL, is_visible BOOLEAN NOT NULL DEFAULT 0,
     prefecture_slugs TEXT NOT NULL DEFAULT '[]', areas TEXT NOT NULL DEFAULT '[]', tags TEXT NOT NULL DEFAULT '[]',
@@ -35,6 +42,8 @@ beforeEach(async () => {
 
   await env.DB.prepare('DELETE FROM itinerary_publications').run();
   await env.DB.prepare('DELETE FROM user_bookmarks').run();
+  await env.DB.prepare('DELETE FROM itinerary_fork_stats').run();
+  await env.DB.prepare('DELETE FROM itinerary_secrets').run();
   await env.DB.prepare('DELETE FROM itineraries').run();
   await env.DB.prepare('DELETE FROM users').run();
 

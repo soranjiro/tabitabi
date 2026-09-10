@@ -418,6 +418,7 @@
     .preview-body > p { margin-bottom: 10px; }
     ol { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
     ol li { min-height: 29px; padding-bottom: 4px; grid-template-columns: 39px minmax(0, 1fr); font-size: 7px; }
+    .preview-body ol li:nth-child(even)::before { display: none; }
     .preview-tabs { padding: 9px 25px 11px; }
     .tap-note { right: -1px; bottom: -37px; color: white; }
     .tap-note svg { width: 45px; }

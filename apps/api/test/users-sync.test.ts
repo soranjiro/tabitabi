@@ -481,12 +481,16 @@ describe('owner publication flow', () => {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ title: '鍵付きしおり', password: 'secret123' }),
     }, env);
-    const createJson = await createRes.json() as { data: { id: string } };
+    const createJson = await createRes.json() as { data: { id: string; token: string } };
     const itineraryId = createJson.data.id;
 
     const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        'X-Itinerary-Token': createJson.data.token,
+      },
       body: JSON.stringify({ prefecture_slugs: ['hokkaido'] }),
     }, env);
     expect(res.status).toBe(200);

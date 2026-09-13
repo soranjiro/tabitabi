@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { Env, Variables } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
-import { authMiddleware, optionalAuthMiddleware, optionalUserAuthMiddleware, userAuthMiddleware, userProfileMiddleware } from '../middleware/auth';
+import { optionalAuthMiddleware, optionalUserAuthMiddleware } from '../middleware/auth';
 import { generateToken } from '../utils/jwt';
 import { UserService } from '../services/user.service';
 import { createItinerarySchema, updateItinerarySchema } from '../validators';
@@ -14,7 +14,10 @@ const itineraries = new Hono<{ Bindings: Env; Variables: Variables }>();
 itineraries.get('/', async (c) => {
   const service = new ItineraryService(c.env.DB, c.env);
   const data = await service.list();
-  const response = data.map(itinerary => service.toResponseItinerary(itinerary));
+  // Source itinerary IDs are private-by-link capabilities. Never enumerate them.
+  const response = data
+    .filter(itinerary => Boolean(itinerary.source_itinerary_id))
+    .map(itinerary => service.toResponseItinerary(itinerary));
   return c.json({ success: true, data: response });
 });
 

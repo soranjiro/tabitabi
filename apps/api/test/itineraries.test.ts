@@ -213,20 +213,23 @@ describe('Itineraries API', () => {
       expect(data).toEqual([]);
     });
 
-    it('returns list of itineraries', async () => {
-      const createRequest = new Request('http://localhost/api/v1/itineraries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Trip 1' }),
-      });
-      await app.fetch(createRequest, env);
+    it('returns published snapshots without enumerating source itineraries', async () => {
+      const sourceIds: string[] = [];
+      for (const title of ['Trip 1', 'Trip 2']) {
+        const createResponse = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title }),
+        }), env);
+        const { data: source } = await createResponse.json() as any;
+        sourceIds.push(source.id);
 
-      const createRequest2 = new Request('http://localhost/api/v1/itineraries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Trip 2' }),
-      });
-      await app.fetch(createRequest2, env);
+        const publishResponse = await app.fetch(new Request(
+          `http://localhost/api/v1/itineraries/${source.id}/publish`,
+          { method: 'POST' },
+        ), env);
+        expect(publishResponse.status).toBe(200);
+      }
 
       const request = new Request('http://localhost/api/v1/itineraries');
       const response = await app.fetch(request, env);
@@ -234,6 +237,7 @@ describe('Itineraries API', () => {
       expect(response.status).toBe(200);
       const { data } = await response.json() as any;
       expect(data).toHaveLength(2);
+      expect(data.every((itinerary: { id: string }) => !sourceIds.includes(itinerary.id))).toBe(true);
     });
   });
 

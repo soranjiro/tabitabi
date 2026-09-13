@@ -1,14 +1,34 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { Env, Variables } from '../utils';
 import { UserService } from '../services/user.service';
 import { ItineraryService } from '../services/itinerary.service';
 import { userAuthMiddleware, userProfileMiddleware } from '../middleware/auth';
+import { verifyToken } from '../utils/jwt';
 import { bootstrapProfileSchema, publishItinerarySchema, syncBookmarksSchema, updateProfileSchema, updateVisibilitySchema } from '../validators';
 import { validationHook } from '../validators/hook';
 import { PublicationService, bookContentSchema } from '../services/publication.service';
 
 const users = new Hono<{ Bindings: Env; Variables: Variables }>();
+type UserRouteContext = Context<{ Bindings: Env; Variables: Variables }>;
+
+async function requireProtectedItineraryEditToken(c: UserRouteContext, itineraryId: string): Promise<Response | null> {
+  const itinerary = await new ItineraryService(c.env.DB, c.env).get(itineraryId);
+  if (!itinerary) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
+  }
+  if (itinerary.source_itinerary_id) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot modify a shared snapshot' } }, 403);
+  }
+  if (!itinerary.password) return null;
+
+  const token = c.req.header('X-Itinerary-Token');
+  const payload = token ? await verifyToken(token, c.env.JWT_SECRET) : null;
+  if (!payload || payload.shioriId !== itineraryId) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Itinerary edit permission is required' } }, 403);
+  }
+  return null;
+}
 
 users.get('/me/bookmarks/:itineraryId/preview', userAuthMiddleware, userProfileMiddleware, async c => {
   const id = c.req.param('itineraryId');
@@ -34,6 +54,8 @@ users.post('/me/bookmarks/:itineraryId/publication/restore', userAuthMiddleware,
   if (!publication || !await new UserService(c.env.DB).hasBookmark(c.get('userId')!, id)) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Publication not found' } }, 404);
   }
+  const denied = await requireProtectedItineraryEditToken(c, id);
+  if (denied) return denied;
   await service.replace(id, bookContentSchema.parse(await service.read(publication.id)), publication.id);
   return c.json({ success: true, data: { id } });
 });
@@ -165,6 +187,8 @@ users.post(
       if (!await userService.hasBookmark(userId, itineraryId)) {
         return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Saved itinerary not found' } }, 404);
       }
+      const denied = await requireProtectedItineraryEditToken(c, itineraryId);
+      if (denied) return denied;
       const snapshot = await itineraryService.publish(itineraryId, userId, {
         prefecture_slugs: input.prefecture_slugs, areas: input.areas ?? [], tags: input.tags ?? [],
       }, input.content);

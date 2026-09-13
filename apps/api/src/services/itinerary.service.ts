@@ -57,10 +57,7 @@ export class ItineraryService {
                s.enabled as secret_enabled, s.offset_minutes as secret_offset,
                COALESCE(f.fork_count, 0) as fork_count
         FROM official_itinerary_aliases a
-        INNER JOIN itinerary_publications p
-          ON p.user_id = a.user_id
-         AND p.source_itinerary_id = a.source_itinerary_id
-        INNER JOIN itineraries i ON i.id = p.shared_itinerary_id
+        INNER JOIN itineraries i ON i.id = a.itinerary_id
         LEFT JOIN itinerary_secrets s ON i.id = s.itinerary_id
         LEFT JOIN itinerary_fork_stats f ON i.id = f.itinerary_id
         WHERE a.alias = ?

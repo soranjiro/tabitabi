@@ -99,8 +99,7 @@ async function applyMigrations(db: D1Database) {
     );`,
     `CREATE TABLE IF NOT EXISTS official_itinerary_aliases (
       alias TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      source_itinerary_id TEXT NOT NULL
+      itinerary_id TEXT NOT NULL UNIQUE
     );`,
     `CREATE TABLE IF NOT EXISTS itinerary_members (
       id TEXT PRIMARY KEY,
@@ -288,8 +287,8 @@ describe('Itineraries API', () => {
       await env.DB.prepare(`INSERT INTO itinerary_publications
         (source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, published_at, updated_at)
         VALUES ('official-source', 'random-public-id', 'official-user', '[]', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).run();
-      await env.DB.prepare(`INSERT INTO official_itinerary_aliases (alias, user_id, source_itinerary_id)
-        VALUES ('official-spring-public', 'official-user', 'official-source')`).run();
+      await env.DB.prepare(`INSERT INTO official_itinerary_aliases (alias, itinerary_id)
+        VALUES ('official-spring-public', 'random-public-id')`).run();
       await env.DB.prepare(`INSERT INTO steps
         (id, itinerary_id, title, start_at, end_at, type, is_all_day, created_at, updated_at)
         VALUES ('official-step', 'random-public-id', 'Published step', 0, 0, 'normal:general', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).run();

@@ -61,6 +61,96 @@ INSERT INTO itineraries (
   'cover',
   '2026-09-13T00:00:00.000Z',
   '2026-09-13T00:00:00.000Z'
+),
+(
+  'preview-trip-public-summer',
+  '夏休みの沖縄旅行',
+  'daycard',
+  'sakura',
+  1,
+  '[]',
+  '[]',
+  '[]',
+  1,
+  '{"text":"Preview環境用の公式しおりです。"}',
+  NULL,
+  'preview-trip-source',
+  NULL,
+  'cover',
+  '2026-09-13T00:00:00.000Z',
+  '2026-09-13T00:00:00.000Z'
+),
+(
+  'preview-trip-public-autumn',
+  '日光・会津 紅葉と温泉',
+  'daycard',
+  'sakura',
+  1,
+  '[]',
+  '[]',
+  '[]',
+  1,
+  '{"text":"Preview環境用の公式しおりです。"}',
+  NULL,
+  'preview-trip-source',
+  NULL,
+  'cover',
+  '2026-09-13T00:00:00.000Z',
+  '2026-09-13T00:00:00.000Z'
+),
+(
+  'preview-trip-public-winter',
+  '冬の北海道 湯めぐり18日間',
+  'daycard',
+  'sakura',
+  1,
+  '[]',
+  '[]',
+  '[]',
+  1,
+  '{"text":"Preview環境用の公式しおりです。"}',
+  NULL,
+  'preview-trip-source',
+  NULL,
+  'cover',
+  '2026-09-13T00:00:00.000Z',
+  '2026-09-13T00:00:00.000Z'
+),
+(
+  'preview-trip-public-plan',
+  '紫陽花の鎌倉・江の島',
+  'daycard',
+  'sakura',
+  1,
+  '[]',
+  '[]',
+  '[]',
+  1,
+  '{"text":"Preview環境用の公式しおりです。"}',
+  NULL,
+  'preview-trip-source',
+  NULL,
+  'cover',
+  '2026-09-13T00:00:00.000Z',
+  '2026-09-13T00:00:00.000Z'
+),
+(
+  'preview-trip-public-map',
+  '秋の金沢 王道まち歩き',
+  'daycard',
+  'sakura',
+  1,
+  '[]',
+  '[]',
+  '[]',
+  1,
+  '{"text":"Preview環境用の公式しおりです。"}',
+  NULL,
+  'preview-trip-source',
+  NULL,
+  'cover',
+  '2026-09-13T00:00:00.000Z',
+  '2026-09-13T00:00:00.000Z'
 );
 
 -- A single step covers date/time, place/map coordinates, notes, type/icon and external link.
@@ -120,13 +210,13 @@ INSERT INTO itinerary_publications (
 
 -- These aliases are preview-local. Production aliases are configured against the
 -- real official account outside of migrations and seed data.
-INSERT INTO official_itinerary_aliases (alias, user_id, source_itinerary_id) VALUES
-  ('official-spring-public', 'preview-user', 'preview-trip-source'),
-  ('official-summer-public', 'preview-user', 'preview-trip-source'),
-  ('official-autumn-public', 'preview-user', 'preview-trip-source'),
-  ('official-winter-public', 'preview-user', 'preview-trip-source'),
-  ('official-plan-public', 'preview-user', 'preview-trip-source'),
-  ('official-map-public', 'preview-user', 'preview-trip-source');
+INSERT INTO official_itinerary_aliases (alias, itinerary_id) VALUES
+  ('official-spring-public', 'preview-trip-public'),
+  ('official-summer-public', 'preview-trip-public-summer'),
+  ('official-autumn-public', 'preview-trip-public-autumn'),
+  ('official-winter-public', 'preview-trip-public-winter'),
+  ('official-plan-public', 'preview-trip-public-plan'),
+  ('official-map-public', 'preview-trip-public-map');
 
 INSERT INTO itinerary_fork_stats (itinerary_id, fork_count)
 VALUES ('preview-trip-public', 1);

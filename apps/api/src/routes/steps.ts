@@ -36,7 +36,7 @@ steps.get('/', async (c) => {
     const offsetMinutes = itinerary.secret_settings.offset_minutes || 60;
     const hasEditPermission = isEditMode || !itinerary.password;
 
-    const data = await stepService.list(itineraryId, {
+    const data = await stepService.list(itinerary.id, {
       currentTime: now,
       offsetMinutes,
       maskSecrets: !hasEditPermission
@@ -45,7 +45,7 @@ steps.get('/', async (c) => {
     return c.json({ success: true, data });
   }
 
-  const data = await stepService.list(itineraryId);
+  const data = await stepService.list(itinerary?.id ?? itineraryId);
   return c.json({ success: true, data });
 });
 

@@ -265,3 +265,10 @@ CREATE TABLE IF NOT EXISTS "itinerary_publications" (
 CREATE INDEX idx_itinerary_publications_user ON itinerary_publications(user_id, published_at DESC);
 CREATE INDEX idx_itinerary_publications_published ON itinerary_publications(published_at DESC);
 CREATE UNIQUE INDEX idx_publications_shared_id ON itinerary_publications(shared_itinerary_id);
+CREATE TABLE official_itinerary_aliases (
+  alias TEXT PRIMARY KEY,
+  itinerary_id TEXT NOT NULL,
+  FOREIGN KEY (itinerary_id)
+    REFERENCES itineraries(id)
+    ON DELETE CASCADE
+);

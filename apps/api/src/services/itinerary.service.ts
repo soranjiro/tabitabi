@@ -31,6 +31,8 @@ export class ItineraryService {
   }
 
   async get(id: string): Promise<Itinerary | null> {
+    if (id.startsWith('official-')) return this.getOfficialAlias(id);
+
     const result = await this.db
       .prepare(`
         SELECT i.*,
@@ -42,6 +44,25 @@ export class ItineraryService {
         WHERE i.id = ?
       `)
       .bind(id)
+      .first();
+
+    return result ? this.mapToItinerary(result) : null;
+  }
+
+  /** Resolve an official, stable URL to the publisher's current public snapshot. */
+  private async getOfficialAlias(alias: string): Promise<Itinerary | null> {
+    const result = await this.db
+      .prepare(`
+        SELECT i.*,
+               s.enabled as secret_enabled, s.offset_minutes as secret_offset,
+               COALESCE(f.fork_count, 0) as fork_count
+        FROM official_itinerary_aliases a
+        INNER JOIN itineraries i ON i.id = a.itinerary_id
+        LEFT JOIN itinerary_secrets s ON i.id = s.itinerary_id
+        LEFT JOIN itinerary_fork_stats f ON i.id = f.itinerary_id
+        WHERE a.alias = ?
+      `)
+      .bind(alias)
       .first();
 
     return result ? this.mapToItinerary(result) : null;

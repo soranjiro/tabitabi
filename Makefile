@@ -55,10 +55,6 @@ seed-local:
 	$(MAKE) migrate-up
 	cd apps/api && pnpm run seed
 
-seed-remote:
-	$(MAKE) migrate-up-remote
-	cd apps/api && node scripts/d1-migrate.mjs seed --remote
-
 test:
 	pnpm run test
 

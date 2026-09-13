@@ -119,7 +119,8 @@
   >{favorited ? "♥" : "♡"}</button>
   <div class="meta">
     <a class="author" href="/users/{itinerary.username}"><i aria-hidden="true">{itinerary.username === "tabitabi_official" ? "旅" : itinerary.username.slice(0, 1).toUpperCase()}</i> {authorName}</a>
-    <span>{itinerary.stops}件の予定 · {itinerary.copies}コピー</span>
+    <!-- <span>{itinerary.stops}件の予定 · {itinerary.copies}コピー</span> -->
+    <span>{itinerary.stops}件の予定</span>
   </div>
 </article>
 

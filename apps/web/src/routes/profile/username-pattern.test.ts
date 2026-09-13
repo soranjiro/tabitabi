@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(new URL('./+page.svelte', import.meta.url), 'utf8');
+const source = readFileSync(resolve(process.cwd(), 'src/routes/profile/+page.svelte'), 'utf8');
 
 describe('profile username pattern', () => {
   it('binds the Unicode username pattern instead of embedding property escapes in Svelte markup', () => {

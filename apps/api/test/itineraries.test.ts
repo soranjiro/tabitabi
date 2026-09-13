@@ -97,6 +97,11 @@ async function applyMigrations(db: D1Database) {
       updated_at TEXT NOT NULL,
       PRIMARY KEY (source_itinerary_id, user_id)
     );`,
+    `CREATE TABLE IF NOT EXISTS official_itinerary_aliases (
+      alias TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      source_itinerary_id TEXT NOT NULL
+    );`,
     `CREATE TABLE IF NOT EXISTS itinerary_members (
       id TEXT PRIMARY KEY,
       itinerary_id TEXT NOT NULL,
@@ -118,6 +123,7 @@ describe('Itineraries API', () => {
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();
     await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
     await env.DB.prepare('DELETE FROM itinerary_members').run();
+    await env.DB.prepare('DELETE FROM official_itinerary_aliases').run();
     await env.DB.prepare('DELETE FROM itineraries').run();
   });
 
@@ -268,6 +274,40 @@ describe('Itineraries API', () => {
       const { success, error } = await response.json() as any;
       expect(success).toBe(false);
       expect(error.code).toBe('NOT_FOUND');
+    });
+
+    it('resolves an official alias to the current published snapshot', async () => {
+      await env.DB.prepare(`INSERT INTO users
+        (id, username, email, password_hash, created_at, updated_at)
+        VALUES ('official-user', 'official', 'official@example.com', 'hash', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).run();
+      await env.DB.prepare(`INSERT INTO itineraries
+        (id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, created_at, updated_at)
+        VALUES ('official-source', 'Source', 'standard-autumn', 'sakura', 1, '[]', '[]', '[]', 0, '{"text":""}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+               ('random-public-id', 'Official public itinerary', 'standard-autumn', 'sakura', 1, '[]', '[]', '[]', 0, '{"text":""}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).run();
+      await env.DB.prepare(`UPDATE itineraries SET source_itinerary_id = 'official-source' WHERE id = 'random-public-id'`).run();
+      await env.DB.prepare(`INSERT INTO itinerary_publications
+        (source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, published_at, updated_at)
+        VALUES ('official-source', 'random-public-id', 'official-user', '[]', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).run();
+      await env.DB.prepare(`INSERT INTO official_itinerary_aliases (alias, user_id, source_itinerary_id)
+        VALUES ('official-spring-public', 'official-user', 'official-source')`).run();
+      await env.DB.prepare(`INSERT INTO steps
+        (id, itinerary_id, title, start_at, end_at, type, is_all_day, created_at, updated_at)
+        VALUES ('official-step', 'random-public-id', 'Published step', 0, 0, 'normal:general', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).run();
+
+      const response = await app.request('/api/v1/itineraries/official-spring-public', {}, env);
+
+      expect(response.status).toBe(200);
+      expect((await response.json() as any).data.id).toBe('random-public-id');
+
+      const stepsResponse = await app.request('/api/v1/steps?itinerary_id=official-spring-public', {}, env);
+      expect(stepsResponse.status).toBe(200);
+      expect((await stepsResponse.json() as any).data).toHaveLength(1);
+    });
+
+    it('returns 404 for an unknown official alias', async () => {
+      const response = await app.request('/api/v1/itineraries/official-missing-public', {}, env);
+
+      expect(response.status).toBe(404);
     });
   });
 

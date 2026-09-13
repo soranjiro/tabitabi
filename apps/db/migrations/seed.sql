@@ -118,6 +118,16 @@ INSERT INTO itinerary_publications (
   '2026-09-13T00:00:00.000Z'
 );
 
+-- These aliases are preview-local. Production aliases are configured against the
+-- real official account outside of migrations and seed data.
+INSERT INTO official_itinerary_aliases (alias, user_id, source_itinerary_id) VALUES
+  ('official-spring-public', 'preview-user', 'preview-trip-source'),
+  ('official-summer-public', 'preview-user', 'preview-trip-source'),
+  ('official-autumn-public', 'preview-user', 'preview-trip-source'),
+  ('official-winter-public', 'preview-user', 'preview-trip-source'),
+  ('official-plan-public', 'preview-user', 'preview-trip-source'),
+  ('official-map-public', 'preview-user', 'preview-trip-source');
+
 INSERT INTO itinerary_fork_stats (itinerary_id, fork_count)
 VALUES ('preview-trip-public', 1);
 

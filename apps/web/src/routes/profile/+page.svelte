@@ -134,6 +134,28 @@
     }
   }
 
+  async function handleGoogleSignIn() {
+    error = null;
+    notice = null;
+    submitting = true;
+    try {
+      const firebaseUser = await userAuth.signInWithGoogle();
+      email = firebaseUser.email ?? "";
+      // Firebase marks email addresses returned by Google as verified. Keep the
+      // guard so a non-standard provider response never bypasses verification.
+      if (!firebaseUser.emailVerified) {
+        verificationSentTo = firebaseUser.email ?? "";
+        mode = "verify";
+        return;
+      }
+      await finishAuthentication();
+    } catch (e) {
+      error = firebaseMessage(e);
+    } finally {
+      submitting = false;
+    }
+  }
+
   async function checkVerification() {
     error = null;
     submitting = true;
@@ -340,6 +362,9 @@
     if (code.includes("email-already-in-use")) return "このメールアドレスはすでに使われています。";
     if (code.includes("weak-password")) return "パスワードは8文字以上で入力してください。";
     if (code.includes("too-many-requests")) return "試行回数が多すぎます。しばらく待ってからお試しください。";
+    if (code.includes("popup-closed-by-user")) return "Googleログインをキャンセルしました。";
+    if (code.includes("popup-blocked")) return "Googleログインのポップアップがブロックされました。ブラウザの設定を確認してください。";
+    if (code.includes("account-exists-with-different-credential")) return "このメールアドレスは別のログイン方法で登録されています。既存の方法でログインしてください。";
     if (code.includes("requires-recent-login")) return "安全のため、いったんログアウトして再ログインしてください。";
     if (code.includes("invalid-email")) return "メールアドレスの形式が正しくありません。";
     if (code === "PREFECTURE_REQUIRED") return "お住まいの都道府県を選択してください。";
@@ -376,6 +401,11 @@
             {#if mode === "register"}<label for="prefecture">お住まいの都道府県</label><select id="prefecture" bind:value={prefecture} required><option value="" disabled>選択してください</option>{#each PREFECTURES as item}<option value={item}>{item}</option>{/each}</select><p class="text-xs text-gray-500">公開されないプロフィール情報です。</p>{/if}
             <button type="submit" disabled={submitting} class="primary">{submitting ? "処理中..." : mode === "register" ? "確認メールを送る" : "ログイン"}</button>
           </form>
+          <div class="oauth-divider" aria-hidden="true"><span>または</span></div>
+          <button type="button" onclick={handleGoogleSignIn} disabled={submitting} class="google-button" aria-label={mode === "register" ? "Googleで新規登録" : "Googleでログイン"}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5a4.7 4.7 0 0 1-2 3.1v2.5h3.2c1.9-1.8 3.1-4.4 3.1-7.4Z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.7-2.4l-3.2-2.5c-.9.6-2 .9-3.5.9-2.7 0-5-1.8-5.8-4.3H2.9v2.6A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.2 13.7a6 6 0 0 1 0-3.5V7.6H2.9a10 10 0 0 0 0 8.9l3.3-2.8Z"/><path fill="#EA4335" d="M12 6a5.4 5.4 0 0 1 3.8 1.5l2.8-2.8A9.5 9.5 0 0 0 2.9 7.6l3.3 2.6C7 7.8 9.3 6 12 6Z"/></svg>
+            {mode === "register" ? "Googleで新規登録" : "Googleでログイン"}
+          </button>
           {#if mode === "login"}<button onclick={() => mode = "forgot"} class="link mt-3">パスワードを忘れた方</button>{/if}
           <p class="mt-5 pt-5 border-t text-sm text-center text-gray-600">{mode === "login" ? "初めての方は " : "アカウントをお持ちの方は "}<button onclick={() => mode = mode === "login" ? "register" : "login"} class="text-indigo-600 font-semibold hover:underline">{mode === "login" ? "新規登録" : "ログイン"}</button></p>
         {/if}
@@ -506,6 +536,11 @@
   .primary:hover { background: rgb(67 56 202); }
   .secondary { border: 1px solid rgb(199 210 254); color: rgb(67 56 202); background: white; }
   .secondary:hover { background: rgb(238 242 255); }
+  .oauth-divider { display: flex; margin: 1.25rem 0; align-items: center; gap: .75rem; color: #94a3b8; font-size: .75rem; }
+  .oauth-divider::before, .oauth-divider::after { content: ""; height: 1px; flex: 1; background: #e2e8f0; }
+  .google-button { display: flex; width: 100%; padding: .625rem .875rem; border: 1px solid #d1d5db; border-radius: .5rem; align-items: center; justify-content: center; gap: .65rem; color: #374151; background: white; font-size: .875rem; font-weight: 600; }
+  .google-button:hover { background: #f8fafc; }
+  .google-button svg { width: 1.15rem; height: 1.15rem; }
   .link { color: rgb(79 70 229); font-weight: 500; }
   .link:hover { text-decoration: underline; }
   .compact { width: auto; padding: .45rem .75rem; }

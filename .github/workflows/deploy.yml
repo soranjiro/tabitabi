@@ -4,12 +4,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      run_seed:
-        description: "Re-seed official itineraries"
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -131,21 +125,7 @@ jobs:
         working-directory: apps/api
         run: node scripts/d1-migrate.mjs verify --remote --env production
 
-      - name: Detect seed changes
-        id: seed
-        run: |
-          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            echo "changed=${{ inputs.run_seed }}" >> "$GITHUB_OUTPUT"
-          elif git diff --quiet "${{ github.event.before }}" "${GITHUB_SHA}" -- apps/db/migrations/seed.sql; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Seed official itineraries
-        if: steps.seed.outputs.changed == 'true'
-        working-directory: apps/api
-        run: node scripts/d1-migrate.mjs seed --remote --env production
+      # Production intentionally does NOT execute apps/db/migrations/seed.sql.
 
       - name: Deploy API (Workers)
         working-directory: apps/api

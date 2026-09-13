@@ -267,7 +267,7 @@ CREATE INDEX idx_itinerary_publications_published ON itinerary_publications(publ
 CREATE UNIQUE INDEX idx_publications_shared_id ON itinerary_publications(shared_itinerary_id);
 CREATE TABLE official_itinerary_aliases (
   alias TEXT PRIMARY KEY,
-  itinerary_id TEXT NOT NULL UNIQUE,
+  itinerary_id TEXT NOT NULL,
   FOREIGN KEY (itinerary_id)
     REFERENCES itineraries(id)
     ON DELETE CASCADE

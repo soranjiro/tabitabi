@@ -99,7 +99,7 @@ async function applyMigrations(db: D1Database) {
     );`,
     `CREATE TABLE IF NOT EXISTS official_itinerary_aliases (
       alias TEXT PRIMARY KEY,
-      itinerary_id TEXT NOT NULL UNIQUE
+      itinerary_id TEXT NOT NULL
     );`,
     `CREATE TABLE IF NOT EXISTS itinerary_members (
       id TEXT PRIMARY KEY,

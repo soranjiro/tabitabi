@@ -3,13 +3,14 @@ import { PREFECTURES } from '@tabitabi/types';
 
 // ── Users ──────────────────────────────────────────────
 
+const usernameSchema = z
+  .string()
+  .min(3, 'username must be at least 3 characters')
+  .max(20, 'username must be at most 20 characters')
+  .regex(/^[\p{L}\p{N}\p{M}_]+$/u, 'username must contain only alphanumeric characters, Unicode letters, and underscores');
+
 export const bootstrapProfileSchema = z.object({
-  username: z
-    .string()
-    .min(3, 'username must be at least 3 characters')
-    .max(20, 'username must be at most 20 characters')
-    .regex(/^[a-zA-Z0-9_]+$/, 'username must contain only alphanumeric characters and underscores')
-    .optional(),
+  username: usernameSchema.optional(),
   prefecture: z.enum(PREFECTURES).optional(),
 });
 
@@ -153,11 +154,7 @@ export const reorderPackingGroupsSchema = z.object({
 // ── Profile / Password ─────────────────────────────────
 
 export const updateProfileSchema = z.object({
-  username: z
-    .string()
-    .min(3, 'username must be at least 3 characters')
-    .max(20, 'username must be at most 20 characters')
-    .optional(),
+  username: usernameSchema.optional(),
   prefecture: z.enum(PREFECTURES).optional(),
 }).refine(data => data.username !== undefined || data.prefecture !== undefined, {
   message: 'username or prefecture is required',

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { prefectures, travelTags } from "$lib/explore/data";
+  import PrefectureSelector from "$lib/features/prefecture/PrefectureSelector.svelte";
 
   interface Props {
     selectedPrefectures: string[];
@@ -13,14 +14,8 @@
     tags = $bindable(),
   }: Props = $props();
 
-  let prefectureCandidate = $state("");
+  const prefectureOptions = prefectures.map((item) => ({ value: item.slug, label: item.name, region: item.region }));
   let areaInput = $state("");
-
-  function addPrefecture() {
-    if (!prefectureCandidate || selectedPrefectures.includes(prefectureCandidate) || selectedPrefectures.length >= 3) return;
-    selectedPrefectures = [...selectedPrefectures, prefectureCandidate];
-    prefectureCandidate = "";
-  }
 
   function addArea() {
     const value = areaInput.trim();
@@ -37,22 +32,15 @@
 
 <div class="metadata-fields">
   <section>
-    <div class="heading"><label for="metadata-prefecture">旅行先</label><span>3件まで</span></div>
-    {#if selectedPrefectures.length}
-      <div class="chips">
-        {#each selectedPrefectures as slug}
-          {@const item = prefectures.find((prefecture) => prefecture.slug === slug)}
-          {#if item}<button type="button" onclick={() => (selectedPrefectures = selectedPrefectures.filter((value) => value !== slug))}>{item.name}<span>×</span></button>{/if}
-        {/each}
-      </div>
-    {/if}
-    <div class="add-row">
-      <select id="metadata-prefecture" bind:value={prefectureCandidate}>
-        <option value="">都道府県を選ぶ</option>
-        {#each prefectures.filter((item) => !selectedPrefectures.includes(item.slug)) as item}<option value={item.slug}>{item.name}</option>{/each}
-      </select>
-      <button type="button" onclick={addPrefecture} disabled={!prefectureCandidate || selectedPrefectures.length >= 3}>追加</button>
-    </div>
+    <div class="heading"><span>旅行先</span><span>3件まで</span></div>
+    <PrefectureSelector
+      options={prefectureOptions}
+      selectedValues={selectedPrefectures}
+      max={3}
+      placeholder="旅行先の都道府県を選ぶ"
+      ariaLabel="旅行先の都道府県"
+      onChange={(values) => (selectedPrefectures = values)}
+    />
   </section>
 
   <section>
@@ -79,10 +67,10 @@
   .chips.optional button { color: var(--theme-text, #334155); background: color-mix(in srgb, var(--theme-primary, #6478b8) 13%, white); }
   .chips button span { margin-left: .3rem; opacity: .65; }
   .add-row { display: grid; grid-template-columns: 1fr auto; gap: .45rem; }
-  .add-row select, .add-row input { min-width: 0; height: 2.55rem; box-sizing: border-box; padding: 0 .7rem; border: 1px solid var(--theme-border, #dbe1e8); border-radius: .65rem; color: var(--theme-text, #334155); background: white; font: inherit; font-size: .82rem; }
+  .add-row input { min-width: 0; height: 2.55rem; box-sizing: border-box; padding: 0 .7rem; border: 1px solid var(--theme-border, #dbe1e8); border-radius: .65rem; color: var(--theme-text, #334155); background: white; font: inherit; font-size: .82rem; }
   .add-row button { border: 0; border-radius: .65rem; padding: 0 .8rem; color: var(--theme-primary, #6478b8); background: color-mix(in srgb, var(--theme-primary, #6478b8) 12%, white); font-weight: 800; cursor: pointer; }
   .add-row button:disabled { opacity: .4; cursor: default; }
   .tags button { border: 1px solid var(--theme-border, #dbe1e8); color: var(--theme-text-light, #64748b); background: white; }
   .tags button.selected { border-color: var(--theme-primary, #6478b8); color: white; background: var(--theme-primary, #6478b8); }
-  @media (max-width: 600px) { .add-row select, .add-row input { font-size: 16px; } }
+  @media (max-width: 600px) { .add-row input { font-size: 16px; } }
 </style>

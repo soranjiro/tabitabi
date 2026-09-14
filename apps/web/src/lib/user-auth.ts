@@ -68,6 +68,15 @@ export const userAuth = {
     return (await signInWithEmailAndPassword(await getAuthInstance(), email, password)).user;
   },
 
+  async signInWithGoogle(): Promise<User> {
+    const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
+    const provider = new GoogleAuthProvider();
+    // Always let the user choose which Google account to use, even when another
+    // account has an active Google session in the browser.
+    provider.setCustomParameters({ prompt: 'select_account' });
+    return (await signInWithPopup(await getAuthInstance(), provider)).user;
+  },
+
   async signOut(): Promise<void> {
     const { signOut } = await import('firebase/auth');
     await signOut(await getAuthInstance());

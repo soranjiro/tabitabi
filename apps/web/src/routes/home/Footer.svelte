@@ -6,9 +6,13 @@
   // after intent keeps its substantial form styles out of the hero's critical
   // rendering path.
   let FeedbackWidget = $state<any>(null);
+  let feedbackKey = $state(0);
 
   async function openFeedback() {
-    FeedbackWidget = (await import("$lib/feedback/FeedbackWidget.svelte")).default;
+    if (!FeedbackWidget) {
+      FeedbackWidget = (await import("$lib/feedback/FeedbackWidget.svelte")).default;
+    }
+    feedbackKey += 1;
   }
 </script>
 
@@ -17,7 +21,7 @@
     <div class="footer-links">
       <a href="/docs/index" rel="noopener noreferrer" class="footer-link">
         <IconBook size={18} />
-        ドキュメント
+        使い方
       </a>
       <a
         href="https://github.com/soranjiro/tabitabi"
@@ -28,13 +32,16 @@
         <IconGitHub size={18} />
         GitHub
       </a>
+      <button type="button" class="feedback-trigger footer-trigger" onclick={openFeedback} aria-haspopup="dialog">
+        <span aria-hidden="true">✦</span>
+        要望
+      </button>
       {#if FeedbackWidget}
-        <FeedbackWidget variant="footer" initiallyOpen />
-      {:else}
-        <button type="button" class="feedback-trigger footer-trigger" onclick={openFeedback} aria-haspopup="dialog">
-          <span aria-hidden="true">✦</span>
-          要望を送る
-        </button>
+        {#key feedbackKey}
+          <div class="feedback-widget-host">
+            <FeedbackWidget variant="footer" initiallyOpen />
+          </div>
+        {/key}
       {/if}
     </div>
     <p class="footer-copy">たびたび - 旅をもっと楽しく</p>
@@ -56,8 +63,9 @@
 
   .footer-links {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
+    align-items: center;
     gap: 2rem;
     margin-bottom: 0.75rem;
   }
@@ -103,7 +111,15 @@
 
   .feedback-trigger:hover { color: white; }
 
+  .feedback-widget-host {
+    display: contents;
+  }
+
+  .feedback-widget-host :global(.feedback-trigger.footer-trigger) {
+    display: none;
+  }
+
   @media (max-width: 560px) {
-    .footer-links { flex-direction: column; align-items: center; gap: 0.2rem; }
+    .footer-links { gap: 0.75rem; }
   }
 </style>

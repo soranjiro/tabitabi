@@ -6,9 +6,13 @@
   // after intent keeps its substantial form styles out of the hero's critical
   // rendering path.
   let FeedbackWidget = $state<any>(null);
+  let feedbackKey = $state(0);
 
   async function openFeedback() {
-    FeedbackWidget = (await import("$lib/feedback/FeedbackWidget.svelte")).default;
+    if (!FeedbackWidget) {
+      FeedbackWidget = (await import("$lib/feedback/FeedbackWidget.svelte")).default;
+    }
+    feedbackKey += 1;
   }
 </script>
 
@@ -29,13 +33,16 @@
       >
         <IconGitHub size={18} />
       </a>
+      <button type="button" class="feedback-trigger footer-trigger" onclick={openFeedback} aria-haspopup="dialog">
+        <span aria-hidden="true">✦</span>
+        要望
+      </button>
       {#if FeedbackWidget}
-        <FeedbackWidget variant="footer" initiallyOpen />
-      {:else}
-        <button type="button" class="feedback-trigger footer-trigger" onclick={openFeedback} aria-haspopup="dialog">
-          <span aria-hidden="true">✦</span>
-          要望
-        </button>
+        {#key feedbackKey}
+          <div class="feedback-widget-host">
+            <FeedbackWidget variant="footer" initiallyOpen />
+          </div>
+        {/key}
       {/if}
     </div>
     <p class="footer-copy">たびたび - 旅をもっと楽しく</p>
@@ -109,6 +116,14 @@
   }
 
   .feedback-trigger:hover { color: white; }
+
+  .feedback-widget-host {
+    display: contents;
+  }
+
+  .feedback-widget-host :global(.feedback-trigger.footer-trigger) {
+    display: none;
+  }
 
   @media (max-width: 560px) {
     .footer-links { gap: 0.75rem; }

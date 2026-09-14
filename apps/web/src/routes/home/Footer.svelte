@@ -27,11 +27,10 @@
         href="https://github.com/soranjiro/tabitabi"
         target="_blank"
         rel="noopener noreferrer"
-        class="footer-link github-link"
-        aria-label="GitHub"
-        title="GitHub"
+        class="footer-link"
       >
         <IconGitHub size={18} />
+        GitHub
       </a>
       <button type="button" class="feedback-trigger footer-trigger" onclick={openFeedback} aria-haspopup="dialog">
         <span aria-hidden="true">✦</span>
@@ -81,11 +80,6 @@
     gap: 0.5rem;
     padding: 0.5rem;
     min-height: 44px;
-  }
-
-  .github-link {
-    justify-content: center;
-    min-width: 44px;
   }
 
   .footer-link :global(svg) {

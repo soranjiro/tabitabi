@@ -17,23 +17,24 @@
     <div class="footer-links">
       <a href="/docs/index" rel="noopener noreferrer" class="footer-link">
         <IconBook size={18} />
-        ドキュメント
+        使い方
       </a>
       <a
         href="https://github.com/soranjiro/tabitabi"
         target="_blank"
         rel="noopener noreferrer"
-        class="footer-link"
+        class="footer-link github-link"
+        aria-label="GitHub"
+        title="GitHub"
       >
         <IconGitHub size={18} />
-        GitHub
       </a>
       {#if FeedbackWidget}
         <FeedbackWidget variant="footer" initiallyOpen />
       {:else}
         <button type="button" class="feedback-trigger footer-trigger" onclick={openFeedback} aria-haspopup="dialog">
           <span aria-hidden="true">✦</span>
-          要望を送る
+          要望
         </button>
       {/if}
     </div>
@@ -56,8 +57,9 @@
 
   .footer-links {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
+    align-items: center;
     gap: 2rem;
     margin-bottom: 0.75rem;
   }
@@ -72,6 +74,11 @@
     gap: 0.5rem;
     padding: 0.5rem;
     min-height: 44px;
+  }
+
+  .github-link {
+    justify-content: center;
+    min-width: 44px;
   }
 
   .footer-link :global(svg) {
@@ -104,6 +111,6 @@
   .feedback-trigger:hover { color: white; }
 
   @media (max-width: 560px) {
-    .footer-links { flex-direction: column; align-items: center; gap: 0.2rem; }
+    .footer-links { gap: 0.75rem; }
   }
 </style>

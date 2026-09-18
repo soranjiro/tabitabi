@@ -16,6 +16,10 @@ async function applyMigrations(db: D1Database) {
       metadata_initialized INTEGER NOT NULL DEFAULT 0,
       memo TEXT,
       password TEXT,
+      source_itinerary_id TEXT,
+      background_image TEXT,
+      page_background_image TEXT,
+      background_display TEXT NOT NULL DEFAULT 'cover',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,

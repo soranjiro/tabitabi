@@ -17,7 +17,7 @@ export function parseMemoData(memo: string | null | undefined): MemoData {
 }
 
 export function getNotesText(notes: string | null | undefined): string {
-  return parseMemoData(notes).text;
+  return notes ?? '';
 }
 
 export function stringifyMemoData(data: MemoData): string {
@@ -25,14 +25,11 @@ export function stringifyMemoData(data: MemoData): string {
 }
 
 export function getMemoText(memo: string | null | undefined): string {
-  const parsedMemo = parseMemoData(memo);
-  return parsedMemo.text;
+  return memo ?? '';
 }
 
 export function updateMemoText(memo: string | null | undefined, text: string): string {
-  const data = parseMemoData(memo);
-  data.text = sanitizeMemoText(text);
-  return stringifyMemoData(data);
+  return sanitizeMemoText(text);
 }
 
 export function mergeMemoData<T extends MemoData>(

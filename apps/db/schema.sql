@@ -18,20 +18,6 @@ CREATE TABLE IF NOT EXISTS "itineraries" (
   password TEXT
 , source_itinerary_id TEXT, packing_enabled INTEGER NOT NULL DEFAULT 1 CHECK(packing_enabled IN (0, 1)), prefecture_slugs TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(prefecture_slugs)), areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)), tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)), metadata_initialized INTEGER NOT NULL DEFAULT 1 CHECK(metadata_initialized IN (0, 1)), palette_id TEXT NOT NULL DEFAULT 'sakura', background_image TEXT, page_background_image TEXT, background_display TEXT NOT NULL DEFAULT 'cover'
   CHECK(background_display IN ('cover', 'page')));
-CREATE TABLE IF NOT EXISTS "steps" (
-  id TEXT PRIMARY KEY,
-  itinerary_id TEXT NOT NULL,
-  title TEXT NOT NULL,
-  start_at INTEGER NOT NULL,
-  end_at INTEGER NOT NULL,
-  location TEXT,
-  notes TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'normal:general', is_all_day INTEGER NOT NULL DEFAULT 0, link TEXT,
-  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_steps_start_at ON steps(itinerary_id, start_at);
-CREATE INDEX idx_steps_end_at ON steps(itinerary_id, end_at);
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
   username TEXT UNIQUE NOT NULL,
@@ -90,45 +76,8 @@ CREATE INDEX idx_packing_groups_itinerary
   ON itinerary_packing_groups(itinerary_id, sort_order, created_at);
 CREATE UNIQUE INDEX idx_itinerary_members_id_itinerary
   ON itinerary_members(id, itinerary_id);
-CREATE UNIQUE INDEX idx_steps_id_itinerary
-  ON steps(id, itinerary_id);
 CREATE UNIQUE INDEX idx_packing_groups_id_itinerary
   ON itinerary_packing_groups(id, itinerary_id);
-CREATE TABLE itinerary_money_items (
-  id TEXT PRIMARY KEY,
-  itinerary_id TEXT NOT NULL,
-  title TEXT NOT NULL,
-  amount INTEGER NOT NULL CHECK(amount > 0),
-  paid_by_member_id TEXT,
-  status TEXT NOT NULL CHECK(status IN ('paid', 'planned')),
-  occurred_on TEXT,
-  step_id TEXT,
-  is_settled INTEGER NOT NULL DEFAULT 0 CHECK(is_settled IN (0, 1)),
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL, paid_from_fund INTEGER NOT NULL DEFAULT 0 CHECK(paid_from_fund IN (0, 1)),
-  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE,
-  FOREIGN KEY (paid_by_member_id, itinerary_id)
-    REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT,
-  FOREIGN KEY (step_id) REFERENCES steps(id) ON DELETE SET NULL
-);
-CREATE UNIQUE INDEX idx_money_items_id_itinerary
-  ON itinerary_money_items(id, itinerary_id);
-CREATE INDEX idx_money_items_itinerary
-  ON itinerary_money_items(itinerary_id, status);
-CREATE INDEX idx_money_items_step
-  ON itinerary_money_items(itinerary_id, step_id);
-CREATE TABLE itinerary_money_item_splits (
-  item_id TEXT NOT NULL,
-  member_id TEXT NOT NULL,
-  itinerary_id TEXT NOT NULL, amount INTEGER CHECK(amount > 0),
-  PRIMARY KEY (item_id, member_id),
-  FOREIGN KEY (item_id, itinerary_id)
-    REFERENCES itinerary_money_items(id, itinerary_id) ON DELETE CASCADE,
-  FOREIGN KEY (member_id, itinerary_id)
-    REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT
-);
-CREATE INDEX idx_money_item_splits_member
-  ON itinerary_money_item_splits(itinerary_id, member_id);
 CREATE TABLE itinerary_packing_items (
   id TEXT PRIMARY KEY,
   itinerary_id TEXT NOT NULL,
@@ -272,3 +221,75 @@ CREATE TABLE official_itinerary_aliases (
     REFERENCES itineraries(id)
     ON DELETE CASCADE
 );
+CREATE TABLE steps (
+  id TEXT PRIMARY KEY,
+  itinerary_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  start_at INTEGER,
+  end_at INTEGER,
+  time_unspecified INTEGER NOT NULL DEFAULT 0 CHECK(time_unspecified IN (0, 1)),
+  location TEXT,
+  notes TEXT NOT NULL DEFAULT '',
+  link TEXT,
+  type TEXT NOT NULL DEFAULT 'normal:general',
+  is_all_day INTEGER NOT NULL DEFAULT 0 CHECK(is_all_day IN (0, 1)),
+  pin_latitude REAL,
+  pin_longitude REAL,
+  is_priority INTEGER NOT NULL DEFAULT 0 CHECK(is_priority IN (0, 1)),
+  sort_order REAL,
+  source_step_id TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE,
+  CHECK (
+    (start_at IS NULL AND end_at IS NULL)
+    OR (start_at IS NOT NULL AND end_at IS NOT NULL AND end_at >= start_at)
+  ),
+  CHECK (
+    (pin_latitude IS NULL AND pin_longitude IS NULL)
+    OR (pin_latitude IS NOT NULL AND pin_longitude IS NOT NULL)
+  ),
+  CHECK (time_unspecified = 0 OR start_at IS NOT NULL),
+  CHECK (NOT (time_unspecified = 1 AND is_all_day = 1)),
+  CHECK (pin_latitude IS NULL OR pin_latitude BETWEEN -90 AND 90),
+  CHECK (pin_longitude IS NULL OR pin_longitude BETWEEN -180 AND 180)
+);
+CREATE UNIQUE INDEX idx_steps_id_itinerary ON steps(id, itinerary_id);
+CREATE INDEX idx_steps_start_at ON steps(itinerary_id, start_at);
+CREATE INDEX idx_steps_end_at ON steps(itinerary_id, end_at);
+CREATE INDEX idx_steps_sort_order ON steps(itinerary_id, sort_order);
+CREATE INDEX idx_steps_source_step ON steps(source_step_id);
+CREATE TABLE itinerary_money_items (
+  id TEXT PRIMARY KEY,
+  itinerary_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  amount INTEGER NOT NULL CHECK(amount > 0),
+  paid_by_member_id TEXT,
+  status TEXT NOT NULL CHECK(status IN ('paid', 'planned')),
+  occurred_on TEXT,
+  step_id TEXT,
+  is_settled INTEGER NOT NULL DEFAULT 0 CHECK(is_settled IN (0, 1)),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  paid_from_fund INTEGER NOT NULL DEFAULT 0 CHECK(paid_from_fund IN (0, 1)),
+  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE,
+  FOREIGN KEY (paid_by_member_id, itinerary_id)
+    REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT,
+  FOREIGN KEY (step_id) REFERENCES steps(id) ON DELETE SET NULL
+);
+CREATE UNIQUE INDEX idx_money_items_id_itinerary ON itinerary_money_items(id, itinerary_id);
+CREATE INDEX idx_money_items_itinerary ON itinerary_money_items(itinerary_id, status);
+CREATE INDEX idx_money_items_step ON itinerary_money_items(itinerary_id, step_id);
+CREATE TABLE itinerary_money_item_splits (
+  item_id TEXT NOT NULL,
+  member_id TEXT NOT NULL,
+  itinerary_id TEXT NOT NULL,
+  amount INTEGER CHECK(amount > 0),
+  PRIMARY KEY (item_id, member_id),
+  FOREIGN KEY (item_id, itinerary_id)
+    REFERENCES itinerary_money_items(id, itinerary_id) ON DELETE CASCADE,
+  FOREIGN KEY (member_id, itinerary_id)
+    REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT
+);
+CREATE INDEX idx_money_item_splits_member
+  ON itinerary_money_item_splits(itinerary_id, member_id);

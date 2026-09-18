@@ -26,6 +26,11 @@ try {
     const sql = readFileSync(join(migrationsDir, file), 'utf8');
     const { up } = parseMigrationText(sql, file);
 
+    if (file === '20260918000000_normalize_step_data.sql' && sentinelExists()) {
+      execute(`UPDATE itineraries SET memo = '{"text":"plain itinerary memo","unused":true}' WHERE id = '${ITINERARY_ID}';
+        UPDATE steps SET notes = '{"text":"plain step notes","booking_url":"https://example.com/book","tabitabi_place":{"lat":35,"lng":135,"priority":true},"tabitabi_schedule":{"precision":"undecided","order":12}}' WHERE id = '${STEP_ID}';`);
+    }
+
     try {
       execute(`PRAGMA foreign_keys = ON;\n${up}\n`);
     } catch (error) {
@@ -36,12 +41,40 @@ try {
       assertSentinel(file);
     }
     assertForeignKeys(file);
+    if (file === '20260918000000_normalize_step_data.sql') assertNormalizedStepMigration();
     ensureSentinel();
   }
 
   console.log(`Migration data-preservation checks passed (${migrations.length} migrations).`);
 } finally {
   rmSync(directory, { recursive: true, force: true });
+}
+
+function assertNormalizedStepMigration() {
+  const itinerary = queryJson(`SELECT memo FROM itineraries WHERE id = '${ITINERARY_ID}';`)[0];
+  const step = queryJson(`SELECT start_at, end_at, notes, link, pin_latitude, pin_longitude,
+    is_priority, sort_order FROM steps WHERE id = '${STEP_ID}';`)[0];
+  if (itinerary?.memo !== 'plain itinerary memo' || step?.notes !== 'plain step notes'
+    || step?.start_at !== null || step?.end_at !== null || step?.pin_latitude !== 35
+    || step?.pin_longitude !== 135 || step?.is_priority !== 1 || step?.sort_order !== 12
+    || step?.link !== 'https://example.com/book') {
+    throw new Error(`Normalized step backfill failed: ${JSON.stringify({ itinerary, step })}`);
+  }
+  assertRejected(`INSERT INTO steps (id, itinerary_id, title, start_at, end_at, created_at, updated_at)
+    VALUES ('invalid-half-date', '${ITINERARY_ID}', 'invalid', NULL, 1, '${NOW}', '${NOW}');`);
+  assertRejected(`INSERT INTO steps (id, itinerary_id, title, start_at, end_at, pin_latitude, created_at, updated_at)
+    VALUES ('invalid-half-pin', '${ITINERARY_ID}', 'invalid', NULL, NULL, 35, '${NOW}', '${NOW}');`);
+  assertRejected(`INSERT INTO steps (id, itinerary_id, title, start_at, end_at, created_at, updated_at)
+    VALUES ('invalid-range', '${ITINERARY_ID}', 'invalid', 2, 1, '${NOW}', '${NOW}');`);
+}
+
+function assertRejected(sql) {
+  try {
+    execute(`PRAGMA foreign_keys = ON;\n${sql}`);
+  } catch {
+    return;
+  }
+  throw new Error(`Expected constraint rejection for SQL: ${sql}`);
 }
 
 function ensureSentinel() {

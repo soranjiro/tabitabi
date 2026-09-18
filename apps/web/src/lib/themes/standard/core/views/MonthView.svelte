@@ -30,9 +30,10 @@
   }: Props = $props();
 
   function getInitialMonth(stepsArr: Step[]): Date {
-    if (stepsArr.length === 0) return new Date();
-    const sorted = [...stepsArr].sort((a, b) => a.start_at - b.start_at);
-    const firstDate = new Date(sorted[0].start_at);
+    const dated = stepsArr.filter((step) => step.start_at !== null);
+    if (dated.length === 0) return new Date();
+    const sorted = [...dated].sort((a, b) => a.start_at! - b.start_at!);
+    const firstDate = new Date(sorted[0].start_at!);
     return new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
   }
 
@@ -59,6 +60,7 @@
   function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
     const now = Date.now();
+    if (step.start_at === null) return false;
     const revealTime = step.start_at - secretModeOffset * 60 * 1000;
     return now < revealTime;
   }
@@ -115,6 +117,7 @@
   }
 
   function getStepEndDate(step: Step): string {
+    if (step.end_at === null) return '';
     const d = new Date(step.end_at);
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -145,10 +148,10 @@
       () => [],
     );
 
-    const sortedSteps = [...steps].sort((a, b) => {
-      if (a.start_at !== b.start_at) return a.start_at - b.start_at;
-      const aDuration = a.end_at - a.start_at;
-      const bDuration = b.end_at - b.start_at;
+    const sortedSteps = steps.filter((step) => step.start_at !== null && step.end_at !== null).sort((a, b) => {
+      if (a.start_at !== b.start_at) return a.start_at! - b.start_at!;
+      const aDuration = a.end_at! - a.start_at!;
+      const bDuration = b.end_at! - b.start_at!;
       return bDuration - aDuration;
     });
 

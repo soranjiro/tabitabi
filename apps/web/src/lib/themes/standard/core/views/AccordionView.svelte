@@ -16,7 +16,7 @@
 
   const groups = $derived.by(() => {
     const map = new Map<string, Step[]>();
-    for (const step of [...steps].sort((a, b) => a.start_at - b.start_at)) {
+    for (const step of [...steps].sort((a, b) => (a.start_at ?? Number.MAX_SAFE_INTEGER) - (b.start_at ?? Number.MAX_SAFE_INTEGER))) {
       const date = getStepDate(step);
       map.set(date, [...(map.get(date) ?? []), step]);
     }
@@ -31,6 +31,7 @@
   });
 
   function dateLabel(value: string, index: number) {
+    if (!value) return { day: "日付未定", title: "", weekday: "" };
     const date = new Date(`${value}T00:00:00`);
     return { day: `Day ${index + 1}`, title: `${date.getMonth() + 1}/${date.getDate()}`, weekday: date.toLocaleDateString("ja-JP", { weekday: "short" }) };
   }

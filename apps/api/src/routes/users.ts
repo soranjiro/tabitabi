@@ -31,7 +31,7 @@ async function requireProtectedItineraryEditToken(c: UserRouteContext, itinerary
 }
 
 users.get('/me/bookmarks/:itineraryId/preview', userAuthMiddleware, userProfileMiddleware, async c => {
-  const id = c.req.param('itineraryId');
+  const id = c.req.param('itineraryId')!;
   if (!await new UserService(c.env.DB).hasBookmark(c.get('userId')!, id)) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Saved itinerary not found' } }, 404);
   }
@@ -41,7 +41,7 @@ users.get('/me/bookmarks/:itineraryId/preview', userAuthMiddleware, userProfileM
 users.post('/me/bookmarks/:itineraryId/publication/content', userAuthMiddleware, userProfileMiddleware,
   zValidator('json', bookContentSchema, validationHook), async c => {
     const service = new PublicationService(c.env.DB, c.env);
-    const publication = await service.owned(c.req.param('itineraryId'), c.get('userId')!);
+    const publication = await service.owned(c.req.param('itineraryId')!, c.get('userId')!);
     if (!publication) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Publication not found' } }, 404);
     await service.replace(publication.id, c.req.valid('json'));
     return c.json({ success: true, data: { id: publication.id } });
@@ -49,14 +49,14 @@ users.post('/me/bookmarks/:itineraryId/publication/content', userAuthMiddleware,
 
 users.post('/me/bookmarks/:itineraryId/publication/restore', userAuthMiddleware, userProfileMiddleware, async c => {
   const service = new PublicationService(c.env.DB, c.env);
-  const id = c.req.param('itineraryId');
+  const id = c.req.param('itineraryId')!;
   const publication = await service.owned(id, c.get('userId')!);
   if (!publication || !await new UserService(c.env.DB).hasBookmark(c.get('userId')!, id)) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Publication not found' } }, 404);
   }
   const denied = await requireProtectedItineraryEditToken(c, id);
   if (denied) return denied;
-  await service.replace(id, bookContentSchema.parse(await service.read(publication.id)), publication.id);
+  await service.restore(id, publication.id);
   return c.json({ success: true, data: { id } });
 });
 

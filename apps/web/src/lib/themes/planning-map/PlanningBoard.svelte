@@ -23,7 +23,7 @@
     const schedule = getStepSchedule(step);
     const matchesFilter = filter === 'all'
       || (filter === 'idea' && schedule.precision === 'undecided')
-      || (filter === 'priority' && getPlace(step.notes)?.priority);
+      || (filter === 'priority' && step.is_priority);
     return matchesFilter && `${step.title} ${step.location || ''} ${getMemoText(step.notes)}`.toLowerCase().includes(query.toLowerCase());
   }));
 </script>
@@ -46,13 +46,13 @@
     </div>
     <div class="cards">
       {#each visible as step}
-        {@const place = getPlace(step.notes)}
+        {@const place = getPlace(step)}
         {@const schedule = getStepSchedule(step)}
         <article class:selected={selected === step.id}>
           <button class="idea" onclick={() => canEdit ? onEdit(step) : selected = step.id} onmouseenter={() => selected = step.id} onfocus={() => selected = step.id} aria-label={canEdit ? `${step.title}を編集` : step.title}>
             <span class="number">{steps.indexOf(step) + 1}</span>
             <span class="content">
-              <span class="topline"><span>{schedule.precision === 'undecided' ? '日程未定' : schedule.day ? `Day ${schedule.day}` : '日時設定済み'}</span>{#if place?.priority}<span class="priority">★ 優先</span>{/if}</span>
+              <span class="topline"><span>{schedule.precision === 'undecided' ? '日付未定' : step.start_at === null ? '日付未定' : new Date(step.start_at).toLocaleDateString('ja-JP')}</span>{#if place?.priority}<span class="priority">★ 優先</span>{/if}</span>
               <strong>{step.title}</strong>
               {#if getMemoText(step.notes)}<span class="memo">{getMemoText(step.notes)}</span>{/if}
               <span class="location">{step.location || (place ? '地図にピンあり' : '場所未定')}</span>

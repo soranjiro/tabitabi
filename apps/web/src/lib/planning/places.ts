@@ -1,14 +1,18 @@
-import { parseMemoData, stringifyMemoData } from '$lib/memo';
+import type { Step } from '@tabitabi/types';
 export interface Place { lat: number; lng: number; priority?: boolean }
-export function getPlace(notes: string | null | undefined): Place | null {
-  const value = parseMemoData(notes).tabitabi_place as Place | undefined;
-  return value && Number.isFinite(value.lat) && Math.abs(value.lat) <= 85.051129 && Number.isFinite(value.lng) && Math.abs(value.lng) <= 180 ? value : null;
+export function getPlace(step: Pick<Step, 'pin_latitude' | 'pin_longitude' | 'is_priority'>): Place | null {
+  const lat = step.pin_latitude;
+  const lng = step.pin_longitude;
+  return lat != null && lng != null && Number.isFinite(lat) && Math.abs(lat) <= 85.051129 && Number.isFinite(lng) && Math.abs(lng) <= 180
+    ? { lat, lng, priority: step.is_priority }
+    : null;
 }
-export function updatePlace(notes: string | null | undefined, place: Place | null): string {
-  const data = parseMemoData(notes);
-  if (place) data.tabitabi_place = place;
-  else delete data.tabitabi_place;
-  return stringifyMemoData(data);
+export function placeFields(place: Place | null) {
+  return {
+    pin_latitude: place?.lat ?? null,
+    pin_longitude: place?.lng ?? null,
+    is_priority: place?.priority ?? false,
+  };
 }
 export function distanceKm(a: Place, b: Place): number {
   const rad = Math.PI / 180;

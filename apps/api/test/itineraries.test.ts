@@ -20,6 +20,9 @@ async function applyMigrations(db: D1Database) {
       memo TEXT,
       password TEXT,
       source_itinerary_id TEXT,
+      background_image TEXT,
+      page_background_image TEXT,
+      background_display TEXT NOT NULL DEFAULT 'cover',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,
@@ -28,13 +31,19 @@ async function applyMigrations(db: D1Database) {
       id TEXT PRIMARY KEY,
       itinerary_id TEXT NOT NULL,
       title TEXT NOT NULL,
-      start_at INTEGER NOT NULL,
-      end_at INTEGER NOT NULL,
+      start_at INTEGER,
+      end_at INTEGER,
+      time_unspecified INTEGER NOT NULL DEFAULT 0,
       location TEXT,
       notes TEXT,
       link TEXT,
       type TEXT NOT NULL DEFAULT 'normal:general',
       is_all_day INTEGER NOT NULL DEFAULT 0,
+      pin_latitude REAL,
+      pin_longitude REAL,
+      is_priority INTEGER NOT NULL DEFAULT 0,
+      sort_order REAL,
+      source_step_id TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
@@ -553,7 +562,9 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
     await app.request('/api/v1/steps', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ itinerary_id: source.id, title: 'ステップ1', start_at: 1700000000000, end_at: 1700003600000 }),
+      body: JSON.stringify({ itinerary_id: source.id, title: 'ステップ1', start_at: null, end_at: null,
+        time_unspecified: false, notes: '候補メモ', pin_latitude: 35, pin_longitude: 135,
+        is_priority: true, sort_order: 7, link: 'https://example.com' }),
     }, env);
 
     const forkRes = await app.request(`/api/v1/itineraries/${source.id}/fork`, {
@@ -567,6 +578,9 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
     expect(stepsJson.data).toHaveLength(1);
     expect(stepsJson.data[0].title).toBe('ステップ1');
     expect(stepsJson.data[0].itinerary_id).toBe(forked.id);
+    expect(stepsJson.data[0]).toMatchObject({ start_at: null, end_at: null, notes: '候補メモ',
+      pin_latitude: 35, pin_longitude: 135, is_priority: true, sort_order: 7,
+      link: 'https://example.com/' });
   });
 
   it('returns 403 for password-protected itinerary', async () => {
@@ -727,7 +741,9 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     await app.request('/api/v1/steps', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ itinerary_id: original.id, title: '観光スポット', start_at: 1700000000000, end_at: 1700003600000 }),
+      body: JSON.stringify({ itinerary_id: original.id, title: '観光スポット', start_at: 1700000000000,
+        end_at: 1700003600000, time_unspecified: true, notes: '公開メモ', pin_latitude: 35,
+        pin_longitude: 135, is_priority: true, sort_order: 8 }),
     }, env);
 
     const publishRes = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
@@ -741,9 +757,11 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     expect(steps).toHaveLength(1);
     expect(steps[0].title).toBe('観光スポット');
     expect(steps[0].itinerary_id).toBe(pub.id);
+    expect(steps[0]).toMatchObject({ time_unspecified: true, notes: '公開メモ',
+      pin_latitude: 35, pin_longitude: 135, is_priority: true, sort_order: 8 });
   });
 
-  it('publishes sanitized step links with affiliate-ready links', async () => {
+  it('publishes sanitized plain-text notes without embedding affiliate metadata', async () => {
     const createRes = await app.request('/api/v1/itineraries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -765,9 +783,7 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
         location: '京都駅 090-1234-5678',
         type: 'normal:hotel',
         link: 'https://www.jalan.net/yad123/?foo=bar',
-        notes: JSON.stringify({
-          text: '部屋番号 1002。予約番号 ABCD1234',
-        }),
+        notes: '部屋番号 1002。予約番号 ABCD1234',
       }),
     }, env);
 
@@ -791,13 +807,9 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     expect(steps[0].location).not.toContain('090-1234-5678');
     expect(steps[0].link).toBe('https://www.jalan.net/yad123/?foo=bar');
 
-    const notes = JSON.parse(steps[0].notes);
-    expect(notes.text).not.toContain('1002');
-    expect(notes.text).not.toContain('ABCD1234');
-    expect(notes.affiliate_provider).toBe('jalan');
-    expect(notes.affiliate_url).toContain('https://affiliate.example/click');
-    expect(notes.affiliate_url).toContain(encodeURIComponent('https://www.jalan.net/yad123/?foo=bar'));
-    expect(notes.affiliate_disclosure).toContain('アフィリエイトリンク');
+    expect(steps[0].notes).not.toContain('1002');
+    expect(steps[0].notes).not.toContain('ABCD1234');
+    expect(steps[0].notes).not.toContain('affiliate');
   });
 
   it('returns 403 when publishing a shared snapshot', async () => {

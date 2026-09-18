@@ -20,6 +20,9 @@ async function applyMigrations(db: D1Database) {
       memo TEXT,
       password TEXT,
       source_itinerary_id TEXT,
+      background_image TEXT,
+      page_background_image TEXT,
+      background_display TEXT NOT NULL DEFAULT 'cover',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,
@@ -28,13 +31,19 @@ async function applyMigrations(db: D1Database) {
       id TEXT PRIMARY KEY,
       itinerary_id TEXT NOT NULL,
       title TEXT NOT NULL,
-      start_at INTEGER NOT NULL,
-      end_at INTEGER NOT NULL,
+      start_at INTEGER,
+      end_at INTEGER,
+      time_unspecified INTEGER NOT NULL DEFAULT 0,
       location TEXT,
       notes TEXT,
       link TEXT,
       type TEXT NOT NULL DEFAULT 'normal:general',
       is_all_day INTEGER NOT NULL DEFAULT 0,
+      pin_latitude REAL,
+      pin_longitude REAL,
+      is_priority INTEGER NOT NULL DEFAULT 0,
+      sort_order REAL,
+      source_step_id TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
@@ -100,6 +109,20 @@ async function applyMigrations(db: D1Database) {
       name TEXT NOT NULL,
       created_at TEXT NOT NULL,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+    );`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_items (
+      id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL,
+      paid_by_member_id TEXT, paid_from_fund INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL,
+      occurred_on TEXT, step_id TEXT, is_settled INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    );`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_item_splits (
+      item_id TEXT NOT NULL, member_id TEXT NOT NULL, itinerary_id TEXT NOT NULL, amount INTEGER,
+      PRIMARY KEY (item_id, member_id)
+    );`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_fund_transactions (
+      id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, member_id TEXT NOT NULL, kind TEXT NOT NULL,
+      amount INTEGER NOT NULL, note TEXT, occurred_on TEXT NOT NULL, created_at TEXT NOT NULL
     );`,
   ];
   for (const sql of migrations) {
@@ -282,6 +305,10 @@ describe('owner publication flow', () => {
     await env.DB.prepare('DELETE FROM user_bookmarks').run();
     await env.DB.prepare('DELETE FROM users').run();
     await env.DB.prepare('DELETE FROM steps').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_item_splits').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_items').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_fund_transactions').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
     await env.DB.prepare('DELETE FROM itinerary_members').run();
     await env.DB.prepare('DELETE FROM itineraries').run();
   });
@@ -317,6 +344,42 @@ describe('owner publication flow', () => {
       .first<{ shared_itinerary_id: string; prefecture_slugs: string }>();
     expect(publication?.shared_itinerary_id).toBe(snapshot!.id);
     expect(JSON.parse(publication!.prefecture_slugs)).toEqual(['tokyo']);
+  });
+
+  it('publishes anonymous members and public money without free-form fund notes', async () => {
+    const token = await registerAndGetToken('money-publisher', 'money-publisher@example.com');
+    const itineraryId = await createItinerary();
+    const now = new Date().toISOString();
+    await app.request('/api/v1/users/me/sync-bookmarks', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ itinerary_ids: [itineraryId] }),
+    }, env);
+    await env.DB.batch([
+      env.DB.prepare('INSERT INTO itinerary_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)').bind('m1', itineraryId, '山田太郎', now),
+      env.DB.prepare('INSERT INTO itinerary_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)').bind('m2', itineraryId, '佐藤花子', now),
+      env.DB.prepare('INSERT INTO itinerary_money_settings (itinerary_id, budget_amount, created_at, updated_at) VALUES (?, ?, ?, ?)').bind(itineraryId, 50000, now, now),
+      env.DB.prepare(`INSERT INTO itinerary_money_items (id, itinerary_id, title, amount, paid_by_member_id,
+        paid_from_fund, status, occurred_on, step_id, is_settled, created_at, updated_at)
+        VALUES ('expense', ?, '山田太郎のホテル', 12000, 'm1', 0, 'paid', '2026-09-18', NULL, 0, ?, ?)`)
+        .bind(itineraryId, now, now),
+      env.DB.prepare("INSERT INTO itinerary_money_item_splits (item_id, member_id, itinerary_id, amount) VALUES ('expense', 'm1', ?, 6000)").bind(itineraryId),
+      env.DB.prepare("INSERT INTO itinerary_money_item_splits (item_id, member_id, itinerary_id, amount) VALUES ('expense', 'm2', ?, 6000)").bind(itineraryId),
+      env.DB.prepare(`INSERT INTO itinerary_money_fund_transactions (id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at)
+        VALUES ('fund', ?, 'm2', 'contribution', 3000, '口座番号 1234', '2026-09-18', ?)`).bind(itineraryId, now),
+    ]);
+    const response = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ prefecture_slugs: ['tokyo'] }),
+    }, env);
+    expect(response.status).toBe(200);
+    const { data: publication } = await response.json() as any;
+    const moneyResponse = await app.request(`/api/v1/itineraries/${publication.id}/money`, {}, env);
+    const { data: money } = await moneyResponse.json() as any;
+    expect(money.budget_amount).toBe(50000);
+    expect(money.members.map((member: any) => member.name)).toEqual(['Aさん', 'Bさん']);
+    expect(money.items[0].title).toBe('[非公開]のホテル');
+    expect(money.items[0].splits).toHaveLength(2);
+    expect(money.fund_transactions[0].note).toBeNull();
   });
 
   it('publishes the editable preview content', async () => {
@@ -408,11 +471,14 @@ describe('owner publication flow', () => {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ itinerary_ids: [itineraryId] }),
     }, env);
-    await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
+    const publishedResponse = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ prefecture_slugs: ['kyoto'] }),
     }, env);
+    const { data: firstPublication } = await publishedResponse.json() as any;
+    await env.DB.prepare('INSERT INTO itinerary_fork_stats (itinerary_id, fork_count) VALUES (?, 3)')
+      .bind(firstPublication.id).run();
 
     const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publication`, {
       method: 'DELETE',
@@ -430,6 +496,66 @@ describe('owner publication flow', () => {
       .bind(itineraryId)
       .first();
     expect(publication).toBeNull();
+    const retained = await env.DB.prepare('SELECT fork_count FROM itinerary_fork_stats WHERE itinerary_id = ?')
+      .bind(itineraryId).first<{ fork_count: number }>();
+    expect(retained?.fork_count).toBe(3);
+
+    const republishedResponse = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ prefecture_slugs: ['kyoto'] }),
+    }, env);
+    const { data: republished } = await republishedResponse.json() as any;
+    expect(republished.id).not.toBe(firstPublication.id);
+    const publicResponse = await app.request(`/api/v1/itineraries/${republished.id}`, {}, env);
+    const { data: publicItinerary } = await publicResponse.json() as any;
+    expect(publicItinerary.fork_count).toBe(3);
+  });
+
+  it('restores snapshot step fields without deleting private-only steps', async () => {
+    const token = await registerAndGetToken('restoreuser', 'restore@example.com');
+    const itineraryId = await createItinerary();
+    await env.DB.prepare(`INSERT INTO steps
+      (id, itinerary_id, title, start_at, end_at, time_unspecified, notes, link,
+       pin_latitude, pin_longitude, is_priority, sort_order)
+      VALUES ('restore-source-step', ?, '元の予定', NULL, NULL, 0, '元メモ', NULL, NULL, NULL, 0, NULL)`)
+      .bind(itineraryId).run();
+    await app.request('/api/v1/users/me/sync-bookmarks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ itinerary_ids: [itineraryId] }),
+    }, env);
+    const publishResponse = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ prefecture_slugs: ['kyoto'] }),
+    }, env);
+    const { data: publication } = await publishResponse.json() as any;
+    const snapshotStep = await env.DB.prepare('SELECT id FROM steps WHERE itinerary_id = ?')
+      .bind(publication.id).first<{ id: string }>();
+    expect(snapshotStep).not.toBeNull();
+
+    await env.DB.prepare(`UPDATE steps SET title = '公開版の予定', start_at = NULL, end_at = NULL,
+      time_unspecified = 0, notes = '公開版メモ', link = 'https://example.com/reserve',
+      pin_latitude = 35.0, pin_longitude = 135.0, is_priority = 1, sort_order = 4
+      WHERE id = ?`).bind(snapshotStep!.id).run();
+    await env.DB.prepare(`UPDATE steps SET title = '非公開版で変更' WHERE id = 'restore-source-step'`).run();
+    await env.DB.prepare(`INSERT INTO steps
+      (id, itinerary_id, title, start_at, end_at, time_unspecified)
+      VALUES ('private-only-step', ?, '非公開だけの予定', NULL, NULL, 0)`)
+      .bind(itineraryId).run();
+
+    const restoreResponse = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publication/restore`, {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` },
+    }, env);
+    expect(restoreResponse.status).toBe(200);
+    const restored = await env.DB.prepare(`SELECT title, start_at, end_at, time_unspecified, notes,
+      link, pin_latitude, pin_longitude, is_priority, sort_order FROM steps WHERE id = 'restore-source-step'`)
+      .first<Record<string, unknown>>();
+    expect(restored).toMatchObject({ title: '公開版の予定', start_at: null, end_at: null,
+      time_unspecified: 0, notes: '公開版メモ', link: 'https://example.com/reserve',
+      pin_latitude: 35, pin_longitude: 135, is_priority: 1, sort_order: 4 });
+    expect(await env.DB.prepare("SELECT title FROM steps WHERE id = 'private-only-step'").first())
+      .toMatchObject({ title: '非公開だけの予定' });
   });
 
   it('unlinks a non-published itinerary without deleting it', async () => {

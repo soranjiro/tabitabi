@@ -11,6 +11,8 @@ const databasePath = join(directory, 'migration.sqlite');
 
 const ITINERARY_ID = '__migration_guard_itinerary__';
 const STEP_ID = '__migration_guard_step__';
+const MEMBER_ID = '__migration_guard_member__';
+const MONEY_ITEM_ID = '__migration_guard_money_item__';
 const NOW = '2026-01-01T00:00:00.000Z';
 
 try {
@@ -27,6 +29,7 @@ try {
     const { up } = parseMigrationText(sql, file);
 
     if (file === '20260918000000_normalize_step_data.sql' && sentinelExists()) {
+      seedNormalizedStepDependencies();
       execute(`UPDATE itineraries SET memo = '{"text":"plain itinerary memo","unused":true}' WHERE id = '${ITINERARY_ID}';
         UPDATE steps SET notes = '{"text":"plain step notes","booking_url":"https://example.com/book","tabitabi_place":{"lat":35,"lng":135,"priority":true},"tabitabi_schedule":{"precision":"undecided","order":12}}' WHERE id = '${STEP_ID}';`);
     }
@@ -60,12 +63,35 @@ function assertNormalizedStepMigration() {
     || step?.link !== 'https://example.com/book') {
     throw new Error(`Normalized step backfill failed: ${JSON.stringify({ itinerary, step })}`);
   }
+  const moneyItem = queryJson(`SELECT id, itinerary_id, step_id, paid_by_member_id, amount,
+    status, is_settled, paid_from_fund FROM itinerary_money_items WHERE id = '${MONEY_ITEM_ID}';`)[0];
+  const split = queryJson(`SELECT item_id, member_id, itinerary_id, amount
+    FROM itinerary_money_item_splits WHERE item_id = '${MONEY_ITEM_ID}';`)[0];
+  if (moneyItem?.itinerary_id !== ITINERARY_ID || moneyItem?.step_id !== STEP_ID
+    || moneyItem?.paid_by_member_id !== MEMBER_ID || moneyItem?.amount !== 1200
+    || moneyItem?.status !== 'paid' || moneyItem?.is_settled !== 1
+    || moneyItem?.paid_from_fund !== 0 || split?.member_id !== MEMBER_ID
+    || split?.itinerary_id !== ITINERARY_ID || split?.amount !== 1200) {
+    throw new Error(`Normalized step dependency preservation failed: ${JSON.stringify({ moneyItem, split })}`);
+  }
   assertRejected(`INSERT INTO steps (id, itinerary_id, title, start_at, end_at, created_at, updated_at)
     VALUES ('invalid-half-date', '${ITINERARY_ID}', 'invalid', NULL, 1, '${NOW}', '${NOW}');`);
   assertRejected(`INSERT INTO steps (id, itinerary_id, title, start_at, end_at, pin_latitude, created_at, updated_at)
     VALUES ('invalid-half-pin', '${ITINERARY_ID}', 'invalid', NULL, NULL, 35, '${NOW}', '${NOW}');`);
   assertRejected(`INSERT INTO steps (id, itinerary_id, title, start_at, end_at, created_at, updated_at)
     VALUES ('invalid-range', '${ITINERARY_ID}', 'invalid', 2, 1, '${NOW}', '${NOW}');`);
+}
+
+function seedNormalizedStepDependencies() {
+  execute(`INSERT OR IGNORE INTO itinerary_members (id, itinerary_id, name, created_at)
+      VALUES ('${MEMBER_ID}', '${ITINERARY_ID}', 'Migration Guard Member', '${NOW}');
+    INSERT OR IGNORE INTO itinerary_money_items
+      (id, itinerary_id, title, amount, paid_by_member_id, status, occurred_on,
+       step_id, is_settled, created_at, updated_at, paid_from_fund)
+      VALUES ('${MONEY_ITEM_ID}', '${ITINERARY_ID}', 'Migration Guard Expense', 1200,
+       '${MEMBER_ID}', 'paid', '2026-01-01', '${STEP_ID}', 1, '${NOW}', '${NOW}', 0);
+    INSERT OR IGNORE INTO itinerary_money_item_splits (item_id, member_id, itinerary_id, amount)
+      VALUES ('${MONEY_ITEM_ID}', '${MEMBER_ID}', '${ITINERARY_ID}', 1200);`);
 }
 
 function assertRejected(sql) {

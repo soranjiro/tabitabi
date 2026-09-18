@@ -2,7 +2,22 @@
 -- Move active-theme structure out of memo/notes JSON and allow genuinely
 -- unscheduled steps. Rebuild dependent money tables so their foreign keys keep
 -- pointing at the new steps table.
+-- migration-risk: destructive-approved
+-- SQLite cannot remove the existing NOT NULL constraints from start_at/end_at
+-- in place. The guard below makes the rebuild fail atomically unless every
+-- existing Step and dependent money row survives the copy.
 PRAGMA defer_foreign_keys = on;
+
+CREATE TABLE _step_normalization_guard (
+  step_count INTEGER NOT NULL,
+  money_item_count INTEGER NOT NULL,
+  money_split_count INTEGER NOT NULL
+);
+INSERT INTO _step_normalization_guard
+SELECT
+  (SELECT COUNT(*) FROM steps),
+  (SELECT COUNT(*) FROM itinerary_money_items),
+  (SELECT COUNT(*) FROM itinerary_money_item_splits);
 
 UPDATE itineraries
 SET memo = CASE
@@ -178,6 +193,51 @@ INSERT INTO itinerary_money_item_splits
 SELECT * FROM itinerary_money_item_splits_step_migration;
 CREATE INDEX idx_money_item_splits_member
   ON itinerary_money_item_splits(itinerary_id, member_id);
+
+-- Abort before any legacy table is dropped if a row, identifier, unchanged
+-- Step field, money reference, or split failed to survive the rebuild.
+CREATE TABLE _step_normalization_assertion (
+  ok INTEGER NOT NULL CHECK(ok = 1)
+);
+INSERT INTO _step_normalization_assertion
+SELECT CASE WHEN
+  (SELECT COUNT(*) FROM steps) = guard.step_count
+  AND (SELECT COUNT(*) FROM itinerary_money_items) = guard.money_item_count
+  AND (SELECT COUNT(*) FROM itinerary_money_item_splits) = guard.money_split_count
+  AND NOT EXISTS (
+    SELECT 1
+    FROM steps_json_legacy old
+    LEFT JOIN steps next ON next.id = old.id
+    WHERE next.id IS NULL
+      OR next.itinerary_id <> old.itinerary_id
+      OR next.title <> old.title
+      OR next.location IS NOT old.location
+      OR next.type <> old.type
+      OR next.is_all_day <> old.is_all_day
+      OR next.created_at <> old.created_at
+      OR next.updated_at <> old.updated_at
+  )
+  AND NOT EXISTS (
+    SELECT id, itinerary_id, title, amount, paid_by_member_id, status,
+      occurred_on, step_id, is_settled, created_at, updated_at, paid_from_fund
+    FROM itinerary_money_items_step_migration
+    EXCEPT
+    SELECT id, itinerary_id, title, amount, paid_by_member_id, status,
+      occurred_on, step_id, is_settled, created_at, updated_at, paid_from_fund
+    FROM itinerary_money_items
+  )
+  AND NOT EXISTS (
+    SELECT item_id, member_id, itinerary_id, amount
+    FROM itinerary_money_item_splits_step_migration
+    EXCEPT
+    SELECT item_id, member_id, itinerary_id, amount
+    FROM itinerary_money_item_splits
+  )
+THEN 1 ELSE 0 END
+FROM _step_normalization_guard guard;
+
+DROP TABLE _step_normalization_assertion;
+DROP TABLE _step_normalization_guard;
 
 DROP TABLE itinerary_money_item_splits_step_migration;
 DROP TABLE itinerary_money_items_step_migration;

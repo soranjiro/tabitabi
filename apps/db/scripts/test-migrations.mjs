@@ -35,7 +35,10 @@ try {
     }
 
     try {
-      execute(`PRAGMA foreign_keys = ON;\n${up}\n`);
+      const transaction = file === '20260918000000_normalize_step_data.sql'
+        ? `BEGIN IMMEDIATE;\n${up}\nCOMMIT;`
+        : up;
+      execute(`PRAGMA foreign_keys = ON;\n${transaction}\n`);
     } catch (error) {
       throw new Error(`${file} failed to apply with foreign keys enabled.`, { cause: error });
     }

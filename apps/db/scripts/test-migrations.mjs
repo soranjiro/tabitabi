@@ -26,6 +26,12 @@ try {
     const sql = readFileSync(join(migrationsDir, file), 'utf8');
     const { up } = parseMigrationText(sql, file);
 
+    if (file === '20260919000000_expand_step_data.sql' && sentinelExists()) {
+      execute(`UPDATE itineraries SET memo = '{"text":"legacy memo","theme_state":{"keep":true}}' WHERE id = '${ITINERARY_ID}';
+        UPDATE steps SET notes = '{"text":"legacy notes","tabitabi_schedule":{"precision":"undecided"}}',
+          start_at = 1767225600000, end_at = 1767229200000 WHERE id = '${STEP_ID}';`);
+    }
+
     try {
       execute(`PRAGMA foreign_keys = ON;\n${up}\n`);
     } catch (error) {
@@ -36,12 +42,30 @@ try {
       assertSentinel(file);
     }
     assertForeignKeys(file);
+    if (file === '20260919000000_expand_step_data.sql') assertExpandStepMigration();
     ensureSentinel();
   }
 
   console.log(`Migration data-preservation checks passed (${migrations.length} migrations).`);
 } finally {
   rmSync(directory, { recursive: true, force: true });
+}
+
+function assertExpandStepMigration() {
+  const itinerary = queryJson(`SELECT memo, memo_text FROM itineraries WHERE id = '${ITINERARY_ID}';`)[0];
+  const step = queryJson(`SELECT start_at, end_at, notes, notes_text, scheduled_start_at,
+    scheduled_end_at, time_unspecified, sort_order, pin_latitude, pin_longitude, is_priority
+    FROM steps WHERE id = '${STEP_ID}';`)[0];
+  if (itinerary?.memo !== '{"text":"legacy memo","theme_state":{"keep":true}}'
+    || itinerary?.memo_text !== null
+    || step?.notes !== '{"text":"legacy notes","tabitabi_schedule":{"precision":"undecided"}}'
+    || step?.notes_text !== null
+    || step?.start_at !== 1767225600000 || step?.end_at !== 1767229200000
+    || step?.scheduled_start_at !== null || step?.scheduled_end_at !== null
+    || step?.time_unspecified !== 0 || step?.sort_order !== null
+    || step?.pin_latitude !== null || step?.pin_longitude !== null || step?.is_priority !== 0) {
+    throw new Error(`Expand migration changed existing data: ${JSON.stringify({ itinerary, step })}`);
+  }
 }
 
 function ensureSentinel() {

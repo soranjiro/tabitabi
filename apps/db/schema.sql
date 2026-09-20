@@ -314,3 +314,157 @@ OR (NEW.time_unspecified = 1 AND NEW.is_all_day = 1)
 BEGIN
   SELECT RAISE(ABORT, 'invalid normalized step state');
 END;
+CREATE TRIGGER sync_itineraries_memo_text_insert
+AFTER INSERT ON itineraries
+BEGIN
+  UPDATE itineraries
+  SET memo_text = CASE
+    WHEN NEW.memo IS NULL THEN ''
+    WHEN json_valid(NEW.memo) AND json_type(NEW.memo, '$.text') = 'text'
+      THEN json_extract(NEW.memo, '$.text')
+    ELSE NEW.memo
+  END
+  WHERE id = NEW.id;
+END;
+CREATE TRIGGER sync_itineraries_memo_text_update
+AFTER UPDATE OF memo ON itineraries
+BEGIN
+  UPDATE itineraries
+  SET memo_text = CASE
+    WHEN NEW.memo IS NULL THEN ''
+    WHEN json_valid(NEW.memo) AND json_type(NEW.memo, '$.text') = 'text'
+      THEN json_extract(NEW.memo, '$.text')
+    ELSE NEW.memo
+  END
+  WHERE id = NEW.id;
+END;
+CREATE TRIGGER sync_steps_normalized_insert
+AFTER INSERT ON steps
+BEGIN
+  UPDATE steps
+  SET
+    notes_text = CASE
+      WHEN NEW.notes IS NULL THEN ''
+      WHEN json_valid(NEW.notes) AND json_type(NEW.notes, '$.text') = 'text'
+        THEN json_extract(NEW.notes, '$.text')
+      ELSE NEW.notes
+    END,
+    scheduled_start_at = CASE
+      WHEN json_valid(NEW.notes)
+        AND json_extract(NEW.notes, '$.tabitabi_schedule.precision') = 'undecided' THEN NULL
+      WHEN NEW.end_at >= NEW.start_at THEN NEW.start_at
+      ELSE NULL
+    END,
+    scheduled_end_at = CASE
+      WHEN json_valid(NEW.notes)
+        AND json_extract(NEW.notes, '$.tabitabi_schedule.precision') = 'undecided' THEN NULL
+      WHEN NEW.end_at >= NEW.start_at THEN NEW.end_at
+      ELSE NULL
+    END,
+    time_unspecified = CASE
+      WHEN NEW.end_at >= NEW.start_at
+        AND json_valid(NEW.notes)
+        AND json_extract(NEW.notes, '$.tabitabi_schedule.precision') = 'day'
+        AND NEW.is_all_day = 0 THEN 1
+      ELSE 0
+    END,
+    sort_order = CASE
+      WHEN json_valid(NEW.notes)
+        AND json_type(NEW.notes, '$.tabitabi_schedule.order') IN ('integer', 'real')
+        THEN json_extract(NEW.notes, '$.tabitabi_schedule.order')
+      ELSE NULL
+    END,
+    pin_latitude = CASE
+      WHEN json_valid(NEW.notes)
+        AND json_type(NEW.notes, '$.tabitabi_place.lat') IN ('integer', 'real')
+        AND json_type(NEW.notes, '$.tabitabi_place.lng') IN ('integer', 'real')
+        THEN json_extract(NEW.notes, '$.tabitabi_place.lat')
+      ELSE NULL
+    END,
+    pin_longitude = CASE
+      WHEN json_valid(NEW.notes)
+        AND json_type(NEW.notes, '$.tabitabi_place.lat') IN ('integer', 'real')
+        AND json_type(NEW.notes, '$.tabitabi_place.lng') IN ('integer', 'real')
+        THEN json_extract(NEW.notes, '$.tabitabi_place.lng')
+      ELSE NULL
+    END,
+    is_priority = CASE
+      WHEN json_valid(NEW.notes)
+        AND json_extract(NEW.notes, '$.tabitabi_place.priority') = 1 THEN 1
+      ELSE 0
+    END,
+    link = CASE
+      WHEN NEW.link IS NULL
+        AND json_valid(NEW.notes)
+        AND json_type(NEW.notes, '$.booking_url') = 'text'
+        AND trim(json_extract(NEW.notes, '$.booking_url')) <> ''
+        THEN json_extract(NEW.notes, '$.booking_url')
+      ELSE NEW.link
+    END
+  WHERE id = NEW.id;
+END;
+CREATE TRIGGER sync_steps_normalized_update
+AFTER UPDATE OF start_at, end_at, notes, is_all_day ON steps
+BEGIN
+  UPDATE steps
+  SET
+    notes_text = CASE
+      WHEN NEW.notes IS NULL THEN ''
+      WHEN json_valid(NEW.notes) AND json_type(NEW.notes, '$.text') = 'text'
+        THEN json_extract(NEW.notes, '$.text')
+      ELSE NEW.notes
+    END,
+    scheduled_start_at = CASE
+      WHEN json_valid(NEW.notes)
+        AND json_extract(NEW.notes, '$.tabitabi_schedule.precision') = 'undecided' THEN NULL
+      WHEN NEW.end_at >= NEW.start_at THEN NEW.start_at
+      ELSE NULL
+    END,
+    scheduled_end_at = CASE
+      WHEN json_valid(NEW.notes)
+        AND json_extract(NEW.notes, '$.tabitabi_schedule.precision') = 'undecided' THEN NULL
+      WHEN NEW.end_at >= NEW.start_at THEN NEW.end_at
+      ELSE NULL
+    END,
+    time_unspecified = CASE
+      WHEN NEW.end_at >= NEW.start_at
+        AND json_valid(NEW.notes)
+        AND json_extract(NEW.notes, '$.tabitabi_schedule.precision') = 'day'
+        AND NEW.is_all_day = 0 THEN 1
+      ELSE 0
+    END,
+    sort_order = CASE
+      WHEN json_valid(NEW.notes)
+        AND json_type(NEW.notes, '$.tabitabi_schedule.order') IN ('integer', 'real')
+        THEN json_extract(NEW.notes, '$.tabitabi_schedule.order')
+      ELSE NULL
+    END,
+    pin_latitude = CASE
+      WHEN json_valid(NEW.notes)
+        AND json_type(NEW.notes, '$.tabitabi_place.lat') IN ('integer', 'real')
+        AND json_type(NEW.notes, '$.tabitabi_place.lng') IN ('integer', 'real')
+        THEN json_extract(NEW.notes, '$.tabitabi_place.lat')
+      ELSE NULL
+    END,
+    pin_longitude = CASE
+      WHEN json_valid(NEW.notes)
+        AND json_type(NEW.notes, '$.tabitabi_place.lat') IN ('integer', 'real')
+        AND json_type(NEW.notes, '$.tabitabi_place.lng') IN ('integer', 'real')
+        THEN json_extract(NEW.notes, '$.tabitabi_place.lng')
+      ELSE NULL
+    END,
+    is_priority = CASE
+      WHEN json_valid(NEW.notes)
+        AND json_extract(NEW.notes, '$.tabitabi_place.priority') = 1 THEN 1
+      ELSE 0
+    END,
+    link = CASE
+      WHEN NEW.link IS NULL
+        AND json_valid(NEW.notes)
+        AND json_type(NEW.notes, '$.booking_url') = 'text'
+        AND trim(json_extract(NEW.notes, '$.booking_url')) <> ''
+        THEN json_extract(NEW.notes, '$.booking_url')
+      ELSE NEW.link
+    END
+  WHERE id = NEW.id;
+END;

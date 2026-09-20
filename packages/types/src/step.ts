@@ -39,13 +39,18 @@ export interface Step {
   id: string;
   itinerary_id: string;
   title: string;
-  start_at: number;
-  end_at: number;
+  start_at: number | null;
+  end_at: number | null;
+  time_unspecified?: boolean;
   location?: string | null;
   notes: string;
   link?: string | null;
   type?: StepType;
   is_all_day?: boolean;
+  pin_latitude?: number | null;
+  pin_longitude?: number | null;
+  is_priority?: boolean;
+  sort_order?: number | null;
   is_hidden?: boolean;
   created_at: string;
   updated_at: string;
@@ -55,27 +60,37 @@ export interface CreateStepInput {
   itinerary_id: string;
   title: string;
   // Unix timestamp in milliseconds
-  start_at: number;
+  start_at: number | null;
   // Unix timestamp in milliseconds
-  end_at?: number;
+  end_at?: number | null;
+  time_unspecified?: boolean;
   location?: string;
   notes?: string;
   link?: string | null;
   type?: StepType;
   is_all_day?: boolean;
+  pin_latitude?: number | null;
+  pin_longitude?: number | null;
+  is_priority?: boolean;
+  sort_order?: number | null;
 }
 
 export interface UpdateStepInput {
   title?: string;
   // Unix timestamp in milliseconds
-  start_at?: number;
+  start_at?: number | null;
   // Unix timestamp in milliseconds
-  end_at?: number;
+  end_at?: number | null;
+  time_unspecified?: boolean;
   location?: string | null;
   notes?: string | null;
   link?: string | null;
   type?: StepType;
   is_all_day?: boolean;
+  pin_latitude?: number | null;
+  pin_longitude?: number | null;
+  is_priority?: boolean;
+  sort_order?: number | null;
 }
 
 /** Date-only updates; the client preserves each event's local time and duration. */
@@ -86,6 +101,7 @@ export interface BatchStepDateUpdate {
 }
 
 export function getStepDate(step: Step): string {
+  if (step.start_at === null) return '';
   const d = new Date(step.start_at);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -94,6 +110,7 @@ export function getStepDate(step: Step): string {
 }
 
 export function getStepTime(step: Step): string {
+  if (step.start_at === null) return '';
   const d = new Date(step.start_at);
   const hh = String(d.getHours()).padStart(2, '0');
   const mm = String(d.getMinutes()).padStart(2, '0');
@@ -101,6 +118,7 @@ export function getStepTime(step: Step): string {
 }
 
 export function getStepEndTime(step: Step): string {
+  if (step.end_at === null) return '';
   const d = new Date(step.end_at);
   const hh = String(d.getHours()).padStart(2, '0');
   const mm = String(d.getMinutes()).padStart(2, '0');
@@ -108,6 +126,7 @@ export function getStepEndTime(step: Step): string {
 }
 
 export function getStepEndDate(step: Step): string {
+  if (step.end_at === null) return '';
   const d = new Date(step.end_at);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');

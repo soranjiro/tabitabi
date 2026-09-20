@@ -15,6 +15,7 @@ async function ensureSchema(db: D1Database) {
       background_display TEXT NOT NULL DEFAULT 'cover',
       source_itinerary_id TEXT,
       password TEXT,
+      memo_text TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )

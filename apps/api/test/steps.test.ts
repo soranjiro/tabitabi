@@ -22,6 +22,11 @@ async function applyMigrations(db: D1Database) {
       metadata_initialized INTEGER NOT NULL DEFAULT 0,
       memo TEXT,
       password TEXT,
+      source_itinerary_id TEXT,
+      background_image TEXT,
+      page_background_image TEXT,
+      background_display TEXT NOT NULL DEFAULT 'cover',
+      memo_text TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,
@@ -31,6 +36,14 @@ async function applyMigrations(db: D1Database) {
       title TEXT NOT NULL,
       start_at INTEGER NOT NULL,
       end_at INTEGER NOT NULL,
+      scheduled_start_at INTEGER,
+      scheduled_end_at INTEGER,
+      time_unspecified INTEGER NOT NULL DEFAULT 0,
+      sort_order REAL,
+      pin_latitude REAL,
+      pin_longitude REAL,
+      is_priority INTEGER NOT NULL DEFAULT 0,
+      source_step_id TEXT,
       location TEXT,
       notes TEXT,
       link TEXT,
@@ -164,6 +177,79 @@ describe('Steps API', () => {
 
       const { data } = await response.json() as any;
       expect(data.link).toBe('https://tabelog.com/tokyo/');
+    });
+
+    it('stores an unscheduled step in normalized columns while retaining rollback data', async () => {
+      const { id, token } = await createItinerary();
+      const response = await app.fetch(new Request('http://localhost/api/v1/steps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          itinerary_id: id,
+          title: '候補',
+          start_at: null,
+          end_at: null,
+          notes: '{"text":"朝に相談する"}',
+          pin_latitude: 35,
+          pin_longitude: 135,
+          is_priority: true,
+          sort_order: 10,
+        }),
+      }), env);
+      expect(response.status).toBe(201);
+      const { data } = await response.json() as any;
+      expect(data).toMatchObject({ start_at: null, end_at: null, pin_latitude: 35,
+        pin_longitude: 135, is_priority: true, sort_order: 10 });
+
+      const row = await env.DB.prepare(`SELECT start_at, end_at, scheduled_start_at,
+        scheduled_end_at, notes FROM steps WHERE id = ?`).bind(data.id).first<any>();
+      expect(typeof row.start_at).toBe('number');
+      expect(typeof row.end_at).toBe('number');
+      expect(row.scheduled_start_at).toBeNull();
+      expect(row.scheduled_end_at).toBeNull();
+      expect(JSON.parse(row.notes).tabitabi_schedule.precision).toBe('undecided');
+      expect(JSON.parse(row.notes).tabitabi_place).toMatchObject({ lat: 35, lng: 135, priority: true });
+    });
+
+    it('supports unscheduled to date-only to timed transitions', async () => {
+      const { id, token } = await createItinerary();
+      const created = await app.fetch(new Request('http://localhost/api/v1/steps', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ itinerary_id: id, title: '候補', start_at: null, end_at: null }),
+      }), env);
+      const { data: initial } = await created.json() as any;
+      const start = 1791586800000;
+      const end = start + 3600000;
+      const dated = await app.fetch(new Request(`http://localhost/api/v1/steps/${initial.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ start_at: start, end_at: end, time_unspecified: true }),
+      }), env);
+      expect(dated.status).toBe(200);
+      expect((await dated.json() as any).data).toMatchObject({ start_at: start, end_at: end, time_unspecified: true });
+
+      const timed = await app.fetch(new Request(`http://localhost/api/v1/steps/${initial.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ time_unspecified: false }),
+      }), env);
+      expect(timed.status).toBe(200);
+      expect((await timed.json() as any).data).toMatchObject({ start_at: start, end_at: end, time_unspecified: false });
+    });
+
+    it('rejects half-scheduled dates, half-specified pins, and invalid time states', async () => {
+      const { id, token } = await createItinerary();
+      const now = Date.now();
+      for (const input of [
+        { start_at: null, end_at: now },
+        { start_at: null, end_at: null, pin_latitude: 35 },
+        { start_at: null, end_at: null, time_unspecified: true },
+        { start_at: now, end_at: now, time_unspecified: true, is_all_day: true },
+      ]) {
+        const response = await app.fetch(new Request('http://localhost/api/v1/steps', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ itinerary_id: id, title: 'invalid', ...input }),
+        }), env);
+        expect(response.status).toBe(400);
+      }
     });
 
     it('returns 400 if required fields are missing', async () => {

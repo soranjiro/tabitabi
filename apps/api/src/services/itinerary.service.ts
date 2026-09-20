@@ -11,6 +11,32 @@ import type { BookContent } from './publication.service';
 const DEFAULT_THEME_ID = 'planning-draft';
 const DEFAULT_PALETTE_ID = 'neutral';
 
+function normalizedLegacyStepNotes(row: Record<string, unknown>): string {
+  const raw = typeof row.notes === 'string' ? row.notes : '{"text":""}';
+  let data: Record<string, unknown>;
+  try {
+    const parsed = JSON.parse(raw);
+    data = typeof parsed === 'object' && parsed !== null ? { ...parsed } : { text: raw };
+  } catch {
+    data = { text: raw };
+  }
+  const startAt = (row.start_at as number | null | undefined) ?? null;
+  data.tabitabi_schedule = {
+    precision: startAt === null ? 'undecided' : row.time_unspecified ? 'day' : 'time',
+    ...(row.sort_order == null ? {} : { order: row.sort_order }),
+  };
+  if (row.pin_latitude != null && row.pin_longitude != null) {
+    data.tabitabi_place = {
+      lat: row.pin_latitude,
+      lng: row.pin_longitude,
+      priority: Boolean(row.is_priority),
+    };
+  } else {
+    delete data.tabitabi_place;
+  }
+  return JSON.stringify(data);
+}
+
 export class ItineraryService {
   constructor(private db: D1Database, private env?: Partial<Env>) {}
 
@@ -19,10 +45,11 @@ export class ItineraryService {
       .prepare(`
         SELECT i.*,
                s.enabled as secret_enabled, s.offset_minutes as secret_offset,
-               COALESCE(f.fork_count, 0) as fork_count
+               COALESCE(f.fork_count, 0) + COALESCE(source_f.fork_count, 0) as fork_count
         FROM itineraries i
         LEFT JOIN itinerary_secrets s ON i.id = s.itinerary_id
         LEFT JOIN itinerary_fork_stats f ON i.id = f.itinerary_id
+        LEFT JOIN itinerary_fork_stats source_f ON i.source_itinerary_id = source_f.itinerary_id
         ORDER BY i.created_at DESC
       `)
       .all();
@@ -37,10 +64,11 @@ export class ItineraryService {
       .prepare(`
         SELECT i.*,
                s.enabled as secret_enabled, s.offset_minutes as secret_offset,
-               COALESCE(f.fork_count, 0) as fork_count
+               COALESCE(f.fork_count, 0) + COALESCE(source_f.fork_count, 0) as fork_count
         FROM itineraries i
         LEFT JOIN itinerary_secrets s ON i.id = s.itinerary_id
         LEFT JOIN itinerary_fork_stats f ON i.id = f.itinerary_id
+        LEFT JOIN itinerary_fork_stats source_f ON i.source_itinerary_id = source_f.itinerary_id
         WHERE i.id = ?
       `)
       .bind(id)
@@ -55,11 +83,12 @@ export class ItineraryService {
       .prepare(`
         SELECT i.*,
                s.enabled as secret_enabled, s.offset_minutes as secret_offset,
-               COALESCE(f.fork_count, 0) as fork_count
+               COALESCE(f.fork_count, 0) + COALESCE(source_f.fork_count, 0) as fork_count
         FROM official_itinerary_aliases a
         INNER JOIN itineraries i ON i.id = a.itinerary_id
         LEFT JOIN itinerary_secrets s ON i.id = s.itinerary_id
         LEFT JOIN itinerary_fork_stats f ON i.id = f.itinerary_id
+        LEFT JOIN itinerary_fork_stats source_f ON i.source_itinerary_id = source_f.itinerary_id
         WHERE a.alias = ?
       `)
       .bind(alias)
@@ -74,9 +103,7 @@ export class ItineraryService {
 
     const memo = input.memo ?? '{"text":""}';
     const validation = validateMemoJson(memo);
-    if (!validation.valid) {
-      throw new Error(validation.error);
-    }
+    if (!validation.valid) throw new Error(validation.error);
 
     const hashedPassword = input.password ? await hashPassword(input.password) : null;
 
@@ -164,9 +191,7 @@ export class ItineraryService {
     }
     if (input.memo !== undefined) {
       const validation = validateMemoJson(input.memo);
-      if (!validation.valid) {
-        throw new Error(validation.error);
-      }
+      if (!validation.valid) throw new Error(validation.error);
       fields.push('memo = ?');
       values.push(input.memo);
     }
@@ -229,24 +254,41 @@ export class ItineraryService {
     // Fetch source steps before batch to generate new IDs
     // Feature-specific settings are intentionally excluded from forks.
     const sourceSteps = await this.db
-      .prepare('SELECT id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
+      .prepare(`SELECT id, itinerary_id, title, start_at AS legacy_start_at,
+        end_at AS legacy_end_at, scheduled_start_at AS start_at,
+        scheduled_end_at AS end_at, time_unspecified,
+        location, notes, link, type, is_all_day, pin_latitude, pin_longitude,
+        is_priority, sort_order FROM steps WHERE itinerary_id = ?
+        ORDER BY scheduled_start_at IS NULL, scheduled_start_at ASC, sort_order ASC`)
       .bind(sourceId)
       .all();
 
-    const rows = content ? content.steps.map(step => ({ ...step, location: step.location ?? null,
-      notes: step.notes ?? '{"text":""}', link: step.link ?? null, is_all_day: step.is_all_day ? 1 : 0 })) : sourceSteps.results ?? [];
+    const rows = (content ? content.steps.map(step => ({ ...step, location: step.location ?? null,
+      notes: step.notes ?? '{"text":""}', link: step.link ?? null, is_all_day: step.is_all_day ? 1 : 0,
+      time_unspecified: step.time_unspecified ? 1 : 0, is_priority: step.is_priority ? 1 : 0,
+      legacy_start_at: step.start_at ?? Date.now(), legacy_end_at: step.end_at ?? step.start_at ?? Date.now() }))
+      : sourceSteps.results ?? []).map(row => ({ ...row, notes: normalizedLegacyStepNotes(row) }));
 
     // Use batch() for atomic execution: all inserts + fork_count upsert succeed or fail together
     const stepStatements = rows.map(row =>
       this.db
-        .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.link, row.type, row.is_all_day, now, now)
+        .prepare(`INSERT INTO steps (id, itinerary_id, title, start_at, end_at,
+          scheduled_start_at, scheduled_end_at, time_unspecified, location, notes, link,
+          type, is_all_day, pin_latitude, pin_longitude, is_priority, sort_order,
+          created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(generateId(), newId, row.title, row.legacy_start_at, row.legacy_end_at,
+          row.start_at, row.end_at, row.time_unspecified,
+          row.location, row.notes, row.link, row.type, row.is_all_day, row.pin_latitude,
+          row.pin_longitude, row.is_priority, row.sort_order, now, now)
     );
 
     await this.db.batch([
       this.db
-        .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?)')
-        .bind(newId, `${source.title.slice(0, 95)}（コピー）`, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, 1, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), source.memo, now, now),
+        .prepare(`INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled,
+          prefecture_slugs, areas, tags, metadata_initialized, memo, password, background_image,
+          page_background_image, background_display, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?, ?, ?, ?)`)
+        .bind(newId, `${source.title.slice(0, 95)}（コピー）`, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, 1, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), source.memo, source.background_image ?? null, source.page_background_image ?? null, source.background_display ?? 'cover', now, now),
       ...stepStatements,
       // Upsert fork_count in the dedicated stats table
       this.db
@@ -273,7 +315,12 @@ export class ItineraryService {
 
     const [sourceSteps, sourceMembers] = await Promise.all([
       this.db
-        .prepare('SELECT title, start_at, end_at, location, notes, link, type, is_all_day FROM steps WHERE itinerary_id = ? ORDER BY start_at ASC')
+        .prepare(`SELECT id, title, start_at AS legacy_start_at, end_at AS legacy_end_at,
+          scheduled_start_at AS start_at, scheduled_end_at AS end_at,
+          time_unspecified, location, notes, link,
+          type, is_all_day, pin_latitude, pin_longitude, is_priority, sort_order
+          FROM steps WHERE itinerary_id = ?
+          ORDER BY scheduled_start_at IS NULL, scheduled_start_at ASC, sort_order ASC`)
         .bind(sourceId)
         .all(),
       this.db
@@ -282,7 +329,15 @@ export class ItineraryService {
         .all<{ name: string }>(),
     ]);
     const memberNames = (sourceMembers.results ?? []).map((member) => member.name);
-    const rows = (content ? content.steps.map(step => ({ ...step, is_all_day: step.is_all_day ? 1 : 0 })) : sourceSteps.results ?? []).map(row => createPublicStepSnapshot(row, this.env, memberNames));
+    const sourceStepRows = sourceSteps.results ?? [];
+    const rows = (content ? content.steps.map((step, index) => ({ ...step,
+      id: sourceStepRows[index]?.id, is_all_day: step.is_all_day ? 1 : 0 })) : sourceStepRows)
+      .map(row => {
+        const snapshot = createPublicStepSnapshot(row, this.env, memberNames);
+        return { ...snapshot, notes: normalizedLegacyStepNotes(snapshot),
+          legacy_start_at: row.legacy_start_at, legacy_end_at: row.legacy_end_at,
+          source_step_id: row.id as string | undefined, snapshot_step_id: generateId() };
+      });
     const publicTitle = createPublicTextSnapshot(source.title, memberNames) || '旅のしおり';
     const publicMemo = createPublicMemoSnapshot(source.memo, memberNames);
 
@@ -298,8 +353,15 @@ export class ItineraryService {
       const newId = generateId();
       const stepStatements = rows.map(row =>
         this.db
-          .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-          .bind(generateId(), newId, row.title, row.start_at, row.end_at, row.location, row.notes, row.link, row.type, row.is_all_day, now, now)
+          .prepare(`INSERT INTO steps (id, itinerary_id, title, start_at, end_at,
+            scheduled_start_at, scheduled_end_at, time_unspecified, location, notes, link,
+            type, is_all_day, pin_latitude, pin_longitude, is_priority, sort_order,
+            source_step_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(row.snapshot_step_id, newId, row.title,
+            row.start_at ?? row.legacy_start_at ?? Date.now(), row.end_at ?? row.legacy_end_at ?? row.start_at ?? Date.now(),
+            row.start_at, row.end_at, row.time_unspecified ? 1 : 0,
+            row.location, row.notes, row.link, row.type, row.is_all_day, row.pin_latitude,
+            row.pin_longitude, row.is_priority ? 1 : 0, row.sort_order, row.source_step_id ?? null, now, now)
       );
 
       try {
@@ -307,6 +369,9 @@ export class ItineraryService {
           this.db
           .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?, ?)')
             .bind(newId, publicTitle, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, sourceId, now, now),
+          this.db.prepare(`UPDATE itineraries SET background_image = ?, page_background_image = ?,
+            background_display = ? WHERE id = ?`).bind(source.background_image ?? null,
+            source.page_background_image ?? null, source.background_display ?? 'cover', newId),
           ...stepStatements,
           ...(userId ? [this.db.prepare(`INSERT INTO itinerary_publications
             (source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at)
@@ -331,14 +396,23 @@ export class ItineraryService {
       const sharedId = existing.id;
       const stepStatements = rows.map(row =>
         this.db
-          .prepare('INSERT INTO steps (id, itinerary_id, title, start_at, end_at, location, notes, link, type, is_all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-          .bind(generateId(), sharedId, row.title, row.start_at, row.end_at, row.location, row.notes, row.link, row.type, row.is_all_day, now, now)
+          .prepare(`INSERT INTO steps (id, itinerary_id, title, start_at, end_at,
+            scheduled_start_at, scheduled_end_at, time_unspecified, location, notes, link,
+            type, is_all_day, pin_latitude, pin_longitude, is_priority, sort_order,
+            source_step_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .bind(row.snapshot_step_id, sharedId, row.title,
+            row.start_at ?? row.legacy_start_at ?? Date.now(), row.end_at ?? row.legacy_end_at ?? row.start_at ?? Date.now(),
+            row.start_at, row.end_at, row.time_unspecified ? 1 : 0,
+            row.location, row.notes, row.link, row.type, row.is_all_day, row.pin_latitude,
+            row.pin_longitude, row.is_priority ? 1 : 0, row.sort_order, row.source_step_id ?? null, now, now)
       );
 
       await this.db.batch([
         this.db
-          .prepare('UPDATE itineraries SET title = ?, theme_id = ?, palette_id = ?, packing_enabled = ?, prefecture_slugs = ?, areas = ?, tags = ?, metadata_initialized = 1, memo = ?, updated_at = ? WHERE id = ?')
-          .bind(publicTitle, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, now, sharedId),
+          .prepare(`UPDATE itineraries SET title = ?, theme_id = ?, palette_id = ?, packing_enabled = ?,
+            prefecture_slugs = ?, areas = ?, tags = ?, metadata_initialized = 1, memo = ?,
+            background_image = ?, page_background_image = ?, background_display = ?, updated_at = ? WHERE id = ?`)
+          .bind(publicTitle, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, source.background_image ?? null, source.page_background_image ?? null, source.background_display ?? 'cover', now, sharedId),
         this.db
           .prepare('DELETE FROM steps WHERE itinerary_id = ?')
           .bind(sharedId),
@@ -371,6 +445,9 @@ export class ItineraryService {
       tags: this.parseStringArray(row.tags),
       metadata_initialized: row.metadata_initialized !== 0,
       memo: row.memo as string,
+      background_image: (row.background_image as string | null | undefined) ?? null,
+      page_background_image: (row.page_background_image as string | null | undefined) ?? null,
+      background_display: row.background_display === 'page' ? 'page' : 'cover',
       password: row.password as string | null | undefined,
       fork_count: (row.fork_count as number) ?? 0,
       created_at: row.created_at as string,

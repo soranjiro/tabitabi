@@ -29,7 +29,6 @@
   import { itineraryCreationPopups } from "$lib/features/itinerary-onboarding/config";
   import { renderMarkdown } from "./utils/markdown";
   import { type ViewMode } from "./utils/storage";
-  import { parseMemoData } from "$lib/memo";
   import { openPrintStudio } from "$lib/print";
 
   interface Props {
@@ -53,8 +52,9 @@
     onCreateStep?: (data: {
       title: string;
       // Unix ms
-      start_at: number;
-      end_at: number;
+      start_at: number | null;
+      end_at: number | null;
+      time_unspecified?: boolean;
       location?: string;
       notes?: string;
       link?: string | null;
@@ -65,8 +65,9 @@
       stepId: string,
       data: {
         title?: string;
-        start_at?: number;
-        end_at?: number;
+        start_at?: number | null;
+        end_at?: number | null;
+        time_unspecified?: boolean;
         location?: string;
         notes?: string;
         link?: string | null;
@@ -127,11 +128,9 @@
   let itineraryTags = $state([...(itinerary.tags ?? [])]);
   let currentViewMode = $derived(getThemePreset(selectedThemeId).viewMode as ViewMode);
   let paletteStyle = $derived(Object.entries(getPalette(selectedPaletteId).colors).map(([key, value]) => `${key}:${value}`).join(";"));
-  let publicNotice = $derived(
-    typeof parseMemoData(itinerary.memo).affiliate_disclosure === "string"
-      ? (parseMemoData(itinerary.memo).affiliate_disclosure as string)
-      : "",
-  );
+  let publicNotice = $derived(itinerary.source_itinerary_id && steps.some((step) => step.link)
+    ? "このページにはアフィリエイトリンクが含まれる場合があります。"
+    : "");
 
   let focusedDate = $state<string | null>(null);
   let stepListRef: any = undefined;
@@ -160,10 +159,10 @@
         const targetDate = pendingDates[date];
         if (!targetDate || targetDate === date) return [];
         return group.map((step) => {
-          const start = new Date(step.start_at);
+          const start = new Date(step.start_at!);
           const target = new Date(`${targetDate}T00:00:00`);
           target.setHours(start.getHours(), start.getMinutes(), start.getSeconds(), start.getMilliseconds());
-          const duration = step.end_at - step.start_at;
+          const duration = step.end_at! - step.start_at!;
           return { id: step.id, start_at: target.getTime(), end_at: target.getTime() + duration };
         });
       });
@@ -398,8 +397,9 @@
 
   async function handleCreateStep(data: {
     title: string;
-    start_at: number;
-    end_at: number;
+    start_at: number | null;
+    end_at: number | null;
+    time_unspecified?: boolean;
     location?: string;
     notes?: string;
     type?: StepType;

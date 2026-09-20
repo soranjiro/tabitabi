@@ -38,6 +38,7 @@
   function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
     const now = Date.now();
+    if (step.start_at === null) return false;
     const revealTime = step.start_at - secretModeOffset * 60 * 1000;
     return now < revealTime;
   }
@@ -54,7 +55,7 @@
   }
 
   const sortedSteps = $derived(
-    [...steps].sort((a, b) => a.start_at - b.start_at),
+    [...steps].sort((a, b) => (a.start_at ?? Number.MAX_SAFE_INTEGER) - (b.start_at ?? Number.MAX_SAFE_INTEGER)),
   );
 
   function handleRowClick(step: Step) {

@@ -35,8 +35,9 @@
       stepId: string,
       data: {
         title?: string;
-        start_at?: number;
-        end_at?: number;
+        start_at?: number | null;
+        end_at?: number | null;
+        time_unspecified?: boolean;
         location?: string;
         notes?: string;
         link?: string | null;
@@ -63,6 +64,7 @@
   function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
     const now = Date.now();
+    if (step.start_at === null) return false;
     const revealTime = step.start_at - secretModeOffset * 60 * 1000;
     return now < revealTime;
   }
@@ -91,7 +93,7 @@
       groups.get(date)!.push(step);
     }
     for (const [_, groupSteps] of groups) {
-      groupSteps.sort((a, b) => a.start_at - b.start_at);
+      groupSteps.sort((a, b) => (a.start_at ?? Number.MAX_SAFE_INTEGER) - (b.start_at ?? Number.MAX_SAFE_INTEGER));
     }
     return Array.from(groups.entries()).sort((a, b) =>
       a[0].localeCompare(b[0]),
@@ -175,6 +177,7 @@
   }
 
   function formatDate(dateStr: string): string {
+    if (!dateStr) return "日付未定";
     const date = new Date(dateStr);
     return date.toLocaleDateString("ja-JP", { month: "long", day: "numeric" });
   }
@@ -491,7 +494,7 @@
               onclick={() => goTo(i)}
               onkeydown={(e) => (e.key === "Enter" || e.key === " ") && goTo(i)}
               aria-label={`日 ${i + 1}`}
-            >Day {i + 1}</button>
+            >{groupedSteps()[i]?.[0] ? `Day ${i + 1}` : '日付未定'}</button>
           {/each}
         </div>
         <button

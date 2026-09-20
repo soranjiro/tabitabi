@@ -20,6 +20,10 @@ async function applyMigrations(db: D1Database) {
       memo TEXT,
       password TEXT,
       source_itinerary_id TEXT,
+      background_image TEXT,
+      page_background_image TEXT,
+      background_display TEXT NOT NULL DEFAULT 'cover',
+      memo_text TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,
@@ -30,6 +34,14 @@ async function applyMigrations(db: D1Database) {
       title TEXT NOT NULL,
       start_at INTEGER NOT NULL,
       end_at INTEGER NOT NULL,
+      scheduled_start_at INTEGER,
+      scheduled_end_at INTEGER,
+      time_unspecified INTEGER NOT NULL DEFAULT 0,
+      sort_order REAL,
+      pin_latitude REAL,
+      pin_longitude REAL,
+      is_priority INTEGER NOT NULL DEFAULT 0,
+      source_step_id TEXT,
       location TEXT,
       notes TEXT,
       link TEXT,
@@ -338,6 +350,52 @@ describe('owner publication flow', () => {
     expect(published.status).toBe(200);
   });
 
+  it('restores published step fields without deleting private-only steps', async () => {
+    const token = await registerAndGetToken('restoreuser', 'restore@example.com');
+    const itineraryId = await createItinerary();
+    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    const originalResponse = await app.request('/api/v1/steps', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itinerary_id: itineraryId, title: '公開時の予定',
+        start_at: null, end_at: null, notes: '{"text":"公開時メモ"}',
+        pin_latitude: 35, pin_longitude: 135, is_priority: true, sort_order: 4,
+        link: 'https://example.com' }),
+    }, env);
+    const { data: original } = await originalResponse.json() as any;
+
+    await app.request('/api/v1/users/me/sync-bookmarks', {
+      method: 'POST', headers, body: JSON.stringify({ itinerary_ids: [itineraryId] }),
+    }, env);
+    expect((await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
+      method: 'POST', headers, body: JSON.stringify({ prefecture_slugs: ['tokyo'] }),
+    }, env)).status).toBe(200);
+
+    await app.request(`/api/v1/steps/${original.id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '変更後', start_at: 1791586800000, end_at: 1791590400000,
+        pin_latitude: null, pin_longitude: null, is_priority: false, sort_order: 99 }),
+    }, env);
+    await app.request('/api/v1/steps', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itinerary_id: itineraryId, title: 'private-only',
+        start_at: 1791673200000, end_at: 1791676800000 }),
+    }, env);
+
+    const restored = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publication/restore`, {
+      method: 'POST', headers,
+    }, env);
+    expect(restored.status).toBe(200);
+    const sourceSteps = await app.request(`/api/v1/steps?itinerary_id=${itineraryId}`, {}, env);
+    const { data } = await sourceSteps.json() as any;
+    expect(data).toHaveLength(2);
+    expect(data.find((step: any) => step.id === original.id)).toMatchObject({
+      title: '公開時の予定', start_at: null, end_at: null,
+      pin_latitude: 35, pin_longitude: 135, is_priority: true, sort_order: 4,
+      link: 'https://example.com/',
+    });
+    expect(data.some((step: any) => step.title === 'private-only')).toBe(true);
+  });
+
   it('does not create a snapshot when the itinerary is not saved by the account', async () => {
     const token = await registerAndGetToken('notowner', 'notowner@example.com');
     const itineraryId = await createItinerary();
@@ -414,6 +472,11 @@ describe('owner publication flow', () => {
       body: JSON.stringify({ prefecture_slugs: ['kyoto'] }),
     }, env);
 
+    const firstSnapshot = await env.DB.prepare('SELECT id FROM itineraries WHERE source_itinerary_id = ?')
+      .bind(itineraryId).first<{ id: string }>();
+    await env.DB.prepare('INSERT INTO itinerary_fork_stats (itinerary_id, fork_count) VALUES (?, 3)')
+      .bind(firstSnapshot!.id).run();
+
     const res = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publication`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -430,6 +493,18 @@ describe('owner publication flow', () => {
       .bind(itineraryId)
       .first();
     expect(publication).toBeNull();
+    expect((await env.DB.prepare('SELECT fork_count FROM itinerary_fork_stats WHERE itinerary_id = ?')
+      .bind(itineraryId).first<{ fork_count: number }>())?.fork_count).toBe(3);
+
+    const republished = await app.request(`/api/v1/users/me/bookmarks/${itineraryId}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ prefecture_slugs: ['kyoto'] }),
+    }, env);
+    expect(republished.status).toBe(200);
+    const feed = await app.request('/api/v1/users', {}, env);
+    const feedJson = await feed.json() as { data: { items: Array<{ copies: number }> } };
+    expect(feedJson.data.items[0]?.copies).toBe(3);
   });
 
   it('unlinks a non-published itinerary without deleting it', async () => {

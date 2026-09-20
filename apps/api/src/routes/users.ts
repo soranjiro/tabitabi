@@ -56,7 +56,7 @@ users.post('/me/bookmarks/:itineraryId/publication/restore', userAuthMiddleware,
   }
   const denied = await requireProtectedItineraryEditToken(c, id);
   if (denied) return denied;
-  await service.replace(id, bookContentSchema.parse(await service.read(publication.id)), publication.id);
+  await service.restore(id, publication.id);
   return c.json({ success: true, data: { id } });
 });
 

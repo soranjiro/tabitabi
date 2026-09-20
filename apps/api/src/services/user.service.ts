@@ -141,14 +141,15 @@ export class UserService {
           i.title, i.theme_id, i.background_image, publication.published_at as created_at,
           publication.prefecture_slugs, publication.areas, publication.tags,
           (SELECT COUNT(*) FROM steps WHERE itinerary_id = i.id) as stops,
-          COALESCE(stats.fork_count, 0) as copies,
-          (SELECT MIN(start_at) FROM steps WHERE itinerary_id = i.id) as start_at,
-          (SELECT MAX(end_at) FROM steps WHERE itinerary_id = i.id) as end_at,
+          COALESCE(stats.fork_count, 0) + COALESCE(source_stats.fork_count, 0) as copies,
+          (SELECT MIN(scheduled_start_at) FROM steps WHERE itinerary_id = i.id) as start_at,
+          (SELECT MAX(scheduled_end_at) FROM steps WHERE itinerary_id = i.id) as end_at,
           '' as description
         FROM itinerary_publications publication
         JOIN itineraries i ON i.id = publication.shared_itinerary_id
         JOIN users u ON publication.user_id = u.id
         LEFT JOIN itinerary_fork_stats stats ON stats.itinerary_id = i.id
+        LEFT JOIN itinerary_fork_stats source_stats ON source_stats.itinerary_id = publication.source_itinerary_id
         WHERE u.username = ?
           AND u.email_verified_at IS NOT NULL
           AND i.password IS NULL
@@ -190,14 +191,15 @@ export class UserService {
           i.title, i.theme_id, i.background_image, publication.published_at as created_at, u.username,
           publication.prefecture_slugs, publication.areas, publication.tags,
           (SELECT COUNT(*) FROM steps WHERE itinerary_id = i.id) as stops,
-          COALESCE(stats.fork_count, 0) as copies,
-          (SELECT MIN(start_at) FROM steps WHERE itinerary_id = i.id) as start_at,
-          (SELECT MAX(end_at) FROM steps WHERE itinerary_id = i.id) as end_at,
+          COALESCE(stats.fork_count, 0) + COALESCE(source_stats.fork_count, 0) as copies,
+          (SELECT MIN(scheduled_start_at) FROM steps WHERE itinerary_id = i.id) as start_at,
+          (SELECT MAX(scheduled_end_at) FROM steps WHERE itinerary_id = i.id) as end_at,
           '' as description
         FROM itinerary_publications publication
         JOIN itineraries i ON i.id = publication.shared_itinerary_id
         JOIN users u ON publication.user_id = u.id
         LEFT JOIN itinerary_fork_stats stats ON stats.itinerary_id = i.id
+        LEFT JOIN itinerary_fork_stats source_stats ON source_stats.itinerary_id = publication.source_itinerary_id
         WHERE ${where}
         ORDER BY publication.published_at DESC
         LIMIT ? OFFSET ?
@@ -244,9 +246,9 @@ export class UserService {
         i.title, i.theme_id, i.background_image, publication.published_at as created_at, u.username,
         publication.prefecture_slugs, publication.areas, publication.tags,
         (SELECT COUNT(*) FROM steps WHERE itinerary_id = i.id) as stops,
-        COALESCE(stats.fork_count, 0) as copies,
-        (SELECT MIN(start_at) FROM steps WHERE itinerary_id = i.id) as start_at,
-        (SELECT MAX(end_at) FROM steps WHERE itinerary_id = i.id) as end_at,
+        COALESCE(stats.fork_count, 0) + COALESCE(source_stats.fork_count, 0) as copies,
+        (SELECT MIN(scheduled_start_at) FROM steps WHERE itinerary_id = i.id) as start_at,
+        (SELECT MAX(scheduled_end_at) FROM steps WHERE itinerary_id = i.id) as end_at,
         '' as description
       FROM itinerary_favorites favorite
       JOIN itineraries i ON i.id = favorite.itinerary_id
@@ -254,6 +256,7 @@ export class UserService {
         ON publication.shared_itinerary_id = i.id
       JOIN users u ON u.id = publication.user_id
       LEFT JOIN itinerary_fork_stats stats ON stats.itinerary_id = i.id
+      LEFT JOIN itinerary_fork_stats source_stats ON source_stats.itinerary_id = publication.source_itinerary_id
       WHERE favorite.user_id = ?
         AND u.email_verified_at IS NOT NULL
         AND i.password IS NULL
@@ -351,7 +354,13 @@ export class UserService {
       'SELECT shared_itinerary_id FROM itinerary_publications WHERE user_id = ? AND source_itinerary_id = ?',
     ).bind(userId, sourceItineraryId).first<{ shared_itinerary_id: string }>();
     if (!publication) return false;
-    const [deleted] = await this.db.batch([
+    const [, deleted] = await this.db.batch([
+      this.db.prepare(`
+        INSERT INTO itinerary_fork_stats (itinerary_id, fork_count)
+        SELECT ?, COALESCE((SELECT fork_count FROM itinerary_fork_stats WHERE itinerary_id = ?), 0)
+        ON CONFLICT(itinerary_id) DO UPDATE
+        SET fork_count = fork_count + excluded.fork_count
+      `).bind(sourceItineraryId, publication.shared_itinerary_id),
       this.db.prepare(
         'DELETE FROM itinerary_publications WHERE user_id = ? AND source_itinerary_id = ?',
       ).bind(userId, sourceItineraryId),

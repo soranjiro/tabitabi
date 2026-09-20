@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import PlaceSearch from "$lib/planning/PlaceSearch.svelte";
   import type { PlaceResult } from "$lib/planning/search";
-  import { getPlace, updatePlace, type Place } from '$lib/planning/places';
+  import { getPlace, placeFields, type Place } from '$lib/planning/places';
   import type { ItineraryResponse, Step, StepType } from "@tabitabi/types";
   import { STEP_TYPE } from "@tabitabi/types";
   import { auth } from "$lib/auth";
@@ -14,8 +14,6 @@
   import {
     getStepSchedule,
     getStepTimeLabel,
-    updateStepSchedule,
-    type SchedulePrecision,
   } from "$lib/planning/schedule";
   import BottomNav from "../standard/core/components/BottomNav.svelte";
   import MoreMenu from "../standard/core/components/MoreMenu.svelte";
@@ -40,23 +38,27 @@
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
-      start_at: number;
-      end_at: number;
+      start_at: number | null;
+      end_at: number | null;
       location?: string;
       notes?: string;
       link?: string | null;
       type?: StepType;
       is_all_day?: boolean;
+      time_unspecified?: boolean;
+      pin_latitude?: number | null; pin_longitude?: number | null; is_priority?: boolean; sort_order?: number | null;
     }) => Promise<void>;
     onUpdateStep?: (stepId: string, data: {
       title?: string;
-      start_at?: number;
-      end_at?: number;
+      start_at?: number | null;
+      end_at?: number | null;
       location?: string | null;
       notes?: string;
       link?: string | null;
       type?: StepType;
       is_all_day?: boolean;
+      time_unspecified?: boolean;
+      pin_latitude?: number | null; pin_longitude?: number | null; is_priority?: boolean; sort_order?: number | null;
     }) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
     onBatchUpdateDates?: (updates: import("@tabitabi/types").BatchStepDateUpdate[]) => Promise<void>;
@@ -125,7 +127,7 @@
     title: "",
     note: "",
     when: "undecided" as WhenChoice,
-    day: 1,
+    date: "",
     time: "",
     endTime: "",
     location: "",
@@ -133,7 +135,7 @@
     type: STEP_TYPE.NORMAL_GENERAL as StepType,
   });
 
-  const previewPin = $derived<Step[]>(placeDraft ? [{ id:'preview-pin', itinerary_id:itinerary.id, title:form.title || '選んだ場所', location:form.location, notes:updatePlace(undefined, placeDraft), start_at:0, end_at:0, created_at:'', updated_at:'' }] : []);
+  const previewPin = $derived<Step[]>(placeDraft ? [{ id:'preview-pin', itinerary_id:itinerary.id, title:form.title || '選んだ場所', location:form.location, notes:'', start_at:null, end_at:null, time_unspecified:false, ...placeFields(placeDraft), sort_order:null, created_at:'', updated_at:'' }] : []);
 
   const otherThemes = $derived(getAvailableThemes().filter((theme) => theme.id !== itinerary.theme_id));
   const palettes = getAvailablePalettes();
@@ -221,38 +223,25 @@
 
   const legacyDates = $derived.by(() => [...new Set(
     steps
-      .filter((step) => getStepSchedule(step).precision === "time")
-      .map((step) => localDateKey(step.start_at)),
+      .filter((step) => step.start_at !== null)
+      .map((step) => localDateKey(step.start_at!)),
   )].sort());
-
-  const baseDate = $derived.by(() => {
-    const scheduled = steps.filter((step) => getStepSchedule(step).precision !== "undecided");
-    const source = scheduled.length
-      ? Math.min(...scheduled.map((step) => {
-          const day = getStepSchedule(step).day ?? 1;
-          return step.start_at - (day - 1) * 24 * 60 * 60 * 1000;
-        }))
-      : Date.now();
-    const date = new Date(source);
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  });
 
   function dayForStep(step: Step): number | null {
     const schedule = getStepSchedule(step);
     if (schedule.precision === "undecided") return null;
-    if (schedule.day) return schedule.day;
-    const index = legacyDates.indexOf(localDateKey(step.start_at));
+    const index = legacyDates.indexOf(localDateKey(step.start_at!));
     return index >= 0 ? index + 1 : 1;
   }
 
   const dayCount = $derived.by(() => Math.max(
-    2,
+    0,
     legacyDates.length,
     ...steps.map((step) => dayForStep(step) ?? 0),
   ));
 
   function stepOrder(step: Step): number {
-    return getStepSchedule(step).order ?? step.start_at;
+    return getStepSchedule(step).order ?? step.start_at ?? 0;
   }
 
   const undecidedSteps = $derived.by(() => steps
@@ -261,21 +250,21 @@
 
   const dayGroups = $derived.by(() => Array.from({ length: dayCount }, (_, index) => ({
     day: index + 1,
+    date: legacyDates[index],
     steps: steps
       .filter((step) => dayForStep(step) === index + 1)
       .sort((a, b) => {
         const aSchedule = getStepSchedule(a);
         const bSchedule = getStepSchedule(b);
-        if (aSchedule.precision === "time" && bSchedule.precision === "time") return a.start_at - b.start_at;
+        if (aSchedule.precision === "time" && bSchedule.precision === "time") return a.start_at! - b.start_at!;
         return stepOrder(a) - stepOrder(b);
       }),
-  })).filter((group) => group.steps.length > 0 || (hasEditPermission && group.day <= Math.max(1, dayCount))));
+  })).filter((group) => group.steps.length > 0));
 
   const isComplete = $derived(steps.length > 0 && steps.every((step) => getStepSchedule(step).precision === "time"));
 
-  function timestampFor(day: number, time: string): number {
-    const date = new Date(baseDate);
-    date.setDate(date.getDate() + day - 1);
+  function timestampFor(dateValue: string, time: string): number {
+    const date = new Date(`${dateValue}T00:00:00`);
     const [hour, minute] = (time || "12:00").split(":").map(Number);
     date.setHours(hour, minute, 0, 0);
     return date.getTime();
@@ -286,27 +275,27 @@
     placeDraft = place ?? null;
     formError = '';
     editingStep = null;
-    form = { title: "", note: "", when: "undecided", day: 1, time: "", endTime: "", location: "", link: "", type: STEP_TYPE.NORMAL_GENERAL as StepType };
+    form = { title: "", note: "", when: "undecided", date: legacyDates.at(-1) ?? localDateKey(Date.now()), time: "", endTime: "", location: "", link: "", type: STEP_TYPE.NORMAL_GENERAL as StepType };
     sheetOpen = true;
   }
 
   function openEdit(step: Step) {
     if (!hasEditPermission) return;
-    placeDraft = getPlace(step.notes);
+    placeDraft = getPlace(step);
     formError = '';
     const schedule = getStepSchedule(step);
     const time = schedule.precision === "time"
-      ? `${String(new Date(step.start_at).getHours()).padStart(2, "0")}:${String(new Date(step.start_at).getMinutes()).padStart(2, "0")}`
+      ? `${String(new Date(step.start_at!).getHours()).padStart(2, "0")}:${String(new Date(step.start_at!).getMinutes()).padStart(2, "0")}`
       : "";
     editingStep = step;
     form = {
       title: step.title,
       note: getMemoText(step.notes),
       when: schedule.precision === "undecided" ? "undecided" : "day",
-      day: dayForStep(step) ?? 1,
+      date: step.start_at === null ? (legacyDates.at(-1) ?? localDateKey(Date.now())) : localDateKey(step.start_at),
       time,
       endTime: schedule.precision === "time"
-        ? `${String(new Date(step.end_at).getHours()).padStart(2, "0")}:${String(new Date(step.end_at).getMinutes()).padStart(2, "0")}`
+        ? `${String(new Date(step.end_at!).getHours()).padStart(2, "0")}:${String(new Date(step.end_at!).getMinutes()).padStart(2, "0")}`
         : "",
       location: step.location ?? "",
       link: step.link ?? "",
@@ -315,44 +304,31 @@
     sheetOpen = true;
   }
 
-  function scheduleFromForm(): { precision: SchedulePrecision; day?: number; order: number } {
-    if (form.when === "undecided") return { precision: "undecided", order: Date.now() };
-    return {
-      precision: form.time ? "time" : "day",
-      day: form.day,
-      order: editingStep ? (getStepSchedule(editingStep).order ?? Date.now()) : Date.now(),
-    };
-  }
-
   async function saveStep(event: SubmitEvent) {
     event.preventDefault();
     if (!hasEditPermission || !form.title.trim() || saving) return;
     formError = '';
     saving = true;
     try {
-      const schedule = scheduleFromForm();
-      const startAt = schedule.precision === "undecided"
-        ? timestampFor(1, "12:00")
-        : timestampFor(schedule.day ?? 1, form.time || "12:00");
-      const endAt = schedule.precision === "time" && form.endTime
-        ? timestampFor(schedule.day ?? 1, form.endTime)
+      const isUndecided = form.when === "undecided";
+      const startAt = isUndecided ? null : timestampFor(form.date, form.time || "12:00");
+      const endAt = startAt === null ? null : form.time && form.endTime
+        ? timestampFor(form.date, form.endTime)
         : startAt + 60 * 60 * 1000;
-      if (endAt <= startAt) {
+      if (startAt !== null && endAt !== null && endAt < startAt) {
         alert("終了時刻は開始時刻より後に設定してください");
         return;
       }
-      let notes = updateStepSchedule(
-        updateMemoText(editingStep?.notes, form.note),
-        schedule,
-      );
-      if (mapPlanning) notes = updatePlace(notes, placeDraft);
       const data = {
         title: form.title.trim(),
         start_at: startAt,
         end_at: endAt,
-        notes,
+        notes: updateMemoText(editingStep?.notes, form.note),
         type: form.type,
         is_all_day: false,
+        time_unspecified: !isUndecided && !form.time,
+        sort_order: editingStep?.sort_order ?? Date.now(),
+        ...(mapPlanning ? placeFields(placeDraft) : {}),
       };
       const location = form.location.trim();
       const link = form.link.trim();
@@ -386,12 +362,10 @@
     const currentIndex = group.findIndex((item) => item.id === step.id);
     const target = group[currentIndex + direction];
     if (!target) return;
-    const stepSchedule = getStepSchedule(step);
-    const targetSchedule = getStepSchedule(target);
-    const currentOrder = stepSchedule.order ?? currentIndex;
-    const targetOrder = targetSchedule.order ?? currentIndex + direction;
-    await onUpdateStep(step.id, { notes: updateStepSchedule(step.notes, { ...stepSchedule, day: dayForStep(step) ?? undefined, order: targetOrder }) });
-    await onUpdateStep(target.id, { notes: updateStepSchedule(target.notes, { ...targetSchedule, day: dayForStep(target) ?? undefined, order: currentOrder }) });
+    const currentOrder = step.sort_order ?? currentIndex;
+    const targetOrder = target.sort_order ?? currentIndex + direction;
+    await onUpdateStep(step.id, { sort_order: targetOrder });
+    await onUpdateStep(target.id, { sort_order: currentOrder });
   }
 
   async function moveDay(group: { steps: Step[] }, value: string) {
@@ -399,10 +373,10 @@
     saving = true;
     try {
       const updates = group.steps.map((step) => {
-        const start = new Date(step.start_at);
+        const start = new Date(step.start_at!);
         const target = new Date(`${value}T00:00:00`);
         target.setHours(start.getHours(), start.getMinutes(), start.getSeconds(), start.getMilliseconds());
-        const duration = step.end_at - step.start_at;
+        const duration = step.end_at! - step.start_at!;
         return { id: step.id, start_at: target.getTime(), end_at: target.getTime() + duration };
       });
       await onBatchUpdateDates(updates);
@@ -410,7 +384,7 @@
   }
 
   function openBatchDayEditor() {
-    dayDateDrafts = Object.fromEntries(dayGroups.map((group) => [group.day, localDateKey(group.steps[0].start_at)]));
+    dayDateDrafts = Object.fromEntries(dayGroups.map((group) => [group.day, localDateKey(group.steps[0].start_at!)]));
     batchDayOpen = true;
   }
 
@@ -418,12 +392,12 @@
     if (!onBatchUpdateDates || saving) return;
     const updates = dayGroups.flatMap((group) => {
       const value = dayDateDrafts[group.day];
-      if (!value || value === localDateKey(group.steps[0].start_at)) return [];
+      if (!value || value === localDateKey(group.steps[0].start_at!)) return [];
       return group.steps.map((step) => {
-        const start = new Date(step.start_at);
+        const start = new Date(step.start_at!);
         const target = new Date(`${value}T00:00:00`);
         target.setHours(start.getHours(), start.getMinutes(), start.getSeconds(), start.getMilliseconds());
-        const duration = step.end_at - step.start_at;
+        const duration = step.end_at! - step.start_at!;
         return { id: step.id, start_at: target.getTime(), end_at: target.getTime() + duration };
       });
     });
@@ -539,7 +513,7 @@
 
       {#each dayGroups as group}
         <section class="draft-section">
-          <div class="section-heading"><div><h2>Day {group.day}</h2><p>{group.steps.length ? `${group.steps.length}件` : "予定なし"}</p></div></div>
+          <div class="section-heading"><div><h2>{group.date.replaceAll('-', '/')}</h2><p>Day {group.day} · {group.steps.length}件</p></div></div>
           {#if group.steps.length}
             <div class="step-list">
               {#each group.steps as step, index}
@@ -569,7 +543,7 @@
       {/if}
       <div class="preview-days">
         {#each dayGroups.filter((group) => group.steps.length > 0) as group}
-          <section class="preview-day"><header><span>Day</span><strong>{group.day}</strong></header><ol>{#each group.steps as step, index}<li><time class:pending={getStepSchedule(step).precision !== "time"}>{getStepTimeLabel(step)}</time><div><strong>{step.title}</strong>{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}{#if mapPlanning && hasEditPermission}<div class="preview-controls"><button onclick={() => openEdit(step)}>編集</button><button disabled={index === 0 || saving} onclick={() => moveStep(step, -1, group.steps)} aria-label={`${step.title}を上へ`}>↑</button><button disabled={index === group.steps.length - 1 || saving} onclick={() => moveStep(step, 1, group.steps)} aria-label={`${step.title}を下へ`}>↓</button></div>{/if}</div></li>{/each}</ol></section>
+          <section class="preview-day"><header><span>Day {group.day}</span><strong>{group.date.slice(5).replace('-', '/')}</strong></header><ol>{#each group.steps as step, index}<li><time class:pending={getStepSchedule(step).precision !== "time"}>{getStepTimeLabel(step)}</time><div><strong>{step.title}</strong>{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}{#if mapPlanning && hasEditPermission}<div class="preview-controls"><button onclick={() => openEdit(step)}>編集</button><button disabled={index === 0 || saving} onclick={() => moveStep(step, -1, group.steps)} aria-label={`${step.title}を上へ`}>↑</button><button disabled={index === group.steps.length - 1 || saving} onclick={() => moveStep(step, 1, group.steps)} aria-label={`${step.title}を下へ`}>↓</button></div>{/if}</div></li>{/each}</ol></section>
         {/each}
       </div>
       {#if steps.length === 0}<div class="empty"><strong>旅程はまだ空です。</strong><p>「考える」から候補を追加しましょう。</p></div>{/if}
@@ -611,7 +585,7 @@
           <label>リンク <small>任意</small><input type="url" bind:value={form.link} placeholder="https://..." /></label>
           <fieldset><legend>いつ？</legend><label class="radio"><input type="radio" bind:group={form.when} value="undecided" />まだ決めない</label><label class="radio"><input type="radio" bind:group={form.when} value="day" />日を決める</label></fieldset>
           {#if form.when === "day"}
-            <div class="date-fields"><label>日<select bind:value={form.day}>{#each Array.from({ length: dayCount + 1 }, (_, index) => index + 1) as day}<option value={day}>Day {day}</option>{/each}</select></label><div class="time-fields"><label>開始時刻 <small>任意</small><input type="time" bind:value={form.time} /></label>{#if form.time}<label>終了時刻 <small>任意</small><input type="time" bind:value={form.endTime} /></label>{/if}</div></div>
+            <div class="date-fields"><label>日付<input type="date" bind:value={form.date} required /></label><div class="time-fields"><label>開始時刻 <small>任意</small><input type="time" bind:value={form.time} /></label>{#if form.time}<label>終了時刻 <small>任意</small><input type="time" bind:value={form.endTime} /></label>{/if}</div></div>
           {/if}
           <button class="save-button" type="submit" disabled={saving}>{saving ? "保存中…" : editingStep ? "保存" : "追加"}</button>
           {#if editingStep}<button class="delete-button" type="button" onclick={deleteStep}>この予定を削除</button>{/if}
@@ -620,7 +594,7 @@
     </div>
   {/if}
 
-  {#if batchDayOpen}<div class="batch-day-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (batchDayOpen = false)}><section class="batch-day-modal" role="dialog" aria-modal="true" aria-label="日程をまとめて変更"><header><div><strong>日程をまとめて変更</strong><small>時刻と所要時間はそのままです</small></div><button onclick={() => batchDayOpen = false} aria-label="閉じる">×</button></header>{#each dayGroups as group}<label><span>Day {group.day}<small>{group.steps.length}件の予定</small></span><input type="date" bind:value={dayDateDrafts[group.day]} /></label>{/each}<footer><button class="cancel" onclick={() => batchDayOpen = false}>キャンセル</button><button onclick={() => void applyBatchDayChanges()} disabled={saving}>{saving ? '変更中…' : '変更する'}</button></footer></section></div>{/if}
+  {#if batchDayOpen}<div class="batch-day-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (batchDayOpen = false)}><section class="batch-day-modal" role="dialog" aria-modal="true" aria-label="日程をまとめて変更"><header><div><strong>日程をまとめて変更</strong><small>時刻と所要時間はそのままです</small></div><button onclick={() => batchDayOpen = false} aria-label="閉じる">×</button></header>{#each dayGroups as group}<label><span>Day {group.day} · {group.date.slice(5).replace('-', '/')}<small>{group.steps.length}件の予定</small></span><input type="date" bind:value={dayDateDrafts[group.day]} /></label>{/each}<footer><button class="cancel" onclick={() => batchDayOpen = false}>キャンセル</button><button onclick={() => void applyBatchDayChanges()} disabled={saving}>{saving ? '変更中…' : '変更する'}</button></footer></section></div>{/if}
 
   <BottomNav
     onMoneyOpen={() => (showMoney = true)}

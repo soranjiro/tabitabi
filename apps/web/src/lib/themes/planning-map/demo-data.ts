@@ -1,6 +1,4 @@
 import { type DemoDataSet, now, getTimestamp } from '../types';
-import { updateStepSchedule } from '$lib/planning/schedule';
-import { updatePlace } from '$lib/planning/places';
 
 export function getDemoData(): DemoDataSet {
   const places = [
@@ -11,9 +9,9 @@ export function getDemoData(): DemoDataSet {
     { title:'鴨川デルタ', lat:35.0307, lng:135.7713, note:'コーヒーを片手に、何もしない時間。', location:'出町柳', day:1 },
   ];
   return {
-    itinerary: { id:'demo', title:'次の京都、どこ行こう。', theme_id:'planning-map', memo:JSON.stringify({text:'急がない、詰めこまない。友人2人で考える、秋の京都1泊2日。\n日程は10月の週末で相談中。寺院・散歩・喫茶店を中心に、1日3か所まで。\nDay 1は東山、Day 2は鴨川・北山を軸に検討。雨なら植物園の代わりに美術館へ。\n未決定：旅行日、京都駅近くの宿、喫茶店。宿・交通・拝観の予約はまだしていません。'}), password:null, created_at:now, updated_at:now },
-    steps:places.map((p,i) => ({ id:`atelier-${i}`, itinerary_id:'demo', title:p.title, location:p.location, start_at:getTimestamp(0,'12:00'), end_at:getTimestamp(0,'13:00'), created_at:now, updated_at:now,
-      notes:updatePlace(updateStepSchedule(JSON.stringify({text:p.note}), { precision:p.day ? 'day' : 'undecided', day:p.day, order:i }), { lat:p.lat, lng:p.lng, priority:p.priority }),
+    itinerary: { id:'demo', title:'次の京都、どこ行こう。', theme_id:'planning-map', memo:'急がない、詰めこまない。友人2人で考える、秋の京都1泊2日。\n日程は10月の週末で相談中。寺院・散歩・喫茶店を中心に、1日3か所まで。\n雨なら植物園の代わりに美術館へ。', password:null, created_at:now, updated_at:now },
+    steps:places.map((p,i) => ({ id:`atelier-${i}`, itinerary_id:'demo', title:p.title, location:p.location, start_at:p.day ? getTimestamp(0,'12:00') : null, end_at:p.day ? getTimestamp(0,'13:00') : null, time_unspecified:!!p.day, created_at:now, updated_at:now,
+      notes:p.note, pin_latitude:p.lat, pin_longitude:p.lng, is_priority:!!p.priority, sort_order:i,
     })),
   };
 }

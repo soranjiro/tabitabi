@@ -296,7 +296,7 @@ BEGIN
 END;
 CREATE TRIGGER validate_steps_scheduled_state_update
 BEFORE UPDATE OF scheduled_start_at, scheduled_end_at, time_unspecified,
-  pin_latitude, pin_longitude, is_priority, is_all_day ON steps
+  pin_latitude, pin_longitude, is_priority ON steps
 WHEN NOT (
   (NEW.scheduled_start_at IS NULL AND NEW.scheduled_end_at IS NULL)
   OR (

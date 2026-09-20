@@ -47,7 +47,7 @@ async function applyMigrations(db: D1Database) {
       link TEXT,
       type TEXT NOT NULL DEFAULT 'normal:general',
       is_all_day INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      notes_text TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
@@ -357,7 +357,7 @@ describe('owner publication flow', () => {
     const originalResponse = await app.request('/api/v1/steps', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ itinerary_id: itineraryId, title: '公開時の予定',
-        start_at: null, end_at: null, notes: '{"text":"公開時メモ"}',
+        start_at: null, end_at: null, notes: '公開時メモ',
         pin_latitude: 35, pin_longitude: 135, is_priority: true, sort_order: 4,
         link: 'https://example.com' }),
     }, env);

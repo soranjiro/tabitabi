@@ -2,7 +2,6 @@ import type { Step, CreateStepInput, UpdateStepInput } from '@tabitabi/types';
 import { STEP_TYPE } from '@tabitabi/types';
 import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
-import { validateMemoJson } from '../utils/memo';
 
 function parseToUnixMs(value: unknown): number | null {
   // Only accept numeric Unix timestamps in milliseconds.
@@ -28,14 +27,14 @@ function normalizeLink(value: unknown): string | null {
 function normalizeLegacyNotes(
   notes: string,
   state: Pick<Step, 'start_at' | 'time_unspecified' | 'sort_order' | 'pin_latitude' | 'pin_longitude' | 'is_priority'>,
+  currentLegacy?: unknown,
 ): string {
-  let data: Record<string, unknown>;
+  let data: Record<string, unknown> = {};
   try {
-    const parsed = JSON.parse(notes);
-    data = typeof parsed === 'object' && parsed !== null ? { ...parsed } : { text: notes };
-  } catch {
-    data = { text: notes };
-  }
+    const parsed = typeof currentLegacy === 'string' ? JSON.parse(currentLegacy) : JSON.parse(notes);
+    if (typeof parsed === 'object' && parsed !== null) data = { ...parsed };
+  } catch {}
+  data.text = notes;
   data.tabitabi_schedule = {
     precision: state.start_at === null ? 'undecided' : state.time_unspecified ? 'day' : 'time',
     ...(state.sort_order === null || state.sort_order === undefined ? {} : { order: state.sort_order }),
@@ -105,9 +104,7 @@ export class StepService {
     this.assertTimeState(startAt, input.time_unspecified ?? false, input.is_all_day ?? false);
     this.assertPin(input.pin_latitude ?? null, input.pin_longitude ?? null);
 
-    const sourceNotes = input.notes ?? '{"text":""}';
-    const validation = validateMemoJson(sourceNotes);
-    if (!validation.valid) throw new Error(validation.error);
+    const sourceNotes = input.notes ?? '';
 
     const step: Step = {
       id,
@@ -128,7 +125,7 @@ export class StepService {
       created_at: now,
       updated_at: now,
     };
-    step.notes = normalizeLegacyNotes(step.notes, step);
+    const legacyNotes = normalizeLegacyNotes(step.notes, step);
     const legacyStart = step.start_at ?? Date.now();
     const legacyEnd = step.end_at ?? legacyStart;
 
@@ -136,9 +133,9 @@ export class StepService {
       .prepare(
         `INSERT INTO steps (id, itinerary_id, title, start_at, end_at,
           scheduled_start_at, scheduled_end_at, time_unspecified, location, notes,
-          link, type, is_all_day, pin_latitude, pin_longitude, is_priority, sort_order,
+          notes_text, link, type, is_all_day, pin_latitude, pin_longitude, is_priority, sort_order,
           created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .bind(
         step.id,
@@ -150,6 +147,7 @@ export class StepService {
         step.end_at,
         step.time_unspecified ? 1 : 0,
         step.location,
+        legacyNotes,
         step.notes,
         step.link,
         step.type,
@@ -183,29 +181,27 @@ export class StepService {
     this.assertPin(nextLatitude, nextLongitude);
     const nextPriority = input.is_priority === undefined ? Boolean(existing.is_priority) : input.is_priority;
     const nextOrder = input.sort_order === undefined ? existing.sort_order ?? null : input.sort_order;
-    const sourceNotes = input.notes === undefined ? existing.notes : input.notes ?? '{"text":""}';
-    const validation = validateMemoJson(sourceNotes);
-    if (!validation.valid) throw new Error(validation.error);
-    const nextNotes = normalizeLegacyNotes(sourceNotes, {
+    const sourceNotes = input.notes === undefined ? existing.notes : input.notes ?? '';
+    const nextLegacyNotes = normalizeLegacyNotes(sourceNotes, {
       start_at: nextStart,
       time_unspecified: nextTimeUnspecified,
       sort_order: nextOrder,
       pin_latitude: nextLatitude,
       pin_longitude: nextLongitude,
       is_priority: nextPriority,
-    });
+    }, existingRow.notes);
     const legacyStart = nextStart ?? Number(existingRow.start_at);
     const legacyEnd = nextEnd ?? Number(existingRow.end_at);
 
     const fields = [
       'updated_at = ?', 'start_at = ?', 'end_at = ?',
       'scheduled_start_at = ?', 'scheduled_end_at = ?', 'time_unspecified = ?',
-      'notes = ?', 'is_all_day = ?', 'pin_latitude = ?', 'pin_longitude = ?',
+      'notes = ?', 'notes_text = ?', 'is_all_day = ?', 'pin_latitude = ?', 'pin_longitude = ?',
       'is_priority = ?', 'sort_order = ?',
     ];
     const values: (string | number | null)[] = [
       now, legacyStart, legacyEnd, nextStart, nextEnd, nextTimeUnspecified ? 1 : 0,
-      nextNotes, nextAllDay ? 1 : 0, nextLatitude, nextLongitude,
+      nextLegacyNotes, sourceNotes, nextAllDay ? 1 : 0, nextLatitude, nextLongitude,
       nextPriority ? 1 : 0, nextOrder,
     ];
 
@@ -236,21 +232,26 @@ export class StepService {
 
   async updateDates(itineraryId: string, updates: Array<{ id: string; start_at: number; end_at: number }>): Promise<Step[]> {
     const now = getCurrentTimestamp();
-    const current = await Promise.all(updates.map((update) => this.get(update.id)));
+    const [current, rawRows] = await Promise.all([
+      Promise.all(updates.map((update) => this.get(update.id))),
+      Promise.all(updates.map((update) => this.db.prepare('SELECT notes FROM steps WHERE id = ?')
+        .bind(update.id).first<{ notes: string | null }>())),
+    ]);
     await this.db.batch(updates.map((update, index) => {
       const step = current[index];
-      const notes = normalizeLegacyNotes(step?.notes ?? '{"text":""}', {
+      const notesText = step?.notes ?? '';
+      const notes = normalizeLegacyNotes(notesText, {
         start_at: update.start_at,
         time_unspecified: step?.time_unspecified,
         sort_order: step?.sort_order,
         pin_latitude: step?.pin_latitude,
         pin_longitude: step?.pin_longitude,
         is_priority: step?.is_priority,
-      });
+      }, rawRows[index]?.notes);
       return this.db.prepare(`UPDATE steps SET start_at = ?, end_at = ?,
-        scheduled_start_at = ?, scheduled_end_at = ?, notes = ?, updated_at = ?
+        scheduled_start_at = ?, scheduled_end_at = ?, notes = ?, notes_text = ?, updated_at = ?
         WHERE id = ? AND itinerary_id = ?`)
-        .bind(update.start_at, update.end_at, update.start_at, update.end_at, notes, now, update.id, itineraryId);
+        .bind(update.start_at, update.end_at, update.start_at, update.end_at, notes, notesText, now, update.id, itineraryId);
     }));
     const result = await Promise.all(updates.map((update) => this.get(update.id)));
     return result.filter((step): step is Step => !!step);
@@ -274,7 +275,7 @@ export class StepService {
       end_at: (row.scheduled_end_at as number | null) ?? null,
       time_unspecified: row.time_unspecified === 1,
       location: row.location as string | null,
-      notes: (row.notes as string | null) ?? '{"text":""}',
+      notes: (row.notes_text as string | null) ?? '',
       link: (row.link as string | null | undefined) ?? null,
       type: (row.type as any) ?? STEP_TYPE.NORMAL_GENERAL,
       is_all_day: !!(row.is_all_day as number),
@@ -290,7 +291,7 @@ export class StepService {
     if (step.is_hidden && maskSecrets) {
       step.title = '?????';
       step.location = null;
-      step.notes = '{"text":""}';
+      step.notes = '';
       step.link = null;
     }
 

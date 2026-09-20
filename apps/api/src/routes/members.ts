@@ -6,6 +6,7 @@ import { ItineraryService } from '../services/itinerary.service';
 import { optionalAuthMiddleware } from '../middleware/auth';
 import { tripMemberSchema } from '../validators';
 import { validationHook } from '../validators/hook';
+import { guardPrivateItineraryRead } from './private-data-access';
 
 const members = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -19,11 +20,10 @@ async function canEdit(c: Context<{ Bindings: Env; Variables: Variables }>, itin
   return null;
 }
 
-members.get('/itineraries/:id/members', async (c) => {
+members.get('/itineraries/:id/members', optionalAuthMiddleware, async (c) => {
   const itineraryId = c.req.param('id')!;
-  if (!await new ItineraryService(c.env.DB, c.env).get(itineraryId)) {
-    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
-  }
+  const denied = await guardPrivateItineraryRead(c, itineraryId);
+  if (denied) return denied;
   const result = await c.env.DB.prepare(
     'SELECT id, itinerary_id, name, created_at FROM itinerary_members WHERE itinerary_id = ? ORDER BY created_at ASC',
   ).bind(itineraryId).all<TripMember>();

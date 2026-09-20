@@ -21,7 +21,7 @@ itineraries.get('/', async (c) => {
   return c.json({ success: true, data: response });
 });
 
-itineraries.get('/:id', async (c) => {
+itineraries.get('/:id', optionalAuthMiddleware, async (c) => {
   const id = c.req.param('id')!;
   const service = new ItineraryService(c.env.DB, c.env);
   const data = await service.get(id);
@@ -30,7 +30,7 @@ itineraries.get('/:id', async (c) => {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   }
 
-  return c.json({ success: true, data: service.toResponseItinerary(data) });
+  return c.json({ success: true, data: service.toResponseItinerary(data, c.get('shioriId') === id) });
 });
 
 itineraries.post('/', optionalUserAuthMiddleware, zValidator('json', createItinerarySchema, validationHook), async (c) => {
@@ -39,7 +39,7 @@ itineraries.post('/', optionalUserAuthMiddleware, zValidator('json', createItine
   const data = await service.create(input);
 
   const token = await generateToken(data.id, c.env.JWT_SECRET);
-  const response = service.toResponseItinerary(data);
+  const response = service.toResponseItinerary(data, true);
 
   const userId = c.get('userId');
   if (userId) {
@@ -85,7 +85,7 @@ itineraries.put('/:id', optionalAuthMiddleware, zValidator('json', updateItinera
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   }
 
-  return c.json({ success: true, data: service.toResponseItinerary(data) });
+  return c.json({ success: true, data: service.toResponseItinerary(data, true) });
 });
 
 itineraries.post('/:id/publish', optionalAuthMiddleware, async (c) => {

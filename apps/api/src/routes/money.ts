@@ -6,6 +6,7 @@ import { ItineraryService } from '../services/itinerary.service';
 import { optionalAuthMiddleware } from '../middleware/auth';
 import { moneyFundTransactionsSchema, moneyFundTransactionSchema, moneyItemSchema, moneyMemberSchema, moneySettingsSchema, updateMoneyFundTransactionSchema, updateMoneyItemSchema } from '../validators';
 import { validationHook } from '../validators/hook';
+import { guardPrivateItineraryRead } from './private-data-access';
 
 const money = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -85,12 +86,10 @@ async function assertStepBelongsToItinerary(db: D1Database, itineraryId: string,
   return !!await db.prepare('SELECT id FROM steps WHERE id = ? AND itinerary_id = ?').bind(stepId, itineraryId).first();
 }
 
-money.get('/itineraries/:id/money', async (c) => {
+money.get('/itineraries/:id/money', optionalAuthMiddleware, async (c) => {
   const itineraryId = c.req.param('id')!;
-  const service = new ItineraryService(c.env.DB, c.env);
-  if (!await service.get(itineraryId)) {
-    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
-  }
+  const denied = await guardPrivateItineraryRead(c, itineraryId);
+  if (denied) return denied;
   const [settings, membersResult, itemsResult, splitsResult, fundTransactionsResult] = await Promise.all([
     c.env.DB.prepare('SELECT budget_amount FROM itinerary_money_settings WHERE itinerary_id = ?')
       .bind(itineraryId).first<{ budget_amount: number | null }>(),

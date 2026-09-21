@@ -15,14 +15,13 @@ beforeAll(async () => {
 const books = () => new ItineraryService(env.DB);
 const steps = () => new StepService(env.DB);
 const publications = () => new PublicationService(env.DB);
-const note = (text: string) => JSON.stringify({ text });
 
 async function trip() {
-  const book = await books().create({ title: 'Storage regression', memo: note('旅のメモ') });
+  const book = await books().create({ title: 'Storage regression', memo: '旅のメモ' });
   const first = await steps().create({ itinerary_id: book.id, title: 'First', start_at: 1800000000000,
-    end_at: 1800003600000, notes: note('最初の予定') });
+    end_at: 1800003600000, notes: '最初の予定' });
   const second = await steps().create({ itinerary_id: book.id, title: 'Second', start_at: 1800090000000,
-    end_at: 1800093600000, notes: note('次の予定') });
+    end_at: 1800093600000, notes: '次の予定' });
   return { book, first, second };
 }
 
@@ -37,12 +36,12 @@ describe('normalized storage against production triggers', () => {
   it('preserves literal JSON notes through publish and fork', async () => {
     const { book, first } = await trip();
     const literal = '{"text":"inner text","custom":"literal user text"}';
-    await steps().update(first.id, { notes: note(literal) });
+    await steps().update(first.id, { notes: literal });
     const shared = await books().publish(book.id);
-    expect(JSON.parse((await steps().list(shared.id))[0].notes).text).toBe(literal);
+    expect((await steps().list(shared.id))[0].notes).toBe(literal);
     const fork = await books().fork(shared.id);
-    expect(JSON.parse((await steps().list(fork.itinerary.id))[0].notes).text).toBe(literal);
-    expect(JSON.parse((await steps().list(book.id))[0].notes).text).toBe(literal);
+    expect((await steps().list(fork.itinerary.id))[0].notes).toBe(literal);
+    expect((await steps().list(book.id))[0].notes).toBe(literal);
   });
 
   it('persists priority independently of coordinates', async () => {
@@ -83,11 +82,9 @@ describe('normalized storage against production triggers', () => {
 
   it('can fork preview content that omits optional normalized fields', async () => {
     const { book } = await trip();
-    const content = bookContentSchema.parse({ itinerary: { title: 'Copy', memo: note('') },
-      steps: [{ title: 'Candidate', start_at: null, end_at: null, notes: note('keep'), type: 'normal:general' }] });
+    const content = bookContentSchema.parse({ itinerary: { title: 'Copy', memo: '' },
+      steps: [{ title: 'Candidate', start_at: null, end_at: null, notes: 'keep', type: 'normal:general' }] });
     const fork = await books().fork(book.id, content);
-    const copied = (await steps().list(fork.itinerary.id))[0];
-    expect(copied).toMatchObject({ title: 'Candidate', start_at: null });
-    expect(JSON.parse(copied.notes).text).toBe('keep');
+    expect((await steps().list(fork.itinerary.id))[0]).toMatchObject({ title: 'Candidate', start_at: null, notes: 'keep' });
   });
 });

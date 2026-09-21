@@ -2,7 +2,6 @@ import type { Itinerary, CreateItineraryInput, UpdateItineraryInput } from '@tab
 import type { D1Database } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
 import type { Env } from '../utils';
-import { validateMemoJson } from '../utils/memo';
 import { createPublicMemoSnapshot, createPublicStepSnapshot, createPublicTextSnapshot } from '../utils/publication';
 import { hashPassword } from '../utils/password';
 import { normalizeThemeId } from '../utils/theme';
@@ -11,15 +10,22 @@ import type { BookContent } from './publication.service';
 const DEFAULT_THEME_ID = 'planning-draft';
 const DEFAULT_PALETTE_ID = 'neutral';
 
-function normalizedLegacyStepNotes(row: Record<string, unknown>): string {
-  const raw = typeof row.notes === 'string' ? row.notes : '{"text":""}';
-  let data: Record<string, unknown>;
-  try {
-    const parsed = JSON.parse(raw);
-    data = typeof parsed === 'object' && parsed !== null ? { ...parsed } : { text: raw };
-  } catch {
-    data = { text: raw };
+function legacyTextJson(text: string, current?: string | null): string {
+  let data: Record<string, unknown> = {};
+  if (current) {
+    try {
+      const parsed = JSON.parse(current);
+      if (typeof parsed === 'object' && parsed !== null) data = { ...parsed };
+    } catch {
+      data = {};
+    }
   }
+  data.text = text;
+  return JSON.stringify(data);
+}
+
+function normalizedLegacyStepNotes(row: Record<string, unknown>): string {
+  const data: Record<string, unknown> = { text: typeof row.notes === 'string' ? row.notes : '' };
   const startAt = (row.start_at as number | null | undefined) ?? null;
   data.tabitabi_schedule = {
     precision: startAt === null ? 'undecided' : row.time_unspecified ? 'day' : 'time',
@@ -101,9 +107,7 @@ export class ItineraryService {
     const id = generateId();
     const now = getCurrentTimestamp();
 
-    const memo = input.memo ?? '{"text":""}';
-    const validation = validateMemoJson(memo);
-    if (!validation.valid) throw new Error(validation.error);
+    const memo = input.memo ?? '';
 
     const hashedPassword = input.password ? await hashPassword(input.password) : null;
 
@@ -130,8 +134,13 @@ export class ItineraryService {
 
     // Insert into main table
     await this.db
-      .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.palette_id, itinerary.packing_enabled ? 1 : 0, '[]', '[]', '[]', 0, itinerary.memo, itinerary.password, itinerary.created_at, itinerary.updated_at)
+      .prepare(`INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled,
+        prefecture_slugs, areas, tags, metadata_initialized, memo, memo_text, password,
+        created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(itinerary.id, itinerary.title, itinerary.theme_id, itinerary.palette_id,
+        itinerary.packing_enabled ? 1 : 0, '[]', '[]', '[]', 0,
+        legacyTextJson(itinerary.memo), itinerary.memo, itinerary.password,
+        itinerary.created_at, itinerary.updated_at)
       .run();
 
     // Insert into secrets table if settings exist
@@ -190,10 +199,10 @@ export class ItineraryService {
       values.push(input.metadata_initialized ? 1 : 0);
     }
     if (input.memo !== undefined) {
-      const validation = validateMemoJson(input.memo);
-      if (!validation.valid) throw new Error(validation.error);
-      fields.push('memo = ?');
-      values.push(input.memo);
+      const legacy = await this.db.prepare('SELECT memo FROM itineraries WHERE id = ?')
+        .bind(id).first<{ memo: string | null }>();
+      fields.push('memo = ?', 'memo_text = ?');
+      values.push(legacyTextJson(input.memo, legacy?.memo), input.memo);
     }
     if (input.password !== undefined) {
       fields.push('password = ?');
@@ -257,38 +266,45 @@ export class ItineraryService {
       .prepare(`SELECT id, itinerary_id, title, start_at AS legacy_start_at,
         end_at AS legacy_end_at, scheduled_start_at AS start_at,
         scheduled_end_at AS end_at, time_unspecified,
-        location, notes, link, type, is_all_day, pin_latitude, pin_longitude,
+        location, notes_text AS notes, link, type, is_all_day, pin_latitude, pin_longitude,
         is_priority, sort_order FROM steps WHERE itinerary_id = ?
         ORDER BY scheduled_start_at IS NULL, scheduled_start_at ASC, sort_order ASC`)
       .bind(sourceId)
       .all();
 
     const rows = (content ? content.steps.map(step => ({ ...step, location: step.location ?? null,
-      notes: step.notes ?? '{"text":""}', link: step.link ?? null, is_all_day: step.is_all_day ? 1 : 0,
+      notes: step.notes ?? '', link: step.link ?? null, is_all_day: step.is_all_day ? 1 : 0,
       time_unspecified: step.time_unspecified ? 1 : 0, is_priority: step.is_priority ? 1 : 0,
       legacy_start_at: step.start_at ?? Date.now(), legacy_end_at: step.end_at ?? step.start_at ?? Date.now() }))
-      : sourceSteps.results ?? []).map(row => ({ ...row, notes: normalizedLegacyStepNotes(row) }));
+      : sourceSteps.results ?? []).map(row => ({ ...row,
+        notes_text: typeof row.notes === 'string' ? row.notes : '',
+        notes: normalizedLegacyStepNotes(row),
+      }));
 
     // Use batch() for atomic execution: all inserts + fork_count upsert succeed or fail together
     const stepStatements = rows.map(row =>
       this.db
         .prepare(`INSERT INTO steps (id, itinerary_id, title, start_at, end_at,
-          scheduled_start_at, scheduled_end_at, time_unspecified, location, notes, link,
+          scheduled_start_at, scheduled_end_at, time_unspecified, location, notes, notes_text, link,
           type, is_all_day, pin_latitude, pin_longitude, is_priority, sort_order,
-          created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .bind(generateId(), newId, row.title, row.legacy_start_at, row.legacy_end_at,
           row.start_at, row.end_at, row.time_unspecified,
-          row.location, row.notes, row.link, row.type, row.is_all_day, row.pin_latitude ?? null,
+          row.location, row.notes, row.notes_text, row.link, row.type, row.is_all_day, row.pin_latitude ?? null,
           row.pin_longitude ?? null, row.is_priority, row.sort_order ?? null, now, now)
     );
 
     await this.db.batch([
       this.db
         .prepare(`INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled,
-          prefecture_slugs, areas, tags, metadata_initialized, memo, password, background_image,
+          prefecture_slugs, areas, tags, metadata_initialized, memo, memo_text, password, background_image,
           page_background_image, background_display, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?, ?, ?, ?)`)
-        .bind(newId, `${source.title.slice(0, 95)}（コピー）`, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, 1, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), source.memo, source.background_image ?? null, source.page_background_image ?? null, source.background_display ?? 'cover', now, now),
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, NULL, ?, ?, ?, ?, ?)`)
+        .bind(newId, `${source.title.slice(0, 95)}（コピー）`, source.theme_id,
+          source.palette_id ?? DEFAULT_PALETTE_ID, 1, JSON.stringify(source.prefecture_slugs ?? []),
+          JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []),
+          legacyTextJson(source.memo), source.memo, source.background_image ?? null,
+          source.page_background_image ?? null, source.background_display ?? 'cover', now, now),
       ...stepStatements,
       // Upsert fork_count in the dedicated stats table
       this.db
@@ -317,7 +333,7 @@ export class ItineraryService {
       this.db
         .prepare(`SELECT id, title, start_at AS legacy_start_at, end_at AS legacy_end_at,
           scheduled_start_at AS start_at, scheduled_end_at AS end_at,
-          time_unspecified, location, notes, link,
+          time_unspecified, location, notes_text AS notes, link,
           type, is_all_day, pin_latitude, pin_longitude, is_priority, sort_order
           FROM steps WHERE itinerary_id = ?
           ORDER BY scheduled_start_at IS NULL, scheduled_start_at ASC, sort_order ASC`)
@@ -336,7 +352,7 @@ export class ItineraryService {
       is_all_day: step.is_all_day ? 1 : 0 })) : sourceStepRows)
       .map(row => {
         const snapshot = createPublicStepSnapshot(row, this.env, memberNames);
-        return { ...snapshot, notes: normalizedLegacyStepNotes(snapshot),
+        return { ...snapshot, notes_text: snapshot.notes, notes: normalizedLegacyStepNotes(snapshot),
           legacy_start_at: row.legacy_start_at, legacy_end_at: row.legacy_end_at,
           source_step_id: row.id as string | undefined, snapshot_step_id: generateId() };
       });
@@ -356,21 +372,27 @@ export class ItineraryService {
       const stepStatements = rows.map(row =>
         this.db
           .prepare(`INSERT INTO steps (id, itinerary_id, title, start_at, end_at,
-            scheduled_start_at, scheduled_end_at, time_unspecified, location, notes, link,
+            scheduled_start_at, scheduled_end_at, time_unspecified, location, notes, notes_text, link,
             type, is_all_day, pin_latitude, pin_longitude, is_priority, sort_order,
-            source_step_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+            source_step_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
           .bind(row.snapshot_step_id, newId, row.title,
             row.start_at ?? row.legacy_start_at ?? Date.now(), row.end_at ?? row.legacy_end_at ?? row.start_at ?? Date.now(),
             row.start_at, row.end_at, row.time_unspecified ? 1 : 0,
-            row.location, row.notes, row.link, row.type, row.is_all_day, row.pin_latitude,
+            row.location, row.notes, row.notes_text, row.link, row.type, row.is_all_day, row.pin_latitude,
             row.pin_longitude, row.is_priority ? 1 : 0, row.sort_order, row.source_step_id ?? null, now, now)
       );
 
       try {
         await this.db.batch([
           this.db
-          .prepare('INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled, prefecture_slugs, areas, tags, metadata_initialized, memo, password, source_itinerary_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL, ?, ?, ?)')
-            .bind(newId, publicTitle, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, sourceId, now, now),
+          .prepare(`INSERT INTO itineraries (id, title, theme_id, palette_id, packing_enabled,
+            prefecture_slugs, areas, tags, metadata_initialized, memo, memo_text, password,
+            source_itinerary_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, NULL, ?, ?, ?)`)
+            .bind(newId, publicTitle, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID,
+              source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []),
+              JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []),
+              legacyTextJson(publicMemo), publicMemo, sourceId, now, now),
           this.db.prepare(`UPDATE itineraries SET background_image = ?, page_background_image = ?,
             background_display = ? WHERE id = ?`).bind(source.background_image ?? null,
             source.page_background_image ?? null, source.background_display ?? 'cover', newId),
@@ -399,22 +421,27 @@ export class ItineraryService {
       const stepStatements = rows.map(row =>
         this.db
           .prepare(`INSERT INTO steps (id, itinerary_id, title, start_at, end_at,
-            scheduled_start_at, scheduled_end_at, time_unspecified, location, notes, link,
+            scheduled_start_at, scheduled_end_at, time_unspecified, location, notes, notes_text, link,
             type, is_all_day, pin_latitude, pin_longitude, is_priority, sort_order,
-            source_step_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+            source_step_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
           .bind(row.snapshot_step_id, sharedId, row.title,
             row.start_at ?? row.legacy_start_at ?? Date.now(), row.end_at ?? row.legacy_end_at ?? row.start_at ?? Date.now(),
             row.start_at, row.end_at, row.time_unspecified ? 1 : 0,
-            row.location, row.notes, row.link, row.type, row.is_all_day, row.pin_latitude,
+            row.location, row.notes, row.notes_text, row.link, row.type, row.is_all_day, row.pin_latitude,
             row.pin_longitude, row.is_priority ? 1 : 0, row.sort_order, row.source_step_id ?? null, now, now)
       );
 
       await this.db.batch([
         this.db
           .prepare(`UPDATE itineraries SET title = ?, theme_id = ?, palette_id = ?, packing_enabled = ?,
-            prefecture_slugs = ?, areas = ?, tags = ?, metadata_initialized = 1, memo = ?,
+            prefecture_slugs = ?, areas = ?, tags = ?, metadata_initialized = 1,
+            memo = ?, memo_text = ?,
             background_image = ?, page_background_image = ?, background_display = ?, updated_at = ? WHERE id = ?`)
-          .bind(publicTitle, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID, source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []), JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []), publicMemo, source.background_image ?? null, source.page_background_image ?? null, source.background_display ?? 'cover', now, sharedId),
+          .bind(publicTitle, source.theme_id, source.palette_id ?? DEFAULT_PALETTE_ID,
+            source.packing_enabled !== false ? 1 : 0, JSON.stringify(source.prefecture_slugs ?? []),
+            JSON.stringify(source.areas ?? []), JSON.stringify(source.tags ?? []),
+            legacyTextJson(publicMemo), publicMemo, source.background_image ?? null,
+            source.page_background_image ?? null, source.background_display ?? 'cover', now, sharedId),
         this.db
           .prepare('DELETE FROM steps WHERE itinerary_id = ?')
           .bind(sharedId),
@@ -446,7 +473,7 @@ export class ItineraryService {
       areas: this.parseStringArray(row.areas),
       tags: this.parseStringArray(row.tags),
       metadata_initialized: row.metadata_initialized !== 0,
-      memo: row.memo as string,
+      memo: (row.memo_text as string | null | undefined) ?? '',
       background_image: (row.background_image as string | null | undefined) ?? null,
       page_background_image: (row.page_background_image as string | null | undefined) ?? null,
       background_display: row.background_display === 'page' ? 'page' : 'cover',

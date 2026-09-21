@@ -2,15 +2,6 @@ import type { Step } from '@tabitabi/types';
 import { STEP_TYPE } from '@tabitabi/types';
 import type { Env } from './index';
 
-type MemoRecord = {
-  text: string;
-  booking_url?: string;
-  affiliate_url?: string;
-  affiliate_provider?: string;
-  affiliate_disclosure?: string;
-  [key: string]: unknown;
-};
-
 export const AFFILIATE_DISCLOSURE = 'このページにはアフィリエイトリンクが含まれます。';
 
 const SENSITIVE_PATTERNS: RegExp[] = [
@@ -19,19 +10,6 @@ const SENSITIVE_PATTERNS: RegExp[] = [
   /(?:部屋|客室|room)\s*(?:番号|no\.?)?[:：]?\s*[A-Z0-9-]{2,}\b/gi,
   /(?:\+?\d[\d\s().-]{8,}\d)/g,
 ];
-
-function parseMemo(value: string | null | undefined): MemoRecord {
-  if (!value) return { text: '' };
-  try {
-    const parsed = JSON.parse(value);
-    if (typeof parsed === 'object' && parsed !== null && typeof parsed.text === 'string') {
-      return { text: '', ...parsed };
-    }
-  } catch {
-    return { text: value };
-  }
-  return { text: '' };
-}
 
 function redactSensitiveText(value: string | null | undefined, sensitiveValues: string[] = []): string {
   if (!value) return '';
@@ -114,44 +92,27 @@ export function buildAffiliateUrl(rawUrl: string | undefined, env?: Partial<Env>
 }
 
 export function createPublicStepSnapshot(row: Record<string, unknown>, env?: Partial<Env>, sensitiveValues: string[] = []) {
-  const notes = parseMemo(row.notes as string | null | undefined);
-  const sourceLink = safeUrl(row.link) ?? safeUrl(notes.booking_url);
-  const affiliate = buildAffiliateUrl(sourceLink, env);
-  const publicNotes: MemoRecord = {
-    text: redactSensitiveText(notes.text, sensitiveValues),
-  };
-
-  if (sourceLink) {
-    publicNotes.booking_url = sourceLink;
-    publicNotes.affiliate_url = affiliate.url ?? sourceLink;
-    publicNotes.affiliate_provider = affiliate.provider ?? detectAffiliateProvider(sourceLink);
-    publicNotes.affiliate_disclosure = AFFILIATE_DISCLOSURE;
-  }
-
+  const sourceLink = safeUrl(row.link);
   const title = redactSensitiveText(row.title as string, sensitiveValues);
   const location = redactSensitiveText(row.location as string | null | undefined, sensitiveValues);
 
   return {
     title: title || '旅の予定',
-    start_at: row.start_at,
-    end_at: row.end_at,
+    start_at: row.start_at ?? null,
+    end_at: row.end_at ?? null,
     time_unspecified: row.time_unspecified === true || row.time_unspecified === 1,
     location: location || null,
-    notes: JSON.stringify(publicNotes),
+    notes: redactSensitiveText(row.notes as string | null | undefined, sensitiveValues),
     link: sourceLink ?? null,
     type: (row.type as Step['type']) ?? STEP_TYPE.NORMAL_GENERAL,
     is_all_day: row.is_all_day,
-    pin_latitude: (row.pin_latitude as number | null | undefined) ?? null,
-    pin_longitude: (row.pin_longitude as number | null | undefined) ?? null,
+    pin_latitude: row.pin_latitude ?? null,
+    pin_longitude: row.pin_longitude ?? null,
     is_priority: row.is_priority === true || row.is_priority === 1,
-    sort_order: (row.sort_order as number | null | undefined) ?? null,
+    sort_order: row.sort_order ?? null,
   };
 }
 
 export function createPublicMemoSnapshot(memo: string | null | undefined, sensitiveValues: string[] = []): string {
-  const parsed = parseMemo(memo);
-  return JSON.stringify({
-    text: redactSensitiveText(parsed.text, sensitiveValues),
-    affiliate_disclosure: AFFILIATE_DISCLOSURE,
-  });
+  return redactSensitiveText(memo, sensitiveValues);
 }

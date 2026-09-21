@@ -10,9 +10,7 @@ import { normalizeThemeId } from '../utils/theme';
 export const bookContentSchema = z.object({
   itinerary: updateItinerarySchema.omit({ password: true, secret_settings: true }).extend({
     title: z.string().min(1).max(100),
-    memo: z.string().max(100000).refine(value => {
-      try { return typeof JSON.parse(value).text === 'string'; } catch { return false; }
-    }),
+    memo: z.string().max(100000),
   }),
   steps: z.array(z.object({
     id: z.string().min(1).max(100).optional(),
@@ -21,9 +19,7 @@ export const bookContentSchema = z.object({
     end_at: z.number().int().min(0).max(8640000000000000).nullable(),
     time_unspecified: z.boolean().optional().default(false),
     location: z.string().nullable().optional(),
-    notes: z.string().max(100000).refine(value => {
-      try { return typeof JSON.parse(value).text === 'string'; } catch { return false; }
-    }).nullable().optional(),
+    notes: z.string().max(100000).nullable().optional(),
     link: z.string().url().refine(value => /^https?:\/\//.test(value)).nullable().optional(),
     type: z.string().max(64),
     is_all_day: z.boolean().optional(),
@@ -47,15 +43,24 @@ export const bookContentSchema = z.object({
 });
 export type BookContent = z.infer<typeof bookContentSchema>;
 
-function normalizedLegacyNotes(step: BookContent['steps'][number]): string {
-  const raw = step.notes ?? '{"text":""}';
-  let data: Record<string, unknown>;
+function legacyTextJson(text: string, current?: unknown): string {
+  let data: Record<string, unknown> = {};
   try {
-    const parsed = JSON.parse(raw);
-    data = typeof parsed === 'object' && parsed !== null ? { ...parsed } : { text: raw };
-  } catch {
-    data = { text: raw };
-  }
+    const parsed = typeof current === 'string' ? JSON.parse(current) : null;
+    if (typeof parsed === 'object' && parsed !== null) data = { ...parsed };
+  } catch {}
+  data.text = text;
+  return JSON.stringify(data);
+}
+
+function normalizedLegacyNotes(step: BookContent['steps'][number], current?: unknown): string {
+  const raw = step.notes ?? '';
+  let data: Record<string, unknown> = {};
+  try {
+    const parsed = typeof current === 'string' ? JSON.parse(current) : null;
+    if (typeof parsed === 'object' && parsed !== null) data = { ...parsed };
+  } catch {}
+  data.text = raw;
   data.tabitabi_schedule = {
     precision: step.start_at === null ? 'undecided' : step.time_unspecified ? 'day' : 'time',
     ...(step.sort_order == null ? {} : { order: step.sort_order }),
@@ -99,9 +104,11 @@ export class PublicationService {
   async replace(id: string, content: BookContent, backgroundSourceId?: string) {
     const now = getCurrentTimestamp();
     const book = content.itinerary;
-    const existingSteps = await this.db.prepare(`SELECT id, source_step_id, start_at, end_at FROM steps
+    const existingBook = await this.db.prepare('SELECT memo FROM itineraries WHERE id = ?')
+      .bind(id).first<{ memo: string | null }>();
+    const existingSteps = await this.db.prepare(`SELECT id, source_step_id, start_at, end_at, notes FROM steps
       WHERE itinerary_id = ? ORDER BY scheduled_start_at IS NULL, scheduled_start_at, sort_order, created_at`)
-      .bind(id).all<{ id: string; source_step_id: string | null; start_at: number; end_at: number }>();
+      .bind(id).all<{ id: string; source_step_id: string | null; start_at: number; end_at: number; notes: string | null }>();
     const previous = existingSteps.results ?? [];
     const previousById = new Map(previous.map(step => [step.id, step]));
     const retainedIds = new Set(content.steps.flatMap(step => step.id ? [step.id] : []));
@@ -109,29 +116,31 @@ export class PublicationService {
       const existing = step.id ? previousById.get(step.id) : undefined;
       const legacyStart = step.start_at ?? existing?.start_at ?? Date.now();
       const legacyEnd = step.end_at ?? existing?.end_at ?? legacyStart;
-      const notes = normalizedLegacyNotes(step);
+      const notes = normalizedLegacyNotes(step, existing?.notes);
       if (existing) return this.db.prepare(`UPDATE steps SET title = ?, start_at = ?, end_at = ?,
-        scheduled_start_at = ?, scheduled_end_at = ?, time_unspecified = ?, location = ?, notes = ?, link = ?, type = ?, is_all_day = ?,
+        scheduled_start_at = ?, scheduled_end_at = ?, time_unspecified = ?, location = ?, notes = ?, notes_text = ?, link = ?, type = ?, is_all_day = ?,
         pin_latitude = ?, pin_longitude = ?, is_priority = ?, sort_order = ?, updated_at = ?
         WHERE id = ? AND itinerary_id = ?`).bind(step.title, legacyStart, legacyEnd,
-        step.start_at, step.end_at, step.time_unspecified ? 1 : 0, step.location ?? null, notes, step.link ?? null,
+        step.start_at, step.end_at, step.time_unspecified ? 1 : 0, step.location ?? null,
+        notes, step.notes ?? '', step.link ?? null,
         step.type, step.is_all_day ? 1 : 0, step.pin_latitude ?? null, step.pin_longitude ?? null,
         step.is_priority ? 1 : 0, step.sort_order ?? null, now, existing.id, id);
       return this.db.prepare(`INSERT INTO steps
         (id, itinerary_id, title, start_at, end_at, scheduled_start_at, scheduled_end_at, time_unspecified, location, notes,
-          link, type, is_all_day, pin_latitude, pin_longitude, is_priority, sort_order,
+          notes_text, link, type, is_all_day, pin_latitude, pin_longitude, is_priority, sort_order,
           created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .bind(step.id ?? generateId(), id, step.title, legacyStart, legacyEnd, step.start_at, step.end_at,
-          step.time_unspecified ? 1 : 0, step.location ?? null, notes,
+          step.time_unspecified ? 1 : 0, step.location ?? null, notes, step.notes ?? '',
           step.link ?? null, step.type, step.is_all_day ? 1 : 0,
           step.pin_latitude ?? null, step.pin_longitude ?? null,
           step.is_priority ? 1 : 0, step.sort_order ?? null, now, now);
     });
     await this.db.batch([
       this.db.prepare(`UPDATE itineraries SET title = ?, theme_id = COALESCE(?, theme_id), palette_id = COALESCE(?, palette_id),
-        memo = ?, packing_enabled = ?, prefecture_slugs = ?, areas = ?, tags = ?, updated_at = ? WHERE id = ?`)
-        .bind(book.title, book.theme_id ? normalizeThemeId(book.theme_id) : null, book.palette_id ?? null, book.memo, book.packing_enabled === false ? 0 : 1,
+        memo = ?, memo_text = ?, packing_enabled = ?, prefecture_slugs = ?, areas = ?, tags = ?, updated_at = ? WHERE id = ?`)
+        .bind(book.title, book.theme_id ? normalizeThemeId(book.theme_id) : null, book.palette_id ?? null,
+          legacyTextJson(book.memo, existingBook?.memo), book.memo, book.packing_enabled === false ? 0 : 1,
           JSON.stringify(book.prefecture_slugs ?? []), JSON.stringify(book.areas ?? []), JSON.stringify(book.tags ?? []), now, id),
       ...stepStatements,
       ...previous.filter(step => !retainedIds.has(step.id)).map(step => this.db.prepare('DELETE FROM steps WHERE id = ? AND itinerary_id = ?').bind(step.id, id)),
@@ -148,46 +157,53 @@ export class PublicationService {
     const now = getCurrentTimestamp();
     const [book, snapshotSteps] = await Promise.all([
       this.db.prepare(`SELECT title, theme_id, palette_id, packing_enabled, prefecture_slugs,
-        areas, tags, memo, background_image, page_background_image, background_display
+        areas, tags, memo_text AS memo, background_image, page_background_image, background_display
         FROM itineraries WHERE id = ? AND source_itinerary_id = ?`)
         .bind(sharedId, sourceId).first<Record<string, unknown>>(),
       this.db.prepare(`SELECT id, title, start_at AS legacy_start_at, end_at AS legacy_end_at,
         scheduled_start_at, scheduled_end_at, time_unspecified, location, notes, link,
+        notes_text,
         type, is_all_day, pin_latitude, pin_longitude, is_priority, sort_order, source_step_id
         FROM steps WHERE itinerary_id = ? ORDER BY scheduled_start_at IS NULL, scheduled_start_at, sort_order`)
         .bind(sharedId).all<Record<string, unknown>>(),
     ]);
     if (!book) throw new Error('NOT_FOUND');
+    const sourceBook = await this.db.prepare('SELECT memo FROM itineraries WHERE id = ?')
+      .bind(sourceId).first<{ memo: string | null }>();
     const statements = [this.db.prepare(`UPDATE itineraries SET title = ?, theme_id = ?,
-      palette_id = ?, packing_enabled = ?, prefecture_slugs = ?, areas = ?, tags = ?, memo = ?,
+      palette_id = ?, packing_enabled = ?, prefecture_slugs = ?, areas = ?, tags = ?, memo = ?, memo_text = ?,
       background_image = ?, page_background_image = ?, background_display = ?, updated_at = ?
       WHERE id = ?`).bind(book.title, book.theme_id, book.palette_id,
-      book.packing_enabled, book.prefecture_slugs, book.areas, book.tags, book.memo,
+      book.packing_enabled, book.prefecture_slugs, book.areas, book.tags,
+      legacyTextJson(String(book.memo ?? ''), sourceBook?.memo), book.memo ?? '',
       book.background_image ?? null, book.page_background_image ?? null,
       book.background_display ?? 'cover', now, sourceId)];
     for (const step of snapshotSteps.results ?? []) {
       const sourceStepId = typeof step.source_step_id === 'string' ? step.source_step_id : null;
-      const existing = sourceStepId ? await this.db.prepare('SELECT start_at, end_at FROM steps WHERE id = ? AND itinerary_id = ?')
-        .bind(sourceStepId, sourceId).first<{ start_at: number; end_at: number }>() : null;
+      const existing = sourceStepId ? await this.db.prepare('SELECT start_at, end_at, notes FROM steps WHERE id = ? AND itinerary_id = ?')
+        .bind(sourceStepId, sourceId).first<{ start_at: number; end_at: number; notes: string | null }>() : null;
       const scheduledStart = (step.scheduled_start_at as number | null) ?? null;
       const scheduledEnd = (step.scheduled_end_at as number | null) ?? null;
       const legacyStart = scheduledStart ?? existing?.start_at ?? Number(step.legacy_start_at) ?? Date.now();
       const legacyEnd = scheduledEnd ?? existing?.end_at ?? Number(step.legacy_end_at) ?? legacyStart;
+      const plainNotes = String(step.notes_text ?? '');
+      const legacyNotes = normalizedLegacyNotes({ ...step, start_at: scheduledStart,
+        end_at: scheduledEnd, notes: plainNotes } as BookContent['steps'][number], existing?.notes);
       const values = [step.title, legacyStart, legacyEnd, scheduledStart, scheduledEnd, step.time_unspecified,
-        step.location ?? null, step.notes ?? '{"text":""}', step.link ?? null, step.type, step.is_all_day,
+        step.location ?? null, legacyNotes, plainNotes, step.link ?? null, step.type, step.is_all_day,
         step.pin_latitude ?? null, step.pin_longitude ?? null, step.is_priority,
         step.sort_order ?? null, now];
       if (existing) {
         statements.push(this.db.prepare(`UPDATE steps SET title = ?, start_at = ?, end_at = ?,
-          scheduled_start_at = ?, scheduled_end_at = ?, time_unspecified = ?, location = ?, notes = ?, link = ?, type = ?, is_all_day = ?,
+          scheduled_start_at = ?, scheduled_end_at = ?, time_unspecified = ?, location = ?, notes = ?, notes_text = ?, link = ?, type = ?, is_all_day = ?,
           pin_latitude = ?, pin_longitude = ?, is_priority = ?, sort_order = ?, updated_at = ?
           WHERE id = ? AND itinerary_id = ?`).bind(...values, sourceStepId, sourceId));
       } else {
         const newSourceStepId = generateId();
         statements.push(this.db.prepare(`INSERT INTO steps (id, itinerary_id, title, start_at,
-          end_at, scheduled_start_at, scheduled_end_at, time_unspecified, location, notes, link, type, is_all_day, pin_latitude,
+          end_at, scheduled_start_at, scheduled_end_at, time_unspecified, location, notes, notes_text, link, type, is_all_day, pin_latitude,
           pin_longitude, is_priority, sort_order, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
           .bind(newSourceStepId, sourceId, ...values.slice(0, -1), now, now));
         statements.push(this.db.prepare('UPDATE steps SET source_step_id = ? WHERE id = ? AND itinerary_id = ?')
           .bind(newSourceStepId, step.id, sharedId));

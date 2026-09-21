@@ -1,4 +1,3 @@
-import { parseMemoData } from "$lib/memo";
 import type { Step, StepType } from "@tabitabi/types";
 import { STEP_TYPE } from "@tabitabi/types";
 
@@ -69,29 +68,17 @@ export function getBookingCard(
   const step = typeof stepOrNotes === "object" && stepOrNotes !== null
     ? stepOrNotes
     : null;
-  const notes: string | null | undefined = step
-    ? step.notes
-    : typeof stepOrNotes === "string"
-      ? stepOrNotes
-      : null;
-  const data = parseMemoData(notes);
-  const linkUrl = safeUrl(step?.link) ?? safeUrl(data.booking_url);
+  const linkUrl = safeUrl(step?.link);
   if (!linkUrl) return null;
 
-  const affiliateUrl = safeUrl(data.affiliate_url) ?? linkUrl;
-  const provider = typeof data.affiliate_provider === "string"
-    ? data.affiliate_provider
-    : detectProvider(linkUrl);
+  const provider = detectProvider(linkUrl);
 
   return {
     linkUrl,
-    actionUrl: affiliateUrl,
+    actionUrl: linkUrl,
     provider,
     providerLabel: PROVIDER_LABELS[provider] ?? PROVIDER_LABELS.default,
     label: step?.type ? TYPE_LABELS[step.type] ?? "リンク" : "リンク",
-    disclosure:
-      typeof data.affiliate_disclosure === "string"
-        ? data.affiliate_disclosure
-        : undefined,
+    disclosure: undefined,
   };
 }

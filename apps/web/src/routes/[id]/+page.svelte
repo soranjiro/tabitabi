@@ -160,14 +160,19 @@
   async function handleCreateStep(stepData: {
     title: string;
     // Unix ms
-    start_at: number;
+    start_at: number | null;
     // Unix ms
-    end_at: number;
+    end_at: number | null;
     location?: string;
     notes?: string;
     link?: string | null;
     type?: import("@tabitabi/types").StepType;
     is_all_day?: boolean;
+    time_unspecified?: boolean;
+    pin_latitude?: number | null;
+    pin_longitude?: number | null;
+    is_priority?: boolean;
+    sort_order?: number | null;
   }) {
     try {
       await stepApi.create(
@@ -188,13 +193,18 @@
     stepId: string,
     updateData: {
       title?: string;
-      start_at?: number;
-      end_at?: number;
+      start_at?: number | null;
+      end_at?: number | null;
       location?: string | null;
       notes?: string;
       link?: string | null;
       type?: import("@tabitabi/types").StepType;
       is_all_day?: boolean;
+      time_unspecified?: boolean;
+      pin_latitude?: number | null;
+      pin_longitude?: number | null;
+      is_priority?: boolean;
+      sort_order?: number | null;
     },
   ) {
     try {

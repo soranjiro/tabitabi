@@ -159,7 +159,7 @@
                     <h1>{itinerary.title}</h1>
                   </div>
                   <div class="week-meta">
-                    <span>{formatPrintDate(page.weekStart, true)}から</span>
+                    <span>{formatPrintDate(page.weekStart, true)}{page.weekStart ? 'から' : ''}</span>
                     <strong>{pageIndex + 1} / {weekPages.length}</strong>
                     {#if page.continuation > 0}<em>続き {page.continuation + 1}</em>{/if}
                   </div>
@@ -168,8 +168,8 @@
                   {#each page.days as day}
                     <section class="week-day" class:weekend={new Date(`${day.date}T00:00:00`).getDay() % 6 === 0}>
                       <header>
-                        <span>{new Date(`${day.date}T00:00:00`).toLocaleDateString("en", { weekday: "short" })}</span>
-                        <strong>{new Date(`${day.date}T00:00:00`).getDate()}</strong>
+                        <span>{day.date ? new Date(`${day.date}T00:00:00`).toLocaleDateString("en", { weekday: "short" }) : '日付未定'}</span>
+                        <strong>{day.date ? new Date(`${day.date}T00:00:00`).getDate() : '—'}</strong>
                         {#if day.continuation && day.steps.length > 0}<small>CONT.</small>{/if}
                       </header>
                       <div class="week-events">

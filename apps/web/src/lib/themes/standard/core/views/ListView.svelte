@@ -38,23 +38,26 @@
   function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
     const now = Date.now();
+    if (step.start_at === null) return false;
     const revealTime = step.start_at - secretModeOffset * 60 * 1000;
     return now < revealTime;
   }
 
   function formatDate(dateStr: string): string {
+    if (!dateStr) return '日付未定';
     const date = new Date(dateStr);
     return `${date.getMonth() + 1}/${date.getDate()}`;
   }
 
   function getDayOfWeek(dateStr: string): string {
+    if (!dateStr) return '';
     const date = new Date(dateStr);
     const days = ["日", "月", "火", "水", "木", "金", "土"];
     return days[date.getDay()];
   }
 
   const sortedSteps = $derived(
-    [...steps].sort((a, b) => a.start_at - b.start_at),
+    [...steps].sort((a, b) => (a.start_at ?? Number.MAX_SAFE_INTEGER) - (b.start_at ?? Number.MAX_SAFE_INTEGER)),
   );
 
   function handleRowClick(step: Step) {

@@ -18,6 +18,10 @@ beforeEach(async () => {
     packing_enabled INTEGER NOT NULL DEFAULT 1,
     prefecture_slugs TEXT NOT NULL DEFAULT '[]', areas TEXT NOT NULL DEFAULT '[]', tags TEXT NOT NULL DEFAULT '[]',
     metadata_initialized INTEGER NOT NULL DEFAULT 0, memo TEXT, password TEXT, source_itinerary_id TEXT,
+    background_image TEXT,
+    page_background_image TEXT,
+    background_display TEXT NOT NULL DEFAULT 'cover',
+    memo_text TEXT,
     created_at TEXT NOT NULL, updated_at TEXT NOT NULL
   )`).run();
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS itinerary_secrets (

@@ -74,12 +74,15 @@ steps.post('/', async (c) => {
     }, 400);
   }
 
-  const startAt = parseToUnixMs(raw.start_at);
-  if (startAt === null) {
-    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'start_at is required and must be a numeric timestamp (milliseconds)' } }, 400);
+  if (!Object.hasOwn(raw, 'start_at') || (raw.start_at !== null && parseToUnixMs(raw.start_at) === null)) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'start_at must be null or a numeric timestamp (milliseconds)' } }, 400);
   }
-
-  const endAt = raw.end_at !== undefined ? parseToUnixMs(raw.end_at) : undefined;
+  const startAt = raw.start_at === null ? null : parseToUnixMs(raw.start_at);
+  const endAt = raw.end_at === null ? null : raw.end_at !== undefined ? parseToUnixMs(raw.end_at) : undefined;
+  if (raw.end_at !== undefined && raw.end_at !== null && endAt === null) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'end_at must be null or a numeric timestamp (milliseconds)' } }, 400);
+  }
+  if (startAt === null && raw.end_at === undefined) raw.end_at = null;
 
   const itineraryService = new ItineraryService(c.env.DB);
   const itinerary = await itineraryService.get(raw.itinerary_id);
@@ -104,8 +107,12 @@ steps.post('/', async (c) => {
 
   const service = new StepService(c.env.DB);
   const payload = { ...raw, start_at: startAt, end_at: endAt };
-  const data = await service.create(payload);
-  return c.json({ success: true, data }, 201);
+  try {
+    const data = await service.create(payload);
+    return c.json({ success: true, data }, 201);
+  } catch (error) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: error instanceof Error ? error.message : 'Invalid step' } }, 400);
+  }
 });
 
 steps.put('/batch-date', async (c) => {
@@ -144,13 +151,6 @@ steps.put('/:stepId', async (c) => {
   const raw = await c.req.json();
   const service = new StepService(c.env.DB);
 
-  // TODO: refactor
-  if (raw.start_at !== undefined && raw.end_at !== undefined && raw.start_at > raw.end_at) {
-    let tmp_timestamp = raw.start_at;
-    raw.start_at = raw.end_at;
-    raw.end_at = tmp_timestamp;
-  }
-
   const existingStep = await service.get(stepId);
   if (!existingStep) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Step not found' } }, 404);
@@ -177,22 +177,26 @@ steps.put('/:stepId', async (c) => {
 
   const updatePayload: Record<string, unknown> = { ...raw };
   if (raw.start_at !== undefined) {
-    const parsed = parseToUnixMs(raw.start_at);
-    if (parsed === null) {
-      return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'start_at provided is invalid (must be numeric milliseconds)' } }, 400);
+    const parsed = raw.start_at === null ? null : parseToUnixMs(raw.start_at);
+    if (raw.start_at !== null && parsed === null) {
+      return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'start_at must be null or numeric milliseconds' } }, 400);
     }
     updatePayload.start_at = parsed;
   }
   if (raw.end_at !== undefined) {
-    const parsedEnd = parseToUnixMs(raw.end_at);
-    if (parsedEnd === null) {
-      return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'end_at provided is invalid (must be numeric milliseconds)' } }, 400);
+    const parsedEnd = raw.end_at === null ? null : parseToUnixMs(raw.end_at);
+    if (raw.end_at !== null && parsedEnd === null) {
+      return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'end_at must be null or numeric milliseconds' } }, 400);
     }
     updatePayload.end_at = parsedEnd;
   }
 
-  const data = await service.update(stepId, updatePayload as any);
-  return c.json({ success: true, data });
+  try {
+    const data = await service.update(stepId, updatePayload as any);
+    return c.json({ success: true, data });
+  } catch (error) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: error instanceof Error ? error.message : 'Invalid step' } }, 400);
+  }
 });
 
 steps.delete('/:stepId', async (c) => {

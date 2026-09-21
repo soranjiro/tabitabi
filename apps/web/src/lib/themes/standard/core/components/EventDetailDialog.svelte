@@ -14,8 +14,6 @@
   import { renderMarkdown } from "../utils/markdown";
   import {
     getMemoText,
-    parseMemoData,
-    stringifyMemoData,
     updateMemoText,
   } from "$lib/memo";
   import TypePicker from "./TypePicker.svelte";
@@ -36,8 +34,9 @@
     onClose: () => void;
     onCreateStep?: (data: {
       title: string;
-      start_at: number;
-      end_at: number;
+      start_at: number | null;
+      end_at: number | null;
+      time_unspecified?: boolean;
       location?: string;
       notes?: string;
       link?: string | null;
@@ -48,8 +47,9 @@
       stepId: string,
       data: {
         title?: string;
-        start_at?: number;
-        end_at?: number;
+        start_at?: number | null;
+        end_at?: number | null;
+        time_unspecified?: boolean;
         location?: string;
         notes?: string;
         link?: string | null;
@@ -75,6 +75,7 @@
   function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
     const now = Date.now();
+    if (step.start_at === null) return false;
     const revealTime = step.start_at - secretModeOffset * 60 * 1000;
     return now < revealTime;
   }
@@ -316,7 +317,7 @@
       endTime: `${endHour}:${endMinute}`,
       location: step?.location ?? "",
       notes: getMemoText(step?.notes ?? "") || "",
-      link: step?.link ?? (parseMemoData(step?.notes).booking_url as string | undefined) ?? "",
+      link: step?.link ?? "",
       type: step?.type ?? STEP_TYPE.NORMAL_GENERAL,
       is_all_day: step?.is_all_day ?? false,
     };
@@ -379,7 +380,7 @@
     isEditing = false;
     editedStep = {};
     if (!step) return;
-    const [startHour, startMinute] = formatTime(step.start_at);
+    const [startHour, startMinute] = formatTime(step.start_at ?? new Date().setHours(9, 0, 0, 0));
     editStartHour = startHour;
     editStartMinute = startMinute;
     editEndHour = "10";
@@ -463,16 +464,7 @@
       return;
     }
 
-    const noteText = (editedStep.notes ?? "").trim();
-    const baseNotes = step ? updateMemoText(step.notes, noteText) : stringifyMemoData({ text: noteText });
-    const noteData = parseMemoData(baseNotes);
-    delete noteData.public_title;
-    delete noteData.public_location;
-    delete noteData.public_text;
-    delete noteData.booking_url;
-    // 標準テーマで日時を保存した時点で、プランニングテーマの未定状態は完了扱いにする。
-    delete noteData.tabitabi_schedule;
-    const notes = stringifyMemoData(noteData);
+    const notes = updateMemoText(step?.notes, (editedStep.notes ?? "").trim());
     const link = editedStep.link?.trim() || null;
 
     let startAt: number;
@@ -510,6 +502,7 @@
         link,
         type: editedStep.type,
         is_all_day: editIsAllDay,
+        time_unspecified: false,
       });
     } else {
       await onUpdateStep?.(step!.id, {
@@ -521,6 +514,7 @@
         link,
         type: editedStep.type,
         is_all_day: editIsAllDay,
+        time_unspecified: false,
       });
     }
 

@@ -135,11 +135,16 @@ export function createPublicStepSnapshot(row: Record<string, unknown>, env?: Par
     title: title || '旅の予定',
     start_at: row.start_at,
     end_at: row.end_at,
+    time_unspecified: row.time_unspecified === true || row.time_unspecified === 1,
     location: location || null,
     notes: JSON.stringify(publicNotes),
     link: sourceLink ?? null,
     type: (row.type as Step['type']) ?? STEP_TYPE.NORMAL_GENERAL,
     is_all_day: row.is_all_day,
+    pin_latitude: (row.pin_latitude as number | null | undefined) ?? null,
+    pin_longitude: (row.pin_longitude as number | null | undefined) ?? null,
+    is_priority: row.is_priority === true || row.is_priority === 1,
+    sort_order: (row.sort_order as number | null | undefined) ?? null,
   };
 }
 

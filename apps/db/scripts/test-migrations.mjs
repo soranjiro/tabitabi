@@ -44,6 +44,7 @@ try {
     assertForeignKeys(file);
     if (file === '20260919000000_expand_step_data.sql') assertExpandStepMigration();
     if (file === '20260920000000_backfill_step_data.sql') assertBackfillStepMigration();
+    if (file === '20260920010000_add_snapshot_step_identity.sql') assertNormalizedConstraints();
     ensureSentinel();
   }
 
@@ -93,6 +94,31 @@ function assertBackfillStepMigration() {
     throw new Error(`Valid JSON without text was discarded: ${JSON.stringify(fallback)}`);
   }
   execute(`UPDATE itineraries SET memo = '${originalMemo}' WHERE id = '${ITINERARY_ID}';`);
+}
+
+function assertNormalizedConstraints() {
+  const base = `INSERT INTO steps (id, itinerary_id, title, start_at, end_at,
+    scheduled_start_at, scheduled_end_at, pin_latitude, pin_longitude,
+    created_at, updated_at) VALUES`;
+  expectSqlFailure(`${base} ('__half_date__', '${ITINERARY_ID}', 'invalid', 1, 2,
+    1, NULL, NULL, NULL, '${NOW}', '${NOW}');`, 'half-scheduled dates');
+  expectSqlFailure(`${base} ('__reversed_date__', '${ITINERARY_ID}', 'invalid', 1, 2,
+    2, 1, NULL, NULL, '${NOW}', '${NOW}');`, 'reversed scheduled dates');
+  expectSqlFailure(`${base} ('__half_pin__', '${ITINERARY_ID}', 'invalid', 1, 2,
+    1, 2, 35, NULL, '${NOW}', '${NOW}');`, 'half-specified pins');
+}
+
+function expectSqlFailure(sql, label) {
+  try {
+    execFileSync('sqlite3', [databasePath], {
+      input: sql,
+      encoding: 'utf8',
+      stdio: ['pipe', 'ignore', 'ignore'],
+    });
+  } catch {
+    return;
+  }
+  throw new Error(`Database accepted ${label}.`);
 }
 
 function ensureSentinel() {

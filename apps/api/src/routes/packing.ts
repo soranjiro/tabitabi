@@ -6,6 +6,7 @@ import { ItineraryService } from '../services/itinerary.service';
 import { optionalAuthMiddleware } from '../middleware/auth';
 import { packingCheckSchema, packingGroupSchema, packingItemSchema, reorderPackingGroupsSchema, updatePackingItemSchema } from '../validators';
 import { validationHook } from '../validators/hook';
+import { guardPrivateItineraryRead } from './private-data-access';
 
 const packing = new Hono<{ Bindings: Env; Variables: Variables }>();
 const DEFAULT_GROUPS = ['貴重品', 'スマホ・電子機器', '洗面・ケアアイテム', '衣類', 'その他'] as const;
@@ -57,11 +58,10 @@ function itemFromRow(row: Record<string, unknown>, checks: string[]): PackingIte
   };
 }
 
-packing.get('/itineraries/:id/packing', async (c) => {
+packing.get('/itineraries/:id/packing', optionalAuthMiddleware, async (c) => {
   const itineraryId = c.req.param('id')!;
-  if (!await new ItineraryService(c.env.DB, c.env).get(itineraryId)) {
-    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
-  }
+  const denied = await guardPrivateItineraryRead(c, itineraryId);
+  if (denied) return denied;
   await ensureDefaultGroups(c.env.DB, itineraryId);
   const [membersResult, groupsResult, itemsResult, checksResult] = await Promise.all([
     c.env.DB.prepare('SELECT id, itinerary_id, name, created_at FROM itinerary_members WHERE itinerary_id = ? ORDER BY created_at ASC').bind(itineraryId).all<TripMember>(),

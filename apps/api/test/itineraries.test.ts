@@ -118,7 +118,29 @@ async function applyMigrations(db: D1Database) {
       itinerary_id TEXT NOT NULL,
       name TEXT NOT NULL,
       created_at TEXT NOT NULL,
+      UNIQUE(id, itinerary_id),
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+    );`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_items (
+      id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL,
+      paid_by_member_id TEXT, paid_from_fund INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL, is_settled INTEGER NOT NULL DEFAULT 0, occurred_on TEXT, step_id TEXT,
+      created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(id, itinerary_id),
+      FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE,
+      FOREIGN KEY (paid_by_member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT,
+      FOREIGN KEY (step_id) REFERENCES steps(id) ON DELETE SET NULL
+    );`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_item_splits (
+      item_id TEXT NOT NULL, member_id TEXT NOT NULL, itinerary_id TEXT NOT NULL, amount INTEGER,
+      PRIMARY KEY (item_id, member_id),
+      FOREIGN KEY (item_id, itinerary_id) REFERENCES itinerary_money_items(id, itinerary_id) ON DELETE CASCADE,
+      FOREIGN KEY (member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT
+    );`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_fund_transactions (
+      id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, member_id TEXT NOT NULL,
+      kind TEXT NOT NULL, amount INTEGER NOT NULL, note TEXT, occurred_on TEXT NOT NULL, created_at TEXT NOT NULL,
+      FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE,
+      FOREIGN KEY (member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT
     );`,
   ];
 
@@ -132,6 +154,9 @@ describe('Itineraries API', () => {
     await applyMigrations(env.DB);
     await env.DB.prepare('DELETE FROM steps').run();
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_item_splits').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_items').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_fund_transactions').run();
     await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
     await env.DB.prepare('DELETE FROM itinerary_members').run();
     await env.DB.prepare('DELETE FROM official_itinerary_aliases').run();
@@ -503,6 +528,9 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
     await env.DB.prepare('DELETE FROM user_bookmarks').run();
     await env.DB.prepare('DELETE FROM steps').run();
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_item_splits').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_items').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_fund_transactions').run();
     await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
     await env.DB.prepare('DELETE FROM itinerary_members').run();
     await env.DB.prepare('DELETE FROM itineraries').run();
@@ -638,7 +666,11 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     await applyMigrations(env.DB);
     await env.DB.prepare('DELETE FROM steps').run();
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_item_splits').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_items').run();
+    await env.DB.prepare('DELETE FROM itinerary_money_fund_transactions').run();
     await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
+    await env.DB.prepare('DELETE FROM itinerary_members').run();
     await env.DB.prepare('DELETE FROM itineraries').run();
     await env.DB.prepare('DELETE FROM users').run();
   });
@@ -714,6 +746,119 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     expect(steps[0].title).toBe('[非公開]と集合');
     expect(steps[0].location).toBe('[非公開]の自宅');
     expect(steps[0].notes).not.toContain('山田');
+  });
+
+  it('publishes an anonymous money snapshot without exposing private member data', async () => {
+    const createRes = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: '会計付きしおり',
+        secret_settings: { enabled: true, offset_minutes: 90 },
+      }),
+    }, env);
+    const { data: original } = await createRes.json() as any;
+    const stepRes = await app.request('/api/v1/steps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        itinerary_id: original.id,
+        title: 'ホテル',
+        start_at: 1700000000000,
+        end_at: 1700003600000,
+      }),
+    }, env);
+    const { data: sourceStep } = await stepRes.json() as any;
+    const now = new Date().toISOString();
+    await env.DB.batch([
+      env.DB.prepare('INSERT INTO itinerary_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)')
+        .bind('private-member-a', original.id, '山田太郎', now),
+      env.DB.prepare('INSERT INTO itinerary_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)')
+        .bind('private-member-b', original.id, '佐藤花子', now),
+      env.DB.prepare('INSERT INTO itinerary_money_settings (itinerary_id, budget_amount, created_at, updated_at) VALUES (?, ?, ?, ?)')
+        .bind(original.id, 100000, now, now),
+      env.DB.prepare(`INSERT INTO itinerary_money_items
+        (id, itinerary_id, title, amount, paid_by_member_id, paid_from_fund, status, is_settled,
+         occurred_on, step_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind('private-item', original.id, '山田太郎の宿泊費 test@example.com', 24000,
+          'private-member-a', 0, 'paid', 1, '2026-10-10', sourceStep.id, now, now),
+      env.DB.prepare('INSERT INTO itinerary_money_item_splits (item_id, member_id, itinerary_id, amount) VALUES (?, ?, ?, ?)')
+        .bind('private-item', 'private-member-a', original.id, 12000),
+      env.DB.prepare('INSERT INTO itinerary_money_item_splits (item_id, member_id, itinerary_id, amount) VALUES (?, ?, ?, ?)')
+        .bind('private-item', 'private-member-b', original.id, 12000),
+      env.DB.prepare(`INSERT INTO itinerary_money_fund_transactions
+        (id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(
+        'private-fund', original.id, 'private-member-b', 'contribution', 10000,
+        '佐藤花子の口座 090-1234-5678', '2026-10-01', now,
+      ),
+    ]);
+
+    const publishRes = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, env);
+    expect(publishRes.status).toBe(200);
+    const { data: published } = await publishRes.json() as any;
+
+    const publicMoneyRes = await app.request(`/api/v1/itineraries/${published.id}/money`, {}, env);
+    expect(publicMoneyRes.status).toBe(200);
+    const { data: publicMoney } = await publicMoneyRes.json() as any;
+    expect(publicMoney.budget_amount).toBe(100000);
+    expect(publicMoney.members.map((member: { name: string }) => member.name)).toEqual(['Aさん', 'Bさん']);
+    expect(publicMoney.items).toHaveLength(1);
+    expect(publicMoney.items[0]).toMatchObject({
+      amount: 24000, status: 'paid', is_settled: true, paid_from_fund: false,
+    });
+    expect(publicMoney.items[0].paid_by_member_id).toBe(publicMoney.members[0].id);
+    expect(publicMoney.items[0].splits).toEqual([
+      { member_id: publicMoney.members[0].id, amount: 12000 },
+      { member_id: publicMoney.members[1].id, amount: 12000 },
+    ]);
+    expect(publicMoney.items[0].title).not.toContain('山田太郎');
+    expect(publicMoney.items[0].title).not.toContain('test@example.com');
+    expect(publicMoney.items[0].step_id).not.toBe(sourceStep.id);
+    expect(publicMoney.fund_transactions).toHaveLength(1);
+    expect(publicMoney.fund_transactions[0]).toMatchObject({
+      member_id: publicMoney.members[1].id, kind: 'contribution', amount: 10000, note: null,
+    });
+    expect(JSON.stringify(publicMoney)).not.toContain('山田太郎');
+    expect(JSON.stringify(publicMoney)).not.toContain('佐藤花子');
+    expect(JSON.stringify(publicMoney)).not.toContain('090-1234-5678');
+
+    expect((await app.request(`/api/v1/itineraries/${original.id}/members`, {}, env)).status).toBe(403);
+    expect((await app.request(`/api/v1/itineraries/${original.id}/money`, {}, env)).status).toBe(403);
+    expect((await app.request(`/api/v1/itineraries/${original.id}/packing`, {}, env)).status).toBe(403);
+    const privateItineraryRes = await app.request(`/api/v1/itineraries/${original.id}`, {}, env);
+    expect((await privateItineraryRes.json() as any).data.secret_settings).toBeUndefined();
+    const ownedItineraryRes = await app.request(`/api/v1/itineraries/${original.id}`, {
+      headers: { Authorization: `Bearer ${original.token}` },
+    }, env);
+    expect((await ownedItineraryRes.json() as any).data.secret_settings).toEqual({
+      enabled: true, offset_minutes: 90,
+    });
+
+    const privateMoneyRes = await app.request(`/api/v1/itineraries/${original.id}/money`, {
+      headers: { Authorization: `Bearer ${original.token}` },
+    }, env);
+    expect(privateMoneyRes.status).toBe(200);
+    expect((await privateMoneyRes.json() as any).data.members[0].name).toBe('山田太郎');
+
+    await env.DB.prepare('UPDATE itinerary_money_items SET amount = ?, title = ? WHERE id = ?')
+      .bind(30000, '更新後の宿泊費', 'private-item').run();
+    await env.DB.prepare('UPDATE itinerary_money_item_splits SET amount = ? WHERE item_id = ?')
+      .bind(15000, 'private-item').run();
+    const republishRes = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
+      method: 'POST', headers: { Authorization: `Bearer ${original.token}` },
+    }, env);
+    expect(republishRes.status).toBe(200);
+    expect((await republishRes.json() as any).data.id).toBe(published.id);
+    const republishedMoneyRes = await app.request(`/api/v1/itineraries/${published.id}/money`, {}, env);
+    const { data: republishedMoney } = await republishedMoneyRes.json() as any;
+    expect(republishedMoney.members.map((member: { name: string }) => member.name)).toEqual(['Aさん', 'Bさん']);
+    expect(republishedMoney.items).toHaveLength(1);
+    expect(republishedMoney.items[0]).toMatchObject({ title: '更新後の宿泊費', amount: 30000 });
+    expect(republishedMoney.items[0].splits.map((split: { amount: number }) => split.amount)).toEqual([15000, 15000]);
   });
 
   it('is idempotent — calling publish again updates the snapshot', async () => {

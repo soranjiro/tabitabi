@@ -123,6 +123,9 @@ jobs:
       - name: Verify generated database schema
         run: pnpm run db:schema:check
 
+      - name: Test step cleanup safety audit
+        run: pnpm run db:cleanup:audit:test
+
       - name: Run API Tests
         run: pnpm run test:api
 

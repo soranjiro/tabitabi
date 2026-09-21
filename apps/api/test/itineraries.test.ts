@@ -20,6 +20,10 @@ async function applyMigrations(db: D1Database) {
       memo TEXT,
       password TEXT,
       source_itinerary_id TEXT,
+      background_image TEXT,
+      page_background_image TEXT,
+      background_display TEXT NOT NULL DEFAULT 'cover',
+      memo_text TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,
@@ -30,6 +34,14 @@ async function applyMigrations(db: D1Database) {
       title TEXT NOT NULL,
       start_at INTEGER NOT NULL,
       end_at INTEGER NOT NULL,
+      scheduled_start_at INTEGER,
+      scheduled_end_at INTEGER,
+      time_unspecified INTEGER NOT NULL DEFAULT 0,
+      sort_order REAL,
+      pin_latitude REAL,
+      pin_longitude REAL,
+      is_priority INTEGER NOT NULL DEFAULT 0,
+      source_step_id TEXT,
       location TEXT,
       notes TEXT,
       link TEXT,
@@ -290,8 +302,10 @@ describe('Itineraries API', () => {
       await env.DB.prepare(`INSERT INTO official_itinerary_aliases (alias, itinerary_id)
         VALUES ('official-spring-public', 'random-public-id')`).run();
       await env.DB.prepare(`INSERT INTO steps
-        (id, itinerary_id, title, start_at, end_at, type, is_all_day, created_at, updated_at)
-        VALUES ('official-step', 'random-public-id', 'Published step', 0, 0, 'normal:general', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).run();
+        (id, itinerary_id, title, start_at, end_at, scheduled_start_at, scheduled_end_at,
+          type, is_all_day, created_at, updated_at)
+        VALUES ('official-step', 'random-public-id', 'Published step', 0, 0, 0, 0,
+          'normal:general', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).run();
 
       const response = await app.request('/api/v1/itineraries/official-spring-public', {}, env);
 
@@ -553,7 +567,9 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
     await app.request('/api/v1/steps', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ itinerary_id: source.id, title: 'ステップ1', start_at: 1700000000000, end_at: 1700003600000 }),
+      body: JSON.stringify({ itinerary_id: source.id, title: 'ステップ1', start_at: null, end_at: null,
+        notes: '{"text":"候補メモ"}', pin_latitude: 35, pin_longitude: 135,
+        is_priority: true, sort_order: 7, link: 'https://example.com' }),
     }, env);
 
     const forkRes = await app.request(`/api/v1/itineraries/${source.id}/fork`, {
@@ -567,6 +583,10 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
     expect(stepsJson.data).toHaveLength(1);
     expect(stepsJson.data[0].title).toBe('ステップ1');
     expect(stepsJson.data[0].itinerary_id).toBe(forked.id);
+    expect(stepsJson.data[0]).toMatchObject({ start_at: null, end_at: null,
+      pin_latitude: 35, pin_longitude: 135, is_priority: true, sort_order: 7,
+      link: 'https://example.com/' });
+    expect(JSON.parse(stepsJson.data[0].notes).text).toBe('候補メモ');
   });
 
   it('returns 403 for password-protected itinerary', async () => {
@@ -727,7 +747,9 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     await app.request('/api/v1/steps', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ itinerary_id: original.id, title: '観光スポット', start_at: 1700000000000, end_at: 1700003600000 }),
+      body: JSON.stringify({ itinerary_id: original.id, title: '観光スポット', start_at: 1700000000000,
+        end_at: 1700003600000, time_unspecified: true, notes: '{"text":"公開メモ"}',
+        pin_latitude: 35, pin_longitude: 135, is_priority: true, sort_order: 8 }),
     }, env);
 
     const publishRes = await app.request(`/api/v1/itineraries/${original.id}/publish`, {
@@ -741,6 +763,10 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     expect(steps).toHaveLength(1);
     expect(steps[0].title).toBe('観光スポット');
     expect(steps[0].itinerary_id).toBe(pub.id);
+    expect(steps[0]).toMatchObject({ start_at: 1700000000000, end_at: 1700003600000,
+      time_unspecified: true, pin_latitude: 35, pin_longitude: 135,
+      is_priority: true, sort_order: 8 });
+    expect(JSON.parse(steps[0].notes).text).toBe('公開メモ');
   });
 
   it('publishes sanitized step links with affiliate-ready links', async () => {

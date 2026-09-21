@@ -57,7 +57,7 @@ export const PRINT_TEMPLATES: Array<{
 ];
 
 export function sortSteps(steps: Step[]): Step[] {
-  return [...steps].sort((a, b) => a.start_at - b.start_at);
+  return [...steps].sort((a, b) => (a.start_at ?? Number.MAX_SAFE_INTEGER) - (b.start_at ?? Number.MAX_SAFE_INTEGER));
 }
 
 export function groupStepsByDay(steps: Step[]): PrintDay[] {
@@ -87,6 +87,7 @@ function toDateKey(date: Date): string {
 }
 
 export function getMonday(dateKey: string): string {
+  if (!dateKey) return '';
   const date = toLocalDate(dateKey);
   const day = date.getDay();
   date.setDate(date.getDate() - (day === 0 ? 6 : day - 1));
@@ -108,6 +109,14 @@ export function buildWeekPages(
 
   const pages: WeekPrintPage[] = [];
   for (const [weekStart, weekDays] of byWeek) {
+    if (!weekStart) {
+      const day = weekDays[0];
+      for (let offset = 0; offset < day.steps.length; offset += perDayCapacity) {
+        pages.push({ weekStart: '', continuation: offset / perDayCapacity,
+          days: [{ ...day, steps: day.steps.slice(offset, offset + perDayCapacity), continuation: offset > 0 }] });
+      }
+      continue;
+    }
     const dayMap = new Map(weekDays.map((day) => [day.date, day]));
     const maxChunks = Math.max(
       1,
@@ -212,6 +221,7 @@ export function getTemplateAvailability(
 }
 
 export function formatPrintDate(dateKey: string, includeYear = false): string {
+  if (!dateKey) return '日付未定';
   return toLocalDate(dateKey).toLocaleDateString("ja-JP", {
     ...(includeYear ? { year: "numeric" as const } : {}),
     month: "long",
@@ -221,6 +231,7 @@ export function formatPrintDate(dateKey: string, includeYear = false): string {
 }
 
 export function formatPrintTime(step: Step): string {
+  if (step.start_at === null || step.time_unspecified) return '時間未定';
   if (step.is_all_day) return "終日";
   const start = getStepTime(step);
   const end = getStepEndTime(step);

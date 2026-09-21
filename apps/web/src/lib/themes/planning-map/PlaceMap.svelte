@@ -31,7 +31,7 @@
     }
   }
   function fit() {
-    const points = steps.map(s => getPlace(s.notes)).filter((p): p is Place => !!p);
+    const points = steps.map(s => getPlace(s)).filter((p): p is Place => !!p);
     if (points.length) map?.fitBounds(points.map(p => [p.lat, p.lng] as [number, number]), { padding: [55, 55], maxZoom: 14 });
   }
   onMount(() => {
@@ -61,7 +61,7 @@
     if (!ready) return;
     layer.clearLayers();
     steps.forEach((step, index) => {
-      const place = getPlace(step.notes);
+      const place = getPlace(step);
       if (!place) return;
       const day = getStepSchedule(step);
       const marker = L.marker([place.lat, place.lng], {
@@ -75,7 +75,8 @@
   });
   $effect(() => {
     if (!ready || !selected) return;
-    const place = getPlace(steps.find(s => s.id === selected)?.notes);
+    const selectedStep = steps.find(s => s.id === selected);
+    const place = selectedStep ? getPlace(selectedStep) : null;
     if (place) map?.panTo([place.lat, place.lng]);
   });
 </script>

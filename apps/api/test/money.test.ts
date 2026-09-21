@@ -4,12 +4,20 @@ import app from '../src/index';
 
 async function setup() {
   const migrations = [
-    `CREATE TABLE IF NOT EXISTS itineraries (id TEXT PRIMARY KEY, title TEXT NOT NULL, theme_id TEXT NOT NULL, palette_id TEXT NOT NULL DEFAULT 'sakura', packing_enabled INTEGER NOT NULL DEFAULT 1, prefecture_slugs TEXT NOT NULL DEFAULT '[]', areas TEXT NOT NULL DEFAULT '[]', tags TEXT NOT NULL DEFAULT '[]', metadata_initialized INTEGER NOT NULL DEFAULT 0, memo TEXT, password TEXT, source_itinerary_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
+    `CREATE TABLE IF NOT EXISTS itineraries (id TEXT PRIMARY KEY, title TEXT NOT NULL, theme_id TEXT NOT NULL, palette_id TEXT NOT NULL DEFAULT 'sakura', packing_enabled INTEGER NOT NULL DEFAULT 1, prefecture_slugs TEXT NOT NULL DEFAULT '[]', areas TEXT NOT NULL DEFAULT '[]', tags TEXT NOT NULL DEFAULT '[]', metadata_initialized INTEGER NOT NULL DEFAULT 0, memo TEXT, password TEXT, source_itinerary_id TEXT, background_image TEXT, page_background_image TEXT, background_display TEXT NOT NULL DEFAULT 'cover', memo_text TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
     `CREATE TABLE IF NOT EXISTS itinerary_secrets (itinerary_id TEXT PRIMARY KEY, enabled INTEGER, offset_minutes INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS itinerary_fork_stats (itinerary_id TEXT PRIMARY KEY, fork_count INTEGER NOT NULL DEFAULT 0, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS itinerary_money_settings (itinerary_id TEXT PRIMARY KEY, budget_amount INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS itinerary_members (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
-    `CREATE TABLE IF NOT EXISTS steps (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, start_at INTEGER NOT NULL, end_at INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
+    `CREATE TABLE IF NOT EXISTS steps (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, start_at INTEGER NOT NULL, end_at INTEGER NOT NULL,
+      scheduled_start_at INTEGER,
+      scheduled_end_at INTEGER,
+      time_unspecified INTEGER NOT NULL DEFAULT 0,
+      sort_order REAL,
+      pin_latitude REAL,
+      pin_longitude REAL,
+      is_priority INTEGER NOT NULL DEFAULT 0,
+      source_step_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS itinerary_money_items (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL CHECK(amount > 0), paid_by_member_id TEXT, paid_from_fund INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL CHECK(status IN ('paid', 'planned')), is_settled INTEGER NOT NULL DEFAULT 0, occurred_on TEXT, step_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE, FOREIGN KEY (paid_by_member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT, FOREIGN KEY (step_id) REFERENCES steps(id) ON DELETE SET NULL);`,
     `CREATE TABLE IF NOT EXISTS itinerary_money_item_splits (item_id TEXT NOT NULL, member_id TEXT NOT NULL, itinerary_id TEXT NOT NULL, amount INTEGER CHECK(amount > 0), PRIMARY KEY (item_id, member_id), FOREIGN KEY (item_id, itinerary_id) REFERENCES itinerary_money_items(id, itinerary_id) ON DELETE CASCADE, FOREIGN KEY (member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT);`,
     `CREATE TABLE IF NOT EXISTS itinerary_money_fund_transactions (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, member_id TEXT NOT NULL, kind TEXT NOT NULL CHECK(kind IN ('contribution', 'refund')), amount INTEGER NOT NULL CHECK(amount > 0), note TEXT, occurred_on TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE, FOREIGN KEY (member_id, itinerary_id) REFERENCES itinerary_members(id, itinerary_id) ON DELETE RESTRICT);`,

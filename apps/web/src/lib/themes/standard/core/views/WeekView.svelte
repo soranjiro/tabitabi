@@ -44,6 +44,7 @@
   function isSecretStep(step: Step): boolean {
     if (!secretModeEnabled) return false;
     const now = Date.now();
+    if (step.start_at === null) return false;
     const revealTime = step.start_at - secretModeOffset * 60 * 1000;
     return now < revealTime;
   }
@@ -76,7 +77,7 @@
     const dayStart = new Date(`${dateStr}T00:00:00`).getTime();
     const dayEnd = dayStart + 24 * 60 * 60 * 1000;
     return steps.filter(
-      (s) => s.is_all_day && s.start_at < dayEnd && s.end_at > dayStart,
+      (s) => s.is_all_day && s.start_at !== null && s.end_at !== null && s.start_at < dayEnd && s.end_at > dayStart,
     );
   }
 

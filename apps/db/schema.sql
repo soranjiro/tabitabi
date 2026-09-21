@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS "steps" (
   location TEXT,
   notes TEXT,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'normal:general', is_all_day INTEGER NOT NULL DEFAULT 0, link TEXT, scheduled_start_at INTEGER, scheduled_end_at INTEGER, time_unspecified INTEGER NOT NULL DEFAULT 0, sort_order REAL, pin_latitude REAL, pin_longitude REAL, is_priority INTEGER NOT NULL DEFAULT 0, notes_text TEXT,
+  updated_at TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'normal:general', is_all_day INTEGER NOT NULL DEFAULT 0, link TEXT, scheduled_start_at INTEGER, scheduled_end_at INTEGER, time_unspecified INTEGER NOT NULL DEFAULT 0, sort_order REAL, pin_latitude REAL, pin_longitude REAL, is_priority INTEGER NOT NULL DEFAULT 0, notes_text TEXT, source_step_id TEXT,
   FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
 );
 CREATE INDEX idx_steps_start_at ON steps(itinerary_id, start_at);
@@ -468,3 +468,4 @@ BEGIN
     END
   WHERE id = NEW.id;
 END;
+CREATE INDEX idx_steps_source_step_id ON steps(itinerary_id, source_step_id);

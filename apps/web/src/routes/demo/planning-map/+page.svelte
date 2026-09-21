@@ -4,7 +4,6 @@
   import { demoStorage, setDemoMode, resetDemoMode } from '$lib/demo';
   import { getDemoData } from '$lib/themes/planning-map/demo-data';
   import { loadTheme } from '$lib/themes';
-  import { parseMemoData } from '$lib/memo';
   let itinerary = $state<ItineraryResponse | null>(null);
   let steps = $state<Step[]>([]);
   let theme = $state<Theme | null>(null);
@@ -20,10 +19,7 @@
     setDemoMode(true);
     try {
       const existing = demoStorage.getData();
-      const memo = parseMemoData(existing?.itinerary.memo);
-      if (memo.tabitabi_example !== 'planning-map-v1' && !memo.text.includes('急がない、詰めこまない')) demoStorage.initializeDemo(getDemoData());
-      const current = demoStorage.getItinerary();
-      if (current) demoStorage.updateItinerary({memo:JSON.stringify({...parseMemoData(current.memo),tabitabi_example:'planning-map-v1'})});
+      if (!existing?.itinerary.memo.includes('急がない、詰めこまない')) demoStorage.initializeDemo(getDemoData());
       void refresh().catch(() => error = 'デモを読み込めませんでした。再読み込みしてください。');
     } catch { error = 'デモの保存にはブラウザのストレージを有効にしてください。'; }
     return resetDemoMode;

@@ -13,6 +13,7 @@ export function getWeekHours(steps: Step[]): number[] {
   }
 
   const showUntilEndOfDay = steps.some((step) => {
+    if (step.start_at === null || step.end_at === null) return false;
     const start = new Date(step.start_at);
     const end = new Date(step.end_at);
     const startMinutes = start.getHours() * 60 + start.getMinutes();
@@ -32,6 +33,7 @@ export function getWeekDatesFromSteps(steps: Step[]): Date[] {
   let maxDay = -Infinity;
 
   for (const s of steps) {
+    if (s.start_at === null || s.end_at === null) continue;
     const sd = new Date(s.start_at);
     sd.setHours(0, 0, 0, 0);
     const ed = new Date(s.end_at);
@@ -40,6 +42,7 @@ export function getWeekDatesFromSteps(steps: Step[]): Date[] {
     maxDay = Math.max(maxDay, ed.getTime());
   }
 
+  if (!Number.isFinite(minDay) || !Number.isFinite(maxDay)) return [];
   const weekDates: Date[] = [];
   const current = new Date(minDay);
   while (current.getTime() <= maxDay) {
@@ -57,11 +60,11 @@ export function getOverlappingStepsForDay(
   const DAY_START = new Date(`${dateStr}T00:00:00`).getTime();
   const DAY_END = DAY_START + 24 * 60 * 60 * 1000;
 
-  const daySteps = steps.filter((s) => s.start_at < DAY_END && s.end_at > DAY_START);
+  const daySteps = steps.filter((s) => s.start_at !== null && s.end_at !== null && s.start_at < DAY_END && s.end_at > DAY_START);
 
   const enriched = daySteps.map((s) => {
-    const relStart = Math.max(0, Math.floor((Math.max(s.start_at, DAY_START) - DAY_START) / 60000));
-    const relEnd = Math.min(24 * 60, Math.ceil((Math.min(s.end_at, DAY_END) - DAY_START) / 60000));
+    const relStart = Math.max(0, Math.floor((Math.max(s.start_at!, DAY_START) - DAY_START) / 60000));
+    const relEnd = Math.min(24 * 60, Math.ceil((Math.min(s.end_at!, DAY_END) - DAY_START) / 60000));
     return { step: s, relStart, relEnd };
   });
 

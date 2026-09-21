@@ -49,7 +49,7 @@ async function applyMigrations(db: D1Database) {
       link TEXT,
       type TEXT NOT NULL DEFAULT 'normal:general',
       is_all_day INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      notes_text TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
@@ -189,7 +189,7 @@ describe('Steps API', () => {
           title: '候補',
           start_at: null,
           end_at: null,
-          notes: '{"text":"朝に相談する"}',
+          notes: '朝に相談する',
           pin_latitude: 35,
           pin_longitude: 135,
           is_priority: true,
@@ -198,7 +198,7 @@ describe('Steps API', () => {
       }), env);
       expect(response.status).toBe(201);
       const { data } = await response.json() as any;
-      expect(data).toMatchObject({ start_at: null, end_at: null, pin_latitude: 35,
+      expect(data).toMatchObject({ start_at: null, end_at: null, notes: '朝に相談する', pin_latitude: 35,
         pin_longitude: 135, is_priority: true, sort_order: 10 });
 
       const row = await env.DB.prepare(`SELECT start_at, end_at, scheduled_start_at,
@@ -209,6 +209,18 @@ describe('Steps API', () => {
       expect(row.scheduled_end_at).toBeNull();
       expect(JSON.parse(row.notes).tabitabi_schedule.precision).toBe('undecided');
       expect(JSON.parse(row.notes).tabitabi_place).toMatchObject({ lat: 35, lng: 135, priority: true });
+      await env.DB.prepare(`UPDATE steps SET notes = json_set(notes, '$.legacy_theme', json('{"keep":true}')) WHERE id = ?`)
+        .bind(data.id).run();
+      const updatedResponse = await app.fetch(new Request(`http://localhost/api/v1/steps/${data.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ notes: '更新後メモ' }),
+      }), env);
+      expect(updatedResponse.status).toBe(200);
+      expect((await updatedResponse.json() as any).data.notes).toBe('更新後メモ');
+      const updatedRow = await env.DB.prepare('SELECT notes, notes_text FROM steps WHERE id = ?')
+        .bind(data.id).first<any>();
+      expect(updatedRow.notes_text).toBe('更新後メモ');
+      expect(JSON.parse(updatedRow.notes).legacy_theme).toEqual({ keep: true });
     });
 
     it('supports unscheduled to date-only to timed transitions', async () => {

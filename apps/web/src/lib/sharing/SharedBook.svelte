@@ -45,7 +45,7 @@
   async function createStep(input: Partial<Step>) {
     const now = new Date().toISOString();
     steps = [...steps, { id: crypto.randomUUID(), itinerary_id: itinerary.id, title: '', start_at: 0, end_at: 0,
-      location: null, notes: '{"text":""}', link: null, type: 'normal:general', is_all_day: false, created_at: now, updated_at: now, ...input }];
+      location: null, notes: '', link: null, type: 'normal:general', is_all_day: false, created_at: now, updated_at: now, ...input }];
     changed();
   }
   async function updateStep(id: string, update: Partial<Step>) { steps = steps.map(step => step.id === id ? { ...step, ...update } : step); changed(); }

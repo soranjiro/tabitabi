@@ -47,7 +47,7 @@ async function applyMigrations(db: D1Database) {
       link TEXT,
       type TEXT NOT NULL DEFAULT 'normal:general',
       is_all_day INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      notes_text TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
     );`,
@@ -208,14 +208,28 @@ describe('Itineraries API', () => {
       const request = new Request('http://localhost/api/v1/itineraries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Trip with Memo', memo: '{"text":"Remember to pack sunscreen"}' }),
+        body: JSON.stringify({ title: 'Trip with Memo', memo: 'Remember to pack sunscreen' }),
       });
 
       const response = await app.fetch(request, env);
       expect(response.status).toBe(201);
 
       const { data } = await response.json() as any;
-      expect(data.memo).toBe('{"text":"Remember to pack sunscreen"}');
+      expect(data.memo).toBe('Remember to pack sunscreen');
+      const stored = await env.DB.prepare('SELECT memo, memo_text FROM itineraries WHERE id = ?')
+        .bind(data.id).first<{ memo: string; memo_text: string }>();
+      expect(stored?.memo_text).toBe('Remember to pack sunscreen');
+      expect(JSON.parse(stored!.memo).text).toBe('Remember to pack sunscreen');
+      await env.DB.prepare(`UPDATE itineraries SET memo = '{"text":"old","legacy_theme":{"keep":true}}' WHERE id = ?`)
+        .bind(data.id).run();
+      await app.request(`/api/v1/itineraries/${data.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.token}` },
+        body: JSON.stringify({ memo: 'updated memo' }),
+      }, env);
+      const updated = await env.DB.prepare('SELECT memo, memo_text FROM itineraries WHERE id = ?')
+        .bind(data.id).first<{ memo: string; memo_text: string }>();
+      expect(updated?.memo_text).toBe('updated memo');
+      expect(JSON.parse(updated!.memo)).toMatchObject({ text: 'updated memo', legacy_theme: { keep: true } });
     });
   });
 
@@ -568,7 +582,7 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ itinerary_id: source.id, title: 'ステップ1', start_at: null, end_at: null,
-        notes: '{"text":"候補メモ"}', pin_latitude: 35, pin_longitude: 135,
+        notes: '候補メモ', pin_latitude: 35, pin_longitude: 135,
         is_priority: true, sort_order: 7, link: 'https://example.com' }),
     }, env);
 
@@ -586,7 +600,7 @@ describe('POST /api/v1/itineraries/:id/fork', () => {
     expect(stepsJson.data[0]).toMatchObject({ start_at: null, end_at: null,
       pin_latitude: 35, pin_longitude: 135, is_priority: true, sort_order: 7,
       link: 'https://example.com/' });
-    expect(JSON.parse(stepsJson.data[0].notes).text).toBe('候補メモ');
+    expect(stepsJson.data[0].notes).toBe('候補メモ');
   });
 
   it('returns 403 for password-protected itinerary', async () => {
@@ -633,7 +647,7 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     const createRes = await app.request('/api/v1/itineraries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: '旅のしおり', memo: '{"text":"メモ"}' }),
+      body: JSON.stringify({ title: '旅のしおり', memo: 'メモ' }),
     }, env);
     const { data: original } = await createRes.json() as any;
 
@@ -660,7 +674,7 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: '山田太郎と山田の旅行',
-        memo: '{"text":"代表者は山田太郎です"}',
+        memo: '代表者は山田太郎です',
         theme_id: 'standard-autumn',
       }),
     }, env);
@@ -681,7 +695,7 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
         start_at: 1700000000000,
         end_at: 1700003600000,
         location: '山田の自宅',
-        notes: '{"text":"山田太郎に連絡"}',
+        notes: '山田太郎に連絡',
       }),
     }, env);
 
@@ -748,7 +762,7 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ itinerary_id: original.id, title: '観光スポット', start_at: 1700000000000,
-        end_at: 1700003600000, time_unspecified: true, notes: '{"text":"公開メモ"}',
+        end_at: 1700003600000, time_unspecified: true, notes: '公開メモ',
         pin_latitude: 35, pin_longitude: 135, is_priority: true, sort_order: 8 }),
     }, env);
 
@@ -766,16 +780,16 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     expect(steps[0]).toMatchObject({ start_at: 1700000000000, end_at: 1700003600000,
       time_unspecified: true, pin_latitude: 35, pin_longitude: 135,
       is_priority: true, sort_order: 8 });
-    expect(JSON.parse(steps[0].notes).text).toBe('公開メモ');
+    expect(steps[0].notes).toBe('公開メモ');
   });
 
-  it('publishes sanitized step links with affiliate-ready links', async () => {
+  it('publishes sanitized plain-text notes without embedding affiliate metadata', async () => {
     const createRes = await app.request('/api/v1/itineraries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: 'ホテル付きしおり',
-        memo: '{"text":"連絡先 test@example.com"}',
+        memo: '連絡先 test@example.com',
       }),
     }, env);
     const { data: original } = await createRes.json() as any;
@@ -791,9 +805,7 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
         location: '京都駅 090-1234-5678',
         type: 'normal:hotel',
         link: 'https://www.jalan.net/yad123/?foo=bar',
-        notes: JSON.stringify({
-          text: '部屋番号 1002。予約番号 ABCD1234',
-        }),
+        notes: '部屋番号 1002。予約番号 ABCD1234',
       }),
     }, env);
 
@@ -817,13 +829,9 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     expect(steps[0].location).not.toContain('090-1234-5678');
     expect(steps[0].link).toBe('https://www.jalan.net/yad123/?foo=bar');
 
-    const notes = JSON.parse(steps[0].notes);
-    expect(notes.text).not.toContain('1002');
-    expect(notes.text).not.toContain('ABCD1234');
-    expect(notes.affiliate_provider).toBe('jalan');
-    expect(notes.affiliate_url).toContain('https://affiliate.example/click');
-    expect(notes.affiliate_url).toContain(encodeURIComponent('https://www.jalan.net/yad123/?foo=bar'));
-    expect(notes.affiliate_disclosure).toContain('アフィリエイトリンク');
+    expect(steps[0].notes).not.toContain('1002');
+    expect(steps[0].notes).not.toContain('ABCD1234');
+    expect(steps[0].notes).not.toContain('affiliate');
   });
 
   it('returns 403 when publishing a shared snapshot', async () => {

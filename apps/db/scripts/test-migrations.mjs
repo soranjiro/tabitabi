@@ -28,7 +28,7 @@ try {
 
     if (file === '20260919000000_expand_step_data.sql' && sentinelExists()) {
       execute(`UPDATE itineraries SET memo = '{"text":"legacy memo","theme_state":{"keep":true}}' WHERE id = '${ITINERARY_ID}';
-        UPDATE steps SET notes = '{"text":"legacy notes","tabitabi_schedule":{"precision":"undecided"}}',
+        UPDATE steps SET notes = '{"text":"legacy notes","booking_url":"https://example.com/legacy","tabitabi_schedule":{"precision":"undecided","order":12.5},"tabitabi_place":{"lat":35.1,"lng":135.2,"priority":true}}',
           start_at = 1767225600000, end_at = 1767229200000 WHERE id = '${STEP_ID}';`);
     }
 
@@ -43,6 +43,7 @@ try {
     }
     assertForeignKeys(file);
     if (file === '20260919000000_expand_step_data.sql') assertExpandStepMigration();
+    if (file === '20260920000000_backfill_step_data.sql') assertBackfillStepMigration();
     ensureSentinel();
   }
 
@@ -58,7 +59,7 @@ function assertExpandStepMigration() {
     FROM steps WHERE id = '${STEP_ID}';`)[0];
   if (itinerary?.memo !== '{"text":"legacy memo","theme_state":{"keep":true}}'
     || itinerary?.memo_text !== null
-    || step?.notes !== '{"text":"legacy notes","tabitabi_schedule":{"precision":"undecided"}}'
+    || step?.notes !== '{"text":"legacy notes","booking_url":"https://example.com/legacy","tabitabi_schedule":{"precision":"undecided","order":12.5},"tabitabi_place":{"lat":35.1,"lng":135.2,"priority":true}}'
     || step?.notes_text !== null
     || step?.start_at !== 1767225600000 || step?.end_at !== 1767229200000
     || step?.scheduled_start_at !== null || step?.scheduled_end_at !== null
@@ -66,6 +67,32 @@ function assertExpandStepMigration() {
     || step?.pin_latitude !== null || step?.pin_longitude !== null || step?.is_priority !== 0) {
     throw new Error(`Expand migration changed existing data: ${JSON.stringify({ itinerary, step })}`);
   }
+}
+
+function assertBackfillStepMigration() {
+  const originalMemo = '{"text":"legacy memo","theme_state":{"keep":true}}';
+  const originalNotes = '{"text":"legacy notes","booking_url":"https://example.com/legacy","tabitabi_schedule":{"precision":"undecided","order":12.5},"tabitabi_place":{"lat":35.1,"lng":135.2,"priority":true}}';
+  const itinerary = queryJson(`SELECT memo, memo_text FROM itineraries WHERE id = '${ITINERARY_ID}';`)[0];
+  const step = queryJson(`SELECT start_at, end_at, notes, notes_text, link, scheduled_start_at,
+    scheduled_end_at, time_unspecified, sort_order, pin_latitude, pin_longitude, is_priority
+    FROM steps WHERE id = '${STEP_ID}';`)[0];
+  if (itinerary?.memo !== originalMemo || itinerary?.memo_text !== 'legacy memo'
+    || step?.notes !== originalNotes || step?.notes_text !== 'legacy notes'
+    || step?.start_at !== 1767225600000 || step?.end_at !== 1767229200000
+    || step?.scheduled_start_at !== null || step?.scheduled_end_at !== null
+    || step?.time_unspecified !== 0 || step?.sort_order !== 12.5
+    || step?.pin_latitude !== 35.1 || step?.pin_longitude !== 135.2 || step?.is_priority !== 1
+    || step?.link !== 'https://example.com/legacy') {
+    throw new Error(`Backfill migration lost or misconverted data: ${JSON.stringify({ itinerary, step })}`);
+  }
+
+  const jsonWithoutText = '{"theme_state":{"must_survive":true}}';
+  execute(`UPDATE itineraries SET memo = '${jsonWithoutText}' WHERE id = '${ITINERARY_ID}';`);
+  const fallback = queryJson(`SELECT memo, memo_text FROM itineraries WHERE id = '${ITINERARY_ID}';`)[0];
+  if (fallback?.memo !== jsonWithoutText || fallback?.memo_text !== jsonWithoutText) {
+    throw new Error(`Valid JSON without text was discarded: ${JSON.stringify(fallback)}`);
+  }
+  execute(`UPDATE itineraries SET memo = '${originalMemo}' WHERE id = '${ITINERARY_ID}';`);
 }
 
 function ensureSentinel() {

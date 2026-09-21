@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS "itineraries" (
   memo TEXT,
   password TEXT
 , source_itinerary_id TEXT, packing_enabled INTEGER NOT NULL DEFAULT 1 CHECK(packing_enabled IN (0, 1)), prefecture_slugs TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(prefecture_slugs)), areas TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(areas)), tags TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(tags)), metadata_initialized INTEGER NOT NULL DEFAULT 1 CHECK(metadata_initialized IN (0, 1)), palette_id TEXT NOT NULL DEFAULT 'sakura', background_image TEXT, page_background_image TEXT, background_display TEXT NOT NULL DEFAULT 'cover'
-  CHECK(background_display IN ('cover', 'page')));
+  CHECK(background_display IN ('cover', 'page')), memo_text TEXT);
 CREATE TABLE IF NOT EXISTS "steps" (
   id TEXT PRIMARY KEY,
   itinerary_id TEXT NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS "steps" (
   location TEXT,
   notes TEXT,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'normal:general', is_all_day INTEGER NOT NULL DEFAULT 0, link TEXT,
+  updated_at TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'normal:general', is_all_day INTEGER NOT NULL DEFAULT 0, link TEXT, scheduled_start_at INTEGER, scheduled_end_at INTEGER, time_unspecified INTEGER NOT NULL DEFAULT 0, sort_order REAL, pin_latitude REAL, pin_longitude REAL, is_priority INTEGER NOT NULL DEFAULT 0, notes_text TEXT,
   FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
 );
 CREATE INDEX idx_steps_start_at ON steps(itinerary_id, start_at);
@@ -272,3 +272,45 @@ CREATE TABLE official_itinerary_aliases (
     REFERENCES itineraries(id)
     ON DELETE CASCADE
 );
+CREATE INDEX idx_steps_scheduled_start_at ON steps(itinerary_id, scheduled_start_at);
+CREATE INDEX idx_steps_scheduled_end_at ON steps(itinerary_id, scheduled_end_at);
+CREATE INDEX idx_steps_sort_order ON steps(itinerary_id, sort_order);
+CREATE TRIGGER validate_steps_scheduled_state_insert
+BEFORE INSERT ON steps
+WHEN NOT (
+  (NEW.scheduled_start_at IS NULL AND NEW.scheduled_end_at IS NULL)
+  OR (
+    NEW.scheduled_start_at IS NOT NULL
+    AND NEW.scheduled_end_at IS NOT NULL
+    AND NEW.scheduled_end_at >= NEW.scheduled_start_at
+  )
+)
+OR NOT (
+  (NEW.pin_latitude IS NULL AND NEW.pin_longitude IS NULL)
+  OR (NEW.pin_latitude IS NOT NULL AND NEW.pin_longitude IS NOT NULL)
+)
+OR (NEW.time_unspecified = 1 AND NEW.scheduled_start_at IS NULL)
+OR (NEW.time_unspecified = 1 AND NEW.is_all_day = 1)
+BEGIN
+  SELECT RAISE(ABORT, 'invalid normalized step state');
+END;
+CREATE TRIGGER validate_steps_scheduled_state_update
+BEFORE UPDATE OF scheduled_start_at, scheduled_end_at, time_unspecified,
+  pin_latitude, pin_longitude, is_priority ON steps
+WHEN NOT (
+  (NEW.scheduled_start_at IS NULL AND NEW.scheduled_end_at IS NULL)
+  OR (
+    NEW.scheduled_start_at IS NOT NULL
+    AND NEW.scheduled_end_at IS NOT NULL
+    AND NEW.scheduled_end_at >= NEW.scheduled_start_at
+  )
+)
+OR NOT (
+  (NEW.pin_latitude IS NULL AND NEW.pin_longitude IS NULL)
+  OR (NEW.pin_latitude IS NOT NULL AND NEW.pin_longitude IS NOT NULL)
+)
+OR (NEW.time_unspecified = 1 AND NEW.scheduled_start_at IS NULL)
+OR (NEW.time_unspecified = 1 AND NEW.is_all_day = 1)
+BEGIN
+  SELECT RAISE(ABORT, 'invalid normalized step state');
+END;

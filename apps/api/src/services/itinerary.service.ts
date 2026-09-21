@@ -1,5 +1,5 @@
 import type { Itinerary, CreateItineraryInput, UpdateItineraryInput } from '@tabitabi/types';
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Database, D1Result } from '@cloudflare/workers-types';
 import { generateId, getCurrentTimestamp } from '../utils';
 import type { Env } from '../utils';
 import { createPublicMemoSnapshot, createPublicStepSnapshot, createPublicTextSnapshot } from '../utils/publication';
@@ -381,6 +381,9 @@ export class ItineraryService {
             row.location, row.notes, row.notes_text, row.link, row.type, row.is_all_day, row.pin_latitude,
             row.pin_longitude, row.is_priority ? 1 : 0, row.sort_order, row.source_step_id ?? null, now, now)
       );
+      const moneyStatements = await this.publicMoneyStatements(
+        sourceId, newId, rows, memberNames, now, false,
+      );
 
       try {
         await this.db.batch([
@@ -397,6 +400,7 @@ export class ItineraryService {
             background_display = ? WHERE id = ?`).bind(source.background_image ?? null,
             source.page_background_image ?? null, source.background_display ?? 'cover', newId),
           ...stepStatements,
+          ...moneyStatements,
           ...(userId ? [this.db.prepare(`INSERT INTO itinerary_publications
             (source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(sourceId, newId, userId,
@@ -430,6 +434,9 @@ export class ItineraryService {
             row.location, row.notes, row.notes_text, row.link, row.type, row.is_all_day, row.pin_latitude,
             row.pin_longitude, row.is_priority ? 1 : 0, row.sort_order, row.source_step_id ?? null, now, now)
       );
+      const moneyStatements = await this.publicMoneyStatements(
+        sourceId, sharedId, rows, memberNames, now, true,
+      );
 
       await this.db.batch([
         this.db
@@ -446,6 +453,7 @@ export class ItineraryService {
           .prepare('DELETE FROM steps WHERE itinerary_id = ?')
           .bind(sharedId),
         ...stepStatements,
+        ...moneyStatements,
       ]);
 
       return (await this.get(sharedId))!;
@@ -460,6 +468,121 @@ export class ItineraryService {
       .run();
 
     return result.success;
+  }
+
+  private async publicMoneyStatements(
+    sourceId: string,
+    sharedId: string,
+    steps: Array<{ source_step_id?: string; snapshot_step_id: string }>,
+    memberNames: string[],
+    now: string,
+    replace: boolean,
+  ) {
+    let settings: Record<string, unknown> | null;
+    let members: D1Result<Record<string, unknown>>;
+    let items: D1Result<Record<string, unknown>>;
+    let splits: D1Result<Record<string, unknown>>;
+    let fund: D1Result<Record<string, unknown>>;
+    try {
+      [settings, members, items, splits, fund] = await Promise.all([
+        this.db.prepare('SELECT budget_amount FROM itinerary_money_settings WHERE itinerary_id = ?')
+          .bind(sourceId).first<Record<string, unknown>>(),
+        this.db.prepare('SELECT id FROM itinerary_members WHERE itinerary_id = ? ORDER BY created_at, id')
+          .bind(sourceId).all<Record<string, unknown>>(),
+        this.db.prepare('SELECT * FROM itinerary_money_items WHERE itinerary_id = ? ORDER BY created_at, id')
+          .bind(sourceId).all<Record<string, unknown>>(),
+        this.db.prepare('SELECT item_id, member_id, amount FROM itinerary_money_item_splits WHERE itinerary_id = ? ORDER BY rowid')
+          .bind(sourceId).all<Record<string, unknown>>(),
+        this.db.prepare('SELECT * FROM itinerary_money_fund_transactions WHERE itinerary_id = ? ORDER BY created_at, id')
+          .bind(sourceId).all<Record<string, unknown>>(),
+      ]);
+    } catch (error) {
+      // Some isolated tests and older development databases do not have the optional money tables yet.
+      if (error instanceof Error && error.message.includes('no such table')) return [];
+      throw error;
+    }
+
+    const memberMap = new Map<string, string>();
+    const itemMap = new Map<string, string>();
+    const stepMap = new Map(steps
+      .filter((step) => step.source_step_id)
+      .map((step) => [step.source_step_id!, step.snapshot_step_id]));
+    const statements = replace ? [
+      this.db.prepare('DELETE FROM itinerary_money_item_splits WHERE itinerary_id = ?').bind(sharedId),
+      this.db.prepare('DELETE FROM itinerary_money_items WHERE itinerary_id = ?').bind(sharedId),
+      this.db.prepare('DELETE FROM itinerary_money_fund_transactions WHERE itinerary_id = ?').bind(sharedId),
+      this.db.prepare('DELETE FROM itinerary_money_settings WHERE itinerary_id = ?').bind(sharedId),
+      this.db.prepare('DELETE FROM itinerary_members WHERE itinerary_id = ?').bind(sharedId),
+    ] : [];
+
+    (members.results ?? []).forEach((member, index) => {
+      const id = generateId();
+      memberMap.set(String(member.id), id);
+      statements.push(this.db.prepare(
+        'INSERT INTO itinerary_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)',
+      ).bind(id, sharedId, `${this.anonymousMemberLabel(index)}さん`, now));
+    });
+
+    if (settings) {
+      statements.push(this.db.prepare(
+        'INSERT INTO itinerary_money_settings (itinerary_id, budget_amount, created_at, updated_at) VALUES (?, ?, ?, ?)',
+      ).bind(sharedId, settings.budget_amount ?? null, now, now));
+    }
+
+    for (const item of items.results ?? []) {
+      const id = generateId();
+      itemMap.set(String(item.id), id);
+      statements.push(this.db.prepare(`INSERT INTO itinerary_money_items
+        (id, itinerary_id, title, amount, paid_by_member_id, paid_from_fund, status,
+         occurred_on, step_id, is_settled, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(
+        id,
+        sharedId,
+        createPublicTextSnapshot(String(item.title), memberNames) || '支出',
+        item.amount,
+        item.paid_by_member_id ? memberMap.get(String(item.paid_by_member_id)) ?? null : null,
+        item.paid_from_fund,
+        item.status,
+        item.occurred_on,
+        item.step_id ? stepMap.get(String(item.step_id)) ?? null : null,
+        item.is_settled,
+        now,
+        now,
+      ));
+    }
+
+    for (const split of splits.results ?? []) {
+      const itemId = itemMap.get(String(split.item_id));
+      const memberId = memberMap.get(String(split.member_id));
+      if (itemId && memberId) {
+        statements.push(this.db.prepare(`INSERT INTO itinerary_money_item_splits
+          (item_id, member_id, itinerary_id, amount) VALUES (?, ?, ?, ?)`)
+          .bind(itemId, memberId, sharedId, split.amount));
+      }
+    }
+
+    for (const entry of fund.results ?? []) {
+      const memberId = memberMap.get(String(entry.member_id));
+      if (memberId) {
+        statements.push(this.db.prepare(`INSERT INTO itinerary_money_fund_transactions
+          (id, itinerary_id, member_id, kind, amount, note, occurred_on, created_at)
+          VALUES (?, ?, ?, ?, ?, NULL, ?, ?)`)
+          .bind(generateId(), sharedId, memberId, entry.kind, entry.amount, entry.occurred_on, now));
+      }
+    }
+
+    return statements;
+  }
+
+  private anonymousMemberLabel(index: number): string {
+    let value = index + 1;
+    let label = '';
+    while (value > 0) {
+      value -= 1;
+      label = String.fromCharCode(65 + (value % 26)) + label;
+      value = Math.floor(value / 26);
+    }
+    return label;
   }
 
   private mapToItinerary(row: Record<string, unknown>): Itinerary {
@@ -508,10 +631,11 @@ export class ItineraryService {
   }
 
   // フロントエンド用：パスワード除外したレスポンスを返す
-  toResponseItinerary(itinerary: Itinerary) {
-    const { password: _, ...rest } = itinerary;
+  toResponseItinerary(itinerary: Itinerary, includePrivateSettings = false) {
+    const { password: _, secret_settings, ...rest } = itinerary;
     return {
       ...rest,
+      ...(includePrivateSettings && secret_settings ? { secret_settings } : {}),
       is_password_protected: !!itinerary.password,
     };
   }

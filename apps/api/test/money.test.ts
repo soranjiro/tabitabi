@@ -40,6 +40,10 @@ async function setup() {
   await env.DB.prepare('DELETE FROM itineraries').run();
 }
 
+function privateGet(url: string, token: string) {
+  return new Request(url, { headers: { Authorization: `Bearer ${token}` } });
+}
+
 describe('Money API', () => {
   beforeEach(setup);
 
@@ -82,7 +86,7 @@ describe('Money API', () => {
     }), env);
     expect(invalidSettlementResponse.status).toBe(400);
 
-    const moneyResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money`), env);
+    const moneyResponse = await app.fetch(privateGet(`http://localhost/api/v1/itineraries/${itinerary.id}/money`, itinerary.token), env);
     const { data } = await moneyResponse.json() as any;
     expect(data.members.map((member: { name: string }) => member.name)).toEqual(['Alice', 'Bob']);
     expect(data.items.find((item: { id: string }) => item.id === paidExpense.id)).toMatchObject({
@@ -157,7 +161,7 @@ describe('Money API', () => {
     }), env);
     expect(invalidExpense.status).toBe(400);
 
-    const moneyResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money`), env);
+    const moneyResponse = await app.fetch(privateGet(`http://localhost/api/v1/itineraries/${itinerary.id}/money`, itinerary.token), env);
     const money = (await moneyResponse.json() as any).data;
     expect(money.fund_transactions).toHaveLength(2);
     expect(money.fund_transactions.reduce((sum: number, transaction: { kind: string; amount: number }) => sum + (transaction.kind === 'contribution' ? transaction.amount : -transaction.amount), 0)).toBe(8000);
@@ -208,7 +212,7 @@ describe('Money API', () => {
 
     const deleteResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/members/${member.id}`, { method: 'DELETE' }), env);
     expect(deleteResponse.status).toBe(200);
-    const moneyResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money`), env);
+    const moneyResponse = await app.fetch(privateGet(`http://localhost/api/v1/itineraries/${itinerary.id}/money`, itinerary.token), env);
     expect((await moneyResponse.json() as any).data.members).toEqual([]);
   });
 
@@ -250,7 +254,7 @@ describe('Packing API', () => {
     };
     const alice = await addMember('Alice');
     const bob = await addMember('Bob');
-    const initialPackingResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    const initialPackingResponse = await app.fetch(privateGet(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`, itinerary.token), env);
     const initialPacking = (await initialPackingResponse.json() as any).data;
     expect(initialPacking.groups.map((group: { name: string }) => group.name)).toEqual(['貴重品', 'スマホ・電子機器', '洗面・ケアアイテム', '衣類', 'その他']);
     const valuables = initialPacking.groups[0];
@@ -284,7 +288,7 @@ describe('Packing API', () => {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ checked: true }),
     }), env);
 
-    const response = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    const response = await app.fetch(privateGet(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`, itinerary.token), env);
     const { data } = await response.json() as any;
     expect(data.members.map((member: { name: string }) => member.name)).toEqual(['Alice', 'Bob']);
     expect(data.items.find((item: { id: string }) => item.id === personal.id)).toMatchObject({ quantity: 2, checked_member_ids: [alice.id], is_packed: false });
@@ -296,20 +300,20 @@ describe('Packing API', () => {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'グループテスト' }),
     }), env);
     const { data: itinerary } = await create.json() as any;
-    await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    await app.fetch(privateGet(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`, itinerary.token), env);
     const add = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing/groups`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'アウトドア' }),
     }), env);
     const group = (await add.json() as any).data;
     expect(add.status).toBe(201);
-    const beforeReorder = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    const beforeReorder = await app.fetch(privateGet(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`, itinerary.token), env);
     const beforeReorderData = (await beforeReorder.json() as any).data;
     const reorderedIds = [group.id, ...beforeReorderData.groups.filter((current: { id: string }) => current.id !== group.id).map((current: { id: string }) => current.id)];
     const reorder = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing/groups/order`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group_ids: reorderedIds }),
     }), env);
     expect(reorder.status).toBe(200);
-    const afterReorder = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    const afterReorder = await app.fetch(privateGet(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`, itinerary.token), env);
     expect((await afterReorder.json() as any).data.groups.map((current: { id: string }) => current.id)).toEqual(reorderedIds);
     const invalidReorder = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing/groups/order`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group_ids: reorderedIds.slice(1) }),
@@ -325,7 +329,7 @@ describe('Packing API', () => {
     const item = (await itemResponse.json() as any).data;
     const remove = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing/groups/${group.id}`, { method: 'DELETE' }), env);
     const reassignedTo = (await remove.json() as any).data.reassigned_to_group_id;
-    const result = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    const result = await app.fetch(privateGet(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`, itinerary.token), env);
     const packingData = (await result.json() as any).data;
     expect(packingData.groups.some((current: { id: string }) => current.id === group.id)).toBe(false);
     expect(packingData.items.find((current: { id: string }) => current.id === item.id).group_id).toBe(reassignedTo);
@@ -340,7 +344,7 @@ describe('Packing API', () => {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Alice' }),
     }), env);
     const { data: member } = await memberResponse.json() as any;
-    const packingResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    const packingResponse = await app.fetch(privateGet(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`, itinerary.token), env);
     const packing = (await packingResponse.json() as any).data;
     const groupId = packing.groups[0].id;
 
@@ -361,7 +365,7 @@ describe('Packing API', () => {
     ), env);
     expect(deleteResponse.status).toBe(200);
 
-    const result = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    const result = await app.fetch(privateGet(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`, itinerary.token), env);
     const data = (await result.json() as any).data;
     expect(data.items.some((item: { id: string }) => item.id === privateItem.id)).toBe(false);
     expect(data.items.find((item: { id: string }) => item.id === sharedItem.id).assignee_member_id).toBeNull();
@@ -376,7 +380,7 @@ describe('Packing API', () => {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Alice' }),
     }), env);
     const { data: member } = await memberResponse.json() as any;
-    const packingResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    const packingResponse = await app.fetch(privateGet(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`, itinerary.token), env);
     const packing = (await packingResponse.json() as any).data;
     await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/settings`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ budget_amount: 10000 }),

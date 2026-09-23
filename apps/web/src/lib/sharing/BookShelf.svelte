@@ -28,7 +28,7 @@
   }
   function open(item: UserBookmarkWithItinerary, manage = false) { target = item; managing = manage; direction = null; message = ''; source = snapshot = null; }
   async function copy() {
-    try { await navigator.clipboard.writeText(`${window.location.origin}/itineraries/${target!.shared_itinerary_id}`); message = 'リンクをコピーしました'; }
+    try { await navigator.clipboard.writeText(`${window.location.origin}/s/${target!.shared_itinerary_id}`); message = 'リンクをコピーしました'; }
     catch { message = 'リンクをコピーできませんでした'; }
   }
   async function compare(next: 'update' | 'restore') {
@@ -98,10 +98,10 @@
       <button class="sheet-action" onclick={() => direction = null} disabled={busy}>戻る</button>
     {:else if target?.is_visible}
       {#if managing}<p class="hint">現在共有されている内容</p>{/if}
-      <a class="sheet-action primary" href="/itineraries/{target.shared_itinerary_id}">{managing ? '共有版を見る' : '共有を見る'}</a>
+      <a class="sheet-action primary" href="/s/{target.shared_itinerary_id}">{managing ? '共有版を見る' : '共有を見る'}</a>
       {#if managing}
         <hr />
-        <a class="sheet-action" href="/itineraries/{target.shared_itinerary_id}?manage=1">共有版を編集</a>
+        <a class="sheet-action" href="/itineraries/{target.itinerary_id}">元のしおりを編集</a>
         <button class="sheet-action" onclick={() => compare('update')} disabled={busy}>元のしおりから更新</button>
         <button class="sheet-action" onclick={() => compare('restore')} disabled={busy}>元のしおりへ反映</button>
       {/if}

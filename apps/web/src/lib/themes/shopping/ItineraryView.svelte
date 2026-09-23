@@ -12,6 +12,7 @@
   import "./styles/index.css";
 
   interface Props {
+    readOnly?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: {
@@ -42,6 +43,7 @@
   }
 
   let {
+    readOnly = false,
     itinerary,
     steps,
     onUpdateItinerary,
@@ -75,6 +77,10 @@
   );
 
   onMount(() => {
+    if (readOnly) {
+      hasEditPermission = false;
+      return;
+    }
     if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
       return;
@@ -104,7 +110,7 @@
   }
 
   async function attemptEditModeActivation() {
-    if (isSharedSnapshot) return;
+    if (readOnly || isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -283,7 +289,7 @@
     </div>
 
     <div class="shopping-header-controls">
-      {#if !hasEditPermission && !isSharedSnapshot}
+      {#if !readOnly && !hasEditPermission && !isSharedSnapshot}
         <button onclick={attemptEditModeActivation} class="shopping-header-btn">
           編集モード
         </button>

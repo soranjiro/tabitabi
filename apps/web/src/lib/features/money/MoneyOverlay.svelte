@@ -225,7 +225,7 @@
       sections.push(['【精算】', settlements.length
         ? settlements.map((settlement) => `${settlement.from} → ${settlement.to}　${formatYen(settlement.amount)}`).join('\n')
         : '精算は不要です'].join('\n'));
-      sections.push(`お金の確認はこちら\n${window.location.origin}${window.location.pathname}#money`);
+      sections.push(`お金の確認はこちら\n${window.location.origin}/s/${encodeURIComponent(itineraryId)}#money`);
     }
     if (shareTransactions) {
       sections.push(['【取引の詳細】', data.items.length
@@ -237,7 +237,7 @@
 
   async function copyMoneyLink() {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}#money`);
+      await navigator.clipboard.writeText(`${window.location.origin}/s/${encodeURIComponent(itineraryId)}#money`);
       copied = true;
       setTimeout(() => copied = false, 2200);
     } catch { formError = 'リンクをコピーできませんでした。'; }

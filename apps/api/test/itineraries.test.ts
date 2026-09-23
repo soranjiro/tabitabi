@@ -826,9 +826,15 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     expect(JSON.stringify(publicMoney)).not.toContain('佐藤花子');
     expect(JSON.stringify(publicMoney)).not.toContain('090-1234-5678');
 
-    expect((await app.request(`/api/v1/itineraries/${original.id}/members`, {}, env)).status).toBe(403);
-    expect((await app.request(`/api/v1/itineraries/${original.id}/money`, {}, env)).status).toBe(403);
-    expect((await app.request(`/api/v1/itineraries/${original.id}/packing`, {}, env)).status).toBe(403);
+    const sourceMembersRes = await app.request(`/api/v1/itineraries/${original.id}/members`, {}, env);
+    expect(sourceMembersRes.status).toBe(200);
+    expect((await sourceMembersRes.json() as any).data.map((member: { name: string }) => member.name))
+      .toEqual(['山田太郎', '佐藤花子']);
+
+    const sourceMoneyRes = await app.request(`/api/v1/itineraries/${original.id}/money`, {}, env);
+    expect(sourceMoneyRes.status).toBe(200);
+    expect((await sourceMoneyRes.json() as any).data.items[0].title).toContain('山田太郎');
+
     const privateItineraryRes = await app.request(`/api/v1/itineraries/${original.id}`, {}, env);
     expect((await privateItineraryRes.json() as any).data.secret_settings).toBeUndefined();
     const ownedItineraryRes = await app.request(`/api/v1/itineraries/${original.id}`, {

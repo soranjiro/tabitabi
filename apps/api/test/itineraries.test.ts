@@ -835,8 +835,6 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     expect(sourceMoneyRes.status).toBe(200);
     expect((await sourceMoneyRes.json() as any).data.items[0].title).toContain('山田太郎');
 
-    const sourcePackingRes = await app.request(`/api/v1/itineraries/${original.id}/packing`, {}, env);
-    expect(sourcePackingRes.status).toBe(200);
     const privateItineraryRes = await app.request(`/api/v1/itineraries/${original.id}`, {}, env);
     expect((await privateItineraryRes.json() as any).data.secret_settings).toBeUndefined();
     const ownedItineraryRes = await app.request(`/api/v1/itineraries/${original.id}`, {

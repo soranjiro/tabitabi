@@ -48,8 +48,8 @@ export const PALETTES: PaletteOption[] = [
 ];
 
 const THEME_CATALOG: ThemePresetOption[] = [
-  { id: "planning-map", name: "地図プラン", description: "地図を見ながら予定を決める", phrase: "地図でつくる旅の予定", viewMode: "list", defaultPaletteId: "neutral", enabled: true },
-  { id: "planning-draft", name: "プラン", description: "候補を日ごとに並べて予定を決める", phrase: "シンプルに旅を計画", viewMode: "list", defaultPaletteId: "neutral", enabled: true },
+  { id: "planning-map", name: "プランニング", description: "旧地図プランとの互換表示", phrase: "地図でつくる旅の予定", viewMode: "list", defaultPaletteId: "neutral", enabled: false },
+  { id: "planning-draft", name: "プランニング", description: "候補を集め、地図で確認し、日程を決める", phrase: "旅を計画する", viewMode: "list", defaultPaletteId: "neutral", enabled: true },
   { id: "daycard", name: "日カード", description: "日付タブで切り替える、親しみやすいカード", phrase: "日ごとの旅行計画", viewMode: "dayCard", defaultPaletteId: "sakura", enabled: true },
   { id: "accordion", name: "セクションカード", description: "旅程全体を見渡せるアコーディオン", phrase: "見渡せる旅行計画", viewMode: "accordion", defaultPaletteId: "ocean", enabled: true },
   { id: "list", name: "リスト", description: "予定をすっきり一覧表示", phrase: "一覧で見る旅行計画", viewMode: "list", defaultPaletteId: "ocean", enabled: true },

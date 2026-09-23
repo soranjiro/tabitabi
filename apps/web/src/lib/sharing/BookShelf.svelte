@@ -101,7 +101,7 @@
       <a class="sheet-action primary" href="/s/{target.shared_itinerary_id}">{managing ? '共有版を見る' : '共有を見る'}</a>
       {#if managing}
         <hr />
-        <a class="sheet-action" href="/s/{target.shared_itinerary_id}?manage=1">共有版を編集</a>
+        <a class="sheet-action" href="/itineraries/{target.itinerary_id}">元のしおりを編集</a>
         <button class="sheet-action" onclick={() => compare('update')} disabled={busy}>元のしおりから更新</button>
         <button class="sheet-action" onclick={() => compare('restore')} disabled={busy}>元のしおりへ反映</button>
       {/if}

@@ -14,6 +14,7 @@
   import ShareDialog from "./components/ShareDialog.svelte";
 
   interface Props {
+    readOnly?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: {
@@ -47,6 +48,7 @@
   }
 
   let {
+    readOnly = false,
     itinerary,
     steps,
     onUpdateItinerary,
@@ -95,6 +97,10 @@
   }
 
   onMount(() => {
+    if (readOnly) {
+      hasEditPermission = false;
+      return;
+    }
     if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
       return;
@@ -123,7 +129,7 @@
   }
 
   async function attemptEditModeActivation() {
-    if (isSharedSnapshot) return;
+    if (readOnly || isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -222,7 +228,7 @@
 
   async function copyViewOnlyLink() {
     try {
-      const url = window.location.origin + window.location.pathname;
+      const url = `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
       await navigator.clipboard.writeText(url);
       showCopyMessage = true;
       setTimeout(() => {
@@ -235,7 +241,9 @@
 
   async function copyShareLink(includeToken: boolean) {
     try {
-      let url = window.location.origin + window.location.pathname;
+      let url = includeToken
+        ? `${window.location.origin}/itineraries/${encodeURIComponent(itinerary.id)}`
+        : `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
 
       if (includeToken && hasEditPermission) {
         const token = auth.getToken(itinerary.id);
@@ -343,7 +351,7 @@
               🔑
             </button>
           {/if}
-        {:else if !isSharedSnapshot}
+        {:else if !readOnly && !isSharedSnapshot}
           <button class="edit-button" onclick={attemptEditModeActivation}>
             編集モード
           </button>

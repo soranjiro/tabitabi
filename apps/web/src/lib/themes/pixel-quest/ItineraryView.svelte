@@ -1279,7 +1279,7 @@
       <h2 class="pq-form-title">SHARE ADVENTURE</h2>
       <p class="pq-share-description">Share this URL with your party:</p>
       <div class="pq-share-url">
-        {typeof window !== "undefined" ? window.location.href : ""}
+        {typeof window !== "undefined" ? `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}` : ""}
       </div>
       <div class="pq-form-actions">
         <button class="pq-btn" onclick={() => (showShareDialog = false)}

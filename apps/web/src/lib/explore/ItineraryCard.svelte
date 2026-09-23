@@ -80,7 +80,7 @@
 </script>
 
 <article style={`--accent:${colors[0]};--soft:${colors[1]}`}>
-  <a class="card-link" href="/itineraries/{itinerary.itinerary_id}" aria-label="{itinerary.title}を読む">
+  <a class="card-link" href="/s/{itinerary.itinerary_id}" aria-label="{itinerary.title}を読む">
     <div class="theme-strip">
       <img
         class="cover"

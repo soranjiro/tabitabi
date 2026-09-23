@@ -10,8 +10,7 @@ export async function guardPrivateItineraryRead(
   if (!itinerary) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   }
-  if (!itinerary.source_itinerary_id && c.get('shioriId') !== itineraryId) {
-    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Private itinerary data requires its token' } }, 403);
-  }
+  // Reading a shiori is capability-by-link. Edit authorization is enforced
+  // separately by each mutation route, so view-only links can read feature data.
   return null;
 }

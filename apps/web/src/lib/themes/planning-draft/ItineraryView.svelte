@@ -28,6 +28,7 @@
   import "../standard/core/styles/index.css";
 
   interface Props {
+    readOnly?: boolean;
     mapPlanning?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
@@ -64,7 +65,7 @@
     onBatchUpdateDates?: (updates: import("@tabitabi/types").BatchStepDateUpdate[]) => Promise<void>;
   }
 
-  let { itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, onBatchUpdateDates, mapPlanning = false }: Props = $props();
+  let { readOnly = false, itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, onBatchUpdateDates, mapPlanning = false }: Props = $props();
   let placeDraft = $state<Place | null>(null);
   let formError = $state('');
   let descriptionEditing = $state(false);
@@ -150,6 +151,10 @@
     window.addEventListener('hashchange', openFeatureFromHash);
     titleDraft = itinerary.title;
     memoDraft = getMemoText(itinerary.memo);
+    if (readOnly) {
+      hasEditPermission = false;
+      return () => window.removeEventListener('hashchange', openFeatureFromHash);
+    }
     if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
       return () => window.removeEventListener('hashchange', openFeatureFromHash);
@@ -183,6 +188,7 @@
   }
 
   async function attemptEditModeActivation() {
+    if (readOnly || isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -202,14 +208,17 @@
   }
 
   function handleEditModeToggle() {
-    if (isSharedSnapshot) return;
+    if (readOnly || isSharedSnapshot) return;
     if (hasEditPermission) hasEditPermission = false;
     else void attemptEditModeActivation();
   }
 
   async function copyShareLink(includeToken: boolean) {
     const token = includeToken ? auth.getToken(itinerary.id) : null;
-    const url = `${window.location.origin}${window.location.pathname}${token ? `?token=${token}` : ""}`;
+    const base = includeToken
+      ? `${window.location.origin}/itineraries/${encodeURIComponent(itinerary.id)}`
+      : `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
+    const url = `${base}${token ? `?token=${token}` : ""}`;
     await navigator.clipboard.writeText(url);
     showShareDialog = false;
     showCopyMessage = true;
@@ -634,7 +643,7 @@
   <MoreMenu
     show={showMoreMenu}
     canConfigure={hasEditPermission}
-    canRequestEdit={!isSharedSnapshot}
+    canRequestEdit={!readOnly && !isSharedSnapshot}
     {hasEditPermission}
     onShare={() => {
       if (hasEditPermission) showShareDialog = true;

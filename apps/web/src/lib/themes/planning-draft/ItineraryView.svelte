@@ -819,16 +819,16 @@
   .preview-unscheduled span { color: #8a928e; font-size: .72rem; }
   .preview-unscheduled p { margin: 0; grid-column: 1 / -1; color: #58645f; font-size: .8rem; }
   .preview-days { display: grid; gap: 1rem; }
-  .preview-day { display: grid; border: 1px solid #dde1dd; background: #fff; grid-template-columns: 70px 1fr; }
-  .preview-day > header { display: grid; padding: 1rem; align-content: start; color: white; background: #3d6f61; text-align: center; }
+  .preview-day { display: grid; border: 1px solid #dde1dd; background: #fff; grid-template-columns: 84px minmax(0, 1fr); }
+  .preview-day > header { display: grid; min-width: 0; padding: 1rem .5rem; align-content: start; color: white; background: #3d6f61; text-align: center; }
   .preview-day > header span { font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; }
-  .preview-day > header strong { font-size: 1.45rem; }
-  .preview-day ol { margin: 0; padding: .6rem 1rem; list-style: none; }
-  .preview-day li { display: grid; min-height: 58px; padding: .7rem 0; border-bottom: 1px solid #eceeeb; grid-template-columns: 72px 1fr; gap: .65rem; }
+  .preview-day > header strong { font-size: 1.2rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .preview-day ol { min-width: 0; margin: 0; padding: .6rem 1rem; list-style: none; }
+  .preview-day li { display: grid; min-height: 58px; padding: .7rem 0; border-bottom: 1px solid #eceeeb; grid-template-columns: 72px minmax(0, 1fr); gap: .65rem; }
   .preview-day li:last-child { border-bottom: 0; }
   .preview-day time { padding-top: .08rem; color: #2f6657; font-size: .75rem; font-weight: 800; }
   .preview-day time.pending { color: #a06d4e; font-weight: 650; }
-  .preview-day li div { display: grid; gap: .25rem; }
+  .preview-day li div { display: grid; min-width: 0; gap: .25rem; }
   .preview-day li strong { font-size: .88rem; }
   .preview-day li small { color: #8a928e; font-size: .69rem; white-space: pre-line; }
   .theme-guide { margin: 2.5rem 0; padding: 1.35rem; border: 1px solid #e2ddd4; background: #f5f1e9; text-align: center; }
@@ -885,8 +885,10 @@
     .planning-intro { gap: .28rem; }
     .planning-intro span { padding: .38rem .4rem; font-size: .61rem; }
     .order-buttons button { width: 29px; }
-    .preview-day { grid-template-columns: 56px 1fr; }
-    .preview-day li { grid-template-columns: 68px 1fr; }
+    .preview-day { grid-template-columns: 76px minmax(0, 1fr); }
+    .preview-day > header { padding: .8rem .25rem; }
+    .preview-day > header strong { font-size: 1.1rem; }
+    .preview-day li { grid-template-columns: 68px minmax(0, 1fr); }
     .date-fields { grid-template-columns: 1fr; }
   }
 </style>

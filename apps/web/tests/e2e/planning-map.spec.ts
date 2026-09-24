@@ -79,3 +79,25 @@ test('related links open from details without opening the editor', async ({ page
   await expect(link).toHaveAttribute('target', '_blank');
   await expect(page.getByRole('dialog', { name: '予定を編集' })).toHaveCount(0);
 });
+
+test('schedule day date stays within its badge on narrow screens', async ({ page }) => {
+  await page.getByRole('button', { name: '計画', exact: true }).click();
+  await page.getByRole('button', { name: '＋ 予定を追加' }).first().click();
+  await page.getByLabel('タイトル', { exact: true }).fill('日付表示の確認');
+  await page.getByLabel('日付だけ').check();
+  await page.getByLabel('開始日').fill('2026-10-17');
+  await page.getByRole('button', { name: '追加', exact: true }).click();
+  await page.getByRole('button', { name: '日程', exact: true }).click();
+
+  const dateLabel = page.locator('.preview-day > header strong').filter({ hasText: '10/17' });
+  await expect(dateLabel).toHaveText('10/17');
+  for (const width of [320, 390, 1024]) {
+    await page.setViewportSize({ width, height: 844 });
+    const fits = await dateLabel.evaluate((node) => {
+      const label = node.getBoundingClientRect();
+      const badge = node.parentElement!.getBoundingClientRect();
+      return label.left >= badge.left - 1 && label.right <= badge.right + 1;
+    });
+    expect(fits, `date should fit inside the day badge at ${width}px`).toBe(true);
+  }
+});

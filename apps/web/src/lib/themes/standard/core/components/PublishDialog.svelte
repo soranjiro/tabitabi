@@ -1,6 +1,7 @@
 <script lang="ts">
   import Dialog from "./Dialog.svelte";
   import { prefectures, travelTags } from "$lib/explore/data";
+  import PrefectureSelector from "$lib/features/prefecture/PrefectureSelector.svelte";
   import SharedBook from '$lib/sharing/SharedBook.svelte';
   import { userApi, type BookContent } from '$lib/api/user';
 
@@ -22,9 +23,9 @@
   }
 
   let { show, itineraryId, isLoggedIn, sourceText = "", initialMetadata, onLogin, onPublish, onClose }: Props = $props();
+  const prefectureOptions = prefectures.map((item) => ({ value: item.slug, label: item.name, region: item.region }));
   let preview = $state<BookContent | null>(null);
   let selectedPrefectures = $state<string[]>([]);
-  let prefectureCandidate = $state("");
   let areas = $state<string[]>([]);
   let areaInput = $state("");
   let tags = $state<string[]>([]);
@@ -52,17 +53,6 @@
     }).slice(0, 3);
     selectedPrefectures = suggestions.map((item) => item.slug);
   });
-
-  function addPrefecture() {
-    if (!prefectureCandidate || selectedPrefectures.includes(prefectureCandidate) || selectedPrefectures.length >= 3) return;
-    selectedPrefectures = [...selectedPrefectures, prefectureCandidate];
-    prefectureCandidate = "";
-    validationMessage = "";
-  }
-
-  function removePrefecture(slug: string) {
-    selectedPrefectures = selectedPrefectures.filter((item) => item !== slug);
-  }
 
   function addArea() {
     const value = areaInput.trim();
@@ -130,17 +120,18 @@
       <p class="publish-intro">公開に必要なのは旅行先だけ。エリアやテーマは、探しやすくしたいときだけ追加できます。</p>
 
       <section class="field-section">
-        <div class="field-heading"><label for="publish-prefecture">旅行先</label><strong>必須 · 3件まで</strong></div>
-        {#if selectedPrefectures.length}
-          <div class="selected-chips">{#each selectedPrefectures as slug}{@const item = prefectures.find((prefecture) => prefecture.slug === slug)}{#if item}<button type="button" onclick={() => removePrefecture(slug)}>{item.name}<span>×</span></button>{/if}{/each}</div>
-        {/if}
-        <div class="add-row">
-          <select id="publish-prefecture" bind:value={prefectureCandidate}>
-            <option value="">都道府県を選ぶ</option>
-            {#each prefectures.filter((item) => !selectedPrefectures.includes(item.slug)) as item}<option value={item.slug}>{item.name}</option>{/each}
-          </select>
-          <button type="button" onclick={addPrefecture} disabled={!prefectureCandidate || selectedPrefectures.length >= 3}>追加</button>
-        </div>
+        <div class="field-heading"><span>旅行先</span><strong>必須 · 3件まで</strong></div>
+        <PrefectureSelector
+          options={prefectureOptions}
+          selectedValues={selectedPrefectures}
+          max={3}
+          placeholder="旅行先の都道府県を選ぶ"
+          ariaLabel="旅行先の都道府県"
+          onChange={(values) => {
+            selectedPrefectures = values;
+            validationMessage = "";
+          }}
+        />
       </section>
 
       <section class="field-section">
@@ -174,7 +165,7 @@
   .selected-chips.optional button { color: var(--theme-text); background: color-mix(in srgb, var(--theme-primary) 13%, white); }
   .selected-chips span { margin-left: .3rem; opacity: .65; }
   .add-row { display: grid; grid-template-columns: 1fr auto; gap: .45rem; }
-  .add-row select, .add-row input { min-width: 0; height: 2.55rem; box-sizing: border-box; padding: 0 .75rem; border: 1px solid var(--theme-border); border-radius: .65rem; color: var(--theme-text); background: white; font: inherit; font-size: .82rem; }
+  .add-row input { min-width: 0; height: 2.55rem; box-sizing: border-box; padding: 0 .75rem; border: 1px solid var(--theme-border); border-radius: .65rem; color: var(--theme-text); background: white; font: inherit; font-size: .82rem; }
   .add-row button { padding: 0 .8rem; border: 0; border-radius: .65rem; color: var(--theme-primary); background: color-mix(in srgb, var(--theme-primary) 12%, white); font-weight: 800; cursor: pointer; }
   .add-row button:disabled { cursor: default; opacity: .4; }
   .tag-options button { padding: .42rem .62rem; border: 1px solid var(--theme-border); border-radius: 999px; color: var(--theme-text-light); background: white; font: inherit; font-size: .7rem; cursor: pointer; }
@@ -190,5 +181,5 @@
   .account-required h4 { margin: 0 0 .55rem; color: var(--theme-text); font-size: 1rem; }
   .account-required p, .publish-success p { margin: 0 0 1.2rem; color: var(--theme-text-light); font-size: .78rem; line-height: 1.7; }
   .publish-success a { display: block; text-decoration: none; }
-  @media (max-width: 600px) { .add-row select, .add-row input { font-size: 16px; } }
+  @media (max-width: 600px) { .add-row input { font-size: 16px; } }
 </style>

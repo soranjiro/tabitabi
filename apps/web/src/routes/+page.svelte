@@ -8,6 +8,7 @@
   import RecentItineraries from "./home/RecentItineraries.svelte";
   import Footer from "./home/Footer.svelte";
   import IconAirplane from "./home/icons/IconAirplane.svelte";
+  import AdSlot from "$lib/ads/AdSlot.svelte";
 
   const { data }: { data: PageData } = $props();
 
@@ -296,6 +297,9 @@
       {/if}
     </div>
   </section>
+  <section class="home-ad-section" aria-label="広告">
+    <AdSlot placement="home" />
+  </section>
   <Footer />
 </div>
 
@@ -374,6 +378,7 @@
   .create-heading p { margin: 0 0 8px; color: #7086a5; font-size: 9px; font-weight: 900; letter-spacing: .2em; }
   .create-heading h2 { margin: 0; font-family: Georgia, "Yu Mincho", serif; font-size: clamp(27px, 4vw, 39px); font-weight: 400; letter-spacing: .06em; }
   .recent-wrapper { margin-top: 42px; }
+  .home-ad-section { position: relative; z-index: 3; padding: 0 20px 64px; background: white; }
 
   @media (max-width: 900px) {
     .site-header { width: calc(100% - 48px); }
@@ -427,7 +432,8 @@
     .scroll-cue { display: none; }
     /* The next-section paper edge must not cover the installed-PWA viewport. */
     .paper-reveal { display: none; }
-    .create-section { padding: 62px 16px 82px; }
+    .create-section { padding: 62px 16px 68px; }
+    .home-ad-section { padding: 0 16px 48px; }
   }
 
   @media (max-height: 720px) and (max-width: 640px) {

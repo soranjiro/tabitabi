@@ -4,11 +4,11 @@
   let { placement }: { placement: "home" | "shared" } = $props();
 
   const clientId = (import.meta.env.VITE_ADSENSE_CLIENT_ID ?? "").trim();
-  const slotId = (
+  const selectedSlotId =
     placement === "home"
       ? import.meta.env.VITE_ADSENSE_HOME_SLOT_ID
-      : import.meta.env.VITE_ADSENSE_SHARED_SLOT_ID
-  ?? "").trim();
+      : import.meta.env.VITE_ADSENSE_SHARED_SLOT_ID;
+  const slotId = (selectedSlotId ?? "").trim();
   const preview = import.meta.env.DEV || import.meta.env.VITE_AD_PREVIEW === "true";
   const enabled = !preview && clientId.length > 0 && slotId.length > 0;
 

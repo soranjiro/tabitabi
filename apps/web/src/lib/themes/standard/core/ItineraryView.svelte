@@ -32,6 +32,7 @@
   import { openPrintStudio } from "$lib/print";
 
   interface Props {
+    readOnly?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: {
@@ -81,6 +82,7 @@
   }
 
   let {
+    readOnly = false,
     itinerary,
     steps,
     onUpdateItinerary,
@@ -221,6 +223,10 @@
     };
     openFeatureFromHash();
     window.addEventListener('hashchange', openFeatureFromHash);
+    if (readOnly) {
+      hasEditPermission = false;
+      return () => window.removeEventListener('hashchange', openFeatureFromHash);
+    }
     if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
       return () => window.removeEventListener('hashchange', openFeatureFromHash);
@@ -270,7 +276,7 @@
   }
 
   function handleEditModeToggle() {
-    if (isSharedSnapshot) return;
+    if (readOnly || isSharedSnapshot) return;
     if (hasEditPermission) {
       // Check if currently editing
       if (stepListRef?.isCurrentlyEditing?.()) {
@@ -290,6 +296,7 @@
   }
 
   async function attemptEditModeActivation() {
+    if (readOnly || isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -328,7 +335,7 @@
 
   async function copyViewOnlyLink() {
     try {
-      const url = window.location.origin + window.location.pathname;
+      const url = `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
       await navigator.clipboard.writeText(url);
       showCopyMessage = true;
       setTimeout(() => {
@@ -341,7 +348,9 @@
 
   async function copyShareLink(includeToken: boolean) {
     try {
-      let url = window.location.origin + window.location.pathname;
+      let url = includeToken
+        ? `${window.location.origin}/itineraries/${encodeURIComponent(itinerary.id)}`
+        : `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
 
       if (includeToken && hasEditPermission) {
         const token = auth.getToken(itinerary.id);
@@ -618,7 +627,7 @@
   <MoreMenu
     show={showMoreMenu}
     canConfigure={hasEditPermission}
-    canRequestEdit={!isSharedSnapshot}
+    canRequestEdit={!readOnly && !isSharedSnapshot}
     {hasEditPermission}
     onShare={() => hasEditPermission && !isSharedSnapshot ? (showShareDialog = true) : void copyViewOnlyLink()}
     onPrint={openPrintPreview}

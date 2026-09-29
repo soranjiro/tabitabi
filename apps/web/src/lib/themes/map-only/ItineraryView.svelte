@@ -27,6 +27,7 @@
   let MapComponent: any = $state(null);
 
   interface Props {
+    readOnly?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: any) => Promise<void>;
@@ -36,6 +37,7 @@
   }
 
   let {
+    readOnly = false,
     itinerary,
     steps,
     onUpdateItinerary,
@@ -154,7 +156,9 @@
     if (browser) {
       const module = await import("./components/Map.svelte");
       MapComponent = module.default;
-      if (getIsDemoMode() || isSharedSnapshot) {
+      if (readOnly) {
+        hasEditPermission = false;
+      } else if (getIsDemoMode() || isSharedSnapshot) {
         hasEditPermission = true;
       } else {
         const token = auth.extractTokenFromUrl();
@@ -165,7 +169,7 @@
         auth.updateAccessTime(itinerary.id, itinerary.title);
       }
 
-      shareUrl = window.location.href.split("?")[0];
+      shareUrl = `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
 
       // Load route display preference from memo
       if (itinerary.memo) {
@@ -208,7 +212,7 @@
   }
 
   async function attemptEditModeActivation() {
-    if (isSharedSnapshot) return;
+    if (readOnly || isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -648,7 +652,7 @@
     </svg>
   </button>
 
-  {#if !hasEditPermission && !isSharedSnapshot}
+  {#if !readOnly && !hasEditPermission && !isSharedSnapshot}
     <button class="edit-mode-button" onclick={attemptEditModeActivation}>
       <svg
         xmlns="http://www.w3.org/2000/svg"

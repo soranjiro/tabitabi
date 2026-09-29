@@ -2,7 +2,7 @@
   import SharedItineraryView from "../../core/ItineraryView.svelte";
   import "./styles/index.css";
 
-  export let itinerary;
+  export let readOnly = false; export let itinerary;
   export let steps;
   export let onUpdateItinerary = undefined;
   export let onCreateStep = undefined;
@@ -13,7 +13,8 @@
 </script>
 
 <SharedItineraryView
-  {itinerary}
+    {readOnly}
+{itinerary}
   {steps}
   {onUpdateItinerary}
   {onCreateStep}

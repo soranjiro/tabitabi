@@ -12,7 +12,7 @@
   import SharedBook from '$lib/sharing/SharedBook.svelte';
   let copiedNotice = $state(false);
 
-  let { data } = $props();
+  let { data, readOnly = false } = $props();
 
   let ItineraryView = $derived(data.theme.components.ItineraryView);
   let backgroundColor = $derived(
@@ -73,7 +73,7 @@
   onMount(() => {
     const init = async () => {
       // 公開スナップショットは最近のしおり・アカウント同期の対象にしない。
-      if (!data.itinerary.source_itinerary_id) {
+      if (!data.itinerary.source_itinerary_id && !readOnly) {
         // Record password protection state for client-side header resolution
         auth.setPasswordProtected(
           data.itinerary.id,
@@ -86,7 +86,7 @@
 
       // 開いた通常しおりは、ログイン中のアカウントにも保存する。
       // 公開スナップショットは閲覧専用のため紐付けない。
-      if (!data.itinerary.source_itinerary_id && userAuth.isLoggedIn()) {
+      if (!data.itinerary.source_itinerary_id && !readOnly && userAuth.isLoggedIn()) {
         try {
           await userApi.syncBookmarks([data.itinerary.id]);
         } catch {
@@ -237,7 +237,8 @@
     }
   }
 
-  let isViewOnly = $derived(!!data.itinerary.source_itinerary_id);
+  let isPublishedSnapshot = $derived(!!data.itinerary.source_itinerary_id);
+  let canonicalPath = $derived(readOnly ? `/s/${data.itinerary.id}` : `/itineraries/${data.itinerary.id}`);
 
 
 </script>
@@ -248,14 +249,14 @@
     name="description"
     content="{data.itinerary.title}の旅のしおり。たびたびで作成された旅行計画を確認できます。"
   />
-  <link rel="canonical" href="https://tabitabi.pages.dev/itineraries/{data.itinerary.id}" />
+  <link rel="canonical" href="https://tabitabi.pages.dev{canonicalPath}" />
   <meta property="og:title" content="{data.itinerary.title} - たびたび" />
   <meta
     property="og:description"
     content="{data.itinerary.title}の旅のしおり。たびたびで作成された旅行計画を確認できます。"
   />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://tabitabi.pages.dev/itineraries/{data.itinerary.id}" />
+  <meta property="og:url" content="https://tabitabi.pages.dev{canonicalPath}" />
   <meta property="og:image" content="https://tabitabi.pages.dev/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -271,7 +272,7 @@
   <meta name="theme-color" content={backgroundColor} />
 </svelte:head>
 
-{#if isViewOnly}
+{#if isPublishedSnapshot}
   <SharedBook content={{ itinerary: data.itinerary, steps: data.steps }} />
 {:else}
   {#if copiedNotice}<p class="copy-notice" role="status">✓ 自分のしおりを作りました</p>{/if}
@@ -280,11 +281,12 @@
   <ItineraryView
     {itinerary}
     {steps}
-    onUpdateItinerary={isViewOnly ? undefined : handleUpdateItinerary}
-    onCreateStep={isViewOnly ? undefined : handleCreateStep}
-    onUpdateStep={isViewOnly ? undefined : handleUpdateStep}
-    onBatchUpdateDates={isViewOnly ? undefined : handleBatchUpdateDates}
-    onDeleteStep={isViewOnly ? undefined : handleDeleteStep}
+    {readOnly}
+    onUpdateItinerary={readOnly ? undefined : handleUpdateItinerary}
+    onCreateStep={readOnly ? undefined : handleCreateStep}
+    onUpdateStep={readOnly ? undefined : handleUpdateStep}
+    onBatchUpdateDates={readOnly ? undefined : handleBatchUpdateDates}
+    onDeleteStep={readOnly ? undefined : handleDeleteStep}
   />
 {/key}
 

@@ -1,10 +1,11 @@
 import type { PageServerLoad } from "./$types";
 
 const PREVIEW_COUNT = 6;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Pick the hero on the server so SSR and hydration always use the same preview.
-// Cache the public landing page briefly at the edge: the selected hero still
-// rotates frequently, while repeat visits avoid paying an SSR round-trip.
+// Rotate the landing sample once per UTC day instead of on every request.
+// This keeps the first impression stable while still showing the range of
+// available itinerary styles over time.
 export const prerender = false;
 
 export const load: PageServerLoad = ({ setHeaders }) => {
@@ -12,7 +13,9 @@ export const load: PageServerLoad = ({ setHeaders }) => {
     "cache-control": "public, max-age=0, s-maxage=60, stale-while-revalidate=600",
   });
 
+  const dayIndex = Math.floor(Date.now() / DAY_MS);
+
   return {
-    previewIndex: Math.floor(Math.random() * PREVIEW_COUNT),
+    previewIndex: dayIndex % PREVIEW_COUNT,
   };
 };

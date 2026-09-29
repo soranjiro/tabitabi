@@ -7,6 +7,7 @@
   import CreateForm from "./home/CreateForm.svelte";
   import RecentItineraries from "./home/RecentItineraries.svelte";
   import Footer from "./home/Footer.svelte";
+  import JourneySteps from "./home/JourneySteps.svelte";
   import IconAirplane from "./home/icons/IconAirplane.svelte";
 
   const { data }: { data: PageData } = $props();
@@ -251,11 +252,13 @@
     </div>
   </section>
 
+  <JourneySteps />
+
   <section id="create" class="create-section" aria-labelledby="create-title">
     <div class="section-inner">
       <div class="create-heading">
         <span class="tiny-route" aria-hidden="true"><i></i><b>✈</b></span>
-        <p>NEXT TRIP</p>
+        <p>次の旅</p>
         <h2 id="create-title">次の旅を、つくろう。</h2>
       </div>
       <CreateForm />

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import "../styles/dialog.css";
+
   interface Props {
     show: boolean;
     title: string;

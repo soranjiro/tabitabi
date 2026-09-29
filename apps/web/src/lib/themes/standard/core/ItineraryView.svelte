@@ -100,7 +100,7 @@
   let editedTitle = $state(itinerary.title);
   let isCreatingStep = $state(false);
   let createStepTemplate = $state<Step | null>(null);
-  let showCopyMessage = $state(false);
+  let copyMessage = $state<string | null>(null);
   let showShareDialog = $state(false);
   let showMoreMenu = $state(false);
   let hasEditPermission = $state(false);
@@ -333,41 +333,61 @@
     openPrintStudio();
   }
 
-  async function copyViewOnlyLink() {
+  function shouldUseNativeShare(): boolean {
+    return (
+      typeof navigator.share === "function" &&
+      (navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches)
+    );
+  }
+
+  async function shareOrCopyLink(url: string, copiedMessage: string) {
+    if (shouldUseNativeShare()) {
+      showShareDialog = false;
+      try {
+        await navigator.share({ title: itinerary.title, url });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.error("Failed to share:", err);
+      }
+      return;
+    }
+
     try {
-      const url = `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
       await navigator.clipboard.writeText(url);
-      showCopyMessage = true;
+      showShareDialog = false;
+      copyMessage = copiedMessage;
       setTimeout(() => {
-        showCopyMessage = false;
+        copyMessage = null;
       }, 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
     }
   }
 
+  async function copyViewOnlyLink() {
+    const url = `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
+    await shareOrCopyLink(url, "閲覧用リンクをコピーしました");
+  }
+
   async function copyShareLink(includeToken: boolean) {
-    try {
-      let url = includeToken
-        ? `${window.location.origin}/itineraries/${encodeURIComponent(itinerary.id)}`
-        : `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
+    let url = includeToken
+      ? `${window.location.origin}/itineraries/${encodeURIComponent(itinerary.id)}`
+      : `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
 
-      if (includeToken && hasEditPermission) {
-        const token = auth.getToken(itinerary.id);
-        if (token) {
-          url += `?token=${token}`;
-        }
+    if (includeToken && hasEditPermission) {
+      const token = auth.getToken(itinerary.id);
+      if (token) {
+        url += `?token=${token}`;
       }
-
-      await navigator.clipboard.writeText(url);
-      showShareDialog = false;
-      showCopyMessage = true;
-      setTimeout(() => {
-        showCopyMessage = false;
-      }, 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
     }
+
+    const copiedMessage = itinerary.is_password_protected
+      ? includeToken
+        ? "編集用リンクをコピーしました"
+        : "閲覧用リンクをコピーしました"
+      : "リンクをコピーしました";
+
+    await shareOrCopyLink(url, copiedMessage);
   }
 
   async function saveMetadata(metadata: { prefectureSlugs: string[]; areas: string[]; tags: string[] }) {
@@ -474,8 +494,8 @@
 >
   <div class="standard-container">
     <header class="standard-header">
-      {#if showCopyMessage}
-        <div class="standard-copy-msg">リンクをコピーしました</div>
+      {#if copyMessage}
+        <div class="standard-copy-msg">{copyMessage}</div>
       {/if}
       {#if isEditingTitle}
         <input

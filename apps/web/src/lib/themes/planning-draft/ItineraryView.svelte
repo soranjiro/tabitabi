@@ -741,8 +741,13 @@
     canRequestEdit={!readOnly && !isSharedSnapshot}
     {hasEditPermission}
     onShare={() => {
-      if (hasEditPermission) showShareDialog = true;
-      else void copyShareLink(false);
+      if (hasEditPermission && !isSharedSnapshot && !itinerary.is_password_protected) {
+        void copyShareLink(true);
+      } else if (hasEditPermission) {
+        showShareDialog = true;
+      } else {
+        void copyShareLink(false);
+      }
     }}
     onPrint={openPrintStudio}
     onSettings={() => (showSettingsDialog = true)}

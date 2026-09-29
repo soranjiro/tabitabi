@@ -35,6 +35,13 @@ interface OgPlatformEnv {
   WEBP_DEC_WASM?: WebAssembly.Module;
 }
 
+interface OgPlatform {
+  env: OgPlatformEnv;
+  caches?: {
+    default: Cache;
+  };
+}
+
 function localAssetPath(value: string): string | null {
   if (!value.startsWith("/") || value.startsWith("//")) return null;
   return value;
@@ -78,7 +85,15 @@ async function staticFallback(request: Request): Promise<Response> {
 }
 
 export const GET: RequestHandler = async ({ params, platform, request, url }) => {
-  const env = platform?.env as OgPlatformEnv | undefined;
+  const cfPlatform = platform as OgPlatform | undefined;
+  const env = cfPlatform?.env;
+  const versioned = url.searchParams.has("v");
+  const edgeCache = versioned ? cfPlatform?.caches?.default : undefined;
+  if (edgeCache) {
+    const cached = await edgeCache.match(request);
+    if (cached) return cached;
+  }
+
   if (!env?.DB) return staticFallback(request);
 
   const [itinerary, range] = await Promise.all([
@@ -140,8 +155,7 @@ export const GET: RequestHandler = async ({ params, platform, request, url }) =>
       assets,
     );
 
-    const versioned = url.searchParams.has("v");
-    return new Response(png, {
+    const response = new Response(png, {
       headers: {
         "content-type": "image/png",
         "content-length": String(png.byteLength),
@@ -150,6 +164,8 @@ export const GET: RequestHandler = async ({ params, platform, request, url }) =>
           : "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
       },
     });
+    if (edgeCache) await edgeCache.put(request, response.clone());
+    return response;
   } catch (error) {
     console.error("Failed to render itinerary OG image", error);
     return staticFallback(request);

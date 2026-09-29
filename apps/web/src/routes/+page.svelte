@@ -277,8 +277,9 @@
         </div>
       </main>
 
-      <p class="place-label">⌖ {preview.destination}</p>
-      <button class="scroll-cue" onclick={scrollToCreate} aria-label="下へスクロール"><span>⌄</span></button>
+      <button class="scroll-cue" onclick={scrollToCreate} aria-label="下へスクロール">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5" /></svg>
+      </button>
       <div class="paper-reveal" aria-hidden="true"><i></i><b></b></div>
     </div>
   </section>
@@ -288,7 +289,7 @@
   <section id="create" class="create-section" aria-labelledby="create-title">
     <div class="section-inner">
       <div class="create-heading">
-        <span class="tiny-route" aria-hidden="true"><i></i><b>✈</b></span>
+        <span class="tiny-route" aria-hidden="true"><i></i><span class="tiny-plane"><IconAirplane size={17} /></span></span>
         <p>次の旅</p>
         <h2 id="create-title">次の旅を、つくろう。</h2>
       </div>
@@ -628,7 +629,7 @@
     display: inline-flex;
     margin-bottom: 9px;
     color: var(--home-muted);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 800;
     letter-spacing: .04em;
   }
@@ -688,7 +689,7 @@
 
   .preview-timeline time {
     color: var(--home-muted);
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .preview-timeline li span {
@@ -710,11 +711,6 @@
     font-weight: 800;
   }
 
-  .tap-note,
-  .place-label {
-    display: none;
-  }
-
   .scroll-cue {
     position: absolute;
     z-index: 5;
@@ -734,9 +730,14 @@
     transform: translateX(-50%);
   }
 
-  .scroll-cue span {
-    font-size: 20px;
-    transform: translateY(-2px);
+  .scroll-cue svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
   .paper-reveal {
@@ -774,7 +775,7 @@
   .create-section {
     position: relative;
     z-index: 3;
-    min-height: 100vh;
+    min-height: auto;
     margin-top: -1px;
     padding: 78px 20px 110px;
     background: var(--home-paper);
@@ -810,19 +811,19 @@
     transform: rotate(-2deg);
   }
 
-  .create-heading .tiny-route b {
+  .create-heading .tiny-plane {
     position: absolute;
-    top: -1px;
-    right: 2px;
-    font-size: 17px;
-    font-weight: 400;
+    top: -2px;
+    right: 1px;
+    display: grid;
+    place-items: center;
     transform: rotate(7deg);
   }
 
   .create-heading p {
     margin: 0 0 8px;
     color: #657a90;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 900;
     letter-spacing: .18em;
   }
@@ -1067,7 +1068,7 @@
       font-size: 12px;
     }
 
-    .preview-timeline time { font-size: 11px; }
+    .preview-timeline time { font-size: 12px; }
 
     .create-section {
       min-height: auto;

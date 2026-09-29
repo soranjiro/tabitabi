@@ -20,6 +20,9 @@
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
+    "@jsquash/avif": "2.1.1",
+    "@jsquash/webp": "1.5.0",
+    "@resvg/resvg-wasm": "2.6.2",
     "@tabitabi/types": "workspace:*",
     "firebase": "^12.4.0",
     "leaflet": "1.9.4",

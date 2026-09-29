@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nextLocalDate, planningDateRange } from './datetime';
+import { nextLocalDate, planningDateRange, planningDuration, planningEndFromStart } from './datetime';
 
 describe('planningDateRange', () => {
   it('saves title-only candidates without dates', () => {
@@ -21,5 +21,30 @@ describe('planningDateRange', () => {
 
   it('advances the local calendar date', () => {
     expect(nextLocalDate('2026-12-31')).toBe('2027-01-01');
+  });
+
+  it('keeps the duration when the start time moves', () => {
+    expect(planningEndFromStart({
+      date: '2026-06-14',
+      time: '11:30',
+      durationMs: 90 * 60 * 1000,
+    })).toEqual({ endDate: '2026-06-14', endTime: '13:00' });
+  });
+
+  it('moves the end date across midnight when needed', () => {
+    expect(planningEndFromStart({
+      date: '2026-06-14',
+      time: '23:30',
+      durationMs: 2 * 60 * 60 * 1000,
+    })).toEqual({ endDate: '2026-06-15', endTime: '01:30' });
+  });
+
+  it('reads a manually edited duration', () => {
+    expect(planningDuration({
+      date: '2026-06-14',
+      time: '09:00',
+      endDate: '2026-06-14',
+      endTime: '11:15',
+    })).toBe(135 * 60 * 1000);
   });
 });

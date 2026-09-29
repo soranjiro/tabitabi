@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,3 +75,77 @@ for (const { dir, altAssetDirs } of dirs) {
   }
 }
 console.log(`Inlined CSS in ${inlinedCount} HTML files`);
+
+
+function installOgWorkerWasmBindings() {
+  const workerPath = path.join(CLOUDFLARE_DIR, '_worker.js');
+  const svelteKitWorkerPath = path.join(CLOUDFLARE_DIR, '_worker.sveltekit.js');
+  if (!fs.existsSync(workerPath)) {
+    throw new Error('Cloudflare worker entry was not generated');
+  }
+
+  if (fs.existsSync(svelteKitWorkerPath)) fs.rmSync(svelteKitWorkerPath);
+  fs.renameSync(workerPath, svelteKitWorkerPath);
+
+  const require = createRequire(import.meta.url);
+  const modules = [
+    {
+      source: require.resolve('@resvg/resvg-wasm/index_bg.wasm'),
+      filename: '_og-resvg.wasm',
+      binding: 'RESVG_WASM',
+      variable: 'resvgWasm',
+    },
+    {
+      source: require.resolve('@jsquash/avif/codec/dec/avif_dec.wasm'),
+      filename: '_og-avif-dec.wasm',
+      binding: 'AVIF_DEC_WASM',
+      variable: 'avifDecodeWasm',
+    },
+    {
+      source: require.resolve('@jsquash/webp/codec/dec/webp_dec.wasm'),
+      filename: '_og-webp-dec.wasm',
+      binding: 'WEBP_DEC_WASM',
+      variable: 'webpDecodeWasm',
+    },
+  ] as const;
+
+  for (const module of modules) {
+    fs.copyFileSync(module.source, path.join(CLOUDFLARE_DIR, module.filename));
+  }
+
+  const imports = modules
+    .map((module) => `import ${module.variable} from './${module.filename}';`)
+    .join('\n');
+  const bindings = modules
+    .map((module) => `${module.binding}: ${module.variable}`)
+    .join(', ');
+
+  fs.writeFileSync(
+    workerPath,
+    `${imports}
+import sveltekit from './_worker.sveltekit.js';
+
+export default {
+  fetch(request, env, context) {
+    return sveltekit.fetch(request, { ...env, ${bindings} }, context);
+  },
+};
+`,
+  );
+
+  const assetsIgnorePath = path.join(CLOUDFLARE_DIR, '.assetsignore');
+  const ignored = [
+    '_worker.sveltekit.js',
+    ...modules.map((module) => module.filename),
+  ];
+  const existing = fs.existsSync(assetsIgnorePath)
+    ? fs.readFileSync(assetsIgnorePath, 'utf-8').trimEnd()
+    : '';
+  const lines = new Set(existing.split('\n').filter(Boolean));
+  for (const item of ignored) lines.add(item);
+  fs.writeFileSync(assetsIgnorePath, `${[...lines].join('\n')}\n`);
+
+  console.log('Installed OG image WASM bindings in Cloudflare worker');
+}
+
+installOgWorkerWasmBindings();

@@ -7,6 +7,7 @@
   import ItineraryCard from '$lib/explore/ItineraryCard.svelte';
   import PublicHeader from '$lib/explore/PublicHeader.svelte';
   import PublicFooter from '$lib/explore/PublicFooter.svelte';
+  import AdSlot from '$lib/ads/AdSlot.svelte';
   import { prefectures, regions, travelTags } from '$lib/explore/data';
 
   let { data }: { data: PageData } = $props();
@@ -131,6 +132,10 @@
       {/if}
     </section>
 
+    <section class="explore-ad" aria-label="広告">
+      <AdSlot placement="explore" />
+    </section>
+
     <section class="section destinations" aria-labelledby="dest-title">
       <div class="heading"><h2 id="dest-title">行き先から探す</h2></div>
       <div class="region-layout">
@@ -177,6 +182,7 @@
   .quick-links{display:flex;margin:1rem auto 0;justify-content:center;flex-wrap:wrap;gap:.45rem}
   .quick-links a,.quick-links button{padding:.42rem .75rem;border:1px solid #dbe3e0;border-radius:99px;color:#38514d;background:rgba(255,255,255,.95);font:inherit;font-size:.7rem;text-decoration:none;cursor:pointer}
   .section{width:min(1080px,calc(100% - 36px));margin:auto;padding:50px 0}
+  .explore-ad{width:min(1080px,calc(100% - 36px));margin:auto;padding:2px 0 26px}
   .heading{display:flex;margin-bottom:1.25rem;align-items:center;justify-content:space-between}
   .heading h2{margin:0;font-family:serif;font-size:1.45rem}
   .heading span{font-size:.72rem}
@@ -231,6 +237,7 @@
     .hero p{max-width:220px;line-height:1.7}
     .quick-links{justify-content:flex-start;flex-wrap:nowrap;overflow:auto}
     .section{padding:34px 0}
+    .explore-ad{padding:0 0 18px}
     .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}
     .skeleton-card{height:170px;border-radius:8px}
     .skeleton-card i{height:100px}

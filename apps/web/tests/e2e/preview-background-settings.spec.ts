@@ -74,6 +74,16 @@ test('deployed preview can save a home hero background from itinerary settings',
     expect(readBody.data.background_image).toBe('/hero/background-winter.avif');
     expect(readBody.data.background_display).toBe('page');
 
+    console.log('preview-background-step=verify-dynamic-og-image');
+    const ogResponse = await request.get(`/og/itineraries/${itineraryId}?v=preview-smoke`);
+    expect(ogResponse.ok()).toBeTruthy();
+    expect(ogResponse.headers()['content-type']).toContain('image/png');
+    const ogImage = await ogResponse.body();
+    expect([...ogImage.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+    expect(ogImage.readUInt32BE(16)).toBe(1200);
+    expect(ogImage.readUInt32BE(20)).toBe(630);
+    expect(ogResponse.headers()['cache-control']).toContain('immutable');
+
     console.log('preview-background-step=verify-live-cover');
     await expect.poll(async () => page.locator('html').evaluate((element) =>
       getComputedStyle(element).getPropertyValue('--itinerary-cover-image'),

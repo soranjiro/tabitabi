@@ -222,58 +222,26 @@
         </div>
 
         <div class="preview-area">
-            <a class="shiori-preview" href="/itineraries/{preview.itineraryId}" aria-label="{preview.title}のしおりを開く">
-              <picture class="preview-photo">
-                <img src={preview.image} alt="" style:object-position={preview.imagePosition} />
-              </picture>
-              <div class="preview-body">
-                <div class="preview-label"><b aria-hidden="true">♡</b></div>
-                <h2>{preview.title}</h2>
-                <p>{preview.duration}・{preview.destination}</p>
-                <strong class="day-label">Day 1</strong>
-                <ol>
-                  {#each preview.steps as step}
-                    <li><time>{step.time}</time><span>{step.title}</span></li>
-                  {/each}
-                </ol>
+          <a class="shiori-preview" href="/s/{preview.itineraryId}" aria-label="{preview.title}のしおりを開く">
+            <picture class="preview-photo">
+              <img src={preview.image} alt="" style:object-position={preview.imagePosition} />
+            </picture>
+            <div class="preview-body">
+              <span class="preview-kicker">サンプルのしおり</span>
+              <h2>{preview.title}</h2>
+              <p>{preview.duration}・{preview.destination}</p>
+              <strong class="day-label">Day 1</strong>
+              <ol class="preview-timeline">
+                {#each preview.steps.slice(0, 3) as step}
+                  <li><time>{step.time}</time><span>{step.title}</span></li>
+                {/each}
+              </ol>
+              <div class="preview-more">
+                <span>しおりを見る</span>
+                <span aria-hidden="true">→</span>
               </div>
-              <div class="preview-tabs"><span>⌖<small>旅程</small></span><span>◇<small>マップ</small></span><span>□<small>メモ</small></span><span>▧<small>写真</small></span></div>
-            </a>
-            <div class="tap-note" aria-hidden="true">
-            <svg
-              viewBox="0 0 100 90"
-              width="100"
-              height="90"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <!-- 矢印の本体 -->
-              <path
-                d="M7 13
-                  C25 5 44 7 46 17
-                  C48 27 36 32 30 25
-                  C24 18 33 12 43 16
-                  C57 21 60 39 65 51
-                  C69 60 75 67 81 72"
-                fill="none"
-                stroke="white"
-                stroke-width="4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-
-              <!-- 矢印の先 -->
-              <path
-                d="M67 69 L82 73 L78 58"
-                fill="none"
-                stroke="white"
-                stroke-width="4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-
-            <p>タップで<br>しおりを開く</p>
-          </div>
+            </div>
+          </a>
         </div>
       </main>
 
@@ -603,7 +571,7 @@
 
   .preview-photo {
     display: block;
-    height: 120px;
+    height: 132px;
     overflow: hidden;
   }
 
@@ -613,100 +581,91 @@
     object-fit: cover;
   }
 
-  .preview-body { padding: 16px 20px 12px; }
+  .preview-body { padding: 18px 20px 16px; }
 
-  .preview-label {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-  }
-
-  .preview-label b {
-    font-size: 20px;
-    font-weight: 400;
+  .preview-kicker {
+    display: inline-flex;
+    margin-bottom: 9px;
+    color: var(--home-muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .04em;
   }
 
   .preview-body h2 {
-    margin: 8px 0 4px;
+    margin: 0 0 5px;
     overflow: hidden;
     font-family: var(--home-font-serif);
-    font-size: 18px;
+    font-size: 19px;
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .preview-body > p {
-    margin: 0 0 14px;
-    color: #68788a;
-    font-size: 11px;
+    margin: 0 0 15px;
+    color: var(--home-muted);
+    font-size: 12px;
     font-weight: 700;
   }
 
   .day-label {
     display: block;
-    margin-bottom: 7px;
-    font-size: 11px;
+    margin-bottom: 8px;
+    font-size: 12px;
   }
 
-  ol {
+  .preview-timeline {
     margin: 0;
     padding: 0 0 0 19px;
     border-left: 2px solid color-mix(in srgb, var(--accent) 70%, white);
     list-style: none;
   }
 
-  ol li {
+  .preview-timeline li {
     position: relative;
     display: grid;
-    min-height: 34px;
-    padding: 3px 0 7px 8px;
-    grid-template-columns: 52px minmax(0, 1fr);
+    min-height: 38px;
+    padding: 3px 0 8px 9px;
+    grid-template-columns: 54px minmax(0, 1fr);
     align-items: start;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 800;
   }
 
-  ol li::before {
+  .preview-timeline li::before {
     position: absolute;
     top: 6px;
     left: -24px;
-    width: 7px;
-    height: 7px;
+    width: 8px;
+    height: 8px;
     border: 2px solid color-mix(in srgb, var(--accent) 70%, white);
     border-radius: 50%;
     background: white;
     content: "";
   }
 
-  ol time {
-    color: #64758a;
-    font-size: 10px;
+  .preview-timeline time {
+    color: var(--home-muted);
+    font-size: 11px;
   }
 
-  ol li span {
+  .preview-timeline li span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .preview-tabs {
+  .preview-more {
     display: flex;
-    padding: 12px 24px 15px;
-    border-top: 1px solid #edf0f4;
+    min-height: 44px;
+    margin-top: 5px;
+    padding-top: 11px;
+    border-top: 1px solid var(--home-border);
+    align-items: center;
     justify-content: space-between;
-    color: #4c5e78;
-  }
-
-  .preview-tabs span {
-    display: grid;
-    gap: 3px;
-    place-items: center;
-    font-size: 14px;
-  }
-
-  .preview-tabs small {
-    font-size: 9px;
+    color: var(--home-action);
+    font-size: 12px;
     font-weight: 800;
   }
 
@@ -1057,34 +1016,17 @@
       padding: 14px 17px 10px;
     }
 
-    .preview-body h2 {
-      margin-top: 7px;
-      font-size: 17px;
+    .preview-body h2 { font-size: 18px; }
+
+    .preview-body > p { font-size: 12px; }
+
+    .preview-timeline li {
+      min-height: 36px;
+      grid-template-columns: 52px minmax(0, 1fr);
+      font-size: 12px;
     }
 
-    .preview-body > p {
-      margin-bottom: 11px;
-      font-size: 11px;
-    }
-
-    ol {
-      display: block;
-    }
-
-    ol li {
-      min-height: 31px;
-      padding-bottom: 5px;
-      grid-template-columns: 48px minmax(0, 1fr);
-      font-size: 11px;
-    }
-
-    ol time { font-size: 10px; }
-
-    .preview-tabs {
-      padding: 10px 22px 12px;
-    }
-
-    .preview-tabs small { font-size: 9px; }
+    .preview-timeline time { font-size: 11px; }
 
     .create-section {
       min-height: auto;

@@ -629,7 +629,15 @@
     canConfigure={hasEditPermission}
     canRequestEdit={!readOnly && !isSharedSnapshot}
     {hasEditPermission}
-    onShare={() => hasEditPermission && !isSharedSnapshot ? (showShareDialog = true) : void copyViewOnlyLink()}
+    onShare={() => {
+      if (hasEditPermission && !isSharedSnapshot && !itinerary.is_password_protected) {
+        void copyShareLink(true);
+      } else if (hasEditPermission && !isSharedSnapshot) {
+        showShareDialog = true;
+      } else {
+        void copyViewOnlyLink();
+      }
+    }}
     onPrint={openPrintPreview}
     onSettings={() => (showSettingsDialog = true)}
     onEditModeToggle={handleEditModeToggle}

@@ -143,7 +143,7 @@
     display: block;
     margin-bottom: 9px;
     color: #7c8c9b;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 900;
     letter-spacing: .12em;
   }

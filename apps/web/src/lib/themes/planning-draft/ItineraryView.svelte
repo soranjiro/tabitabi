@@ -554,7 +554,7 @@
 <svelte:head><meta name="theme-color" content="#faf9f5" /></svelte:head>
 
 <div class="draft-theme" style={paletteStyle} class:map-planning={mapPlanning}>
-  {#if showCopyMessage}<div class="copy-message">コピーしました</div>{/if}
+  {#if showCopyMessage}<div class="copy-message">リンクをコピーしました</div>{/if}
   <header class="draft-header">
     <a class="brand" href="/">たびたび</a>
     {#if editingTitle}

@@ -12,10 +12,17 @@
   import { getMemoText, updateMemoText } from "$lib/memo";
   import { getAvailablePalettes, getAvailableThemes, getPalette } from "$lib/themes/catalog";
   import {
+    buildStepOrderUpdates,
     getStepSchedule,
     getStepTimeLabel,
   } from "$lib/planning/schedule";
-  import { nextLocalDate, planningDateRange, type PlanningWhen } from "$lib/planning/datetime";
+  import {
+    nextLocalDate,
+    planningDateRange,
+    planningDuration,
+    planningEndFromStart,
+    type PlanningWhen,
+  } from "$lib/planning/datetime";
   import BottomNav from "../standard/core/components/BottomNav.svelte";
   import MoreMenu from "../standard/core/components/MoreMenu.svelte";
   import SettingsDialog from "../standard/core/components/SettingsDialog.svelte";
@@ -80,7 +87,10 @@
 
   function focusSheet(node: HTMLElement) {
     const previous = document.activeElement as HTMLElement | null;
-    node.querySelector<HTMLInputElement>('input')?.focus();
+    const initialFocus = editingStep
+      ? node.querySelector<HTMLButtonElement>('.sheet-title button')
+      : node.querySelector<HTMLInputElement>('input');
+    initialFocus?.focus();
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !saving) { sheetOpen = false; event.preventDefault(); }
       if (event.key !== 'Tab') return;
@@ -102,7 +112,7 @@
   let placeEditing = $state(false);
   let mapPinEditing = $state(false);
   let extraFieldsOpen = $state(false);
-  let endDateTouched = $state(false);
+  let timeDurationMs = $state(60 * 60 * 1000);
   let searchQuery = $state("");
   let hasEditPermission = $state(false);
   let editingTitle = $state(false);
@@ -341,7 +351,7 @@
     formError = '';
     editingStep = null;
     form = { title: "", note: "", when: "undecided", date: legacyDates.at(-1) ?? localDateKey(Date.now()), time: "09:00", endDate: legacyDates.at(-1) ?? localDateKey(Date.now()), endTime: "10:00", location: "", link: "", type: STEP_TYPE.NORMAL_GENERAL as StepType, isPriority: false };
-    endDateTouched = false;
+    timeDurationMs = 60 * 60 * 1000;
     extraFieldsOpen = false;
     sheetOpen = true;
   }
@@ -369,9 +379,28 @@
       type: step.type ?? STEP_TYPE.NORMAL_GENERAL,
       isPriority: !!step.is_priority,
     };
-    endDateTouched = form.endDate !== form.date;
+    timeDurationMs = step.start_at !== null && step.end_at !== null && step.end_at > step.start_at
+      ? step.end_at - step.start_at
+      : 60 * 60 * 1000;
     extraFieldsOpen = !!(form.note || form.link || placeDraft?.priority);
     sheetOpen = true;
+  }
+
+  function syncEndFromStart() {
+    if (form.when !== "time" || !form.date || !form.time) return;
+    const next = planningEndFromStart({
+      date: form.date,
+      time: form.time,
+      durationMs: timeDurationMs,
+    });
+    form.endDate = next.endDate;
+    form.endTime = next.endTime;
+  }
+
+  function rememberDuration() {
+    if (form.when !== "time") return;
+    const duration = planningDuration(form);
+    if (duration !== null) timeDurationMs = duration;
   }
 
   async function saveStep(event: SubmitEvent) {
@@ -426,13 +455,10 @@
 
   async function moveStep(step: Step, direction: -1 | 1, group: Step[]) {
     if (!onUpdateStep) return;
-    const currentIndex = group.findIndex((item) => item.id === step.id);
-    const target = group[currentIndex + direction];
-    if (!target) return;
-    const currentOrder = step.sort_order ?? currentIndex;
-    const targetOrder = target.sort_order ?? currentIndex + direction;
-    await onUpdateStep(step.id, { sort_order: targetOrder });
-    await onUpdateStep(target.id, { sort_order: currentOrder });
+    const updates = buildStepOrderUpdates(group, step.id, direction);
+    await Promise.all(updates.map((update) =>
+      onUpdateStep!(update.id, { sort_order: update.sort_order }),
+    ));
   }
 
   async function moveDay(group: { steps: Step[] }, value: string) {
@@ -648,8 +674,8 @@
           <div class="type-picker"><span>予定のアイコン</span><TypePicker value={form.type} onSelect={(type: StepType) => form.type = type} /></div>
           <fieldset><legend>日時</legend><label class="radio"><input type="radio" bind:group={form.when} value="undecided" />まだ決めない</label><label class="radio"><input type="radio" bind:group={form.when} value="day" />日付だけ</label><label class="radio"><input type="radio" bind:group={form.when} value="time" />日時まで</label></fieldset>
           {#if form.when !== "undecided"}
-            <div class="date-fields"><label>開始日<input type="date" bind:value={form.date} onchange={() => { if (!endDateTouched) form.endDate = form.date; }} required /></label>{#if form.when === 'time'}<label>開始時刻<input type="time" bind:value={form.time} required /></label><label>終了日<input type="date" bind:value={form.endDate} onchange={() => endDateTouched = true} required /></label><label>終了時刻<input type="time" bind:value={form.endTime} required /></label>{/if}</div>
-            {#if form.when === 'time' && form.endDate === form.date && form.endTime <= form.time}<button type="button" class="next-day" onclick={() => form.endDate = nextLocalDate(form.date)}>翌日 {form.endTime} として設定</button>{/if}
+            <div class="date-fields"><label>開始日<input type="date" bind:value={form.date} onchange={syncEndFromStart} required /></label>{#if form.when === 'time'}<label>開始時刻<input type="time" bind:value={form.time} onchange={syncEndFromStart} required /></label><label>終了日<input type="date" bind:value={form.endDate} onchange={rememberDuration} required /></label><label>終了時刻<input type="time" bind:value={form.endTime} onchange={rememberDuration} required /></label>{/if}</div>
+            {#if form.when === 'time' && form.endDate === form.date && form.endTime <= form.time}<button type="button" class="next-day" onclick={() => { form.endDate = nextLocalDate(form.date); rememberDuration(); }}>翌日 {form.endTime} として設定</button>{/if}
           {/if}
           <button type="button" class="extra-toggle" onclick={() => extraFieldsOpen = !extraFieldsOpen}>{extraFieldsOpen ? '詳細を閉じる' : '＋ メモ・リンクなどを追加'}</button>
           {#if extraFieldsOpen}<label>メモ<textarea bind:value={form.note} rows="3" placeholder="朝の方が空いてそう"></textarea></label><label>リンク <small>任意</small><input type="url" bind:value={form.link} placeholder="https://..." /></label><label class="radio"><input type="checkbox" bind:checked={form.isPriority} />優先予定</label>{/if}

@@ -3,6 +3,7 @@
   import { itineraryApi } from "$lib/api/itinerary";
   import { auth } from "$lib/auth";
   import { defaultThemeId, getAvailableThemes, getThemePreset } from "$lib/themes/catalog";
+  import { resolveSharedItineraryPath } from "./shared-url";
 
   let title = $state("");
   let password = $state("");
@@ -47,24 +48,6 @@
     }
   }
 
-  function resolveSharedPath(value: string): string | null {
-    const urlObj = new URL(value.trim(), window.location.origin);
-
-    if (urlObj.origin !== window.location.origin) {
-      return null;
-    }
-
-    const pathname = urlObj.pathname.replace(/\/+$/, "");
-    const isItinerary = /^\/itineraries\/[a-zA-Z0-9_-]+$/.test(pathname);
-    const isShared = /^\/s\/[a-zA-Z0-9_-]+$/.test(pathname);
-
-    if (!isItinerary && !isShared) {
-      return null;
-    }
-
-    return pathname + urlObj.search + urlObj.hash;
-  }
-
   function handleUrlSubmit() {
     urlError = "";
 
@@ -73,18 +56,14 @@
       return;
     }
 
-    try {
-      const destination = resolveSharedPath(url);
+    const destination = resolveSharedItineraryPath(url, window.location.origin);
 
-      if (!destination) {
-        urlError = "たびたびのしおりURLを入力してください";
-        return;
-      }
-
-      goto(destination);
-    } catch {
-      urlError = "無効なURLです";
+    if (!destination) {
+      urlError = "たびたびのしおりURLを入力してください";
+      return;
     }
+
+    goto(destination);
   }
 </script>
 
@@ -441,7 +420,7 @@
     display: -webkit-box;
     overflow: hidden;
     color: var(--home-muted);
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.45;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;

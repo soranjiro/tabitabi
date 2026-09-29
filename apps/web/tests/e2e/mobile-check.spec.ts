@@ -2,74 +2,69 @@ import { test, expect, devices } from "@playwright/test";
 
 test.use({
   ...devices["iPhone 13"],
-  // Keep the project browser (Chromium) while emulating the iPhone viewport,
-  // touch input, device scale factor, and user agent.
   defaultBrowserType: undefined,
 });
 
-test.describe("Mobile Home Page", () => {
-  test("should display home page on mobile", async ({ page }) => {
+test.describe("Responsive home page", () => {
+  test("keeps the mobile hero readable and non-sticky", async ({ page }) => {
     await page.goto("/");
 
-    await page.waitForLoadState("networkidle");
+    await expect(page.locator("h1")).toContainText("旅の予定を");
+    await expect(page.locator(".hero-stage")).toBeVisible();
+    await expect(page.locator(".shiori-preview")).toBeVisible();
+    await expect(page.locator(".preview-photo")).toBeVisible();
+    await expect(page.locator(".journey-section")).toBeVisible();
+    await expect(page.locator(".create-section")).toBeVisible();
 
-    await page.screenshot({
-      path: "test-results/mobile-home.png",
-      fullPage: true,
-    });
+    const heroPosition = await page.locator(".hero-scene").evaluate(
+      (element) => window.getComputedStyle(element).position,
+    );
+    expect(heroPosition).toBe("relative");
 
-    const hero = page.locator(".hero");
-    await expect(hero).toBeVisible();
-
-    const heroTitle = page.locator(".hero-title");
-    await expect(heroTitle).toBeVisible();
-    await expect(heroTitle).toContainText("たびたび");
-
-    const features = page.locator(".features");
-    await expect(features).toBeVisible();
-
-    const createSection = page.locator(".create-section");
-    await expect(createSection).toBeVisible();
-
-    const errors = await page.evaluate(() => {
-      const errorLogs: string[] = [];
-      const originalError = console.error;
-      console.error = (...args) => {
-        errorLogs.push(args.join(" "));
-        originalError.apply(console, args);
-      };
-      return errorLogs;
-    });
-
-    console.log("Console errors:", errors);
+    const menuBox = await page.locator(".menu-button").boundingBox();
+    expect(menuBox).not.toBeNull();
+    expect(menuBox!.width).toBeGreaterThanOrEqual(44);
+    expect(menuBox!.height).toBeGreaterThanOrEqual(44);
   });
 
-  test("should check opacity and visibility", async ({ page }) => {
+  for (const viewport of [
+    { width: 320, height: 700 },
+    { width: 390, height: 844 },
+    { width: 820, height: 1180 },
+  ]) {
+    test(`does not overflow horizontally at ${viewport.width}px`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.goto("/");
+
+      const dimensions = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }));
+
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
+
+      if (viewport.width <= 1024) {
+        const heroPosition = await page.locator(".hero-scene").evaluate(
+          (element) => window.getComputedStyle(element).position,
+        );
+        expect(heroPosition).toBe("relative");
+      }
+    });
+  }
+
+  test("shows explicit creation and shared URL choices", async ({ page }) => {
     await page.goto("/");
 
-    await page.waitForLoadState("networkidle");
+    await page.locator(".create-section").scrollIntoViewIfNeeded();
+    await expect(page.getByRole("tab", { name: "新しく作る" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "URLから開く" })).toBeVisible();
 
-    const homePage = page.locator(".home-page");
-    const opacity = await homePage.evaluate((el) =>
-      window.getComputedStyle(el).opacity
-    );
-    console.log("Home page opacity:", opacity);
-    expect(parseFloat(opacity)).toBeGreaterThan(0);
-
-    const hero = page.locator(".hero");
-    const heroOpacity = await hero.evaluate((el) =>
-      window.getComputedStyle(el).opacity
-    );
-    console.log("Hero opacity:", heroOpacity);
-
-    const sectionHeader = page.locator(".section-header").first();
-    const headerOpacity = await sectionHeader.evaluate((el) =>
-      window.getComputedStyle(el).opacity
-    );
-    console.log("Section header opacity:", headerOpacity);
+    await page.getByRole("tab", { name: "URLから開く" }).click();
+    await expect(page.getByLabel("しおりのURL")).toBeVisible();
+    await expect(page.getByRole("button", { name: /しおりを開く/ })).toBeVisible();
   });
 
-  test("should keep text-entry controls at 16px to prevent iOS focus zoom", async ({
+  test("keeps text-entry controls at 16px to prevent iOS focus zoom", async ({
     page,
   }) => {
     await page.goto("/");

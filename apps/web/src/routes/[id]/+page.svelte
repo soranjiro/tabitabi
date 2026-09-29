@@ -9,6 +9,7 @@
   import { onMount } from "svelte";
   import type { Theme } from "@tabitabi/types";
   import { getPalette } from "$lib/themes";
+  import { getItineraryOgVersion } from "$lib/itinerary/cover";
   import SharedBook from '$lib/sharing/SharedBook.svelte';
   let copiedNotice = $state(false);
 
@@ -239,6 +240,7 @@
 
   let isPublishedSnapshot = $derived(!!data.itinerary.source_itinerary_id);
   let canonicalPath = $derived(readOnly ? `/s/${data.itinerary.id}` : `/itineraries/${data.itinerary.id}`);
+  let ogImageUrl = $derived(`https://tabitabi.pages.dev/og/itineraries/${encodeURIComponent(data.itinerary.id)}?v=${getItineraryOgVersion(data.itinerary, data.steps)}`);
 
 
 </script>
@@ -257,7 +259,8 @@
   />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://tabitabi.pages.dev{canonicalPath}" />
-  <meta property="og:image" content="https://tabitabi.pages.dev/og-image.png" />
+  <meta property="og:image" content={ogImageUrl} />
+  <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:locale" content="ja_JP" />
@@ -268,7 +271,7 @@
     name="twitter:description"
     content="{data.itinerary.title}の旅のしおり。たびたびで作成された旅行計画を確認できます。"
   />
-  <meta name="twitter:image" content="https://tabitabi.pages.dev/og-image.png" />
+  <meta name="twitter:image" content={ogImageUrl} />
   <meta name="theme-color" content={backgroundColor} />
 </svelte:head>
 

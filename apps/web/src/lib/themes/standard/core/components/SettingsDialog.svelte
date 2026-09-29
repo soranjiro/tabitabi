@@ -70,15 +70,12 @@
   );
 
   $effect(() => {
-    localSecretEnabled = secretModeEnabled;
-    localSecretOffset = secretModeOffset;
-    localThemeId = selectedThemeId;
-    localPaletteId = selectedPaletteId;
-    localPackingEnabled = packingEnabled;
-  });
-
-  $effect(() => {
     if (show && !wasOpen) {
+      localSecretEnabled = secretModeEnabled;
+      localSecretOffset = secretModeOffset;
+      localThemeId = selectedThemeId;
+      localPaletteId = selectedPaletteId;
+      localPackingEnabled = packingEnabled;
       saveError = "";
       void loadBackground();
     }
@@ -105,14 +102,23 @@
 
   async function handleSave() {
     if (isSaving || isLoadingBackground) return;
+
+    // Snapshot the user's edits before any async update can refresh parent props.
+    const nextThemeId = localThemeId;
+    const nextPaletteId = localPaletteId;
+    const nextSecretEnabled = localSecretEnabled;
+    const nextSecretOffset = localSecretOffset;
+    const nextPackingEnabled = localPackingEnabled;
+    const nextBackgroundImage = localBackgroundImage || null;
+    const nextBackgroundDisplay = localBackgroundDisplay;
+
     isSaving = true;
     saveError = "";
     try {
-      const nextBackgroundImage = localBackgroundImage || null;
-      if (nextBackgroundImage !== currentBackgroundImage || localBackgroundDisplay !== currentBackgroundDisplay) {
+      if (nextBackgroundImage !== currentBackgroundImage || nextBackgroundDisplay !== currentBackgroundDisplay) {
         const result = await backgroundApi.update(itineraryId, {
           background_image: nextBackgroundImage,
-          background_display: localBackgroundDisplay,
+          background_display: nextBackgroundDisplay,
         });
         currentBackgroundImage = result.background_image;
         currentBackgroundDisplay = result.background_display;
@@ -126,10 +132,10 @@
           }));
         }
       }
-      await onThemeChange(localThemeId);
-      await onPaletteChange(localPaletteId);
-      await onSecretModeChange(localSecretEnabled, localSecretOffset);
-      await onPackingEnabledChange(localPackingEnabled);
+      await onThemeChange(nextThemeId);
+      await onPaletteChange(nextPaletteId);
+      await onSecretModeChange(nextSecretEnabled, nextSecretOffset);
+      await onPackingEnabledChange(nextPackingEnabled);
       onClose();
     } catch (error) {
       console.error("Failed to save itinerary settings:", error);

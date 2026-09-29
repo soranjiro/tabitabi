@@ -132,7 +132,7 @@
   let showMoney = $state(false);
   let showPacking = $state(false);
   let isAuthenticating = $state(false);
-  let showCopyMessage = $state(false);
+  let copyMessage = $state<string | null>(null);
   let showSettingsDialog = $state(false);
   let showMetadataDialog = $state(false);
   let selectedPaletteId = $state(itinerary.palette_id ?? "neutral");
@@ -239,16 +239,48 @@
     else void attemptEditModeActivation();
   }
 
+  function shouldUseNativeShare(): boolean {
+    return (
+      typeof navigator.share === "function" &&
+      (navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches)
+    );
+  }
+
+  async function shareOrCopyLink(url: string, copiedMessage: string) {
+    if (shouldUseNativeShare()) {
+      showShareDialog = false;
+      try {
+        await navigator.share({ title: itinerary.title, url });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.error("Failed to share:", err);
+      }
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      showShareDialog = false;
+      copyMessage = copiedMessage;
+      setTimeout(() => (copyMessage = null), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  }
+
   async function copyShareLink(includeToken: boolean) {
     const token = includeToken ? auth.getToken(itinerary.id) : null;
     const base = includeToken
       ? `${window.location.origin}/itineraries/${encodeURIComponent(itinerary.id)}`
       : `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
     const url = `${base}${token ? `?token=${token}` : ""}`;
-    await navigator.clipboard.writeText(url);
-    showShareDialog = false;
-    showCopyMessage = true;
-    setTimeout(() => (showCopyMessage = false), 2000);
+    const copiedMessage = itinerary.is_password_protected
+      ? includeToken
+        ? "編集用リンクをコピーしました"
+        : "閲覧用リンクをコピーしました"
+      : "リンクをコピーしました";
+
+    await shareOrCopyLink(url, copiedMessage);
   }
 
   function localDateKey(value: number): string {
@@ -554,7 +586,7 @@
 <svelte:head><meta name="theme-color" content="#faf9f5" /></svelte:head>
 
 <div class="draft-theme" style={paletteStyle} class:map-planning={mapPlanning}>
-  {#if showCopyMessage}<div class="copy-message">コピーしました</div>{/if}
+  {#if copyMessage}<div class="copy-message">{copyMessage}</div>{/if}
   <header class="draft-header">
     <a class="brand" href="/">たびたび</a>
     {#if editingTitle}
@@ -741,8 +773,13 @@
     canRequestEdit={!readOnly && !isSharedSnapshot}
     {hasEditPermission}
     onShare={() => {
-      if (hasEditPermission) showShareDialog = true;
-      else void copyShareLink(false);
+      if (hasEditPermission && !isSharedSnapshot && !itinerary.is_password_protected) {
+        void copyShareLink(true);
+      } else if (hasEditPermission) {
+        showShareDialog = true;
+      } else {
+        void copyShareLink(false);
+      }
     }}
     onPrint={openPrintStudio}
     onSettings={() => (showSettingsDialog = true)}

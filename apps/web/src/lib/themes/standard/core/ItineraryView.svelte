@@ -475,7 +475,7 @@
   <div class="standard-container">
     <header class="standard-header">
       {#if showCopyMessage}
-        <div class="standard-copy-msg">コピーしました</div>
+        <div class="standard-copy-msg">リンクをコピーしました</div>
       {/if}
       {#if isEditingTitle}
         <input

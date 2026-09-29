@@ -1,13 +1,17 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  let { placement }: { placement: "home" | "shared" } = $props();
+  let { placement, size = "standard" }: { placement: "home" | "home-lead" | "explore" | "shared"; size?: "standard" | "billboard" } = $props();
 
   const clientId = (import.meta.env.VITE_ADSENSE_CLIENT_ID ?? "").trim();
   const selectedSlotId =
     placement === "home"
       ? import.meta.env.VITE_ADSENSE_HOME_SLOT_ID
-      : import.meta.env.VITE_ADSENSE_SHARED_SLOT_ID;
+      : placement === "home-lead"
+        ? import.meta.env.VITE_ADSENSE_HOME_LEAD_SLOT_ID
+        : placement === "explore"
+          ? import.meta.env.VITE_ADSENSE_EXPLORE_SLOT_ID
+          : import.meta.env.VITE_ADSENSE_SHARED_SLOT_ID;
   const slotId = (selectedSlotId ?? "").trim();
   const preview = import.meta.env.DEV || import.meta.env.VITE_AD_PREVIEW === "true";
   const enabled = !preview && clientId.length > 0 && slotId.length > 0;
@@ -49,7 +53,7 @@
 </script>
 
 {#if preview || enabled}
-  <aside class="ad-slot" aria-label="広告">
+  <aside class="ad-slot" class:billboard={size === "billboard"} aria-label="広告">
     <span class="ad-label">広告</span>
     <div class="ad-frame">
       {#if preview}
@@ -120,8 +124,34 @@
     font-size: 9px;
   }
 
+  .billboard {
+    width: min(100%, 1000px);
+  }
+
+  .billboard .ad-frame {
+    width: min(100%, 970px);
+    height: 250px;
+    border-radius: 14px;
+  }
+
+  .billboard .ad-preview strong {
+    font-size: 14px;
+  }
+
+  .billboard .ad-preview small {
+    font-size: 10px;
+  }
+
+  @media (min-width: 761px) and (max-width: 1040px) {
+    .billboard .ad-frame {
+      width: min(100%, 728px);
+      height: 90px;
+    }
+  }
+
   @media (min-width: 521px) and (max-width: 760px) {
-    .ad-frame {
+    .ad-frame,
+    .billboard .ad-frame {
       width: min(100%, 468px);
       height: 60px;
     }
@@ -136,7 +166,8 @@
       width: 100%;
     }
 
-    .ad-frame {
+    .ad-frame,
+    .billboard .ad-frame {
       width: min(100%, 320px);
       height: 100px;
       border-radius: 8px;

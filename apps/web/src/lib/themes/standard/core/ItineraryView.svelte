@@ -656,11 +656,14 @@
     {secretModeEnabled}
     {secretModeOffset}
     {packingEnabled}
+    {prefectureSlugs}
+    areas={itineraryAreas}
+    tags={itineraryTags}
     onThemeChange={handleThemeChange}
     onPaletteChange={handlePaletteChange}
     onSecretModeChange={handleSecretModeUpdate}
     onPackingEnabledChange={handlePackingEnabledUpdate}
-    onEditMetadata={() => (showMetadataDialog = true)}
+    onMetadataChange={saveMetadata}
     onClose={() => (showSettingsDialog = false)}
   />
 

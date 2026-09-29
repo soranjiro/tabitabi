@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PageData } from "./$types";
+  import type { ShioriHistory } from "@tabitabi/types";
   import { onMount } from "svelte";
   import { afterNavigate } from "$app/navigation";
   import { auth } from "$lib/auth";
@@ -129,16 +130,45 @@
   let scrollProgress = $state(0);
   let heroStage = $state<HTMLElement | null>(null);
   let recentItineraries = $state<Array<{ id: string; title: string; visitedAt: number }>>([]);
+  let removedHistoryEntry = $state<ShioriHistory | null>(null);
+  let undoTimer: ReturnType<typeof setTimeout> | null = null;
 
   const heroStyle = $derived(
     `--accent:${preview?.accent ?? "#ec858c"};--paper-y:${Math.round((1 - scrollProgress) * 190)}px;--image-scale:${1 + scrollProgress * 0.045};--content-y:${Math.round(scrollProgress * -32)}px;--content-opacity:${1 - scrollProgress * 0.28}`,
   );
 
   function refreshLoggedIn() { loggedIn = userAuth.isLoggedIn(); }
-  function scrollToCreate() { document.getElementById("create")?.scrollIntoView({ behavior: "smooth" }); }
+
+  function scrollToCreate() {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("create")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+  }
+
   function removeRecent(id: string) {
+    removedHistoryEntry = auth.getHistory().find((entry) => entry.shioriId === id) ?? null;
     auth.removeFromHistory(id);
     recentItineraries = auth.getRecentItineraries();
+
+    if (undoTimer) clearTimeout(undoTimer);
+    if (removedHistoryEntry) {
+      undoTimer = setTimeout(() => {
+        removedHistoryEntry = null;
+        undoTimer = null;
+      }, 6000);
+    }
+  }
+
+  function restoreRecent() {
+    if (!removedHistoryEntry) return;
+
+    auth.restoreHistoryEntry(removedHistoryEntry);
+    recentItineraries = auth.getRecentItineraries();
+    removedHistoryEntry = null;
+
+    if (undoTimer) {
+      clearTimeout(undoTimer);
+      undoTimer = null;
+    }
   }
 
   afterNavigate(refreshLoggedIn);
@@ -161,6 +191,7 @@
       cancelAnimationFrame(frame);
       window.removeEventListener("scroll", updateScroll);
       window.removeEventListener("resize", updateScroll);
+      if (undoTimer) clearTimeout(undoTimer);
     };
   });
 </script>
@@ -262,8 +293,15 @@
         <h2 id="create-title">次の旅を、つくろう。</h2>
       </div>
       <CreateForm />
-      {#if recentItineraries.length > 0}
-        <div class="recent-wrapper"><RecentItineraries items={recentItineraries} onRemove={removeRecent} /></div>
+      {#if recentItineraries.length > 0 || removedHistoryEntry}
+        <div class="recent-wrapper">
+          <RecentItineraries
+            items={recentItineraries}
+            onRemove={removeRecent}
+            removedTitle={removedHistoryEntry?.title ?? null}
+            onRestore={restoreRecent}
+          />
+        </div>
       {/if}
     </div>
   </section>

@@ -5,6 +5,7 @@
   import { userApi } from "$lib/api/user";
   import { userAuth } from "$lib/user-auth";
   import { prefectureName } from "./data";
+  import { resolveItineraryCoverImage } from "$lib/itinerary/cover";
 
   let {
     itinerary,
@@ -27,16 +28,7 @@
   } as const;
 
   const colors = $derived(themeColors[itinerary.theme_id as keyof typeof themeColors] ?? themeColors.week);
-  const coverImages: Record<string, string> = {
-    daycard: '/hero/background-spring.avif',
-    list: '/hero/background-summer.avif',
-    week: '/hero/background-autumn.avif',
-    month: '/hero/background-winter.avif',
-    'map-only': '/itinerary-backgrounds/coastal-drive.avif',
-    'mapbox-journey': '/itinerary-backgrounds/sky.avif',
-    'shopping': '/itinerary-backgrounds/food.webp',
-  };
-  const coverImage = $derived(itinerary.background_image ?? coverImages[itinerary.theme_id] ?? '/itinerary-backgrounds/japanese.avif');
+  const coverImage = $derived(resolveItineraryCoverImage(itinerary.background_image, itinerary.theme_id));
   const authorName = $derived(itinerary.username === "tabitabi_official" ? "たびたび公式" : `@${itinerary.username}`);
   const duration = $derived.by(() => {
     if (itinerary.start_at == null || itinerary.end_at == null) return "日程未設定";

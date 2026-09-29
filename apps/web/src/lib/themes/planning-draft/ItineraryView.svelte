@@ -698,6 +698,7 @@
   {#if batchDayOpen}<div class="batch-day-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (batchDayOpen = false)}><section class="batch-day-modal" role="dialog" aria-modal="true" aria-label="日程をまとめて変更"><header><div><strong>日程をまとめて変更</strong><small>時刻と所要時間はそのままです</small></div><button onclick={() => batchDayOpen = false} aria-label="閉じる">×</button></header>{#each dayGroups as group}<label><span>Day {group.day} · {group.date.slice(5).replace('-', '/')}<small>{group.steps.length}件の予定</small></span><input type="date" bind:value={dayDateDrafts[group.day]} /></label>{/each}<footer><button class="cancel" onclick={() => batchDayOpen = false}>キャンセル</button><button onclick={() => void applyBatchDayChanges()} disabled={saving}>{saving ? '変更中…' : '変更する'}</button></footer></section></div>{/if}
 
   <BottomNav
+    {packingEnabled}
     onMoneyOpen={() => (showMoney = true)}
     onPackingOpen={() => (showPacking = true)}
     onMenuClick={() => (showMoreMenu = true)}
@@ -711,12 +712,14 @@
     onClose={() => closeFeature('money')}
   />
 
-  <PackingOverlay
-    show={showPacking}
-    itineraryId={itinerary.id}
-    canEdit={hasEditPermission && !isSharedSnapshot}
-    onClose={() => closeFeature('packing')}
-  />
+  {#if packingEnabled}
+    <PackingOverlay
+      show={showPacking}
+      itineraryId={itinerary.id}
+      canEdit={hasEditPermission && !isSharedSnapshot}
+      onClose={() => closeFeature('packing')}
+    />
+  {/if}
 
   <PasswordDialog
     show={showPasswordDialog}

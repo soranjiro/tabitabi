@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { onMount } from "svelte";
   import { itineraryApi } from "$lib/api/itinerary";
   import { auth } from "$lib/auth";
   import { defaultThemeId, getAvailableThemes, getThemePreset } from "$lib/themes/catalog";
@@ -18,8 +19,11 @@
 
   let themeCarousel = $state<HTMLElement | null>(null);
   let themeScrollFrame = 0;
+  let themeLoopSettleTimer: ReturnType<typeof setTimeout> | undefined;
 
   const themes = getAvailableThemes();
+  const themeCopies = [0, 1, 2] as const;
+  const middleThemeCopy = 1;
 
   async function createItinerary() {
     titleError = "";
@@ -69,43 +73,120 @@
     goto(destination);
   }
 
+  function findClosestThemeCard(themeId?: string) {
+    if (!themeCarousel) return undefined;
+
+    const carouselRect = themeCarousel.getBoundingClientRect();
+    const carouselCenter = carouselRect.left + carouselRect.width / 2;
+    const selector = themeId
+      ? `[data-theme-id="${themeId}"]`
+      : "[data-theme-id]";
+    let closestCard: HTMLElement | undefined;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    for (const item of themeCarousel.querySelectorAll<HTMLElement>(selector)) {
+      const rect = item.getBoundingClientRect();
+      const itemCenter = rect.left + rect.width / 2;
+      const distance = Math.abs(itemCenter - carouselCenter);
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestCard = item;
+      }
+    }
+
+    return closestCard;
+  }
+
+  function scrollThemeCardIntoCenter(
+    card: HTMLElement,
+    behavior: ScrollBehavior,
+  ) {
+    if (!themeCarousel) return;
+
+    themeCarousel.scrollTo({
+      left:
+        card.offsetLeft -
+        (themeCarousel.clientWidth - card.clientWidth) / 2,
+      behavior,
+    });
+  }
+
+  function recenterThemeLoop(themeId: string) {
+    const middleCard = themeCarousel?.querySelector<HTMLElement>(
+      `[data-theme-copy="${middleThemeCopy}"][data-theme-id="${themeId}"]`,
+    );
+
+    if (middleCard) {
+      scrollThemeCardIntoCenter(middleCard, "auto");
+    }
+  }
+
+  function queueThemeLoopRecentering() {
+    if (themeLoopSettleTimer) {
+      clearTimeout(themeLoopSettleTimer);
+    }
+
+    themeLoopSettleTimer = setTimeout(() => {
+      const closestCard = findClosestThemeCard();
+      const themeId = closestCard?.dataset.themeId;
+      const copy = Number(closestCard?.dataset.themeCopy);
+
+      if (themeId && copy !== middleThemeCopy) {
+        recenterThemeLoop(themeId);
+      }
+    }, 120);
+  }
+
+  onMount(() => {
+    const initialFrame = requestAnimationFrame(() => {
+      recenterThemeLoop(theme_id);
+    });
+
+    return () => {
+      cancelAnimationFrame(initialFrame);
+      cancelAnimationFrame(themeScrollFrame);
+      if (themeLoopSettleTimer) {
+        clearTimeout(themeLoopSettleTimer);
+      }
+    };
+  });
+
   function selectTheme(themeId: string) {
     theme_id = themeId;
 
     requestAnimationFrame(() => {
-      themeCarousel
-        ?.querySelector<HTMLElement>(`[data-theme-id="${themeId}"]`)
-        ?.scrollIntoView({
-          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-          block: "nearest",
-          inline: "center",
-        });
+      const closestCard = findClosestThemeCard(themeId);
+      if (!closestCard) return;
+
+      scrollThemeCardIntoCenter(
+        closestCard,
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+      );
     });
   }
 
   function handleThemeScroll() {
     cancelAnimationFrame(themeScrollFrame);
+    if (themeLoopSettleTimer) {
+      clearTimeout(themeLoopSettleTimer);
+    }
+
     themeScrollFrame = requestAnimationFrame(() => {
-      if (!themeCarousel) return;
-
-      const carouselRect = themeCarousel.getBoundingClientRect();
-      const carouselCenter = carouselRect.left + carouselRect.width / 2;
-      let closestThemeId: string | undefined;
-      let closestDistance = Number.POSITIVE_INFINITY;
-
-      for (const item of themeCarousel.querySelectorAll<HTMLElement>("[data-theme-id]")) {
-        const rect = item.getBoundingClientRect();
-        const itemCenter = rect.left + rect.width / 2;
-        const distance = Math.abs(itemCenter - carouselCenter);
-
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestThemeId = item.dataset.themeId;
-        }
-      }
+      const closestCard = findClosestThemeCard();
+      const closestThemeId = closestCard?.dataset.themeId;
 
       if (closestThemeId && closestThemeId !== theme_id) {
         theme_id = closestThemeId;
+      }
+
+      if (
+        closestCard &&
+        Number(closestCard.dataset.themeCopy) !== middleThemeCopy
+      ) {
+        queueThemeLoopRecentering();
       }
     });
   }
@@ -170,15 +251,17 @@
           onscroll={handleThemeScroll}
           aria-label="デザインテーマを横にスクロールして選択"
         >
-          {#each themes as theme}
-            <button
-              type="button"
-              class="theme-card"
-              class:selected={theme_id === theme.id}
-              aria-pressed={theme_id === theme.id}
-              data-theme-id={theme.id}
-              onclick={() => selectTheme(theme.id)}
-            >
+          {#each themeCopies as copy}
+            {#each themes as theme}
+              <button
+                type="button"
+                class="theme-card"
+                class:selected={theme_id === theme.id}
+                aria-pressed={theme_id === theme.id}
+                data-theme-id={theme.id}
+                data-theme-copy={copy}
+                onclick={() => selectTheme(theme.id)}
+              >
               <span
                 class="theme-preview"
                 class:planning={theme.id === "planning-draft"}
@@ -218,7 +301,8 @@
                 {/if}
               </span>
               <span class="theme-name">{theme.name}</span>
-            </button>
+              </button>
+            {/each}
           {/each}
         </div>
       </fieldset>

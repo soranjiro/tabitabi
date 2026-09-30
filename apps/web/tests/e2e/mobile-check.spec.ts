@@ -21,6 +21,15 @@ test.describe("Responsive home page", () => {
     );
     expect(heroPosition).toBe("relative");
 
+    const viewport = page.viewportSize();
+    const heroBox = await page.locator(".hero-stage").boundingBox();
+    const journeyBox = await page.locator(".journey-section").boundingBox();
+    expect(viewport).not.toBeNull();
+    expect(heroBox).not.toBeNull();
+    expect(journeyBox).not.toBeNull();
+    expect(heroBox!.height).toBeGreaterThanOrEqual(viewport!.height);
+    expect(journeyBox!.y).toBeGreaterThanOrEqual(viewport!.height - 1);
+
     const menuBox = await page.locator(".menu-button").boundingBox();
     expect(menuBox).not.toBeNull();
     expect(menuBox!.width).toBeGreaterThanOrEqual(44);

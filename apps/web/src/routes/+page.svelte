@@ -259,7 +259,6 @@
               <img src={preview.image} alt="" style:object-position={preview.imagePosition} />
             </picture>
             <div class="preview-body">
-              <span class="preview-kicker">サンプルのしおり</span>
               <h2>{preview.title}</h2>
               <p>{preview.duration}・{preview.destination}</p>
               <strong class="day-label">Day 1</strong>
@@ -625,15 +624,6 @@
 
   .preview-body { padding: 18px 20px 16px; }
 
-  .preview-kicker {
-    display: inline-flex;
-    margin-bottom: 9px;
-    color: var(--home-muted);
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: .04em;
-  }
-
   .preview-body h2 {
     margin: 0 0 5px;
     overflow: hidden;
@@ -978,11 +968,16 @@
 
     .menu-button.open { font-size: 22px; }
 
-    .hero-main {
-      width: calc(100% - 32px);
+    .hero-stage,
+    .hero-scene {
       min-height: auto;
-      padding: 42px 0 64px;
-      gap: 30px;
+    }
+
+    .hero-main {
+      width: calc(100% - 28px);
+      min-height: auto;
+      padding: 38px 0 30px;
+      gap: 38px;
     }
 
     .hero-copy {
@@ -1040,7 +1035,7 @@
     }
 
     .preview-area {
-      width: min(100%, 350px);
+      width: min(100%, 360px);
       margin: 0 auto;
     }
 
@@ -1051,11 +1046,11 @@
 
     .preview-photo {
       display: block;
-      height: 118px;
+      height: 112px;
     }
 
     .preview-body {
-      padding: 14px 17px 10px;
+      padding: 15px 17px 11px;
     }
 
     .preview-body h2 { font-size: 18px; }
@@ -1078,13 +1073,14 @@
 
   @media (max-height: 720px) and (max-width: 767px) {
     .hero-main {
-      padding-top: 24px;
-      gap: 22px;
+      padding: 24px 0 22px;
+      gap: 30px;
     }
 
     h1 { font-size: 36px; }
     .hero-copy > p { margin: 10px 0 16px; }
     .quick-facts { margin-top: 14px; }
+    .preview-photo { height: 96px; }
   }
 
   @media (prefers-reduced-motion: reduce) {

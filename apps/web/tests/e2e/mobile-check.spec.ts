@@ -63,27 +63,64 @@ test.describe("Responsive home page", () => {
     });
   }
 
-  test("uses a centered theme carousel and simple password control", async ({ page }) => {
+  test("uses a looping centered theme carousel and simple password control", async ({ page }) => {
     await page.goto("/");
     await page.locator(".create-section").scrollIntoViewIfNeeded();
 
     const carousel = page.locator(".theme-carousel");
-    const themeCards = page.locator(".theme-card");
+    const themeCards = page.locator('.theme-card[data-theme-copy="1"]');
+    const allThemeCards = page.locator(".theme-card");
     await expect(carousel).toBeVisible();
     await expect(themeCards).toHaveCount(6);
+    await expect(allThemeCards).toHaveCount(18);
 
-    const monthCard = page.locator('[data-theme-id="month"]');
-    await monthCard.click();
-    await expect(monthCard).toHaveAttribute("aria-pressed", "true");
+    const planningCard = page.locator(
+      '.theme-card[data-theme-copy="1"][data-theme-id="planning-draft"]',
+    );
+    await expect(planningCard).toHaveAttribute("aria-pressed", "true");
 
-    const listCard = page.locator('[data-theme-id="list"]');
+    // The card immediately to the left of the initial planning theme is the
+    // trailing month theme from the previous copy.
     await carousel.evaluate((element) => {
-      const card = element.querySelector<HTMLElement>('[data-theme-id="list"]');
+      const card = element.querySelector<HTMLElement>(
+        '[data-theme-copy="0"][data-theme-id="month"]',
+      );
       if (!card) return;
-      element.scrollLeft = card.offsetLeft - (element.clientWidth - card.clientWidth) / 2;
+      element.scrollLeft =
+        card.offsetLeft - (element.clientWidth - card.clientWidth) / 2;
       element.dispatchEvent(new Event("scroll"));
     });
-    await page.waitForTimeout(50);
+
+    const monthCard = page.locator(
+      '.theme-card[data-theme-copy="1"][data-theme-id="month"]',
+    );
+    await expect(monthCard).toHaveAttribute("aria-pressed", "true");
+    await expect
+      .poll(async () =>
+        carousel.evaluate((element) => {
+          const card = element.querySelector<HTMLElement>(
+            '[data-theme-copy="1"][data-theme-id="month"]',
+          );
+          if (!card) return Number.POSITIVE_INFINITY;
+          const expectedLeft =
+            card.offsetLeft - (element.clientWidth - card.clientWidth) / 2;
+          return Math.abs(element.scrollLeft - expectedLeft);
+        }),
+      )
+      .toBeLessThan(4);
+
+    const listCard = page.locator(
+      '.theme-card[data-theme-copy="1"][data-theme-id="list"]',
+    );
+    await carousel.evaluate((element) => {
+      const card = element.querySelector<HTMLElement>(
+        '[data-theme-copy="1"][data-theme-id="list"]',
+      );
+      if (!card) return;
+      element.scrollLeft =
+        card.offsetLeft - (element.clientWidth - card.clientWidth) / 2;
+      element.dispatchEvent(new Event("scroll"));
+    });
     await expect(listCard).toHaveAttribute("aria-pressed", "true");
 
     const passwordCheckbox = page.getByRole("checkbox");

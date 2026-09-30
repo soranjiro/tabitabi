@@ -76,9 +76,28 @@ export function formatItineraryDateRange(
   return start === end ? start : `${start} — ${end}`;
 }
 
+type OgVersionItinerary = {
+  updated_at: string;
+  title?: string;
+  theme_id?: string;
+  background_image?: string | null;
+};
+
+type OgVersionStep = Pick<Step, "updated_at"> &
+  Partial<Pick<Step, "id" | "start_at" | "end_at">>;
+
+function fnv1a(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
+}
+
 export function getItineraryOgVersion(
-  itinerary: { updated_at: string },
-  steps: Array<Pick<Step, "updated_at">>,
+  itinerary: OgVersionItinerary,
+  steps: OgVersionStep[],
 ): string {
   let latest = Date.parse(itinerary.updated_at);
   if (!Number.isFinite(latest)) latest = 0;
@@ -88,7 +107,19 @@ export function getItineraryOgVersion(
     if (Number.isFinite(updated)) latest = Math.max(latest, updated);
   }
 
-  return Math.max(0, latest).toString(36);
+  const content = JSON.stringify({
+    title: itinerary.title ?? "",
+    theme: itinerary.theme_id ?? "",
+    background: itinerary.background_image ?? "",
+    steps: steps.map((step) => [
+      step.id ?? "",
+      step.start_at ?? null,
+      step.end_at ?? null,
+      step.updated_at,
+    ]),
+  });
+
+  return `${Math.max(0, latest).toString(36)}${fnv1a(content)}`;
 }
 
 function glyphUnits(char: string): number {

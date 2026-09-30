@@ -1,10 +1,7 @@
 <script lang="ts">
-  import IconBook from "./icons/IconBook.svelte";
+  import IconAirplane from "./icons/IconAirplane.svelte";
   import IconGitHub from "./icons/IconGitHub.svelte";
 
-  // The dialog is not needed for the initial page render. Loading it only
-  // after intent keeps its substantial form styles out of the hero's critical
-  // rendering path.
   let FeedbackWidget = $state<any>(null);
   let feedbackKey = $state(0);
 
@@ -18,22 +15,23 @@
 
 <footer class="footer">
   <div class="footer-content">
-    <div class="footer-links">
-      <a href="/docs/index" rel="noopener noreferrer" class="footer-link">
-        <IconBook size={18} />
-        使い方
-      </a>
+    <a class="footer-brand" href="/" aria-label="たびたび ホーム">
+      <span class="footer-mark"><IconAirplane size={20} /></span>
+      <span>たびたび</span>
+    </a>
+
+    <nav class="footer-links" aria-label="フッターナビゲーション">
+      <a href="/docs/index" class="footer-link">使い方</a>
       <a
         href="https://github.com/soranjiro/tabitabi"
         target="_blank"
         rel="noopener noreferrer"
-        class="footer-link"
+        class="footer-link github-link"
+        aria-label="GitHub"
       >
-        <IconGitHub size={18} />
-        GitHub
+        <IconGitHub size={20} />
       </a>
-      <button type="button" class="feedback-trigger footer-trigger" onclick={openFeedback} aria-haspopup="dialog">
-        <span aria-hidden="true">✦</span>
+      <button type="button" class="feedback-trigger" onclick={openFeedback} aria-haspopup="dialog">
         要望
       </button>
       {#if FeedbackWidget}
@@ -43,73 +41,101 @@
           </div>
         {/key}
       {/if}
-    </div>
-    <p class="footer-copy">たびたび - 旅をもっと楽しく</p>
+    </nav>
+
+    <p class="footer-copy">旅をもっと楽しく。</p>
   </div>
 </footer>
 
 <style>
   .footer {
-    background: #1f2937;
-    color: white;
-    padding: 1.5rem 1rem;
+    border-top: 1px solid var(--home-border);
+    color: var(--home-ink);
+    background: var(--home-paper);
+    padding: 34px 20px 38px;
   }
 
   .footer-content {
-    max-width: 800px;
+    display: grid;
+    width: min(var(--home-content-main), 100%);
     margin: 0 auto;
-    text-align: center;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 18px 28px;
+  }
+
+  .footer-brand {
+    display: inline-flex;
+    width: fit-content;
+    min-height: 44px;
+    align-items: center;
+    gap: 9px;
+    color: var(--home-ink-strong);
+    font-family: var(--home-font-serif);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-decoration: none;
+  }
+
+  .footer-mark {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--home-border);
+    border-radius: 50%;
+    place-items: center;
+    color: var(--home-action);
+    background: white;
   }
 
   .footer-links {
     display: flex;
     flex-wrap: nowrap;
-    justify-content: center;
     align-items: center;
-    gap: 2rem;
-    margin-bottom: 0.75rem;
+    justify-content: flex-end;
+    gap: 8px;
   }
 
-  .footer-link {
-    color: #e5e7eb;
-    text-decoration: none;
-    font-size: 0.875rem;
-    transition: color 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    min-height: 44px;
-  }
-
-  .footer-link :global(svg) {
-    flex-shrink: 0;
-  }
-
-  .footer-link:hover {
-    color: white;
-  }
-
-  .footer-copy {
-    color: #d1d5db;
-    font-size: 0.75rem;
-  }
-
+  .footer-link,
   .feedback-trigger {
     display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
+    min-width: 44px;
     min-height: 44px;
-    padding: 0.5rem;
+    padding: 8px 10px;
     border: 0;
-    color: #e5e7eb;
+    border-radius: var(--home-radius-sm);
+    align-items: center;
+    justify-content: center;
+    color: var(--home-ink);
     background: transparent;
     font: inherit;
-    font-size: 0.875rem;
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
     cursor: pointer;
   }
 
-  .feedback-trigger:hover { color: white; }
+  .footer-link:hover,
+  .feedback-trigger:hover {
+    background: var(--home-surface-soft);
+  }
+
+  .footer-brand:focus-visible,
+  .footer-link:focus-visible,
+  .feedback-trigger:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--home-focus) 45%, white);
+    outline-offset: 2px;
+  }
+
+  .github-link { padding-inline: 12px; }
+
+  .footer-copy {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--home-muted);
+    font-size: 12px;
+  }
 
   .feedback-widget-host {
     display: contents;
@@ -120,6 +146,32 @@
   }
 
   @media (max-width: 560px) {
-    .footer-links { gap: 0.75rem; }
+    .footer {
+      padding: 26px 16px 30px;
+    }
+
+    .footer-content {
+      grid-template-columns: auto 1fr;
+      gap: 12px 16px;
+    }
+
+    .footer-brand {
+      font-size: 16px;
+    }
+
+    .footer-links {
+      gap: 2px;
+      justify-content: flex-end;
+    }
+
+    .footer-link,
+    .feedback-trigger {
+      padding-inline: 8px;
+      font-size: 12px;
+    }
+
+    .footer-copy {
+      text-align: center;
+    }
   }
 </style>

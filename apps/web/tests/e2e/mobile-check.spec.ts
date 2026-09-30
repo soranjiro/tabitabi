@@ -31,6 +31,8 @@ test.describe("Responsive home page", () => {
     { width: 320, height: 700 },
     { width: 390, height: 844 },
     { width: 820, height: 1180 },
+    { width: 1024, height: 800 },
+    { width: 1100, height: 800 },
   ]) {
     test(`does not overflow horizontally at ${viewport.width}px`, async ({ page }) => {
       await page.setViewportSize(viewport);
@@ -43,7 +45,7 @@ test.describe("Responsive home page", () => {
 
       expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
 
-      if (viewport.width <= 1024) {
+      if (viewport.width <= 1180) {
         const heroPosition = await page.locator(".hero-scene").evaluate(
           (element) => window.getComputedStyle(element).position,
         );
@@ -52,17 +54,28 @@ test.describe("Responsive home page", () => {
     });
   }
 
-  test("keeps theme and password controls simple", async ({ page }) => {
+  test("uses a centered theme carousel and simple password control", async ({ page }) => {
     await page.goto("/");
     await page.locator(".create-section").scrollIntoViewIfNeeded();
 
-    const themeSelect = page.getByLabel("デザイン");
-    await expect(themeSelect).toBeVisible();
-    await expect(themeSelect.locator("option")).toHaveCount(6);
-    await expect(page.locator(".selected-theme-preview")).toBeVisible();
+    const carousel = page.locator(".theme-carousel");
+    const themeCards = page.locator(".theme-card");
+    await expect(carousel).toBeVisible();
+    await expect(themeCards).toHaveCount(6);
 
-    await themeSelect.selectOption("month");
-    await expect(page.locator(".theme-preview.month")).toBeVisible();
+    const monthCard = page.locator('[data-theme-id="month"]');
+    await monthCard.click();
+    await expect(monthCard).toHaveAttribute("aria-pressed", "true");
+
+    const listCard = page.locator('[data-theme-id="list"]');
+    await carousel.evaluate((element) => {
+      const card = element.querySelector<HTMLElement>('[data-theme-id="list"]');
+      if (!card) return;
+      element.scrollLeft = card.offsetLeft - (element.clientWidth - card.clientWidth) / 2;
+      element.dispatchEvent(new Event("scroll"));
+    });
+    await page.waitForTimeout(50);
+    await expect(listCard).toHaveAttribute("aria-pressed", "true");
 
     const passwordCheckbox = page.getByRole("checkbox");
     await expect(passwordCheckbox).toBeVisible();
@@ -73,6 +86,22 @@ test.describe("Responsive home page", () => {
     await expect(page.getByLabel("編集用パスワード")).toBeVisible();
 
     await expect(page.getByText("詳細設定")).toHaveCount(0);
+  });
+
+  test("keeps the intermediate hero in two columns", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await page.goto("/");
+
+    const display = await page.locator(".hero-main").evaluate(
+      (element) => window.getComputedStyle(element).display,
+    );
+    expect(display).toBe("grid");
+
+    const copyBox = await page.locator(".hero-copy").boundingBox();
+    const previewBox = await page.locator(".preview-area").boundingBox();
+    expect(copyBox).not.toBeNull();
+    expect(previewBox).not.toBeNull();
+    expect(previewBox!.x).toBeGreaterThan(copyBox!.x + copyBox!.width * 0.65);
   });
 
   test("shows explicit creation and shared URL choices", async ({ page }) => {

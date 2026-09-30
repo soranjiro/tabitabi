@@ -941,6 +941,22 @@
   }
 
   @media (max-width: 767px) {
+    .hero-stage {
+      height: auto;
+      min-height: auto;
+    }
+
+    .hero-scene {
+      position: relative;
+      height: auto;
+      min-height: auto;
+      overflow: hidden;
+    }
+
+    .hero-picture {
+      transform: none;
+    }
+
     .hero-shade {
       background:
         linear-gradient(180deg, rgba(7,25,38,.22) 0%, rgba(6,24,37,.52) 52%, rgba(5,22,34,.68) 100%);
@@ -1015,16 +1031,17 @@
 
     .menu-button.open { font-size: 22px; }
 
-    .hero-stage,
-    .hero-scene {
-      min-height: auto;
-    }
-
     .hero-main {
+      display: flex;
       width: calc(100% - 28px);
+      height: auto;
       min-height: auto;
       padding: 38px 0 30px;
+      align-items: stretch;
+      flex-direction: column;
       gap: 38px;
+      transform: none;
+      opacity: 1;
     }
 
     .hero-copy {

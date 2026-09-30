@@ -943,13 +943,13 @@
   @media (max-width: 767px) {
     .hero-stage {
       height: auto;
-      min-height: auto;
+      min-height: 100svh;
     }
 
     .hero-scene {
       position: relative;
       height: auto;
-      min-height: auto;
+      min-height: 100svh;
       overflow: hidden;
     }
 
@@ -1035,11 +1035,11 @@
       display: flex;
       width: calc(100% - 28px);
       height: auto;
-      min-height: auto;
-      padding: 38px 0 30px;
+      min-height: calc(100svh - 66px);
+      padding: clamp(34px, 4.5svh, 58px) 0 clamp(44px, 5.5svh, 76px);
       align-items: stretch;
       flex-direction: column;
-      gap: 38px;
+      gap: clamp(38px, 7svh, 82px);
       transform: none;
       opacity: 1;
     }
@@ -1101,6 +1101,7 @@
     .preview-area {
       width: min(100%, 360px);
       margin: 0 auto;
+      flex: 0 0 auto;
     }
 
     .shiori-preview {
@@ -1137,6 +1138,7 @@
 
   @media (max-height: 720px) and (max-width: 767px) {
     .hero-main {
+      min-height: calc(100svh - 66px);
       padding: 24px 0 22px;
       gap: 30px;
     }

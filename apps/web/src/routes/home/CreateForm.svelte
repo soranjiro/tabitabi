@@ -224,7 +224,7 @@
         createItinerary();
       }}
     >
-      <div class="form-group">
+      <div class="form-group title-group">
         <label for="title" class="form-label">
           旅のタイトル <span class="required" aria-hidden="true">*</span>
         </label>
@@ -390,8 +390,8 @@
   .tab-btn {
     position: relative;
     flex: 1;
-    min-height: 46px;
-    padding: 10px 16px;
+    min-height: 44px;
+    padding: 9px 16px;
     border: 0;
     border-radius: 10px;
     color: var(--home-muted);
@@ -418,11 +418,23 @@
 
   .form-body {
     display: grid;
-    gap: 24px;
-    padding: 30px;
+    gap: 18px;
+    padding: 28px 30px 30px;
   }
 
   .form-group { margin: 0; }
+
+  .title-group .form-label {
+    margin-bottom: 10px;
+    font-size: 15px;
+  }
+
+  .title-group .form-input {
+    min-height: 56px;
+    border-color: color-mix(in srgb, var(--home-border) 72%, var(--home-ink-strong));
+    font-size: 17px;
+    font-weight: 600;
+  }
 
   .form-label {
     display: block;
@@ -472,12 +484,12 @@
   }
 
   .theme-carousel {
-    --theme-card-width: 180px;
+    --theme-card-width: clamp(138px, 36vw, 152px);
     display: flex;
     width: 100%;
-    margin-top: 2px;
-    padding: 4px calc(50% - (var(--theme-card-width) / 2)) 8px;
-    gap: 12px;
+    margin-top: 0;
+    padding: 2px calc(50% - (var(--theme-card-width) / 2)) 5px;
+    gap: 10px;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-padding-inline: calc(50% - (var(--theme-card-width) / 2));
@@ -493,7 +505,7 @@
   .theme-card {
     width: var(--theme-card-width);
     min-width: var(--theme-card-width);
-    padding: 8px;
+    padding: 6px;
     border: 1px solid var(--home-border);
     border-radius: var(--home-radius-md);
     scroll-snap-align: center;
@@ -501,8 +513,8 @@
     background: white;
     font: inherit;
     cursor: pointer;
-    opacity: .58;
-    transform: scale(.94);
+    opacity: .5;
+    transform: scale(.96);
     transition:
       opacity 160ms ease,
       border-color 160ms ease,
@@ -512,24 +524,25 @@
 
   .theme-card.selected {
     border-color: var(--home-action);
-    box-shadow: 0 5px 16px rgba(49,91,125,.13);
+    box-shadow: 0 4px 12px rgba(49,91,125,.12);
     opacity: 1;
     transform: scale(1);
   }
 
   .theme-name {
     display: block;
-    padding: 8px 4px 2px;
+    padding: 6px 2px 1px;
     color: var(--home-ink-strong);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
+    line-height: 1.35;
     text-align: center;
   }
 
   .theme-preview {
     position: relative;
     display: block;
-    height: 82px;
+    height: 60px;
     overflow: hidden;
     border-radius: 8px;
     background: #f6f8f9;
@@ -562,34 +575,34 @@
     transform: rotate(-45deg);
   }
 
-  .planning-map i { top: 17px; left: 14px; }
-  .planning-map b { top: 44px; right: 11px; }
-  .planning-map em { top: 28px; left: 31px; }
+  .planning-map i { top: 12px; left: 12px; }
+  .planning-map b { top: 35px; right: 10px; }
+  .planning-map em { top: 22px; left: 27px; }
 
   .planning-list {
     display: grid;
-    padding: 13px 9px;
+    padding: 9px 7px;
     align-content: start;
-    gap: 9px;
+    gap: 6px;
     background: white;
   }
 
   .planning-list i {
-    height: 9px;
+    height: 7px;
     border-left: 3px solid #6f918a;
     border-radius: 2px;
     background: #edf1f2;
   }
 
   .theme-preview.daycard {
-    padding: 8px;
+    padding: 6px;
     background: #fff5f7;
   }
 
   .day-tabs {
     display: flex;
-    height: 12px;
-    margin-bottom: 5px;
+    height: 9px;
+    margin-bottom: 4px;
     gap: 4px;
   }
 
@@ -603,24 +616,24 @@
 
   .day-card {
     display: grid;
-    height: 51px;
-    padding: 8px;
+    height: 35px;
+    padding: 5px;
     border: 1px solid #ead9de;
     border-radius: 7px;
     align-content: start;
-    gap: 5px;
+    gap: 3px;
     background: white;
   }
 
   .day-card b {
     width: 48%;
-    height: 5px;
+    height: 4px;
     border-radius: 3px;
     background: #bf7288;
   }
 
   .day-card i {
-    height: 4px;
+    height: 3px;
     border-radius: 3px;
     background: #ece5e7;
   }
@@ -629,16 +642,16 @@
 
   .theme-preview.accordion {
     display: grid;
-    padding: 9px;
+    padding: 6px;
     align-content: start;
-    gap: 5px;
+    gap: 4px;
     background: #f2f7fc;
   }
 
   .accordion-row {
     position: relative;
     display: block;
-    height: 16px;
+    height: 12px;
     border: 1px solid #d8e4ef;
     border-radius: 5px;
     background: white;
@@ -646,31 +659,31 @@
 
   .accordion-row b {
     position: absolute;
-    top: 5px;
-    left: 7px;
+    top: 4px;
+    left: 6px;
     width: 42%;
-    height: 4px;
+    height: 3px;
     border-radius: 2px;
     background: #8aa7c0;
   }
 
-  .accordion-row.open { height: 31px; }
+  .accordion-row.open { height: 23px; }
 
   .accordion-row.open i {
     position: absolute;
-    right: 7px;
-    bottom: 6px;
-    left: 7px;
-    height: 7px;
+    right: 6px;
+    bottom: 4px;
+    left: 6px;
+    height: 5px;
     border-radius: 3px;
     background: #edf2f6;
   }
 
   .theme-preview.list {
     display: grid;
-    padding: 10px;
+    padding: 7px;
     align-content: start;
-    gap: 7px;
+    gap: 5px;
     background: white;
   }
 
@@ -700,7 +713,7 @@
 
   .theme-preview.week {
     display: grid;
-    padding: 8px;
+    padding: 6px;
     grid-template-columns: repeat(3, 1fr);
     gap: 5px;
     background: #faf5f0;
@@ -708,37 +721,37 @@
 
   .week-column {
     display: grid;
-    padding: 6px 4px;
+    padding: 4px 3px;
     border-radius: 5px;
     align-content: start;
-    gap: 5px;
+    gap: 4px;
     background: white;
   }
 
   .week-column b {
-    height: 5px;
+    height: 4px;
     border-radius: 3px;
     background: #b48b70;
   }
 
   .week-column i {
-    height: 14px;
+    height: 10px;
     border-radius: 3px;
     background: #efe5dd;
   }
 
-  .week-column:nth-child(2) i { height: 28px; }
+  .week-column:nth-child(2) i { height: 20px; }
 
   .theme-preview.month {
-    padding: 8px;
+    padding: 6px;
     background: #f4f8fb;
   }
 
   .month-head {
     display: block;
     width: 46%;
-    height: 6px;
-    margin-bottom: 7px;
+    height: 5px;
+    margin-bottom: 5px;
     border-radius: 3px;
     background: #7892aa;
   }
@@ -746,11 +759,11 @@
   .month-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 3px;
+    gap: 2px;
   }
 
   .month-grid i {
-    height: 12px;
+    height: 8px;
     border: 1px solid #d8e2ea;
     border-radius: 2px;
     background: white;
@@ -763,7 +776,8 @@
 
   .password-setting {
     display: grid;
-    gap: 12px;
+    gap: 10px;
+    padding-top: 1px;
   }
 
   .checkbox-label {
@@ -785,8 +799,9 @@
   }
 
   .checkbox-label strong {
-    color: var(--home-ink-strong);
-    font-size: 14px;
+    color: var(--home-ink);
+    font-size: 13px;
+    font-weight: 700;
   }
 
   .password-group {
@@ -848,14 +863,26 @@
 
   @media (max-width: 720px) {
     .form-body {
-      gap: 22px;
-      padding: 22px 18px;
+      gap: 16px;
+      padding: 20px 18px 22px;
+    }
+
+    .title-group .form-input {
+      min-height: 54px;
     }
 
     .theme-carousel {
-      --theme-card-width: 168px;
+      --theme-card-width: clamp(136px, 38vw, 146px);
       margin-inline: -18px;
       width: calc(100% + 36px);
+    }
+
+    .checkbox-label {
+      min-height: 40px;
+    }
+
+    .btn-submit {
+      min-height: 50px;
     }
   }
 

@@ -196,7 +196,8 @@ export const GET: RequestHandler = async ({
     },
   } as CfImageRequestInit);
 
-  if (!transformed.ok) {
+  const transformedType = transformed.headers.get("content-type") ?? "";
+  if (!transformed.ok || !transformedType.includes("image/jpeg")) {
     return fallbackOgImage(eventFetch, url);
   }
 

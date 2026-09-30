@@ -166,7 +166,7 @@ export const GET: RequestHandler = async ({
       color: "#ffffff",
       size: 29,
       right: 128,
-      bottom: 52,
+      top: 52,
     },
     {
       url: LOGO_URL,
@@ -174,7 +174,7 @@ export const GET: RequestHandler = async ({
       height: 64,
       fit: "contain",
       right: 48,
-      bottom: 42,
+      top: 42,
       opacity: 0.96,
     },
   );

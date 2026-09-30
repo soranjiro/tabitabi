@@ -18,33 +18,6 @@
 
   const themes = getAvailableThemes();
 
-  const themeGuidance: Record<string, { hint: string; summary: string }> = {
-    "planning-draft": {
-      hint: "迷ったらこれ",
-      summary: "候補を集めて、地図を見ながら予定を決めたい旅に。",
-    },
-    daycard: {
-      hint: "日ごとに見やすい",
-      summary: "1日ずつカードを切り替えて、予定を確認したい旅に。",
-    },
-    accordion: {
-      hint: "全体を見渡せる",
-      summary: "日程をまとめて見つつ、必要な部分だけ開きたい旅に。",
-    },
-    list: {
-      hint: "シンプル",
-      summary: "予定を上から順番に、すっきり一覧で見たい旅に。",
-    },
-    week: {
-      hint: "日程を比較",
-      summary: "数日分の予定を横に並べて、流れを比べたい旅に。",
-    },
-    month: {
-      hint: "日付を俯瞰",
-      summary: "旅行前後も含め、月のカレンダーで予定を見たい旅に。",
-    },
-  };
-
   async function createItinerary() {
     titleError = "";
 
@@ -145,69 +118,59 @@
         {/if}
       </div>
 
-      <fieldset class="theme-fieldset">
-        <legend class="form-label">デザイン</legend>
-        <p class="theme-help">旅の見方に合わせて選べます。あとから変更できます。</p>
-
-        <div class="theme-grid">
+      <div class="form-group">
+        <label for="theme" class="form-label">デザイン</label>
+        <select id="theme" bind:value={theme_id} class="form-input theme-select">
           {#each themes as theme}
-            {@const guidance = themeGuidance[theme.id]}
-            <button
-              type="button"
-              class="theme-option"
-              class:selected={theme_id === theme.id}
-              aria-pressed={theme_id === theme.id}
-              onclick={() => (theme_id = theme.id)}
-            >
-              <span class="theme-preview" class:planning={theme.id === "planning-draft"} class:daycard={theme.id === "daycard"} class:accordion={theme.id === "accordion"} class:list={theme.id === "list"} class:week={theme.id === "week"} class:month={theme.id === "month"} aria-hidden="true">
-                {#if theme.id === "planning-draft"}
-                  <span class="planning-map"><i></i><b></b><em></em></span>
-                  <span class="planning-list"><i></i><i></i><i></i></span>
-                {:else if theme.id === "daycard"}
-                  <span class="day-tabs"><i></i><i></i><i></i></span>
-                  <span class="day-card"><b></b><i></i><i></i><i></i></span>
-                {:else if theme.id === "accordion"}
-                  <span class="accordion-row open"><b></b><i></i></span>
-                  <span class="accordion-row"><b></b></span>
-                  <span class="accordion-row"><b></b></span>
-                {:else if theme.id === "list"}
-                  <span class="list-line"><b></b><i></i></span>
-                  <span class="list-line"><b></b><i></i></span>
-                  <span class="list-line"><b></b><i></i></span>
-                  <span class="list-line"><b></b><i></i></span>
-                {:else if theme.id === "week"}
-                  <span class="week-column"><b></b><i></i><i></i></span>
-                  <span class="week-column"><b></b><i></i></span>
-                  <span class="week-column"><b></b><i></i><i></i></span>
-                {:else if theme.id === "month"}
-                  <span class="month-head"></span>
-                  <span class="month-grid">
-                    {#each Array(14) as _}
-                      <i></i>
-                    {/each}
-                  </span>
-                {/if}
-              </span>
-
-              <span class="theme-heading">
-                <span class="theme-name">{theme.name}</span>
-                {#if guidance}
-                  <span class="theme-hint">{guidance.hint}</span>
-                {/if}
-              </span>
-              <span class="theme-description">{guidance?.summary ?? theme.description}</span>
-            </button>
+            <option value={theme.id}>{theme.name}</option>
           {/each}
+        </select>
+
+        <div class="selected-theme-preview" aria-hidden="true">
+          <span
+            class="theme-preview"
+            class:planning={theme_id === "planning-draft"}
+            class:daycard={theme_id === "daycard"}
+            class:accordion={theme_id === "accordion"}
+            class:list={theme_id === "list"}
+            class:week={theme_id === "week"}
+            class:month={theme_id === "month"}
+          >
+            {#if theme_id === "planning-draft"}
+              <span class="planning-map"><i></i><b></b><em></em></span>
+              <span class="planning-list"><i></i><i></i><i></i></span>
+            {:else if theme_id === "daycard"}
+              <span class="day-tabs"><i></i><i></i><i></i></span>
+              <span class="day-card"><b></b><i></i><i></i><i></i></span>
+            {:else if theme_id === "accordion"}
+              <span class="accordion-row open"><b></b><i></i></span>
+              <span class="accordion-row"><b></b></span>
+              <span class="accordion-row"><b></b></span>
+            {:else if theme_id === "list"}
+              <span class="list-line"><b></b><i></i></span>
+              <span class="list-line"><b></b><i></i></span>
+              <span class="list-line"><b></b><i></i></span>
+              <span class="list-line"><b></b><i></i></span>
+            {:else if theme_id === "week"}
+              <span class="week-column"><b></b><i></i><i></i></span>
+              <span class="week-column"><b></b><i></i></span>
+              <span class="week-column"><b></b><i></i><i></i></span>
+            {:else if theme_id === "month"}
+              <span class="month-head"></span>
+              <span class="month-grid">
+                {#each Array(14) as _}
+                  <i></i>
+                {/each}
+              </span>
+            {/if}
+          </span>
         </div>
-      </fieldset>
+      </div>
 
       <div class="password-setting">
         <label class="checkbox-label">
           <input type="checkbox" bind:checked={usePassword} />
-          <span>
-            <strong>パスワードで保護する</strong>
-            <small>編集する人だけにパスワードを共有します。</small>
-          </span>
+          <strong>パスワードで保護する</strong>
         </label>
 
         {#if usePassword}
@@ -307,7 +270,6 @@
   }
 
   .tab-btn:focus-visible,
-  .theme-option:focus-visible,
   .btn-submit:focus-visible {
     outline: 3px solid color-mix(in srgb, var(--home-focus) 45%, white);
     outline-offset: 2px;
@@ -361,58 +323,21 @@
     font-weight: 700;
   }
 
-  .theme-fieldset {
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-
-  .theme-help {
-    margin: -2px 0 12px;
-    color: var(--home-muted);
-    font-size: 12px;
-    line-height: 1.55;
-  }
-
-  .theme-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .theme-option {
-    display: grid;
-    min-width: 0;
-    min-height: 190px;
-    padding: 11px;
-    border: 1px solid var(--home-border);
-    border-radius: var(--home-radius-md);
-    align-content: start;
-    gap: 7px;
-    color: var(--home-ink);
-    background: white;
-    text-align: left;
+  .theme-select {
     cursor: pointer;
-    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
   }
 
-  .theme-option:hover {
-    border-color: #afbbc6;
-    transform: translateY(-1px);
-  }
-
-  .theme-option.selected {
-    border-color: var(--home-action);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--home-action) 14%, transparent);
+  .selected-theme-preview {
+    width: 154px;
+    margin-top: 10px;
   }
 
   .theme-preview {
     position: relative;
     display: block;
-    height: 82px;
+    height: 72px;
     overflow: hidden;
-    border: 1px solid #e1e6ea;
+    border: 1px solid var(--home-border);
     border-radius: 8px;
     background: #f6f8f9;
   }
@@ -444,39 +369,39 @@
     transform: rotate(-45deg);
   }
 
-  .planning-map i { top: 17px; left: 14px; }
-  .planning-map b { top: 44px; right: 11px; }
-  .planning-map em { top: 28px; left: 31px; }
+  .planning-map i { top: 14px; left: 12px; }
+  .planning-map b { top: 39px; right: 9px; }
+  .planning-map em { top: 25px; left: 27px; }
 
   .planning-list {
     display: grid;
-    padding: 13px 9px;
+    padding: 11px 8px;
     align-content: start;
-    gap: 9px;
+    gap: 8px;
     background: white;
   }
 
   .planning-list i {
-    height: 9px;
+    height: 8px;
     border-left: 3px solid #6f918a;
     border-radius: 2px;
     background: #edf1f2;
   }
 
   .theme-preview.daycard {
-    padding: 8px;
+    padding: 7px;
     background: #fff5f7;
   }
 
   .day-tabs {
     display: flex;
-    height: 12px;
-    margin-bottom: 5px;
+    height: 10px;
+    margin-bottom: 4px;
     gap: 4px;
   }
 
   .day-tabs i {
-    width: 22px;
+    width: 20px;
     border-radius: 4px 4px 0 0;
     background: #ead0d8;
   }
@@ -485,24 +410,24 @@
 
   .day-card {
     display: grid;
-    height: 51px;
-    padding: 8px;
+    height: 43px;
+    padding: 7px;
     border: 1px solid #ead9de;
-    border-radius: 7px;
+    border-radius: 6px;
     align-content: start;
-    gap: 5px;
+    gap: 4px;
     background: white;
   }
 
   .day-card b {
     width: 48%;
-    height: 5px;
+    height: 4px;
     border-radius: 3px;
     background: #bf7288;
   }
 
   .day-card i {
-    height: 4px;
+    height: 3px;
     border-radius: 3px;
     background: #ece5e7;
   }
@@ -511,16 +436,16 @@
 
   .theme-preview.accordion {
     display: grid;
-    padding: 9px;
+    padding: 8px;
     align-content: start;
-    gap: 5px;
+    gap: 4px;
     background: #f2f7fc;
   }
 
   .accordion-row {
     position: relative;
     display: block;
-    height: 16px;
+    height: 14px;
     border: 1px solid #d8e4ef;
     border-radius: 5px;
     background: white;
@@ -528,31 +453,31 @@
 
   .accordion-row b {
     position: absolute;
-    top: 5px;
-    left: 7px;
+    top: 4px;
+    left: 6px;
     width: 42%;
     height: 4px;
     border-radius: 2px;
     background: #8aa7c0;
   }
 
-  .accordion-row.open { height: 31px; }
+  .accordion-row.open { height: 26px; }
 
   .accordion-row.open i {
     position: absolute;
-    right: 7px;
-    bottom: 6px;
-    left: 7px;
-    height: 7px;
+    right: 6px;
+    bottom: 5px;
+    left: 6px;
+    height: 6px;
     border-radius: 3px;
     background: #edf2f6;
   }
 
   .theme-preview.list {
     display: grid;
-    padding: 10px;
+    padding: 9px;
     align-content: start;
-    gap: 7px;
+    gap: 6px;
     background: white;
   }
 
@@ -571,7 +496,7 @@
   }
 
   .list-line i {
-    height: 6px;
+    height: 5px;
     border-radius: 3px;
     background: #e8ecef;
   }
@@ -582,45 +507,45 @@
 
   .theme-preview.week {
     display: grid;
-    padding: 8px;
+    padding: 7px;
     grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
+    gap: 4px;
     background: #faf5f0;
   }
 
   .week-column {
     display: grid;
-    padding: 6px 4px;
+    padding: 5px 3px;
     border-radius: 5px;
     align-content: start;
-    gap: 5px;
+    gap: 4px;
     background: white;
   }
 
   .week-column b {
-    height: 5px;
+    height: 4px;
     border-radius: 3px;
     background: #b48b70;
   }
 
   .week-column i {
-    height: 14px;
+    height: 12px;
     border-radius: 3px;
     background: #efe5dd;
   }
 
-  .week-column:nth-child(2) i { height: 28px; }
+  .week-column:nth-child(2) i { height: 24px; }
 
   .theme-preview.month {
-    padding: 8px;
+    padding: 7px;
     background: #f4f8fb;
   }
 
   .month-head {
     display: block;
     width: 46%;
-    height: 6px;
-    margin-bottom: 7px;
+    height: 5px;
+    margin-bottom: 6px;
     border-radius: 3px;
     background: #7892aa;
   }
@@ -632,7 +557,7 @@
   }
 
   .month-grid i {
-    height: 12px;
+    height: 10px;
     border: 1px solid #d8e2ea;
     border-radius: 2px;
     background: white;
@@ -643,72 +568,27 @@
     background: #dce8f1;
   }
 
-  .theme-heading {
-    display: flex;
-    min-width: 0;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-  }
-
-  .theme-name {
-    overflow: hidden;
-    color: var(--home-ink-strong);
-    font-size: 13px;
-    font-weight: 800;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .theme-hint {
-    flex: 0 0 auto;
-    padding: 3px 6px;
-    border-radius: var(--home-radius-pill);
-    color: var(--home-action);
-    background: color-mix(in srgb, var(--home-action) 9%, white);
-    font-size: 12px;
-    font-weight: 900;
-    white-space: nowrap;
-  }
-
-  .theme-description {
-    display: -webkit-box;
-    overflow: hidden;
-    color: var(--home-muted);
-    font-size: 12px;
-    line-height: 1.45;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-  }
-
   .password-setting {
     display: grid;
-    gap: 14px;
-    padding: 18px;
-    border: 1px solid var(--home-border);
-    border-radius: var(--home-radius-md);
-    background: var(--home-surface-soft);
+    gap: 12px;
   }
 
   .checkbox-label {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
+    display: inline-flex;
+    width: fit-content;
+    min-height: 44px;
+    align-items: center;
+    gap: 10px;
     cursor: pointer;
   }
 
   .checkbox-label input[type="checkbox"] {
     width: 20px;
     height: 20px;
-    margin-top: 1px;
+    margin: 0;
     accent-color: var(--home-action);
     cursor: pointer;
     flex: 0 0 auto;
-  }
-
-  .checkbox-label span {
-    display: grid;
-    gap: 3px;
   }
 
   .checkbox-label strong {
@@ -716,15 +596,8 @@
     font-size: 14px;
   }
 
-  .checkbox-label small {
-    color: var(--home-muted);
-    font-size: 12px;
-    line-height: 1.5;
-  }
-
   .password-group {
-    padding-top: 13px;
-    border-top: 1px solid var(--home-border);
+    margin-top: -2px;
   }
 
   .password-group .form-label { margin-bottom: 8px; }
@@ -786,31 +659,13 @@
       padding: 22px 18px;
     }
 
-    .theme-grid {
-      display: flex;
-      margin-right: -18px;
-      padding: 2px 18px 5px 0;
-      gap: 10px;
-      overflow-x: auto;
-      scroll-snap-type: x proximity;
-      scrollbar-width: thin;
+    .selected-theme-preview {
+      width: 140px;
     }
-
-    .theme-option {
-      width: 206px;
-      min-width: 206px;
-      min-height: 208px;
-      scroll-snap-align: start;
-    }
-
-    .theme-preview { height: 92px; }
-
-    .password-setting { padding: 16px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .tab-btn,
-    .theme-option,
     .form-input,
     .btn-submit {
       transition: none;

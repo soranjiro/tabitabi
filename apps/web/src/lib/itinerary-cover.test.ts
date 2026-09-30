@@ -90,6 +90,31 @@ describe("itinerary cover helpers", () => {
     expect(changed).not.toBe(base);
   });
 
+  it("changes the OGP version when a dated step is deleted", () => {
+    const itinerary = {
+      title: "金沢旅行",
+      theme_id: "planning-draft",
+      background_image: null,
+      updated_at: "2026-10-01T00:00:00.000Z",
+    };
+    const latestStep = {
+      id: "latest",
+      start_at: 1_800_000,
+      end_at: 1_900_000,
+      updated_at: "2026-10-01T00:00:02.000Z",
+    };
+    const earlyStep = {
+      id: "early",
+      start_at: 1_000_000,
+      end_at: 1_100_000,
+      updated_at: "2026-09-30T00:00:00.000Z",
+    };
+
+    expect(
+      getItineraryOgVersion(itinerary, [earlyStep, latestStep]),
+    ).not.toBe(getItineraryOgVersion(itinerary, [latestStep]));
+  });
+
   it("keeps long titles to two lines and truncates the rest", () => {
     const lines = splitOgTitle(
       "とても長い旅行タイトルなので共有画像の中で安全に二行へ収めたい旅行",

@@ -8,6 +8,7 @@
   import RecentItineraries from "./home/RecentItineraries.svelte";
   import Footer from "./home/Footer.svelte";
   import IconAirplane from "./home/icons/IconAirplane.svelte";
+  import AdSlot from "$lib/ads/AdSlot.svelte";
 
   const { data }: { data: PageData } = $props();
 
@@ -283,6 +284,10 @@
     </div>
   </section>
 
+  <section class="home-lead-ad" aria-label="広告">
+    <AdSlot placement="home-lead" size="billboard" />
+  </section>
+
   <section id="create" class="create-section" aria-labelledby="create-title">
     <div class="section-inner">
       <div class="create-heading">
@@ -295,6 +300,9 @@
         <div class="recent-wrapper"><RecentItineraries items={recentItineraries} onRemove={removeRecent} /></div>
       {/if}
     </div>
+  </section>
+  <section class="home-ad-section" aria-label="広告">
+    <AdSlot placement="home" />
   </section>
   <Footer />
 </div>
@@ -365,7 +373,8 @@
   .paper-reveal i, .paper-reveal b { position: absolute; top: 42px; width: 120px; border-top: 2px dashed #b9c4d1; opacity: .65; }
   .paper-reveal i { left: 22%; transform: rotate(8deg); }
   .paper-reveal b { right: 18%; transform: rotate(-6deg); }
-  .create-section { position: relative; z-index: 3; min-height: 100vh; margin-top: -1px; padding: 78px 20px 110px; background: white; }
+  .home-lead-ad { position: relative; z-index: 3; padding: 42px 20px 30px; background: white; }
+  .create-section { position: relative; z-index: 3; min-height: 100vh; margin-top: -1px; padding: 48px 20px 110px; background: white; }
   .section-inner { width: min(820px, 100%); margin: 0 auto; }
   .create-heading { margin-bottom: 30px; text-align: center; }
   .create-heading .tiny-route { position: relative; display: block; width: 112px; height: 19px; margin: 0 auto 8px; color: #9aabba; }
@@ -374,6 +383,7 @@
   .create-heading p { margin: 0 0 8px; color: #7086a5; font-size: 9px; font-weight: 900; letter-spacing: .2em; }
   .create-heading h2 { margin: 0; font-family: Georgia, "Yu Mincho", serif; font-size: clamp(27px, 4vw, 39px); font-weight: 400; letter-spacing: .06em; }
   .recent-wrapper { margin-top: 42px; }
+  .home-ad-section { position: relative; z-index: 3; padding: 0 20px 64px; background: white; }
 
   @media (max-width: 900px) {
     .site-header { width: calc(100% - 48px); }
@@ -427,7 +437,9 @@
     .scroll-cue { display: none; }
     /* The next-section paper edge must not cover the installed-PWA viewport. */
     .paper-reveal { display: none; }
-    .create-section { padding: 62px 16px 82px; }
+    .home-lead-ad { padding: 28px 16px 18px; }
+    .create-section { padding: 44px 16px 68px; }
+    .home-ad-section { padding: 0 16px 48px; }
   }
 
   @media (max-height: 720px) and (max-width: 640px) {

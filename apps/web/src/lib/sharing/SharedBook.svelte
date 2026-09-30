@@ -5,6 +5,7 @@
   import { itineraryApi } from '$lib/api/itinerary';
   import { userApi, type BookContent } from '$lib/api/user';
   import { auth } from '$lib/auth';
+  import AdSlot from '$lib/ads/AdSlot.svelte';
 
   let { content, preview = false, onBack, onConfirm }: {
     content: BookContent; preview?: boolean; onBack?: () => void; onConfirm?: (content: BookContent) => Promise<true | string>;
@@ -106,6 +107,9 @@
     {#key itinerary.theme_id}
       <View {itinerary} {steps} onUpdateItinerary={updateItinerary} onCreateStep={createStep} onUpdateStep={updateStep} onDeleteStep={deleteStep} />
     {/key}
+    {#if !preview}
+      <div class="shared-ad-slot"><AdSlot placement="shared" /></div>
+    {/if}
   {:else}<p class="loading">しおりを開いています…</p>{/if}
 </div>
 
@@ -143,4 +147,5 @@
   .preview > header { position: sticky; top: 0; }
   .notice { position: fixed; z-index: 3000; top: 3.5rem; left: 50%; transform: translateX(-50%); width: max-content; max-width: 90%; padding: .8rem 1rem; border-radius: .5rem; color: #fff; background: #355f50; font-size: .8rem; }
   .loading { padding: 3rem; text-align: center; }
+  .shared-ad-slot { padding: 2.75rem 1rem max(5.5rem, calc(2.5rem + env(safe-area-inset-bottom))); }
 </style>

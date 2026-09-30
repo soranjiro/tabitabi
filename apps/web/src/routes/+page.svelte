@@ -828,7 +828,7 @@
 
   .recent-wrapper { margin-top: 42px; }
 
-  @media (max-width: 1024px) {
+  @media (min-width: 768px) and (max-width: 1180px) {
     .hero-stage {
       height: auto;
       min-height: 100svh;
@@ -846,40 +846,87 @@
     }
 
     .site-header {
-      width: min(var(--home-content-wide), calc(100% - 48px));
+      width: calc(100% - 40px);
+      height: 74px;
     }
 
-    .brand-route { width: 96px; }
+    .brand-route { width: 76px; }
+
+    nav {
+      gap: 18px;
+    }
+
+    nav a {
+      font-size: 13px;
+    }
+
+    .account-link {
+      padding-inline: 13px;
+    }
 
     .hero-main {
-      display: flex;
-      width: min(700px, calc(100% - 48px));
+      display: grid;
+      width: calc(100% - 40px);
       height: auto;
-      min-height: calc(100svh - 82px);
-      padding: 54px 0 88px;
+      min-height: calc(100svh - 74px);
+      margin: 0 auto;
+      padding: 34px 0 54px;
+      grid-template-columns: minmax(0, 1fr) minmax(268px, 31vw);
       align-items: center;
-      flex-direction: column;
-      gap: 38px;
+      gap: clamp(26px, 4vw, 48px);
       transform: none;
       opacity: 1;
     }
 
     .hero-copy {
       width: 100%;
-      max-width: 680px;
-      text-align: center;
+      max-width: 520px;
+      text-align: left;
+    }
+
+    h1 {
+      font-size: clamp(42px, 5.2vw, 58px);
+      line-height: 1.3;
+    }
+
+    .hero-copy > p {
+      margin: 16px 0 24px;
+      font-size: 15px;
     }
 
     .hero-actions {
-      margin: 0 auto;
+      width: min(100%, 280px);
+      margin: 0;
     }
 
     .quick-facts {
-      justify-content: center;
+      margin-top: 22px;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 10px 16px;
     }
 
     .preview-area {
-      width: min(100%, 360px);
+      width: 100%;
+      max-width: 330px;
+      justify-self: end;
+    }
+
+    .preview-photo {
+      height: 112px;
+    }
+
+    .preview-body {
+      padding: 15px 17px 12px;
+    }
+
+    .preview-body h2 {
+      font-size: 17px;
+    }
+
+    .preview-timeline li {
+      min-height: 34px;
+      grid-template-columns: 50px minmax(0, 1fr);
     }
 
     .scroll-cue,

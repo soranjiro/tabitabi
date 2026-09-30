@@ -79,6 +79,31 @@ test.describe("Responsive home page", () => {
     );
     await expect(planningCard).toHaveAttribute("aria-pressed", "true");
 
+    const visualHierarchy = await page.evaluate(() => {
+      const titleLabel = document.querySelector<HTMLElement>(".title-group .form-label");
+      const designLabel = document.querySelector<HTMLElement>(".theme-fieldset .form-label");
+      const passwordLabel = document.querySelector<HTMLElement>(".checkbox-label strong");
+      const titleInput = document.querySelector<HTMLElement>(".title-group .form-input");
+      const selectedTheme = document.querySelector<HTMLElement>(".theme-card.selected");
+
+      if (!titleLabel || !designLabel || !passwordLabel || !titleInput || !selectedTheme) {
+        throw new Error("Create form hierarchy controls were not found");
+      }
+
+      return {
+        titleLabelSize: parseFloat(getComputedStyle(titleLabel).fontSize),
+        designLabelSize: parseFloat(getComputedStyle(designLabel).fontSize),
+        passwordLabelSize: parseFloat(getComputedStyle(passwordLabel).fontSize),
+        titleInputHeight: titleInput.getBoundingClientRect().height,
+        themeCardHeight: selectedTheme.getBoundingClientRect().height,
+      };
+    });
+
+    expect(visualHierarchy.titleLabelSize).toBeGreaterThan(visualHierarchy.designLabelSize);
+    expect(visualHierarchy.designLabelSize).toBeGreaterThan(visualHierarchy.passwordLabelSize);
+    expect(visualHierarchy.titleInputHeight).toBeGreaterThanOrEqual(54);
+    expect(visualHierarchy.themeCardHeight).toBeLessThanOrEqual(100);
+
     // The card immediately to the left of the initial planning theme is the
     // trailing month theme from the previous copy.
     await carousel.evaluate((element) => {

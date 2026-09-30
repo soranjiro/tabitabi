@@ -246,7 +246,7 @@ jobs:
         run: pnpm --filter web exec playwright install --with-deps chromium
 
       - name: Exercise deployed preview
-        run: pnpm --filter web exec playwright test tests/e2e/preview-background-settings.spec.ts --project=chromium
+        run: pnpm --filter web exec playwright test tests/e2e/preview-background-settings.spec.ts tests/e2e/preview-og-image.spec.ts --project=chromium
         env:
           PLAYWRIGHT_BASE_URL: ${{ needs.deploy-preview.outputs.web_url }}
           PREVIEW_API_URL: ${{ needs.deploy-preview.outputs.api_url }}

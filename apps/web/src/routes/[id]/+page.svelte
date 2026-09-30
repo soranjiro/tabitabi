@@ -10,6 +10,7 @@
   import type { Theme } from "@tabitabi/types";
   import { getPalette } from "$lib/themes";
   import SharedBook from '$lib/sharing/SharedBook.svelte';
+  import { getItineraryOgVersion } from "$lib/itinerary-cover";
   let copiedNotice = $state(false);
 
   let { data, readOnly = false } = $props();
@@ -239,6 +240,8 @@
 
   let isPublishedSnapshot = $derived(!!data.itinerary.source_itinerary_id);
   let canonicalPath = $derived(readOnly ? `/s/${data.itinerary.id}` : `/itineraries/${data.itinerary.id}`);
+  let ogImageVersion = $derived(getItineraryOgVersion(data.itinerary, data.steps));
+  let ogImageUrl = $derived(`https://tabitabi.pages.dev/og/itineraries/${data.itinerary.id}?v=${ogImageVersion}`);
 
 
 </script>
@@ -257,9 +260,11 @@
   />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://tabitabi.pages.dev{canonicalPath}" />
-  <meta property="og:image" content="https://tabitabi.pages.dev/og-image.png" />
+  <meta property="og:image" content={ogImageUrl} />
+  <meta property="og:image:type" content="image/jpeg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="{data.itinerary.title}の旅のしおり" />
   <meta property="og:locale" content="ja_JP" />
   <meta property="og:site_name" content="たびたび" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -268,7 +273,8 @@
     name="twitter:description"
     content="{data.itinerary.title}の旅のしおり。たびたびで作成された旅行計画を確認できます。"
   />
-  <meta name="twitter:image" content="https://tabitabi.pages.dev/og-image.png" />
+  <meta name="twitter:image" content={ogImageUrl} />
+  <meta name="twitter:image:alt" content="{data.itinerary.title}の旅のしおり" />
   <meta name="theme-color" content={backgroundColor} />
 </svelte:head>
 

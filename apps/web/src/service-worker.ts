@@ -6,6 +6,53 @@ const worker = self as unknown as ServiceWorkerGlobalScope;
 const CACHE_NAME = `tabitabi-cache-${version}`;
 const BUILD_ASSETS = new Set(build);
 
+function offlineResponse(request: Request): Response {
+  const headers = {
+    "Cache-Control": "no-store",
+  };
+
+  if (request.mode === "navigate") {
+    return new Response(
+      "<!doctype html><html lang=\"ja\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>オフライン</title><body><main><h1>オフラインです</h1><p>通信を確認して、もう一度お試しください。</p></main></body></html>",
+      {
+        status: 503,
+        statusText: "Service Unavailable",
+        headers: {
+          ...headers,
+          "Content-Type": "text/html; charset=utf-8",
+        },
+      },
+    );
+  }
+
+  const url = new URL(request.url);
+  if (url.pathname.startsWith("/api/")) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: {
+          code: "OFFLINE",
+          message: "オフラインのためデータを取得できません。",
+        },
+      }),
+      {
+        status: 503,
+        statusText: "Service Unavailable",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json; charset=utf-8",
+        },
+      },
+    );
+  }
+
+  return new Response(null, {
+    status: 503,
+    statusText: "Service Unavailable",
+    headers,
+  });
+}
+
 worker.addEventListener("install", () => {
   // Do not precache the whole application bundle during first load. Fetching all
   // route chunks here competes with the hero image on constrained mobile links.
@@ -44,15 +91,19 @@ worker.addEventListener("fetch", (event: FetchEvent) => {
       const cachedResponse = await cache.match(event.request);
       if (cachedResponse) return cachedResponse;
 
-      const response = await fetch(event.request);
-      if (response.status === 200) {
-        try {
-          await cache.put(event.request, response.clone());
-        } catch (e) {
-          console.warn("Failed to cache build asset:", event.request.url, e);
+      try {
+        const response = await fetch(event.request);
+        if (response.status === 200) {
+          try {
+            await cache.put(event.request, response.clone());
+          } catch (e) {
+            console.warn("Failed to cache build asset:", event.request.url, e);
+          }
         }
+        return response;
+      } catch {
+        return offlineResponse(event.request);
       }
-      return response;
     }
 
     // Navigation, API data and static assets stay network-first. Resources that
@@ -73,7 +124,7 @@ worker.addEventListener("fetch", (event: FetchEvent) => {
       const cachedResponse = await cache.match(event.request);
       if (cachedResponse) return cachedResponse;
 
-      throw new Error("Offline and no cache available");
+      return offlineResponse(event.request);
     }
   }
 

@@ -52,6 +52,28 @@ test.describe("Responsive home page", () => {
     });
   }
 
+  test("makes theme differences and password protection easy to understand", async ({ page }) => {
+    await page.goto("/");
+    await page.locator(".create-section").scrollIntoViewIfNeeded();
+
+    const themeOptions = page.locator(".theme-option");
+    await expect(themeOptions).toHaveCount(6);
+
+    await expect(page.getByText("迷ったらこれ")).toBeVisible();
+    await expect(page.getByText("日ごとに見やすい")).toBeVisible();
+    await expect(page.getByText("全体を見渡せる")).toBeVisible();
+
+    const passwordCheckbox = page.getByRole("checkbox");
+    await expect(passwordCheckbox).toBeVisible();
+    await expect(page.getByLabel("編集用パスワード")).toHaveCount(0);
+
+    await passwordCheckbox.check();
+    await expect(page.getByLabel("編集用パスワード")).toBeVisible();
+
+    await expect(page.getByText("サンプルのしおり")).toHaveCount(0);
+    await expect(page.getByText("詳細設定")).toHaveCount(0);
+  });
+
   test("shows explicit creation and shared URL choices", async ({ page }) => {
     await page.goto("/");
 

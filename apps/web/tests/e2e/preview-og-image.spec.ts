@@ -7,7 +7,7 @@ test("deployed preview generates a cached itinerary OGP cover", async ({ request
   test.skip(!apiBaseUrl, "PREVIEW_API_URL is required for deployed-preview smoke testing");
   test.setTimeout(60_000);
 
-  const title = `OGP Preview 確認旅行-${Date.now()}`;
+  const title = "OGP Preview 確認旅行";
   const password = `preview-${Date.now()}`;
 
   const createResponse = await request.post(`${apiBaseUrl}/itineraries`, {
@@ -57,7 +57,7 @@ test("deployed preview generates a cached itinerary OGP cover", async ({ request
     expect(html).toContain('property="og:image:type" content="image/jpeg"');
 
     const ogResponse = await request.get(
-      `/og/itineraries/${itineraryId}?v=preview-smoke`,
+      `/og/itineraries/${itineraryId}?v=previewsmoke`,
     );
     expect(ogResponse.ok()).toBeTruthy();
     expect(ogResponse.headers()["content-type"]).toContain("image/jpeg");
@@ -65,12 +65,13 @@ test("deployed preview generates a cached itinerary OGP cover", async ({ request
 
     const bytes = await ogResponse.body();
     expect(bytes.byteLength).toBeGreaterThan(10_000);
+    expect(Array.from(bytes.subarray(0, 3))).toEqual([0xff, 0xd8, 0xff]);
 
     await mkdir("test-results", { recursive: true });
     await writeFile("test-results/itinerary-og-preview.jpg", bytes);
 
     const cachedResponse = await request.get(
-      `/og/itineraries/${itineraryId}?v=preview-smoke`,
+      `/og/itineraries/${itineraryId}?v=previewsmoke`,
     );
     expect(cachedResponse.ok()).toBeTruthy();
     expect(cachedResponse.headers()["cache-control"]).toContain("immutable");

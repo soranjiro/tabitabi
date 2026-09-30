@@ -666,7 +666,7 @@
     border-radius: var(--home-radius-pill);
     color: var(--home-action);
     background: color-mix(in srgb, var(--home-action) 9%, white);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 900;
     white-space: nowrap;
   }

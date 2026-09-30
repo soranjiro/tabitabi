@@ -16,6 +16,9 @@
   let url = $state("");
   let urlError = $state("");
 
+  let themeCarousel = $state<HTMLElement | null>(null);
+  let themeScrollFrame = 0;
+
   const themes = getAvailableThemes();
 
   async function createItinerary() {
@@ -64,6 +67,47 @@
     }
 
     goto(destination);
+  }
+
+  function selectTheme(themeId: string) {
+    theme_id = themeId;
+
+    requestAnimationFrame(() => {
+      themeCarousel
+        ?.querySelector<HTMLElement>(`[data-theme-id="${themeId}"]`)
+        ?.scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+    });
+  }
+
+  function handleThemeScroll() {
+    cancelAnimationFrame(themeScrollFrame);
+    themeScrollFrame = requestAnimationFrame(() => {
+      if (!themeCarousel) return;
+
+      const carouselRect = themeCarousel.getBoundingClientRect();
+      const carouselCenter = carouselRect.left + carouselRect.width / 2;
+      let closestThemeId: string | undefined;
+      let closestDistance = Number.POSITIVE_INFINITY;
+
+      for (const item of themeCarousel.querySelectorAll<HTMLElement>("[data-theme-id]")) {
+        const rect = item.getBoundingClientRect();
+        const itemCenter = rect.left + rect.width / 2;
+        const distance = Math.abs(itemCenter - carouselCenter);
+
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestThemeId = item.dataset.themeId;
+        }
+      }
+
+      if (closestThemeId && closestThemeId !== theme_id) {
+        theme_id = closestThemeId;
+      }
+    });
   }
 </script>
 
@@ -118,54 +162,66 @@
         {/if}
       </div>
 
-      <div class="form-group">
-        <label for="theme" class="form-label">デザイン</label>
-        <select id="theme" bind:value={theme_id} class="form-input theme-select">
+      <fieldset class="theme-fieldset">
+        <legend class="form-label">デザイン</legend>
+        <div
+          class="theme-carousel"
+          bind:this={themeCarousel}
+          onscroll={handleThemeScroll}
+          aria-label="デザインテーマを横にスクロールして選択"
+        >
           {#each themes as theme}
-            <option value={theme.id}>{theme.name}</option>
-          {/each}
-        </select>
-
-        <div class="selected-theme-preview" aria-hidden="true">
-          <span
-            class="theme-preview"
-            class:planning={theme_id === "planning-draft"}
-            class:daycard={theme_id === "daycard"}
-            class:accordion={theme_id === "accordion"}
-            class:list={theme_id === "list"}
-            class:week={theme_id === "week"}
-            class:month={theme_id === "month"}
-          >
-            {#if theme_id === "planning-draft"}
-              <span class="planning-map"><i></i><b></b><em></em></span>
-              <span class="planning-list"><i></i><i></i><i></i></span>
-            {:else if theme_id === "daycard"}
-              <span class="day-tabs"><i></i><i></i><i></i></span>
-              <span class="day-card"><b></b><i></i><i></i><i></i></span>
-            {:else if theme_id === "accordion"}
-              <span class="accordion-row open"><b></b><i></i></span>
-              <span class="accordion-row"><b></b></span>
-              <span class="accordion-row"><b></b></span>
-            {:else if theme_id === "list"}
-              <span class="list-line"><b></b><i></i></span>
-              <span class="list-line"><b></b><i></i></span>
-              <span class="list-line"><b></b><i></i></span>
-              <span class="list-line"><b></b><i></i></span>
-            {:else if theme_id === "week"}
-              <span class="week-column"><b></b><i></i><i></i></span>
-              <span class="week-column"><b></b><i></i></span>
-              <span class="week-column"><b></b><i></i><i></i></span>
-            {:else if theme_id === "month"}
-              <span class="month-head"></span>
-              <span class="month-grid">
-                {#each Array(14) as _}
-                  <i></i>
-                {/each}
+            <button
+              type="button"
+              class="theme-card"
+              class:selected={theme_id === theme.id}
+              aria-pressed={theme_id === theme.id}
+              data-theme-id={theme.id}
+              onclick={() => selectTheme(theme.id)}
+            >
+              <span
+                class="theme-preview"
+                class:planning={theme.id === "planning-draft"}
+                class:daycard={theme.id === "daycard"}
+                class:accordion={theme.id === "accordion"}
+                class:list={theme.id === "list"}
+                class:week={theme.id === "week"}
+                class:month={theme.id === "month"}
+                aria-hidden="true"
+              >
+                {#if theme.id === "planning-draft"}
+                  <span class="planning-map"><i></i><b></b><em></em></span>
+                  <span class="planning-list"><i></i><i></i><i></i></span>
+                {:else if theme.id === "daycard"}
+                  <span class="day-tabs"><i></i><i></i><i></i></span>
+                  <span class="day-card"><b></b><i></i><i></i><i></i></span>
+                {:else if theme.id === "accordion"}
+                  <span class="accordion-row open"><b></b><i></i></span>
+                  <span class="accordion-row"><b></b></span>
+                  <span class="accordion-row"><b></b></span>
+                {:else if theme.id === "list"}
+                  <span class="list-line"><b></b><i></i></span>
+                  <span class="list-line"><b></b><i></i></span>
+                  <span class="list-line"><b></b><i></i></span>
+                  <span class="list-line"><b></b><i></i></span>
+                {:else if theme.id === "week"}
+                  <span class="week-column"><b></b><i></i><i></i></span>
+                  <span class="week-column"><b></b><i></i></span>
+                  <span class="week-column"><b></b><i></i><i></i></span>
+                {:else if theme.id === "month"}
+                  <span class="month-head"></span>
+                  <span class="month-grid">
+                    {#each Array(14) as _}
+                      <i></i>
+                    {/each}
+                  </span>
+                {/if}
               </span>
-            {/if}
-          </span>
+              <span class="theme-name">{theme.name}</span>
+            </button>
+          {/each}
         </div>
-      </div>
+      </fieldset>
 
       <div class="password-setting">
         <label class="checkbox-label">
@@ -270,6 +326,7 @@
   }
 
   .tab-btn:focus-visible,
+  .theme-card:focus-visible,
   .btn-submit:focus-visible {
     outline: 3px solid color-mix(in srgb, var(--home-focus) 45%, white);
     outline-offset: 2px;
@@ -323,21 +380,73 @@
     font-weight: 700;
   }
 
-  .theme-select {
-    cursor: pointer;
+  .theme-fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
   }
 
-  .selected-theme-preview {
-    width: 154px;
-    margin-top: 10px;
+  .theme-carousel {
+    --theme-card-width: 180px;
+    display: flex;
+    width: 100%;
+    margin-top: 2px;
+    padding: 4px calc(50% - (var(--theme-card-width) / 2)) 8px;
+    gap: 12px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: calc(50% - (var(--theme-card-width) / 2));
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .theme-carousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .theme-card {
+    width: var(--theme-card-width);
+    min-width: var(--theme-card-width);
+    padding: 8px;
+    border: 1px solid var(--home-border);
+    border-radius: var(--home-radius-md);
+    scroll-snap-align: center;
+    color: var(--home-ink);
+    background: white;
+    font: inherit;
+    cursor: pointer;
+    opacity: .58;
+    transform: scale(.94);
+    transition:
+      opacity 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms ease;
+  }
+
+  .theme-card.selected {
+    border-color: var(--home-action);
+    box-shadow: 0 5px 16px rgba(49,91,125,.13);
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .theme-name {
+    display: block;
+    padding: 8px 4px 2px;
+    color: var(--home-ink-strong);
+    font-size: 13px;
+    font-weight: 800;
+    text-align: center;
   }
 
   .theme-preview {
     position: relative;
     display: block;
-    height: 72px;
+    height: 82px;
     overflow: hidden;
-    border: 1px solid var(--home-border);
     border-radius: 8px;
     background: #f6f8f9;
   }
@@ -369,39 +478,39 @@
     transform: rotate(-45deg);
   }
 
-  .planning-map i { top: 14px; left: 12px; }
-  .planning-map b { top: 39px; right: 9px; }
-  .planning-map em { top: 25px; left: 27px; }
+  .planning-map i { top: 17px; left: 14px; }
+  .planning-map b { top: 44px; right: 11px; }
+  .planning-map em { top: 28px; left: 31px; }
 
   .planning-list {
     display: grid;
-    padding: 11px 8px;
+    padding: 13px 9px;
     align-content: start;
-    gap: 8px;
+    gap: 9px;
     background: white;
   }
 
   .planning-list i {
-    height: 8px;
+    height: 9px;
     border-left: 3px solid #6f918a;
     border-radius: 2px;
     background: #edf1f2;
   }
 
   .theme-preview.daycard {
-    padding: 7px;
+    padding: 8px;
     background: #fff5f7;
   }
 
   .day-tabs {
     display: flex;
-    height: 10px;
-    margin-bottom: 4px;
+    height: 12px;
+    margin-bottom: 5px;
     gap: 4px;
   }
 
   .day-tabs i {
-    width: 20px;
+    width: 22px;
     border-radius: 4px 4px 0 0;
     background: #ead0d8;
   }
@@ -410,24 +519,24 @@
 
   .day-card {
     display: grid;
-    height: 43px;
-    padding: 7px;
+    height: 51px;
+    padding: 8px;
     border: 1px solid #ead9de;
-    border-radius: 6px;
+    border-radius: 7px;
     align-content: start;
-    gap: 4px;
+    gap: 5px;
     background: white;
   }
 
   .day-card b {
     width: 48%;
-    height: 4px;
+    height: 5px;
     border-radius: 3px;
     background: #bf7288;
   }
 
   .day-card i {
-    height: 3px;
+    height: 4px;
     border-radius: 3px;
     background: #ece5e7;
   }
@@ -436,16 +545,16 @@
 
   .theme-preview.accordion {
     display: grid;
-    padding: 8px;
+    padding: 9px;
     align-content: start;
-    gap: 4px;
+    gap: 5px;
     background: #f2f7fc;
   }
 
   .accordion-row {
     position: relative;
     display: block;
-    height: 14px;
+    height: 16px;
     border: 1px solid #d8e4ef;
     border-radius: 5px;
     background: white;
@@ -453,31 +562,31 @@
 
   .accordion-row b {
     position: absolute;
-    top: 4px;
-    left: 6px;
+    top: 5px;
+    left: 7px;
     width: 42%;
     height: 4px;
     border-radius: 2px;
     background: #8aa7c0;
   }
 
-  .accordion-row.open { height: 26px; }
+  .accordion-row.open { height: 31px; }
 
   .accordion-row.open i {
     position: absolute;
-    right: 6px;
-    bottom: 5px;
-    left: 6px;
-    height: 6px;
+    right: 7px;
+    bottom: 6px;
+    left: 7px;
+    height: 7px;
     border-radius: 3px;
     background: #edf2f6;
   }
 
   .theme-preview.list {
     display: grid;
-    padding: 9px;
+    padding: 10px;
     align-content: start;
-    gap: 6px;
+    gap: 7px;
     background: white;
   }
 
@@ -496,7 +605,7 @@
   }
 
   .list-line i {
-    height: 5px;
+    height: 6px;
     border-radius: 3px;
     background: #e8ecef;
   }
@@ -507,45 +616,45 @@
 
   .theme-preview.week {
     display: grid;
-    padding: 7px;
+    padding: 8px;
     grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
+    gap: 5px;
     background: #faf5f0;
   }
 
   .week-column {
     display: grid;
-    padding: 5px 3px;
+    padding: 6px 4px;
     border-radius: 5px;
     align-content: start;
-    gap: 4px;
+    gap: 5px;
     background: white;
   }
 
   .week-column b {
-    height: 4px;
+    height: 5px;
     border-radius: 3px;
     background: #b48b70;
   }
 
   .week-column i {
-    height: 12px;
+    height: 14px;
     border-radius: 3px;
     background: #efe5dd;
   }
 
-  .week-column:nth-child(2) i { height: 24px; }
+  .week-column:nth-child(2) i { height: 28px; }
 
   .theme-preview.month {
-    padding: 7px;
+    padding: 8px;
     background: #f4f8fb;
   }
 
   .month-head {
     display: block;
     width: 46%;
-    height: 5px;
-    margin-bottom: 6px;
+    height: 6px;
+    margin-bottom: 7px;
     border-radius: 3px;
     background: #7892aa;
   }
@@ -557,7 +666,7 @@
   }
 
   .month-grid i {
-    height: 10px;
+    height: 12px;
     border: 1px solid #d8e2ea;
     border-radius: 2px;
     background: white;
@@ -659,13 +768,16 @@
       padding: 22px 18px;
     }
 
-    .selected-theme-preview {
-      width: 140px;
+    .theme-carousel {
+      --theme-card-width: 168px;
+      margin-inline: -18px;
+      width: calc(100% + 36px);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .tab-btn,
+    .theme-card,
     .form-input,
     .btn-submit {
       transition: none;

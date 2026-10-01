@@ -318,6 +318,7 @@
     scroll-behavior: smooth;
   }
   .home-page {
+    --home-muted: #566c80;
     color: var(--home-ink);
     background: var(--home-paper);
     font-family: var(--home-font-sans);

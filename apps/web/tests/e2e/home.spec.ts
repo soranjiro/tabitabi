@@ -25,13 +25,13 @@ test('desktop preview keeps its cover and compact size at narrow landscape width
   const previewArea = page.locator('.preview-area');
   const previewPhoto = page.locator('.preview-photo');
 
-  await expect(previewArea).toHaveCSS('width', '300px');
-  await expect(previewPhoto).toBeVisible();
+  await expect(previewArea).toHaveCSS('width', '320px');
+  await expect(previewPhoto).toHaveCount(0);
 
   await page.setViewportSize({ width: 1024, height: 768 });
 
   await expect(previewArea).toHaveCSS('width', '300px');
-  await expect(previewPhoto).toBeVisible();
+  await expect(previewPhoto).toHaveCount(0);
 });
 
 test('mobile hero keeps the background unobstructed', async ({ page }) => {
@@ -39,5 +39,14 @@ test('mobile hero keeps the background unobstructed', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.locator('.hero-picture')).toBeVisible();
-  await expect(page.locator('.paper-reveal')).toBeHidden();
+  await expect(page.locator('.preview-photo')).toHaveCount(0);
+
+  const viewport = page.viewportSize();
+  const heroBox = await page.locator('.hero-stage').boundingBox();
+  const journeyBox = await page.locator('.journey-section').boundingBox();
+  expect(viewport).not.toBeNull();
+  expect(heroBox).not.toBeNull();
+  expect(journeyBox).not.toBeNull();
+  expect(Math.abs(heroBox!.height - viewport!.height)).toBeLessThanOrEqual(1);
+  expect(journeyBox!.y).toBeGreaterThanOrEqual(viewport!.height - 1);
 });

@@ -33,6 +33,17 @@ test("deployed home keeps the intended mobile composition", async ({ page }) => 
   expect(previewBox!.y + previewBox!.height).toBeLessThanOrEqual(viewport!.height - 10);
   expect(journeyBox!.y).toBeGreaterThanOrEqual(viewport!.height - 1);
 
+  const timelineRows = await preview.locator(".preview-timeline li").evaluateAll((rows) =>
+    rows.map((row) => {
+      const rect = row.getBoundingClientRect();
+      return { top: rect.top, width: rect.width };
+    }),
+  );
+  expect(timelineRows).toHaveLength(3);
+  expect(timelineRows[1]!.top - timelineRows[0]!.top).toBeGreaterThanOrEqual(28);
+  expect(timelineRows[2]!.top - timelineRows[1]!.top).toBeGreaterThanOrEqual(28);
+  expect(timelineRows.every((row) => row.width > 240)).toBeTruthy();
+
   await page.screenshot({
     path: "test-results/home-mobile-hero.png",
     fullPage: false,

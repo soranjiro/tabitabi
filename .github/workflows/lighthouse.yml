@@ -68,14 +68,31 @@ jobs:
           fi
 
           for run in 1 2 3 4 5; do
-            echo "Running ${{ matrix.device }} Lighthouse for ${{ matrix.path }} (${run}/5)"
-            npx --yes lighthouse@latest "$target_url" \
-              --quiet \
-              --chrome-flags="--headless --no-sandbox" \
-              "${extra_args[@]}" \
-              --only-categories=performance,accessibility,best-practices,seo \
-              --output=json \
-              --output-path="./lighthouse-${{ matrix.page }}-${{ matrix.device }}-${run}.json" || status=1
+            output_path="./lighthouse-${{ matrix.page }}-${{ matrix.device }}-${run}.json"
+            succeeded=0
+
+            for attempt in 1 2; do
+              echo "Running ${{ matrix.device }} Lighthouse for ${{ matrix.path }} (${run}/5, attempt ${attempt}/2)"
+              rm -f "$output_path"
+
+              if npx --yes lighthouse@latest "$target_url" \
+                --quiet \
+                --chrome-flags="--headless --no-sandbox" \
+                "${extra_args[@]}" \
+                --only-categories=performance,accessibility,best-practices,seo \
+                --output=json \
+                --output-path="$output_path"; then
+                succeeded=1
+                break
+              fi
+
+              echo "::warning::Lighthouse attempt ${attempt} failed; retrying once to tolerate transient Chrome startup failures."
+              sleep 2
+            done
+
+            if [ "$succeeded" -ne 1 ]; then
+              status=1
+            fi
           done
 
           exit "$status"

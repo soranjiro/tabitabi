@@ -42,9 +42,9 @@ test("deployed home keeps the intended mobile composition", async ({ page }) => 
   const swipeBox = await heroScene.boundingBox();
   expect(swipeBox).not.toBeNull();
 
-  await page.mouse.move(swipeBox!.x + swipeBox!.width * 0.78, swipeBox!.y + swipeBox!.height * 0.72);
+  await page.mouse.move(swipeBox!.x + swipeBox!.width * 0.92, swipeBox!.y + swipeBox!.height * 0.46);
   await page.mouse.down();
-  await page.mouse.move(swipeBox!.x + swipeBox!.width * 0.24, swipeBox!.y + swipeBox!.height * 0.72, { steps: 8 });
+  await page.mouse.move(swipeBox!.x + swipeBox!.width * 0.18, swipeBox!.y + swipeBox!.height * 0.46, { steps: 8 });
   await page.mouse.up();
 
   await expect.poll(async () => preview.locator("h2").textContent()).not.toBe(initialPreviewTitle);

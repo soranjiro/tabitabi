@@ -143,7 +143,8 @@
   }
   .view-label {
     top: 82%;
-    left: 77%;
+    left: 73%;
+    white-space: nowrap;
   }
   .visually-hidden {
     position: absolute;

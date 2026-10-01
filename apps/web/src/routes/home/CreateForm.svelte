@@ -456,7 +456,7 @@
     padding: 9px 16px;
     border: 0;
     border-radius: 10px;
-    color: var(--home-muted);
+    color: #566a7d;
     background: transparent;
     font: inherit;
     font-size: 14px;

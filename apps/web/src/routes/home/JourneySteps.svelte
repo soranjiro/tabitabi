@@ -240,7 +240,7 @@
     margin-bottom: 10px;
     border-radius: 50%;
     place-items: center;
-    color: #54748f;
+    color: #46657f;
     background: #e7f1f7;
     font-size: 12px;
     font-weight: 900;

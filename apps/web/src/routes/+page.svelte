@@ -581,7 +581,7 @@
     justify-content: center;
     gap: 30px;
     color: white;
-    background: rgba(49,100,140,.92);
+    background: rgba(39,82,118,.96);
     box-shadow: 0 12px 30px rgba(5,20,31,.22);
     font: inherit;
     font-size: 14px;
@@ -592,7 +592,7 @@
   }
 
   .primary:hover {
-    background: rgba(43,90,127,.98);
+    background: rgba(32,72,105,.99);
     transform: translateY(-1px);
     box-shadow: 0 15px 34px rgba(5,20,31,.28);
   }

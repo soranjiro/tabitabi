@@ -191,10 +191,6 @@
     }
   }
 
-  function getThemeLabel(theme: (typeof themes)[number]) {
-    return theme.id === "planning-draft" ? "予定表" : theme.name;
-  }
-
   function handleThemeScroll() {
     cancelAnimationFrame(themeScrollFrame);
     if (themeLoopSettleTimer) {
@@ -337,7 +333,7 @@
                   </span>
                 {/if}
               </span>
-              <span class="theme-name">{getThemeLabel(theme)}</span>
+              <span class="theme-name">{theme.name}</span>
               </button>
             {/each}
           {/each}

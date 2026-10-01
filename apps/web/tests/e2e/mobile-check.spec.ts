@@ -63,6 +63,32 @@ test.describe("Responsive home page", () => {
     });
   }
 
+
+  test("does not prefetch alternate hero photos on data-saving connections", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "connection", {
+        configurable: true,
+        value: { saveData: true, effectiveType: "2g" },
+      });
+    });
+
+    const heroImages = new Set<string>();
+    page.on("request", (request) => {
+      const url = request.url();
+      if (
+        /\/hero\/background-(spring|summer|autumn|winter)\.avif(?:\?|$)/.test(url)
+        || /\/itinerary-backgrounds\/(coastal-drive|japanese)\.avif(?:\?|$)/.test(url)
+      ) {
+        heroImages.add(url.split("?")[0]!);
+      }
+    });
+
+    await page.goto("/");
+    await page.waitForTimeout(1200);
+
+    expect([...heroImages]).toHaveLength(1);
+  });
+
   test("uses a looping centered theme carousel and simple password control", async ({ page }) => {
     await page.goto("/");
     await page.locator(".create-section").scrollIntoViewIfNeeded();

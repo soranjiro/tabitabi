@@ -19,6 +19,16 @@ Webで必要なFirebase公開設定は、`apps/web/.env.example`と環境変数�
 
 公開設定値はクライアント識別に必要な値です。サーバー専用の秘密値を`PUBLIC_`などクライアントへ公開される変数へ入れないでください。
 
+### Googleログインの有効化
+
+GoogleログインはFirebase AuthenticationのGoogleプロバイダを使用します。追加の環境変数やサーバー秘密鍵は必要ありません。
+
+1. Firebase Consoleで対象プロジェクトを開き、**Authentication > Sign-in method > Google** を有効にする
+2. OAuth同意画面のサポートメールと公開用の連絡先を設定する
+3. **Authentication > Settings > Authorized domains** に開発・公開環境のWebドメインを追加する（`localhost` は通常あらかじめ登録されています）
+
+Googleアカウントで初めてログインした利用者には、たびたび内の公開名と都道府県の設定画面が表示されます。同じメールアドレスのFirebaseアカウントが既にある場合は、Firebaseのアカウント統合設定に従います。
+
 ## API設定
 
 API側では、トークン検証に必要なプロジェクト情報を環境ごとに設定します。

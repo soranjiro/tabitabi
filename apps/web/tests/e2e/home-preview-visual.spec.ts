@@ -137,3 +137,33 @@ test("deployed home keeps the intended desktop composition", async ({ page }) =>
     fullPage: false,
   });
 });
+
+
+test("deployed home remains composed on a 320px-wide phone", async ({ page }) => {
+  test.setTimeout(30_000);
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/", { waitUntil: "networkidle" });
+
+  const heroBox = await page.locator(".hero-stage").boundingBox();
+  const previewBox = await page.locator(".shiori-preview").boundingBox();
+  expect(heroBox).not.toBeNull();
+  expect(previewBox).not.toBeNull();
+
+  expect(Math.abs(heroBox!.height - 700)).toBeLessThanOrEqual(1);
+  expect(previewBox!.width).toBeLessThanOrEqual(286);
+  expect(previewBox!.x).toBeGreaterThanOrEqual(20);
+  expect(previewBox!.x + previewBox!.width).toBeLessThanOrEqual(300);
+  expect(previewBox!.y + previewBox!.height).toBeLessThanOrEqual(694);
+
+  const dimensions = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    clientWidth: document.documentElement.clientWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
+
+  await page.screenshot({
+    path: "test-results/home-mobile-320.png",
+    fullPage: false,
+  });
+});

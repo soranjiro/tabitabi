@@ -12,6 +12,7 @@
   import IconAirplane from "./home/icons/IconAirplane.svelte";
   import ItineraryCarousel from "./home/ItineraryCarousel.svelte";
   import { previews } from "./home/landing-previews";
+  import { scrollDrawing } from "./home/scroll-drawing";
 
   const { data }: { data: PageData } = $props();
 
@@ -167,7 +168,10 @@
   <meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<div class="home-page">
+<div
+  class="home-page"
+  style={`--home-action:${preview.action};--home-action-hover:color-mix(in srgb, ${preview.action}, #172938 18%)`}
+>
   <section class="hero-stage">
     <div class="hero-scene">
       {#key preview.id}
@@ -197,7 +201,11 @@
           aria-expanded={menuOpen}
           aria-controls="home-navigation"
         >
-          {menuOpen ? "×" : "☰"}
+          <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path class="menu-top" d="M5 6h14" />
+            <path class="menu-middle" d="M5 12h14" />
+            <path class="menu-bottom" d="M5 18h14" />
+          </svg>
         </button>
 
         <nav
@@ -283,12 +291,19 @@
 
   <section id="create" class="create-section" aria-labelledby="create-title">
     <div class="section-inner">
-      <div class="create-heading">
-        <span class="tiny-route" aria-hidden="true">
-          <i></i>
-          <span class="tiny-plane"><IconAirplane size={17} /></span>
-        </span>
-        <p>次の旅</p>
+      <div class="create-heading" use:scrollDrawing>
+        <svg
+          class="form-thread"
+          viewBox="0 0 620 112"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path
+            data-draw
+            pathLength="1"
+            d="M310 0C310 20 608 10 608 48C608 90 359 86 325 98C314 102 310 104 310 112"
+          />
+        </svg>
         <h2 id="create-title">次の旅を、つくろう。</h2>
       </div>
 
@@ -414,6 +429,32 @@
   .menu-button {
     display: none;
   }
+  .menu-icon {
+    width: 24px;
+    height: 24px;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+  }
+  .menu-icon path {
+    transform-origin: 12px 12px;
+    transition:
+      transform 180ms ease,
+      opacity 180ms ease;
+  }
+  .menu-button.open .menu-top {
+    transform: translateY(6px) rotate(45deg);
+    transform-origin: 12px 6px;
+  }
+  .menu-button.open .menu-middle {
+    opacity: 0;
+  }
+  .menu-button.open .menu-bottom {
+    transform: translateY(-6px) rotate(-45deg);
+    transform-origin: 12px 18px;
+  }
   .hero-main {
     display: grid;
     width: min(1180px, calc(100% - 64px));
@@ -513,7 +554,7 @@
     stroke-linecap: round;
   }
   .create-section {
-    padding: 32px 24px 80px;
+    padding: 0 24px 80px;
     scroll-margin-top: 24px;
   }
   .section-inner {
@@ -521,37 +562,33 @@
     margin: auto;
   }
   .create-heading {
-    margin-bottom: 28px;
+    position: relative;
+    display: grid;
+    height: 112px;
+    place-items: center;
     text-align: center;
   }
-  .tiny-route {
-    position: relative;
-    display: block;
-    width: 110px;
-    height: 22px;
-    margin: 0 auto 12px;
-    color: #8aa1b3;
-  }
-  .tiny-route i {
+  .form-thread {
     position: absolute;
-    top: 10px;
-    left: 0;
-    width: 85px;
-    border-top: 2px dotted currentColor;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
   }
-  .tiny-plane {
-    position: absolute;
-    right: 0;
-    top: 0;
-    transform: rotate(8deg);
-  }
-  .create-heading p {
-    margin: 0 0 8px;
-    color: var(--home-muted);
-    font-size: 11px;
-    letter-spacing: 0.16em;
+  .form-thread path {
+    fill: none;
+    stroke: #354952;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    vector-effect: non-scaling-stroke;
+    transition: stroke-dashoffset 70ms linear;
   }
   .create-heading h2 {
+    position: relative;
+    padding: 6px 10px;
+    background: var(--home-paper);
     margin: 0;
     font-family: var(--home-font-serif);
     font-size: clamp(26px, 3.5vw, 36px);
@@ -692,10 +729,7 @@
       height: 20px;
     }
     .create-section {
-      padding: 24px 16px 56px;
-    }
-    .create-heading {
-      margin-bottom: 22px;
+      padding: 0 16px 56px;
     }
   }
   @media (max-height: 700px) and (max-width: 767px) {
@@ -717,7 +751,9 @@
     :global(html) {
       scroll-behavior: auto;
     }
-    .primary {
+    .primary,
+    .form-thread path,
+    .menu-icon path {
       transition: none;
     }
   }

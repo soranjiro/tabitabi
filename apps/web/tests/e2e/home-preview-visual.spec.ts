@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
-async function selectMiddlePreview(page: Page) {
-  await page.locator(".preview-dots button").nth(2).click();
+async function selectMiddlePreview(page: Page, index = 2) {
+  await page.locator(".preview-dots button").nth(index).click();
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await expect
     .poll(() =>
@@ -91,7 +91,7 @@ for (const viewport of viewports) {
     expect(form.x + form.width).toBeLessThanOrEqual(viewport.width - 14);
     await expect(page.locator("#title")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "次の表示スタイル" }),
+      page.getByRole("button", { name: "次のデザイン" }),
     ).toBeVisible();
     await expect(
       page.getByRole("switch", { name: "パスワードで保護する" }),
@@ -125,7 +125,7 @@ test("preview buttons, dots, horizontal scroll and resize keep the selected samp
   await page.locator(".preview-dots button").first().click();
   await expect(
     page.getByRole("button", { name: "前のしおり", exact: true }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   const track = page.locator(".preview-track");
   await track.evaluate((element) => {
     element.scrollLeft += 232;
@@ -149,7 +149,7 @@ test("preview buttons, dots, horizontal scroll and resize keep the selected samp
   await page.locator(".preview-dots button").last().click();
   await expect(
     page.getByRole("button", { name: "次のしおり", exact: true }),
-  ).toBeDisabled();
+  ).toBeEnabled();
 });
 
 test("touch swiping changes the sample without blocking vertical page scrolling", async ({
@@ -158,7 +158,7 @@ test("touch swiping changes the sample without blocking vertical page scrolling"
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await selectMiddlePreview(page);
+  await selectMiddlePreview(page, 5);
   const previousTitle = await page
     .locator(".shiori-preview.active h2")
     .textContent();
@@ -182,6 +182,10 @@ test("touch swiping changes the sample without blocking vertical page scrolling"
   await expect(page.locator(".shiori-preview.active h2")).not.toHaveText(
     previousTitle!,
   );
+  await expect(page.locator(".preview-dots button").first()).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await session.send("Input.dispatchTouchEvent", {
     type: "touchStart",
     touchPoints: [{ x: 195, y: 700 }],
@@ -201,46 +205,115 @@ test("touch swiping changes the sample without blocking vertical page scrolling"
     .toBeGreaterThan(100);
 });
 
-test("journey line completes while visible and respects changing reduced-motion preferences", async ({
-  page,
-}, testInfo) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.emulateMedia({ reducedMotion: "no-preference" });
-  await page.goto("/");
-  const line = page.locator(".story-line");
-  await expect
-    .poll(async () => Number(await line.getAttribute("stroke-dashoffset")))
-    .toBeGreaterThan(0.95);
-  const top = await page
-    .locator(".journey-section")
-    .evaluate((element) => (element as HTMLElement).offsetTop);
-  await page.evaluate(
-    (y) => window.scrollTo({ top: y - 500, behavior: "instant" }),
-    top,
-  );
-  await expect
-    .poll(async () => Number(await line.getAttribute("stroke-dashoffset")))
-    .toBeLessThan(0.95);
-  await expect
-    .poll(async () => Number(await line.getAttribute("stroke-dashoffset")))
-    .toBeGreaterThan(0.1);
-  await page.evaluate(
-    (y) => window.scrollTo({ top: y - 140, behavior: "instant" }),
-    top,
-  );
-  await expect(line).toHaveAttribute("stroke-dashoffset", "0");
-  await expect(page.locator(".paper-plane")).toHaveCSS("opacity", "1");
-  await expect(page.locator(".view-scene")).toHaveCSS("opacity", "1");
-  await page.screenshot({ path: testInfo.outputPath("journey.png") });
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(line).toHaveCSS("transition-duration", "0s");
-  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
-  await expect(line).toHaveAttribute("stroke-dashoffset", "0");
-  await expect(page.locator(".shiori-preview.active")).toHaveCSS(
-    "transition-duration",
-    "0s",
-  );
-});
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test(`the continuous drawing unfolds in order, reverses on scroll and joins the form at ${viewport.width}px`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.goto("/");
+    const drawing = page.locator(".journey-inner");
+    const progress = () =>
+      drawing.evaluate((node) =>
+        Number((node as HTMLElement).dataset.drawingProgress),
+      );
+    await expect.poll(progress).toBe(0);
+    const { top, height } = await drawing.evaluate((node) => ({
+      top: node.getBoundingClientRect().top + window.scrollY,
+      height: node.getBoundingClientRect().height,
+    }));
+    const scrollToProgress = async (value: number) => {
+      await page.evaluate(
+        ({ top, height, value }) =>
+          window.scrollTo({
+            top:
+              top -
+              (innerHeight * 0.82 -
+                value * Math.max(height * 0.55, height - innerHeight * 0.24)),
+            behavior: "instant",
+          }),
+        { top, height, value },
+      );
+      await expect.poll(progress).toBeCloseTo(value, 2);
+    };
+    await scrollToProgress(0.22);
+    await expect(page.locator(".entry-line")).toHaveCSS(
+      "stroke-dashoffset",
+      "0px",
+    );
+    await expect(page.locator(".create-scene")).not.toHaveCSS(
+      "stroke-dashoffset",
+      "0px",
+    );
+    await expect(page.locator(".share-scene")).toHaveCSS(
+      "stroke-dashoffset",
+      "1px",
+    );
+    await scrollToProgress(0.6);
+    await expect(page.locator(".share-scene")).toHaveCSS(
+      "stroke-dashoffset",
+      "0px",
+    );
+    await expect(page.locator(".view-scene")).toHaveCSS(
+      "stroke-dashoffset",
+      "1px",
+    );
+    await scrollToProgress(1);
+    await expect(page.locator(".exit-line")).toHaveCSS(
+      "stroke-dashoffset",
+      "0px",
+    );
+    await page.screenshot({ path: testInfo.outputPath("journey.png") });
+    const joins = await page.evaluate(() => {
+      const art = document
+        .querySelector(".journey-art")!
+        .getBoundingClientRect();
+      const thread = document
+        .querySelector(".form-thread")!
+        .getBoundingClientRect();
+      const form = document
+        .querySelector(".form-outline")!
+        .getBoundingClientRect();
+      return {
+        first: Math.abs(art.bottom - thread.top),
+        second: Math.abs(thread.bottom - form.top),
+        centers: Math.abs(
+          art.left + art.width / 2 - thread.left - thread.width / 2,
+        ),
+      };
+    });
+    expect(joins.first).toBeLessThan(1);
+    expect(joins.second).toBeLessThan(1);
+    expect(joins.centers).toBeLessThan(1);
+    await scrollToProgress(0.22);
+    await expect(page.locator(".view-scene")).toHaveCSS(
+      "stroke-dashoffset",
+      "1px",
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await expect.poll(progress).toBe(1);
+    await expect(page.locator(".view-scene")).toHaveCSS(
+      "stroke-dashoffset",
+      "0px",
+    );
+    await expect(page.locator(".entry-line")).toHaveCSS(
+      "transition-duration",
+      "0s",
+    );
+    await page.locator("#create").scrollIntoViewIfNeeded();
+    await expect(page.locator(".form-outline path")).toHaveCSS(
+      "stroke-dashoffset",
+      "0px",
+    );
+    await expect(page.locator(".shiori-preview.active")).toHaveCSS(
+      "transition-duration",
+      "0s",
+    );
+  });
+}
 
 test("form retains the selected style after switching tabs and resizing", async ({
   page,
@@ -249,7 +322,7 @@ test("form retains the selected style after switching tabs and resizing", async 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await page.locator("#create").scrollIntoViewIfNeeded();
-  await page.getByRole("button", { name: "次の表示スタイル" }).click();
+  await page.getByRole("button", { name: "次のデザイン" }).click();
   const selected = page.locator('.theme-card.selected[data-theme-copy="1"]');
   const theme = await selected.getAttribute("data-theme-id");
   await page.getByRole("tab", { name: "URLから開く" }).click();
@@ -289,8 +362,10 @@ test("rapid smooth carousel navigation finishes at the requested sample", async 
   );
   await selectMiddlePreview(page);
   const title = await page.locator(".shiori-preview.active h2").textContent();
-  await page.getByRole("button", { name: "次のしおり", exact: true }).click();
-  await page.getByRole("button", { name: "前のしおり", exact: true }).click();
+  for (let step = 0; step < 20; step++)
+    await page.getByRole("button", { name: "次のしおり", exact: true }).click();
+  for (let step = 0; step < 20; step++)
+    await page.getByRole("button", { name: "前のしおり", exact: true }).click();
   await expect(page.locator(".shiori-preview.active h2")).toHaveText(title!);
   await expect
     .poll(() =>
@@ -352,4 +427,108 @@ test("the create anchor works before JavaScript is available", async ({
     .click();
   await expect(page.locator("#create")).toBeInViewport();
   await context.close();
+});
+
+test("preview loops in both directions and keeps background, color and accessible card in sync", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await selectMiddlePreview(page, 0);
+  const springColor = await page
+    .locator(".primary")
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+  await page.getByRole("button", { name: "前のしおり", exact: true }).click();
+  await expect(page.locator(".preview-dots button").last()).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.locator(".shiori-preview.active h2")).toHaveText(
+    "秋の金沢 王道まち歩き",
+  );
+  await expect(page.locator(".primary")).not.toHaveCSS(
+    "background-color",
+    springColor,
+  );
+  for (let step = 0; step < 13; step++) {
+    await page.getByRole("button", { name: "次のしおり", exact: true }).click();
+    await expect(
+      page.locator(".preview-dots button").nth(step % 6),
+    ).toHaveAttribute("aria-pressed", "true");
+  }
+  await expect(page.locator(".shiori-preview.active h2")).toHaveText(
+    "春の京都・宇治",
+  );
+  await expect(page.locator(".hero-picture img")).toHaveAttribute(
+    "src",
+    "/hero/background-spring.avif",
+  );
+  await expect(page.locator(".primary")).toHaveCSS(
+    "background-color",
+    springColor,
+  );
+  await expect(page.locator(".shiori-preview[tabindex='0']")).toHaveCount(1);
+  await expect(
+    page.locator(".shiori-preview[aria-hidden='false']"),
+  ).toHaveCount(1);
+  await expect
+    .poll(() =>
+      page.locator(".shiori-preview.active").evaluate((node) => {
+        const a = node.getBoundingClientRect(),
+          b = node.parentElement!.getBoundingClientRect();
+        return Math.abs(a.left + a.width / 2 - b.left - b.width / 2);
+      }),
+    )
+    .toBeLessThan(2);
+  for (let step = 0; step < 13; step++) {
+    await page.getByRole("button", { name: "前のしおり", exact: true }).click();
+    await expect(
+      page.locator(".preview-dots button").nth((5 - (step % 6) + 6) % 6),
+    ).toHaveAttribute("aria-pressed", "true");
+  }
+});
+
+test("hamburger and close icon share the exact button center", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator(".preview-area")).toHaveAttribute(
+    "data-ready",
+    "true",
+  );
+  const menu = page.locator(".menu-button");
+  for (const open of [false, true, false]) {
+    if ((await menu.getAttribute("aria-expanded")) !== String(open))
+      await menu.click();
+    const delta = await menu.evaluate((button) => {
+      const box = button.getBoundingClientRect();
+      const paths = Array.from(button.querySelectorAll("path"))
+        .filter((p) => getComputedStyle(p).opacity !== "0")
+        .map((p) => p.getBoundingClientRect());
+      return {
+        x: Math.abs(
+          (Math.min(...paths.map((p) => p.left)) +
+            Math.max(...paths.map((p) => p.right))) /
+            2 -
+            box.left -
+            box.width / 2,
+        ),
+        y: Math.abs(
+          (Math.min(...paths.map((p) => p.top)) +
+            Math.max(...paths.map((p) => p.bottom))) /
+            2 -
+            box.top -
+            box.height / 2,
+        ),
+      };
+    });
+    expect(delta.x).toBeLessThan(0.5);
+    expect(delta.y).toBeLessThan(0.5);
+    await page.screenshot({
+      path: testInfo.outputPath(open ? "menu-open.png" : "menu-closed.png"),
+    });
+  }
 });

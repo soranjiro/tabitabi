@@ -6,6 +6,7 @@ export type Preview = {
   duration: string;
   destination: string;
   accent: string;
+  action: string;
   imagePosition: string;
   steps: Array<{ time: string; title: string }>;
 };
@@ -19,6 +20,7 @@ export const previews: Preview[] = [
     duration: "2泊3日",
     destination: "京都",
     accent: "#ec858c",
+    action: "#885167",
     imagePosition: "center 48%",
     steps: [
       { time: "09:00", title: "清水寺参拝" },
@@ -35,6 +37,7 @@ export const previews: Preview[] = [
     duration: "2泊3日",
     destination: "沖縄",
     accent: "#3f9ec6",
+    action: "#236489",
     imagePosition: "center 52%",
     steps: [
       { time: "10:00", title: "那覇空港到着" },
@@ -51,6 +54,7 @@ export const previews: Preview[] = [
     duration: "6泊7日",
     destination: "栃木",
     accent: "#c77145",
+    action: "#98532e",
     imagePosition: "center 48%",
     steps: [
       { time: "09:00", title: "日光東照宮参拝" },
@@ -67,6 +71,7 @@ export const previews: Preview[] = [
     duration: "17泊18日",
     destination: "北海道",
     accent: "#7592b7",
+    action: "#4c6083",
     imagePosition: "center 50%",
     steps: [
       { time: "08:00", title: "札幌駅から登別へ移動" },
@@ -83,6 +88,7 @@ export const previews: Preview[] = [
     duration: "1泊2日",
     destination: "鎌倉・江の島",
     accent: "#668fb2",
+    action: "#4f687e",
     imagePosition: "center 48%",
     steps: [
       { time: "08:30", title: "明月院の紫陽花" },
@@ -99,6 +105,7 @@ export const previews: Preview[] = [
     duration: "1泊2日",
     destination: "金沢",
     accent: "#a96845",
+    action: "#8c583a",
     imagePosition: "center 52%",
     steps: [
       { time: "09:50", title: "金沢駅に到着" },

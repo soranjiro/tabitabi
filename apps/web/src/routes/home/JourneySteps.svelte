@@ -1,340 +1,167 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-
-  let section = $state<HTMLElement | null>(null);
-  // Keep the illustration complete during SSR and when JavaScript is disabled.
-  let progress = $state(1);
-
-  onMount(() => {
-    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-    let frame = 0;
-    let active = !("IntersectionObserver" in window);
-
-    const update = () => {
-      if (motionPreference.matches) {
-        cancelAnimationFrame(frame);
-        progress = 1;
-        return;
-      }
-      if (!active) return;
-
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        if (!section) return;
-
-        const rect = section.getBoundingClientRect();
-        const start = window.innerHeight * 0.86;
-        // Finish while the illustration is still visible, before the form.
-        const end = window.innerHeight * 0.35 - rect.height * 0.15;
-        const next = (start - rect.top) / Math.max(1, start - end);
-        progress = Math.min(1, Math.max(0, next));
-      });
-    };
-
-    const observer = "IntersectionObserver" in window && section
-      ? new IntersectionObserver(
-          ([entry]) => {
-            active = Boolean(entry?.isIntersecting);
-            if (active) update();
-          },
-          { rootMargin: "22% 0px 22% 0px" },
-        )
-      : null;
-
-    if (observer && section) observer.observe(section);
-    update();
-    motionPreference.addEventListener("change", update);
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update, { passive: true });
-
-    return () => {
-      cancelAnimationFrame(frame);
-      observer?.disconnect();
-      motionPreference.removeEventListener("change", update);
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-    };
-  });
-
-  const planeOpacity = $derived(Math.min(1, Math.max(0, (progress - 0.34) * 4)));
-  const viewOpacity = $derived(Math.min(1, Math.max(0, (progress - 0.62) * 3.2)));
+  import { scrollDrawing } from "./scroll-drawing";
 </script>
 
-<section class="journey-section" bind:this={section} aria-labelledby="journey-title">
-  <div class="journey-inner">
-    <header class="journey-heading">
-      <span class="route-mark" aria-hidden="true"><i></i><b></b><i></i></span>
-      <h2 id="journey-title">つくって、送って、<br class="mobile-break" />みんなで見る。</h2>
-    </header>
-
-    <div class="journey-art-wrap" aria-hidden="true">
-      <svg class="journey-art" viewBox="0 40 420 150" role="presentation">
-        <g class="line-art create-scene">
-          <path d="M23 156c10-19 24-29 42-31 19-2 34 5 43 17" />
-          <circle cx="52" cy="95" r="15" />
-          <path d="M42 91c4-10 10-15 20-16M39 99c-6 8-8 20-8 31M62 110c7 7 11 15 13 25M41 125l18 16M59 141l20-16" />
-          <circle cx="101" cy="91" r="14" />
-          <path d="M90 88c4-9 10-14 20-14M88 105c-7 8-10 19-10 34M111 105c7 8 10 18 12 30M87 129l14 11 14-12" />
-          <circle cx="145" cy="101" r="14" />
-          <path d="M135 96c5-9 11-13 20-12M131 114c-7 8-10 18-10 29M155 114c7 8 10 16 12 26M132 135l14 7 12-11" />
-          <path class="map-sheet" d="M71 146l36-8 25 14-38 9-23-15Z" />
-          <path d="M81 146l13 6 20-7M92 143l7 15M116 142l6 11" />
-        </g>
-
+<section class="journey-section" aria-labelledby="journey-title">
+  <h2 id="journey-title" class="visually-hidden">
+    つくって、送って、みんなで見る。
+  </h2>
+  <div class="journey-inner" use:scrollDrawing>
+    <svg class="journey-art" viewBox="0 0 600 1080" aria-hidden="true">
+      <g
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          class="story-line entry-line"
+          data-draw
+          data-from="0"
+          data-to=".10"
+          pathLength="1"
+          d="M300 0C316 42 322 74 276 98S213 150 245 170"
+        />
+        <path
+          class="create-scene"
+          data-draw
+          data-from=".10"
+          data-to=".27"
+          pathLength="1"
+          d="M245 170C273 184 279 204 260 216L204 203 179 289C170 288 163 269 167 249S166 220 153 207C137 194 138 185 151 182C180 177 185 145 168 125C151 102 123 113 119 137C114 158 120 190 105 193C91 196 86 179 101 173C120 165 134 182 125 194C114 208 94 214 87 235L64 282C51 304 41 302 42 293C47 281 52 304 61 314C80 337 120 336 152 322C181 310 211 303 237 307L275 323C302 305 323 301 352 308L389 319C414 324 432 302 431 279C431 258 424 232 407 218C392 205 371 204 373 193C373 185 382 179 380 163C385 126 346 118 329 137C314 154 320 181 341 187C358 194 366 187 362 193C354 203 335 192 314 198C294 201 287 216 282 237L275 323 292 228 352 216 341 299C335 297 337 285 342 275L341 269C330 263 329 253 340 254L353 257C363 263 369 279 381 282C396 286 404 263 407 252M179 289L204 203C235 207 270 216 282 237"
+        />
+        <path
+          data-draw
+          data-from=".27"
+          data-to=".32"
+          pathLength="1"
+          d="M121 138C127 157 145 166 166 137M122 316C109 312 100 277 104 253C107 224 132 211 143 225C157 241 145 274 144 299C145 307 169 279 184 272L211 261C223 258 229 263 218 267L209 269C219 270 218 276 209 277C219 281 211 285 205 284C211 288 204 292 199 291L176 315M307 243L349 235 342 269 301 275ZM309 264L320 250 334 262 339 257M334 245C331 245 330 251 334 251C339 251 339 245 334 245M252 244C239 228 259 223 260 239C260 246 252 250 252 250Z"
+        />
         <path
           class="story-line"
+          data-draw
+          data-from=".32"
+          data-to=".42"
           pathLength="1"
-          stroke-dasharray="1"
-          stroke-dashoffset={1 - progress}
-          d="M20 164c48 7 74 10 121 3 37-6 48-31 76-22 24 8 24 35 51 35 27 0 33-35 62-33 27 2 33 25 72 13"
+          d="M389 319C426 328 437 363 388 382C317 410 361 427 347 457C338 476 309 466 290 474"
         />
-
-        <g class="paper-plane" style:opacity={planeOpacity}>
-          <path d="M213 124l31-13-12 28-7-10-12-5Z" />
-          <path d="M225 129l19-18" />
-        </g>
-
-        <g class="line-art view-scene" style:opacity={viewOpacity}>
-          <circle cx="324" cy="99" r="15" />
-          <path d="M314 94c4-10 11-15 21-14M310 114c-7 8-10 18-9 31M336 114c7 8 11 17 13 29M311 137l14 6 13-11" />
-          <circle cx="369" cy="104" r="14" />
-          <path d="M359 100c4-9 11-13 20-12M356 117c-6 7-9 17-9 28M379 117c7 7 10 15 12 25M357 137l13 7 11-12" />
-          <rect x="337" y="127" width="28" height="35" rx="4" />
-          <path d="M344 136h14M344 143h11M344 150h14" />
-          <path class="landscape" d="M344 67c13-15 30-18 51-11M364 66c6-8 13-12 21-11M379 61l8-12 8 12" />
-        </g>
-      </svg>
-    </div>
-
-    <div class="journey-labels" aria-label="たびたびの使い方">
-      <div>
-        <span>01</span>
-        <strong>つくる</strong>
-        <small>旅の予定をまとめる。</small>
-      </div>
-      <div>
-        <span>02</span>
-        <strong>送る</strong>
-        <small>URLで共有する。</small>
-      </div>
-      <div>
-        <span>03</span>
-        <strong>見る</strong>
-        <small>みんなで確認。</small>
-      </div>
-    </div>
+        <path
+          class="share-scene"
+          data-draw
+          data-from=".42"
+          data-to=".57"
+          pathLength="1"
+          d="M290 474C273 475 264 482 265 498L281 626C283 641 294 647 308 644L354 638C369 636 371 626 368 612L351 484C349 472 344 467 330 470L290 474C277 476 270 483 272 499L288 627C290 637 297 639 308 637L351 631C360 630 361 623 359 612M283 510L337 502 344 553 290 561 283 510M290 550L305 529 319 540 328 535 337 543M307 576L340 570M310 588L332 584M281 600C255 596 234 577 241 568C249 559 256 578 237 582C220 589 190 583 179 575C164 564 140 559 139 539C138 520 159 509 174 520C188 529 187 548 177 556C165 566 146 559 139 545M148 552C155 536 173 537 178 551M354 530C378 531 373 500 401 499C418 498 416 491 416 483C416 464 439 456 452 470C466 484 459 504 442 507C426 510 417 500 416 489M426 498C427 483 448 482 452 497M354 638C389 625 426 637 415 655C402 675 339 680 321 662"
+        />
+        <path
+          class="paper-plane"
+          data-draw
+          data-from=".57"
+          data-to=".63"
+          pathLength="1"
+          d="M301 626C301 603 336 595 350 615C365 636 347 654 328 653C309 652 301 641 301 626M314 623L338 612 331 640 324 628 314 623 338 612 324 628M380 569L390 551M383 583L407 572M219 501C204 489 207 469 226 468C243 467 246 481 240 490L239 502 228 497 219 501M220 480C216 471 226 472 227 478C230 472 238 476 234 482L228 488 220 480"
+        />
+        <path
+          class="story-line"
+          data-draw
+          data-from=".63"
+          data-to=".72"
+          pathLength="1"
+          d="M321 662C286 698 306 716 329 738C354 762 353 791 317 807"
+        />
+        <path
+          class="view-scene"
+          data-draw
+          data-from=".72"
+          data-to=".88"
+          pathLength="1"
+          d="M317 807C294 801 277 819 281 841C284 862 310 870 326 855C346 839 338 812 317 807M284 853C293 865 285 871 273 875C259 879 253 890 251 906M327 855C322 869 340 871 347 889M87 943C101 934 116 920 133 896C147 878 169 879 187 889C199 897 207 909 208 929M153 873C132 870 122 849 132 833C145 811 174 815 185 832C197 853 181 875 153 873C144 872 151 859 148 846C145 837 126 839 130 851C132 860 146 852 146 839C145 823 171 816 179 830M188 845C183 860 164 873 151 870M172 895C182 904 180 928 177 948C175 956 183 944 196 934L228 912C246 901 251 906 239 912L232 916C245 913 247 919 238 922C249 922 240 927 236 926L211 950C198 964 182 976 167 976C145 975 136 952 131 939M87 943C117 965 133 980 164 978C213 974 246 954 276 959L303 927 266 923 249 962C245 968 256 968 258 961L270 928 304 929 297 961 277 962M347 889C356 879 375 882 386 896C397 910 397 931 405 947C413 962 438 964 439 976C441 990 409 986 393 978C375 969 374 954 369 940C362 924 347 922 343 905C338 884 335 862 350 848C366 832 390 838 397 855C405 873 392 891 380 887C365 884 358 867 351 854M374 892C387 902 376 917 386 928C394 937 387 949 386 966M304 962C331 963 351 977 374 980C414 986 442 973 463 953"
+        />
+        <path
+          data-draw
+          data-from=".88"
+          data-to=".93"
+          pathLength="1"
+          d="M211 803C191 794 193 769 215 765C238 761 256 777 249 795L242 813 230 802 211 803M217 778C209 772 208 788 219 797C229 787 229 774 217 778M399 822C385 812 391 790 409 788C428 785 443 800 438 815L427 829 422 819 399 822M401 810L411 799 420 806 425 801 432 809M283 792L277 780M309 785V772M335 792L343 779"
+        />
+        <path
+          class="story-line exit-line"
+          data-draw
+          data-from=".93"
+          data-to="1"
+          pathLength="1"
+          d="M463 953C493 926 509 936 487 982C465 1031 355 1009 316 1041C307 1048 300 1062 300 1080"
+        />
+      </g>
+    </svg>
+    <p class="scene-label create-label" data-reveal=".22">旅をつくる。</p>
+    <p class="scene-label share-label" data-reveal=".52">URLで送る。</p>
+    <p class="scene-label view-label" data-reveal=".82">みんなで見る。</p>
   </div>
 </section>
 
 <style>
   .journey-section {
     position: relative;
-    padding: 64px 20px 48px;
-    overflow: hidden;
-    background:
-      radial-gradient(circle at 12% 32%, rgba(203,225,237,.28) 0 46px, transparent 47px),
-      radial-gradient(circle at 88% 58%, rgba(203,225,237,.2) 0 58px, transparent 59px),
-      var(--home-paper);
-  }
-
-  .journey-inner {
-    width: min(900px, 100%);
-    margin: 0 auto;
-  }
-
-  .journey-heading {
-    margin-bottom: 38px;
-    text-align: center;
-  }
-
-  .route-mark {
-    position: relative;
-    display: flex;
-    width: 112px;
-    height: 18px;
-    margin: 0 auto 14px;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .route-mark::before {
-    position: absolute;
-    right: 5px;
-    left: 5px;
-    top: 8px;
-    border-top: 2px dashed #aebdca;
-    content: "";
-  }
-
-  .route-mark i,
-  .route-mark b {
-    position: relative;
-    z-index: 1;
-    width: 9px;
-    height: 9px;
-    border: 2px solid #8fa5b6;
-    border-radius: 50%;
+    padding-inline: 16px;
     background: var(--home-paper);
   }
-
-  .route-mark b {
-    width: 11px;
-    height: 11px;
-    border-color: var(--home-action);
+  .journey-inner {
+    position: relative;
+    width: min(660px, 100%);
+    margin: auto;
   }
-
-  h2 {
-    margin: 0;
-    color: var(--home-ink-strong);
-    font-family: var(--home-font-serif);
-    font-size: clamp(30px, 4.1vw, 42px);
-    font-weight: 400;
-    line-height: 1.45;
-    letter-spacing: .045em;
-  }
-
-  .mobile-break { display: none; }
-
-  .journey-art-wrap {
-    width: min(760px, 100%);
-    margin: 0 auto;
-  }
-
   .journey-art {
     display: block;
     width: 100%;
     height: auto;
-    overflow: visible;
-    color: #2f6590;
+    color: #354952;
   }
-
-  .line-art,
-  .story-line,
-  .paper-plane {
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2.15;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    vector-effect: non-scaling-stroke;
+  .journey-art path {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 70ms linear;
   }
-
-  .line-art .map-sheet {
-    fill: rgba(255,255,255,.55);
-  }
-
-  .story-line {
-    stroke-width: 2.6;
-    transition: stroke-dashoffset 80ms linear;
-  }
-
-  .paper-plane,
-  .view-scene {
-    transition: opacity 180ms ease;
-  }
-
-  .journey-labels {
-    display: grid;
-    width: min(760px, 100%);
-    margin: -8px auto 0;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 18px;
-  }
-
-  .journey-labels > div {
-    display: grid;
-    min-width: 0;
-    justify-items: center;
-    text-align: center;
-  }
-
-  .journey-labels span {
-    display: grid;
-    width: 38px;
-    height: 38px;
-    margin-bottom: 10px;
-    border-radius: 50%;
-    place-items: center;
-    color: #46657f;
-    background: #e7f1f7;
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: .06em;
-  }
-
-  .journey-labels strong {
+  .scene-label {
+    position: absolute;
+    margin: 0;
     color: var(--home-ink-strong);
     font-family: var(--home-font-serif);
-    font-size: 21px;
-    font-weight: 600;
+    font-size: clamp(13px, 2.2vw, 20px);
+    line-height: 1.8;
+    letter-spacing: 0.035em;
+    transition: opacity 120ms linear;
   }
-
-  .journey-labels small {
-    margin-top: 6px;
-    color: var(--home-muted);
-    font-size: 12px;
-    line-height: 1.6;
+  .create-label {
+    top: 22%;
+    left: 75%;
   }
-
+  .share-label {
+    top: 51%;
+    left: 2%;
+  }
+  .view-label {
+    top: 82%;
+    left: 77%;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   @media (max-width: 767px) {
-    .journey-section {
-      padding: 32px 16px 24px;
-    }
-
-    .journey-heading {
-      margin-bottom: 24px;
-    }
-
-    .mobile-break { display: none; }
-
-    h2 {
-      font-size: clamp(17px, 4.7vw, 24px);
-      line-height: 1.5;
-    }
-
-    .journey-art-wrap {
-      width: min(100%, 420px);
-      margin-top: 4px;
-    }
-
-    .journey-labels {
-      width: min(100%, 420px);
-      margin-top: -3px;
-      gap: 6px;
-    }
-
-    .journey-labels span {
-      width: 34px;
-      height: 34px;
-      margin-bottom: 8px;
-      font-size: 11px;
-    }
-
-    .journey-labels strong {
-      font-size: 18px;
-    }
-
-    .journey-labels small {
-      max-width: 104px;
-      font-size: 11px;
-      line-height: 1.45;
+    .journey-art path {
+      stroke-width: 2.7;
     }
   }
-
-  @media (max-width: 350px) {
-    .journey-section {
-      padding-inline: 12px;
-    }
-
-    .journey-labels strong { font-size: 17px; }
-    .journey-labels small { font-size: 10px; }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .story-line,
-    .paper-plane,
-    .view-scene {
+    .journey-art path,
+    .scene-label {
       transition: none;
     }
   }

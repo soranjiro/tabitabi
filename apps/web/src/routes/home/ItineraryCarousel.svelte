@@ -10,11 +10,16 @@
     onselect: (index: number) => void;
   } = $props();
 
+  const count = previews.length;
+  const copies = [0, 1, 2];
   let index = $state(untrack(() => initialIndex));
+  let physicalIndex = $state(count + untrack(() => initialIndex));
   let ready = $state(false);
   let track = $state<HTMLDivElement | null>(null);
   let frame = 0;
+  let settleTimer: ReturnType<typeof setTimeout> | undefined;
   let pendingIndex: number | null = null;
+  let measuredWidth = 0;
 
   function centerCard(next: number, behavior: ScrollBehavior = "smooth") {
     const card = track?.children[next] as HTMLElement | undefined;
@@ -22,33 +27,58 @@
     track.scrollTo({
       left: card.offsetLeft - (track.clientWidth - card.offsetWidth) / 2,
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
+        ? "instant"
         : behavior,
     });
   }
 
+  function recenter() {
+    cancelAnimationFrame(frame);
+    clearTimeout(settleTimer);
+    measuredWidth = track?.clientWidth ?? 0;
+    physicalIndex = count + index;
+    pendingIndex = physicalIndex;
+    centerCard(physicalIndex, "instant");
+    updateSelection();
+  }
+
   function select(next: number) {
     cancelAnimationFrame(frame);
-    index = Math.max(0, Math.min(previews.length - 1, next));
-    pendingIndex = index;
+    clearTimeout(settleTimer);
+    if (next < 0 || next >= count * copies.length) {
+      const direction = next < physicalIndex ? -1 : 1;
+      recenter();
+      next = physicalIndex + direction;
+    }
+    physicalIndex = next;
+    index = next % count;
+    pendingIndex = next;
     onselect(index);
-    centerCard(index);
+    centerCard(next);
+  }
+
+  function settle() {
+    if (pendingIndex !== null || !track) return;
+    if (physicalIndex < count || physicalIndex >= count * 2) recenter();
   }
 
   function updateSelection() {
     cancelAnimationFrame(frame);
+    clearTimeout(settleTimer);
     frame = requestAnimationFrame(() => {
       if (!track) return;
+      if (track.clientWidth !== measuredWidth) {
+        recenter();
+        return;
+      }
       const center = track.scrollLeft + track.clientWidth / 2;
-      // Scroll events can still refer to the old position just after a button
-      // click. Keep the requested sample selected until its snap point arrives.
       if (pendingIndex !== null) {
         const target = track.children[pendingIndex] as HTMLElement;
         if (Math.abs(target.offsetLeft + target.offsetWidth / 2 - center) > 2)
           return;
         pendingIndex = null;
       }
-      let closest = index;
+      let closest = physicalIndex;
       let distance = Infinity;
       Array.from(track.children).forEach((node, candidate) => {
         const card = node as HTMLElement;
@@ -58,26 +88,36 @@
           distance = delta;
         }
       });
-      if (closest !== index) {
-        index = closest;
+      physicalIndex = closest;
+      if (closest % count !== index) {
+        index = closest % count;
         onselect(index);
       }
+      // Safari versions without scrollend still normalize once the swipe settles.
+      settleTimer = setTimeout(settle, 160);
     });
+  }
+
+  function beginGesture() {
+    pendingIndex = null;
+    clearTimeout(settleTimer);
   }
 
   onMount(() => {
     let mounted = true;
     ready = true;
     void tick().then(() => {
-      if (mounted) centerCard(index, "auto");
+      if (mounted) recenter();
     });
-    // Preserve the centered card when rotating a phone or resizing the window.
-    const observer = new ResizeObserver(() => centerCard(index, "auto"));
+    window.addEventListener("resize", recenter);
+    const observer = new ResizeObserver(recenter);
     if (track) observer.observe(track);
     return () => {
       mounted = false;
       cancelAnimationFrame(frame);
+      clearTimeout(settleTimer);
       observer.disconnect();
+      window.removeEventListener("resize", recenter);
     };
   });
 </script>
@@ -94,49 +134,55 @@
     aria-label="しおりの一覧"
     bind:this={track}
     onscroll={updateSelection}
-    onpointerdown={() => (pendingIndex = null)}
-    onwheel={() => (pendingIndex = null)}
+    onscrollend={settle}
+    onpointerdown={beginGesture}
+    onwheel={beginGesture}
   >
-    {#each previews as preview, candidate}
-      <a
-        class="shiori-preview"
-        class:active={candidate === index}
-        href="/s/{preview.itineraryId}"
-        aria-label="{preview.title}のしおりを開く"
-        aria-hidden={candidate !== index}
-        tabindex={candidate === index ? 0 : -1}
-        style={`--accent:${preview.accent}`}
-        onclick={(event) => {
-          if (candidate !== index) {
-            event.preventDefault();
-            select(candidate);
-          }
-        }}
-      >
-        <div class="preview-body">
-          <span class="preview-destination"
-            >{preview.destination} / {preview.duration}</span
-          >
-          <h2>{preview.title}</h2>
-          <div class="day-row"><strong>Day 1</strong><span>旅の予定</span></div>
-          <ol class="preview-timeline">
-            {#each preview.steps as step}
-              <li><time>{step.time}</time><span>{step.title}</span></li>
-            {/each}
-          </ol>
-          <div class="preview-more">
-            <span>しおりを見る</span><span aria-hidden="true">→</span>
+    {#each copies as copy}
+      {#each previews as preview, candidate}
+        {@const position = copy * count + candidate}
+        <a
+          class="shiori-preview"
+          class:active={position === physicalIndex}
+          href="/s/{preview.itineraryId}"
+          aria-label="{preview.title}のしおりを開く"
+          aria-hidden={position !== physicalIndex}
+          tabindex={position === physicalIndex ? 0 : -1}
+          style={`--accent:${preview.accent}`}
+          onclick={(event) => {
+            if (position !== physicalIndex) {
+              event.preventDefault();
+              select(position);
+            }
+          }}
+        >
+          <div class="preview-body">
+            <span class="preview-destination"
+              >{preview.destination} / {preview.duration}</span
+            >
+            <h2>{preview.title}</h2>
+            <div class="day-row">
+              <strong>Day 1</strong><span>旅の予定</span>
+            </div>
+            <ol class="preview-timeline">
+              {#each preview.steps as step}
+                <li><time>{step.time}</time><span>{step.title}</span></li>
+              {/each}
+            </ol>
+            <div class="preview-more">
+              <span>しおりを見る</span><span aria-hidden="true">→</span>
+            </div>
           </div>
-        </div>
-      </a>
+        </a>
+      {/each}
     {/each}
   </div>
   <button
     class="preview-arrow previous"
     type="button"
     aria-label="前のしおり"
-    disabled={!ready || index === 0}
-    onclick={() => select(index - 1)}
+    disabled={!ready}
+    onclick={() => select(physicalIndex - 1)}
   >
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
   </button>
@@ -144,8 +190,8 @@
     class="preview-arrow next"
     type="button"
     aria-label="次のしおり"
-    disabled={!ready || index === previews.length - 1}
-    onclick={() => select(index + 1)}
+    disabled={!ready}
+    onclick={() => select(physicalIndex + 1)}
   >
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
   </button>
@@ -157,7 +203,11 @@
         class:active={candidate === index}
         aria-label={`${candidate + 1}枚目：${preview.title}`}
         aria-pressed={candidate === index}
-        onclick={() => select(candidate)}><span></span></button
+        onclick={() =>
+          select(
+            physicalIndex +
+              (((candidate - index + count + count / 2) % count) - count / 2),
+          )}><span></span></button
       >
     {/each}
   </div>

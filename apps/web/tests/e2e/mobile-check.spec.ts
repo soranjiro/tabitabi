@@ -234,10 +234,10 @@ test.describe("Responsive home page", () => {
     await passwordSwitch.check();
     await expect(page.getByLabel("編集用パスワード")).toBeVisible();
 
-    await expect(page.getByLabel("次の表示スタイル")).toBeVisible();
-    await expect(page.getByLabel("前の表示スタイル")).toBeVisible();
+    await expect(page.getByLabel("次のデザイン")).toBeVisible();
+    await expect(page.getByLabel("前のデザイン")).toBeVisible();
     await expect(
-      page.getByText("予定表", { exact: true }).first(),
+      page.getByText("計画を立てる", { exact: true }).first(),
     ).toBeVisible();
     await expect(page.getByText("詳細設定")).toHaveCount(0);
   });
@@ -250,14 +250,15 @@ test.describe("Responsive home page", () => {
       "data-ready",
       "true",
     );
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.locator(".journey-section").scrollIntoViewIfNeeded();
 
     await expect(page.locator(".journey-art")).toBeVisible();
-    await expect(page.locator(".story-line")).toHaveCount(1);
+    await expect(page.locator(".story-line")).toHaveCount(4);
     await expect(page.locator(".journey-step")).toHaveCount(0);
-    await expect(page.getByText("旅の予定をまとめる。")).toBeVisible();
-    await expect(page.getByText("URLで共有する。")).toBeVisible();
-    await expect(page.getByText("みんなで確認。")).toBeVisible();
+    await expect(page.getByText("旅をつくる。")).toBeVisible();
+    await expect(page.getByText("URLで送る。")).toBeVisible();
+    await expect(page.getByText("みんなで見る。", { exact: true })).toBeVisible();
   });
 
   test("keeps the intermediate hero in two columns", async ({ page }) => {

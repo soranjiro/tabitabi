@@ -728,15 +728,20 @@
   }
 
   .preview-timeline {
+    display: grid;
+    width: 100%;
     margin: 0;
     padding: 0 0 0 18px;
     border-left: 2px solid color-mix(in srgb, var(--accent) 72%, white);
+    grid-template-columns: minmax(0, 1fr);
     list-style: none;
   }
 
   .preview-timeline li {
     position: relative;
     display: grid;
+    width: 100%;
+    min-width: 0;
     min-height: 37px;
     padding: 4px 0 7px 10px;
     grid-template-columns: 50px minmax(0, 1fr);

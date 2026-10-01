@@ -57,6 +57,21 @@ for (const viewport of viewports) {
     expect(preview.x + preview.width).toBeLessThanOrEqual(viewport.width);
     expect(preview.y + preview.height).toBeLessThanOrEqual(hero.height);
     expect(journey.y).toBeGreaterThanOrEqual(hero.height);
+    const labels = await page.locator(".scene-label").evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const rect = node.getBoundingClientRect();
+        return {
+          left: rect.left,
+          right: rect.right,
+          lines: rect.height / parseFloat(getComputedStyle(node).lineHeight),
+        };
+      }),
+    );
+    for (const label of labels) {
+      expect(label.left).toBeGreaterThanOrEqual(0);
+      expect(label.right).toBeLessThanOrEqual(viewport.width);
+      expect(label.lines).toBeLessThan(1.01);
+    }
     if (viewport.width < 768) {
       expect(copy.y + copy.height).toBeLessThan(preview.y);
       // Common phone heights keep the entire composition in the first screen.

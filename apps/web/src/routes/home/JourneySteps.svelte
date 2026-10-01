@@ -124,6 +124,7 @@
     transition: stroke-dashoffset 70ms linear;
   }
   .scene-label {
+    white-space: nowrap;
     position: absolute;
     margin: 0;
     color: var(--home-ink-strong);
@@ -143,8 +144,7 @@
   }
   .view-label {
     top: 82%;
-    left: 73%;
-    white-space: nowrap;
+    left: 71%;
   }
   .visually-hidden {
     position: absolute;

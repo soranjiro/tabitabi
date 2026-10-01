@@ -144,6 +144,7 @@
         <a
           class="shiori-preview"
           class:active={position === physicalIndex}
+          class:current={candidate === index}
           href="/s/{preview.itineraryId}"
           aria-label="{preview.title}のしおりを開く"
           aria-hidden={position !== physicalIndex}
@@ -258,7 +259,8 @@
       opacity 180ms ease,
       transform 180ms ease;
   }
-  .shiori-preview.active {
+  /* Copies of the same sample look identical before the invisible loop jump. */
+  .shiori-preview.current {
     opacity: 1;
     transform: none;
   }

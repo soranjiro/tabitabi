@@ -185,8 +185,20 @@
     image.src = candidate.image;
   }
 
+  function canPreloadNeighborImages() {
+    if (typeof navigator === "undefined" || navigator.onLine === false) return false;
+
+    const connection = (navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+    }).connection;
+
+    if (connection?.saveData) return false;
+    if (connection?.effectiveType && connection.effectiveType !== "4g") return false;
+    return true;
+  }
+
   function queueNeighborPreload(index: number) {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !canPreloadNeighborImages()) return;
 
     const load = () => {
       preloadPreview(index + 1);
@@ -198,9 +210,9 @@
     };
 
     if (idleWindow.requestIdleCallback) {
-      idleWindow.requestIdleCallback(load, { timeout: 1400 });
+      idleWindow.requestIdleCallback(load, { timeout: 1800 });
     } else {
-      window.setTimeout(load, 500);
+      window.setTimeout(load, 700);
     }
   }
 

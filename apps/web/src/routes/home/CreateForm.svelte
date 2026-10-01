@@ -9,7 +9,6 @@
     getThemePreset,
   } from "$lib/themes/catalog";
   import { resolveSharedItineraryPath } from "./shared-url";
-  import { scrollDrawing } from "./scroll-drawing";
 
   let title = $state("");
   let password = $state("");
@@ -227,7 +226,7 @@
   }
 </script>
 
-<div class="form-card" use:scrollDrawing>
+<div class="form-card">
   <svg
     class="form-outline"
     viewBox="0 0 620 600"
@@ -235,7 +234,6 @@
     aria-hidden="true"
   >
     <path
-      data-draw
       pathLength="1"
       d="M310 0C310 9 365 7 398 8L586 7Q612 8 612 32C611 182 616 399 613 567Q613 589 588 590C412 592 180 587 31 591Q8 591 8 567C5 382 10 192 7 32Q7 9 32 8L273 7C287 7 305 8 310 0"
     />
@@ -500,14 +498,13 @@
   }
   .form-outline path {
     fill: none;
-    stroke: #354952;
+    stroke: #1c1c1c;
     stroke-width: 1.6;
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-dasharray: none;
     stroke-dashoffset: 0;
     vector-effect: non-scaling-stroke;
-    transition: stroke-dashoffset 70ms linear;
   }
   .tab-bar {
     display: flex;
@@ -1241,7 +1238,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .form-outline path,
     .tab-btn,
     .theme-card,
     .theme-arrow,

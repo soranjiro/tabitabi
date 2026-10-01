@@ -2,19 +2,21 @@
   import { onMount } from "svelte";
 
   let section = $state<HTMLElement | null>(null);
-  let progress = $state(0);
+  // Keep the illustration complete during SSR and when JavaScript is disabled.
+  let progress = $state(1);
 
   onMount(() => {
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion) {
-      progress = 1;
-      return;
-    }
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     let frame = 0;
     let active = !("IntersectionObserver" in window);
 
     const update = () => {
+      if (motionPreference.matches) {
+        cancelAnimationFrame(frame);
+        progress = 1;
+        return;
+      }
       if (!active) return;
 
       cancelAnimationFrame(frame);
@@ -23,7 +25,8 @@
 
         const rect = section.getBoundingClientRect();
         const start = window.innerHeight * 0.86;
-        const end = -rect.height * 0.08;
+        // Finish while the illustration is still visible, before the form.
+        const end = window.innerHeight * 0.35 - rect.height * 0.15;
         const next = (start - rect.top) / Math.max(1, start - end);
         progress = Math.min(1, Math.max(0, next));
       });
@@ -41,12 +44,14 @@
 
     if (observer && section) observer.observe(section);
     update();
+    motionPreference.addEventListener("change", update);
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update, { passive: true });
 
     return () => {
       cancelAnimationFrame(frame);
       observer?.disconnect();
+      motionPreference.removeEventListener("change", update);
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
@@ -64,7 +69,7 @@
     </header>
 
     <div class="journey-art-wrap" aria-hidden="true">
-      <svg class="journey-art" viewBox="0 0 420 250" role="presentation">
+      <svg class="journey-art" viewBox="0 40 420 150" role="presentation">
         <g class="line-art create-scene">
           <path d="M23 156c10-19 24-29 42-31 19-2 34 5 43 17" />
           <circle cx="52" cy="95" r="15" />
@@ -119,18 +124,13 @@
         <small>みんなで確認。</small>
       </div>
     </div>
-
-    <div class="journey-tail" aria-hidden="true">
-      <i></i>
-      <span>✈</span>
-    </div>
   </div>
 </section>
 
 <style>
   .journey-section {
     position: relative;
-    padding: 104px 20px 94px;
+    padding: 64px 20px 48px;
     overflow: hidden;
     background:
       radial-gradient(circle at 12% 32%, rgba(203,225,237,.28) 0 46px, transparent 47px),
@@ -277,40 +277,19 @@
     line-height: 1.6;
   }
 
-  .journey-tail {
-    display: flex;
-    width: 114px;
-    height: 25px;
-    margin: 72px auto -22px;
-    align-items: center;
-    color: #8fa5b6;
-  }
-
-  .journey-tail i {
-    flex: 1;
-    border-top: 2px dotted currentColor;
-  }
-
-  .journey-tail span {
-    margin-left: 8px;
-    font-size: 17px;
-    transform: rotate(8deg);
-  }
-
   @media (max-width: 767px) {
     .journey-section {
-      min-height: 78svh;
-      padding: 78px 16px 68px;
+      padding: 32px 16px 24px;
     }
 
     .journey-heading {
       margin-bottom: 24px;
     }
 
-    .mobile-break { display: initial; }
+    .mobile-break { display: none; }
 
     h2 {
-      font-size: clamp(28px, 8.2vw, 34px);
+      font-size: clamp(17px, 4.7vw, 24px);
       line-height: 1.5;
     }
 
@@ -340,10 +319,6 @@
       max-width: 104px;
       font-size: 11px;
       line-height: 1.45;
-    }
-
-    .journey-tail {
-      margin-top: 56px;
     }
   }
 

@@ -1,176 +1,334 @@
 import { expect, test } from "@playwright/test";
 
-test("deployed home keeps the intended mobile composition", async ({ page }) => {
-  test.setTimeout(45_000);
+const viewports = [
+  { width: 320, height: 700 },
+  { width: 360, height: 640 },
+  { width: 390, height: 844 },
+  { width: 430, height: 932 },
+  { width: 767, height: 1024 },
+  { width: 768, height: 1024 },
+  { width: 820, height: 1180 },
+  { width: 1024, height: 768 },
+  { width: 1280, height: 800 },
+  { width: 1440, height: 900 },
+  { width: 1920, height: 1080 },
+  { width: 844, height: 390 },
+];
+
+for (const viewport of viewports) {
+  test(`home layout stays readable at ${viewport.width}×${viewport.height}`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto("/", { waitUntil: "networkidle" });
+
+    const hero = (await page.locator(".hero-stage").boundingBox())!;
+    const copy = (await page.locator(".hero-copy").boundingBox())!;
+    const preview = (await page
+      .locator(".shiori-preview.active")
+      .boundingBox())!;
+    const journey = (await page.locator(".journey-section").boundingBox())!;
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(viewport.width);
+    expect(hero.height).toBeGreaterThanOrEqual(viewport.height);
+    expect(preview.x).toBeGreaterThanOrEqual(0);
+    expect(preview.x + preview.width).toBeLessThanOrEqual(viewport.width);
+    expect(preview.y + preview.height).toBeLessThanOrEqual(hero.height);
+    expect(journey.y).toBeGreaterThanOrEqual(hero.height);
+    if (viewport.width < 768) {
+      expect(copy.y + copy.height).toBeLessThan(preview.y);
+      // Common phone heights keep the entire composition in the first screen.
+      if (viewport.height >= 700)
+        expect(hero.height).toBeLessThanOrEqual(viewport.height + 1);
+      expect(preview.width).toBeGreaterThanOrEqual(218);
+      expect(preview.width).toBeLessThanOrEqual(270);
+    } else {
+      expect(copy.x + copy.width).toBeLessThan(preview.x);
+      expect(preview.width).toBe(300);
+    }
+    const rows = await page
+      .locator(".shiori-preview.active .preview-timeline li")
+      .evaluateAll((elements) =>
+        elements.map((element) => {
+          const rect = element.getBoundingClientRect();
+          return { top: rect.top, bottom: rect.bottom };
+        }),
+      );
+    expect(rows).toHaveLength(4);
+    rows
+      .slice(1)
+      .forEach((row, index) =>
+        expect(row.top).toBeGreaterThanOrEqual(rows[index]!.bottom - 1),
+      );
+    await page.screenshot({ path: testInfo.outputPath("hero.png") });
+
+    await page.locator("#create").scrollIntoViewIfNeeded();
+    const form = (await page.locator(".form-card").boundingBox())!;
+    expect(form.x).toBeGreaterThanOrEqual(14);
+    expect(form.width).toBeLessThanOrEqual(620);
+    expect(form.x + form.width).toBeLessThanOrEqual(viewport.width - 14);
+    await expect(page.locator("#title")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "次の表示スタイル" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("switch", { name: "パスワードで保護する" }),
+    ).toBeAttached();
+    await page.screenshot({ path: testInfo.outputPath("create.png") });
+    expect(errors).toEqual([]);
+  });
+}
+
+test("preview buttons, dots, horizontal scroll and resize keep the selected sample centered", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/", { waitUntil: "networkidle" });
-
-  const hero = page.locator(".hero-stage");
-  const heroScene = page.locator(".hero-scene");
-  const preview = page.locator(".shiori-preview");
-  const journey = page.locator(".journey-section");
-
-  await expect(hero).toBeVisible();
-  await expect(preview).toBeVisible();
-  await expect(page.locator(".preview-photo")).toHaveCount(0);
-
-  const viewport = page.viewportSize();
-  const heroBox = await hero.boundingBox();
-  const previewBox = await preview.boundingBox();
-  const journeyBox = await journey.boundingBox();
-
-  expect(viewport).not.toBeNull();
-  expect(heroBox).not.toBeNull();
-  expect(previewBox).not.toBeNull();
-  expect(journeyBox).not.toBeNull();
-
-  expect(Math.abs(heroBox!.height - viewport!.height)).toBeLessThanOrEqual(1);
-  expect(previewBox!.width).toBeGreaterThanOrEqual(285);
-  expect(previewBox!.width).toBeLessThanOrEqual(320);
-  expect(previewBox!.x).toBeGreaterThanOrEqual(24);
-  expect(previewBox!.x + previewBox!.width).toBeLessThanOrEqual(viewport!.width - 24);
-  expect(previewBox!.y + previewBox!.height).toBeLessThanOrEqual(viewport!.height - 10);
-  expect(journeyBox!.y).toBeGreaterThanOrEqual(viewport!.height - 1);
-
-  const timelineRows = await preview.locator(".preview-timeline li").evaluateAll((rows) =>
-    rows.map((row) => {
-      const rect = row.getBoundingClientRect();
-      return { top: rect.top, width: rect.width };
-    }),
+  await page.goto("/");
+  const active = page.locator(".shiori-preview.active");
+  const initialTitle = await active.locator("h2").textContent();
+  const initialImage = await page
+    .locator(".hero-picture img")
+    .getAttribute("src");
+  await page.getByRole("button", { name: "次のしおり", exact: true }).click();
+  await expect(active.locator("h2")).not.toHaveText(initialTitle!);
+  await expect(page.locator(".hero-picture img")).not.toHaveAttribute(
+    "src",
+    initialImage!,
   );
-  expect(timelineRows).toHaveLength(3);
-  expect(timelineRows[1]!.top - timelineRows[0]!.top).toBeGreaterThanOrEqual(28);
-  expect(timelineRows[2]!.top - timelineRows[1]!.top).toBeGreaterThanOrEqual(28);
-  expect(timelineRows.every((row) => row.width > 240)).toBeTruthy();
+  await page.getByRole("button", { name: "前のしおり", exact: true }).click();
+  await expect(active.locator("h2")).toHaveText(initialTitle!);
 
-  await page.screenshot({
-    path: "test-results/home-mobile-hero.png",
-    fullPage: false,
+  await page.locator(".preview-dots button").first().click();
+  await expect(
+    page.getByRole("button", { name: "前のしおり", exact: true }),
+  ).toBeDisabled();
+  const track = page.locator(".preview-track");
+  await track.evaluate((element) => {
+    element.scrollLeft += 232;
   });
-
-  const initialPreviewTitle = await preview.locator("h2").textContent();
-  const initialBackground = await page.locator(".hero-picture img").getAttribute("src");
-  const swipeBox = await heroScene.boundingBox();
-  expect(swipeBox).not.toBeNull();
-
-  await page.mouse.move(swipeBox!.x + swipeBox!.width * 0.92, swipeBox!.y + swipeBox!.height * 0.46);
-  await page.mouse.down();
-  await page.mouse.move(swipeBox!.x + swipeBox!.width * 0.18, swipeBox!.y + swipeBox!.height * 0.46, { steps: 8 });
-  await page.mouse.up();
-
-  await expect.poll(async () => preview.locator("h2").textContent()).not.toBe(initialPreviewTitle);
-  await expect.poll(async () => page.locator(".hero-picture img").getAttribute("src")).not.toBe(initialBackground);
-
-  await page.screenshot({
-    path: "test-results/home-mobile-hero-swiped.png",
-    fullPage: false,
-  });
-
-  await journey.scrollIntoViewIfNeeded();
-  await expect(page.locator(".journey-art")).toBeVisible();
-  await expect(page.locator(".story-line")).toHaveCount(1);
-  await expect(page.getByText("旅の予定をまとめる。")).toBeVisible();
-  await expect(page.getByText("URLで共有する。")).toBeVisible();
-  await expect(page.getByText("みんなで確認。")).toBeVisible();
-
-  await page.screenshot({
-    path: "test-results/home-mobile-journey.png",
-    fullPage: false,
-  });
-
-  const createSection = page.locator(".create-section");
-  await createSection.scrollIntoViewIfNeeded();
-  await expect(page.getByRole("tab", { name: "新しく作る" })).toBeVisible();
-  await expect(page.getByText("表示スタイル", { exact: true })).toBeVisible();
-  await expect(page.getByText("予定表", { exact: true }).first()).toBeVisible();
-  await expect(page.getByLabel("前の表示スタイル")).toBeVisible();
-  await expect(page.getByLabel("次の表示スタイル")).toBeVisible();
-  await expect(page.getByRole("switch", { name: "パスワードで保護する" })).toBeAttached();
-
-  const formBox = await page.locator(".form-card").boundingBox();
-  expect(formBox).not.toBeNull();
-  expect(formBox!.x).toBeGreaterThanOrEqual(14);
-  expect(formBox!.x + formBox!.width).toBeLessThanOrEqual(viewport!.width - 14);
-
-  await page.screenshot({
-    path: "test-results/home-mobile-create.png",
-    fullPage: false,
-  });
-});
-
-
-test("deployed home keeps the intended desktop composition", async ({ page }) => {
+  await expect(page.locator(".preview-dots button").nth(1)).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  const selectedTitle = await active.locator("h2").textContent();
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/", { waitUntil: "networkidle" });
-
-  const hero = page.locator(".hero-stage");
-  const preview = page.locator(".shiori-preview");
-  const heroMain = page.locator(".hero-main");
-
-  const viewport = page.viewportSize();
-  const heroBox = await hero.boundingBox();
-  const previewBox = await preview.boundingBox();
-  const mainBox = await heroMain.boundingBox();
-
-  expect(viewport).not.toBeNull();
-  expect(heroBox).not.toBeNull();
-  expect(previewBox).not.toBeNull();
-  expect(mainBox).not.toBeNull();
-
-  expect(Math.abs(heroBox!.height - viewport!.height)).toBeLessThanOrEqual(1);
-  expect(previewBox!.width).toBeGreaterThanOrEqual(295);
-  expect(previewBox!.width).toBeLessThanOrEqual(325);
-  expect(mainBox!.width).toBeLessThanOrEqual(1216);
-  await expect(page.locator(".preview-photo")).toHaveCount(0);
-
-  const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-  expect(documentWidth).toBeLessThanOrEqual(viewport!.width);
-
-  await page.screenshot({
-    path: "test-results/home-desktop-hero.png",
-    fullPage: false,
-  });
-
-  await page.locator(".create-section").scrollIntoViewIfNeeded();
-  const formBox = await page.locator(".form-card").boundingBox();
-  expect(formBox).not.toBeNull();
-  expect(formBox!.width).toBeLessThanOrEqual(820);
-  expect(formBox!.width).toBeGreaterThanOrEqual(700);
-
-  await page.screenshot({
-    path: "test-results/home-desktop-create.png",
-    fullPage: false,
-  });
+  await expect(active.locator("h2")).toHaveText(selectedTitle!);
+  await expect
+    .poll(async () => {
+      const card = (await active.boundingBox())!;
+      const viewport = (await track.boundingBox())!;
+      return Math.abs(
+        card.x + card.width / 2 - viewport.x - viewport.width / 2,
+      );
+    })
+    .toBeLessThan(2);
+  await page.locator(".preview-dots button").last().click();
+  await expect(
+    page.getByRole("button", { name: "次のしおり", exact: true }),
+  ).toBeDisabled();
 });
 
-
-test("deployed home remains composed on a 320px-wide phone", async ({ page }) => {
-  test.setTimeout(30_000);
-  await page.setViewportSize({ width: 320, height: 700 });
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/", { waitUntil: "networkidle" });
-
-  const heroBox = await page.locator(".hero-stage").boundingBox();
-  const previewBox = await page.locator(".shiori-preview").boundingBox();
-  expect(heroBox).not.toBeNull();
-  expect(previewBox).not.toBeNull();
-
-  expect(Math.abs(heroBox!.height - 700)).toBeLessThanOrEqual(1);
-  expect(previewBox!.width).toBeLessThanOrEqual(286);
-  expect(previewBox!.x).toBeGreaterThanOrEqual(20);
-  expect(previewBox!.x + previewBox!.width).toBeLessThanOrEqual(300);
-  expect(previewBox!.y + previewBox!.height).toBeLessThanOrEqual(694);
-
-  const dimensions = await page.evaluate(() => ({
-    scrollWidth: document.documentElement.scrollWidth,
-    clientWidth: document.documentElement.clientWidth,
-  }));
-  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
-
-  await page.screenshot({
-    path: "test-results/home-mobile-320.png",
-    fullPage: false,
+test("touch swiping changes the sample without blocking vertical page scrolling", async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const previousTitle = await page
+    .locator(".shiori-preview.active h2")
+    .textContent();
+  const track = (await page.locator(".preview-track").boundingBox())!;
+  const session = await context.newCDPSession(page);
+  const y = track.y + track.height / 2;
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: 300, y }],
   });
+  for (let x = 280; x >= 80; x -= 20) {
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x, y }],
+    });
+  }
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await expect(page.locator(".shiori-preview.active h2")).not.toHaveText(
+    previousTitle!,
+  );
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: 195, y: 700 }],
+  });
+  for (let nextY = 680; nextY >= 400; nextY -= 20) {
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x: 195, y: nextY }],
+    });
+  }
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(100);
+});
+
+test("journey line completes while visible and respects changing reduced-motion preferences", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  const line = page.locator(".story-line");
+  await expect
+    .poll(async () => Number(await line.getAttribute("stroke-dashoffset")))
+    .toBeGreaterThan(0.95);
+  const top = await page
+    .locator(".journey-section")
+    .evaluate((element) => (element as HTMLElement).offsetTop);
+  await page.evaluate(
+    (y) => window.scrollTo({ top: y - 500, behavior: "instant" }),
+    top,
+  );
+  await expect
+    .poll(async () => Number(await line.getAttribute("stroke-dashoffset")))
+    .toBeLessThan(0.95);
+  await expect
+    .poll(async () => Number(await line.getAttribute("stroke-dashoffset")))
+    .toBeGreaterThan(0.1);
+  await page.evaluate(
+    (y) => window.scrollTo({ top: y - 140, behavior: "instant" }),
+    top,
+  );
+  await expect(line).toHaveAttribute("stroke-dashoffset", "0");
+  await expect(page.locator(".paper-plane")).toHaveCSS("opacity", "1");
+  await expect(page.locator(".view-scene")).toHaveCSS("opacity", "1");
+  await page.screenshot({ path: testInfo.outputPath("journey.png") });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(line).toHaveCSS("transition-duration", "0s");
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await expect(line).toHaveAttribute("stroke-dashoffset", "0");
+  await expect(page.locator(".shiori-preview.active")).toHaveCSS(
+    "transition-duration",
+    "0s",
+  );
+});
+
+test("form retains the selected style after switching tabs and resizing", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await page.locator("#create").scrollIntoViewIfNeeded();
+  await page.getByRole("button", { name: "次の表示スタイル" }).click();
+  const selected = page.locator('.theme-card.selected[data-theme-copy="1"]');
+  const theme = await selected.getAttribute("data-theme-id");
+  await page.getByRole("tab", { name: "URLから開く" }).click();
+  await page.getByRole("tab", { name: "新しく作る" }).click();
+  await expect(selected).toHaveAttribute("data-theme-id", theme!);
+  const centerDistance = () =>
+    selected.evaluate((element) => {
+      const card = element.getBoundingClientRect();
+      const carousel = element
+        .closest(".theme-carousel")!
+        .getBoundingClientRect();
+      return Math.abs(
+        card.left + card.width / 2 - carousel.left - carousel.width / 2,
+      );
+    });
+  await expect.poll(centerDistance).toBeLessThan(2);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect.poll(centerDistance).toBeLessThan(2);
+  await page.getByRole("switch", { name: "パスワードで保護する" }).check();
+  await expect(page.getByLabel("編集用パスワード")).toBeVisible();
+  await page.getByRole("switch", { name: "パスワードで保護する" }).uncheck();
+  await expect(page.getByLabel("編集用パスワード")).toHaveCount(0);
+  await page.locator(".btn-submit").click();
+  await expect(page.locator("#title")).toBeFocused();
+  await expect(page.locator("#title-error")).toBeVisible();
+});
+
+test("rapid smooth carousel navigation finishes at the requested sample", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  await expect(page.locator(".preview-area")).toHaveAttribute(
+    "data-ready",
+    "true",
+  );
+  const title = await page.locator(".shiori-preview.active h2").textContent();
+  await page.getByRole("button", { name: "次のしおり", exact: true }).click();
+  await page.getByRole("button", { name: "前のしおり", exact: true }).click();
+  await expect(page.locator(".shiori-preview.active h2")).toHaveText(title!);
+  await expect
+    .poll(() =>
+      page.locator(".shiori-preview.active").evaluate((element) => {
+        const card = element.getBoundingClientRect();
+        const track = element
+          .closest(".preview-track")!
+          .getBoundingClientRect();
+        return Math.abs(
+          card.left + card.width / 2 - track.left - track.width / 2,
+        );
+      }),
+    )
+    .toBeLessThan(2);
+});
+
+test("mobile navigation and the password switch work with the keyboard", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator(".preview-area")).toHaveAttribute(
+    "data-ready",
+    "true",
+  );
+  const menu = page.getByRole("button", { name: "メニューを開閉" });
+  await menu.focus();
+  await page.keyboard.press("Enter");
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("Tab");
+  await expect(
+    page.getByRole("link", { name: "みんなのしおり", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Enter");
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+  await page.locator("#create").scrollIntoViewIfNeeded();
+  const password = page.getByRole("switch", { name: "パスワードで保護する" });
+  await password.focus();
+  await page.keyboard.press("Space");
+  await expect(password).toBeChecked();
+  await expect(page.getByLabel("編集用パスワード")).toBeVisible();
+});
+
+test("the create anchor works before JavaScript is available", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    viewport: { width: 390, height: 844 },
+  });
+  const page = await context.newPage();
+  await page.goto("/");
+  await expect(page.locator(".shiori-preview.active")).toBeInViewport();
+  await page
+    .locator(".hero-actions")
+    .getByRole("link", { name: "しおりを作る" })
+    .click();
+  await expect(page.locator("#create")).toBeInViewport();
+  await context.close();
 });

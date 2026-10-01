@@ -1,49 +1,75 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from "@playwright/test";
 
-test('home explains the service and scrolls to create section', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/');
+test("home explains the service and scrolls to create section", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator(".preview-area")).toHaveAttribute(
+    "data-ready",
+    "true",
+  );
 
   await expect(page).toHaveTitle(/たびたび/);
 
-  await expect(page.getByRole('heading', { name: /旅の予定を/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'みんなのしおりを見る' })).toBeVisible();
-  await expect(page.getByText('登録不要')).toBeVisible();
+  await expect(page.getByRole("heading", { name: /旅の予定を/ })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "みんなのしおりを見る" }),
+  ).toBeVisible();
+  await expect(page.getByText("登録不要")).toBeVisible();
 
-  const cta = page.getByRole('button', { name: /しおりを作る/ });
+  const cta = page
+    .locator(".hero-actions")
+    .getByRole("link", { name: /しおりを作る/ });
   await expect(cta).toBeVisible();
 
   await cta.click();
 
-  await expect(page.locator('#create')).toBeInViewport();
+  await expect(page.locator("#create")).toBeInViewport();
 });
 
-test('desktop preview keeps its cover and compact size at narrow landscape widths', async ({ page }) => {
+test("desktop preview stays compact at narrow landscape widths", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/');
+  await page.goto("/");
+  await expect(page.locator(".preview-area")).toHaveAttribute(
+    "data-ready",
+    "true",
+  );
 
-  const previewArea = page.locator('.preview-area');
-  const previewPhoto = page.locator('.preview-photo');
+  const previewTrack = page.locator(".preview-track");
 
-  await expect(previewArea).toHaveCSS('width', '320px');
-  await expect(previewPhoto).toHaveCount(0);
+  await expect(page.locator(".shiori-preview.active")).toHaveCSS(
+    "width",
+    "300px",
+  );
+  await expect(previewTrack).toBeVisible();
+  await expect(page.locator(".preview-photo")).toHaveCount(0);
 
   await page.setViewportSize({ width: 1024, height: 768 });
 
-  await expect(previewArea).toHaveCSS('width', '300px');
-  await expect(previewPhoto).toHaveCount(0);
+  await expect(page.locator(".shiori-preview.active")).toHaveCSS(
+    "width",
+    "300px",
+  );
+  await expect(page.locator(".preview-photo")).toHaveCount(0);
 });
 
-test('mobile hero keeps the background unobstructed', async ({ page }) => {
+test("mobile hero keeps the background unobstructed", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto("/");
+  await expect(page.locator(".preview-area")).toHaveAttribute(
+    "data-ready",
+    "true",
+  );
 
-  await expect(page.locator('.hero-picture')).toBeVisible();
-  await expect(page.locator('.preview-photo')).toHaveCount(0);
+  await expect(page.locator(".hero-picture")).toBeVisible();
+  await expect(page.locator(".preview-photo")).toHaveCount(0);
 
   const viewport = page.viewportSize();
-  const heroBox = await page.locator('.hero-stage').boundingBox();
-  const journeyBox = await page.locator('.journey-section').boundingBox();
+  const heroBox = await page.locator(".hero-stage").boundingBox();
+  const journeyBox = await page.locator(".journey-section").boundingBox();
   expect(viewport).not.toBeNull();
   expect(heroBox).not.toBeNull();
   expect(journeyBox).not.toBeNull();

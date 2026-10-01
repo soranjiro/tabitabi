@@ -9,7 +9,7 @@
   let title = $state("");
   let password = $state("");
   let usePassword = $state(false);
-  let theme_id = $state(defaultThemeId);
+  let theme_id = $state<string>(defaultThemeId);
   let creating = $state(false);
   let createSucceeded = $state(false);
   let titleError = $state("");
@@ -28,6 +28,7 @@
   const middleThemeCopy = 1;
 
   async function createItinerary() {
+    if (creating || createSucceeded) return;
     titleError = "";
 
     if (!title.trim()) {
@@ -50,7 +51,6 @@
         auth.setToken(created.id, created.title, created.token);
       }
 
-      creating = false;
       createSucceeded = true;
 
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -151,13 +151,18 @@
     }, 120);
   }
 
-  onMount(() => {
-    const initialFrame = requestAnimationFrame(() => {
-      recenterThemeLoop(theme_id);
-    });
+  // The create tab mounts again after opening a shared URL. Recenter every
+  // newly mounted carousel, and keep it centered after a viewport change.
+  $effect(() => {
+    const carousel = themeCarousel;
+    if (!carousel) return;
+    const observer = new ResizeObserver(() => recenterThemeLoop(theme_id));
+    observer.observe(carousel);
+    return () => observer.disconnect();
+  });
 
+  onMount(() => {
     return () => {
-      cancelAnimationFrame(initialFrame);
       cancelAnimationFrame(themeScrollFrame);
       if (themeLoopSettleTimer) {
         clearTimeout(themeLoopSettleTimer);
@@ -291,6 +296,8 @@
                 class="theme-card"
                 class:selected={theme_id === theme.id}
                 aria-pressed={theme_id === theme.id}
+                aria-hidden={copy !== middleThemeCopy}
+                tabindex={copy === middleThemeCopy ? 0 : -1}
                 data-theme-id={theme.id}
                 data-theme-copy={copy}
                 onclick={() => selectTheme(theme.id)}
@@ -357,7 +364,7 @@
             </span>
             <strong>パスワードで保護する</strong>
           </span>
-          <input type="checkbox" role="switch" bind:checked={usePassword} aria-label="パスワードで保護する" />
+          <input type="checkbox" role="switch" bind:checked={usePassword} aria-checked={usePassword} aria-label="パスワードで保護する" />
           <span class="toggle-track" aria-hidden="true"><i></i></span>
         </label>
 
@@ -547,6 +554,7 @@
   }
 
   .theme-carousel {
+    position: relative;
     --theme-card-width: clamp(118px, 31vw, 132px);
     display: flex;
     width: 100%;
@@ -929,13 +937,19 @@
 
   .toggle-setting input {
     position: absolute;
-    width: 1px;
-    height: 1px;
+    right: 0;
+    top: 50%;
+    z-index: 1;
+    width: 46px;
+    height: 26px;
+    margin: 0;
+    transform: translateY(-50%);
     opacity: 0;
-    pointer-events: none;
+    cursor: pointer;
   }
 
   .toggle-track {
+    pointer-events: none;
     position: relative;
     width: 46px;
     height: 26px;

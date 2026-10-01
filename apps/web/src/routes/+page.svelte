@@ -12,7 +12,6 @@
   import IconAirplane from "./home/icons/IconAirplane.svelte";
   import ItineraryCarousel from "./home/ItineraryCarousel.svelte";
   import { previews } from "./home/landing-previews";
-  import { scrollDrawing } from "./home/scroll-drawing";
 
   const { data }: { data: PageData } = $props();
 
@@ -291,7 +290,7 @@
 
   <section id="create" class="create-section" aria-labelledby="create-title">
     <div class="section-inner">
-      <div class="create-heading" use:scrollDrawing>
+      <div class="create-heading">
         <svg
           class="form-thread"
           viewBox="0 0 620 112"
@@ -299,7 +298,6 @@
           aria-hidden="true"
         >
           <path
-            data-draw
             pathLength="1"
             d="M310 0C310 20 608 10 608 48C608 90 359 86 325 98C314 102 310 104 310 112"
           />
@@ -577,13 +575,12 @@
   }
   .form-thread path {
     fill: none;
-    stroke: #354952;
+    stroke: #1c1c1c;
     stroke-width: 1.6;
     stroke-linecap: round;
     stroke-dasharray: none;
     stroke-dashoffset: 0;
     vector-effect: non-scaling-stroke;
-    transition: stroke-dashoffset 70ms linear;
   }
   .create-heading h2 {
     position: relative;
@@ -752,7 +749,6 @@
       scroll-behavior: auto;
     }
     .primary,
-    .form-thread path,
     .menu-icon path {
       transition: none;
     }

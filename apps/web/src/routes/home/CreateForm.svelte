@@ -11,7 +11,9 @@
   let usePassword = $state(false);
   let theme_id = $state(defaultThemeId);
   let creating = $state(false);
+  let createSucceeded = $state(false);
   let titleError = $state("");
+  let titleInput = $state<HTMLInputElement | null>(null);
 
   let activeTab = $state<"create" | "open">("create");
   let url = $state("");
@@ -30,10 +32,12 @@
 
     if (!title.trim()) {
       titleError = "タイトルを入力してください";
+      requestAnimationFrame(() => titleInput?.focus());
       return;
     }
 
     creating = true;
+    createSucceeded = false;
     try {
       const created = await itineraryApi.create({
         title: title.trim(),
@@ -46,12 +50,21 @@
         auth.setToken(created.id, created.title, created.token);
       }
 
-      goto("/itineraries/" + created.id);
+      creating = false;
+      createSucceeded = true;
+
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reducedMotion) {
+        await new Promise((resolve) => setTimeout(resolve, 180));
+      }
+
+      await goto("/itineraries/" + created.id);
     } catch (error) {
       console.error("Failed to create:", error);
       alert("しおりの作成に失敗しました");
     } finally {
       creating = false;
+      createSucceeded = false;
     }
   }
 
@@ -168,6 +181,20 @@
     });
   }
 
+  function moveTheme(direction: -1 | 1) {
+    const currentIndex = themes.findIndex((theme) => theme.id === theme_id);
+    const nextIndex = (currentIndex + direction + themes.length) % themes.length;
+    const nextTheme = themes[nextIndex];
+
+    if (nextTheme) {
+      selectTheme(nextTheme.id);
+    }
+  }
+
+  function getThemeLabel(theme: (typeof themes)[number]) {
+    return theme.id === "planning-draft" ? "予定表" : theme.name;
+  }
+
   function handleThemeScroll() {
     cancelAnimationFrame(themeScrollFrame);
     if (themeLoopSettleTimer) {
@@ -232,6 +259,7 @@
           id="title"
           type="text"
           bind:value={title}
+          bind:this={titleInput}
           placeholder="例：秋の金沢旅行"
           class:error={Boolean(titleError)}
           class="form-input"
@@ -244,12 +272,21 @@
       </div>
 
       <fieldset class="theme-fieldset">
-        <legend class="form-label">デザイン</legend>
-        <div
+        <legend class="form-label">表示スタイル</legend>
+        <div class="theme-carousel-shell">
+          <button
+            type="button"
+            class="theme-arrow previous"
+            aria-label="前の表示スタイル"
+            onclick={() => moveTheme(-1)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6.5-5.5 5.5 5.5 5.5" /></svg>
+          </button>
+          <div
           class="theme-carousel"
           bind:this={themeCarousel}
           onscroll={handleThemeScroll}
-          aria-label="デザインテーマを横にスクロールして選択"
+          aria-label="表示スタイルを横にスクロールして選択"
         >
           {#each themeCopies as copy}
             {#each themes as theme}
@@ -300,17 +337,32 @@
                   </span>
                 {/if}
               </span>
-              <span class="theme-name">{theme.name}</span>
+              <span class="theme-name">{getThemeLabel(theme)}</span>
               </button>
             {/each}
           {/each}
+          </div>
+          <button
+            type="button"
+            class="theme-arrow next"
+            aria-label="次の表示スタイル"
+            onclick={() => moveTheme(1)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 6.5 5.5 5.5-5.5 5.5" /></svg>
+          </button>
         </div>
       </fieldset>
 
       <div class="password-setting">
-        <label class="checkbox-label">
-          <input type="checkbox" bind:checked={usePassword} />
-          <strong>パスワードで保護する</strong>
+        <label class="toggle-setting">
+          <span class="toggle-copy">
+            <span class="lock-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3" /><rect x="5" y="10" width="14" height="10" rx="2" /></svg>
+            </span>
+            <strong>パスワードで保護する</strong>
+          </span>
+          <input type="checkbox" role="switch" bind:checked={usePassword} aria-label="パスワードで保護する" />
+          <span class="toggle-track" aria-hidden="true"><i></i></span>
         </label>
 
         {#if usePassword}
@@ -327,8 +379,17 @@
         {/if}
       </div>
 
-      <button type="submit" disabled={creating} class="btn-submit">
-        {creating ? "作成中..." : "しおりを作る"} <span aria-hidden="true">→</span>
+      <button type="submit" disabled={creating || createSucceeded} class:success={createSucceeded} class="btn-submit">
+        {#if creating}
+          <span class="submit-spinner" aria-hidden="true"></span>
+          <span>作成中…</span>
+        {:else if createSucceeded}
+          <span class="success-check" aria-hidden="true">✓</span>
+          <span>作成しました</span>
+        {:else}
+          <span>しおりを作る</span>
+          <span class="submit-arrow" aria-hidden="true">→</span>
+        {/if}
       </button>
     </form>
   {:else}
@@ -373,18 +434,19 @@
 <style>
   .form-card {
     overflow: hidden;
-    border: 1px solid var(--home-border);
-    border-radius: var(--home-radius-lg);
-    background: color-mix(in srgb, var(--home-surface) 96%, var(--home-paper));
-    box-shadow: var(--home-shadow-md);
+    border: 1px solid color-mix(in srgb, var(--home-border) 82%, white);
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--home-surface) 97%, var(--home-paper));
+    box-shadow: 0 18px 48px rgba(33, 51, 70, .09);
   }
 
   .tab-bar {
     display: flex;
-    gap: 6px;
-    padding: 8px;
-    border-bottom: 1px solid var(--home-border);
-    background: rgba(247,245,240,.72);
+    gap: 5px;
+    margin: 10px 10px 0;
+    padding: 4px;
+    border-radius: 14px;
+    background: rgba(242,241,237,.88);
   }
 
   .tab-btn {
@@ -418,21 +480,21 @@
 
   .form-body {
     display: grid;
-    gap: 18px;
-    padding: 28px 30px 30px;
+    gap: 17px;
+    padding: 24px 30px 30px;
   }
 
   .form-group { margin: 0; }
 
   .title-group .form-label {
-    margin-bottom: 10px;
+    margin-bottom: 9px;
     font-size: 15px;
   }
 
   .title-group .form-input {
-    min-height: 56px;
-    border-color: color-mix(in srgb, var(--home-border) 72%, var(--home-ink-strong));
-    font-size: 17px;
+    min-height: 54px;
+    border-color: color-mix(in srgb, var(--home-border) 82%, var(--home-ink-strong));
+    font-size: 16px;
     font-weight: 600;
   }
 
@@ -483,12 +545,17 @@
     border: 0;
   }
 
+  .theme-carousel-shell {
+    position: relative;
+    margin-inline: -14px;
+  }
+
   .theme-carousel {
-    --theme-card-width: clamp(138px, 36vw, 152px);
+    --theme-card-width: clamp(118px, 31vw, 132px);
     display: flex;
     width: 100%;
     margin-top: 0;
-    padding: 2px calc(50% - (var(--theme-card-width) / 2)) 5px;
+    padding: 3px calc(50% - (var(--theme-card-width) / 2)) 6px;
     gap: 10px;
     overflow-x: auto;
     overscroll-behavior-x: contain;
@@ -513,8 +580,8 @@
     background: white;
     font: inherit;
     cursor: pointer;
-    opacity: .5;
-    transform: scale(.96);
+    opacity: .72;
+    transform: scale(.975);
     transition:
       opacity 160ms ease,
       border-color 160ms ease,
@@ -524,7 +591,7 @@
 
   .theme-card.selected {
     border-color: var(--home-action);
-    box-shadow: 0 4px 12px rgba(49,91,125,.12);
+    box-shadow: 0 5px 14px rgba(49,91,125,.11);
     opacity: 1;
     transform: scale(1);
   }
@@ -542,7 +609,7 @@
   .theme-preview {
     position: relative;
     display: block;
-    height: 60px;
+    height: 52px;
     overflow: hidden;
     border-radius: 8px;
     background: #f6f8f9;
@@ -774,34 +841,131 @@
     background: #dce8f1;
   }
 
+  .theme-arrow {
+    position: absolute;
+    z-index: 3;
+    top: 50%;
+    display: grid;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--home-border) 84%, white);
+    border-radius: 50%;
+    place-items: center;
+    color: var(--home-action);
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 5px 14px rgba(37, 57, 76, .10);
+    cursor: pointer;
+    transform: translateY(-50%);
+  }
+
+  .theme-arrow.previous { left: 1px; }
+  .theme-arrow.next { right: 1px; }
+
+  .theme-arrow svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .theme-arrow:hover {
+    background: white;
+    box-shadow: 0 7px 18px rgba(37, 57, 76, .15);
+  }
+
   .password-setting {
     display: grid;
     gap: 10px;
-    padding-top: 1px;
+    padding-top: 2px;
   }
 
-  .checkbox-label {
-    display: inline-flex;
-    width: fit-content;
+  .toggle-setting {
+    position: relative;
+    display: flex;
     min-height: 44px;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    gap: 14px;
     cursor: pointer;
   }
 
-  .checkbox-label input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    margin: 0;
-    accent-color: var(--home-action);
-    cursor: pointer;
+  .toggle-copy {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .lock-icon {
+    display: grid;
+    width: 28px;
+    height: 28px;
     flex: 0 0 auto;
+    place-items: center;
+    color: #6f8293;
   }
 
-  .checkbox-label strong {
+  .lock-icon svg {
+    width: 19px;
+    height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .toggle-setting strong {
     color: var(--home-ink);
     font-size: 13px;
     font-weight: 700;
+  }
+
+  .toggle-setting input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .toggle-track {
+    position: relative;
+    width: 46px;
+    height: 26px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: #d9dee2;
+    transition: background-color 160ms ease;
+  }
+
+  .toggle-track i {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 2px 5px rgba(30,45,58,.2);
+    transition: transform 160ms ease;
+  }
+
+  .toggle-setting input:checked + .toggle-track {
+    background: var(--home-action);
+  }
+
+  .toggle-setting input:checked + .toggle-track i {
+    transform: translateX(20px);
+  }
+
+  .toggle-setting input:focus-visible + .toggle-track {
+    outline: 3px solid color-mix(in srgb, var(--home-focus) 28%, transparent);
+    outline-offset: 2px;
   }
 
   .password-group {
@@ -834,6 +998,46 @@
     background: var(--home-action-hover);
     transform: translateY(-1px);
     box-shadow: 0 13px 28px rgba(49,91,125,.24);
+  }
+
+  .btn-submit:active:not(:disabled) {
+    transform: scale(.985);
+  }
+
+  .submit-arrow {
+    display: inline-block;
+    transition: transform 150ms ease;
+  }
+
+  .btn-submit:hover:not(:disabled) .submit-arrow {
+    transform: translateX(4px);
+  }
+
+  .submit-spinner {
+    width: 17px;
+    height: 17px;
+    border: 2px solid rgba(255,255,255,.38);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: submit-spin .7s linear infinite;
+  }
+
+  .btn-submit.success {
+    background: #477b70;
+  }
+
+  .success-check {
+    display: grid;
+    width: 20px;
+    height: 20px;
+    border: 1.5px solid rgba(255,255,255,.85);
+    border-radius: 50%;
+    place-items: center;
+    font-size: 12px;
+  }
+
+  @keyframes submit-spin {
+    to { transform: rotate(360deg); }
   }
 
   .btn-submit:disabled {
@@ -871,14 +1075,20 @@
       min-height: 54px;
     }
 
-    .theme-carousel {
-      --theme-card-width: clamp(136px, 38vw, 146px);
+    .theme-carousel-shell {
       margin-inline: -18px;
-      width: calc(100% + 36px);
     }
 
-    .checkbox-label {
-      min-height: 40px;
+    .theme-carousel {
+      --theme-card-width: clamp(118px, 34vw, 128px);
+      width: 100%;
+    }
+
+    .theme-arrow.previous { left: 2px; }
+    .theme-arrow.next { right: 2px; }
+
+    .toggle-setting {
+      min-height: 42px;
     }
 
     .btn-submit {
@@ -889,9 +1099,17 @@
   @media (prefers-reduced-motion: reduce) {
     .tab-btn,
     .theme-card,
+    .theme-arrow,
     .form-input,
-    .btn-submit {
+    .btn-submit,
+    .submit-arrow,
+    .toggle-track,
+    .toggle-track i {
       transition: none;
+    }
+
+    .submit-spinner {
+      animation: none;
     }
   }
 </style>

@@ -83,7 +83,7 @@ export class UserService {
       .prepare(`
         SELECT
           ub.user_id, ub.itinerary_id, ub.is_visible, ub.created_at, ub.updated_at,
-          i.title, i.theme_id,
+          i.title, i.theme_id, i.background_image,
           CASE WHEN i.password IS NOT NULL THEN 1 ELSE 0 END as is_password_protected,
           i.updated_at as itinerary_updated_at,
           i.source_itinerary_id,
@@ -118,6 +118,7 @@ export class UserService {
       title: row.title as string,
       theme_id: row.theme_id as string,
       palette_id: row.palette_id as string,
+      background_image: (row.background_image as string | null) ?? null,
       start_at: row.start_at as number | null,
       end_at: row.end_at as number | null,
       shared_title: row.shared_title as string | null,

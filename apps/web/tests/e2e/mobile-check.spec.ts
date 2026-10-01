@@ -12,7 +12,7 @@ test.describe("Responsive home page", () => {
     await expect(page.locator("h1")).toContainText("旅の予定を");
     await expect(page.locator(".hero-stage")).toBeVisible();
     await expect(page.locator(".shiori-preview")).toBeVisible();
-    await expect(page.locator(".preview-photo")).toBeVisible();
+    await expect(page.locator(".preview-photo")).toHaveCount(0);
     await expect(page.locator(".journey-section")).toBeVisible();
     await expect(page.locator(".create-section")).toBeVisible();
 
@@ -27,7 +27,7 @@ test.describe("Responsive home page", () => {
     expect(viewport).not.toBeNull();
     expect(heroBox).not.toBeNull();
     expect(journeyBox).not.toBeNull();
-    expect(heroBox!.height).toBeGreaterThanOrEqual(viewport!.height);
+    expect(Math.abs(heroBox!.height - viewport!.height)).toBeLessThanOrEqual(1);
     expect(journeyBox!.y).toBeGreaterThanOrEqual(viewport!.height - 1);
 
     const menuBox = await page.locator(".menu-button").boundingBox();
@@ -82,7 +82,7 @@ test.describe("Responsive home page", () => {
     const visualHierarchy = await page.evaluate(() => {
       const titleLabel = document.querySelector<HTMLElement>(".title-group .form-label");
       const designLabel = document.querySelector<HTMLElement>(".theme-fieldset .form-label");
-      const passwordLabel = document.querySelector<HTMLElement>(".checkbox-label strong");
+      const passwordLabel = document.querySelector<HTMLElement>(".toggle-setting strong");
       const titleInput = document.querySelector<HTMLElement>(".title-group .form-input");
       const selectedTheme = document.querySelector<HTMLElement>(".theme-card.selected");
 
@@ -148,15 +148,31 @@ test.describe("Responsive home page", () => {
     });
     await expect(listCard).toHaveAttribute("aria-pressed", "true");
 
-    const passwordCheckbox = page.getByRole("checkbox");
-    await expect(passwordCheckbox).toBeVisible();
+    const passwordSwitch = page.getByRole("switch", { name: "パスワードで保護する" });
+    await expect(passwordSwitch).toBeAttached();
+    await expect(passwordSwitch).toHaveAttribute("aria-checked", "false");
     await expect(page.getByText("編集する人だけにパスワードを共有します。")).toHaveCount(0);
     await expect(page.getByLabel("編集用パスワード")).toHaveCount(0);
 
-    await passwordCheckbox.check();
+    await passwordSwitch.check();
     await expect(page.getByLabel("編集用パスワード")).toBeVisible();
 
+    await expect(page.getByLabel("次の表示スタイル")).toBeVisible();
+    await expect(page.getByLabel("前の表示スタイル")).toBeVisible();
+    await expect(page.getByText("予定表", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("詳細設定")).toHaveCount(0);
+  });
+
+  test("renders the journey as one lightweight line-art story", async ({ page }) => {
+    await page.goto("/");
+    await page.locator(".journey-section").scrollIntoViewIfNeeded();
+
+    await expect(page.locator(".journey-art")).toBeVisible();
+    await expect(page.locator(".story-line")).toHaveCount(1);
+    await expect(page.locator(".journey-step")).toHaveCount(0);
+    await expect(page.getByText("旅の予定をまとめる。")).toBeVisible();
+    await expect(page.getByText("URLで共有する。")).toBeVisible();
+    await expect(page.getByText("みんなで確認。")).toBeVisible();
   });
 
   test("keeps the intermediate hero in two columns", async ({ page }) => {

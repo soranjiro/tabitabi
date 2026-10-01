@@ -50,6 +50,7 @@ test("deployed home keeps the intended mobile composition", async ({ page }) => 
   });
 
   const initialPreviewTitle = await preview.locator("h2").textContent();
+  const initialBackground = await page.locator(".hero-picture img").getAttribute("src");
   const swipeBox = await heroScene.boundingBox();
   expect(swipeBox).not.toBeNull();
 
@@ -59,6 +60,12 @@ test("deployed home keeps the intended mobile composition", async ({ page }) => 
   await page.mouse.up();
 
   await expect.poll(async () => preview.locator("h2").textContent()).not.toBe(initialPreviewTitle);
+  await expect.poll(async () => page.locator(".hero-picture img").getAttribute("src")).not.toBe(initialBackground);
+
+  await page.screenshot({
+    path: "test-results/home-mobile-hero-swiped.png",
+    fullPage: false,
+  });
 
   await journey.scrollIntoViewIfNeeded();
   await expect(page.locator(".journey-art")).toBeVisible();

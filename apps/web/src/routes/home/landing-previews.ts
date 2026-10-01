@@ -20,7 +20,7 @@ export const previews: Preview[] = [
     duration: "2泊3日",
     destination: "京都",
     accent: "#ec858c",
-    action: "#885167",
+    action: "#bc4f74",
     imagePosition: "center 48%",
     steps: [
       { time: "09:00", title: "清水寺参拝" },

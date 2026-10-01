@@ -256,9 +256,30 @@ test.describe("Responsive home page", () => {
     await expect(page.locator(".journey-art")).toBeVisible();
     await expect(page.locator(".story-line")).toHaveCount(4);
     await expect(page.locator(".journey-step")).toHaveCount(0);
-    await expect(page.getByText("旅をつくる。")).toBeVisible();
-    await expect(page.getByText("URLで送る。")).toBeVisible();
-    await expect(page.getByText("みんなで見る。", { exact: true })).toBeVisible();
+    await expect(page.getByText("しおりを作る", { exact: true })).toBeVisible();
+    await expect(page.getByText("SNSで共有", { exact: true })).toBeVisible();
+    await expect(page.getByText("みんなで見る", { exact: true })).toBeVisible();
+
+    expect(
+      await page.locator(".journey-inner").getAttribute("data-drawing-progress"),
+    ).toBeNull();
+
+    const labelAlignment = await page.evaluate(() => {
+      const frame = document
+        .querySelector<HTMLElement>(".journey-inner")!
+        .getBoundingClientRect();
+      return Math.max(
+        ...Array.from(
+          document.querySelectorAll<HTMLElement>(".scene-label"),
+        ).map((label) => {
+          const box = label.getBoundingClientRect();
+          return Math.abs(
+            box.left + box.width / 2 - (frame.left + frame.width / 2),
+          );
+        }),
+      );
+    });
+    expect(labelAlignment).toBeLessThan(1);
   });
 
   test("keeps the intermediate hero in two columns", async ({ page }) => {

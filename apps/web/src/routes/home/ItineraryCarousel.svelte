@@ -187,7 +187,7 @@
   .preview-track::-webkit-scrollbar {
     display: none;
   }
-  /* Render the daily sample in the center before hydration, too. */
+  /* Center the server-selected sample before hydration, too. */
   .preview-area[data-ready="false"] .shiori-preview:not(.active) {
     display: none;
   }

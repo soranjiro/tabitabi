@@ -1,4 +1,22 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function selectMiddlePreview(page: Page) {
+  await page.locator(".preview-dots button").nth(2).click();
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await expect
+    .poll(() =>
+      page.locator(".shiori-preview.active").evaluate((element) => {
+        const card = element.getBoundingClientRect();
+        const track = element
+          .closest(".preview-track")!
+          .getBoundingClientRect();
+        return Math.abs(
+          card.left + card.width / 2 - track.left - track.width / 2,
+        );
+      }),
+    )
+    .toBeLessThan(2);
+}
 
 const viewports = [
   { width: 320, height: 700 },
@@ -90,6 +108,7 @@ test("preview buttons, dots, horizontal scroll and resize keep the selected samp
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const active = page.locator(".shiori-preview.active");
+  await selectMiddlePreview(page);
   const initialTitle = await active.locator("h2").textContent();
   const initialImage = await page
     .locator(".hero-picture img")
@@ -139,6 +158,7 @@ test("touch swiping changes the sample without blocking vertical page scrolling"
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await selectMiddlePreview(page);
   const previousTitle = await page
     .locator(".shiori-preview.active h2")
     .textContent();
@@ -267,6 +287,7 @@ test("rapid smooth carousel navigation finishes at the requested sample", async 
     "data-ready",
     "true",
   );
+  await selectMiddlePreview(page);
   const title = await page.locator(".shiori-preview.active h2").textContent();
   await page.getByRole("button", { name: "次のしおり", exact: true }).click();
   await page.getByRole("button", { name: "前のしおり", exact: true }).click();

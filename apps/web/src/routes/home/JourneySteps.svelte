@@ -12,7 +12,11 @@
     }
 
     let frame = 0;
+    let active = !("IntersectionObserver" in window);
+
     const update = () => {
+      if (!active) return;
+
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         if (!section) return;
@@ -25,12 +29,24 @@
       });
     };
 
+    const observer = "IntersectionObserver" in window && section
+      ? new IntersectionObserver(
+          ([entry]) => {
+            active = Boolean(entry?.isIntersecting);
+            if (active) update();
+          },
+          { rootMargin: "22% 0px 22% 0px" },
+        )
+      : null;
+
+    if (observer && section) observer.observe(section);
     update();
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update, { passive: true });
 
     return () => {
       cancelAnimationFrame(frame);
+      observer?.disconnect();
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };

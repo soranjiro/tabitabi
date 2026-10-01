@@ -91,3 +91,49 @@ test("deployed home keeps the intended mobile composition", async ({ page }) => 
     fullPage: false,
   });
 });
+
+
+test("deployed home keeps the intended desktop composition", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/", { waitUntil: "networkidle" });
+
+  const hero = page.locator(".hero-stage");
+  const preview = page.locator(".shiori-preview");
+  const heroMain = page.locator(".hero-main");
+
+  const viewport = page.viewportSize();
+  const heroBox = await hero.boundingBox();
+  const previewBox = await preview.boundingBox();
+  const mainBox = await heroMain.boundingBox();
+
+  expect(viewport).not.toBeNull();
+  expect(heroBox).not.toBeNull();
+  expect(previewBox).not.toBeNull();
+  expect(mainBox).not.toBeNull();
+
+  expect(Math.abs(heroBox!.height - viewport!.height)).toBeLessThanOrEqual(1);
+  expect(previewBox!.width).toBeGreaterThanOrEqual(295);
+  expect(previewBox!.width).toBeLessThanOrEqual(325);
+  expect(mainBox!.width).toBeLessThanOrEqual(1216);
+  await expect(page.locator(".preview-photo")).toHaveCount(0);
+
+  const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(documentWidth).toBeLessThanOrEqual(viewport!.width);
+
+  await page.screenshot({
+    path: "test-results/home-desktop-hero.png",
+    fullPage: false,
+  });
+
+  await page.locator(".create-section").scrollIntoViewIfNeeded();
+  const formBox = await page.locator(".form-card").boundingBox();
+  expect(formBox).not.toBeNull();
+  expect(formBox!.width).toBeLessThanOrEqual(820);
+  expect(formBox!.width).toBeGreaterThanOrEqual(700);
+
+  await page.screenshot({
+    path: "test-results/home-desktop-create.png",
+    fullPage: false,
+  });
+});

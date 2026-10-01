@@ -224,65 +224,22 @@ for (const viewport of [
   { width: 390, height: 844 },
   { width: 1440, height: 900 },
 ]) {
-  test(`the continuous drawing unfolds in order, reverses on scroll and joins the form at ${viewport.width}px`, async ({
+  test(`the static journey artwork stays centered and joins the form at ${viewport.width}px`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize(viewport);
-    await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto("/");
-    const drawing = page.locator(".journey-inner");
-    const progress = () =>
-      drawing.evaluate((node) =>
-        Number((node as HTMLElement).dataset.drawingProgress),
-      );
-    await expect.poll(progress).toBe(0);
-    const { top, height } = await drawing.evaluate((node) => ({
-      top: node.getBoundingClientRect().top + window.scrollY,
-      height: node.getBoundingClientRect().height,
-    }));
-    const scrollToProgress = async (value: number) => {
-      await page.evaluate(
-        ({ top, height, value }) =>
-          window.scrollTo({
-            top:
-              top -
-              (innerHeight * 0.82 -
-                value * Math.max(height * 0.55, height - innerHeight * 0.24)),
-            behavior: "instant",
-          }),
-        { top, height, value },
-      );
-      await expect.poll(progress).toBeCloseTo(value, 2);
-    };
-    await scrollToProgress(0.22);
-    await expect(page.locator(".entry-line")).toHaveCSS(
-      "stroke-dashoffset",
-      "0px",
-    );
-    await expect(page.locator(".create-scene")).not.toHaveCSS(
-      "stroke-dashoffset",
-      "0px",
-    );
-    await expect(page.locator(".share-scene")).toHaveCSS(
-      "stroke-dashoffset",
-      "1px",
-    );
-    await scrollToProgress(0.6);
-    await expect(page.locator(".share-scene")).toHaveCSS(
-      "stroke-dashoffset",
-      "0px",
-    );
-    await expect(page.locator(".view-scene")).toHaveCSS(
-      "stroke-dashoffset",
-      "1px",
-    );
-    await scrollToProgress(1);
-    await expect(page.locator(".exit-line")).toHaveCSS(
-      "stroke-dashoffset",
-      "0px",
-    );
+    await page.locator(".journey-section").scrollIntoViewIfNeeded();
+
+    await expect(page.getByText("しおりを作る", { exact: true })).toBeVisible();
+    await expect(page.getByText("SNSで共有", { exact: true })).toBeVisible();
+    await expect(page.getByText("みんなで見る", { exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("journey.png") });
-    const joins = await page.evaluate(() => {
+
+    const geometry = await page.evaluate(() => {
+      const drawing = document
+        .querySelector<HTMLElement>(".journey-inner")!
+        .getBoundingClientRect();
       const art = document
         .querySelector(".journey-art")!
         .getBoundingClientRect();
@@ -292,38 +249,57 @@ for (const viewport of [
       const form = document
         .querySelector(".form-outline")!
         .getBoundingClientRect();
+      const labels = Array.from(
+        document.querySelectorAll<HTMLElement>(".scene-label"),
+      ).map((label) => label.getBoundingClientRect());
+
       return {
-        first: Math.abs(art.bottom - thread.top),
-        second: Math.abs(thread.bottom - form.top),
-        centers: Math.abs(
+        width: drawing.width,
+        drawingProgress: document
+          .querySelector<HTMLElement>(".journey-inner")!
+          .getAttribute("data-drawing-progress"),
+        firstJoin: Math.abs(art.bottom - thread.top),
+        secondJoin: Math.abs(thread.bottom - form.top),
+        centerJoin: Math.abs(
           art.left + art.width / 2 - thread.left - thread.width / 2,
         ),
+        maxLabelCenterDelta: Math.max(
+          ...labels.map((label) =>
+            Math.abs(
+              label.left +
+                label.width / 2 -
+                (drawing.left + drawing.width / 2),
+            ),
+          ),
+        ),
+        labelTops: labels.map((label) => label.top),
+        documentOverflow:
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
       };
     });
-    expect(joins.first).toBeLessThan(1);
-    expect(joins.second).toBeLessThan(1);
-    expect(joins.centers).toBeLessThan(1);
-    await scrollToProgress(0.22);
-    await expect(page.locator(".view-scene")).toHaveCSS(
-      "stroke-dashoffset",
-      "1px",
-    );
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    await expect.poll(progress).toBe(1);
-    await expect(page.locator(".view-scene")).toHaveCSS(
-      "stroke-dashoffset",
-      "0px",
-    );
+
+    expect(geometry.drawingProgress).toBeNull();
+    expect(geometry.firstJoin).toBeLessThan(1);
+    expect(geometry.secondJoin).toBeLessThan(1);
+    expect(geometry.centerJoin).toBeLessThan(1);
+    expect(geometry.maxLabelCenterDelta).toBeLessThan(1);
+    expect(geometry.labelTops[0]).toBeLessThan(geometry.labelTops[1]!);
+    expect(geometry.labelTops[1]).toBeLessThan(geometry.labelTops[2]!);
+    expect(geometry.documentOverflow).toBeLessThanOrEqual(1);
+    expect(geometry.width).toBeLessThanOrEqual(761);
+
+    if (viewport.width === 390) {
+      expect(geometry.width).toBeGreaterThan(370);
+    } else {
+      expect(geometry.width).toBeGreaterThan(700);
+    }
+
     await expect(page.locator(".entry-line")).toHaveCSS(
       "transition-duration",
       "0s",
     );
-    await page.locator("#create").scrollIntoViewIfNeeded();
     await expect(page.locator(".form-outline path")).toHaveCSS(
-      "stroke-dashoffset",
-      "0px",
-    );
-    await expect(page.locator(".shiori-preview.active")).toHaveCSS(
       "transition-duration",
       "0s",
     );
@@ -454,6 +430,7 @@ test("preview loops in both directions and keeps background, color and accessibl
   const springColor = await page
     .locator(".primary")
     .evaluate((node) => getComputedStyle(node).backgroundColor);
+  expect(springColor).toBe("rgb(188, 79, 116)");
   await page.getByRole("button", { name: "前のしおり", exact: true }).click();
   await expect(page.locator(".preview-dots button").last()).toHaveAttribute(
     "aria-pressed",

@@ -46,7 +46,8 @@
     onUpdateItinerary?: (data: {
       title?: string; theme_id?: string; palette_id?: string; packing_enabled?: boolean;
       prefecture_slugs?: string[]; areas?: string[]; tags?: string[]; metadata_initialized?: boolean;
-      memo?: string; secret_settings?: { enabled: boolean; offset_minutes: number } | null;
+      memo?: string; background_image?: string | null; background_display?: "cover" | "page";
+      secret_settings?: { enabled: boolean; offset_minutes: number } | null;
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
@@ -136,6 +137,8 @@
   let showSettingsDialog = $state(false);
   let showMetadataDialog = $state(false);
   let selectedPaletteId = $state(itinerary.palette_id ?? "neutral");
+  let selectedBackgroundImage = $state<string | null>(itinerary.background_image ?? null);
+  let selectedBackgroundDisplay = $state<"cover" | "page">(itinerary.background_display ?? "cover");
   let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
   let secretModeOffset = $state(itinerary.secret_settings?.offset_minutes ?? 60);
   let packingEnabled = $state(itinerary.packing_enabled ?? true);
@@ -570,6 +573,24 @@
     await onUpdateItinerary?.({ palette_id: paletteId });
   }
 
+  async function handleBackgroundChange(backgroundImage: string | null, backgroundDisplay: "cover" | "page") {
+    selectedBackgroundImage = backgroundImage;
+    selectedBackgroundDisplay = backgroundDisplay;
+    await onUpdateItinerary?.({
+      background_image: backgroundImage,
+      background_display: backgroundDisplay,
+    });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("tabitabi:background-changed", {
+        detail: {
+          itineraryId: itinerary.id,
+          backgroundImage,
+          backgroundDisplay,
+        },
+      }));
+    }
+  }
+
   async function handleSecretModeChange(enabled: boolean, offset: number) {
     secretModeEnabled = enabled;
     secretModeOffset = offset;
@@ -794,6 +815,8 @@
     {palettes}
     selectedThemeId={itinerary.theme_id}
     {selectedPaletteId}
+    backgroundImage={selectedBackgroundImage}
+    backgroundDisplay={selectedBackgroundDisplay}
     {secretModeEnabled}
     {secretModeOffset}
     {packingEnabled}
@@ -805,6 +828,7 @@
     onSecretModeChange={handleSecretModeChange}
     onPackingEnabledChange={handlePackingEnabledChange}
     onMetadataChange={saveMetadata}
+    onBackgroundChange={handleBackgroundChange}
     onClose={() => (showSettingsDialog = false)}
   />
 

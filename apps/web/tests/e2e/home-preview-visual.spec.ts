@@ -1,7 +1,21 @@
 import { expect, test, type Page } from "@playwright/test";
 
 async function selectMiddlePreview(page: Page, index = 2) {
-  await page.locator(".preview-dots button").nth(index).click();
+  const status = page.locator(".preview-area > .sr-only");
+  const selection = await status.textContent();
+  const match = selection?.match(/(\d+)\s*\/\s*(\d+)/);
+  if (!match) throw new Error("Could not read carousel selection");
+
+  const current = Number(match[1]) - 1;
+  const count = Number(match[2]);
+  const forward = (index - current + count) % count;
+  const backward = (current - index + count) % count;
+  const direction = forward <= backward ? "次のしおり" : "前のしおり";
+  const steps = Math.min(forward, backward);
+
+  for (let step = 0; step < steps; step++)
+    await page.getByRole("button", { name: direction, exact: true }).click();
+
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await expect
     .poll(() =>
@@ -116,7 +130,7 @@ for (const viewport of viewports) {
   });
 }
 
-test("preview buttons, dots, horizontal scroll and resize keep the selected sample centered", async ({
+test("preview buttons, horizontal scroll and resize keep the selected sample centered without dots", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -137,18 +151,17 @@ test("preview buttons, dots, horizontal scroll and resize keep the selected samp
   await page.getByRole("button", { name: "前のしおり", exact: true }).click();
   await expect(active.locator("h2")).toHaveText(initialTitle!);
 
-  await page.locator(".preview-dots button").first().click();
+  await expect(page.locator(".preview-dots")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "前のしおり", exact: true }),
   ).toBeEnabled();
   const track = page.locator(".preview-track");
+  const beforeScrollTitle = await active.locator("h2").textContent();
   await track.evaluate((element) => {
     element.scrollLeft += 232;
+    element.dispatchEvent(new Event("scroll"));
   });
-  await expect(page.locator(".preview-dots button").nth(1)).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(active.locator("h2")).not.toHaveText(beforeScrollTitle!);
   const selectedTitle = await active.locator("h2").textContent();
   await page.setViewportSize({ width: 1280, height: 800 });
   await expect(active.locator("h2")).toHaveText(selectedTitle!);
@@ -161,7 +174,6 @@ test("preview buttons, dots, horizontal scroll and resize keep the selected samp
       );
     })
     .toBeLessThan(2);
-  await page.locator(".preview-dots button").last().click();
   await expect(
     page.getByRole("button", { name: "次のしおり", exact: true }),
   ).toBeEnabled();
@@ -197,10 +209,6 @@ test("touch swiping changes the sample without blocking vertical page scrolling"
   await expect(page.locator(".shiori-preview.active h2")).not.toHaveText(
     previousTitle!,
   );
-  await expect(page.locator(".preview-dots button").first()).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
   await session.send("Input.dispatchTouchEvent", {
     type: "touchStart",
     touchPoints: [{ x: 195, y: 700 }],
@@ -235,6 +243,12 @@ for (const viewport of [
     await expect(journey.locator(".create-label")).toHaveText("しおりを作る");
     await expect(journey.locator(".share-label")).toHaveText("SNSで共有");
     await expect(journey.locator(".view-label")).toHaveText("みんなで見る");
+    await expect(journey.locator(".intro-line")).toHaveAttribute(
+      "data-intro-label",
+      "はじめかた",
+    );
+    const introPath = await journey.locator(".intro-line").getAttribute("d");
+    expect(introPath?.match(/\bM/g)).toHaveLength(1);
     await page.screenshot({ path: testInfo.outputPath("journey.png") });
 
     const geometry = await page.evaluate(() => {
@@ -433,10 +447,6 @@ test("preview loops in both directions and keeps background, color and accessibl
     .evaluate((node) => getComputedStyle(node).backgroundColor);
   expect(springColor).toBe("rgb(188, 79, 116)");
   await page.getByRole("button", { name: "前のしおり", exact: true }).click();
-  await expect(page.locator(".preview-dots button").last()).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
   await expect(page.locator(".shiori-preview.active h2")).toHaveText(
     "秋の金沢 王道まち歩き",
   );
@@ -444,12 +454,8 @@ test("preview loops in both directions and keeps background, color and accessibl
     "background-color",
     springColor,
   );
-  for (let step = 0; step < 13; step++) {
+  for (let step = 0; step < 13; step++)
     await page.getByRole("button", { name: "次のしおり", exact: true }).click();
-    await expect(
-      page.locator(".preview-dots button").nth(step % 6),
-    ).toHaveAttribute("aria-pressed", "true");
-  }
   await expect(page.locator(".shiori-preview.active h2")).toHaveText(
     "春の京都・宇治",
   );
@@ -474,12 +480,8 @@ test("preview loops in both directions and keeps background, color and accessibl
       }),
     )
     .toBeLessThan(2);
-  for (let step = 0; step < 13; step++) {
+  for (let step = 0; step < 13; step++)
     await page.getByRole("button", { name: "前のしおり", exact: true }).click();
-    await expect(
-      page.locator(".preview-dots button").nth((5 - (step % 6) + 6) % 6),
-    ).toHaveAttribute("aria-pressed", "true");
-  }
 });
 
 test("hamburger and close icon share the exact button center", async ({

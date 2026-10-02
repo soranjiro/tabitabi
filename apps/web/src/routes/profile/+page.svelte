@@ -8,10 +8,12 @@
   import BookShelf from "$lib/sharing/BookShelf.svelte";
   import JapanMap from "$lib/explore/JapanMap.svelte";
   import ItineraryCard from "$lib/explore/ItineraryCard.svelte";
+  import IconAirplane from "../home/icons/IconAirplane.svelte";
+  import ProfileIcon from "./ProfileIcon.svelte";
   import { PREFECTURES, type Prefecture, type PublicFeedItem, type UserBookmarkWithItinerary, type UserSessionProfile } from "@tabitabi/types";
 
   type Mode = "login" | "register" | "verify" | "forgot" | "setup";
-  const usernamePattern = "[\\p{L}\\p{N}\\p{M}_]+";
+  const usernamePattern = "[\\p{L}\\p{N}\\p{M}]+";
   const betaMailNotice = "現在はベータ版のため noreply@tabitabi-47ccd.firebaseapp.com というアカウントから確認メールが届きます。迷惑メールに含まれていないか確認してください。";
 
   let mode = $state<Mode>("login");
@@ -43,6 +45,7 @@
   let unlinkTarget = $state<UserBookmarkWithItinerary | null>(null);
   let showAccount = $state(false);
   let showPassword = $state(false);
+  let showLogoutConfirm = $state(false);
   let shareFocusToken = $state(0);
   let activeTab = $state<"itineraries" | "favorites" | "map">("itineraries");
   const visitedCounts = $derived.by(() => {
@@ -197,12 +200,17 @@
   }
 
   async function handleLogout() {
+    showLogoutConfirm = false;
     await userAuth.signOut();
     loggedIn = false;
     account = null;
     bookmarks = [];
     favoriteItineraries = [];
     await goto("/");
+  }
+
+  function requestLogout() {
+    showLogoutConfirm = true;
   }
 
   async function syncLocalBookmarks() {
@@ -377,11 +385,7 @@
   <header class="brand-header">
     <div class="brand-header-inner">
       <a href="/" class="brand-link" aria-label="たびたびのトップへ戻る">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" role="img">
-            <path d="M12 3v18M4.5 10.5 12 7l7.5 3.5M7.5 17 12 15l4.5 2" />
-          </svg>
-        </span>
+        <span class="brand-mark" aria-hidden="true"><IconAirplane size={20} /></span>
         <span>たびたび</span>
       </a>
     </div>
@@ -417,15 +421,15 @@
           </p>
         </div>
 
-        <svg class="auth-illustration" viewBox="0 0 340 190" aria-hidden="true">
-          <path class="route-line" d="M12 166c57-4 55-58 111-60 42-2 45 35 88 22 39-12 48-65 111-83" />
-          <path class="route-line" d="M288 34 330 18l-18 39-9-12-15-11Z" />
-          <rect class="soft-fill" x="182" y="28" width="78" height="112" rx="16" />
-          <rect class="route-line" x="176" y="23" width="78" height="112" rx="16" />
-          <circle class="route-line" cx="215" cy="67" r="19" />
-          <path class="route-line" d="M215 53v28m-13-11 13-6 13 6m-20 19h31m-31 12h25" />
-          <path class="route-line" d="m262 87 50 13-8 42-50-13z" />
-          <path class="route-line" d="m274 101 25 7m-27 6 22 6" />
+        <svg class="auth-illustration" viewBox="0 0 320 180" aria-hidden="true">
+          <path class="route-line" d="M14 151c43-2 53-34 86-38 34-4 42 23 71 17 33-7 39-47 77-55 21-5 37 1 56 14" />
+          <rect class="soft-fill" x="174" y="31" width="70" height="101" rx="15" />
+          <rect class="route-line" x="168" y="25" width="70" height="101" rx="15" />
+          <circle class="route-line" cx="203" cy="62" r="16" />
+          <path class="route-line" d="M203 50v24m-10-8 10-5 10 5m-16 17h26m-26 10h21" />
+          <path class="route-line" d="m244 91 44 12-9 34-44-12z" />
+          <path class="route-line" d="m252 104 25 7m-27 4 20 6" />
+          <path class="route-line plane" d="m270 55 35-15-10 35-8-11-17-9Z" />
         </svg>
       </section>
 
@@ -458,7 +462,7 @@
 
         {#if mode === "verify"}
           <div class="auth-state">
-            <span class="state-icon" aria-hidden="true">✉</span>
+            <span class="state-icon" aria-hidden="true"><ProfileIcon name="mail" size={23} /></span>
             <h2>確認メールを送りました</h2>
             <p><strong>{verificationSentTo || email}</strong> に届いたメールのリンクを開いてください。</p>
             <div class="beta-mail-note">
@@ -471,14 +475,13 @@
               <span aria-hidden="true">→</span>
             </button>
             <button onclick={resendVerification} disabled={submitting} class="secondary auth-submit">確認メールを再送</button>
-            <button onclick={handleLogout} class="text-link">別のアカウントでログイン</button>
+            <button onclick={requestLogout} class="text-link">別のアカウントでログイン</button>
           </div>
         {:else if mode === "forgot"}
           <form onsubmit={(event) => { event.preventDefault(); requestPasswordReset(); }} class="auth-form">
             <div class="field-group">
               <label for="forgot-email">メールアドレス</label>
               <div class="input-shell">
-                <span aria-hidden="true">✉</span>
                 <input id="forgot-email" type="email" bind:value={email} autocomplete="email" placeholder="例：taro@tabitabi.jp" required />
               </div>
             </div>
@@ -492,14 +495,12 @@
             <div class="field-group">
               <label for="setup-username">ユーザー名</label>
               <div class="input-shell">
-                <span aria-hidden="true">人</span>
-                <input id="setup-username" bind:value={usernameInput} minlength="3" maxlength="20" pattern={usernamePattern} title="3〜20文字の日本語・英数字・_が使えます" autocomplete="username" required />
+                <input id="setup-username" bind:value={usernameInput} minlength="3" maxlength="20" pattern={usernamePattern} title="3〜20文字の日本語・英数字が使えます" autocomplete="username" required />
               </div>
             </div>
             <div class="field-group">
               <label for="setup-prefecture">お住まいの都道府県</label>
               <div class="input-shell select-shell">
-                <span aria-hidden="true">⌖</span>
                 <select id="setup-prefecture" bind:value={prefecture} required>
                   <option value="" disabled>選択してください</option>
                   {#each PREFECTURES as item}<option value={item}>{item}</option>{/each}
@@ -517,8 +518,7 @@
               <div class="field-group">
                 <label for="username">ユーザー名 <em>*</em></label>
                 <div class="input-shell">
-                  <span aria-hidden="true">人</span>
-                  <input id="username" bind:value={usernameInput} minlength="3" maxlength="20" pattern={usernamePattern} title="3〜20文字の日本語・英数字・_が使えます" autocomplete="username" placeholder="例：tabitabi_taro" required />
+                    <input id="username" bind:value={usernameInput} minlength="3" maxlength="20" pattern={usernamePattern} title="3〜20文字の日本語・英数字が使えます" autocomplete="username" placeholder="例：tabitabitaro" required />
                 </div>
               </div>
             {/if}
@@ -526,7 +526,6 @@
             <div class="field-group">
               <label for="email">メールアドレス <em>*</em></label>
               <div class="input-shell">
-                <span aria-hidden="true">✉</span>
                 <input id="email" type="email" bind:value={email} autocomplete="email" placeholder="例：taro@tabitabi.jp" required />
               </div>
             </div>
@@ -534,7 +533,6 @@
             <div class="field-group">
               <label for="password">パスワード <em>*</em></label>
               <div class="input-shell">
-                <span aria-hidden="true">▣</span>
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -551,7 +549,7 @@
                   aria-label={showPassword ? "パスワードを隠す" : "パスワードを表示"}
                   aria-pressed={showPassword}
                   onclick={() => showPassword = !showPassword}
-                >{showPassword ? "隠" : "見"}</button>
+                ><ProfileIcon name={showPassword ? "eye-off" : "eye"} size={20} /></button>
               </div>
             </div>
 
@@ -559,8 +557,7 @@
               <div class="field-group">
                 <label for="prefecture">お住まいの都道府県 <em>*</em></label>
                 <div class="input-shell select-shell">
-                  <span aria-hidden="true">⌖</span>
-                  <select id="prefecture" bind:value={prefecture} required>
+                    <select id="prefecture" bind:value={prefecture} required>
                     <option value="" disabled>選択してください</option>
                     {#each PREFECTURES as item}<option value={item}>{item}</option>{/each}
                   </select>
@@ -594,7 +591,7 @@
           </button>
         {/if}
 
-        <p class="security-note"><span aria-hidden="true">♢</span> Firebase Authentication で安全にアカウントを管理します</p>
+        <p class="security-note"><span aria-hidden="true"><ProfileIcon name="lock" size={15} /></span> Firebase Authentication で安全にアカウントを管理します</p>
       </section>
 
       <footer class="auth-footer">
@@ -622,7 +619,7 @@
             <h2>こんにちは、{account?.username}さん</h2>
             <span>{bookmarks.length}の旅　{bookmarks.filter(item => item.is_visible).length}つの共有</span>
           </div>
-          <a class="create-journey" href="/#create">＋ しおりを作る <span aria-hidden="true">→</span></a>
+          <a class="create-journey" href="/#create"><ProfileIcon name="plus" size={18} /> しおりを作る <ProfileIcon name="arrow-right" size={17} /></a>
           <div class="hero-line-art" aria-hidden="true">
             <svg viewBox="0 0 240 105">
               <path d="M8 91c46-12 45-61 95-56 29 3 35 23 59 10 24-14 27-37 62-36" />
@@ -638,15 +635,15 @@
 
       <section class="account-actions" aria-label="アカウント操作">
         <button type="button" onclick={() => showAccount = !showAccount} aria-expanded={showAccount}>
-          <span class="action-icon" aria-hidden="true">人</span>
+          <span class="action-icon" aria-hidden="true"><ProfileIcon name="user" size={20} /></span>
           <span><strong>アカウント設定</strong><small>プロフィール・メールなど</small></span>
         </button>
         <button type="button" onclick={openShareSettings}>
-          <span class="action-icon" aria-hidden="true">⌁</span>
+          <span class="action-icon" aria-hidden="true"><ProfileIcon name="share" size={20} /></span>
           <span><strong>共有設定</strong><small>共有中のしおりを管理</small></span>
         </button>
-        <button type="button" class="logout-action" onclick={handleLogout}>
-          <span class="action-icon" aria-hidden="true">↪</span>
+        <button type="button" class="logout-action" onclick={requestLogout}>
+          <span class="action-icon" aria-hidden="true"><ProfileIcon name="logout" size={20} /></span>
           <span><strong>ログアウト</strong><small>アカウントからサインアウト</small></span>
         </button>
       </section>
@@ -664,10 +661,10 @@
 
           {#if editSection === "none"}
             <div class="account-menu">
-              <button onclick={() => editSection = "profile"}><span>プロフィール</span><small>ユーザー名・都道府県</small><b aria-hidden="true">›</b></button>
-              <button onclick={() => { editEmail = account?.email ?? ""; editSection = "email"; }}><span>メールアドレス変更</span><small>{account?.email}</small><b aria-hidden="true">›</b></button>
-              <button onclick={() => editSection = "password"}><span>パスワード変更</span><small>ログイン用パスワード</small><b aria-hidden="true">›</b></button>
-              <a href="/users/{account?.username}"><span>公開プロフィール</span><small>ほかの人から見えるページ</small><b aria-hidden="true">›</b></a>
+              <button onclick={() => editSection = "profile"}><span>プロフィール</span><small>ユーザー名・都道府県</small><b aria-hidden="true"><ProfileIcon name="chevron-right" size={18} /></b></button>
+              <button onclick={() => { editEmail = account?.email ?? ""; editSection = "email"; }}><span>メールアドレス変更</span><small>{account?.email}</small><b aria-hidden="true"><ProfileIcon name="chevron-right" size={18} /></b></button>
+              <button onclick={() => editSection = "password"}><span>パスワード変更</span><small>ログイン用パスワード</small><b aria-hidden="true"><ProfileIcon name="chevron-right" size={18} /></b></button>
+              <a href="/users/{account?.username}"><span>公開プロフィール</span><small>ほかの人から見えるページ</small><b aria-hidden="true"><ProfileIcon name="chevron-right" size={18} /></b></a>
             </div>
           {:else}
             <div class="account-editor">
@@ -676,7 +673,7 @@
                 <form onsubmit={(event) => { event.preventDefault(); updateProfile(); }} class="settings-form">
                   <div class="field-group">
                     <label for="edit-username">ユーザー名</label>
-                    <div class="input-shell"><input id="edit-username" bind:value={editUsername} minlength="3" maxlength="20" pattern={usernamePattern} title="3〜20文字の日本語・英数字・_が使えます" required /></div>
+                    <div class="input-shell"><input id="edit-username" bind:value={editUsername} minlength="3" maxlength="20" pattern={usernamePattern} title="3〜20文字の日本語・英数字が使えます" required /></div>
                   </div>
                   <div class="field-group">
                     <label for="edit-prefecture">お住まいの都道府県</label>
@@ -737,11 +734,11 @@
       </section>
 
       <nav class="mobile-nav" aria-label="メインナビゲーション">
-        <a href="/" aria-label="ホーム"><span aria-hidden="true">⌂</span><small>ホーム</small></a>
-        <a href="/explore" aria-label="見つける"><span aria-hidden="true">⌕</span><small>見つける</small></a>
-        <a href="/#create" class="mobile-create" aria-label="しおりを作る"><span aria-hidden="true">＋</span><small>しおりを作る</small></a>
-        <button type="button" class:active={activeTab === "map"} onclick={openVisitedMap} aria-label="訪問マップ"><span aria-hidden="true">⌖</span><small>地図</small></button>
-        <a href="/profile" class="active" aria-current="page" aria-label="マイページ"><span aria-hidden="true">人</span><small>マイページ</small></a>
+        <a href="/" aria-label="ホーム"><span aria-hidden="true"><ProfileIcon name="home" size={21} /></span><small>ホーム</small></a>
+        <a href="/explore" aria-label="見つける"><span aria-hidden="true"><ProfileIcon name="search" size={21} /></span><small>見つける</small></a>
+        <a href="/#create" class="mobile-create" aria-label="しおりを作る"><span aria-hidden="true"><ProfileIcon name="plus" size={25} /></span><small>しおりを作る</small></a>
+        <button type="button" class:active={activeTab === "map"} onclick={openVisitedMap} aria-label="訪問マップ"><span aria-hidden="true"><ProfileIcon name="map" size={21} /></span><small>地図</small></button>
+        <a href="/profile" class="active" aria-current="page" aria-label="マイページ"><span aria-hidden="true"><ProfileIcon name="user" size={21} /></span><small>マイページ</small></a>
       </nav>
 
       {#if unlinkTarget}
@@ -759,6 +756,20 @@
         </div>
       {/if}
     </main>
+  {/if}
+
+  {#if showLogoutConfirm}
+    <div class="logout-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (showLogoutConfirm = false)}>
+      <section class="logout-dialog" role="dialog" aria-modal="true" aria-labelledby="logout-title" aria-describedby="logout-description">
+        <span class="logout-dialog-icon" aria-hidden="true"><ProfileIcon name="logout" size={23} /></span>
+        <h2 id="logout-title">ログアウトしますか？</h2>
+        <p id="logout-description">この端末のアカウントからログアウトします。作成したしおりや共有内容は削除されません。</p>
+        <div class="logout-dialog-actions">
+          <button type="button" class="secondary" onclick={() => showLogoutConfirm = false}>キャンセル</button>
+          <button type="button" class="logout-confirm" onclick={handleLogout}>ログアウト</button>
+        </div>
+      </section>
+    </div>
   {/if}
 </div>
 

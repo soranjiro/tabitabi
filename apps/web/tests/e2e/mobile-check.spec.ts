@@ -254,7 +254,7 @@ test.describe("Responsive home page", () => {
     await expect(listCard).toHaveAttribute("aria-pressed", "true");
 
     const passwordSwitch = page.getByRole("switch", {
-      name: "パスワードで保護する",
+      name: "パスワードを設定する",
     });
     await expect(passwordSwitch).toBeAttached();
     await expect(passwordSwitch).toHaveAttribute("aria-checked", "false");

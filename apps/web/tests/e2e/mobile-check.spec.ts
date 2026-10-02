@@ -288,9 +288,10 @@ test.describe("Responsive home page", () => {
     await expect(page.locator(".journey-art")).toBeVisible();
     await expect(page.locator(".story-line")).toHaveCount(4);
     await expect(page.locator(".journey-step")).toHaveCount(0);
-    await expect(page.getByText("しおりを作る", { exact: true })).toBeVisible();
-    await expect(page.getByText("SNSで共有", { exact: true })).toBeVisible();
-    await expect(page.getByText("みんなで見る", { exact: true })).toBeVisible();
+    const journey = page.locator(".journey-section");
+    await expect(journey.locator(".create-label")).toHaveText("しおりを作る");
+    await expect(journey.locator(".share-label")).toHaveText("SNSで共有");
+    await expect(journey.locator(".view-label")).toHaveText("みんなで見る");
 
     expect(
       await page.locator(".journey-inner").getAttribute("data-drawing-progress"),

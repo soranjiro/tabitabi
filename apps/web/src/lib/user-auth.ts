@@ -32,7 +32,9 @@ async function getAuthInstance(): Promise<Auth> {
         throw new Error('FIREBASE_CONFIG_MISSING');
       }
       const app = appModule.getApps()[0] ?? appModule.initializeApp(config);
-      return authModule.getAuth(app);
+      const auth = authModule.getAuth(app);
+      auth.languageCode = 'ja';
+      return auth;
     });
   }
   return authPromise;
@@ -93,6 +95,32 @@ export const userAuth = {
   async sendPasswordReset(email: string): Promise<void> {
     const { sendPasswordResetEmail } = await import('firebase/auth');
     await sendPasswordResetEmail(await getAuthInstance(), email);
+  },
+
+  async applyActionCode(code: string): Promise<void> {
+    const { applyActionCode } = await import('firebase/auth');
+    await applyActionCode(await getAuthInstance(), code);
+  },
+
+  async checkActionCode(code: string): Promise<{ email: string | null; previousEmail: string | null; operation: string }> {
+    const { checkActionCode } = await import('firebase/auth');
+    const info = await checkActionCode(await getAuthInstance(), code);
+    const data = info.data as { email?: string | null; previousEmail?: string | null };
+    return {
+      email: data.email ?? null,
+      previousEmail: data.previousEmail ?? null,
+      operation: String(info.operation),
+    };
+  },
+
+  async verifyPasswordResetCode(code: string): Promise<string> {
+    const { verifyPasswordResetCode } = await import('firebase/auth');
+    return verifyPasswordResetCode(await getAuthInstance(), code);
+  },
+
+  async confirmPasswordReset(code: string, newPassword: string): Promise<void> {
+    const { confirmPasswordReset } = await import('firebase/auth');
+    await confirmPasswordReset(await getAuthInstance(), code, newPassword);
   },
 
   async requestEmailChange(newEmail: string): Promise<void> {

@@ -6,7 +6,9 @@
   import { stepApi } from '$lib/api/step';
   import Dialog from '$lib/themes/standard/core/components/Dialog.svelte';
   import PublishDialog from '$lib/themes/standard/core/components/PublishDialog.svelte';
-  let { bookmarks, onRefresh, onUnlink }: { bookmarks: UserBookmarkWithItinerary[]; onRefresh: () => Promise<void>; onUnlink: (item: UserBookmarkWithItinerary) => void } = $props();
+  import { prefectureName } from '$lib/explore/data';
+  import AppIcon from '$lib/icons/AppIcon.svelte';
+  let { bookmarks, onRefresh, onUnlink, focusShared = 0 }: { bookmarks: UserBookmarkWithItinerary[]; onRefresh: () => Promise<void>; onUnlink: (item: UserBookmarkWithItinerary) => void; focusShared?: number } = $props();
   let shared = $state(false);
   let target = $state<UserBookmarkWithItinerary | null>(null);
   let managing = $state(false);
@@ -16,15 +18,45 @@
   let busy = $state(false);
   let message = $state('');
   let publishingTarget = $state<UserBookmarkWithItinerary | null>(null);
+  const coverImages: Record<string, string> = {
+    daycard: '/hero/background-spring.avif',
+    list: '/hero/background-summer.avif',
+    week: '/hero/background-autumn.avif',
+    month: '/hero/background-winter.avif',
+    'map-only': '/itinerary-backgrounds/coastal-drive.avif',
+    'mapbox-journey': '/itinerary-backgrounds/sky.avif',
+    shopping: '/itinerary-backgrounds/food.webp',
+    'planning-draft': '/itinerary-backgrounds/japanese.avif',
+    'planning-map': '/itinerary-backgrounds/coastal-drive.avif',
+  };
   const publications = $derived(bookmarks.filter(item => item.is_visible && item.shared_itinerary_id));
   const books = $derived(shared ? publications : bookmarks);
   const from = $derived(direction === 'restore' ? snapshot : source);
   const to = $derived(direction === 'restore' ? source : snapshot);
+  $effect(() => {
+    if (focusShared > 0) shared = true;
+  });
   function date(value?: number | null) { return value == null ? '日程未定' : new Date(value).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }); }
   function days(item: UserBookmarkWithItinerary) {
     if (item.start_at == null || item.end_at == null) return '';
     const start = new Date(item.start_at); const end = new Date(item.end_at);
     return `${Math.round((Date.UTC(end.getFullYear(), end.getMonth(), end.getDate()) - Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / 86400000) + 1}日間`;
+  }
+  function dateRange(item: UserBookmarkWithItinerary) {
+    if (item.start_at == null) return '日程未定';
+    const start = new Date(item.start_at);
+    const startText = `${start.getMonth() + 1}/${start.getDate()}`;
+    if (item.end_at == null) return startText;
+    const end = new Date(item.end_at);
+    return `${startText} – ${end.getMonth() + 1}/${end.getDate()}`;
+  }
+  function destination(item: UserBookmarkWithItinerary) {
+    if (item.areas?.length) return item.areas[0];
+    if (item.prefecture_slugs?.length) return prefectureName(item.prefecture_slugs[0]);
+    return '旅のしおり';
+  }
+  function cover(item: UserBookmarkWithItinerary) {
+    return item.background_image ?? coverImages[item.theme_id] ?? '/itinerary-backgrounds/japanese.avif';
   }
   function open(item: UserBookmarkWithItinerary, manage = false) { target = item; managing = manage; direction = null; message = ''; source = snapshot = null; }
   async function copy() {
@@ -62,22 +94,50 @@
 </script>
 
 <nav class="shelf-tabs" aria-label="しおりの種類">
-  <button class:active={!shared} aria-pressed={!shared} onclick={() => shared = false}>自分のしおり <small>{bookmarks.length}</small></button>
-  <button class:active={shared} aria-pressed={shared} onclick={() => shared = true}>共有中 <small>{publications.length}</small></button>
+  <button class:active={!shared} aria-pressed={!shared} onclick={() => shared = false}>
+    <span>自分のしおり</span><small>{bookmarks.length}</small>
+  </button>
+  <button class:active={shared} aria-pressed={shared} onclick={() => shared = true}>
+    <span>共有中</span><small>{publications.length}</small>
+  </button>
 </nav>
+
 {#if !books.length}
-  <div class="empty"><p>{shared ? '共有中のしおりはありません' : '最初の旅を、この本棚に。'}</p><a href="/#create">＋ しおりを作る</a></div>
+  <div class="empty">
+    <span aria-hidden="true">{#if shared}<AppIcon name="share" size={23} />{:else}<AppIcon name="plus" size={23} />{/if}</span>
+    <p>{shared ? '共有中のしおりはありません' : '最初の旅を、この本棚に。'}</p>
+    <a href="/#create">しおりを作る</a>
+  </div>
 {:else}
   <div class="shelf">
     {#each books as book (book.itinerary_id)}
-      {@const palette = getPalette(book.palette_id)}
-      <article class:stacked={shared} style={`--paper:${palette.colors['--theme-bg']};--ink:${palette.colors['--theme-primary']}`}>
+      <article class:stacked={shared}>
         {#if shared}
-          <button class="cover" onclick={() => open(book, true)}><span class="stamp">共有版</span><strong>{book.shared_title ?? book.title}</strong><span class="dates">{date(book.start_at)}<small>{days(book)}</small></span></button>
+          <button class="book-card shared-card" onclick={() => open(book, true)} aria-label="{book.shared_title ?? book.title}の共有設定を開く">
+            <span class="visual">
+              <img src={cover(book)} alt="" loading="lazy" decoding="async" width="640" height="360" />
+              <span class="shared-badge">共有中</span>
+              <span class="more" aria-hidden="true"><AppIcon name="more-horizontal" size={20} /></span>
+            </span>
+            <span class="book-body">
+              <span class="destination">{destination(book)} / {days(book) || "日程未定"}</span>
+              <strong>{book.shared_title ?? book.title}</strong>
+              <span class="book-meta"><span>{dateRange(book)}</span><small>共有版を管理</small></span>
+            </span>
+          </button>
         {:else}
-          <a class="cover" href="/itineraries/{book.itinerary_id}"><span class="edition">TABITABI / 旅のしおり</span><strong>{book.title}</strong><span class="dates">{date(book.start_at)}<small>{days(book)}</small></span></a>
-          {#if book.is_visible}<button class="shared-mark" title="共有中" aria-label="共有中" onclick={() => open(book)}>◉</button>{/if}
-          <button class="menu" aria-label={`${book.title}のメニュー`} onclick={() => open(book)}>…</button>
+          <a class="book-card" href="/itineraries/{book.itinerary_id}" aria-label="{book.title}を開く">
+            <span class="visual">
+              <img src={cover(book)} alt="" loading="lazy" decoding="async" width="640" height="360" />
+              {#if book.is_visible}<span class="shared-badge">共有中</span>{/if}
+            </span>
+            <span class="book-body">
+              <span class="destination">{destination(book)} / {days(book) || "日程未定"}</span>
+              <strong>{book.title}</strong>
+              <span class="book-meta"><span>{dateRange(book)}</span><small>{days(book)}</small></span>
+            </span>
+          </a>
+          <button class="menu" aria-label="{book.title}のメニュー" onclick={() => open(book)}><AppIcon name="more-horizontal" size={20} /></button>
         {/if}
       </article>
     {/each}
@@ -129,17 +189,380 @@
 {/if}
 
 <style>
-  .shelf-tabs { display: flex; gap: 1.5rem; margin: 1.5rem 0 2rem; } .shelf-tabs button { padding: .7rem 0; border: 0; border-bottom: 2px solid transparent; color: #899087; background: none; font: inherit; cursor: pointer; } .shelf-tabs button.active { color: #355f50; border-color: #355f50; } small { font-size: .7rem; font-weight: 400; }
-  .shelf { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1.5rem 1rem; padding: 0 .3rem 2rem; }
-  article { position: relative; isolation: isolate; min-width: 0; color: var(--ink,#355f50); background: var(--paper,#faf7ed); border: 1px solid color-mix(in srgb,var(--ink,#355f50) 22%,white); border-radius: 3px 8px 8px 3px; box-shadow: 3px 4px 0 #eceae2, 4px 5px 0 #dddcd2; }
-  article::before { content: ''; position: absolute; inset: 0 auto 0 8px; border-left: 1px solid currentColor; opacity: .15; pointer-events: none; }
-  article.stacked::after { content: ''; position: absolute; z-index: -1; inset: -6px -6px 6px 6px; border: 1px solid #d4d8cf; background: var(--paper,#faf7ed); border-radius: 3px; }
-  .cover { display: flex; flex-direction: column; width: 100%; min-height: 235px; height: 100%; padding: 1.1rem 1rem 1.3rem 1.3rem; border: 0; color: inherit; background: transparent; text-decoration: none; text-align: left; cursor: pointer; }
-  .cover strong { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin: 2rem 0 1.5rem; font-family: 'Yu Mincho',serif; font-size: clamp(1.2rem,3vw,1.8rem); line-height: 1.65; letter-spacing: .07em; overflow-wrap: anywhere; }
-  .edition { font-size: .5rem; letter-spacing: .1em; opacity: .6; } .dates { margin-top: auto; padding-top: .7rem; border-top: 1px solid color-mix(in srgb,currentColor 25%,transparent); width: 100%; font-family: serif; font-size: 1.2rem; } .dates small { display: block; margin-top: .3rem; font-family: sans-serif; }
-  .stamp { align-self: flex-start; padding: .2rem .4rem; border: 1px solid currentColor; font-size: .6rem; letter-spacing: .15em; } .shared-mark,.menu { position: absolute; right: .4rem; border: 0; color: inherit; background: transparent; width: 36px; height: 36px; cursor: pointer; } .shared-mark { top: .2rem; font-size: .7rem; } .menu { bottom: .3rem; font-size: 1.2rem; }
-  .sheet-action { display: block; width: 100%; padding: .9rem; border: 0; background: transparent; color: #355447; text-decoration: none; text-align: left; font: inherit; cursor: pointer; } .primary { background: #355f50; color: white; border-radius: .5rem; text-align: center; } .danger { color: #a7534e; } .hint { font-size: .8rem; color: #7e857c; line-height: 1.7; } hr { border: 0; border-top: 1px solid #e6e5df; margin: 1rem 0; }
-  .comparison { display: grid; grid-template-columns: 1fr auto 1fr; gap: .8rem; align-items: center; margin: 1.5rem 0; } .comparison div { padding: 1rem; min-height: 130px; background: #faf7ed; border: 1px solid #dedcd2; } .comparison strong { display: block; margin-top: 1rem; font-family: serif; overflow-wrap: anywhere; } dl { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; font-size: .8rem; } dd { margin: 0; text-align: right; } .empty { padding: 3rem 1rem; text-align: center; color: #758074; }
-  @media(min-width:700px) { .shelf { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 2rem; } .cover { min-height: 300px; padding: 1.5rem; } }
-  @media(min-width:1100px) { .shelf { grid-template-columns: repeat(4,minmax(0,1fr)); } }
+  .shelf-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 0 0 1.15rem;
+    padding: .28rem;
+    border-radius: 1rem;
+    background: #f3f2ed;
+  }
+
+  .shelf-tabs button {
+    display: flex;
+    min-height: 2.85rem;
+    padding: .55rem .8rem;
+    border: 0;
+    border-radius: .8rem;
+    align-items: center;
+    justify-content: center;
+    gap: .35rem;
+    color: #85909b;
+    background: transparent;
+    font: inherit;
+    font-size: .78rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .shelf-tabs button.active {
+    color: #18334a;
+    background: white;
+    box-shadow: 0 5px 18px rgba(38, 57, 72, .07);
+  }
+
+  .shelf-tabs small {
+    font-size: .67rem;
+    font-weight: 700;
+  }
+
+  .shelf {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    padding-bottom: 2rem;
+  }
+
+  article {
+    position: relative;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid #e2e8ec;
+    border-radius: 1rem;
+    background: white;
+    box-shadow: 0 8px 24px rgba(36, 58, 74, .055);
+    transition: transform 160ms ease, box-shadow 160ms ease;
+  }
+
+  article:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 13px 30px rgba(36, 58, 74, .09);
+  }
+
+  article.stacked {
+    border-color: #d8e3e9;
+  }
+
+  .book-card {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    background: white;
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .visual {
+    position: relative;
+    display: block;
+    aspect-ratio: 16 / 8.7;
+    overflow: hidden;
+    background: #eef5f7;
+  }
+
+  .visual::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 34%;
+    background: linear-gradient(180deg, transparent, rgba(14, 43, 59, .14));
+    pointer-events: none;
+  }
+
+  .visual img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 220ms ease;
+  }
+
+  article:hover .visual img {
+    transform: scale(1.025);
+  }
+
+  .shared-badge {
+    position: absolute;
+    z-index: 2;
+    left: .65rem;
+    top: .65rem;
+    padding: .3rem .48rem;
+    border-radius: 999px;
+    color: #285e77;
+    background: rgba(255,255,255,.9);
+    box-shadow: 0 3px 12px rgba(28, 56, 73, .09);
+    font-size: .58rem;
+    font-weight: 900;
+  }
+
+  .more {
+    position: absolute;
+    z-index: 2;
+    right: .6rem;
+    top: .48rem;
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border-radius: 50%;
+    color: #385468;
+    background: rgba(255,255,255,.9);
+    box-shadow: 0 3px 12px rgba(28, 56, 73, .09);
+    font-size: 1rem;
+  }
+
+  .book-body {
+    display: grid;
+    min-height: 9rem;
+    padding: .85rem .9rem .9rem;
+  }
+
+  .destination {
+    overflow: hidden;
+    color: #7d8b97;
+    font-size: .62rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .book-body strong {
+    display: -webkit-box;
+    min-height: 3.2rem;
+    margin: .5rem 0 .7rem;
+    overflow: hidden;
+    color: #1d3348;
+    font-family: var(--home-font-serif, Georgia, serif);
+    font-size: clamp(.95rem, 2.5vw, 1.18rem);
+    font-weight: 500;
+    line-height: 1.55;
+    letter-spacing: .035em;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .book-meta {
+    display: flex;
+    margin-top: auto;
+    padding-top: .62rem;
+    border-top: 1px solid #edf0f2;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: .6rem;
+    color: #4d6173;
+    font-family: var(--home-font-serif, Georgia, serif);
+    font-size: .83rem;
+  }
+
+  .book-meta small {
+    color: #83909d;
+    font-family: var(--home-font-sans, sans-serif);
+    font-size: .58rem;
+    font-weight: 600;
+  }
+
+  .menu {
+    position: absolute;
+    z-index: 3;
+    right: .55rem;
+    top: .45rem;
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    color: #385468;
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 3px 12px rgba(28, 56, 73, .09);
+    font-size: 1rem;
+    cursor: pointer;
+  }
+
+  .menu:focus-visible,
+  .book-card:focus-visible,
+  .shelf-tabs button:focus-visible {
+    outline: 2px solid #28799a;
+    outline-offset: 2px;
+  }
+
+  .empty {
+    display: grid;
+    min-height: 13rem;
+    padding: 2rem 1rem;
+    border: 1px dashed #cbdce5;
+    border-radius: 1.1rem;
+    place-items: center;
+    align-content: center;
+    gap: .65rem;
+    color: #71808c;
+    background: rgba(255,255,255,.68);
+    text-align: center;
+  }
+
+  .empty > span {
+    color: #4e8aa6;
+    font-size: 1.5rem;
+  }
+
+  .empty p {
+    margin: 0;
+    font-family: var(--home-font-serif, Georgia, serif);
+  }
+
+  .empty a {
+    display: inline-flex;
+    min-height: 2.6rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    align-items: center;
+    color: white;
+    background: #28799a;
+    font-size: .75rem;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .sheet-action {
+    display: block;
+    width: 100%;
+    padding: .9rem;
+    border: 0;
+    background: transparent;
+    color: #355447;
+    text-decoration: none;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .sheet-action.primary {
+    border-radius: .5rem;
+    color: white;
+    background: #2b7796;
+    text-align: center;
+  }
+
+  .sheet-action.danger {
+    color: #a7534e;
+  }
+
+  .hint {
+    color: #7e857c;
+    font-size: .8rem;
+    line-height: 1.7;
+  }
+
+  hr {
+    margin: 1rem 0;
+    border: 0;
+    border-top: 1px solid #e6e5df;
+  }
+
+  .comparison {
+    display: grid;
+    margin: 1.5rem 0;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: .8rem;
+  }
+
+  .comparison div {
+    min-height: 130px;
+    padding: 1rem;
+    border: 1px solid #dedcd2;
+    background: #faf7ed;
+  }
+
+  .comparison strong {
+    display: block;
+    margin-top: 1rem;
+    overflow-wrap: anywhere;
+    font-family: serif;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .7rem;
+    font-size: .8rem;
+  }
+
+  dd {
+    margin: 0;
+    text-align: right;
+  }
+
+  @media (min-width: 760px) {
+    .shelf {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.15rem;
+    }
+
+    .book-body {
+      min-height: 10.5rem;
+      padding: 1rem;
+    }
+  }
+
+  @media (max-width: 430px) {
+    .shelf {
+      gap: .7rem;
+    }
+
+    article {
+      border-radius: .75rem;
+    }
+
+    .book-body {
+      min-height: 8.2rem;
+      padding: .7rem;
+    }
+
+    .book-body strong {
+      min-height: 2.9rem;
+      margin: .4rem 0 .55rem;
+      font-size: .9rem;
+    }
+
+    .destination {
+      font-size: .56rem;
+    }
+
+    .book-meta {
+      font-size: .72rem;
+    }
+
+    .book-meta small {
+      font-size: .52rem;
+    }
+
+    .shared-badge {
+      left: .45rem;
+      top: .45rem;
+    }
+
+    .menu,
+    .more {
+      right: .38rem;
+      top: .32rem;
+      width: 1.8rem;
+      height: 1.8rem;
+    }
+  }
 </style>

@@ -37,10 +37,10 @@ describe('Firebase account authentication', () => {
 
   it('creates a D1 profile only after verification', async () => {
     const token = await createFirebaseToken('new-id', 'NEW@example.com');
-    const response = await postBootstrap(token, { username: 'new_user', prefecture: '京都府' });
+    const response = await postBootstrap(token, { username: 'newuser', prefecture: '京都府' });
     expect(response.status).toBe(200);
     const json = await response.json() as any;
-    expect(json.data).toMatchObject({ username: 'new_user', email: 'new@example.com', prefecture: '京都府', email_verified: true, profile_complete: true });
+    expect(json.data).toMatchObject({ username: 'newuser', email: 'new@example.com', prefecture: '京都府', email_verified: true, profile_complete: true });
     const row = await env.DB.prepare('SELECT id, password_hash FROM users WHERE id = ?').bind('new-id').first<any>();
     expect(row).toEqual({ id: 'new-id', password_hash: '!firebase-managed!' });
   });

@@ -7,6 +7,7 @@
   import Dialog from '$lib/themes/standard/core/components/Dialog.svelte';
   import PublishDialog from '$lib/themes/standard/core/components/PublishDialog.svelte';
   import { prefectureName } from '$lib/explore/data';
+  import AppIcon from '$lib/icons/AppIcon.svelte';
   let { bookmarks, onRefresh, onUnlink, focusShared = 0 }: { bookmarks: UserBookmarkWithItinerary[]; onRefresh: () => Promise<void>; onUnlink: (item: UserBookmarkWithItinerary) => void; focusShared?: number } = $props();
   let shared = $state(false);
   let target = $state<UserBookmarkWithItinerary | null>(null);
@@ -103,7 +104,7 @@
 
 {#if !books.length}
   <div class="empty">
-    <span aria-hidden="true">{shared ? "⌁" : "＋"}</span>
+    <span aria-hidden="true">{#if shared}<AppIcon name="share" size={23} />{:else}<AppIcon name="plus" size={23} />{/if}</span>
     <p>{shared ? '共有中のしおりはありません' : '最初の旅を、この本棚に。'}</p>
     <a href="/#create">しおりを作る</a>
   </div>
@@ -116,7 +117,7 @@
             <span class="visual">
               <img src={cover(book)} alt="" loading="lazy" decoding="async" width="640" height="360" />
               <span class="shared-badge">共有中</span>
-              <span class="more" aria-hidden="true">…</span>
+              <span class="more" aria-hidden="true"><AppIcon name="more-horizontal" size={20} /></span>
             </span>
             <span class="book-body">
               <span class="destination">{destination(book)} / {days(book) || "日程未定"}</span>
@@ -136,7 +137,7 @@
               <span class="book-meta"><span>{dateRange(book)}</span><small>{days(book)}</small></span>
             </span>
           </a>
-          <button class="menu" aria-label="{book.title}のメニュー" onclick={() => open(book)}>…</button>
+          <button class="menu" aria-label="{book.title}のメニュー" onclick={() => open(book)}><AppIcon name="more-horizontal" size={20} /></button>
         {/if}
       </article>
     {/each}

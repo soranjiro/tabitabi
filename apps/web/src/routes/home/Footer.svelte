@@ -133,7 +133,7 @@
   .footer-copy {
     grid-column: 1 / -1;
     margin: 0;
-    color: var(--home-muted);
+    color: #5d7082;
     font-size: 12px;
   }
 

@@ -67,7 +67,7 @@ export const previews: Preview[] = [
     id: "winter",
     image: "/hero/background-winter.avif",
     itineraryId: "official-winter-public",
-    title: "冬の北海道 湯めぐり18日間",
+    title: "冬の北海道 湯めぐり",
     duration: "17泊18日",
     destination: "北海道",
     accent: "#7592b7",

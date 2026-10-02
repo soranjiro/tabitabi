@@ -249,7 +249,7 @@
     border: 1px solid rgba(255, 255, 255, 0.9);
     border-radius: 20px;
     color: var(--home-ink-strong);
-    background: #fff;
+    background: rgba(255, 255, 255, 0.95);
     text-decoration: none;
     scroll-snap-align: center;
     box-shadow: 0 12px 28px rgba(25, 52, 73, 0.13);

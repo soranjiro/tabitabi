@@ -1,5 +1,5 @@
 <script lang="ts">
-  export type IconName =
+  type IconName =
     | "user"
     | "share"
     | "logout"

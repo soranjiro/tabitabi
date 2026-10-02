@@ -358,6 +358,13 @@
     }
   }
 
+  function openVisitedMap() {
+    activeTab = "map";
+    if (typeof document !== "undefined") {
+      requestAnimationFrame(() => document.getElementById("profile-library")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+  }
+
   function formatDate(value: string) { return new Date(value).toLocaleDateString("ja-JP"); }
 </script>
 
@@ -728,6 +735,14 @@
           <BookShelf {bookmarks} onRefresh={loadBookmarks} onUnlink={(item) => unlinkTarget = item} focusShared={shareFocusToken} />
         {/if}
       </section>
+
+      <nav class="mobile-nav" aria-label="メインナビゲーション">
+        <a href="/" aria-label="ホーム"><span aria-hidden="true">⌂</span><small>ホーム</small></a>
+        <a href="/explore" aria-label="見つける"><span aria-hidden="true">⌕</span><small>見つける</small></a>
+        <a href="/#create" class="mobile-create" aria-label="しおりを作る"><span aria-hidden="true">＋</span><small>しおりを作る</small></a>
+        <button type="button" class:active={activeTab === "map"} onclick={openVisitedMap} aria-label="訪問マップ"><span aria-hidden="true">⌖</span><small>地図</small></button>
+        <a href="/profile" class="active" aria-current="page" aria-label="マイページ"><span aria-hidden="true">人</span><small>マイページ</small></a>
+      </nav>
 
       {#if unlinkTarget}
         <div class="publication-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (unlinkTarget = null)}>
@@ -1662,6 +1677,10 @@
     text-decoration: none;
   }
 
+  .mobile-nav {
+    display: none;
+  }
+
   .publication-backdrop {
     position: fixed;
     z-index: 1000;
@@ -1803,6 +1822,84 @@
 
     .dashboard-layout {
       padding-top: 1.25rem;
+      padding-bottom: 6.8rem;
+    }
+
+    .mobile-nav {
+      position: fixed;
+      z-index: 40;
+      right: .65rem;
+      bottom: max(.65rem, env(safe-area-inset-bottom));
+      left: .65rem;
+      display: grid;
+      min-height: 4.35rem;
+      padding: .35rem .45rem;
+      border: 1px solid rgba(220, 228, 234, .9);
+      border-radius: 1.35rem;
+      grid-template-columns: repeat(5, 1fr);
+      align-items: center;
+      background: rgba(255, 255, 255, .94);
+      box-shadow: 0 14px 42px rgba(28, 50, 66, .16);
+      backdrop-filter: blur(18px);
+    }
+
+    .mobile-nav a,
+    .mobile-nav button {
+      display: grid;
+      min-width: 0;
+      height: 3.45rem;
+      padding: .15rem;
+      border: 0;
+      place-items: center;
+      align-content: center;
+      gap: .18rem;
+      color: #718091;
+      background: transparent;
+      font: inherit;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .mobile-nav span {
+      font-size: 1.05rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .mobile-nav small {
+      overflow: hidden;
+      max-width: 100%;
+      font-size: .54rem;
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mobile-nav .active {
+      color: #1f7092;
+    }
+
+    .mobile-nav .mobile-create {
+      position: relative;
+      color: #1d718f;
+    }
+
+    .mobile-nav .mobile-create span {
+      display: grid;
+      width: 3rem;
+      height: 3rem;
+      margin-top: -.9rem;
+      place-items: center;
+      border-radius: 50%;
+      color: white;
+      background: linear-gradient(135deg, #1781a6, #256b8a);
+      box-shadow: 0 8px 20px rgba(31, 113, 146, .25);
+      font-size: 1.5rem;
+      font-weight: 400;
+    }
+
+    .mobile-nav .mobile-create small {
+      margin-top: -.05rem;
     }
 
     .dashboard-hero {

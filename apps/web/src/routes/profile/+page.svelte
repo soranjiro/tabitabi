@@ -9,7 +9,7 @@
   import JapanMap from "$lib/explore/JapanMap.svelte";
   import ItineraryCard from "$lib/explore/ItineraryCard.svelte";
   import IconAirplane from "../home/icons/IconAirplane.svelte";
-  import ProfileIcon from "./ProfileIcon.svelte";
+  import AppIcon from "$lib/icons/AppIcon.svelte";
   import { PREFECTURES, type Prefecture, type PublicFeedItem, type UserBookmarkWithItinerary, type UserSessionProfile } from "@tabitabi/types";
 
   type Mode = "login" | "register" | "verify" | "forgot" | "setup";
@@ -393,7 +393,7 @@
 
   {#if loading}
     <main class="loading-state" aria-live="polite">
-      <span class="loading-plane" aria-hidden="true">✈</span>
+      <span class="loading-plane" aria-hidden="true"><IconAirplane size={27} /></span>
       <p>アカウントを確認しています...</p>
     </main>
   {:else if !loggedIn}
@@ -462,7 +462,7 @@
 
         {#if mode === "verify"}
           <div class="auth-state">
-            <span class="state-icon" aria-hidden="true"><ProfileIcon name="mail" size={23} /></span>
+            <span class="state-icon" aria-hidden="true"><AppIcon name="mail" size={23} /></span>
             <h2>確認メールを送りました</h2>
             <p><strong>{verificationSentTo || email}</strong> に届いたメールのリンクを開いてください。</p>
             <div class="beta-mail-note">
@@ -472,7 +472,7 @@
             <p class="subtle-note">既存アカウントも、これまでのパスワードでログイン後に一度だけ確認が必要です。</p>
             <button onclick={checkVerification} disabled={submitting} class="primary auth-submit">
               {submitting ? "確認中..." : "確認が完了しました"}
-              <span class="inline-svg" aria-hidden="true"><ProfileIcon name="arrow-right" size={17} /></span>
+              <span class="inline-svg" aria-hidden="true"><AppIcon name="arrow-right" size={17} /></span>
             </button>
             <button onclick={resendVerification} disabled={submitting} class="secondary auth-submit">確認メールを再送</button>
             <button onclick={requestLogout} class="text-link">別のアカウントでログイン</button>
@@ -486,7 +486,7 @@
               </div>
             </div>
             <button type="submit" disabled={submitting} class="primary auth-submit">
-              {submitting ? "送信中..." : "再設定メールを送る"} <span class="inline-svg" aria-hidden="true"><ProfileIcon name="arrow-right" size={17} /></span>
+              {submitting ? "送信中..." : "再設定メールを送る"} <span class="inline-svg" aria-hidden="true"><AppIcon name="arrow-right" size={17} /></span>
             </button>
             <button type="button" onclick={() => mode = "login"} class="text-link">ログインに戻る</button>
           </form>
@@ -509,7 +509,7 @@
               <p class="field-help">都道府県は旅の傾向改善に利用し、公開プロフィールには表示しません。</p>
             </div>
             <button type="submit" disabled={submitting} class="primary auth-submit">
-              {submitting ? "設定中..." : "利用を開始する"} <span class="inline-svg" aria-hidden="true"><ProfileIcon name="arrow-right" size={17} /></span>
+              {submitting ? "設定中..." : "利用を開始する"} <span class="inline-svg" aria-hidden="true"><AppIcon name="arrow-right" size={17} /></span>
             </button>
           </form>
         {:else}
@@ -549,7 +549,7 @@
                   aria-label={showPassword ? "パスワードを隠す" : "パスワードを表示"}
                   aria-pressed={showPassword}
                   onclick={() => showPassword = !showPassword}
-                ><ProfileIcon name={showPassword ? "eye-off" : "eye"} size={20} /></button>
+                ><AppIcon name={showPassword ? "eye-off" : "eye"} size={20} /></button>
               </div>
             </div>
 
@@ -572,7 +572,7 @@
 
             <button type="submit" disabled={submitting} class="primary auth-submit">
               {submitting ? "処理中..." : mode === "register" ? "確認メールを送る" : "ログイン"}
-              <span class="inline-svg" aria-hidden="true"><ProfileIcon name="arrow-right" size={17} /></span>
+              <span class="inline-svg" aria-hidden="true"><AppIcon name="arrow-right" size={17} /></span>
             </button>
           </form>
 
@@ -587,11 +587,11 @@
             onclick={() => mode = mode === "login" ? "register" : "login"}
           >
             {mode === "login" ? "新規登録する" : "ログインに戻る"}
-            <span class="inline-svg" aria-hidden="true"><ProfileIcon name="arrow-right" size={17} /></span>
+            <span class="inline-svg" aria-hidden="true"><AppIcon name="arrow-right" size={17} /></span>
           </button>
         {/if}
 
-        <p class="security-note"><span aria-hidden="true"><ProfileIcon name="lock" size={15} /></span> Firebase Authentication で安全にアカウントを管理します</p>
+        <p class="security-note"><span aria-hidden="true"><AppIcon name="lock" size={15} /></span> Firebase Authentication で安全にアカウントを管理します</p>
       </section>
 
       <footer class="auth-footer">
@@ -619,7 +619,7 @@
             <h2>こんにちは、{account?.username}さん</h2>
             <span>{bookmarks.length}の旅　{bookmarks.filter(item => item.is_visible).length}つの共有</span>
           </div>
-          <a class="create-journey" href="/#create"><ProfileIcon name="plus" size={18} /> しおりを作る <ProfileIcon name="arrow-right" size={17} /></a>
+          <a class="create-journey" href="/#create"><AppIcon name="plus" size={18} /> しおりを作る <AppIcon name="arrow-right" size={17} /></a>
           <div class="hero-line-art" aria-hidden="true">
             <svg viewBox="0 0 240 105">
               <path d="M8 91c46-12 45-61 95-56 29 3 35 23 59 10 24-14 27-37 62-36" />
@@ -635,15 +635,15 @@
 
       <section class="account-actions" aria-label="アカウント操作">
         <button type="button" onclick={() => showAccount = !showAccount} aria-expanded={showAccount}>
-          <span class="action-icon" aria-hidden="true"><ProfileIcon name="user" size={20} /></span>
+          <span class="action-icon" aria-hidden="true"><AppIcon name="user" size={20} /></span>
           <span><strong>アカウント設定</strong><small>プロフィール・メールなど</small></span>
         </button>
         <button type="button" onclick={openShareSettings}>
-          <span class="action-icon" aria-hidden="true"><ProfileIcon name="share" size={20} /></span>
+          <span class="action-icon" aria-hidden="true"><AppIcon name="share" size={20} /></span>
           <span><strong>共有設定</strong><small>共有中のしおりを管理</small></span>
         </button>
         <button type="button" class="logout-action" onclick={requestLogout}>
-          <span class="action-icon" aria-hidden="true"><ProfileIcon name="logout" size={20} /></span>
+          <span class="action-icon" aria-hidden="true"><AppIcon name="logout" size={20} /></span>
           <span><strong>ログアウト</strong><small>アカウントからサインアウト</small></span>
         </button>
       </section>
@@ -661,10 +661,10 @@
 
           {#if editSection === "none"}
             <div class="account-menu">
-              <button onclick={() => editSection = "profile"}><span>プロフィール</span><small>ユーザー名・都道府県</small><b aria-hidden="true"><ProfileIcon name="chevron-right" size={18} /></b></button>
-              <button onclick={() => { editEmail = account?.email ?? ""; editSection = "email"; }}><span>メールアドレス変更</span><small>{account?.email}</small><b aria-hidden="true"><ProfileIcon name="chevron-right" size={18} /></b></button>
-              <button onclick={() => editSection = "password"}><span>パスワード変更</span><small>ログイン用パスワード</small><b aria-hidden="true"><ProfileIcon name="chevron-right" size={18} /></b></button>
-              <a href="/users/{account?.username}"><span>公開プロフィール</span><small>ほかの人から見えるページ</small><b aria-hidden="true"><ProfileIcon name="chevron-right" size={18} /></b></a>
+              <button onclick={() => editSection = "profile"}><span>プロフィール</span><small>ユーザー名・都道府県</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
+              <button onclick={() => { editEmail = account?.email ?? ""; editSection = "email"; }}><span>メールアドレス変更</span><small>{account?.email}</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
+              <button onclick={() => editSection = "password"}><span>パスワード変更</span><small>ログイン用パスワード</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
+              <a href="/users/{account?.username}"><span>公開プロフィール</span><small>ほかの人から見えるページ</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></a>
             </div>
           {:else}
             <div class="account-editor">
@@ -720,7 +720,7 @@
         {:else if activeTab === "favorites"}
           <div class="library-heading"><div><p>FAVORITES</p><h2>お気に入り</h2></div><span>{favoriteItineraries.length}件</span></div>
           {#if favoriteItineraries.length === 0}
-            <div class="library-empty"><span>♡</span><h3>お気に入りはまだありません</h3><p>みんなのしおりで気になる旅程を保存すると、ここからいつでも確認できます。</p><a href="/explore">みんなのしおりを見る</a></div>
+            <div class="library-empty"><span aria-hidden="true"><AppIcon name="heart" size={24} /></span><h3>お気に入りはまだありません</h3><p>みんなのしおりで気になる旅程を保存すると、ここからいつでも確認できます。</p><a href="/explore">みんなのしおりを見る</a></div>
           {:else}
             <div class="favorite-grid">
               {#each favoriteItineraries as itinerary}
@@ -734,17 +734,17 @@
       </section>
 
       <nav class="mobile-nav" aria-label="メインナビゲーション">
-        <a href="/" aria-label="ホーム"><span aria-hidden="true"><ProfileIcon name="home" size={21} /></span><small>ホーム</small></a>
-        <a href="/explore" aria-label="見つける"><span aria-hidden="true"><ProfileIcon name="search" size={21} /></span><small>見つける</small></a>
-        <a href="/#create" class="mobile-create" aria-label="しおりを作る"><span aria-hidden="true"><ProfileIcon name="plus" size={25} /></span><small>しおりを作る</small></a>
-        <button type="button" class:active={activeTab === "map"} onclick={openVisitedMap} aria-label="訪問マップ"><span aria-hidden="true"><ProfileIcon name="map" size={21} /></span><small>地図</small></button>
-        <a href="/profile" class="active" aria-current="page" aria-label="マイページ"><span aria-hidden="true"><ProfileIcon name="user" size={21} /></span><small>マイページ</small></a>
+        <a href="/" aria-label="ホーム"><span aria-hidden="true"><AppIcon name="home" size={21} /></span><small>ホーム</small></a>
+        <a href="/explore" aria-label="見つける"><span aria-hidden="true"><AppIcon name="search" size={21} /></span><small>見つける</small></a>
+        <a href="/#create" class="mobile-create" aria-label="しおりを作る"><span aria-hidden="true"><AppIcon name="plus" size={25} /></span><small>しおりを作る</small></a>
+        <button type="button" class:active={activeTab === "map"} onclick={openVisitedMap} aria-label="訪問マップ"><span aria-hidden="true"><AppIcon name="map" size={21} /></span><small>地図</small></button>
+        <a href="/profile" class="active" aria-current="page" aria-label="マイページ"><span aria-hidden="true"><AppIcon name="user" size={21} /></span><small>マイページ</small></a>
       </nav>
 
       {#if unlinkTarget}
         <div class="publication-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (unlinkTarget = null)}>
           <div class="publication-dialog unlink-dialog" role="dialog" aria-modal="true" aria-labelledby="unlink-title">
-            <button class="dialog-close" onclick={() => (unlinkTarget = null)} aria-label="閉じる">×</button>
+            <button class="dialog-close" onclick={() => (unlinkTarget = null)} aria-label="閉じる"><AppIcon name="x" size={17} /></button>
             <p class="dialog-eyebrow">UNLINK ITINERARY</p>
             <h2 id="unlink-title">紐付けを解除しますか？</h2>
             <p class="dialog-intro">「{unlinkTarget.title}」はこのアカウントのしおり一覧から見えなくなります。しおり自体や共有URLは削除されません。</p>
@@ -761,7 +761,7 @@
   {#if showLogoutConfirm}
     <div class="logout-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (showLogoutConfirm = false)}>
       <section class="logout-dialog" role="dialog" aria-modal="true" aria-labelledby="logout-title" aria-describedby="logout-description">
-        <span class="logout-dialog-icon" aria-hidden="true"><ProfileIcon name="logout" size={23} /></span>
+        <span class="logout-dialog-icon" aria-hidden="true"><AppIcon name="logout" size={23} /></span>
         <h2 id="logout-title">ログアウトしますか？</h2>
         <p id="logout-description">この端末のアカウントからログアウトします。作成したしおりや共有内容は削除されません。</p>
         <div class="logout-dialog-actions">

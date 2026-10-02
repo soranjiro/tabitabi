@@ -630,7 +630,10 @@
 
   .theme-carousel-shell {
     position: relative;
-    margin-inline: -14px;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 14px;
   }
 
   .theme-carousel {
@@ -1213,19 +1216,19 @@
     }
 
     .theme-carousel-shell {
-      margin-inline: -18px;
+      width: 100%;
     }
 
     .theme-carousel {
-      --theme-card-width: clamp(118px, 34vw, 128px);
+      --theme-card-width: clamp(112px, 31vw, 124px);
       width: 100%;
     }
 
     .theme-arrow.previous {
-      left: 2px;
+      left: 4px;
     }
     .theme-arrow.next {
-      right: 2px;
+      right: 4px;
     }
 
     .toggle-setting {

@@ -109,7 +109,7 @@ for (const viewport of viewports) {
       page.getByRole("button", { name: "次のデザイン" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("switch", { name: "パスワードで保護する" }),
+      page.getByRole("switch", { name: "パスワードを設定する" }),
     ).toBeAttached();
     await page.screenshot({ path: testInfo.outputPath("create.png") });
     expect(errors).toEqual([]);
@@ -231,9 +231,10 @@ for (const viewport of [
     await page.goto("/");
     await page.locator(".journey-section").scrollIntoViewIfNeeded();
 
-    await expect(page.getByText("しおりを作る", { exact: true })).toBeVisible();
-    await expect(page.getByText("SNSで共有", { exact: true })).toBeVisible();
-    await expect(page.getByText("みんなで見る", { exact: true })).toBeVisible();
+    const journey = page.locator(".journey-section");
+    await expect(journey.locator(".create-label")).toHaveText("しおりを作る");
+    await expect(journey.locator(".share-label")).toHaveText("SNSで共有");
+    await expect(journey.locator(".view-label")).toHaveText("みんなで見る");
     await page.screenshot({ path: testInfo.outputPath("journey.png") });
 
     const geometry = await page.evaluate(() => {
@@ -332,9 +333,9 @@ test("form retains the selected style after switching tabs and resizing", async 
   await expect.poll(centerDistance).toBeLessThan(2);
   await page.setViewportSize({ width: 1280, height: 800 });
   await expect.poll(centerDistance).toBeLessThan(2);
-  await page.getByRole("switch", { name: "パスワードで保護する" }).check();
+  await page.getByRole("switch", { name: "パスワードを設定する" }).check();
   await expect(page.getByLabel("編集用パスワード")).toBeVisible();
-  await page.getByRole("switch", { name: "パスワードで保護する" }).uncheck();
+  await page.getByRole("switch", { name: "パスワードを設定する" }).uncheck();
   await expect(page.getByLabel("編集用パスワード")).toHaveCount(0);
   await page.locator(".btn-submit").click();
   await expect(page.locator("#title")).toBeFocused();
@@ -395,7 +396,7 @@ test("mobile navigation and the password switch work with the keyboard", async (
   await page.keyboard.press("Enter");
   await expect(menu).toHaveAttribute("aria-expanded", "false");
   await page.locator("#create").scrollIntoViewIfNeeded();
-  const password = page.getByRole("switch", { name: "パスワードで保護する" });
+  const password = page.getByRole("switch", { name: "パスワードを設定する" });
   await password.focus();
   await page.keyboard.press("Space");
   await expect(password).toBeChecked();

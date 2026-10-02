@@ -1,13 +1,80 @@
 <section class="journey-section" aria-labelledby="journey-title">
-  <h2 id="journey-title" class="sr-only">つくって、送って、みんなで見る。</h2>
+  <h2 id="journey-title" class="sr-only">はじめかた。つくって、送って、みんなで見る。</h2>
 
   <div class="journey-inner">
     <!-- Keep the illustrations and connecting line in one coordinate system so
          their joins stay aligned at every viewport width. Text remains native HTML. -->
-    <svg class="journey-art" viewBox="0 0 864 1536" fill="none" aria-hidden="true">
+    <svg class="journey-art" viewBox="0 0 864 1656" fill="none" aria-hidden="true">
       <g class="ink">
-        <!-- The thread leads into two people planning with an open itinerary. -->
-        <path class="story-line entry-line" d="M431 0C458 84 345 87 322 127C299 169 361 184 384 211C404 235 383 251 369 254" />
+        <!-- "はじめかた" is drawn as one continuous monoline. The final た
+             flows directly into the thread that leads to the first scene. -->
+        <path
+          class="story-line entry-line intro-line"
+          data-intro-label="はじめかた"
+          d="M165 86
+             C162 69 164 50 171 36
+             C177 26 184 31 181 42
+             C177 57 175 73 178 89
+             C182 101 190 104 197 96
+             C205 87 207 72 202 61
+             C197 51 188 49 182 56
+             C176 64 182 74 193 74
+             C207 74 221 67 232 58
+             C224 65 218 77 219 88
+             C220 100 231 104 240 96
+             C249 86 251 70 250 56
+             C249 44 253 34 263 31
+             C272 29 281 35 284 43
+             C287 51 281 58 273 58
+             C264 57 258 50 260 43
+             C267 46 273 47 280 47
+             C289 48 296 53 299 61
+             C302 72 298 88 292 99
+             C286 110 277 116 269 112
+             C263 104 276 98 284 86
+             C292 74 295 58 292 45
+             C301 57 311 67 323 77
+             C335 87 343 99 339 109
+             C335 118 321 117 314 108
+             C307 99 311 86 322 76
+             C333 66 346 60 358 61
+             C371 62 379 72 377 83
+             C375 98 360 108 346 106
+             C354 92 360 74 364 55
+             C366 43 372 35 380 38
+             C389 42 388 54 381 61
+             C372 70 361 74 350 76
+             C369 72 389 71 404 77
+             C420 83 425 97 418 108
+             C412 118 397 118 391 108
+             C385 98 392 89 403 86
+             C416 84 428 87 439 94
+             C452 85 461 70 462 53
+             C463 41 469 33 477 35
+             C486 38 488 49 482 56
+             C475 65 463 68 451 68
+             C470 68 489 64 504 57
+             C515 52 523 54 526 61
+             C529 69 522 76 513 77
+             C499 78 484 75 472 80
+             C459 85 455 96 462 104
+             C470 113 486 111 499 104
+             C511 98 521 88 528 76
+             C534 66 540 55 549 56
+             C560 57 564 69 557 77
+             C550 85 540 86 531 82
+             C542 85 553 91 558 100
+             C563 110 558 120 549 122
+             C538 124 528 115 526 105
+             C523 93 530 83 542 79
+             C565 83 592 87 613 85
+             C582 91 548 96 520 105
+             C486 115 458 118 431 120
+             C458 204 345 207 322 247
+             C299 289 361 304 384 331
+             C404 355 383 371 369 374"
+        />
+        <g transform="translate(0 120)">
         <path d="M65 429C105 432 144 417 153 400C161 382 136 387 136 398C136 414 173 442 222 435C284 427 315 397 361 402C393 402 414 416 433 426C466 407 499 398 547 410C583 414 604 435 654 436C715 437 768 381 806 431" />
         <!-- Left figure: swept hair, a loose bun, shoulder and pointing hand. -->
         <path d="M249 254C240 216 268 187 292 191C328 194 332 236 309 258C300 267 286 262 286 274C286 289 306 285 312 309C319 332 300 351 315 364" />
@@ -87,6 +154,7 @@
         <path d="M545 1312L555 1372C559 1388 566 1372 572 1355L588 1311" />
         <path d="M565 1314L566 1351L579 1383C581 1392 575 1399 565 1399" />
         <path d="M439 1477C438 1507 464 1515 432 1536" />
+        </g>
       </g>
     </svg>
 
@@ -110,7 +178,7 @@
     position: relative;
     width: min(100%, 760px);
     margin-inline: auto;
-    aspect-ratio: 864 / 1536;
+    aspect-ratio: 864 / 1656;
     container-type: inline-size;
   }
 
@@ -151,9 +219,9 @@
     text-align: center;
   }
 
-  .create-label { top: 29.55%; }
-  .share-label { top: 60.65%; }
-  .view-label { top: 92.6%; }
+  .create-label { top: 34.66%; }
+  .share-label { top: 63.53%; }
+  .view-label { top: 93.12%; }
 
   .scene-label {
     margin: 0;

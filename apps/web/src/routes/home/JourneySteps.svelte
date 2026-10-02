@@ -10,6 +10,21 @@
       preserveAspectRatio="xMidYMid meet"
       aria-hidden="true"
     >
+      <defs>
+        <linearGradient
+          id="journey-entry-gradient"
+          gradientUnits="userSpaceOnUse"
+          x1="432"
+          y1="0"
+          x2="432"
+          y2="82"
+        >
+          <stop offset="0" stop-color="#1c1c1c" stop-opacity="0" />
+          <stop offset="0.42" stop-color="#1c1c1c" stop-opacity="0.48" />
+          <stop offset="1" stop-color="#1c1c1c" stop-opacity="1" />
+        </linearGradient>
+      </defs>
+
       <g
         class="line-art"
         fill="none"
@@ -21,6 +36,7 @@
         <!-- ファーストビューから自然につながる一本線 -->
         <path
           class="story-line entry-line"
+          stroke="url(#journey-entry-gradient)"
           d="M432 -8C441 36 449 67 426 96C408 119 366 130 343 149C317 171 312 198 335 218C349 230 367 232 379 247"
         />
 

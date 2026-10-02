@@ -45,6 +45,8 @@
       tags?: string[];
       metadata_initialized?: boolean;
       memo?: string;
+      background_image?: string | null;
+      background_display?: "cover" | "page";
       secret_settings?: {
         enabled: boolean;
         offset_minutes: number;
@@ -116,6 +118,8 @@
 
   let selectedThemeId = $state(itinerary.theme_id || "accordion");
   let selectedPaletteId = $state(itinerary.palette_id || getThemePreset(selectedThemeId).defaultPaletteId);
+  let selectedBackgroundImage = $state<string | null>(itinerary.background_image ?? null);
+  let selectedBackgroundDisplay = $state<"cover" | "page">(itinerary.background_display ?? "cover");
   let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
   let secretModeOffset = $state(
     itinerary.secret_settings?.offset_minutes ?? 60,
@@ -461,6 +465,26 @@
     if (onUpdateItinerary) await onUpdateItinerary({ palette_id: paletteId });
   }
 
+  async function handleBackgroundChange(backgroundImage: string | null, backgroundDisplay: "cover" | "page") {
+    selectedBackgroundImage = backgroundImage;
+    selectedBackgroundDisplay = backgroundDisplay;
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({
+        background_image: backgroundImage,
+        background_display: backgroundDisplay,
+      });
+    }
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("tabitabi:background-changed", {
+        detail: {
+          itineraryId: itinerary.id,
+          backgroundImage,
+          backgroundDisplay,
+        },
+      }));
+    }
+  }
+
   async function handleSecretModeUpdate(enabled: boolean, offset: number) {
     secretModeEnabled = enabled;
     secretModeOffset = offset;
@@ -681,6 +705,8 @@
     {palettes}
     {selectedThemeId}
     {selectedPaletteId}
+    backgroundImage={selectedBackgroundImage}
+    backgroundDisplay={selectedBackgroundDisplay}
     {secretModeEnabled}
     {secretModeOffset}
     {packingEnabled}
@@ -692,6 +718,7 @@
     onSecretModeChange={handleSecretModeUpdate}
     onPackingEnabledChange={handlePackingEnabledUpdate}
     onMetadataChange={saveMetadata}
+    onBackgroundChange={handleBackgroundChange}
     onClose={() => (showSettingsDialog = false)}
   />
 

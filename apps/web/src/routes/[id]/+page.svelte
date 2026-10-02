@@ -1,6 +1,7 @@
 <script lang="ts">
   import { invalidateAll } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
+  import { backgroundApi } from "$lib/api/background";
   import { userApi } from "$lib/api/user";
   import { stepApi } from "$lib/api/step";
   import { auth } from "$lib/auth";
@@ -140,13 +141,33 @@
     tags?: string[];
     metadata_initialized?: boolean;
     memo?: string;
+    background_image?: string | null;
+    background_display?: "cover" | "page";
     secret_settings?: {
       enabled: boolean;
       offset_minutes: number;
     } | null;
   }) {
     try {
-      await itineraryApi.update(data.itinerary.id, updateData);
+      const {
+        background_image: backgroundImage,
+        background_display: backgroundDisplay,
+        ...itineraryUpdate
+      } = updateData;
+
+      if (backgroundImage !== undefined || backgroundDisplay !== undefined) {
+        await backgroundApi.update(data.itinerary.id, {
+          background_image: backgroundImage !== undefined
+            ? backgroundImage
+            : (data.itinerary.background_image ?? null),
+          background_display: backgroundDisplay ?? data.itinerary.background_display ?? "cover",
+        });
+      }
+
+      if (Object.keys(itineraryUpdate).length > 0) {
+        await itineraryApi.update(data.itinerary.id, itineraryUpdate);
+      }
+
       await invalidateAll();
       if (updateData.title) {
         auth.updateAccessTime(data.itinerary.id, updateData.title);

@@ -584,8 +584,9 @@
   }
   .create-heading h2 {
     position: relative;
+    z-index: 1;
     padding: 6px 10px;
-    background: var(--home-paper);
+    background: transparent;
     margin: 0;
     font-family: var(--home-font-serif);
     font-size: clamp(26px, 3.5vw, 36px);

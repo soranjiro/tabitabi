@@ -396,14 +396,14 @@
                 /></svg
               >
             </span>
-            <strong>パスワードで保護する</strong>
+            <strong>パスワードを設定する</strong>
           </span>
           <input
             type="checkbox"
             role="switch"
             bind:checked={usePassword}
             aria-checked={usePassword}
-            aria-label="パスワードで保護する"
+            aria-label="パスワードを設定する"
           />
           <span class="toggle-track" aria-hidden="true"><i></i></span>
         </label>

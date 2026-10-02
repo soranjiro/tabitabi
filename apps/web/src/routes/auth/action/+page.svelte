@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { userAuth } from "$lib/user-auth";
+  import IconAirplane from "../../home/icons/IconAirplane.svelte";
 
   type ActionState = "loading" | "reset" | "submitting" | "success" | "error";
 
@@ -118,9 +119,7 @@
 <div class="action-page">
   <header>
     <a href="/" class="brand" aria-label="たびたびのトップへ戻る">
-      <span aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M12 3v18M4.5 10.5 12 7l7.5 3.5M7.5 17 12 15l4.5 2" /></svg>
-      </span>
+      <span aria-hidden="true"><IconAirplane size={20} /></span>
       たびたび
     </a>
   </header>
@@ -238,16 +237,6 @@
     border: 1px solid #2b789f;
     border-radius: 50%;
     color: #2b789f;
-  }
-
-  .brand svg {
-    width: 1.15rem;
-    height: 1.15rem;
-    fill: none;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 1.45;
   }
 
   main {

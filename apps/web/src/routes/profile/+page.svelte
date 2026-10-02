@@ -472,7 +472,7 @@
             <p class="subtle-note">既存アカウントも、これまでのパスワードでログイン後に一度だけ確認が必要です。</p>
             <button onclick={checkVerification} disabled={submitting} class="primary auth-submit">
               {submitting ? "確認中..." : "確認が完了しました"}
-              <span aria-hidden="true">→</span>
+              <span class="inline-svg" aria-hidden="true"><ProfileIcon name="arrow-right" size={17} /></span>
             </button>
             <button onclick={resendVerification} disabled={submitting} class="secondary auth-submit">確認メールを再送</button>
             <button onclick={requestLogout} class="text-link">別のアカウントでログイン</button>
@@ -486,7 +486,7 @@
               </div>
             </div>
             <button type="submit" disabled={submitting} class="primary auth-submit">
-              {submitting ? "送信中..." : "再設定メールを送る"} <span aria-hidden="true">→</span>
+              {submitting ? "送信中..." : "再設定メールを送る"} <span class="inline-svg" aria-hidden="true"><ProfileIcon name="arrow-right" size={17} /></span>
             </button>
             <button type="button" onclick={() => mode = "login"} class="text-link">ログインに戻る</button>
           </form>
@@ -509,7 +509,7 @@
               <p class="field-help">都道府県は旅の傾向改善に利用し、公開プロフィールには表示しません。</p>
             </div>
             <button type="submit" disabled={submitting} class="primary auth-submit">
-              {submitting ? "設定中..." : "利用を開始する"} <span aria-hidden="true">→</span>
+              {submitting ? "設定中..." : "利用を開始する"} <span class="inline-svg" aria-hidden="true"><ProfileIcon name="arrow-right" size={17} /></span>
             </button>
           </form>
         {:else}
@@ -572,7 +572,7 @@
 
             <button type="submit" disabled={submitting} class="primary auth-submit">
               {submitting ? "処理中..." : mode === "register" ? "確認メールを送る" : "ログイン"}
-              <span aria-hidden="true">→</span>
+              <span class="inline-svg" aria-hidden="true"><ProfileIcon name="arrow-right" size={17} /></span>
             </button>
           </form>
 
@@ -587,7 +587,7 @@
             onclick={() => mode = mode === "login" ? "register" : "login"}
           >
             {mode === "login" ? "新規登録する" : "ログインに戻る"}
-            <span aria-hidden="true">→</span>
+            <span class="inline-svg" aria-hidden="true"><ProfileIcon name="arrow-right" size={17} /></span>
           </button>
         {/if}
 
@@ -809,23 +809,13 @@
 
   .brand-mark {
     display: grid;
-    width: 2rem;
-    height: 2rem;
+    width: 2.25rem;
+    height: 2.25rem;
     place-items: center;
-    border: 1px solid #2b789f;
+    border: 1px solid rgba(21, 39, 61, .22);
     border-radius: 50%;
-    color: #2b789f;
-    background: rgba(255,255,255,.78);
-  }
-
-  .brand-mark svg {
-    width: 1.15rem;
-    height: 1.15rem;
-    fill: none;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 1.45;
+    color: #24466c;
+    background: rgba(255,255,255,.58);
   }
 
   .loading-state {
@@ -899,9 +889,12 @@
   }
 
   .auth-illustration {
+    display: block;
     width: 100%;
-    max-width: 22rem;
+    max-width: 20rem;
+    height: auto;
     justify-self: end;
+    overflow: visible;
   }
 
   .route-line {
@@ -909,7 +902,12 @@
     stroke: #286f93;
     stroke-linecap: round;
     stroke-linejoin: round;
-    stroke-width: 2;
+    stroke-width: 1.75;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .route-line.plane {
+    fill: rgba(255,255,255,.35);
   }
 
   .soft-fill {
@@ -983,7 +981,7 @@
     border: 1px solid #cbd5df;
     border-radius: .9rem;
     align-items: center;
-    gap: .65rem;
+    gap: 0;
     background: rgba(255,255,255,.9);
     transition: border-color 150ms ease, box-shadow 150ms ease;
   }
@@ -991,12 +989,6 @@
   .input-shell:focus-within {
     border-color: #3f7898;
     box-shadow: 0 0 0 3px rgba(63, 120, 152, .11);
-  }
-
-  .input-shell > span {
-    flex: 0 0 auto;
-    color: #6f8194;
-    font-size: .86rem;
   }
 
   .input-shell input,
@@ -1021,16 +1013,28 @@
   }
 
   .visibility-toggle {
+    display: grid;
     flex: 0 0 auto;
-    width: 2.1rem;
-    height: 2.1rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
     border: 0;
     border-radius: 50%;
-    color: #60788c;
-    background: #eef4f7;
-    font-size: .7rem;
-    font-weight: 800;
+    place-items: center;
+    color: #5f7284;
+    background: transparent;
     cursor: pointer;
+    transition: color 150ms ease, background-color 150ms ease;
+  }
+
+  .visibility-toggle:hover {
+    color: #276f90;
+    background: #eef6f9;
+  }
+
+  .visibility-toggle:focus-visible {
+    outline: 2px solid #3f7898;
+    outline-offset: 1px;
   }
 
   .field-help {
@@ -1692,6 +1696,74 @@
     display: none;
   }
 
+  .logout-backdrop {
+    position: fixed;
+    z-index: 1200;
+    inset: 0;
+    display: grid;
+    padding: 1rem;
+    place-items: center;
+    background: rgba(19, 35, 49, .46);
+    backdrop-filter: blur(7px);
+  }
+
+  .logout-dialog {
+    width: min(100%, 25rem);
+    padding: 1.45rem;
+    border: 1px solid rgba(218, 226, 231, .95);
+    border-radius: 1.3rem;
+    background: #fffefa;
+    box-shadow: 0 24px 70px rgba(22, 42, 58, .23);
+    text-align: center;
+  }
+
+  .logout-dialog-icon {
+    display: grid;
+    width: 3rem;
+    height: 3rem;
+    margin: 0 auto .85rem;
+    place-items: center;
+    border-radius: 1rem;
+    color: #7d5155;
+    background: #f9eeee;
+  }
+
+  .logout-dialog h2 {
+    margin: 0;
+    color: var(--home-ink-strong);
+    font-family: var(--home-font-serif);
+    font-size: 1.35rem;
+    font-weight: 500;
+  }
+
+  .logout-dialog p {
+    margin: .65rem 0 1.2rem;
+    color: #6e7d89;
+    font-size: .78rem;
+    line-height: 1.75;
+  }
+
+  .logout-dialog-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .65rem;
+  }
+
+  .logout-confirm {
+    border: 1px solid #8c5a5e;
+    border-radius: .9rem;
+    color: white;
+    background: #8c5a5e;
+    font: inherit;
+    font-size: .86rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .logout-confirm:hover {
+    background: #7b4d51;
+  }
+
   .publication-backdrop {
     position: fixed;
     z-index: 1000;
@@ -1814,11 +1886,11 @@
 
     .auth-illustration {
       position: absolute;
-      right: -.8rem;
-      bottom: -.6rem;
-      width: 45%;
-      min-width: 10rem;
-      opacity: .72;
+      right: 0;
+      bottom: .25rem;
+      width: min(42vw, 11rem);
+      min-width: 0;
+      opacity: .7;
     }
 
     .auth-lead {
@@ -2022,8 +2094,10 @@
     }
 
     .auth-illustration {
-      width: 48%;
-      opacity: .6;
+      right: -.15rem;
+      bottom: .45rem;
+      width: min(44vw, 10rem);
+      opacity: .62;
     }
 
     .auth-card {

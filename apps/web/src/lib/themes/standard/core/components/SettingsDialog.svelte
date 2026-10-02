@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { backgroundApi } from "$lib/api/background";
   import { ITINERARY_BACKGROUND_PRESETS } from "$lib/itinerary-backgrounds";
   import { prefectures } from "$lib/explore/data";
   import ItineraryMetadataFields from "$lib/features/itinerary-metadata/ItineraryMetadataFields.svelte";
@@ -38,11 +37,14 @@
     prefectureSlugs?: string[];
     areas?: string[];
     tags?: string[];
+    backgroundImage?: string | null;
+    backgroundDisplay?: "cover" | "page";
     onThemeChange: (themeId: string) => void | Promise<void>;
     onPaletteChange: (paletteId: string) => void | Promise<void>;
     onSecretModeChange: (enabled: boolean, offset: number) => void | Promise<void>;
     onPackingEnabledChange: (enabled: boolean) => void | Promise<void>;
     onMetadataChange?: (metadata: MetadataValue) => void | Promise<void>;
+    onBackgroundChange: (backgroundImage: string | null, backgroundDisplay: "cover" | "page") => void | Promise<void>;
     onClose: () => void;
   }
 
@@ -61,11 +63,14 @@
     prefectureSlugs = [],
     areas = [],
     tags = [],
+    backgroundImage = null,
+    backgroundDisplay = "cover",
     onThemeChange,
     onPaletteChange,
     onSecretModeChange,
     onPackingEnabledChange,
     onMetadataChange,
+    onBackgroundChange,
     onClose,
   }: Props = $props();
 
@@ -77,14 +82,11 @@
   let localPrefectureSlugs = $state<string[]>([]);
   let localAreas = $state<string[]>([]);
   let localTags = $state<string[]>([]);
-  let currentBackgroundImage = $state<string | null>(null);
-  let currentBackgroundDisplay = $state<"cover" | "page">("cover");
   let localBackgroundImage = $state("");
   let localBackgroundDisplay = $state<"cover" | "page">("cover");
   let activePanel = $state<SettingsPanel>("main");
   let wasOpen = $state(false);
   let isSaving = $state(false);
-  let isLoadingBackground = $state(false);
   let saveError = $state("");
 
   let selectedTheme = $derived(themes.find((theme) => theme.id === localThemeId));
@@ -105,20 +107,15 @@
       || localSecretOffset !== secretModeOffset
       || localPackingEnabled !== packingEnabled
       || metadataChanged
-      || localBackgroundImage !== (currentBackgroundImage ?? "")
-      || localBackgroundDisplay !== currentBackgroundDisplay,
+      || localBackgroundImage !== (backgroundImage ?? "")
+      || localBackgroundDisplay !== backgroundDisplay,
   );
 
   $effect(() => {
     if (show && !wasOpen) {
       resetDraft();
-      currentBackgroundImage = null;
-      currentBackgroundDisplay = "cover";
-      localBackgroundImage = "";
-      localBackgroundDisplay = "cover";
       activePanel = "main";
       saveError = "";
-      void loadBackground();
     }
     wasOpen = show;
   });
@@ -147,30 +144,12 @@
     localPrefectureSlugs = [...prefectureSlugs];
     localAreas = [...areas];
     localTags = [...tags];
-    localBackgroundImage = currentBackgroundImage ?? "";
-    localBackgroundDisplay = currentBackgroundDisplay;
-  }
-
-  async function loadBackground() {
-    isLoadingBackground = true;
-    try {
-      const result = await backgroundApi.get(itineraryId);
-      currentBackgroundImage = result.background_image;
-      currentBackgroundDisplay = result.background_display;
-      localBackgroundImage = result.background_image ?? "";
-      localBackgroundDisplay = result.background_display;
-    } catch (error) {
-      console.error("Failed to load itinerary background:", error);
-      currentBackgroundImage = null;
-      localBackgroundImage = "";
-      saveError = "背景画像の現在の設定を読み込めませんでした。";
-    } finally {
-      isLoadingBackground = false;
-    }
+    localBackgroundImage = backgroundImage ?? "";
+    localBackgroundDisplay = backgroundDisplay;
   }
 
   async function handleSave() {
-    if (isSaving || isLoadingBackground || !isDirty) return;
+    if (isSaving || !isDirty) return;
 
     const nextThemeId = localThemeId;
     const nextPaletteId = localPaletteId;
@@ -201,22 +180,8 @@
         });
       }
 
-      if (nextBackgroundImage !== currentBackgroundImage || nextBackgroundDisplay !== currentBackgroundDisplay) {
-        const result = await backgroundApi.update(itineraryId, {
-          background_image: nextBackgroundImage,
-          background_display: nextBackgroundDisplay,
-        });
-        currentBackgroundImage = result.background_image;
-        currentBackgroundDisplay = result.background_display;
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("tabitabi:background-changed", {
-            detail: {
-              itineraryId,
-              backgroundImage: result.background_image,
-              backgroundDisplay: result.background_display,
-            },
-          }));
-        }
+      if (nextBackgroundImage !== backgroundImage || nextBackgroundDisplay !== backgroundDisplay) {
+        await onBackgroundChange(nextBackgroundImage, nextBackgroundDisplay);
       }
 
       if (nextThemeId !== selectedThemeId) await onThemeChange(nextThemeId);
@@ -351,15 +316,12 @@
           class="standard-settings-card standard-settings-card-action"
           onclick={() => (activePanel = "background")}
           aria-label="背景画像を編集"
-          disabled={isLoadingBackground}
         >
           <span class="standard-settings-card-icon" aria-hidden="true">▧</span>
           <span class="standard-settings-card-body">
             <strong>背景画像</strong>
             <small>
-              {#if isLoadingBackground}
-                読み込み中…
-              {:else if localBackgroundImage}
+              {#if localBackgroundImage}
                 {selectedBackground?.name ?? "背景画像"}・{localBackgroundDisplay === "cover" ? "カバー" : "全体"}
               {:else}
                 背景なし
@@ -432,7 +394,7 @@
           onclick={handleSave}
           class="standard-btn standard-btn-primary"
           class:standard-settings-save-active={isDirty}
-          disabled={isSaving || isLoadingBackground || !isDirty}
+          disabled={isSaving || !isDirty}
         >
           {isSaving ? "保存中…" : "保存"}
         </button>

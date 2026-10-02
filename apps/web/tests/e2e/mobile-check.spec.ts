@@ -177,6 +177,38 @@ test.describe("Responsive home page", () => {
     expect(visualHierarchy.titleInputHeight).toBeGreaterThanOrEqual(54);
     expect(visualHierarchy.themeCardHeight).toBeLessThanOrEqual(100);
 
+    const carouselContainment = await page.evaluate(() => {
+      const form = document.querySelector<HTMLElement>(".form-card")!.getBoundingClientRect();
+      const shell = document
+        .querySelector<HTMLElement>(".theme-carousel-shell")!
+        .getBoundingClientRect();
+      const selected = document
+        .querySelector<HTMLElement>(".theme-card.selected")!
+        .getBoundingClientRect();
+      const previous = document
+        .querySelector<HTMLElement>(".theme-arrow.previous")!
+        .getBoundingClientRect();
+      const next = document
+        .querySelector<HTMLElement>(".theme-arrow.next")!
+        .getBoundingClientRect();
+
+      return {
+        shellLeftInset: shell.left - form.left,
+        shellRightInset: form.right - shell.right,
+        selectedLeftInset: selected.left - shell.left,
+        selectedRightInset: shell.right - selected.right,
+        previousLeftInset: previous.left - shell.left,
+        nextRightInset: shell.right - next.right,
+      };
+    });
+
+    expect(carouselContainment.shellLeftInset).toBeGreaterThan(8);
+    expect(carouselContainment.shellRightInset).toBeGreaterThan(8);
+    expect(carouselContainment.selectedLeftInset).toBeGreaterThanOrEqual(0);
+    expect(carouselContainment.selectedRightInset).toBeGreaterThanOrEqual(0);
+    expect(carouselContainment.previousLeftInset).toBeGreaterThanOrEqual(0);
+    expect(carouselContainment.nextRightInset).toBeGreaterThanOrEqual(0);
+
     // The card immediately to the left of the initial planning theme is the
     // trailing month theme from the previous copy.
     await carousel.evaluate((element) => {
@@ -300,6 +332,37 @@ test.describe("Responsive home page", () => {
     expect(copyBox).not.toBeNull();
     expect(previewBox).not.toBeNull();
     expect(previewBox!.x).toBeGreaterThan(copyBox!.x + copyBox!.width * 0.65);
+  });
+
+  test("keeps the create heading thread visible without a paper-colored mask", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.locator("#create").scrollIntoViewIfNeeded();
+
+    const heading = page.locator(".create-heading h2");
+    await expect(heading).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(page.locator(".form-thread path")).toHaveCSS(
+      "stroke-dashoffset",
+      "0px",
+    );
+
+    const alignment = await page.evaluate(() => {
+      const thread = document
+        .querySelector<SVGElement>(".form-thread")!
+        .getBoundingClientRect();
+      const outline = document
+        .querySelector<SVGElement>(".form-outline")!
+        .getBoundingClientRect();
+      return {
+        bottomJoin: Math.abs(thread.bottom - outline.top),
+        centerDelta: Math.abs(
+          thread.left + thread.width / 2 - (outline.left + outline.width / 2),
+        ),
+      };
+    });
+    expect(alignment.bottomJoin).toBeLessThan(1);
+    expect(alignment.centerDelta).toBeLessThan(1);
   });
 
   test("shows explicit creation and shared URL choices", async ({ page }) => {

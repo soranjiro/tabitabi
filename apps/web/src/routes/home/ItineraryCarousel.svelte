@@ -196,22 +196,6 @@
   >
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
   </button>
-  <div class="preview-dots" aria-label="しおりを選ぶ">
-    {#each previews as preview, candidate}
-      <button
-        type="button"
-        disabled={!ready}
-        class:active={candidate === index}
-        aria-label={`${candidate + 1}枚目：${preview.title}`}
-        aria-pressed={candidate === index}
-        onclick={() =>
-          select(
-            physicalIndex +
-              (((candidate - index + count + count / 2) % count) - count / 2),
-          )}><span></span></button
-      >
-    {/each}
-  </div>
   <span class="sr-only" aria-live="polite" aria-atomic="true"
     >{index + 1} / {previews.length}：{previews[index]?.title}</span
   >
@@ -378,30 +362,6 @@
     opacity: 0.4;
     cursor: default;
   }
-  .preview-dots {
-    display: flex;
-    justify-content: center;
-  }
-  .preview-dots button {
-    display: grid;
-    width: 28px;
-    height: 32px;
-    padding: 0;
-    place-items: center;
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-  }
-  .preview-dots span {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #bdcbd5;
-  }
-  .preview-dots .active span {
-    background: var(--home-action);
-    transform: scale(1.3);
-  }
   button:focus-visible,
   a:focus-visible {
     outline: 3px solid var(--home-focus);
@@ -472,9 +432,6 @@
     }
     .preview-track {
       padding-block: 6px 10px;
-    }
-    .preview-dots button {
-      height: 28px;
     }
   }
 </style>

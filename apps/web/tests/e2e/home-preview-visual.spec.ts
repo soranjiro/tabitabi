@@ -235,6 +235,8 @@ for (const viewport of [
     await expect(journey.locator(".create-label")).toHaveText("しおりを作る");
     await expect(journey.locator(".share-label")).toHaveText("SNSで共有");
     await expect(journey.locator(".view-label")).toHaveText("みんなで見る");
+    await expect(journey.locator(".intro-word")).toHaveText("はじめかた");
+    await expect(journey.locator(".intro-word")).toHaveCSS("fill", "none");
     await page.screenshot({ path: testInfo.outputPath("journey.png") });
 
     const geometry = await page.evaluate(() => {
@@ -253,9 +255,17 @@ for (const viewport of [
       const labels = Array.from(
         document.querySelectorAll<HTMLElement>(".scene-label"),
       ).map((label) => label.getBoundingClientRect());
+      const intro = document.querySelector<SVGTextElement>(".intro-word")!;
+      const introBox = intro.getBBox();
+      const tail = document.querySelector<SVGPathElement>(".intro-tail")!;
+      const tailStart = tail.getPointAtLength(0);
 
       return {
         width: drawing.width,
+        introTailXGap: Math.abs(introBox.x + introBox.width - tailStart.x),
+        introTailStartsWithinWordHeight:
+          tailStart.y >= introBox.y - 4 &&
+          tailStart.y <= introBox.y + introBox.height + 4,
         drawingProgress: document
           .querySelector<HTMLElement>(".journey-inner")!
           .getAttribute("data-drawing-progress"),
@@ -280,6 +290,8 @@ for (const viewport of [
       };
     });
 
+    expect(geometry.introTailXGap).toBeLessThan(8);
+    expect(geometry.introTailStartsWithinWordHeight).toBe(true);
     expect(geometry.drawingProgress).toBeNull();
     expect(geometry.firstJoin).toBeLessThan(1);
     expect(geometry.secondJoin).toBeLessThan(1);

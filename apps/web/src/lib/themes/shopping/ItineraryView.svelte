@@ -63,7 +63,7 @@
   let editedMemo = $state(itinerary.memo || "");
   let password = $state("");
   let isAuthenticating = $state(false);
-  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
 
   function isCompleted(step: Step): boolean {
     return step.notes?.startsWith("Done") ?? false;
@@ -128,7 +128,7 @@
     }
 
     // パスワード未設定かつ共有スナップショットでなければ即編集可、設定ありならダイアログ表示
-    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
     } else {

@@ -632,11 +632,12 @@ export class ItineraryService {
 
   // フロントエンド用：パスワード除外したレスポンスを返す
   toResponseItinerary(itinerary: Itinerary, includePrivateSettings = false) {
-    const { password: _, secret_settings, ...rest } = itinerary;
+    const { password: _, secret_settings, source_itinerary_id, ...rest } = itinerary;
     return {
       ...rest,
       ...(includePrivateSettings && secret_settings ? { secret_settings } : {}),
       is_password_protected: !!itinerary.password,
+      is_shared_snapshot: Boolean(source_itinerary_id),
     };
   }
 }

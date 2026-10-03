@@ -47,8 +47,10 @@ export interface PublishItineraryResponse {
 }
 
 // フロントエンドに返すItinerary（パスワード情報は除外、保護フラグを追加）
-export type ItineraryResponse = Omit<Itinerary, 'password'> & {
+export type ItineraryResponse = Omit<Itinerary, 'password' | 'source_itinerary_id'> & {
   is_password_protected: boolean;
+  /** Public snapshot marker; the private source ID is never returned. */
+  is_shared_snapshot: boolean;
 };
 
 export interface CreateItineraryInput {

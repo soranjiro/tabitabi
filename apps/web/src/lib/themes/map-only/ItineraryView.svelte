@@ -58,7 +58,7 @@
   let isViewMode = $state(false);
 
   let hasEditPermission = $state(false);
-  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
   let password = $state("");
   let isAuthenticating = $state(false);
   let shareUrl = $state("");
@@ -230,7 +230,7 @@
     }
 
     // パスワード未設定かつ共有スナップショットでなければ編集可能、設定ありならダイアログを表示
-    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
     } else {

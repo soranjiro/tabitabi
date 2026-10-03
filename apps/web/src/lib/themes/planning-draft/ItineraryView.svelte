@@ -146,7 +146,7 @@
   let itineraryAreas = $state([...(itinerary.areas ?? [])]);
   let itineraryTags = $state([...(itinerary.tags ?? [])]);
 
-  const isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  const isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
 
   let form = $state({
     title: "",

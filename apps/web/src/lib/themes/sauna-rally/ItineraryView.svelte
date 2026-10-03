@@ -70,7 +70,7 @@
   let showShareDialog = $state(false);
   let showCopyMessage = $state(false);
   let passwordDialogAuthenticating = $state(false);
-  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
 
   interface SaunaData {
     visited?: boolean;
@@ -146,7 +146,7 @@
       }
     }
 
-    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
     } else {

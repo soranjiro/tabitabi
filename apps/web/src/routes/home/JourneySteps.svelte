@@ -3,7 +3,7 @@
 
   <div class="journey-inner">
     <!-- Keep the illustrations and connecting line in one coordinate system so
-         their joins stay aligned at every viewport width. Text remains native HTML. -->
+         their joins stay aligned at every viewport width. -->
     <svg class="journey-art" viewBox="0 0 864 1656" fill="none" aria-hidden="true">
       <g class="ink">
         <!-- Use actual Japanese glyph shapes for legibility, while keeping the
@@ -21,7 +21,7 @@
           d="M626 79C607 94 570 102 527 106C486 110 450 112 431 120C458 204 345 207 322 247C299 289 361 304 384 331C404 355 383 371 369 374"
         />
         <g transform="translate(0 120)">
-        <path d="M65 429C105 432 144 417 153 400C161 382 136 387 136 398C136 414 173 442 222 435C284 427 315 397 361 402C393 402 414 416 433 426C466 407 499 398 547 410C583 414 604 435 654 436C715 437 768 381 806 431" />
+          <path d="M65 429C105 432 144 417 153 400C161 382 136 387 136 398C136 414 173 442 222 435C284 427 315 397 361 402C393 402 414 416 433 426C466 407 499 398 547 410C583 414 604 435 654 436C715 437 768 381 806 431" />
         <!-- Left figure: swept hair, a loose bun, shoulder and pointing hand. -->
         <path d="M249 254C240 216 268 187 292 191C328 194 332 236 309 258C300 267 286 262 286 274C286 289 306 285 312 309C319 332 300 351 315 364" />
         <path d="M314 202C309 233 286 257 255 257C229 234 209 258 222 274C237 292 263 262 263 253C254 245 242 247 235 250" />
@@ -99,7 +99,7 @@
         <path d="M548 1290C535 1304 543 1317 555 1314C566 1311 574 1298 564 1291C558 1287 553 1297 548 1290" />
         <path d="M545 1312L555 1372C559 1388 566 1372 572 1355L588 1311" />
         <path d="M565 1314L566 1351L579 1383C581 1392 575 1399 565 1399" />
-        <path d="M439 1477C438 1507 464 1515 432 1536" />
+          <path d="M439 1477C438 1507 464 1515 432 1536" />
         </g>
       </g>
     </svg>

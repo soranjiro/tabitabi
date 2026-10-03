@@ -111,7 +111,7 @@
   let showSettingsDialog = $state(false);
   let showMetadataDialog = $state(false);
   let isAuthenticating = $state(false);
-  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
   let bulkDateOpen = $state(false);
   let pendingDates = $state<Record<string, string>>({});
   let applyingDates = $state(false);
@@ -134,7 +134,7 @@
   let itineraryTags = $state([...(itinerary.tags ?? [])]);
   let currentViewMode = $derived(getThemePreset(selectedThemeId).viewMode as ViewMode);
   let paletteStyle = $derived(Object.entries(getPalette(selectedPaletteId).colors).map(([key, value]) => `${key}:${value}`).join(";"));
-  let publicNotice = $derived(itinerary.source_itinerary_id && steps.some((step) => step.link)
+  let publicNotice = $derived(itinerary.is_shared_snapshot && steps.some((step) => step.link)
     ? "このページにはアフィリエイトリンクが含まれる場合があります。"
     : "");
 
@@ -242,7 +242,7 @@
     }
     hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
 
-    if (!hasEditPermission && !itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!hasEditPermission && !itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
     }
 
@@ -318,7 +318,7 @@
     }
 
     // パスワード不要かつ共有スナップショットでなければ即許可、必要なら入力ダイアログを開く
-    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
     } else {
@@ -603,7 +603,7 @@
         onOpenDateEditor={openBulkDateEditor}
       />
 
-      {#if itinerary.source_itinerary_id && publicNotice}
+      {#if itinerary.is_shared_snapshot && publicNotice}
         <p class="standard-public-disclosure">{publicNotice}</p>
       {/if}
     <BottomNav

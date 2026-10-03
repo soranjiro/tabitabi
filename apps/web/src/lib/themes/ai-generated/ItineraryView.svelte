@@ -78,7 +78,7 @@
   let showPasswordDialog = $state(false);
   let showMemoDialog = $state(false);
   let isAuthenticating = $state(false);
-  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
 
   let selectedThemeId = $state(itinerary.theme_id || "ai-generated");
   let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
@@ -115,7 +115,7 @@
     }
     hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
 
-    if (!hasEditPermission && !itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!hasEditPermission && !itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       attemptEditModeActivation();
     }
 
@@ -164,7 +164,7 @@
     }
 
     // パスワード未設定かつ共有スナップショットでなければ即座に編集可能、設定ありなら入力ダイアログ
-    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
     } else {

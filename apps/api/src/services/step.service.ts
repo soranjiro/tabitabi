@@ -53,10 +53,16 @@ function normalizeLegacyNotes(
   return JSON.stringify(data);
 }
 
+export interface StepReadOptions {
+  currentTime?: number;
+  offsetMinutes?: number;
+  maskSecrets?: boolean;
+}
+
 export class StepService {
   constructor(private db: D1Database) {}
 
-  async list(itineraryId: string, options?: { currentTime?: number; offsetMinutes?: number; maskSecrets?: boolean }): Promise<Step[]> {
+  async list(itineraryId: string, options?: StepReadOptions): Promise<Step[]> {
     let query = 'SELECT * FROM steps WHERE itinerary_id = ?';
     const bindings: (string | number)[] = [itineraryId];
 
@@ -84,13 +90,13 @@ export class StepService {
     return (result.results || []).map(row => this.mapToStep(row, options?.maskSecrets));
   }
 
-  async get(stepId: string): Promise<Step | null> {
-    const result = await this.db
-      .prepare('SELECT * FROM steps WHERE id = ?')
-      .bind(stepId)
-      .first();
-
-    return result ? this.mapToStep(result) : null;
+  async get(stepId: string, options?: StepReadOptions): Promise<Step | null> {
+    const statement = options?.currentTime !== undefined && options.offsetMinutes !== undefined
+      ? this.db.prepare('SELECT *, (scheduled_start_at > ? + ? * 60000) AS is_hidden_flag FROM steps WHERE id = ?')
+        .bind(options.currentTime, options.offsetMinutes, stepId)
+      : this.db.prepare('SELECT * FROM steps WHERE id = ?').bind(stepId);
+    const result = await statement.first();
+    return result ? this.mapToStep(result, options?.maskSecrets) : null;
   }
 
   async create(input: CreateStepInput): Promise<Step> {
@@ -295,6 +301,10 @@ export class StepService {
       step.location = null;
       step.notes = '';
       step.link = null;
+      step.pin_latitude = null;
+      step.pin_longitude = null;
+      step.is_priority = false;
+      step.type = STEP_TYPE.NORMAL_GENERAL;
     }
 
     return step;

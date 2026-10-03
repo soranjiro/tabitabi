@@ -74,7 +74,7 @@
   onMount(() => {
     const init = async () => {
       // 公開スナップショットは最近のしおり・アカウント同期の対象にしない。
-      if (!data.itinerary.source_itinerary_id && !readOnly) {
+      if (!data.itinerary.is_shared_snapshot && !readOnly) {
         // Record password protection state for client-side header resolution
         auth.setPasswordProtected(
           data.itinerary.id,
@@ -87,7 +87,7 @@
 
       // 開いた通常しおりは、ログイン中のアカウントにも保存する。
       // 公開スナップショットは閲覧専用のため紐付けない。
-      if (!data.itinerary.source_itinerary_id && !readOnly && userAuth.isLoggedIn()) {
+      if (!data.itinerary.is_shared_snapshot && !readOnly && userAuth.isLoggedIn()) {
         try {
           await userApi.syncBookmarks([data.itinerary.id]);
         } catch {
@@ -258,7 +258,7 @@
     }
   }
 
-  let isPublishedSnapshot = $derived(!!data.itinerary.source_itinerary_id);
+  let isPublishedSnapshot = $derived(!!data.itinerary.is_shared_snapshot);
   let canonicalPath = $derived(readOnly ? `/s/${data.itinerary.id}` : `/itineraries/${data.itinerary.id}`);
 
 

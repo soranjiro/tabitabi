@@ -1,14 +1,27 @@
 <section class="journey-section" aria-labelledby="journey-title">
-  <h2 id="journey-title" class="sr-only">つくって、送って、みんなで見る。</h2>
+  <h2 id="journey-title" class="sr-only">はじめかた。つくって、送って、みんなで見る。</h2>
 
   <div class="journey-inner">
     <!-- Keep the illustrations and connecting line in one coordinate system so
-         their joins stay aligned at every viewport width. Text remains native HTML. -->
-    <svg class="journey-art" viewBox="0 0 864 1536" fill="none" aria-hidden="true">
+         their joins stay aligned at every viewport width. -->
+    <svg class="journey-art" viewBox="0 0 864 1656" fill="none" aria-hidden="true">
       <g class="ink">
-        <!-- The thread leads into two people planning with an open itinerary. -->
-        <path class="story-line entry-line" d="M431 0C458 84 345 87 322 127C299 169 361 184 384 211C404 235 383 251 369 254" />
-        <path d="M65 429C105 432 144 417 153 400C161 382 136 387 136 398C136 414 173 442 222 435C284 427 315 397 361 402C393 402 414 416 433 426C466 407 499 398 547 410C583 414 604 435 654 436C715 437 768 381 806 431" />
+        <!-- Use actual Japanese glyph shapes for legibility, while keeping the
+             title as stroke-only line art. The tail begins at the final た. -->
+        <text
+          class="intro-word"
+          x="432"
+          y="82"
+          text-anchor="middle"
+          textLength="390"
+          lengthAdjust="spacingAndGlyphs"
+        >はじめかた</text>
+        <path
+          class="story-line entry-line intro-tail"
+          d="M626 79C607 94 570 102 527 106C486 110 450 112 431 120C458 204 345 207 322 247C299 289 361 304 384 331C404 355 383 371 369 374"
+        />
+        <g transform="translate(0 120)">
+          <path d="M65 429C105 432 144 417 153 400C161 382 136 387 136 398C136 414 173 442 222 435C284 427 315 397 361 402C393 402 414 416 433 426C466 407 499 398 547 410C583 414 604 435 654 436C715 437 768 381 806 431" />
         <!-- Left figure: swept hair, a loose bun, shoulder and pointing hand. -->
         <path d="M249 254C240 216 268 187 292 191C328 194 332 236 309 258C300 267 286 262 286 274C286 289 306 285 312 309C319 332 300 351 315 364" />
         <path d="M314 202C309 233 286 257 255 257C229 234 209 258 222 274C237 292 263 262 263 253C254 245 242 247 235 250" />
@@ -86,7 +99,8 @@
         <path d="M548 1290C535 1304 543 1317 555 1314C566 1311 574 1298 564 1291C558 1287 553 1297 548 1290" />
         <path d="M545 1312L555 1372C559 1388 566 1372 572 1355L588 1311" />
         <path d="M565 1314L566 1351L579 1383C581 1392 575 1399 565 1399" />
-        <path d="M439 1477C438 1507 464 1515 432 1536" />
+          <path d="M439 1477C438 1507 464 1515 432 1536" />
+        </g>
       </g>
     </svg>
 
@@ -110,7 +124,7 @@
     position: relative;
     width: min(100%, 760px);
     margin-inline: auto;
-    aspect-ratio: 864 / 1536;
+    aspect-ratio: 864 / 1656;
     container-type: inline-size;
   }
 
@@ -133,6 +147,18 @@
     stroke-width: clamp(1.1px, .19vw, 1.8px);
   }
 
+  .intro-word {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.2px;
+    font-family: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+    font-size: 72px;
+    font-weight: 400;
+    letter-spacing: .04em;
+    text-rendering: geometricPrecision;
+    vector-effect: non-scaling-stroke;
+  }
+
   .map-route { stroke-dasharray: 6 9; }
   .dot { fill: currentColor; stroke: none; }
 
@@ -151,9 +177,9 @@
     text-align: center;
   }
 
-  .create-label { top: 29.55%; }
-  .share-label { top: 60.65%; }
-  .view-label { top: 92.6%; }
+  .create-label { top: 34.66%; }
+  .share-label { top: 63.50%; }
+  .view-label { top: 93.13%; }
 
   .scene-label {
     margin: 0;

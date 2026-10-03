@@ -14,7 +14,7 @@
     "preview": "vite preview",
     "deploy": "pnpm build && wrangler pages deploy .svelte-kit/cloudflare",
     "test": "vitest",
-    "test:run": "vitest run",
+    "test:run": "vitest run && node --test scripts/security.node-test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

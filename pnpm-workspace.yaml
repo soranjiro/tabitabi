@@ -23,3 +23,6 @@ overrides:
   ws: '>=8.21.0'
   devalue: '^5.9.4'
   '@grpc/grpc-js': '^1.14.5'
+
+patchedDependencies:
+  braces@3.0.3: patches/braces@3.0.3.patch

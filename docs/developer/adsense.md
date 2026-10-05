@@ -2,19 +2,20 @@
 
 tabitabi の広告コードは、AdSense の ID が未設定なら本番でも非表示、PR Preview / ローカルでは実広告を読み込まずプレースホルダーを表示する構成です。
 
-## 0. 先に独自ドメインを用意する
+## 0. 利用する本番 URL を決める
 
-Google AdSense の通常サイト申請では、パスやパラメータを含まない標準ドメインが必要で、一般的なサブドメインは申請 URL として利用できません。
+現在の `tabitabi.pages.dev` のままでも AdSense を利用できる可能性があります。
 
-現在の `tabitabi.pages.dev` は `pages.dev` のサブドメインなので、AdSense を本運用する前に独自ドメインを取得し、Cloudflare Pages の Custom domains に接続します。
+Google は AdSense の「サイト」として、通常のドメインに加えて Public Suffix List に登録されたプラットフォーム配下のサブドメインも追加可能としています。`pages.dev` は Public Suffix List に登録されています。
 
-- 例: `tabitabi.jp`
-- AdSense には独自ドメインのルートを登録する
-- canonical / OGP などの本番 URL も独自ドメインへ切り替える
+そのため、まず `tabitabi.pages.dev` を AdSense の「サイト」に追加して審査を進めます。AdSense 側で URL を受け付けない場合や、ブランド・SEO上の理由で必要になった場合に独自ドメインへ移行します。
+
+独自ドメインは AdSense の必須条件としては扱わず、任意の改善項目とします。
 
 参考:
-- https://support.google.com/adsense/answer/2784438?hl=ja
-- https://support.google.com/adsense/answer/7584263?hl=ja
+- https://support.google.com/adsense/answer/12170421?hl=ja
+- https://support.google.com/adsense/answer/12169212?hl=ja
+- https://publicsuffix.org/list/public_suffix_list.dat
 
 ## 1. AdSense にサイトを追加して審査する
 

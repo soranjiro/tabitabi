@@ -23,3 +23,8 @@
 <a href="https://tabitabi.pages.dev/itineraries/official-autumn-public"><img src="./docs/assets/theme/week.png" alt="week" width="400"/> <a href="https://tabitabi.pages.dev/itineraries/official-autumn-public"><img src="./docs/assets/theme/month.png" alt="month" width="400"/></a>
 
 <a href="https://tabitabi.pages.dev/itineraries/official-map-public"><img src="./docs/assets/theme/plan-map.png" alt="plan-map" width="400"/> </a><a href="https://tabitabi.pages.dev/itineraries/official-plan-public"><img src="./docs/assets/theme/plan-draft.png" alt="plan-draft" width="400"/></a>
+
+## ライセンス
+
+本プロジェクトは [GNU Affero General Public License v3.0](./LICENSE)（AGPL-3.0-only）のもとで公開されています。
+改変版をネットワーク経由で利用者に提供する場合は、AGPLv3 第13条に従い、対応するソースコードを利用者が取得できるようにする必要があります。

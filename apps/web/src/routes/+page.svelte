@@ -12,6 +12,7 @@
   import IconAirplane from "./home/icons/IconAirplane.svelte";
   import ItineraryCarousel from "./home/ItineraryCarousel.svelte";
   import { previews } from "./home/landing-previews";
+  import AdSlot from "$lib/ads/AdSlot.svelte";
 
   const { data }: { data: PageData } = $props();
 
@@ -286,6 +287,10 @@
     </div>
   </section>
 
+  <section class="home-ad home-ad-lead" aria-label="広告">
+    <AdSlot placement="home-lead" size="billboard" />
+  </section>
+
   <JourneySteps />
 
   <section id="create" class="create-section" aria-labelledby="create-title">
@@ -318,6 +323,10 @@
         </div>
       {/if}
     </div>
+  </section>
+
+  <section class="home-ad home-ad-tail" aria-label="広告">
+    <AdSlot placement="home" />
   </section>
 
   <Footer />
@@ -550,6 +559,16 @@
     stroke: currentColor;
     stroke-width: 1.6;
     stroke-linecap: round;
+  }
+  .home-ad {
+    padding-inline: 24px;
+    background: var(--home-paper);
+  }
+  .home-ad-lead {
+    padding-block: 36px 52px;
+  }
+  .home-ad-tail {
+    padding-block: 8px 56px;
   }
   .create-section {
     padding: 0 24px 80px;

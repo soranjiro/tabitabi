@@ -15,6 +15,7 @@
     "db:schema:check": "pnpm run db:schema && git diff --exit-code -- apps/db/schema.sql",
     "db:migrations:check": "node apps/db/scripts/check-migrations.mjs",
     "db:migrations:test": "node apps/db/scripts/test-migrations.mjs",
+    "db:cleanup:audit:test": "node --test apps/db/scripts/audit-step-cleanup.node-test.mjs",
     "test": "turbo test:run",
     "test:api": "pnpm --filter api test:run",
     "test:web": "pnpm --filter web test:run",

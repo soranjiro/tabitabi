@@ -104,6 +104,18 @@ describe('security regressions', () => {
     expect(response.status).toBe(200);
     const data = (await response.json() as any).data;
     expect(data.map((item: any) => item.id)).toEqual(['published-snapshot']);
+    expect(data[0].is_shared_snapshot).toBe(true);
+    expect(data[0]).not.toHaveProperty('source_itinerary_id');
+    expect(JSON.stringify(data)).not.toContain(sourceData.id);
+
+    const detail = await app.request('/api/v1/itineraries/published-snapshot', {}, env);
+    const detailData = (await detail.json() as any).data;
+    expect(detailData.is_shared_snapshot).toBe(true);
+    expect(detailData).not.toHaveProperty('source_itinerary_id');
+    expect(JSON.stringify(detailData)).not.toContain(sourceData.id);
+
+    const sourceDetail = await app.request(`/api/v1/itineraries/${sourceData.id}`, {}, env);
+    expect((await sourceDetail.json() as any).data.is_shared_snapshot).toBe(false);
   });
 
   it('does not reveal secret steps with a token issued for another itinerary', async () => {
@@ -124,9 +136,16 @@ describe('security regressions', () => {
         start_at: now + 2 * 60 * 60 * 1000,
         end_at: now + 3 * 60 * 60 * 1000,
         location: 'secret location',
+        notes: 'secret note',
+        link: 'https://example.com/secret',
+        pin_latitude: 35.68,
+        pin_longitude: 139.76,
+        is_priority: true,
+        type: 'normal:hotel',
       }),
     }, env);
     expect(createStep.status).toBe(201);
+    const createdStep = (await createStep.json() as any).data;
 
     const wrongTokenResponse = await app.request(`/api/v1/steps?itinerary_id=${target.id}`, {
       headers: { Authorization: `Bearer ${attacker.token}` },
@@ -135,6 +154,30 @@ describe('security regressions', () => {
     const wrongTokenData = (await wrongTokenResponse.json() as any).data;
     expect(wrongTokenData[0].title).toBe('?????');
     expect(wrongTokenData[0].location).toBeNull();
+    expect(wrongTokenData[0].pin_latitude).toBeNull();
+    expect(wrongTokenData[0].pin_longitude).toBeNull();
+    expect(wrongTokenData[0].is_priority).toBe(false);
+
+    const requestHeaders: Record<string, string>[] = [{}, { Authorization: `Bearer ${attacker.token}` }];
+    for (const headers of requestHeaders) {
+      for (const path of [`/api/v1/steps?itinerary_id=${target.id}`, `/api/v1/steps/${createdStep.id}`]) {
+        const response = await app.request(path, { headers }, env);
+        expect(response.status).toBe(200);
+        const result = (await response.json() as any).data;
+        const step = Array.isArray(result) ? result[0] : result;
+        expect(step).toMatchObject({
+          title: '?????', location: null, notes: '', link: null,
+          pin_latitude: null, pin_longitude: null, is_priority: false, type: 'normal:general',
+        });
+      }
+    }
+
+    const ownerDetail = await app.request(`/api/v1/steps/${createdStep.id}`, {
+      headers: { Authorization: `Bearer ${target.token}` },
+    }, env);
+    expect((await ownerDetail.json() as any).data).toMatchObject({
+      title: 'secret destination', pin_latitude: 35.68, pin_longitude: 139.76, is_priority: true,
+    });
 
     const ownerResponse = await app.request(`/api/v1/steps?itinerary_id=${target.id}`, {
       headers: { Authorization: `Bearer ${target.token}` },

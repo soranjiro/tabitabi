@@ -33,7 +33,7 @@ steps.get('/', async (c) => {
 
   if (itinerary?.secret_settings?.enabled) {
     const now = Date.now();
-    const offsetMinutes = itinerary.secret_settings.offset_minutes || 60;
+    const offsetMinutes = itinerary.secret_settings.offset_minutes ?? 60;
     const hasEditPermission = isEditMode || !itinerary.password;
 
     const data = await stepService.list(itinerary.id, {
@@ -59,6 +59,18 @@ steps.get('/:stepId', async (c) => {
       success: false,
       error: { code: 'NOT_FOUND', message: 'Step not found' }
     }, 404);
+  }
+
+  const itinerary = await new ItineraryService(c.env.DB).get(data.itinerary_id);
+  if (itinerary?.secret_settings?.enabled) {
+    const token = extractBearerToken(c.req.header('Authorization'));
+    const payload = token ? await verifyToken(token, c.env.JWT_SECRET) : null;
+    const masked = await service.get(stepId, {
+      currentTime: Date.now(),
+      offsetMinutes: itinerary.secret_settings.offset_minutes ?? 60,
+      maskSecrets: Boolean(itinerary.password) && payload?.shioriId !== itinerary.id,
+    });
+    return c.json({ success: true, data: masked });
   }
 
   return c.json({ success: true, data });

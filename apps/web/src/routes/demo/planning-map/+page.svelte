@@ -12,7 +12,7 @@
     const data = demoStorage.getItinerary();
     if (!data) return;
     theme = await loadTheme(data.theme_id);
-    itinerary = { ...data, is_password_protected:false };
+    itinerary = { ...data, is_password_protected:false, is_shared_snapshot:false };
     steps = demoStorage.getSteps();
   }
   onMount(() => {

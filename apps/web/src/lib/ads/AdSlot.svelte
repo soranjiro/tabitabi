@@ -64,9 +64,11 @@
       {:else}
         <ins
           class="adsbygoogle"
-          style="display:block;width:100%;height:100%"
+          style="display:block"
           data-ad-client={clientId}
           data-ad-slot={slotId}
+          data-ad-format="auto"
+          data-full-width-responsive="true"
         ></ins>
       {/if}
     </div>
@@ -94,7 +96,7 @@
 
   .ad-frame {
     width: min(100%, 728px);
-    height: 90px;
+    min-height: 90px;
     margin: 0 auto;
     overflow: hidden;
     border-radius: 10px;
@@ -102,6 +104,7 @@
 
   .ad-preview {
     display: flex;
+    min-height: inherit;
     height: 100%;
     border: 1px dashed #cbd3dc;
     border-radius: inherit;
@@ -130,7 +133,7 @@
 
   .billboard .ad-frame {
     width: min(100%, 970px);
-    height: 250px;
+    min-height: 250px;
     border-radius: 14px;
   }
 
@@ -145,7 +148,7 @@
   @media (min-width: 761px) and (max-width: 1040px) {
     .billboard .ad-frame {
       width: min(100%, 728px);
-      height: 90px;
+      min-height: 90px;
     }
   }
 
@@ -153,7 +156,7 @@
     .ad-frame,
     .billboard .ad-frame {
       width: min(100%, 468px);
-      height: 60px;
+      min-height: 60px;
     }
 
     .ad-preview small {
@@ -169,7 +172,7 @@
     .ad-frame,
     .billboard .ad-frame {
       width: min(100%, 320px);
-      height: 100px;
+      min-height: 100px;
       border-radius: 8px;
     }
   }

@@ -92,7 +92,7 @@ export class PublicationService {
     const names = members.results.map(member => member.name);
     return {
       itinerary: { ...service.toResponseItinerary(itinerary), title: createPublicTextSnapshot(itinerary.title, names) || '旅のしおり',
-        memo: createPublicMemoSnapshot(itinerary.memo, names), source_itinerary_id: id, is_password_protected: false, secret_settings: null },
+        memo: createPublicMemoSnapshot(itinerary.memo, names), is_shared_snapshot: true, is_password_protected: false, secret_settings: null },
       steps: steps.map(step => ({ ...step, ...createPublicStepSnapshot({ ...step }, this.env, names),
         start_at: step.start_at, end_at: step.end_at, time_unspecified: step.time_unspecified,
         is_all_day: step.is_all_day, pin_latitude: step.pin_latitude,

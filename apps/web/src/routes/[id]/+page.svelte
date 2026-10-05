@@ -1,6 +1,7 @@
 <script lang="ts">
   import { invalidateAll } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
+  import { backgroundApi } from "$lib/api/background";
   import { userApi } from "$lib/api/user";
   import { stepApi } from "$lib/api/step";
   import { auth } from "$lib/auth";
@@ -73,7 +74,7 @@
   onMount(() => {
     const init = async () => {
       // 公開スナップショットは最近のしおり・アカウント同期の対象にしない。
-      if (!data.itinerary.source_itinerary_id && !readOnly) {
+      if (!data.itinerary.is_shared_snapshot && !readOnly) {
         // Record password protection state for client-side header resolution
         auth.setPasswordProtected(
           data.itinerary.id,
@@ -86,7 +87,7 @@
 
       // 開いた通常しおりは、ログイン中のアカウントにも保存する。
       // 公開スナップショットは閲覧専用のため紐付けない。
-      if (!data.itinerary.source_itinerary_id && !readOnly && userAuth.isLoggedIn()) {
+      if (!data.itinerary.is_shared_snapshot && !readOnly && userAuth.isLoggedIn()) {
         try {
           await userApi.syncBookmarks([data.itinerary.id]);
         } catch {
@@ -140,13 +141,33 @@
     tags?: string[];
     metadata_initialized?: boolean;
     memo?: string;
+    background_image?: string | null;
+    background_display?: "cover" | "page";
     secret_settings?: {
       enabled: boolean;
       offset_minutes: number;
     } | null;
   }) {
     try {
-      await itineraryApi.update(data.itinerary.id, updateData);
+      const {
+        background_image: backgroundImage,
+        background_display: backgroundDisplay,
+        ...itineraryUpdate
+      } = updateData;
+
+      if (backgroundImage !== undefined || backgroundDisplay !== undefined) {
+        await backgroundApi.update(data.itinerary.id, {
+          background_image: backgroundImage !== undefined
+            ? backgroundImage
+            : (data.itinerary.background_image ?? null),
+          background_display: backgroundDisplay ?? data.itinerary.background_display ?? "cover",
+        });
+      }
+
+      if (Object.keys(itineraryUpdate).length > 0) {
+        await itineraryApi.update(data.itinerary.id, itineraryUpdate);
+      }
+
       await invalidateAll();
       if (updateData.title) {
         auth.updateAccessTime(data.itinerary.id, updateData.title);
@@ -237,7 +258,7 @@
     }
   }
 
-  let isPublishedSnapshot = $derived(!!data.itinerary.source_itinerary_id);
+  let isPublishedSnapshot = $derived(!!data.itinerary.is_shared_snapshot);
   let canonicalPath = $derived(readOnly ? `/s/${data.itinerary.id}` : `/itineraries/${data.itinerary.id}`);
 
 

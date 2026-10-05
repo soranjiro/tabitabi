@@ -47,6 +47,7 @@ export interface UserBookmark {
 
 export interface UserBookmarkWithItinerary extends UserBookmark {
   palette_id?: string;
+  background_image?: string | null;
   start_at?: number | null;
   end_at?: number | null;
   shared_title?: string | null;

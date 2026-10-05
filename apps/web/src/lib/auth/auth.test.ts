@@ -171,6 +171,28 @@ describe('auth', () => {
     });
   });
 
+  describe('restoreHistoryEntry', () => {
+    it('restores an entry with its token and original access time', () => {
+      auth.setToken('restore', 'Restore', 'secret');
+      const [entry] = auth.getHistory();
+
+      auth.removeFromHistory('restore');
+      auth.restoreHistoryEntry(entry);
+
+      const [restored] = auth.getHistory();
+      expect(restored).toEqual(entry);
+    });
+
+    it('does not create duplicate entries when restoring', () => {
+      auth.setToken('same', 'Same', 'token');
+      const [entry] = auth.getHistory();
+
+      auth.restoreHistoryEntry(entry);
+
+      expect(auth.getHistory()).toHaveLength(1);
+    });
+  });
+
   describe('getRecentItineraries', () => {
     it('returns recent itineraries sorted by access time', () => {
       vi.useFakeTimers();

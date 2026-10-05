@@ -78,7 +78,7 @@
   let planBEntries = $state<PlanBEntry[]>([]);
   let newPlanBEntries = $state<PlanBEntry[]>([]);
   let hasEditPermission = $state(false);
-  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
   let showPasswordDialog = $state(false);
   let password = $state("");
   let isAuthenticating = $state(false);
@@ -629,7 +629,7 @@
       }
     }
 
-    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
       return true;

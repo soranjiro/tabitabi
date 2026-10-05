@@ -2,77 +2,396 @@ import { test, expect, devices } from "@playwright/test";
 
 test.use({
   ...devices["iPhone 13"],
-  // Keep the project browser (Chromium) while emulating the iPhone viewport,
-  // touch input, device scale factor, and user agent.
   defaultBrowserType: undefined,
 });
 
-test.describe("Mobile Home Page", () => {
-  test("should display home page on mobile", async ({ page }) => {
+test.describe("Responsive home page", () => {
+  test("keeps the mobile hero readable and non-sticky", async ({ page }) => {
     await page.goto("/");
+    await expect(page.locator(".preview-area")).toHaveAttribute(
+      "data-ready",
+      "true",
+    );
 
-    await page.waitForLoadState("networkidle");
+    await expect(page.locator("h1")).toContainText("旅の予定を");
+    await expect(page.locator(".hero-stage")).toBeVisible();
+    await expect(page.locator(".shiori-preview.active")).toBeVisible();
+    await expect(page.locator(".preview-photo")).toHaveCount(0);
+    await expect(page.locator(".journey-section")).toBeVisible();
+    await expect(page.locator(".create-section")).toBeVisible();
 
-    await page.screenshot({
-      path: "test-results/mobile-home.png",
-      fullPage: true,
-    });
+    const heroPosition = await page
+      .locator(".hero-scene")
+      .evaluate((element) => window.getComputedStyle(element).position);
+    expect(heroPosition).toBe("relative");
 
-    const hero = page.locator(".hero");
-    await expect(hero).toBeVisible();
+    const viewport = page.viewportSize();
+    const heroBox = await page.locator(".hero-stage").boundingBox();
+    const journeyBox = await page.locator(".journey-section").boundingBox();
+    expect(viewport).not.toBeNull();
+    expect(heroBox).not.toBeNull();
+    expect(journeyBox).not.toBeNull();
+    expect(Math.abs(heroBox!.height - viewport!.height)).toBeLessThanOrEqual(1);
+    expect(journeyBox!.y).toBeGreaterThanOrEqual(viewport!.height - 1);
 
-    const heroTitle = page.locator(".hero-title");
-    await expect(heroTitle).toBeVisible();
-    await expect(heroTitle).toContainText("たびたび");
-
-    const features = page.locator(".features");
-    await expect(features).toBeVisible();
-
-    const createSection = page.locator(".create-section");
-    await expect(createSection).toBeVisible();
-
-    const errors = await page.evaluate(() => {
-      const errorLogs: string[] = [];
-      const originalError = console.error;
-      console.error = (...args) => {
-        errorLogs.push(args.join(" "));
-        originalError.apply(console, args);
-      };
-      return errorLogs;
-    });
-
-    console.log("Console errors:", errors);
+    const menuBox = await page.locator(".menu-button").boundingBox();
+    expect(menuBox).not.toBeNull();
+    expect(menuBox!.width).toBeGreaterThanOrEqual(44);
+    expect(menuBox!.height).toBeGreaterThanOrEqual(44);
   });
 
-  test("should check opacity and visibility", async ({ page }) => {
+  for (const viewport of [
+    { width: 320, height: 700 },
+    { width: 390, height: 844 },
+    { width: 820, height: 1180 },
+    { width: 1024, height: 800 },
+    { width: 1100, height: 800 },
+  ]) {
+    test(`does not overflow horizontally at ${viewport.width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await page.goto("/");
+      await expect(page.locator(".preview-area")).toHaveAttribute(
+        "data-ready",
+        "true",
+      );
+
+      const dimensions = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }));
+
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(
+        dimensions.clientWidth + 1,
+      );
+
+      if (viewport.width <= 1180) {
+        const heroPosition = await page
+          .locator(".hero-scene")
+          .evaluate((element) => window.getComputedStyle(element).position);
+        expect(heroPosition).toBe("relative");
+      }
+    });
+  }
+
+  test("does not prefetch alternate hero photos on data-saving connections", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "connection", {
+        configurable: true,
+        value: { saveData: true, effectiveType: "2g" },
+      });
+    });
+
+    const heroImages = new Set<string>();
+    page.on("request", (request) => {
+      const url = request.url();
+      if (
+        /\/hero\/background-(spring|summer|autumn|winter)\.avif(?:\?|$)/.test(
+          url,
+        ) ||
+        /\/itinerary-backgrounds\/(coastal-drive|japanese)\.avif(?:\?|$)/.test(
+          url,
+        )
+      ) {
+        heroImages.add(url.split("?")[0]!);
+      }
+    });
+
     await page.goto("/");
-
-    await page.waitForLoadState("networkidle");
-
-    const homePage = page.locator(".home-page");
-    const opacity = await homePage.evaluate((el) =>
-      window.getComputedStyle(el).opacity
+    await expect(page.locator(".preview-area")).toHaveAttribute(
+      "data-ready",
+      "true",
     );
-    console.log("Home page opacity:", opacity);
-    expect(parseFloat(opacity)).toBeGreaterThan(0);
+    await page.waitForTimeout(1200);
 
-    const hero = page.locator(".hero");
-    const heroOpacity = await hero.evaluate((el) =>
-      window.getComputedStyle(el).opacity
-    );
-    console.log("Hero opacity:", heroOpacity);
-
-    const sectionHeader = page.locator(".section-header").first();
-    const headerOpacity = await sectionHeader.evaluate((el) =>
-      window.getComputedStyle(el).opacity
-    );
-    console.log("Section header opacity:", headerOpacity);
+    expect([...heroImages]).toHaveLength(1);
   });
 
-  test("should keep text-entry controls at 16px to prevent iOS focus zoom", async ({
+  test("uses a looping centered theme carousel and simple password control", async ({
     page,
   }) => {
     await page.goto("/");
+    await expect(page.locator(".preview-area")).toHaveAttribute(
+      "data-ready",
+      "true",
+    );
+    await page.locator(".create-section").scrollIntoViewIfNeeded();
+
+    const carousel = page.locator(".theme-carousel");
+    const themeCards = page.locator('.theme-card[data-theme-copy="1"]');
+    const allThemeCards = page.locator(".theme-card");
+    await expect(carousel).toBeVisible();
+    await expect(themeCards).toHaveCount(6);
+    await expect(allThemeCards).toHaveCount(18);
+
+    const planningCard = page.locator(
+      '.theme-card[data-theme-copy="1"][data-theme-id="planning-draft"]',
+    );
+    await expect(planningCard).toHaveAttribute("aria-pressed", "true");
+
+    const visualHierarchy = await page.evaluate(() => {
+      const titleLabel = document.querySelector<HTMLElement>(
+        ".title-group .form-label",
+      );
+      const designLabel = document.querySelector<HTMLElement>(
+        ".theme-fieldset .form-label",
+      );
+      const passwordLabel = document.querySelector<HTMLElement>(
+        ".toggle-setting strong",
+      );
+      const titleInput = document.querySelector<HTMLElement>(
+        ".title-group .form-input",
+      );
+      const selectedTheme = document.querySelector<HTMLElement>(
+        ".theme-card.selected",
+      );
+
+      if (
+        !titleLabel ||
+        !designLabel ||
+        !passwordLabel ||
+        !titleInput ||
+        !selectedTheme
+      ) {
+        throw new Error("Create form hierarchy controls were not found");
+      }
+
+      return {
+        titleLabelSize: parseFloat(getComputedStyle(titleLabel).fontSize),
+        designLabelSize: parseFloat(getComputedStyle(designLabel).fontSize),
+        passwordLabelSize: parseFloat(getComputedStyle(passwordLabel).fontSize),
+        titleInputHeight: titleInput.getBoundingClientRect().height,
+        themeCardHeight: selectedTheme.getBoundingClientRect().height,
+      };
+    });
+
+    expect(visualHierarchy.titleLabelSize).toBeGreaterThan(
+      visualHierarchy.designLabelSize,
+    );
+    expect(visualHierarchy.designLabelSize).toBeGreaterThan(
+      visualHierarchy.passwordLabelSize,
+    );
+    expect(visualHierarchy.titleInputHeight).toBeGreaterThanOrEqual(54);
+    expect(visualHierarchy.themeCardHeight).toBeLessThanOrEqual(100);
+
+    const carouselContainment = await page.evaluate(() => {
+      const form = document.querySelector<HTMLElement>(".form-card")!.getBoundingClientRect();
+      const shell = document
+        .querySelector<HTMLElement>(".theme-carousel-shell")!
+        .getBoundingClientRect();
+      const selected = document
+        .querySelector<HTMLElement>(".theme-card.selected")!
+        .getBoundingClientRect();
+      const previous = document
+        .querySelector<HTMLElement>(".theme-arrow.previous")!
+        .getBoundingClientRect();
+      const next = document
+        .querySelector<HTMLElement>(".theme-arrow.next")!
+        .getBoundingClientRect();
+
+      return {
+        shellLeftInset: shell.left - form.left,
+        shellRightInset: form.right - shell.right,
+        selectedLeftInset: selected.left - shell.left,
+        selectedRightInset: shell.right - selected.right,
+        previousLeftInset: previous.left - shell.left,
+        nextRightInset: shell.right - next.right,
+      };
+    });
+
+    expect(carouselContainment.shellLeftInset).toBeGreaterThan(8);
+    expect(carouselContainment.shellRightInset).toBeGreaterThan(8);
+    expect(carouselContainment.selectedLeftInset).toBeGreaterThanOrEqual(0);
+    expect(carouselContainment.selectedRightInset).toBeGreaterThanOrEqual(0);
+    expect(carouselContainment.previousLeftInset).toBeGreaterThanOrEqual(0);
+    expect(carouselContainment.nextRightInset).toBeGreaterThanOrEqual(0);
+
+    // The card immediately to the left of the initial planning theme is the
+    // trailing month theme from the previous copy.
+    await carousel.evaluate((element) => {
+      const card = element.querySelector<HTMLElement>(
+        '[data-theme-copy="0"][data-theme-id="month"]',
+      );
+      if (!card) return;
+      element.scrollLeft =
+        card.offsetLeft - (element.clientWidth - card.clientWidth) / 2;
+      element.dispatchEvent(new Event("scroll"));
+    });
+
+    const monthCard = page.locator(
+      '.theme-card[data-theme-copy="1"][data-theme-id="month"]',
+    );
+    await expect(monthCard).toHaveAttribute("aria-pressed", "true");
+    await expect
+      .poll(async () =>
+        carousel.evaluate((element) => {
+          const card = element.querySelector<HTMLElement>(
+            '[data-theme-copy="1"][data-theme-id="month"]',
+          );
+          if (!card) return Number.POSITIVE_INFINITY;
+          const expectedLeft =
+            card.offsetLeft - (element.clientWidth - card.clientWidth) / 2;
+          return Math.abs(element.scrollLeft - expectedLeft);
+        }),
+      )
+      .toBeLessThan(4);
+
+    const listCard = page.locator(
+      '.theme-card[data-theme-copy="1"][data-theme-id="list"]',
+    );
+    await carousel.evaluate((element) => {
+      const card = element.querySelector<HTMLElement>(
+        '[data-theme-copy="1"][data-theme-id="list"]',
+      );
+      if (!card) return;
+      element.scrollLeft =
+        card.offsetLeft - (element.clientWidth - card.clientWidth) / 2;
+      element.dispatchEvent(new Event("scroll"));
+    });
+    await expect(listCard).toHaveAttribute("aria-pressed", "true");
+
+    const passwordSwitch = page.getByRole("switch", {
+      name: "パスワードを設定する",
+    });
+    await expect(passwordSwitch).toBeAttached();
+    await expect(passwordSwitch).toHaveAttribute("aria-checked", "false");
+    await expect(
+      page.getByText("編集する人だけにパスワードを共有します。"),
+    ).toHaveCount(0);
+    await expect(page.getByLabel("編集用パスワード")).toHaveCount(0);
+
+    await passwordSwitch.check();
+    await expect(page.getByLabel("編集用パスワード")).toBeVisible();
+
+    await expect(page.getByLabel("次のデザイン")).toBeVisible();
+    await expect(page.getByLabel("前のデザイン")).toBeVisible();
+    await expect(
+      page.getByText("計画を立てる", { exact: true }).first(),
+    ).toBeVisible();
+    await expect(page.getByText("詳細設定")).toHaveCount(0);
+  });
+
+  test("renders the journey as one lightweight line-art story", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(page.locator(".preview-area")).toHaveAttribute(
+      "data-ready",
+      "true",
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.locator(".journey-section").scrollIntoViewIfNeeded();
+
+    await expect(page.locator(".journey-art")).toBeVisible();
+    await expect(page.locator(".story-line")).toHaveCount(4);
+    await expect(page.locator(".journey-step")).toHaveCount(0);
+    const journey = page.locator(".journey-section");
+    await expect(journey.locator(".create-label")).toHaveText("しおりを作る");
+    await expect(journey.locator(".share-label")).toHaveText("SNSで共有");
+    await expect(journey.locator(".view-label")).toHaveText("みんなで見る");
+
+    expect(
+      await page.locator(".journey-inner").getAttribute("data-drawing-progress"),
+    ).toBeNull();
+
+    const labelAlignment = await page.evaluate(() => {
+      const frame = document
+        .querySelector<HTMLElement>(".journey-inner")!
+        .getBoundingClientRect();
+      return Math.max(
+        ...Array.from(
+          document.querySelectorAll<HTMLElement>(".scene-label"),
+        ).map((label) => {
+          const box = label.getBoundingClientRect();
+          return Math.abs(
+            box.left + box.width / 2 - (frame.left + frame.width / 2),
+          );
+        }),
+      );
+    });
+    expect(labelAlignment).toBeLessThan(1);
+  });
+
+  test("keeps the intermediate hero in two columns", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await page.goto("/");
+    await expect(page.locator(".preview-area")).toHaveAttribute(
+      "data-ready",
+      "true",
+    );
+
+    const display = await page
+      .locator(".hero-main")
+      .evaluate((element) => window.getComputedStyle(element).display);
+    expect(display).toBe("grid");
+
+    const copyBox = await page.locator(".hero-copy").boundingBox();
+    const previewBox = await page.locator(".preview-area").boundingBox();
+    expect(copyBox).not.toBeNull();
+    expect(previewBox).not.toBeNull();
+    expect(previewBox!.x).toBeGreaterThan(copyBox!.x + copyBox!.width * 0.65);
+  });
+
+  test("keeps the create heading thread visible without a paper-colored mask", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.locator("#create").scrollIntoViewIfNeeded();
+
+    const heading = page.locator(".create-heading h2");
+    await expect(heading).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(page.locator(".form-thread path")).toHaveCSS(
+      "stroke-dashoffset",
+      "0px",
+    );
+
+    const alignment = await page.evaluate(() => {
+      const thread = document
+        .querySelector<SVGElement>(".form-thread")!
+        .getBoundingClientRect();
+      const outline = document
+        .querySelector<SVGElement>(".form-outline")!
+        .getBoundingClientRect();
+      return {
+        bottomJoin: Math.abs(thread.bottom - outline.top),
+        centerDelta: Math.abs(
+          thread.left + thread.width / 2 - (outline.left + outline.width / 2),
+        ),
+      };
+    });
+    expect(alignment.bottomJoin).toBeLessThan(1);
+    expect(alignment.centerDelta).toBeLessThan(1);
+  });
+
+  test("shows explicit creation and shared URL choices", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".preview-area")).toHaveAttribute(
+      "data-ready",
+      "true",
+    );
+
+    await page.locator(".create-section").scrollIntoViewIfNeeded();
+    await expect(page.getByRole("tab", { name: "新しく作る" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "URLから開く" })).toBeVisible();
+
+    await page.getByRole("tab", { name: "URLから開く" }).click();
+    await expect(page.getByLabel("しおりのURL")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /しおりを開く/ }),
+    ).toBeVisible();
+  });
+
+  test("keeps text-entry controls at 16px to prevent iOS focus zoom", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(page.locator(".preview-area")).toHaveAttribute(
+      "data-ready",
+      "true",
+    );
 
     const fontSizes = await page.evaluate(() => {
       const fixture = document.createElement("div");

@@ -16,7 +16,7 @@ export const load: PageLoad = async ({ params }) => {
 
   // Published/shared snapshots belong to the public read-only URL.
   // Keep old /itineraries/:id links working while canonicalizing the browser URL.
-  if (itinerary.source_itinerary_id) {
+  if (itinerary.is_shared_snapshot) {
     throw redirect(308, `/s/${params.id}`);
   }
 

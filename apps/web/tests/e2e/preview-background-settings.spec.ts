@@ -40,10 +40,10 @@ test('deployed preview can save a home hero background from itinerary settings',
     await page.getByRole('button', { name: 'メニュー' }).click();
     await page.getByRole('button', { name: /しおり設定/ }).click();
     await expect(page.getByRole('heading', { name: 'しおり設定' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '保存' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: '保存' })).toBeDisabled();
 
     console.log('preview-background-step=open-background-picker');
-    await page.getByRole('button', { name: '背景を選ぶ' }).click();
+    await page.getByRole('button', { name: '背景画像を編集' }).click();
     await expect(page.getByRole('heading', { name: '背景画像' }).last()).toBeVisible();
 
     console.log('preview-background-step=choose-page-background');
@@ -52,6 +52,7 @@ test('deployed preview can save a home hero background from itinerary settings',
     await page.locator('label.standard-settings-page-radio').filter({ hasText: 'しおり全体の背景' }).click();
     await expect(winterOption.locator('input[type="radio"]')).toBeChecked();
     await page.getByRole('button', { name: /戻る/ }).last().click();
+    await expect(page.getByRole('button', { name: '保存' })).toBeEnabled();
     await page.screenshot({ path: 'test-results/background-settings-selected.png', fullPage: false });
 
     console.log('preview-background-step=save-background');

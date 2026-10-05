@@ -46,7 +46,8 @@
     onUpdateItinerary?: (data: {
       title?: string; theme_id?: string; palette_id?: string; packing_enabled?: boolean;
       prefecture_slugs?: string[]; areas?: string[]; tags?: string[]; metadata_initialized?: boolean;
-      memo?: string; secret_settings?: { enabled: boolean; offset_minutes: number } | null;
+      memo?: string; background_image?: string | null; background_display?: "cover" | "page";
+      secret_settings?: { enabled: boolean; offset_minutes: number } | null;
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
@@ -132,10 +133,12 @@
   let showMoney = $state(false);
   let showPacking = $state(false);
   let isAuthenticating = $state(false);
-  let showCopyMessage = $state(false);
+  let copyMessage = $state<string | null>(null);
   let showSettingsDialog = $state(false);
   let showMetadataDialog = $state(false);
   let selectedPaletteId = $state(itinerary.palette_id ?? "neutral");
+  let selectedBackgroundImage = $state<string | null>(itinerary.background_image ?? null);
+  let selectedBackgroundDisplay = $state<"cover" | "page">(itinerary.background_display ?? "cover");
   let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
   let secretModeOffset = $state(itinerary.secret_settings?.offset_minutes ?? 60);
   let packingEnabled = $state(itinerary.packing_enabled ?? true);
@@ -143,7 +146,7 @@
   let itineraryAreas = $state([...(itinerary.areas ?? [])]);
   let itineraryTags = $state([...(itinerary.tags ?? [])]);
 
-  const isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  const isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
 
   let form = $state({
     title: "",
@@ -239,16 +242,48 @@
     else void attemptEditModeActivation();
   }
 
+  function shouldUseNativeShare(): boolean {
+    return (
+      typeof navigator.share === "function" &&
+      (navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches)
+    );
+  }
+
+  async function shareOrCopyLink(url: string, copiedMessage: string) {
+    if (shouldUseNativeShare()) {
+      showShareDialog = false;
+      try {
+        await navigator.share({ title: itinerary.title, url });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.error("Failed to share:", err);
+      }
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      showShareDialog = false;
+      copyMessage = copiedMessage;
+      setTimeout(() => (copyMessage = null), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  }
+
   async function copyShareLink(includeToken: boolean) {
     const token = includeToken ? auth.getToken(itinerary.id) : null;
     const base = includeToken
       ? `${window.location.origin}/itineraries/${encodeURIComponent(itinerary.id)}`
       : `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
     const url = `${base}${token ? `?token=${token}` : ""}`;
-    await navigator.clipboard.writeText(url);
-    showShareDialog = false;
-    showCopyMessage = true;
-    setTimeout(() => (showCopyMessage = false), 2000);
+    const copiedMessage = itinerary.is_password_protected
+      ? includeToken
+        ? "編集用リンクをコピーしました"
+        : "閲覧用リンクをコピーしました"
+      : "リンクをコピーしました";
+
+    await shareOrCopyLink(url, copiedMessage);
   }
 
   function localDateKey(value: number): string {
@@ -538,6 +573,24 @@
     await onUpdateItinerary?.({ palette_id: paletteId });
   }
 
+  async function handleBackgroundChange(backgroundImage: string | null, backgroundDisplay: "cover" | "page") {
+    selectedBackgroundImage = backgroundImage;
+    selectedBackgroundDisplay = backgroundDisplay;
+    await onUpdateItinerary?.({
+      background_image: backgroundImage,
+      background_display: backgroundDisplay,
+    });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("tabitabi:background-changed", {
+        detail: {
+          itineraryId: itinerary.id,
+          backgroundImage,
+          backgroundDisplay,
+        },
+      }));
+    }
+  }
+
   async function handleSecretModeChange(enabled: boolean, offset: number) {
     secretModeEnabled = enabled;
     secretModeOffset = offset;
@@ -554,7 +607,7 @@
 <svelte:head><meta name="theme-color" content="#faf9f5" /></svelte:head>
 
 <div class="draft-theme" style={paletteStyle} class:map-planning={mapPlanning}>
-  {#if showCopyMessage}<div class="copy-message">コピーしました</div>{/if}
+  {#if copyMessage}<div class="copy-message">{copyMessage}</div>{/if}
   <header class="draft-header">
     <a class="brand" href="/">たびたび</a>
     {#if editingTitle}
@@ -741,8 +794,13 @@
     canRequestEdit={!readOnly && !isSharedSnapshot}
     {hasEditPermission}
     onShare={() => {
-      if (hasEditPermission) showShareDialog = true;
-      else void copyShareLink(false);
+      if (hasEditPermission && !isSharedSnapshot && !itinerary.is_password_protected) {
+        void copyShareLink(true);
+      } else if (hasEditPermission) {
+        showShareDialog = true;
+      } else {
+        void copyShareLink(false);
+      }
     }}
     onPrint={openPrintStudio}
     onSettings={() => (showSettingsDialog = true)}
@@ -757,14 +815,20 @@
     {palettes}
     selectedThemeId={itinerary.theme_id}
     {selectedPaletteId}
+    backgroundImage={selectedBackgroundImage}
+    backgroundDisplay={selectedBackgroundDisplay}
     {secretModeEnabled}
     {secretModeOffset}
     {packingEnabled}
+    {prefectureSlugs}
+    areas={itineraryAreas}
+    tags={itineraryTags}
     onThemeChange={switchTheme}
     onPaletteChange={handlePaletteChange}
     onSecretModeChange={handleSecretModeChange}
     onPackingEnabledChange={handlePackingEnabledChange}
-    onEditMetadata={() => (showMetadataDialog = true)}
+    onMetadataChange={saveMetadata}
+    onBackgroundChange={handleBackgroundChange}
     onClose={() => (showSettingsDialog = false)}
   />
 

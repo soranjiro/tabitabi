@@ -697,7 +697,8 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     const snapshotRes = await app.request(`/api/v1/itineraries/${data.id}`, {}, env);
     const { data: snapshot } = await snapshotRes.json() as any;
     expect(snapshot.title).toBe('旅のしおり');
-    expect(snapshot.source_itinerary_id).toBe(original.id);
+    expect(snapshot.is_shared_snapshot).toBe(true);
+    expect(snapshot).not.toHaveProperty('source_itinerary_id');
   });
 
   it('masks trip member names in a shared snapshot', async () => {

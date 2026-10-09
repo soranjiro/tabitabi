@@ -102,6 +102,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Keep a separate cache namespace because preview builds use a PR-specific
+      # API URL and real public Firebase configuration.
+      - name: Restore Turbo preview build cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-preview-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-preview-${{ runner.os }}-
+
       - name: Delete existing preview D1 database
         run: |
           pnpm wrangler d1 delete "${PREVIEW_DB_NAME}" --skip-confirmation || echo "Preview database may not exist"
@@ -242,8 +252,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Determine Playwright version
+        id: playwright-version
+        run: |
+          VERSION=$(pnpm --filter web exec playwright --version)
+          echo "version=${VERSION##* }" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-headless
+
       - name: Install browser for preview smoke tests
-        run: pnpm --filter web exec playwright install --with-deps chromium
+        run: pnpm --filter web exec playwright install --with-deps --only-shell chromium
 
       - name: Exercise deployed preview
         run: pnpm --filter web exec playwright test tests/e2e/preview-background-settings.spec.ts tests/e2e/home-preview-visual.spec.ts --project=chromium

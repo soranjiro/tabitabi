@@ -14,6 +14,11 @@ on:
       - "**/*.png"
       - "docs/**"
 
+# Cancel obsolete checks when a newer commit is pushed to the same PR.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -123,17 +128,38 @@ jobs:
       - name: Verify generated database schema
         run: pnpm run db:schema:check
 
-      - name: Run API Tests
-        run: pnpm run test:api
+      # The test suites use separate workspaces and do not share mutable state.
+      # Collect each exit status so a failure in either suite fails this check.
+      - name: Run API and Web Tests in parallel
+        shell: bash
+        run: |
+          pnpm run test:api >"$RUNNER_TEMP/api-test.log" 2>&1 &
+          api_pid=$!
+          pnpm run test:web >"$RUNNER_TEMP/web-test.log" 2>&1 &
+          web_pid=$!
 
-      - name: Run Web Tests
-        run: pnpm run test:web
+          api_status=0
+          web_status=0
+          wait "$api_pid" || api_status=$?
+          wait "$web_pid" || web_status=$?
 
+          echo "::group::API Tests (exit: $api_status)"
+          cat "$RUNNER_TEMP/api-test.log"
+          echo "::endgroup::"
+
+          echo "::group::Web Tests (exit: $web_status)"
+          cat "$RUNNER_TEMP/web-test.log"
+          echo "::endgroup::"
+
+          if [ "$api_status" -ne 0 ] || [ "$web_status" -ne 0 ]; then
+            echo "::error::Test failure: API=$api_status Web=$web_status"
+            exit 1
+          fi
+
+  # Building does not depend on the test or migration results. All three
+  # required checks still have to pass before the pull request can be merged.
   build:
     runs-on: ubuntu-latest
-    needs:
-      - migration-safety
-      - test
     steps:
       - uses: actions/checkout@v4
 
@@ -148,6 +174,14 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Restore Turbo build cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-ci-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-ci-${{ runner.os }}-
 
       - name: Build
         run: pnpm run build

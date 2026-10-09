@@ -42,6 +42,13 @@ jobs:
       PREVIEW_URL: ${{ inputs.preview_url }}
 
     steps:
+      # Reuse the npx installation across PR updates and all audit matrices.
+      - name: Cache Lighthouse CLI
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/_npx
+          key: lighthouse-npx-${{ runner.os }}-13.4.1-v1
+
       - name: Wait for preview page to become available
         run: |
           target_url="${PREVIEW_URL%/}${{ matrix.path }}"
@@ -75,7 +82,7 @@ jobs:
               echo "Running ${{ matrix.device }} Lighthouse for ${{ matrix.path }} (${run}/5, attempt ${attempt}/2)"
               rm -f "$output_path"
 
-              if npx --yes lighthouse@latest "$target_url" \
+              if npx --yes lighthouse@13.4.1 "$target_url" \
                 --quiet \
                 --chrome-flags="--headless --no-sandbox" \
                 "${extra_args[@]}" \

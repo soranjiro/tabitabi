@@ -242,6 +242,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Determine Playwright version
+        id: playwright-version
+        run: |
+          VERSION=$(pnpm --filter web exec playwright --version)
+          echo "version=${VERSION##* }" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
       - name: Install browser for preview smoke tests
         run: pnpm --filter web exec playwright install --with-deps chromium
 

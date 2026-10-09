@@ -102,6 +102,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Keep a separate cache namespace because preview builds use a PR-specific
+      # API URL and real public Firebase configuration.
+      - name: Restore Turbo preview build cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-preview-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-preview-${{ runner.os }}-
+
       - name: Delete existing preview D1 database
         run: |
           pnpm wrangler d1 delete "${PREVIEW_DB_NAME}" --skip-confirmation || echo "Preview database may not exist"

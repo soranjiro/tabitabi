@@ -153,6 +153,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Restore Turbo build cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-ci-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-ci-${{ runner.os }}-
+
       - name: Build
         run: pnpm run build
         env:

@@ -10,6 +10,7 @@ import favorites from './routes/favorites';
 import money from './routes/money';
 import members from './routes/members';
 import packing from './routes/packing';
+import passkeys from './routes/passkeys';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -20,6 +21,7 @@ app.get('/health', (c) => {
 });
 
 app.route('/api/v1/auth', auth);
+app.route('/api/v1/passkeys', passkeys);
 app.route('/api/v1/itineraries', itineraries);
 app.route('/api/v1/backgrounds', backgrounds);
 app.route('/api/v1/steps', steps);

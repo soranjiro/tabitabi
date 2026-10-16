@@ -76,6 +76,17 @@ describe('Passkey endpoints', () => {
     expect(res.status).toBe(503);
   });
 
+  it('reports availability only when the exact origin and signing credentials exist', async () => {
+    const ready = await app.request('/api/v1/passkeys/availability', {}, configuredEnv());
+    expect(ready.status).toBe(200);
+    expect((await ready.json() as { data: { available: boolean } }).data.available).toBe(true);
+
+    const missing = await app.request('/api/v1/passkeys/availability', {}, {
+      ...configuredEnv(), FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY: undefined,
+    });
+    expect((await missing.json() as { data: { available: boolean } }).data.available).toBe(false);
+  });
+
   it('requires verified Firebase auth to register a passkey', async () => {
     const res = await post('/register/options', {});
     expect(res.status).toBe(401);

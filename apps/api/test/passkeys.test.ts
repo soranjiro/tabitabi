@@ -42,6 +42,24 @@ function post(path: string, data: object, token?: string, customEnv = configured
   }, customEnv);
 }
 
+
+function base64Url(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function derFromRawEcdsa(raw: Uint8Array): Uint8Array {
+  function integer(bytes: Uint8Array): number[] {
+    let start = 0;
+    while (start < bytes.length - 1 && bytes[start] === 0) start++;
+    const value = Array.from(bytes.slice(start));
+    if (value[0] & 0x80) value.unshift(0);
+    return [0x02, value.length, ...value];
+  }
+  const r = integer(raw.slice(0, 32));
+  const s = integer(raw.slice(32, 64));
+  return Uint8Array.from([0x30, r.length + s.length, ...r, ...s]);
+}
+
 describe('Passkey endpoints', () => {
   beforeEach(async () => {
     await tables();
@@ -110,6 +128,75 @@ describe('Passkey endpoints', () => {
       method: 'DELETE', headers: { Authorization: `Bearer ${owner.token}` },
     }, configuredEnv());
     expect(removed.status).toBe(200);
+  });
+
+
+  it('verifies a genuine ECDSA assertion and mints a token for the existing Firebase UID', async () => {
+    const user = await insertVerifiedUser(env.DB, 'validpk', 'validpk@example.com');
+    const signingKeys = await crypto.subtle.generateKey({
+      name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256',
+    }, true, ['sign', 'verify']);
+    const pkcs8 = new Uint8Array(await crypto.subtle.exportKey('pkcs8', signingKeys.privateKey));
+    const serviceKey = '-----BEGIN PRIVATE KEY-----\\n' +
+      btoa(String.fromCharCode(...pkcs8)).match(/.{1,64}/g)!.join('\\n') +
+      '\\n-----END PRIVATE KEY-----';
+    const passkeyKeys = await crypto.subtle.generateKey({
+      name: 'ECDSA', namedCurve: 'P-256',
+    }, true, ['sign', 'verify']);
+    const publicJwk = await crypto.subtle.exportKey('jwk', passkeyKeys.publicKey);
+    const x = Uint8Array.from(atob(publicJwk.x!.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+    const y = Uint8Array.from(atob(publicJwk.y!.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+    const cose = Uint8Array.from([0xa5, 0x01, 0x02, 0x03, 0x26, 0x20, 0x01,
+      0x21, 0x58, 0x20, ...x, 0x22, 0x58, 0x20, ...y]);
+    const id = base64Url(Uint8Array.from([5, 2, 17, 8, 99, 44, 7, 20]));
+    await env.DB.prepare(`INSERT INTO user_passkeys
+      (credential_id, user_id, public_key, counter, transports, created_at)
+      VALUES (?, ?, ?, 0, '[]', ?)`)
+      .bind(id, user.id, base64Url(cose), new Date().toISOString()).run();
+
+    const begin = await post('/login/options', {});
+    const { data } = await begin.json() as { data: { challengeId: string; options: { challenge: string } } };
+    const rpHash = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('localhost')));
+    const authenticatorData = Uint8Array.from([...rpHash, 0x05, 0, 0, 0, 1]);
+    const clientDataJSON = new TextEncoder().encode(JSON.stringify({
+      type: 'webauthn.get', challenge: data.options.challenge, origin: 'http://localhost:5173',
+      crossOrigin: false,
+    }));
+    const clientHash = new Uint8Array(await crypto.subtle.digest('SHA-256', clientDataJSON));
+    const signedData = Uint8Array.from([...authenticatorData, ...clientHash]);
+    const rawSignature = new Uint8Array(await crypto.subtle.sign(
+      { name: 'ECDSA', hash: 'SHA-256' }, passkeyKeys.privateKey, signedData,
+    ));
+
+    const response = {
+      id,
+      rawId: id,
+      type: 'public-key',
+      clientExtensionResults: {},
+      response: {
+        authenticatorData: base64Url(authenticatorData),
+        clientDataJSON: base64Url(clientDataJSON),
+        signature: base64Url(derFromRawEcdsa(rawSignature)),
+        userHandle: base64Url(new TextEncoder().encode(user.id)),
+      },
+    };
+    const login = await post('/login/verify', { challengeId: data.challengeId, response }, undefined, {
+      ...configuredEnv(), FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY: serviceKey,
+    });
+    expect(login.status).toBe(200);
+    const { data: loggedIn } = await login.json() as { data: { token: string } };
+    const { decodeJwt } = await import('jose');
+    expect(decodeJwt(loggedIn.token).uid).toBe(user.id);
+
+    const stored = await env.DB.prepare(
+      'SELECT counter FROM user_passkeys WHERE credential_id = ?',
+    ).bind(id).first<{ counter: number }>();
+    expect(stored?.counter).toBe(1);
+    const replay = await post('/login/verify', { challengeId: data.challengeId, response }, undefined, {
+      ...configuredEnv(), FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY: serviceKey,
+    });
+    expect(replay.status).toBe(400);
   });
 
   it('associates a new registration challenge only with the authenticated UID', async () => {

@@ -70,7 +70,7 @@ describe('Passkey endpoints', () => {
       data: { challengeId: string; options: { challenge: string; allowCredentials?: unknown[] } };
     };
     expect(json.data.options.challenge.length).toBeGreaterThan(15);
-    expect(json.data.options.allowCredentials).toBeUndefined();
+    expect(json.data.options.allowCredentials ?? []).toHaveLength(0);
     const stored = await env.DB.prepare(
       'SELECT challenge FROM passkey_challenges WHERE id = ?',
     ).bind(json.data.challengeId).first<{ challenge: string }>();

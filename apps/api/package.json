@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@hono/zod-validator": "^0.7.6",
+    "@simplewebauthn/server": "^13.3.3",
     "@tsndr/cloudflare-worker-jwt": "^3.2.0",
     "bcryptjs": "^2.4.3",
     "hono": "^4.13.7",

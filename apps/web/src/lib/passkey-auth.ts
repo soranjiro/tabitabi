@@ -40,6 +40,16 @@ async function browser() {
 }
 
 export const passkeyAuth = {
+  async available(): Promise<boolean> {
+    try {
+      const { available } = await request<{ available: boolean }>('/availability', undefined, false, 'GET');
+      if (!available) return false;
+      return (await browser()).browserSupportsWebAuthn();
+    } catch {
+      return false;
+    }
+  },
+
   async login(): Promise<void> {
     const { startAuthentication } = await browser();
     const { challengeId, options } = await request<{

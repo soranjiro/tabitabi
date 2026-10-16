@@ -21,6 +21,7 @@
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
     "@tabitabi/types": "workspace:*",
+    "@simplewebauthn/browser": "^13.3.3",
     "firebase": "^12.4.0",
     "leaflet": "1.9.4",
     "mapbox-gl": "^3.17.0"

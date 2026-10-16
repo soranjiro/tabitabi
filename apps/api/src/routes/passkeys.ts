@@ -31,7 +31,8 @@ type PasskeySettings = { origin: string; rpID: string };
 
 function settings(env: Env): PasskeySettings | null {
   // Never infer this from an untrusted Host/Origin header or CORS wildcard.
-  if (!env.PASSKEY_ORIGIN || !env.PASSKEY_RP_ID || !env.FIREBASE_PROJECT_ID) return null;
+  if (!env.PASSKEY_ORIGIN || !env.PASSKEY_RP_ID || !env.FIREBASE_PROJECT_ID ||
+      !env.FIREBASE_SERVICE_ACCOUNT_EMAIL || !env.FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY) return null;
   const origin = new URL(env.PASSKEY_ORIGIN);
   if (origin.origin !== env.PASSKEY_ORIGIN || (
     origin.protocol !== 'https:' && !(origin.protocol === 'http:' && origin.hostname === 'localhost')

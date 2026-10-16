@@ -4,6 +4,7 @@
   import { userApi } from "$lib/api/user";
   import { itineraryApi } from "$lib/api/itinerary";
   import { userAuth } from "$lib/user-auth";
+  import { passkeyAuth, type Passkey } from "$lib/passkey-auth";
   import { auth } from "$lib/auth";
   import BookShelf from "$lib/sharing/BookShelf.svelte";
   import JapanMap from "$lib/explore/JapanMap.svelte";
@@ -32,7 +33,7 @@
   let prefecture = $state<Prefecture | "">("");
   let verificationSentTo = $state("");
 
-  let editSection = $state<"none" | "profile" | "email" | "password">("none");
+  let editSection = $state<"none" | "profile" | "email" | "password" | "passkeys">("none");
   let editUsername = $state("");
   let editPrefecture = $state<Prefecture | "">("");
   let editEmail = $state("");
@@ -41,6 +42,8 @@
   let confirmPassword = $state("");
   let editError = $state<string | null>(null);
   let editSuccess = $state<string | null>(null);
+  let passkeys: Passkey[] = $state([]);
+  let passkeyRemovalTarget = $state<Passkey | null>(null);
   let publishingIds = $state(new Set<string>());
   let unlinkTarget = $state<UserBookmarkWithItinerary | null>(null);
   let showAccount = $state(false);
@@ -97,7 +100,7 @@
       editPrefecture = profile.prefecture ?? "";
       editEmail = profile.email;
       await syncLocalBookmarks();
-      await Promise.all([loadBookmarks(), loadFavoriteItineraries()]);
+      await Promise.all([loadBookmarks(), loadFavoriteItineraries(), loadPasskeys()]);
       await continuePendingAction();
     } catch (e) {
       if (errorCode(e) === "PROFILE_SETUP_REQUIRED") {
@@ -193,7 +196,7 @@
       editEmail = account.email;
       notice = "アカウントの準備が完了しました。";
       await syncLocalBookmarks();
-      await Promise.all([loadBookmarks(), loadFavoriteItineraries()]);
+      await Promise.all([loadBookmarks(), loadFavoriteItineraries(), loadPasskeys()]);
       await continuePendingAction();
     } catch (e) { error = apiMessage(e); }
     finally { submitting = false; }
@@ -206,11 +209,73 @@
     account = null;
     bookmarks = [];
     favoriteItineraries = [];
+    passkeys = [];
     await goto("/");
   }
 
   function requestLogout() {
     showLogoutConfirm = true;
+  }
+
+  async function loadPasskeys() {
+    try { passkeys = await passkeyAuth.list(); }
+    catch { passkeys = []; /* Do not block an ordinary Firebase login. */ }
+  }
+
+  function passkeyError(value: unknown): string {
+    const message = value instanceof Error ? value.message : "";
+    const name = value instanceof Error ? value.name : "";
+    if (message === "PASSKEY_NOT_SUPPORTED") return "このブラウザはパスキーに対応していません。";
+    if (message === "PASSKEY_UNAVAILABLE") return "現在パスキーを利用できません。メールアドレスでログインしてください。";
+    if (message === "RECENT_LOGIN_REQUIRED") return "パスキーを変更するには、一度ログアウトして再ログインしてください。";
+    if (name === "NotAllowedError") return "パスキー認証がキャンセルされました。";
+    if (name === "InvalidStateError") return "このパスキーはすでに登録されています。";
+    return "パスキーの操作に失敗しました。もう一度お試しください。";
+  }
+
+  async function handlePasskeyLogin() {
+    error = null;
+    notice = null;
+    submitting = true;
+    try {
+      await passkeyAuth.login();
+      const firebaseUser = await userAuth.ready();
+      if (!firebaseUser?.emailVerified) throw new Error("EMAIL_NOT_VERIFIED");
+      await finishAuthentication();
+    } catch (e) {
+      error = passkeyError(e);
+    } finally {
+      submitting = false;
+    }
+  }
+
+  async function registerPasskey() {
+    editError = null;
+    editSuccess = null;
+    submitting = true;
+    try {
+      await passkeyAuth.register();
+      await loadPasskeys();
+      editSuccess = "パスキーを登録しました。次回からパスキーでログインできます。";
+    } catch (e) {
+      editError = passkeyError(e);
+    } finally { submitting = false; }
+  }
+
+  async function removePasskey() {
+    const target = passkeyRemovalTarget;
+    if (!target) return;
+    editError = null;
+    submitting = true;
+    try {
+      await passkeyAuth.remove(target.id);
+      await loadPasskeys();
+      passkeyRemovalTarget = null;
+      editSuccess = "パスキーを削除しました。";
+    } catch (e) {
+      passkeyRemovalTarget = null;
+      editError = passkeyError(e);
+    } finally { submitting = false; }
   }
 
   async function syncLocalBookmarks() {
@@ -513,6 +578,14 @@
             </button>
           </form>
         {:else}
+          {#if mode === "login"}
+            <button type="button" class="primary auth-submit passkey-login" disabled={submitting} onclick={handlePasskeyLogin}>
+              <AppIcon name="lock" size={20} />
+              {submitting ? "認証中..." : "パスキーでログイン"}
+            </button>
+            <p class="field-help passkey-help">Face ID・指紋認証・端末のPINを利用できます。</p>
+            <div class="auth-divider"><span>またはメール・パスワードで</span></div>
+          {/if}
           <form onsubmit={(event) => { event.preventDefault(); handleAuthSubmit(); }} class="auth-form">
             {#if mode === "register"}
               <div class="field-group">
@@ -663,6 +736,7 @@
             <div class="account-menu">
               <button onclick={() => editSection = "profile"}><span>プロフィール</span><small>ユーザー名・都道府県</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
               <button onclick={() => { editEmail = account?.email ?? ""; editSection = "email"; }}><span>メールアドレス変更</span><small>{account?.email}</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
+              <button onclick={() => { editSection = "passkeys"; editError = null; loadPasskeys(); }}><span>パスキー</span><small>登録・管理</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
               <button onclick={() => editSection = "password"}><span>パスワード変更</span><small>ログイン用パスワード</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
               <a href="/users/{account?.username}"><span>公開プロフィール</span><small>ほかの人から見えるページ</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></a>
             </div>
@@ -691,6 +765,29 @@
                   <div class="beta-mail-note"><strong>確認メールについて</strong><span>{betaMailNotice}</span></div>
                   <div class="settings-actions"><button type="button" onclick={() => editSection = "none"} class="secondary">キャンセル</button><button type="submit" disabled={submitting} class="primary">確認メールを送る</button></div>
                 </form>
+              {:else if editSection === "passkeys"}
+                <div class="passkey-settings">
+                  <p class="field-help">パスキーでパスワードを入力せずにログインできます。紛失に備え、複数の端末で登録できます。</p>
+                  <button type="button" class="primary" onclick={registerPasskey} disabled={submitting}>
+                    {submitting ? "操作中..." : "パスキーを追加"}
+                  </button>
+                  {#if passkeys.length > 0}
+                    <ul class="passkey-list">
+                      {#each passkeys as passkey (passkey.id)}
+                        <li>
+                          <div>
+                            <strong>パスキー</strong>
+                            <small>登録日 {new Date(passkey.created_at).toLocaleDateString("ja-JP")}</small>
+                          </div>
+                          <button type="button" class="secondary" onclick={() => passkeyRemovalTarget = passkey}>削除</button>
+                        </li>
+                      {/each}
+                    </ul>
+                  {:else}
+                    <p class="field-help">登録されたパスキーはありません。</p>
+                  {/if}
+                  <button type="button" class="text-link" onclick={() => editSection = "none"}>設定に戻る</button>
+                </div>
               {:else}
                 <form onsubmit={(event) => { event.preventDefault(); changePassword(); }} class="settings-form">
                   <div class="field-group"><label for="current-password">現在のパスワード</label><div class="input-shell"><input id="current-password" type="password" bind:value={currentPassword} autocomplete="current-password" required /></div></div>
@@ -758,6 +855,19 @@
     </main>
   {/if}
 
+  {#if passkeyRemovalTarget}
+    <div class="logout-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (passkeyRemovalTarget = null)}>
+      <section class="logout-dialog" role="dialog" aria-modal="true" aria-labelledby="passkey-remove-title">
+        <h2 id="passkey-remove-title">パスキーを削除しますか？</h2>
+        <p>このパスキーではログインできなくなります。他のパスキーやパスワードでのログインは引き続き利用できます。</p>
+        <div class="logout-dialog-actions">
+          <button type="button" class="secondary" onclick={() => passkeyRemovalTarget = null} disabled={submitting}>キャンセル</button>
+          <button type="button" class="logout-confirm" onclick={removePasskey} disabled={submitting}>削除する</button>
+        </div>
+      </section>
+    </div>
+  {/if}
+
   {#if showLogoutConfirm}
     <div class="logout-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (showLogoutConfirm = false)}>
       <section class="logout-dialog" role="dialog" aria-modal="true" aria-labelledby="logout-title" aria-describedby="logout-description">
@@ -774,6 +884,20 @@
 </div>
 
 <style>
+  .passkey-login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .7rem;
+    width: 100%;
+  }
+  .passkey-help { text-align: center; margin: .4rem 0 .8rem; }
+  .passkey-settings { display: grid; gap: 1rem; }
+  .passkey-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
+  .passkey-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem; border: 1px solid #e4eaf0; border-radius: .75rem; }
+  .passkey-list li div { display: grid; gap: .2rem; min-width: 0; }
+  .passkey-list li small { color: #61717c; }
+
   :global(body) {
     background: #fffdf9;
   }

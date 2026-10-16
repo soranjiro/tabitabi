@@ -3,6 +3,10 @@ export interface Env {
   ALLOWED_ORIGINS?: string;
   JWT_SECRET?: string;
   FIREBASE_PROJECT_ID?: string;
+  FIREBASE_SERVICE_ACCOUNT_EMAIL?: string;
+  FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY?: string;
+  PASSKEY_ORIGIN?: string;
+  PASSKEY_RP_ID?: string;
   ENVIRONMENT?: string;
   AFFILIATE_TEMPLATE_JALAN?: string;
   AFFILIATE_TEMPLATE_RAKUTEN_TRAVEL?: string;

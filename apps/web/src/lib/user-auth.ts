@@ -70,6 +70,11 @@ export const userAuth = {
     return (await signInWithEmailAndPassword(await getAuthInstance(), email, password)).user;
   },
 
+  async signInWithCustomToken(token: string): Promise<User> {
+    const { signInWithCustomToken } = await import('firebase/auth');
+    return (await signInWithCustomToken(await getAuthInstance(), token)).user;
+  },
+
   async signOut(): Promise<void> {
     const { signOut } = await import('firebase/auth');
     await signOut(await getAuthInstance());

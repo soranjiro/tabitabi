@@ -123,6 +123,10 @@ passkeys.use('*', async (c, next) => {
   c.header('Cache-Control', 'no-store');
 });
 
+passkeys.get('/availability', c =>
+  c.json({ success: true, data: { available: Boolean(settings(c.env)) } }),
+);
+
 passkeys.get('/', userAuthMiddleware, userProfileMiddleware, async c => {
   const { results } = await c.env.DB.prepare(
     'SELECT credential_id AS id, created_at, last_used_at FROM user_passkeys WHERE user_id = ? ORDER BY created_at DESC',

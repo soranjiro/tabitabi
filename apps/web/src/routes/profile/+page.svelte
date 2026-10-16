@@ -43,6 +43,7 @@
   let editError = $state<string | null>(null);
   let editSuccess = $state<string | null>(null);
   let passkeys: Passkey[] = $state([]);
+  let passkeyAvailable = $state(false);
   let passkeyRemovalTarget = $state<Passkey | null>(null);
   let publishingIds = $state(new Set<string>());
   let unlinkTarget = $state<UserBookmarkWithItinerary | null>(null);
@@ -60,6 +61,8 @@
   });
 
   onMount(async () => {
+    // An unconfigured preview or unsupported browser keeps the existing login UX.
+    void passkeyAuth.available().then((available) => passkeyAvailable = available);
     try {
       const firebaseUser = await userAuth.ready();
       if (!firebaseUser) return;
@@ -578,7 +581,7 @@
             </button>
           </form>
         {:else}
-          {#if mode === "login"}
+          {#if mode === "login" && passkeyAvailable}
             <button type="button" class="primary auth-submit passkey-login" disabled={submitting} onclick={handlePasskeyLogin}>
               <AppIcon name="lock" size={20} />
               {submitting ? "認証中..." : "パスキーでログイン"}
@@ -736,7 +739,9 @@
             <div class="account-menu">
               <button onclick={() => editSection = "profile"}><span>プロフィール</span><small>ユーザー名・都道府県</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
               <button onclick={() => { editEmail = account?.email ?? ""; editSection = "email"; }}><span>メールアドレス変更</span><small>{account?.email}</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
-              <button onclick={() => { editSection = "passkeys"; editError = null; loadPasskeys(); }}><span>パスキー</span><small>登録・管理</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
+              {#if passkeyAvailable}
+                <button onclick={() => { editSection = "passkeys"; editError = null; loadPasskeys(); }}><span>パスキー</span><small>登録・管理</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
+              {/if}
               <button onclick={() => editSection = "password"}><span>パスワード変更</span><small>ログイン用パスワード</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
               <a href="/users/{account?.username}"><span>公開プロフィール</span><small>ほかの人から見えるページ</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></a>
             </div>

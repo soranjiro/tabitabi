@@ -1,3 +1,4 @@
+import type { D1Database } from '@cloudflare/workers-types';
 import { dev } from '$app/environment';
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';

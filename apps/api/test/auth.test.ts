@@ -179,6 +179,36 @@ describe('Password Authentication', () => {
       expect(data.token).toBeDefined();
     });
 
+    it('limits repeated guesses per IP and itinerary before bcrypt verification', async () => {
+      const created = await app.request('/api/v1/itineraries', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Protected with rate limit', password: 'secret123' }),
+      }, env);
+      const { data: book } = await created.json() as { data: { id: string } };
+      const attempt = (ip: string) => app.request('/api/v1/auth/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': ip },
+        body: JSON.stringify({ shioriId: book.id, password: 'incorrect-password' }),
+      }, env);
+      for (let i = 0; i < 8; i += 1) {
+        expect((await attempt('198.51.100.24')).status).toBe(401);
+      }
+      const blocked = await attempt('198.51.100.24');
+      expect(blocked.status).toBe(429);
+      expect(blocked.headers.get('Retry-After')).toBeTruthy();
+      const separateClient = await attempt('198.51.100.25');
+      expect(separateClient.status).toBe(401);
+    });
+
+    it('rejects invalid JSON and oversized password payloads without executing bcrypt', async () => {
+      for (const payload of ['{invalid', JSON.stringify({ shioriId: 'a', password: 'a'.repeat(2000) })]) {
+        const response = await app.request('/api/v1/auth/password', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload,
+        }, env);
+        expect(response.status).toBe(400);
+      }
+    });
+
     it('returns 404 for non-existent itinerary', async () => {
       const authRequest = new Request('http://localhost/api/v1/auth/password', {
         method: 'POST',

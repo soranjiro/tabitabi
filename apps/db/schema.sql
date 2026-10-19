@@ -469,6 +469,15 @@ BEGIN
   WHERE id = NEW.id;
 END;
 CREATE INDEX idx_steps_source_step_id ON steps(itinerary_id, source_step_id);
+CREATE TABLE itinerary_editor_grants (
+  itinerary_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  granted_at TEXT NOT NULL,
+  PRIMARY KEY (itinerary_id, user_id),
+  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_itinerary_editor_grants_user ON itinerary_editor_grants(user_id);
 CREATE TABLE api_rate_limit_counters (
   bucket_key TEXT PRIMARY KEY,
   window_start INTEGER NOT NULL,

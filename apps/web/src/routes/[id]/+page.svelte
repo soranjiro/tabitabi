@@ -60,6 +60,7 @@
 
   // Use local state for steps to allow client-side updates (e.g. unmasking secrets)
   let steps = $state(data.steps);
+  let editAccessEpoch = $state(0);
 
   // Freeze itinerary object to prevent accidental modification
   let itinerary = $derived.by(() => {
@@ -95,21 +96,39 @@
         }
       }
 
-      // Check if we have edit permission and need to re-fetch steps to reveal secrets
-      const token =
-        auth.extractTokenFromUrl() || auth.getToken(data.itinerary.id);
-      if (token && data.itinerary.is_password_protected) {
-        // If we have a token, we might be in edit mode.
-        // If the initial load was SSR, steps might be masked.
-        // We should re-fetch to get the unmasked data.
-        // We can check if any step is hidden or just force re-fetch if secret mode is enabled.
-        if (data.itinerary.secret_settings?.enabled) {
+      // A valid edit JWT can be linked to the currently signed-in account.
+      // Bookmark synchronization above intentionally never grants edit rights.
+      const urlToken = auth.extractTokenFromUrl();
+      if (urlToken && !data.itinerary.is_shared_snapshot && !readOnly) {
+        auth.setToken(data.itinerary.id, data.itinerary.title, urlToken);
+      }
+      let token = auth.getToken(data.itinerary.id);
+      const hadLocalToken = Boolean(token);
+      if (!data.itinerary.is_shared_snapshot && !readOnly && userAuth.isLoggedIn()) {
+        if (token) {
           try {
-            const unmaskedSteps = await stepApi.list(data.itinerary.id);
-            steps = unmaskedSteps;
-          } catch (e) {
-            console.error("Failed to re-fetch steps:", e);
+            await userApi.claimEditorAccess(data.itinerary.id);
+          } catch {
+            // Expired/invalid local tokens must never create account permissions.
           }
+        }
+        try {
+          const restored = await userApi.restoreEditorAccess(data.itinerary.id);
+          token = restored.token;
+          auth.setToken(data.itinerary.id, data.itinerary.title, token);
+          // Themes decide edit visibility during mount; remount only when a
+          // fresh device has just regained its editing capability.
+          if (!hadLocalToken) editAccessEpoch += 1;
+        } catch {
+          // No saved grant: protected itineraries still require a password.
+        }
+      }
+      if (token && data.itinerary.is_password_protected) {
+        try {
+          // Server rendering may have masked secret steps before authentication.
+          steps = await stepApi.list(data.itinerary.id);
+        } catch (error) {
+          console.error("Failed to re-fetch steps:", error);
         }
       }
     };
@@ -298,7 +317,7 @@
 {:else}
   {#if copiedNotice}<p class="copy-notice" role="status">✓ 自分のしおりを作りました</p>{/if}
 
-{#key data.itinerary.theme_id}
+{#key `${data.itinerary.theme_id}:${editAccessEpoch}`}
   <ItineraryView
     {itinerary}
     {steps}

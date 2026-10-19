@@ -44,8 +44,13 @@ itineraries.post('/', optionalUserAuthMiddleware, zValidator('json', createItine
   const userId = c.get('userId');
   if (userId) {
     try {
+      // The authenticated creator receives permanent edit access even after
+      // the short-lived itinerary token disappears from this device.
       const userService = new UserService(c.env.DB);
       await userService.addBookmark(userId, data.id);
+      await c.env.DB.prepare(
+        'INSERT OR IGNORE INTO itinerary_editor_grants (itinerary_id, user_id, granted_at) VALUES (?, ?, ?)',
+      ).bind(data.id, userId, new Date().toISOString()).run();
     } catch {
       // 非致命的: しおりは作成済み、/me/sync-bookmarks で後から同期可能
     }
@@ -148,6 +153,9 @@ itineraries.post('/:id/fork', optionalUserAuthMiddleware, async (c) => {
     try {
       const userService = new UserService(c.env.DB);
       await userService.addBookmark(userId, result.itinerary.id);
+      await c.env.DB.prepare(
+        'INSERT OR IGNORE INTO itinerary_editor_grants (itinerary_id, user_id, granted_at) VALUES (?, ?, ?)',
+      ).bind(result.itinerary.id, userId, new Date().toISOString()).run();
     } catch {
       // 非致命的
     }

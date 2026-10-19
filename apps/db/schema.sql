@@ -469,3 +469,8 @@ BEGIN
   WHERE id = NEW.id;
 END;
 CREATE INDEX idx_steps_source_step_id ON steps(itinerary_id, source_step_id);
+CREATE TABLE api_rate_limit_counters (
+  bucket_key TEXT PRIMARY KEY,
+  window_start INTEGER NOT NULL,
+  hit_count INTEGER NOT NULL DEFAULT 0 CHECK (hit_count >= 0)
+);

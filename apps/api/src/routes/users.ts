@@ -4,7 +4,7 @@ import { Env, Variables } from '../utils';
 import { UserService } from '../services/user.service';
 import { ItineraryService } from '../services/itinerary.service';
 import { userAuthMiddleware, userProfileMiddleware } from '../middleware/auth';
-import { verifyToken } from '../utils/jwt';
+import { generateToken, verifyToken } from '../utils/jwt';
 import { bootstrapProfileSchema, publishItinerarySchema, syncBookmarksSchema, updateProfileSchema, updateVisibilitySchema } from '../validators';
 import { validationHook } from '../validators/hook';
 import { PublicationService, bookContentSchema } from '../services/publication.service';
@@ -29,6 +29,41 @@ async function requireProtectedItineraryEditToken(c: UserRouteContext, itinerary
   }
   return null;
 }
+
+// A saved bookmark is not an edit grant. The user must demonstrate possession
+// of a signed itinerary edit token once; thereafter Firebase authentication can
+// recover an edit token on other devices.
+users.post('/me/editor-access/:itineraryId', userAuthMiddleware, userProfileMiddleware, async c => {
+  const itineraryId = c.req.param('itineraryId');
+  const editToken = c.req.header('X-Itinerary-Token');
+  const payload = editToken ? await verifyToken(editToken, c.env.JWT_SECRET) : null;
+  if (payload?.shioriId !== itineraryId) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'A valid itinerary edit token is required' } }, 403);
+  }
+  const itinerary = await new ItineraryService(c.env.DB, c.env).get(itineraryId);
+  if (!itinerary || itinerary.source_itinerary_id) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Editable itinerary not found' } }, 404);
+  }
+  await c.env.DB.prepare(
+    'INSERT OR IGNORE INTO itinerary_editor_grants (itinerary_id, user_id, granted_at) VALUES (?, ?, ?)',
+  ).bind(itineraryId, c.get('userId')!, new Date().toISOString()).run();
+  return c.json({ success: true, data: { itinerary_id: itineraryId } }, 201);
+});
+
+users.get('/me/editor-access/:itineraryId', userAuthMiddleware, userProfileMiddleware, async c => {
+  const itineraryId = c.req.param('itineraryId');
+  const grant = await c.env.DB.prepare(`
+    SELECT 1 FROM itinerary_editor_grants grants
+    JOIN itineraries itineraries ON itineraries.id = grants.itinerary_id
+    WHERE grants.itinerary_id = ? AND grants.user_id = ?
+      AND itineraries.source_itinerary_id IS NULL
+  `).bind(itineraryId, c.get('userId')!).first();
+  if (!grant) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'No saved edit permission' } }, 403);
+  }
+  const token = await generateToken(itineraryId, c.env.JWT_SECRET);
+  return c.json({ success: true, data: { token } });
+});
 
 users.get('/me/bookmarks/:itineraryId/preview', userAuthMiddleware, userProfileMiddleware, async c => {
   const id = c.req.param('itineraryId');

@@ -46,6 +46,10 @@ export const GET: RequestHandler = async ({ url, platform, request }) => {
         window_start = excluded.window_start
       RETURNING hit_count
     `).bind(`mapbox-geocode:${hash}`, windowStart).first<{ hit_count: number }>();
+    if (Math.random() < 1 / 512) {
+      await db.prepare('DELETE FROM api_rate_limit_counters WHERE window_start < ?')
+        .bind(now - 24 * 60 * 60_000).run().catch(() => {});
+    }
     if (!row || row.hit_count > 30) {
       const retryAfter = Math.max(1, Math.ceil((windowStart + windowMs - now) / 1000));
       return json(

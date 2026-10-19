@@ -7,6 +7,11 @@ beforeAll(() => installFirebaseCertMock());
 
 async function applyMigrations(db: D1Database) {
   const migrations = [
+    `CREATE TABLE IF NOT EXISTS api_rate_limit_counters (
+      bucket_key TEXT PRIMARY KEY,
+      window_start INTEGER NOT NULL,
+      hit_count INTEGER NOT NULL DEFAULT 0 CHECK (hit_count >= 0)
+    );`,
     `CREATE TABLE IF NOT EXISTS itineraries (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -152,6 +157,7 @@ async function applyMigrations(db: D1Database) {
 describe('Itineraries API', () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
+    await env.DB.prepare('DELETE FROM api_rate_limit_counters').run();
     await env.DB.prepare('DELETE FROM steps').run();
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();
     await env.DB.prepare('DELETE FROM itinerary_money_item_splits').run();

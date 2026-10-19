@@ -483,3 +483,4 @@ CREATE TABLE api_rate_limit_counters (
   window_start INTEGER NOT NULL,
   hit_count INTEGER NOT NULL DEFAULT 0 CHECK (hit_count >= 0)
 );
+CREATE INDEX idx_api_rate_limits_window ON api_rate_limit_counters(window_start);

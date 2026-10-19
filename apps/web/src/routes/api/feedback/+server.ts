@@ -1,4 +1,6 @@
 import { env } from "$env/dynamic/private";
+import { dev } from "$app/environment";
+import type { D1Database } from "@cloudflare/workers-types";
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import {
@@ -7,42 +9,12 @@ import {
   parseFeedbackInput,
 } from "$lib/feedback/feedback";
 
-const requestHistory = new Map<string, number[]>();
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000;
-const RATE_LIMIT_MAX = 5;
-
 function isSameOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
   return !origin || origin === new URL(request.url).origin;
 }
 
-function isRateLimited(request: Request): boolean {
-  const clientId =
-    request.headers.get("cf-connecting-ip") ??
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown";
-  const now = Date.now();
-  if (requestHistory.size > 1_000) {
-    for (const [key, timestamps] of requestHistory) {
-      if (timestamps.every((timestamp) => now - timestamp >= RATE_LIMIT_WINDOW)) {
-        requestHistory.delete(key);
-      }
-    }
-  }
-  const recent = (requestHistory.get(clientId) ?? []).filter(
-    (timestamp) => now - timestamp < RATE_LIMIT_WINDOW,
-  );
-
-  if (recent.length >= RATE_LIMIT_MAX) {
-    requestHistory.set(clientId, recent);
-    return true;
-  }
-
-  requestHistory.set(clientId, [...recent, now]);
-  return false;
-}
-
-export const POST: RequestHandler = async ({ request, fetch }) => {
+export const POST: RequestHandler = async ({ request, fetch, platform }) => {
   if (!isSameOrigin(request)) {
     return json({ message: "このページから送信してください" }, { status: 403 });
   }
@@ -52,9 +24,13 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
     return json({ message: "入力内容が長すぎます" }, { status: 413 });
   }
 
+  const raw = await request.text();
+  if (raw.length > 16_000) {
+    return json({ message: "入力内容が長すぎます" }, { status: 413 });
+  }
   let feedback;
   try {
-    feedback = parseFeedbackInput(await request.json());
+    feedback = parseFeedbackInput(JSON.parse(raw));
   } catch (error) {
     const message =
       error instanceof FeedbackValidationError
@@ -67,11 +43,39 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
     return json({ issueUrl: null });
   }
 
-  if (isRateLimited(request)) {
-    return json(
-      { message: "送信回数が多いため、しばらく待ってからお試しください" },
-      { status: 429 },
-    );
+  // In-memory counters are per-instance and can be evaded by Workers/Pages
+  // instance changes. Store counters atomically in the shared Cloudflare D1 DB.
+  const db = (platform?.env as { DB?: D1Database } | undefined)?.DB;
+  if (!db && !dev) {
+    return json({ message: "現在、要望を送信できません。時間をおいてお試しください" }, { status: 503 });
+  }
+  if (db) {
+    // Only the Cloudflare-managed client IP header is trusted in production.
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
+    const ipHash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+    const now = Date.now();
+    for (const { key, max, windowMs } of [
+      { key: `feedback:ip:${ipHash}`, max: 5, windowMs: 15 * 60_000 },
+      { key: "feedback:global", max: 100, windowMs: 24 * 60 * 60_000 },
+    ]) {
+      const windowStart = Math.floor(now / windowMs) * windowMs;
+      const row = await db.prepare(`
+        INSERT INTO api_rate_limit_counters (bucket_key, window_start, hit_count)
+        VALUES (?, ?, 1)
+        ON CONFLICT(bucket_key) DO UPDATE SET
+          hit_count = CASE WHEN window_start = excluded.window_start THEN hit_count + 1 ELSE 1 END,
+          window_start = excluded.window_start
+        RETURNING hit_count
+      `).bind(key, windowStart).first<{ hit_count: number }>();
+      if (!row || row.hit_count > max) {
+        const seconds = Math.max(1, Math.ceil((windowStart + windowMs - now) / 1000));
+        return json(
+          { message: "送信回数が多いため、しばらく待ってからお試しください" },
+          { status: 429, headers: { "Retry-After": String(seconds) } },
+        );
+      }
+    }
   }
 
   const token = env.APP_GITHUB_ISSUES_TOKEN;

@@ -4,6 +4,7 @@ import app from '../src/index';
 import { PublicationService } from '../src/services/publication.service';
 
 async function applyMigrations(db: D1Database) {
+  await db.prepare('DROP TABLE IF EXISTS api_rate_limit_counters').run();
   await db.prepare('DROP TABLE IF EXISTS itinerary_fork_stats').run();
   await db.prepare('DROP TABLE IF EXISTS itinerary_money_settings').run();
   await db.prepare('DROP TABLE IF EXISTS itinerary_members').run();
@@ -12,6 +13,11 @@ async function applyMigrations(db: D1Database) {
   await db.prepare('DROP TABLE IF EXISTS itineraries').run();
 
   for (const sql of [
+    `CREATE TABLE IF NOT EXISTS api_rate_limit_counters (
+      bucket_key TEXT PRIMARY KEY,
+      window_start INTEGER NOT NULL,
+      hit_count INTEGER NOT NULL DEFAULT 0 CHECK (hit_count >= 0)
+    )`,
     `CREATE TABLE itineraries (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,

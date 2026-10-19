@@ -3,7 +3,8 @@ import { Env } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
 import { generateToken, verifyToken, extractBearerToken } from '../utils/jwt';
 import { verifyPassword } from '../utils/password';
-import type { PasswordAuthRequest } from '@tabitabi/types';
+import { z } from 'zod';
+import { consumeRateLimit, rateLimitIpKey } from '../utils/rate-limit';
 
 const auth = new Hono<{ Bindings: Env }>();
 
@@ -34,13 +35,30 @@ auth.post('/verify', async (c) => {
 });
 
 auth.post('/password', async (c) => {
-  const { shioriId, password }: PasswordAuthRequest = await c.req.json();
-
-  if (!shioriId) {
-    return c.json({
-      success: false,
-      error: { code: 'INVALID_INPUT', message: 'shioriId is required' }
-    }, 400);
+  const body = await c.req.text();
+  if (body.length > 4096) {
+    return c.json({ success: false, error: { code: 'INVALID_INPUT', message: 'Request body too large' } }, 413);
+  }
+  let input: unknown;
+  try { input = JSON.parse(body); } catch { input = null; }
+  const parsed = z.object({
+    shioriId: z.string().min(1).max(128),
+    password: z.string().max(1024).optional(),
+  }).safeParse(input);
+  if (!parsed.success) {
+    return c.json({ success: false, error: { code: 'INVALID_INPUT', message: 'Invalid password authentication request' } }, 400);
+  }
+  const { shioriId, password } = parsed.data;
+  // Check both budgets before loading an itinerary or running expensive bcrypt.
+  // Only CF-Connecting-IP is used: user supplied X-Forwarded-For is untrusted.
+  const ip = await rateLimitIpKey(c.req.header('CF-Connecting-IP') || 'unknown');
+  const globalBudget = await consumeRateLimit(c.env.DB, `auth-ip:${ip}`, 60, 10 * 60_000);
+  const itineraryBudget = globalBudget.allowed
+    ? await consumeRateLimit(c.env.DB, `auth-book:${ip}:${shioriId}`, 8, 10 * 60_000)
+    : globalBudget;
+  if (!globalBudget.allowed || !itineraryBudget.allowed) {
+    c.header('Retry-After', String(Math.max(globalBudget.retryAfterSeconds, itineraryBudget.retryAfterSeconds)));
+    return c.json({ success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Try again later.' } }, 429);
   }
 
   const service = new ItineraryService(c.env.DB);

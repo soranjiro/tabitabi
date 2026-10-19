@@ -478,3 +478,9 @@ CREATE TABLE itinerary_editor_grants (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 CREATE INDEX idx_itinerary_editor_grants_user ON itinerary_editor_grants(user_id);
+CREATE TABLE api_rate_limit_counters (
+  bucket_key TEXT PRIMARY KEY,
+  window_start INTEGER NOT NULL,
+  hit_count INTEGER NOT NULL DEFAULT 0 CHECK (hit_count >= 0)
+);
+CREATE INDEX idx_api_rate_limits_window ON api_rate_limit_counters(window_start);

@@ -43,6 +43,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Restore Turbo production build cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-deploy-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-deploy-${{ runner.os }}-
+
       - name: Generate wrangler.toml from example
         run: |
           if [ -z "${APP_GITHUB_ISSUES_TOKEN:-}" ]; then

@@ -46,7 +46,8 @@ export const updateItinerarySchema = z.object({
   tags: z.array(z.string().trim().min(1).max(24)).max(3).optional(),
   metadata_initialized: z.boolean().optional(),
   memo: z.string().optional(),
-  password: z.string().optional(),
+  // Password is fixed at creation; edits must never set, change, or remove it.
+  password: z.never().optional(),
   secret_settings: z.object({
     enabled: z.boolean(),
     offset_minutes: z.number(),

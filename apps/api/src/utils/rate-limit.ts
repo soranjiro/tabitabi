@@ -18,6 +18,12 @@ export async function consumeRateLimit(
       window_start = excluded.window_start
     RETURNING hit_count
   `).bind(key, windowStart).first<{ hit_count: number }>();
+  // Expired buckets should not accumulate indefinitely. Cleanup runs rarely
+  // and never makes a user request fail if maintenance encounters an error.
+  if (Math.random() < 1 / 512) {
+    await db.prepare('DELETE FROM api_rate_limit_counters WHERE window_start < ?')
+      .bind(now - 24 * 60 * 60_000).run().catch(() => {});
+  }
   const retryAfterSeconds = Math.max(1, Math.ceil((windowStart + windowMs - now) / 1000));
   return { allowed: Boolean(row && row.hit_count <= maxRequests), retryAfterSeconds };
 }

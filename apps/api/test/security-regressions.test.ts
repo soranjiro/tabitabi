@@ -1,10 +1,12 @@
 import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, it } from 'vitest';
 import app from '../src/index';
+import { PublicationService } from '../src/services/publication.service';
 
 async function applyMigrations(db: D1Database) {
   await db.prepare('DROP TABLE IF EXISTS itinerary_fork_stats').run();
   await db.prepare('DROP TABLE IF EXISTS itinerary_money_settings').run();
+  await db.prepare('DROP TABLE IF EXISTS itinerary_members').run();
   await db.prepare('DROP TABLE IF EXISTS itinerary_secrets').run();
   await db.prepare('DROP TABLE IF EXISTS steps').run();
   await db.prepare('DROP TABLE IF EXISTS itineraries').run();
@@ -59,6 +61,7 @@ async function applyMigrations(db: D1Database) {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )`,
+    `CREATE TABLE itinerary_members (itinerary_id TEXT NOT NULL, name TEXT NOT NULL)`,
     `CREATE TABLE itinerary_money_settings (
       itinerary_id TEXT PRIMARY KEY,
       budget_amount INTEGER,
@@ -187,4 +190,68 @@ describe('security regressions', () => {
     expect(ownerData[0].title).toBe('secret destination');
     expect(ownerData[0].location).toBe('secret location');
   });
+
+  it('rejects all attempts to set, rotate or remove an existing itinerary password', async () => {
+    const protectedBook = await createProtectedItinerary('locked');
+    for (const password of ['new-password', '']) {
+      const response = await app.request(`/api/v1/itineraries/${protectedBook.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${protectedBook.token}` },
+        body: JSON.stringify({ password }),
+      }, env);
+      expect(response.status).toBe(400);
+    }
+
+    const publicBook = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'originally unprotected' }),
+    }, env);
+    const id = (await publicBook.json() as any).data.id;
+    const setLater = await app.request(`/api/v1/itineraries/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'changed-by-collaborator' }),
+    }, env);
+    expect(setLater.status).toBe(400);
+
+    const stillProtected = await app.request('/api/v1/auth/password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shioriId: protectedBook.id, password: 'password123' }),
+    }, env);
+    expect(stillProtected.status).toBe(200);
+  });
+
+  it('masks future secret details in sanitized bookmarked previews', async () => {
+    const itinerary = await createProtectedItinerary('masked source');
+    const now = Date.now();
+    await env.DB.prepare(
+      'INSERT INTO itinerary_secrets (itinerary_id, enabled, offset_minutes, created_at, updated_at) VALUES (?, 1, 60, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+    ).bind(itinerary.id).run();
+
+    const created = await app.request('/api/v1/steps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${itinerary.token}` },
+      body: JSON.stringify({
+        itinerary_id: itinerary.id, title: 'hidden waterfall',
+        start_at: now + 4 * 60 * 60 * 1000, end_at: now + 5 * 60 * 60 * 1000,
+        location: 'hidden station', notes: 'hidden personal note',
+        pin_latitude: 35.7, pin_longitude: 139.8, is_priority: true,
+      }),
+    }, env);
+    expect(created.status).toBe(201);
+
+    // This service powers GET /users/me/bookmarks/:itineraryId/preview.
+    const preview = await new PublicationService(env.DB, env).read(itinerary.id, true);
+    expect(preview.steps).toHaveLength(1);
+    expect(preview.steps[0]).toMatchObject({
+      title: '?????', location: null, notes: '', pin_latitude: null, pin_longitude: null, is_priority: false,
+    });
+    const serialized = JSON.stringify(preview);
+    for (const secret of ['hidden waterfall', 'hidden station', 'hidden personal note']) {
+      expect(serialized).not.toContain(secret);
+    }
+  });
+
 });

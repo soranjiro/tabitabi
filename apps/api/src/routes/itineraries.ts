@@ -44,6 +44,11 @@ itineraries.post('/', optionalUserAuthMiddleware, zValidator('json', createItine
   const userId = c.get('userId');
   if (userId) {
     try {
+      // The authenticated creator receives permanent edit access even after
+      // the short-lived itinerary token disappears from this device.
+      await c.env.DB.prepare(
+        'INSERT OR IGNORE INTO itinerary_editor_grants (itinerary_id, user_id, granted_at) VALUES (?, ?, ?)',
+      ).bind(data.id, userId, new Date().toISOString()).run();
       const userService = new UserService(c.env.DB);
       await userService.addBookmark(userId, data.id);
     } catch {
@@ -146,6 +151,9 @@ itineraries.post('/:id/fork', optionalUserAuthMiddleware, async (c) => {
 
   if (userId) {
     try {
+      await c.env.DB.prepare(
+        'INSERT OR IGNORE INTO itinerary_editor_grants (itinerary_id, user_id, granted_at) VALUES (?, ?, ?)',
+      ).bind(result.itinerary.id, userId, new Date().toISOString()).run();
       const userService = new UserService(c.env.DB);
       await userService.addBookmark(userId, result.itinerary.id);
     } catch {

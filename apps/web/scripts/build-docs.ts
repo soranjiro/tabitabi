@@ -11,9 +11,9 @@ const PROJECT_ROOT = path.resolve(__dirname, '../../..');
 const DOCS_SRC = path.join(PROJECT_ROOT, 'docs');
 const DOCS_DEST = path.join(PROJECT_ROOT, 'apps/web/static/docs');
 
-if (!fs.existsSync(DOCS_DEST)) {
-  fs.mkdirSync(DOCS_DEST, { recursive: true });
-}
+// Remove stale pages when documentation is deleted or moved.
+fs.rmSync(DOCS_DEST, { recursive: true, force: true });
+fs.mkdirSync(DOCS_DEST, { recursive: true });
 
 function escapeHtml(value: string): string {
   return value
@@ -32,7 +32,7 @@ marked.use({
   renderer: {
     code({ text, lang }) {
       if (lang === 'mermaid') {
-        return `<div class="mermaid">${escapeHtml(text)}</div>`;
+        return `<pre><code class="language-mermaid">${escapeHtml(text)}</code></pre>`;
       }
       return `<pre><code class="language-${normalizeCodeLanguage(lang)}">${escapeHtml(text)}</code></pre>`;
     }
@@ -46,7 +46,12 @@ function getFiles(dir: string): string[] {
   });
 }
 
-const allFiles = getFiles(DOCS_SRC).filter(file => file.endsWith('.md'));
+// Only pages intended for end users may be published under /docs.
+const allFiles = getFiles(DOCS_SRC).filter(file => {
+  if (!file.endsWith('.md')) return false;
+  const relativePath = path.relative(DOCS_SRC, file);
+  return relativePath === 'index.md' || relativePath.startsWith('user' + path.sep);
+});
 
 interface SearchItem {
   id: string;
@@ -64,7 +69,6 @@ interface NavItem {
 
 const SECTION_LABELS: Record<string, string> = {
   user: '使い方ガイド',
-  developer: '開発者ガイド',
   features: '機能一覧',
   common: '共通機能',
   home: 'ホーム画面',
@@ -112,7 +116,7 @@ function buildNavTree(): NavItem[] {
     });
   });
 
-  const dirs = ['user', 'developer'];
+  const dirs = ['user'];
   dirs.forEach(dir => {
     const dirPath = path.join(DOCS_SRC, dir);
     if (!fs.existsSync(dirPath)) return;
@@ -220,9 +224,7 @@ function buildNavTree(): NavItem[] {
   });
 
   const userItem = dirMap.get('user');
-  const developerItem = dirMap.get('developer');
   if (userItem) tree.unshift(userItem);
-  if (developerItem) tree.splice(userItem ? 1 : 0, 0, developerItem);
 
   return tree;
 }
@@ -309,10 +311,10 @@ const template = (title: string, content: string, nav: string, pageNav: string, 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="たびたびの使い方と開発情報をまとめた公式ドキュメントです。">
+  <meta name="description" content="たびたびのしおりの作成・編集・共有など、アプリの使い方を説明します。">
   <meta name="theme-color" content="#fffdf9">
   <link rel="canonical" href="https://tabitabi.pages.dev${toUrlPath(currentPath)}">
-  <title>${escapeHtml(title)} - たびたび ドキュメント</title>
+  <title>${escapeHtml(title)} - たびたびの使い方</title>
   <style>
     :root {
       --ink: #15243c;
@@ -864,13 +866,13 @@ const template = (title: string, content: string, nav: string, pageNav: string, 
           <span class="nav-brand-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h18M14 6l7 6-7 6M8 9l-3 3 3 3"/></svg>
           </span>
-          <span>たびたび Docs</span>
+          <span>たびたびの使い方</span>
         </a>
         <button class="mobile-nav-toggle" id="mobile-nav-toggle" type="button" aria-controls="docs-navigation" aria-expanded="false">目次</button>
       </div>
       <div class="search-wrap" role="search">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input type="search" id="search-input" class="search-box" placeholder="ドキュメントを検索" aria-label="ドキュメントを検索" autocomplete="off">
+        <input type="search" id="search-input" class="search-box" placeholder="使い方を検索" aria-label="使い方を検索" autocomplete="off">
         <div id="search-results" aria-live="polite"></div>
       </div>
     </div>
@@ -891,11 +893,6 @@ const template = (title: string, content: string, nav: string, pageNav: string, 
   <button class="scroll-top" id="scroll-top" type="button" aria-label="ページ上部へ戻る">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
   </button>
-  <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
-    mermaid.init(undefined, document.querySelectorAll('.mermaid'));
-  </script>
   <script>
     const sidebar = document.getElementById('docs-sidebar');
     const mobileNavToggle = document.getElementById('mobile-nav-toggle');

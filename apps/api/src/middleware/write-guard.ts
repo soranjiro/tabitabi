@@ -22,7 +22,7 @@ async function exceedsBodyLimit(request: Request): Promise<boolean> {
       if (done) return false;
       bytes += value.byteLength;
       if (bytes > MAX_WRITE_BYTES) {
-        await reader.cancel();
+        void reader.cancel().catch(() => {});
         return true;
       }
     }

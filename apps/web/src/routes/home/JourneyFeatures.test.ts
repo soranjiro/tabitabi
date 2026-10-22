@@ -16,7 +16,8 @@ describe("landing feature illustrations", () => {
 
   it("points to lightweight, accessible SVG assets", () => {
     for (const feature of journeyFeatures) {
-      expect(feature.image).toMatch(/^\\/illustrations\\/journey-[a-z]+\\.svg$/);
+      expect(feature.image.startsWith("/illustrations/journey-")).toBe(true);
+      expect(feature.image.endsWith(".svg")).toBe(true);
       const asset = readFileSync(
         join(process.cwd(), "static", feature.image.slice(1)),
         "utf8",

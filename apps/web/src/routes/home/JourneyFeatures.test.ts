@@ -18,7 +18,7 @@ describe("landing feature illustrations", () => {
     const images = [...container.querySelectorAll<HTMLImageElement>(".feature-art")];
     expect(images).toHaveLength(5);
     expect(images.every((image) => image.getAttribute("alt") === "")).toBe(true);
-    expect(images.every((image) => image.loading === "lazy")).toBe(true);
+    expect(images.every((image) => image.getAttribute("loading") === "lazy")).toBe(true);
     expect(images.every((image) => image.getAttribute("width") === "840")).toBe(true);
     expect(images.every((image) => image.getAttribute("height") === "420")).toBe(true);
   });

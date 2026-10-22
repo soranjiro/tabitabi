@@ -4,6 +4,8 @@
 
 実際に使ってみる https://tabitabi.pages.dev
 
+使い方 https://tabitabi.pages.dev/docs
+
 ## 主な機能
 
 ### 1. しおりの作成

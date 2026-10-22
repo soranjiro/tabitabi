@@ -1,19 +1,11 @@
 <script lang="ts">
-  // The original three-scene drawing lives in JourneySteps.svelte.
-  // These lightweight SVGs continue its story without adding raster image weight.
-  const features = [
-    { title: "地図で計画", image: "/illustrations/journey-map.svg" },
-    { title: "好きなデザインに", image: "/illustrations/journey-design.svg" },
-    { title: "持ち物をチェック", image: "/illustrations/journey-packing.svg" },
-    { title: "お金を管理", image: "/illustrations/journey-money.svg" },
-    { title: "時間までひみつ", image: "/illustrations/journey-secret.svg" },
-  ] as const;
+  import { journeyFeatures } from "./JourneyFeatures.data";
 </script>
 
 <!-- A single column is intentional at every viewport size: the thread and reading
      order stay intact instead of breaking into cards on desktop or mobile. -->
 <ol class="feature-scenes" start="4">
-  {#each features as feature (feature.title)}
+  {#each journeyFeatures as feature (feature.title)}
     <li class="feature-scene">
       <svg class="connecting-thread" viewBox="0 0 840 116" fill="none" aria-hidden="true">
         <path d="M420 0 C409 30 442 42 475 58 C535 88 453 102 420 116" />

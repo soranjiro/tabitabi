@@ -1,9 +1,5 @@
-<script lang="ts">
-  import JourneyFeatures from "./JourneyFeatures.svelte";
-</script>
-
 <section class="journey-section" aria-labelledby="journey-title">
-  <h2 id="journey-title" class="sr-only">たびたびでできること</h2>
+  <h2 id="journey-title" class="sr-only">つくって、送って、みんなで見る。</h2>
 
   <div class="journey-inner">
     <!-- Keep the illustrations and connecting line in one coordinate system so
@@ -101,7 +97,6 @@
     </ol>
   </div>
 
-  <JourneyFeatures />
 </section>
 
 <style>

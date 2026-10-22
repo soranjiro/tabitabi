@@ -16,7 +16,7 @@ if (missing.length > 0) {
   console.error('Missing required web build environment variables:');
   for (const name of missing) console.error(`  - ${name}`);
   console.error('\nCopy the values from Firebase Console into apps/web/.env.');
-  console.error('See internal-docs/developer/account-auth.md for setup details.');
+  console.error('See docs/developer/account-auth.md for setup details.');
   process.exit(1);
 }
 

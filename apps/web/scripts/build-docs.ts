@@ -32,7 +32,7 @@ marked.use({
   renderer: {
     code({ text, lang }) {
       if (lang === 'mermaid') {
-        return `<pre><code class="language-mermaid">${escapeHtml(text)}</code></pre>`;
+        return `<div class="mermaid">${escapeHtml(text)}</div>`;
       }
       return `<pre><code class="language-${normalizeCodeLanguage(lang)}">${escapeHtml(text)}</code></pre>`;
     }
@@ -46,11 +46,11 @@ function getFiles(dir: string): string[] {
   });
 }
 
-// Only pages intended for end users may be published under /docs.
+// /docs publishes the user guide and developer guide, but not incident or migration records.
 const allFiles = getFiles(DOCS_SRC).filter(file => {
   if (!file.endsWith('.md')) return false;
   const relativePath = path.relative(DOCS_SRC, file);
-  return relativePath === 'index.md' || relativePath.startsWith('user' + path.sep);
+  return relativePath === 'index.md' || ['user', 'developer'].some(section => relativePath.startsWith(section + path.sep));
 });
 
 interface SearchItem {
@@ -69,6 +69,7 @@ interface NavItem {
 
 const SECTION_LABELS: Record<string, string> = {
   user: '使い方ガイド',
+  developer: '開発者ガイド',
   features: '機能一覧',
   common: '共通機能',
   home: 'ホーム画面',
@@ -116,7 +117,7 @@ function buildNavTree(): NavItem[] {
     });
   });
 
-  const dirs = ['user'];
+  const dirs = ['user', 'developer'];
   dirs.forEach(dir => {
     const dirPath = path.join(DOCS_SRC, dir);
     if (!fs.existsSync(dirPath)) return;
@@ -224,7 +225,9 @@ function buildNavTree(): NavItem[] {
   });
 
   const userItem = dirMap.get('user');
-  if (userItem) tree.unshift(userItem);
+  const developerItem = dirMap.get('developer');
+  if (userItem) tree.push(userItem);
+  if (developerItem) tree.push(developerItem);
 
   return tree;
 }
@@ -304,6 +307,14 @@ function generatePrevNextHtml(prev: NavItem | null, next: NavItem | null): strin
   html += '</nav>';
   return html;
 }
+
+const mermaidScript = `
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+    mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+  </script>
+`;
 
 const template = (title: string, content: string, nav: string, pageNav: string, currentPath: string) => `
 <!DOCTYPE html>
@@ -893,6 +904,7 @@ const template = (title: string, content: string, nav: string, pageNav: string, 
   <button class="scroll-top" id="scroll-top" type="button" aria-label="ページ上部へ戻る">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
   </button>
+  ${content.includes('class="mermaid"') ? mermaidScript : ''}
   <script>
     const sidebar = document.getElementById('docs-sidebar');
     const mobileNavToggle = document.getElementById('mobile-nav-toggle');

@@ -49,8 +49,12 @@ export async function protectApiWrites(
       { key: `write-ip:${ipHash}`, max: 240, windowMs: 60_000 },
     ];
 
-    if ((c.req.method === 'POST' && c.req.path === '/api/v1/itineraries')
-      || (c.req.method === 'POST' && /^\/api\/v1\/itineraries\/[^/]+\/fork$/.test(c.req.path))) {
+    if (c.req.method === 'POST' && (
+      c.req.path === '/api/v1/itineraries'
+      || /^\/api\/v1\/itineraries\/[^/]+\/(fork|publish)$/.test(c.req.path)
+      || /^\/api\/v1\/users\/me\/bookmarks\/[^/]+\/publication\/(content|restore)$/.test(c.req.path)
+      || c.req.path === '/api/v1/users/me/sync-bookmarks'
+    )) {
       budgets.push({ key: `write-create:${ipHash}`, max: 60, windowMs: 60 * 60_000 });
     }
     for (const budget of budgets) {

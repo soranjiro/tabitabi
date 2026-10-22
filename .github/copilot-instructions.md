@@ -1,6 +1,6 @@
 # Development
 
-You must follow and read all of the development rules in `docs/developer/*.md` and `docs/*`.
+You must follow and read all of the development rules in `docs/developer/*.md`, `internal-docs/*.md`, and `docs/user/*.md`.
 
 When testing or checking ui, use playwright and demo data.
 

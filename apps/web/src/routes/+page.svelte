@@ -8,7 +8,7 @@
   import CreateForm from "./home/CreateForm.svelte";
   import RecentItineraries from "./home/RecentItineraries.svelte";
   import Footer from "./home/Footer.svelte";
-  import JourneySteps from "./home/JourneySteps.svelte";
+  import JourneyPoster from "./home/JourneyPoster.svelte";
   import IconAirplane from "./home/icons/IconAirplane.svelte";
   import ItineraryCarousel from "./home/ItineraryCarousel.svelte";
   import { previews } from "./home/landing-previews";
@@ -286,7 +286,7 @@
     </div>
   </section>
 
-  <JourneySteps />
+  <JourneyPoster />
 
   <section id="create" class="create-section" aria-labelledby="create-title">
     <div class="section-inner">

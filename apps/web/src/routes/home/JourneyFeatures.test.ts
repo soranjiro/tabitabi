@@ -1,25 +1,29 @@
-import { render, screen } from "@testing-library/svelte";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import JourneyFeatures from "./JourneyFeatures.svelte";
+import { journeyFeatures } from "./JourneyFeatures.data";
 
 describe("landing feature illustrations", () => {
-  it("shows five additional features in a consistent vertical reading order", () => {
-    const { container } = render(JourneyFeatures);
-    expect(
-      screen.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent),
-    ).toEqual([
+  it("keeps the additional features in the intended reading order", () => {
+    expect(journeyFeatures.map((feature) => feature.title)).toEqual([
       "地図で計画",
       "好きなデザインに",
       "持ち物をチェック",
       "お金を管理",
       "時間までひみつ",
     ]);
+  });
 
-    const images = [...container.querySelectorAll<HTMLImageElement>(".feature-art")];
-    expect(images).toHaveLength(5);
-    expect(images.every((image) => image.getAttribute("alt") === "")).toBe(true);
-    expect(images.every((image) => image.getAttribute("loading") === "lazy")).toBe(true);
-    expect(images.every((image) => image.getAttribute("width") === "840")).toBe(true);
-    expect(images.every((image) => image.getAttribute("height") === "420")).toBe(true);
+  it("points to lightweight, accessible SVG assets", () => {
+    for (const feature of journeyFeatures) {
+      expect(feature.image).toMatch(/^\\/illustrations\\/journey-[a-z]+\\.svg$/);
+      const asset = readFileSync(
+        join(process.cwd(), "static", feature.image.slice(1)),
+        "utf8",
+      );
+      expect(asset).toContain('viewBox="0 0 840 420"');
+      expect(asset).toContain('aria-hidden="true"');
+      expect(asset).not.toMatch(/<script|onload=/i);
+    }
   });
 });

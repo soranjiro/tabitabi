@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { Env } from './utils';
 import { corsMiddleware } from './middleware/cors';
+import { protectApiWrites } from './middleware/write-guard';
 import auth from './routes/auth';
 import itineraries from './routes/itineraries';
 import backgrounds from './routes/backgrounds';
@@ -14,6 +15,7 @@ import packing from './routes/packing';
 const app = new Hono<{ Bindings: Env }>();
 
 app.use('*', corsMiddleware);
+app.use('/api/v1/*', protectApiWrites);
 
 app.get('/health', (c) => {
   return c.json({ status: 'ok', service: 'tabitabi-api' });

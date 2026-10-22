@@ -2,6 +2,7 @@ import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, it } from 'vitest';
 import app from '../src/index';
 import { PublicationService } from '../src/services/publication.service';
+import { rateLimitIpKey } from '../src/utils/rate-limit';
 
 async function applyMigrations(db: D1Database) {
   await db.prepare('DROP TABLE IF EXISTS api_rate_limit_counters').run();
@@ -258,6 +259,84 @@ describe('security regressions', () => {
     for (const secret of ['hidden waterfall', 'hidden station', 'hidden personal note']) {
       expect(serialized).not.toContain(secret);
     }
+  });
+
+
+  it('rate-limits itinerary creation across requests using shared D1 counters', async () => {
+    const ip = '198.51.100.42';
+    const hash = await rateLimitIpKey(ip);
+    const windowMs = 60 * 60_000;
+    const windowStart = Math.floor(Date.now() / windowMs) * windowMs;
+    await env.DB.prepare(
+      'INSERT INTO api_rate_limit_counters (bucket_key, window_start, hit_count) VALUES (?, ?, 60)',
+    ).bind(`write-create:${hash}`, windowStart).run();
+
+    const blocked = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': ip },
+      body: JSON.stringify({ title: 'Blocked creation' }),
+    }, env);
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get('Retry-After')).toBeTruthy();
+    expect((await blocked.json() as any).error.code).toBe('RATE_LIMITED');
+
+    const otherIp = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '198.51.100.43' },
+      body: JSON.stringify({ title: 'Another visitor' }),
+    }, env);
+    expect(otherIp.status).toBe(201);
+  });
+
+  it('rejects an oversized body even without a Content-Length header', async () => {
+    const response = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Excessive memo', memo: 'x'.repeat(2 * 1024 * 1024) }),
+    }, env);
+    expect(response.status).toBe(413);
+    expect((await response.json() as any).error.code).toBe('PAYLOAD_TOO_LARGE');
+  });
+
+  it('rejects oversized step text and malformed JSON without changing existing data', async () => {
+    const book = await createProtectedItinerary('step validation');
+    const oversized = await app.request('/api/v1/steps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${book.token}` },
+      body: JSON.stringify({
+        itinerary_id: book.id, title: 'ok', notes: 'x'.repeat(100001),
+        start_at: null, end_at: null,
+      }),
+    }, env);
+    expect(oversized.status).toBe(400);
+
+    const malformed = await app.request('/api/v1/steps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{not-json',
+    }, env);
+    expect(malformed.status).toBe(400);
+    const count = await env.DB.prepare('SELECT COUNT(*) AS n FROM steps WHERE itinerary_id = ?')
+      .bind(book.id).first<{ n: number }>();
+    expect(count?.n).toBe(0);
+  });
+
+  it('rejects oversized memo, non-finite secret offsets and oversized batch edits', async () => {
+    const invalid = await app.request('/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Bad offset', secret_settings: { enabled: true, offset_minutes: -1 } }),
+    }, env);
+    expect(invalid.status).toBe(400);
+
+    const book = await createProtectedItinerary('batch validation');
+    const response = await app.request('/api/v1/steps/batch-date', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${book.token}` },
+      body: JSON.stringify({ itinerary_id: book.id, updates: Array.from({ length: 1001 }, (_, i) =>
+        ({ id: String(i), start_at: 10000, end_at: 20000 })) }),
+    }, env);
+    expect(response.status).toBe(400);
   });
 
 });

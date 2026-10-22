@@ -265,6 +265,12 @@
     else showPacking = false;
   }
 
+  function openMemberSettings(feature: 'money' | 'packing') {
+    if (!hasEditPermission || isSharedSnapshot) return;
+    closeFeature(feature);
+    showSettingsDialog = true;
+  }
+
   async function onPasswordAuth(password: string) {
     await handlePasswordAuth({
       shioriId: itinerary.id,
@@ -637,6 +643,7 @@
     requestedEditItemId={requestedMoneyItemId}
     onEditItemOpened={() => (requestedMoneyItemId = null)}
     onViewStep={openStepFromMoney}
+    onOpenMemberSettings={() => openMemberSettings('money')}
     onClose={() => closeFeature('money')}
   />
 
@@ -657,6 +664,7 @@
       show={showPacking}
       itineraryId={itinerary.id}
       canEdit={hasEditPermission && !isSharedSnapshot}
+      onOpenMemberSettings={() => openMemberSettings('packing')}
       onClose={() => closeFeature('packing')}
     />
   {/if}

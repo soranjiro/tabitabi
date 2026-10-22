@@ -14,9 +14,10 @@
     requestedEditItemId?: string | null;
     onEditItemOpened?: () => void;
     onViewStep?: (step: Step) => void;
+    onOpenMemberSettings: () => void;
     onClose: () => void;
   }
-  let { show, itineraryId, canEdit, steps = [], requestedEditItemId = null, onEditItemOpened, onViewStep, onClose }: Props = $props();
+  let { show, itineraryId, canEdit, steps = [], requestedEditItemId = null, onEditItemOpened, onViewStep, onOpenMemberSettings, onClose }: Props = $props();
 
   let data = $state<MoneyData>({ budget_amount: null, members: [], items: [], fund_transactions: [] });
   let loading = $state(false);
@@ -616,6 +617,14 @@
       {#if loading}<p class="standard-money-status">読み込み中…</p>
       {:else if error}<p class="standard-money-status">{error}</p>
       {:else}
+        {#if !data.members.length}
+          <div class="standard-money-members-required">
+            <p>旅行メンバーを追加すると、立替と精算額を管理できます。</p>
+            {#if canEdit}
+              <button type="button" onclick={onOpenMemberSettings}>メンバーを追加 <span aria-hidden="true">→</span></button>
+            {/if}
+          </div>
+        {/if}
         {#if canEdit}
           <details class="standard-money-setup" bind:open={settingsOpen}>
             <summary>お金の設定 <small>予算・共同基金</small></summary>
@@ -690,8 +699,7 @@
               {/if}
             </section>
           {/if}
-          {#if !data.members.length}<p class="standard-money-empty">メンバーを追加すると、立替と精算額を自動で計算します。</p>
-          {:else}
+          {#if data.members.length}
             <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><button class="standard-money-member-history" onclick={() => openMemberHistory(member.id)} aria-label={`${member.name}の旅行中の取引履歴を見る`}><strong>{member.name}</strong><span>履歴を見る</span></button><span class="standard-money-trip-total">旅行での支出合計 <b>{formatYen(member.tripTotal)}</b></span></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>
           {/if}
         {:else}
@@ -766,7 +774,7 @@
               </div>
             </section>
           {/if}
-          {#if !editorOpen && !data.items.length}<p class="standard-money-empty">支出を追加すると、立替と精算額を自動で計算します。</p>
+          {#if !editorOpen && !data.items.length && data.members.length}<p class="standard-money-empty">支出を追加すると、立替と精算額を自動で計算します。</p>
           {:else if !editorOpen}
             <div class="standard-money-item-list">
               {#each data.items as item}

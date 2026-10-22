@@ -12,11 +12,11 @@ export function mayCacheOffline(
     || request.headers.has('Authorization') || request.cache === 'no-store') return false;
 
   const url = new URL(request.url);
-  if (!['http:', 'https:'].includes(url.protocol) || url.origin !== origin) return false;
+  if (!['http:', 'https:'].includes(url.protocol) || url.origin !== origin || url.search) return false;
   if (buildAssets.has(url.pathname)) return true;
 
   // Public, non-personalized images. Query-bearing assets are deliberately
   // excluded so signed URLs and sensitive query strings never enter storage.
-  return !url.search && /^\/(?:hero|itinerary-backgrounds)\//.test(url.pathname)
+  return /^\/(?:hero|itinerary-backgrounds)\//.test(url.pathname)
     && /\.(?:avif|webp|png|jpe?g|gif|svg)$/i.test(url.pathname);
 }

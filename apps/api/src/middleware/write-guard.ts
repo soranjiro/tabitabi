@@ -7,9 +7,9 @@ import { consumeRateLimit, rateLimitIpKey } from '../utils/rate-limit';
 const MAX_WRITE_BYTES = 2 * 1024 * 1024;
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-async function exceedsBodyLimit(request: Request): Promise<boolean> {
+async function exceedsBodyLimit(request: Request, maxBytes: number): Promise<boolean> {
   const length = request.headers.get('Content-Length');
-  if (length && Number(length) > MAX_WRITE_BYTES) return true;
+  if (length && Number(length) > maxBytes) return true;
   if (!request.body) return false;
 
   // Read from a clone so downstream route handlers can parse the original.
@@ -21,7 +21,7 @@ async function exceedsBodyLimit(request: Request): Promise<boolean> {
       const { done, value } = await reader.read();
       if (done) return false;
       bytes += value.byteLength;
-      if (bytes > MAX_WRITE_BYTES) {
+      if (bytes > maxBytes) {
         void reader.cancel().catch(() => {});
         return true;
       }
@@ -37,14 +37,13 @@ export async function protectApiWrites(
 ): Promise<Response | void> {
   if (!WRITE_METHODS.has(c.req.method)) return next();
 
-  // Password verification is already guarded by stricter, account-specific
-  // D1 budgets and has its own 4 KiB input limit.
-  if (c.req.path === '/api/v1/auth/password') return next();
-
+  // Password verification has stricter, account-specific budgets, but still
+  // needs a streaming body bound before c.req.text() materializes it.
+  const isPasswordAuth = c.req.path === '/api/v1/auth/password';
   const clientIp = c.req.header('CF-Connecting-IP');
   // Unit tests without a Cloudflare edge header share one test database.
   // Production never trusts client-supplied X-Forwarded-For for IP identity.
-  if (clientIp || c.env.ENVIRONMENT !== 'test') {
+  if (!isPasswordAuth && (clientIp || c.env.ENVIRONMENT !== 'test')) {
     const ipHash = await rateLimitIpKey(clientIp || 'unknown');
     const budgets: Array<{ key: string; max: number; windowMs: number }> = [
       { key: `write-ip:${ipHash}`, max: 240, windowMs: 60_000 },
@@ -66,10 +65,11 @@ export async function protectApiWrites(
     }
   }
 
-  if (await exceedsBodyLimit(c.req.raw)) {
+  const maxBytes = isPasswordAuth ? 4096 : MAX_WRITE_BYTES;
+  if (await exceedsBodyLimit(c.req.raw, maxBytes)) {
     return c.json({
       success: false,
-      error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request body exceeds 2 MiB' },
+      error: { code: 'PAYLOAD_TOO_LARGE', message: isPasswordAuth ? 'Request body exceeds 4 KiB' : 'Request body exceeds 2 MiB' },
     }, 413);
   }
   return next();

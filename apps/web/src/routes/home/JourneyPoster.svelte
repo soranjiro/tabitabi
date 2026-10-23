@@ -1,5 +1,5 @@
-<!-- Both layouts use vector paths traced from the same original poster.
-     The mobile asset reflows only the original middle three scenes. -->
+<!-- Both layouts use hand-authored, smooth SVG strokes rather than traced pixels.
+     The mobile artwork retains only the middle three scenes. -->
 <section class="feature-poster" aria-labelledby="feature-poster-heading">
   <h2 id="feature-poster-heading" class="sr-only">たびたびでできること</h2>
   <picture class="poster-picture">
@@ -8,7 +8,7 @@
       srcset="/illustrations/tabitabi-feature-poster-mobile.svg"
       type="image/svg+xml"
       width="500"
-      height="1620"
+      height="1660"
     />
     <img
       class="poster-image"

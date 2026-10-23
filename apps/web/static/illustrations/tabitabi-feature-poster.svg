@@ -24,7 +24,7 @@
 <circle cx="47" cy="115" r="4"/><circle cx="207" cy="153" r="4"/><circle cx="297" cy="152" r="4"/>
 <path d="M126 128 L169 118 L171 161 L128 171 Z M132 158 L146 142 L155 151 L160 145 L167 152"/>
 <path d="M45 192 L91 202 M42 207 L76 213 M293 192 L336 200 M291 204 L329 213 M247 61 L251 37 M266 68 L285 50 M279 82 L308 74"/></g>
-<g transform="translate(438 479) scale(1.02)"><g transform="rotate(-9 163 148)">
+<g transform="translate(454 474) scale(.89)"><g transform="rotate(-9 163 148)">
 <rect x="116" y="63" width="125" height="206" rx="21"/><rect x="125" y="71" width="108" height="190" rx="17"/>
 <path d="M158 83 L199 83"/><rect x="140" y="110" width="78" height="71" rx="3"/>
 <path d="M149 167 L166 143 L182 159 L191 153 L208 168"/><circle cx="198" cy="131" r="6"/>

@@ -1,38 +1,51 @@
-import { readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const posterDir = join(process.cwd(), "static", "illustrations");
+const illustrations = join(process.cwd(), "static", "illustrations");
+const readSvg = (name: string) => readFileSync(join(illustrations, name), "utf8");
 
-describe("landing poster vector artwork", () => {
-  it("uses real SVG paths rather than embedded raster images", () => {
-    for (const name of ["tabitabi-feature-poster.svg", "tabitabi-feature-poster-mobile.svg"]) {
-      const file = join(posterDir, name);
-      const svg = readFileSync(file, "utf8");
+describe("landing poster handwritten line art", () => {
+  const desktopName = "tabitabi-feature-poster.svg";
+  const mobileName = "tabitabi-feature-poster-mobile.svg";
 
+  it("ships small, standalone, vector-only illustrations", () => {
+    for (const name of [desktopName, mobileName]) {
+      const svg = readSvg(name);
       expect(svg.startsWith("<svg ")).toBe(true);
-      expect(svg).toContain("<path");
-      expect(svg).not.toMatch(/<image\\b|<foreignObject\\b|data:image|<script\\b/i);
-      expect(statSync(file).size).toBeLessThan(2_000_000);
+      expect(svg).toContain('shape-rendering="geometricPrecision"');
+      expect(svg).toContain('stroke-linecap="round"');
+      expect(svg).toContain('stroke-linejoin="round"');
+      expect(svg).toMatch(/d="[^"]*[CQ][^"]*"/);
+      expect(svg).not.toMatch(/<image\b|<polygon\b|fill-rule=|data:image|<script\b/i);
+      expect(statSync(join(illustrations, name)).size).toBeLessThan(30_000);
     }
+    expect(existsSync(join(illustrations, "tabitabi-feature-poster.webp"))).toBe(false);
   });
 
-  it("preserves the original desktop proportion and mobile's three vector crops", () => {
-    const desktop = readFileSync(join(posterDir, "tabitabi-feature-poster.svg"), "utf8");
-    const mobile = readFileSync(join(posterDir, "tabitabi-feature-poster-mobile.svg"), "utf8");
-
+  it("preserves the full desktop composition and mobile's three featured scenes", () => {
+    const desktop = readSvg(desktopName);
+    const mobile = readSvg(mobileName);
     expect(desktop).toContain('viewBox="0 0 1208 1302"');
-    expect(mobile).toContain('viewBox="0 0 500 1620"');
-    expect((mobile.match(/<clipPath/g) ?? []).length).toBe(3);
-    expect((mobile.match(/<use /g) ?? []).length).toBe(3);
-    expect(mobile).toContain('stroke-linecap="round"');
+    expect(mobile).toContain('viewBox="0 0 500 1660"');
+    for (const title of ["多彩なデザイン", "SNSで共有", "お金・持ち物の管理"]) {
+      expect(desktop).toContain(title);
+      expect(mobile).toContain(title);
+    }
+    for (const title of ["しおりを作る", "シークレットモード", "いつでも、どこでも"]) {
+      expect(desktop).toContain(title);
+      expect(mobile).not.toContain(title);
+    }
+    expect((desktop.match(/<path /g) ?? []).length).toBeGreaterThan(40);
+    expect((mobile.match(/<path /g) ?? []).length).toBeGreaterThan(20);
   });
 
-  it("serves only the selected responsive image to the browser", () => {
+  it("switches sources responsively without loading both posters", () => {
     const component = readFileSync(join(process.cwd(), "src", "routes", "home", "JourneyPoster.svelte"), "utf8");
     expect(component).toContain('<picture class="poster-picture">');
     expect(component).toContain('media="(max-width: 900px)"');
     expect(component).toContain('srcset="/illustrations/tabitabi-feature-poster-mobile.svg"');
     expect(component).toContain('src="/illustrations/tabitabi-feature-poster.svg"');
+    expect(component).toContain('height="1660"');
   });
 });

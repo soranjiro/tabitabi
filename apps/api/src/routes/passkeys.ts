@@ -33,12 +33,17 @@ function settings(env: Env): PasskeySettings | null {
   // Never infer this from an untrusted Host/Origin header or CORS wildcard.
   if (!env.PASSKEY_ORIGIN || !env.PASSKEY_RP_ID || !env.FIREBASE_PROJECT_ID ||
       !env.FIREBASE_SERVICE_ACCOUNT_EMAIL || !env.FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY) return null;
-  const origin = new URL(env.PASSKEY_ORIGIN);
-  if (origin.origin !== env.PASSKEY_ORIGIN || (
-    origin.protocol !== 'https:' && !(origin.protocol === 'http:' && origin.hostname === 'localhost')
-  )) return null;
-  if (origin.hostname !== env.PASSKEY_RP_ID && !origin.hostname.endsWith('.' + env.PASSKEY_RP_ID)) return null;
-  return { origin: origin.origin, rpID: env.PASSKEY_RP_ID };
+  try {
+    const origin = new URL(env.PASSKEY_ORIGIN);
+    if (origin.origin !== env.PASSKEY_ORIGIN || (
+      origin.protocol !== 'https:' && !(origin.protocol === 'http:' && origin.hostname === 'localhost')
+    )) return null;
+    if (origin.hostname !== env.PASSKEY_RP_ID && !origin.hostname.endsWith('.' + env.PASSKEY_RP_ID)) return null;
+    return { origin: origin.origin, rpID: env.PASSKEY_RP_ID };
+  } catch {
+    // Misconfiguration must disable passkeys, not break the login screen.
+    return null;
+  }
 }
 
 const invalid = (c: any, message = 'Invalid or expired passkey request') =>

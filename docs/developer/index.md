@@ -31,7 +31,8 @@ pnpm dev
 | [機能開発](feature-development.md) | データ、API、Webをまたぐ機能追加 |
 | [テーマ開発](theme-development.md) | テーマや表示の追加・変更 |
 | [テスト](testing.md) | テスト方針と実行方法 |
-| [ドキュメントデザイン](docs-design-guidelines.md) | `/docs` の情報設計と表現ルール |
+| [依存関係のセキュリティ](dependency-security.md) | ライブラリ更新時の確認事項 |
+| [ドキュメントデザイン](docs-design-guidelines.md) | 公開する使い方ガイドの情報設計と表現ルール |
 
 ## ドキュメント更新の原則
 

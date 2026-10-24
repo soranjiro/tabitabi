@@ -13,6 +13,32 @@ function parseToUnixMs(value: unknown): number | null {
   return null;
 }
 
+/**
+ * Reject malformed and oversized step fields before they can reach D1.
+ * Preserve all existing optional step fields and the public editor payload.
+ */
+function invalidStepInput(value: unknown, creating: boolean): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return true;
+  const data = value as Record<string, unknown>;
+  if (creating && (typeof data.itinerary_id !== 'string' || !data.itinerary_id || data.itinerary_id.length > 128)) return true;
+  if (creating && (typeof data.title !== 'string' || !data.title.trim())) return true;
+
+  for (const [name, max] of [
+    ['title', 200], ['location', 1000], ['notes', 100000],
+    ['link', 2048], ['type', 64],
+  ] as const) {
+    const field = data[name];
+    if (field !== undefined && field !== null && (typeof field !== 'string' || field.length > max)) return true;
+  }
+  if (data.title === '') return true;
+  for (const name of ['time_unspecified', 'is_all_day', 'is_priority'] as const) {
+    if (data[name] !== undefined && typeof data[name] !== 'boolean') return true;
+  }
+  if (data.sort_order !== undefined && data.sort_order !== null
+    && (typeof data.sort_order !== 'number' || !Number.isFinite(data.sort_order))) return true;
+  return false;
+}
+
 steps.get('/', async (c) => {
   const itineraryId = c.req.query('itinerary_id');
 
@@ -77,9 +103,10 @@ steps.get('/:stepId', async (c) => {
 });
 
 steps.post('/', async (c) => {
-  const raw = await c.req.json();
+  let raw: any;
+  try { raw = await c.req.json(); } catch { raw = null; }
 
-  if (!raw.itinerary_id || !raw.title) {
+  if (invalidStepInput(raw, true)) {
     return c.json({
       success: false,
       error: { code: 'VALIDATION_ERROR', message: 'itinerary_id and title are required' }
@@ -129,7 +156,8 @@ steps.post('/', async (c) => {
 
 steps.put('/batch-date', async (c) => {
   const raw = await c.req.json<{ itinerary_id?: unknown; updates?: unknown }>();
-  if (typeof raw.itinerary_id !== 'string' || !Array.isArray(raw.updates) || raw.updates.length === 0) {
+  if (typeof raw.itinerary_id !== 'string' || raw.itinerary_id.length > 128
+    || !Array.isArray(raw.updates) || raw.updates.length === 0 || raw.updates.length > 1000) {
     return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'itinerary_id and one or more date updates are required' } }, 400);
   }
   const updates = raw.updates.map((update: any) => ({
@@ -137,7 +165,9 @@ steps.put('/batch-date', async (c) => {
     start_at: parseToUnixMs(update?.start_at),
     end_at: parseToUnixMs(update?.end_at),
   }));
-  if (updates.some((update) => !update.id || update.start_at === null || update.end_at === null || update.end_at < update.start_at)) {
+  if (updates.some((update) => !update.id || update.id.length > 128
+    || update.start_at === null || update.end_at === null || update.end_at < update.start_at)
+    || new Set(updates.map(update => update.id)).size !== updates.length) {
     return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Each update needs a valid id, start_at and end_at' } }, 400);
   }
   const itineraryService = new ItineraryService(c.env.DB);
@@ -160,7 +190,11 @@ steps.put('/batch-date', async (c) => {
 
 steps.put('/:stepId', async (c) => {
   const stepId = c.req.param('stepId');
-  const raw = await c.req.json();
+  let raw: any;
+  try { raw = await c.req.json(); } catch { raw = null; }
+  if (invalidStepInput(raw, false)) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid step fields' } }, 400);
+  }
   const service = new StepService(c.env.DB);
 
   const existingStep = await service.get(stepId);

@@ -21,14 +21,14 @@ export const createItinerarySchema = z.object({
     .string({ error: 'title is required' })
     .min(1, 'title is required')
     .max(100, 'title must be at most 100 characters'),
-  theme_id: z.string().optional(),
+  theme_id: z.string().max(64).optional(),
   palette_id: z.string().min(1).max(32).optional(),
   packing_enabled: z.boolean().optional(),
-  memo: z.string().optional(),
-  password: z.string().optional(),
+  memo: z.string().max(100000).optional(),
+  password: z.string().max(1024).optional(),
   secret_settings: z.object({
     enabled: z.boolean(),
-    offset_minutes: z.number(),
+    offset_minutes: z.number().int().min(0).max(10080),
   }).optional(),
 });
 
@@ -45,11 +45,12 @@ export const updateItinerarySchema = z.object({
   areas: z.array(z.string().trim().min(1).max(16)).max(3).optional(),
   tags: z.array(z.string().trim().min(1).max(24)).max(3).optional(),
   metadata_initialized: z.boolean().optional(),
-  memo: z.string().optional(),
-  password: z.string().optional(),
+  memo: z.string().max(100000).optional(),
+  // Password is fixed at creation; edits must never set, change, or remove it.
+  password: z.never().optional(),
   secret_settings: z.object({
     enabled: z.boolean(),
-    offset_minutes: z.number(),
+    offset_minutes: z.number().int().min(0).max(10080),
   }).nullable().optional(),
 });
 

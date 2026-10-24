@@ -491,3 +491,18 @@ CREATE TABLE passkey_challenges (
 );
 CREATE INDEX idx_passkey_challenges_expires ON passkey_challenges(expires_at);
 CREATE INDEX idx_passkey_challenges_user ON passkey_challenges(user_id, action);
+CREATE TABLE itinerary_editor_grants (
+  itinerary_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  granted_at TEXT NOT NULL,
+  PRIMARY KEY (itinerary_id, user_id),
+  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_itinerary_editor_grants_user ON itinerary_editor_grants(user_id);
+CREATE TABLE api_rate_limit_counters (
+  bucket_key TEXT PRIMARY KEY,
+  window_start INTEGER NOT NULL,
+  hit_count INTEGER NOT NULL DEFAULT 0 CHECK (hit_count >= 0)
+);
+CREATE INDEX idx_api_rate_limits_window ON api_rate_limit_counters(window_start);

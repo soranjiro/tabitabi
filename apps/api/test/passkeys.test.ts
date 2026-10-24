@@ -30,6 +30,10 @@ async function tables() {
     id TEXT PRIMARY KEY, action TEXT NOT NULL, user_id TEXT, challenge TEXT NOT NULL,
     expires_at INTEGER NOT NULL, created_at INTEGER NOT NULL
   )`).run();
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS api_rate_limit_counters (
+    bucket_key TEXT PRIMARY KEY, window_start INTEGER NOT NULL,
+    hit_count INTEGER NOT NULL DEFAULT 0 CHECK(hit_count >= 0)
+  )`).run();
 }
 
 function post(path: string, data: object, token?: string, customEnv = configuredEnv()) {

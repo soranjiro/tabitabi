@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="240" viewBox="0 0 360 240" fill="none" stroke="#30302d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <title>旅のしおりをスマートフォンから友達に共有</title>
+  <g transform="rotate(-8 177 134)">
+    <rect fill="#fbf9f5" x="127" y="52" width="104" height="161" rx="14"/>
+    <path d="M139 73H219V190H139ZM166 62H193M171 202H187"/>
+    <rect x="149" y="86" width="60" height="52" rx="3"/>
+    <path d="M155 128L171 108L183 121L192 113L203 128M151 151H205M151 162H193M151 173H178"/>
+    <circle cx="195" cy="99" r="4"/>
+  </g>
+  <circle fill="#fbf9f5" cx="222" cy="190" r="29"/>
+  <path d="M206 188L239 175L226 207L218 195L206 188ZM218 195L239 175"/>
+  <path d="M72 49C49 48 44 70 57 81C63 87 73 88 80 86L94 98L90 81C108 67 95 47 72 49Z"/>
+  <path d="M64 65C64 57 74 57 76 63C80 56 90 60 87 67C84 73 76 78 76 78S64 71 64 65Z"/>
+  <circle cx="278" cy="64" r="26"/><circle cx="278" cy="58" r="8"/>
+  <path d="M263 80C266 66 290 66 293 80M268 127C268 113 281 105 296 107C312 108 322 120 316 132C312 141 302 145 289 143L276 153L279 138C272 136 268 132 268 127Z"/>
+  <circle cx="284" cy="126" r="1"/><circle cx="294" cy="126" r="1"/><circle cx="304" cy="126" r="1"/>
+  <path d="M95 188C67 188 60 170 70 162C82 153 94 168 84 175C69 184 52 173 43 180M112 46L109 35M242 116L250 109"/>
+</svg>

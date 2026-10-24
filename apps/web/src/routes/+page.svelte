@@ -18,6 +18,11 @@
   let previewIndex = $state(data.previewIndex ?? 0);
   const preview = $derived(previews[previewIndex] ?? previews[0]!);
 
+  let posterElement = $state<HTMLDivElement | null>(null);
+  let createElement = $state<HTMLElement | null>(null);
+  let posterVisible = $state(false);
+  let createVisible = $state(false);
+
   let loggedIn = $state(false);
   let menuOpen = $state(false);
   let recentItineraries = $state<
@@ -139,7 +144,17 @@
     preloadedImages.add(preview.image);
     queueNeighborPreload(previewIndex);
 
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === posterElement) posterVisible = entry.isIntersecting;
+        if (entry.target === createElement) createVisible = entry.isIntersecting;
+      }
+    });
+    if (posterElement) observer.observe(posterElement);
+    if (createElement) observer.observe(createElement);
+
     return () => {
+      observer.disconnect();
       if (undoTimer) clearTimeout(undoTimer);
       cancelNeighborPreload();
     };
@@ -286,26 +301,31 @@
     </div>
   </section>
 
-  <JourneyPoster />
+  <div bind:this={posterElement}>
+    <JourneyPoster />
+  </div>
 
-  <section id="create" class="create-section" aria-labelledby="create-title">
+  {#if posterVisible && !createVisible}
+    <a
+      class="mobile-create"
+      href="#create"
+      onclick={(event) => {
+        event.preventDefault();
+        scrollToCreate();
+      }}
+    >しおりを作る <span aria-hidden="true">→</span></a>
+  {/if}
+
+  <section id="create" class="create-section" aria-labelledby="create-title" bind:this={createElement}>
     <div class="section-inner">
       <div class="create-heading">
-        <svg
-          class="form-thread"
-          viewBox="0 0 620 112"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <path
-            pathLength="1"
-            d="M310 0C310 20 608 10 608 48C608 90 359 86 325 98C314 102 310 104 310 112"
-          />
-        </svg>
-        <h2 id="create-title">次の旅を、つくろう。</h2>
+        <h2 id="create-title">{recentItineraries.length > 0 ? "今度はどこ行く？" : "まずは作ってみよう"}</h2>
       </div>
 
       <CreateForm />
+      <p class="example-link">
+        <a href="/explore">作られたしおりの例を見てみる <span aria-hidden="true">›</span></a>
+      </p>
 
       {#if recentItineraries.length > 0 || removedHistoryEntry}
         <div class="recent-wrapper">
@@ -566,22 +586,6 @@
     place-items: center;
     text-align: center;
   }
-  .form-thread {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-  .form-thread path {
-    fill: none;
-    stroke: #1c1c1c;
-    stroke-width: 1.6;
-    stroke-linecap: round;
-    stroke-dasharray: none;
-    stroke-dashoffset: 0;
-    vector-effect: non-scaling-stroke;
-  }
   .create-heading h2 {
     position: relative;
     z-index: 1;
@@ -592,6 +596,45 @@
     font-size: clamp(26px, 3.5vw, 36px);
     font-weight: 400;
     letter-spacing: 0.04em;
+  }
+  .example-link {
+    margin: 24px 0 0;
+    text-align: center;
+    font-size: 14px;
+  }
+  .example-link a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    gap: 8px;
+    color: var(--home-action);
+    text-underline-offset: 4px;
+  }
+  .mobile-create {
+    display: none;
+  }
+  @media (max-width: 767px) {
+    .mobile-create {
+      position: fixed;
+      z-index: 20;
+      right: max(16px, env(safe-area-inset-right));
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      display: inline-flex;
+      min-height: 48px;
+      padding: 12px 20px;
+      align-items: center;
+      gap: 14px;
+      border-radius: 999px;
+      color: white;
+      background: var(--home-action);
+      box-shadow: 0 4px 18px rgba(30, 45, 58, 0.22);
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .mobile-create:hover {
+      background: var(--home-action-hover);
+    }
   }
   .recent-wrapper {
     margin-top: 36px;

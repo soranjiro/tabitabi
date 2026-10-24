@@ -62,3 +62,66 @@ API側では、トークン検証に必要なプロジェクト情報を環境�
 ## ドキュメント方針
 
 アカウント移行の手順、過去の認証方式、特定リリースのデプロイ順序はこのページへ残しません。現行の認証フローと開発時に必要な設定だけを記載します。
+
+## パスキー認証（導入段階）
+
+既存の Firebase Authentication のメール・パスワードログインを残しつつ、アカウントに
+WebAuthn（パスキー）を追加登録できます。パスキーでのログイン成功時は、**既存の Firebase UID** に対する
+Firebase Custom Token を Workers が発行します。D1 の `users.id` やしおりの紐付けは変更しません。
+
+- Web: `@simplewebauthn/browser`（ユーザー操作でのみ読み込み）
+- API: `@simplewebauthn/server` による Origin、RP ID、Challenge、署名、ユーザー検証の検証
+- D1: `user_passkeys`（公開鍵、カウンター、Credential ID）、`passkey_challenges`（一回限り、5分）
+- パスキー追加・削除には **直近10分以内** の Firebase ログインが必要
+- ログインオプションは discoverable credentials を使うためメールアドレス入力不要
+- 確認済みメールとプロフィールの存在をログイン許可条件として維持
+- 既存のしおり編集パスワードと JWT は一切変更しない
+
+### デプロイ設定（必須）
+
+D1 migration `20261016000000_add_user_passkeys.sql` を **API 公開前に** 適用します。
+
+Workers の環境変数（`[vars]`）:
+
+| 変数 | 設定例 | 注意 |
+| --- | --- | --- |
+| `PASSKEY_ORIGIN` | `https://tabitabi.pages.dev` | Web の完全一致 Origin（末尾スラッシュなし） |
+| `PASSKEY_RP_ID` | `tabitabi.pages.dev` | ドメイン移行時に再登録が必要になる可能性 |
+| `FIREBASE_PROJECT_ID` | 既存 Firebase project ID | 既存設定を流用 |
+
+Workers の secret（**絶対にソースや公開環境変数に含めない**）:
+
+| secret | 説明 |
+| --- | --- |
+| `FIREBASE_SERVICE_ACCOUNT_EMAIL` | Firebase プロジェクトのサービスアカウント email |
+| `FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY` | JWT RS256 署名用 PEM private key |
+
+ローカルでも上記を設定します（`wrangler secret put`、ローカルの `.dev.vars` 等）。
+Firebase コンソールでサービスアカウントの運用権限と鍵のローテーションを管理してください。
+証明書や公開 Web API Key では Custom Token の署名はできません。
+
+**Cloudflare Pages のプレビュー用ランダムサブドメインを本番 RP ID と共用しないでください。**
+`PASSKEY_ORIGIN` が一致しないプレビュー環境ではパスキーを無効化し、
+必要なら固定ホスト名の専用テスト環境を用意します。カスタムドメイン導入を予定しているなら、
+本番パスキーを配布する前にドメインを確定してください。
+
+`/api/v1/passkeys/` 配下の POST / DELETE には、共通の書き込み保護に加えて
+**D1 に保存する IP 別レート制限（30回/分・200回/時間）** と **32 KiB のリクエスト上限** を適用します。
+これは `20261020010000_api_rate_limits.sql` のテーブルに依存するため、上記パスキー用 migration とともに
+API 公開前に適用してください。テストでは制限超過時の HTTP 429 と大きな JSON の HTTP 413 を検証します。
+
+`POST /api/v1/passkeys/login/options` は匿名でアクセスできます。
+D1 への大量書き込みをさらに抑えるため、Cloudflare WAF のレート制限も別途設定し、
+チャレンジ発行量を監視してください。パスキー追加・削除には既存 Firebase トークンと
+直近のログインが必要です。
+
+### 検証項目
+
+- iOS Safari、Android Chrome、Windows Hello/macOS のパスキー登録・ログイン
+- キャンセル、未対応端末、鍵削除、別端末への同期、サインアウト直後の再ログイン
+- Origin/RP ID 不一致、期限切れ・再利用チャレンジ、異なるアカウントの鍵、古いログイン
+- 未確認メールのアカウントがパスキーでログインできないこと
+- Cloudflare Workers 上での Firebase Custom Token 発行と既存 UID の維持
+- しおり閲覧・共同編集・パスワード付き編集の既存フローへの影響がないこと
+
+パスキーのみの新規登録やメールアドレス必須制約の廃止は **この PR の対象外** です。

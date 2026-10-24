@@ -2,6 +2,7 @@ import { env } from 'cloudflare:test';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import app from '../src/index';
 import { insertVerifiedUser, installFirebaseCertMock } from './helpers/firebase-auth';
+import { rateLimitIpKey } from '../src/utils/rate-limit';
 
 beforeAll(() => installFirebaseCertMock());
 
@@ -85,6 +86,48 @@ describe('Passkey endpoints', () => {
       ...configuredEnv(), FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY: undefined,
     });
     expect((await missing.json() as { data: { available: boolean } }).data.available).toBe(false);
+  });
+
+
+  it('disables passkeys for an invalid origin without crashing the availability endpoint', async () => {
+    const response = await app.request('/api/v1/passkeys/availability', {}, {
+      ...configuredEnv(), PASSKEY_ORIGIN: 'not a valid URL',
+    });
+    expect(response.status).toBe(200);
+    expect((await response.json() as { data: { available: boolean } }).data.available).toBe(false);
+  });
+
+  it('limits anonymous login options by IP before creating challenges', async () => {
+    const ip = '198.51.100.90';
+    const hash = await rateLimitIpKey(ip);
+    const windowMs = 60_000;
+    const windowStart = Math.floor(Date.now() / windowMs) * windowMs;
+    await env.DB.prepare(
+      'INSERT INTO api_rate_limit_counters (bucket_key, window_start, hit_count) VALUES (?, ?, 30) ON CONFLICT(bucket_key) DO UPDATE SET window_start = excluded.window_start, hit_count = excluded.hit_count',
+    ).bind(`passkey-minute:${hash}`, windowStart).run();
+
+    const before = await env.DB.prepare('SELECT COUNT(*) AS n FROM passkey_challenges')
+      .first<{ n: number }>();
+    const blocked = await app.request('/api/v1/passkeys/login/options', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': ip },
+      body: '{}',
+    }, configuredEnv());
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get('Retry-After')).toBeTruthy();
+    expect((await blocked.json() as { error: { code: string } }).error.code).toBe('RATE_LIMITED');
+    const after = await env.DB.prepare('SELECT COUNT(*) AS n FROM passkey_challenges')
+      .first<{ n: number }>();
+    expect(after?.n).toBe(before?.n);
+  });
+
+  it('rejects oversized anonymous WebAuthn payloads', async () => {
+    const blocked = await post('/login/verify', {
+      challengeId: 'oversized',
+      response: { id: 'x'.repeat(32_768) },
+    });
+    expect(blocked.status).toBe(413);
+    expect((await blocked.json() as { error: { code: string } }).error.code).toBe('PAYLOAD_TOO_LARGE');
   });
 
   it('requires verified Firebase auth to register a passkey', async () => {

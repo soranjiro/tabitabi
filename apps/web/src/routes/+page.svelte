@@ -18,9 +18,9 @@
   let previewIndex = $state(data.previewIndex ?? 0);
   const preview = $derived(previews[previewIndex] ?? previews[0]!);
 
-  let posterElement = $state<HTMLDivElement | null>(null);
+  let scrollY = $state(0);
   let createElement = $state<HTMLElement | null>(null);
-  let posterVisible = $state(false);
+  let createAhead = $state(true);
   let createVisible = $state(false);
 
   let loggedIn = $state(false);
@@ -146,11 +146,12 @@
 
     const observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
-        if (entry.target === posterElement) posterVisible = entry.isIntersecting;
-        if (entry.target === createElement) createVisible = entry.isIntersecting;
+        if (entry.target === createElement) {
+          createVisible = entry.isIntersecting;
+          createAhead = entry.boundingClientRect.top > 0;
+        }
       }
     });
-    if (posterElement) observer.observe(posterElement);
     if (createElement) observer.observe(createElement);
 
     return () => {
@@ -160,6 +161,8 @@
     };
   });
 </script>
+
+<svelte:window bind:scrollY />
 
 <svelte:head>
   <title>たびたび - 旅の予定を、ひとつに。</title>
@@ -301,11 +304,9 @@
     </div>
   </section>
 
-  <div bind:this={posterElement}>
-    <JourneyPoster />
-  </div>
+  <JourneyPoster />
 
-  {#if posterVisible && !createVisible}
+  {#if scrollY > 80 && createAhead && !createVisible}
     <a
       class="mobile-create"
       href="#create"

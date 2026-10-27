@@ -146,7 +146,7 @@ jobs:
             exit 1
           fi
           cp wrangler.toml.example wrangler.toml
-          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const replacements = { PLACEHOLDER_DATABASE_ID: process.env.PREVIEW_DATABASE_ID, PLACEHOLDER_PREVIEW_SECRET: process.env.JWT_SECRET, "your-firebase-project-id": process.env.PUBLIC_FIREBASE_PROJECT_ID, "database_name = \"tabitabi\"": `database_name = "${process.env.PREVIEW_DB_NAME}"` }; let config = fs.readFileSync(path, "utf8"); for (const [from, to] of Object.entries(replacements)) config = config.replaceAll(from, to); fs.writeFileSync(path, config);'
+          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const replacements = { PLACEHOLDER_DATABASE_ID: process.env.PREVIEW_DATABASE_ID, "your-firebase-project-id": process.env.PUBLIC_FIREBASE_PROJECT_ID, "database_name = \"tabitabi\"": `database_name = "${process.env.PREVIEW_DB_NAME}"` }; let config = fs.readFileSync(path, "utf8"); for (const [from, to] of Object.entries(replacements)) config = config.replaceAll(from, to); fs.writeFileSync(path, config);'
         env:
           PREVIEW_DATABASE_ID: ${{ steps.preview-db.outputs.database_id }}
 
@@ -158,11 +158,20 @@ jobs:
         working-directory: apps/api
         run: node scripts/d1-migrate.mjs seed --remote --env preview
 
-      - name: Deploy API to preview environment
+      - name: Deploy API to preview environment with encrypted JWT binding
         working-directory: apps/api
+        shell: bash
         run: |
+          set -euo pipefail
+          if [ -z "${JWT_SECRET:-}" ]; then
+            echo "::error::PREVIEW_JWT_SECRET GitHub secret is not available" >&2
+            exit 1
+          fi
           WORKER_NAME="tabitabi-api-preview-pr-${PR_NUMBER}"
-          pnpm wrangler deploy --name ${WORKER_NAME} --env preview
+          secrets_file="$RUNNER_TEMP/tabitabi-preview-api-secrets.json"
+          trap 'rm -f "$secrets_file"' EXIT
+          node -e 'const fs = require("node:fs"); fs.writeFileSync(process.argv[1], JSON.stringify({ JWT_SECRET: process.env.JWT_SECRET }), { mode: 0o600 });' "$secrets_file"
+          pnpm wrangler deploy --name "$WORKER_NAME" --env preview --secrets-file "$secrets_file"
 
       - name: Get API preview URL
         id: api-url

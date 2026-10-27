@@ -34,19 +34,21 @@ export const entries: EntryGenerator = () => {
 
 export const load: PageServerLoad = async ({ params, url }) => {
 	const docPath = params.path || 'index';
+	const cleanPath = docPath.endsWith('.html') ? docPath.slice(0, -5) : docPath;
 
-	// Redirect .html URLs to clean URLs
-	// Check both the path parameter and the actual URL
+	// Validate the catch-all input before using it for either redirects or disk reads.
+	const docsRoot = path.join(process.cwd(), 'static', 'docs');
+	const staticDocsPath = resolveContainedHtmlPath(docsRoot, cleanPath);
+	if (!staticDocsPath) {
+		throw error(404, 'Documentation page not found');
+	}
+
+	// Redirect .html URLs to clean URLs only after the path is known to be safe.
 	if (docPath.endsWith('.html') || url.pathname.endsWith('.html')) {
-		const cleanPath = docPath.endsWith('.html') ? docPath.slice(0, -5) : docPath;
 		throw redirect(301, `/docs/${cleanPath}`);
 	}
 
-	// Keep catch-all route input inside the generated documentation directory.
-	const docsRoot = path.join(process.cwd(), 'static', 'docs');
-	const staticDocsPath = resolveContainedHtmlPath(docsRoot, docPath);
-
-	if (!staticDocsPath || !fs.existsSync(staticDocsPath)) {
+	if (!fs.existsSync(staticDocsPath)) {
 		throw error(404, 'Documentation page not found');
 	}
 

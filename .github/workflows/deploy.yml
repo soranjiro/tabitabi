@@ -69,7 +69,7 @@ jobs:
             exit 1
           fi
           cp wrangler.toml.example wrangler.toml
-          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const replacements = { PLACEHOLDER_DATABASE_ID: process.env.CLOUDFLARE_DATABASE_ID, PLACEHOLDER_PROD_SECRET: process.env.JWT_SECRET, "your-firebase-project-id": process.env.PUBLIC_FIREBASE_PROJECT_ID }; let config = fs.readFileSync(path, "utf8"); for (const [from, to] of Object.entries(replacements)) config = config.replaceAll(from, to); fs.writeFileSync(path, config);'
+          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const replacements = { PLACEHOLDER_DATABASE_ID: process.env.CLOUDFLARE_DATABASE_ID, "your-firebase-project-id": process.env.PUBLIC_FIREBASE_PROJECT_ID }; let config = fs.readFileSync(path, "utf8"); for (const [from, to] of Object.entries(replacements)) config = config.replaceAll(from, to); fs.writeFileSync(path, config);'
 
       - name: Build all packages
         run: pnpm run build
@@ -135,9 +135,21 @@ jobs:
 
       # Production intentionally does NOT execute apps/db/migrations/seed.sql.
 
-      - name: Deploy API (Workers)
+      - name: Deploy API (Workers) with encrypted JWT binding
         working-directory: apps/api
-        run: pnpm wrangler deploy --env production
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${JWT_SECRET:-}" ]; then
+            echo "::error::JWT_SECRET GitHub secret is not available" >&2
+            exit 1
+          fi
+          # Wrangler uploads this as an encrypted secret in the same deploy;
+          # never interpolate the signing key into plaintext wrangler.toml.
+          secrets_file="$RUNNER_TEMP/tabitabi-api-secrets.json"
+          trap 'rm -f "$secrets_file"' EXIT
+          node -e 'const fs = require("node:fs"); fs.writeFileSync(process.argv[1], JSON.stringify({ JWT_SECRET: process.env.JWT_SECRET }), { mode: 0o600 });' "$secrets_file"
+          pnpm wrangler deploy --env production --secrets-file "$secrets_file"
 
       - name: Deploy Web (Pages)
         run: pnpm wrangler pages deploy apps/web/.svelte-kit/cloudflare --project-name=tabitabi --branch=main --commit-message="$(git log -1 --format=%H)"

@@ -2,6 +2,7 @@ import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, EntryGenerator } from './$types';
 import fs from 'node:fs';
 import path from 'node:path';
+import { resolveContainedHtmlPath } from '$lib/server/security';
 
 // Generate all documentation page entries for prerendering
 export const entries: EntryGenerator = () => {
@@ -41,11 +42,11 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		throw redirect(301, `/docs/${cleanPath}`);
 	}
 
-	// Construct the file path
-	const staticDocsPath = path.join(process.cwd(), 'static', 'docs', `${docPath}.html`);
+	// Keep catch-all route input inside the generated documentation directory.
+	const docsRoot = path.join(process.cwd(), 'static', 'docs');
+	const staticDocsPath = resolveContainedHtmlPath(docsRoot, docPath);
 
-	// Check if file exists
-	if (!fs.existsSync(staticDocsPath)) {
+	if (!staticDocsPath || !fs.existsSync(staticDocsPath)) {
 		throw error(404, 'Documentation page not found');
 	}
 

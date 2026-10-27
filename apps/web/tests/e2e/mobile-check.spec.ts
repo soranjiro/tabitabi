@@ -17,7 +17,7 @@ test.describe("Responsive home page", () => {
     await expect(page.locator(".hero-stage")).toBeVisible();
     await expect(page.locator(".shiori-preview.active")).toBeVisible();
     await expect(page.locator(".preview-photo")).toHaveCount(0);
-    await expect(page.locator(".journey-section")).toBeVisible();
+    await expect(page.locator(".feature-poster")).toBeVisible();
     await expect(page.locator(".create-section")).toBeVisible();
 
     const heroPosition = await page
@@ -27,7 +27,7 @@ test.describe("Responsive home page", () => {
 
     const viewport = page.viewportSize();
     const heroBox = await page.locator(".hero-stage").boundingBox();
-    const journeyBox = await page.locator(".journey-section").boundingBox();
+    const journeyBox = await page.locator(".feature-poster").boundingBox();
     expect(viewport).not.toBeNull();
     expect(heroBox).not.toBeNull();
     expect(journeyBox).not.toBeNull();
@@ -283,12 +283,12 @@ test.describe("Responsive home page", () => {
       "true",
     );
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.locator(".journey-section").scrollIntoViewIfNeeded();
+    await page.locator(".feature-poster").scrollIntoViewIfNeeded();
 
     await expect(page.locator(".journey-art")).toBeVisible();
     await expect(page.locator(".story-line")).toHaveCount(4);
     await expect(page.locator(".journey-step")).toHaveCount(0);
-    const journey = page.locator(".journey-section");
+    const journey = page.locator(".feature-poster");
     await expect(journey.locator(".create-label")).toHaveText("しおりを作る");
     await expect(journey.locator(".share-label")).toHaveText("SNSで共有");
     await expect(journey.locator(".view-label")).toHaveText("みんなで見る");

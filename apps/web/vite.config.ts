@@ -24,6 +24,11 @@ export default defineConfig({
   server: {
     port: 5173
   },
+  // SvelteKit 2.x preview on Windows is vulnerable when exposed to untrusted
+  // clients. Keep the preview server loopback-only by default until Kit 3.
+  preview: {
+    host: '127.0.0.1'
+  },
   build: {
     cssCodeSplit: true,
     cssMinify: true,

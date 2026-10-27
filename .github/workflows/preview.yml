@@ -222,7 +222,9 @@ jobs:
       - resolve-preview
       - deploy-preview
     if: needs.deploy-preview.result == 'success'
-    runs-on: ubuntu-latest
+    # Playwright 1.57 does not provide chromium-headless-shell for Ubuntu 26.04.
+    # Pin the smoke runner until the browser toolchain supports that image.
+    runs-on: ubuntu-24.04
     env:
       PR_NUMBER: ${{ needs.resolve-preview.outputs.pr_number }}
     steps:

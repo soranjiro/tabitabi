@@ -23,7 +23,6 @@ name = "tabitabi-api"
 
 [env.production.vars]
 ALLOWED_ORIGINS = "https://tabitabi.pages.dev"
-JWT_SECRET = "PLACEHOLDER_PROD_SECRET"
 FIREBASE_PROJECT_ID = "your-firebase-project-id"
 ENVIRONMENT = "production"
 
@@ -40,7 +39,6 @@ migrations_dir = "../db/migrations/sql"
 
 [env.preview.vars]
 ALLOWED_ORIGINS = "*"
-JWT_SECRET = "PLACEHOLDER_PREVIEW_SECRET"
 FIREBASE_PROJECT_ID = "your-firebase-project-id"
 ENVIRONMENT = "preview"
 

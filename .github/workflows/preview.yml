@@ -128,15 +128,10 @@ jobs:
 
       - name: Generate wrangler.toml from example
         run: |
-          if [ -z "${APP_GITHUB_ISSUES_TOKEN:-}" ]; then
-            echo "::error::APP_GITHUB_ISSUES_TOKEN GitHub secret is not available"
-            exit 1
-          fi
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${{ steps.preview-db.outputs.database_id }}/g" wrangler.toml
           sed -i "s/database_name = \"tabitabi\"/database_name = \"${PREVIEW_DB_NAME}\"/g" wrangler.toml
           sed -i "s/PLACEHOLDER_PR_NUMBER/${PR_NUMBER}/g" wrangler.toml
-          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const token = JSON.stringify(process.env.APP_GITHUB_ISSUES_TOKEN ?? ""); fs.writeFileSync(path, fs.readFileSync(path, "utf8").replaceAll("\"PLACEHOLDER_GITHUB_ISSUES_TOKEN\"", token));'
 
       - name: Generate API wrangler.toml from example
         working-directory: apps/api
@@ -186,6 +181,16 @@ jobs:
           PUBLIC_FIREBASE_APP_ID: ${{ secrets.PUBLIC_FIREBASE_APP_ID }}
           PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN }}
           PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}
+
+      - name: Configure encrypted Pages feedback token (preview)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${APP_GITHUB_ISSUES_TOKEN:-}" ]; then
+            echo "::error::APP_GITHUB_ISSUES_TOKEN GitHub secret is not available" >&2
+            exit 1
+          fi
+          printf '%s' "$APP_GITHUB_ISSUES_TOKEN" | pnpm wrangler pages secret put APP_GITHUB_ISSUES_TOKEN --project-name=tabitabi --env preview
 
       - name: Deploy Web to Pages preview
         id: pages-deploy

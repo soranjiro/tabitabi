@@ -28,3 +28,20 @@ test('production and preview deploy JWT through encrypted Wrangler secret files'
     assert.doesNotMatch(config, /PLACEHOLDER_(?:PROD|PREVIEW)_SECRET/);
   }
 });
+
+test('Pages feedback GitHub token is an encrypted binding, not a plaintext var', () => {
+  const config = read('wrangler.toml.example');
+  assert.doesNotMatch(config, /^\s*APP_GITHUB_ISSUES_TOKEN\s*=/m);
+  assert.doesNotMatch(config, /PLACEHOLDER_GITHUB_ISSUES_TOKEN/);
+
+  for (const [workflow, environment] of [
+    ['deploy.yml', 'production'],
+    ['preview.yml', 'preview'],
+  ]) {
+    const content = read(`.github/workflows/${workflow}`);
+    assert.match(content, /printf '%s' "\$APP_GITHUB_ISSUES_TOKEN" \| pnpm wrangler pages secret put/);
+    assert.ok(content.includes(`wrangler pages secret put APP_GITHUB_ISSUES_TOKEN --project-name=tabitabi --env ${environment}`));
+    assert.match(content, /wrangler pages deploy/);
+    assert.doesNotMatch(content, /PLACEHOLDER_GITHUB_ISSUES_TOKEN/);
+  }
+});

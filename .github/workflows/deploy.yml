@@ -53,13 +53,8 @@ jobs:
 
       - name: Generate wrangler.toml from example
         run: |
-          if [ -z "${APP_GITHUB_ISSUES_TOKEN:-}" ]; then
-            echo "::error::APP_GITHUB_ISSUES_TOKEN GitHub secret is not available"
-            exit 1
-          fi
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${CLOUDFLARE_DATABASE_ID}/g" wrangler.toml
-          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const token = JSON.stringify(process.env.APP_GITHUB_ISSUES_TOKEN ?? ""); fs.writeFileSync(path, fs.readFileSync(path, "utf8").replaceAll("\"PLACEHOLDER_GITHUB_ISSUES_TOKEN\"", token));'
 
       - name: Generate API wrangler.toml from example
         working-directory: apps/api
@@ -150,6 +145,16 @@ jobs:
           trap 'rm -f "$secrets_file"' EXIT
           node -e 'const fs = require("node:fs"); fs.writeFileSync(process.argv[1], JSON.stringify({ JWT_SECRET: process.env.JWT_SECRET }), { mode: 0o600 });' "$secrets_file"
           pnpm wrangler deploy --env production --secrets-file "$secrets_file"
+
+      - name: Configure encrypted Pages feedback token (production)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${APP_GITHUB_ISSUES_TOKEN:-}" ]; then
+            echo "::error::APP_GITHUB_ISSUES_TOKEN GitHub secret is not available" >&2
+            exit 1
+          fi
+          printf '%s' "$APP_GITHUB_ISSUES_TOKEN" | pnpm wrangler pages secret put APP_GITHUB_ISSUES_TOKEN --project-name=tabitabi --env production
 
       - name: Deploy Web (Pages)
         run: pnpm wrangler pages deploy apps/web/.svelte-kit/cloudflare --project-name=tabitabi --branch=main --commit-message="$(git log -1 --format=%H)"

@@ -728,16 +728,16 @@
       <section class="account-actions" aria-label="アカウント操作">
         <button type="button" onclick={() => showAccount = !showAccount} aria-expanded={showAccount}>
           <span class="action-icon" aria-hidden="true"><AppIcon name="user" size={20} /></span>
-          <span><strong>アカウント設定</strong><small>プロフィール・メールなど</small></span>
+          <span><strong>アカウント設定</strong><small>プロフィール・ログイン方法</small></span>
         </button>
         <button type="button" onclick={openShareSettings}>
           <span class="action-icon" aria-hidden="true"><AppIcon name="share" size={20} /></span>
           <span><strong>共有設定</strong><small>共有中のしおりを管理</small></span>
         </button>
-        <button type="button" class="logout-action" onclick={requestLogout}>
-          <span class="action-icon" aria-hidden="true"><AppIcon name="logout" size={20} /></span>
-          <span><strong>ログアウト</strong><small>アカウントからサインアウト</small></span>
-        </button>
+        <a class="public-profile-action" href="/users/{account?.username}">
+          <span class="action-icon" aria-hidden="true"><AppIcon name="user" size={20} /></span>
+          <span><strong>公開プロフィール</strong><small>ほかの人から見えるページ</small></span>
+        </a>
       </section>
 
       {#if showAccount}
@@ -753,13 +753,16 @@
 
           {#if editSection === "none"}
             <div class="account-menu">
-              <button onclick={() => editSection = "profile"}><span>プロフィール</span><small>ユーザー名・都道府県</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
+              <p class="account-group-label">基本情報</p>
+              <button onclick={() => editSection = "profile"><span>プロフィール</span><small>ユーザー名・都道府県</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
               <button onclick={() => { editEmail = account?.email ?? ""; editSection = "email"; }}><span>メールアドレス変更</span><small>{account?.email}</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
+              <p class="account-group-label">ログインとセキュリティ</p>
               {#if passkeyAvailable}
-                <button onclick={() => { editSection = "passkeys"; editError = null; loadPasskeys(); }}><span>パスキー</span><small>登録・管理</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
+                <button onclick={() => { editSection = "passkeys"; editError = null; loadPasskeys(); }}><span>パスキー</span><small>{passkeys.length}件登録済み · 追加・削除</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
               {/if}
-              <button onclick={() => editSection = "password"}><span>パスワード変更</span><small>ログイン用パスワード</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
-              <a href="/users/{account?.username}"><span>公開プロフィール</span><small>ほかの人から見えるページ</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></a>
+              <button onclick={() => editSection = "password"}><span>従来のパスワード変更</span><small>パスワードを設定している方のみ</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
+              <p class="account-security-help">パスキーを紛失した場合は、ログイン画面から登録メールにリンクを送り、本人確認して再登録できます。</p>
+              <button class="logout-setting" type="button" onclick={requestLogout}><span>ログアウト</span><small>この端末のログインを終了</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
             </div>
           {:else}
             <div class="account-editor">
@@ -788,7 +791,7 @@
                 </form>
               {:else if editSection === "passkeys"}
                 <div class="passkey-settings">
-                  <p class="field-help">パスキーでパスワードを入力せずにログインできます。紛失に備え、複数の端末で登録できます。</p>
+                  <p class="field-help">パスキーでパスワードを入力せずにログインできます。紛失時は登録メールでログインしてから再登録できます。別の端末にも追加しておくと安心です。</p>
                   <button type="button" class="primary" onclick={registerPasskey} disabled={submitting}>
                     {submitting ? "操作中..." : "パスキーを追加"}
                   </button>
@@ -919,6 +922,9 @@
   .passkey-onboarding > div { flex: 1 1 15rem; }
   .passkey-onboarding p { margin: .3rem 0 0; color: #52677c; font-size: .8rem; line-height: 1.6; }
   .passkey-onboarding .text-link { width: auto; }
+  .account-group-label { margin: 1rem 0 .3rem; color: #617d90; font-size: .68rem; font-weight: 800; letter-spacing: .06em; }
+  .account-security-help { margin: .75rem 0; color: #61717c; font-size: .75rem; line-height: 1.7; }
+  .account-menu .logout-setting span { color: #975c61; }
   .passkey-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
   .passkey-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem; border: 1px solid #e4eaf0; border-radius: .75rem; }
   .passkey-list li div { display: grid; gap: .2rem; min-width: 0; }
@@ -1564,7 +1570,8 @@
     box-shadow: 0 10px 28px rgba(42, 65, 82, .055);
   }
 
-  .account-actions button {
+  .account-actions button,
+  .account-actions a {
     display: grid;
     min-width: 0;
     padding: .95rem .7rem;
@@ -1576,14 +1583,16 @@
     color: var(--home-ink-strong);
     background: transparent;
     text-align: left;
+    text-decoration: none;
     cursor: pointer;
   }
 
-  .account-actions button:last-child {
+  .account-actions > :last-child {
     border-right: 0;
   }
 
-  .account-actions button:hover {
+  .account-actions button:hover,
+  .account-actions a:hover {
     border-radius: .9rem;
     background: #f8fafb;
   }

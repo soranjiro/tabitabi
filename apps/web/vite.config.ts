@@ -46,7 +46,9 @@ export default defineConfig({
   },
   build: {
     cssCodeSplit: true,
-    cssMinify: true,
+    // Vite 8 defaults to Lightning CSS, which rejects existing nested @keyframes.
+    // Keep the prior esbuild minification behavior while migrating styles.
+    cssMinify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: (id) => {

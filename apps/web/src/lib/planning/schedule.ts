@@ -22,3 +22,21 @@ export function getStepTimeLabel(step: Step): string {
   const date = new Date(step.start_at);
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
+
+
+export function buildStepOrderUpdates(
+  group: ReadonlyArray<Pick<Step, "id" | "sort_order">>,
+  stepId: string,
+  direction: -1 | 1,
+): Array<{ id: string; sort_order: number }> {
+  const currentIndex = group.findIndex((step) => step.id === stepId);
+  const targetIndex = currentIndex + direction;
+  if (currentIndex < 0 || targetIndex < 0 || targetIndex >= group.length) return [];
+
+  const reordered = [...group];
+  [reordered[currentIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[currentIndex]];
+
+  return reordered.flatMap((step, index) =>
+    step.sort_order === index ? [] : [{ id: step.id, sort_order: index }],
+  );
+}

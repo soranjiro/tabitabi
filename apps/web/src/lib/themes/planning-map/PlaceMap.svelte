@@ -6,7 +6,7 @@
   import { getPlace, type Place } from '$lib/planning/places';
   import { getStepSchedule } from '$lib/planning/schedule';
   import 'leaflet/dist/leaflet.css';
-  let { steps, numbers, selected, canEdit, onSelect, onPin }: { steps: Step[]; numbers: Record<string, number>; selected: string | null; canEdit: boolean; onSelect: (id: string) => void; onPin: (place: Place) => void } = $props();
+  let { steps, numbers, selected, canEdit, onSelect, onPin, onMove, onCenterChange, centerMode = false }: { steps: Step[]; numbers: Record<string, number>; selected: string | null; canEdit: boolean; onSelect: (id: string) => void; onPin: (place: Place) => void; onMove?: (id: string, place: Place) => void; onCenterChange?: (place: Place) => void; centerMode?: boolean } = $props();
   let container: HTMLDivElement;
   let map: Leaflet.Map | undefined;
   let L: typeof Leaflet;
@@ -40,7 +40,7 @@
     void import('leaflet').then(module => {
       if (disposed) return;
       L = module;
-      map = L.map(container, { scrollWheelZoom: false }).setView([35.01, 135.77], 13);
+      map = L.map(container, { scrollWheelZoom: true, touchZoom: true, zoomControl: true }).setView([35.01, 135.77], 13);
       tiles = L.tileLayer(env.PUBLIC_PLANNING_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19, keepBuffer: 0,
         attribution: env.PUBLIC_PLANNING_TILE_ATTRIBUTION || '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -50,6 +50,7 @@
       map.on('click', (e: Leaflet.LeafletMouseEvent) => {
         if (canEdit && adding) { onPin({ lat: e.latlng.lat, lng: e.latlng.wrap().lng }); adding = false; }
       });
+      map.on('moveend', () => { if (centerMode && map) { const p = map.getCenter(); onCenterChange?.({ lat: p.lat, lng: p.wrap().lng }); } });
       observer = new ResizeObserver(() => { map?.invalidateSize(); fit(); });
       observer.observe(container);
       ready = true;
@@ -65,12 +66,13 @@
       if (!place) return;
       const day = getStepSchedule(step);
       const marker = L.marker([place.lat, place.lng], {
-        title: step.title, keyboard: true,
+        title: step.title, keyboard: true, draggable: canEdit && !centerMode && !!onMove,
         icon: L.divIcon({ className: 'atelier-marker', html: `<span style="background:${selected === step.id ? '#b75b38' : day.precision === 'undecided' ? '#35695d' : '#556ca1'}">${stepIcon(step.type)}</span>`, iconSize: [38, 46], iconAnchor: [19, 46] }),
       }).addTo(layer);
       const label = document.createElement('span'); label.textContent = step.title;
       marker.bindTooltip(label, { direction: 'top', offset: [0, -35] });
       marker.on('click', () => onSelect(step.id));
+      marker.on('dragend', () => { const p = marker.getLatLng(); onMove?.(step.id, { lat: p.lat, lng: p.wrap().lng, priority: place.priority }); });
     });
   });
   $effect(() => {
@@ -82,9 +84,10 @@
 </script>
 <div class="map-frame" class:adding>
   <div class="canvas" bind:this={container} aria-label="行きたい場所の地図"></div>
+  {#if centerMode}<div class="center-pin" aria-hidden="true">📍</div>{/if}
   <div class="map-tools">
     <button onclick={fit} disabled={!ready}>全候補を表示</button>
-    {#if canEdit}<button class:active={adding} disabled={!ready} onclick={() => adding = !adding}>{adding ? 'ピン追加をやめる' : '＋ 地図にピンを刺す'}</button>{/if}
+    {#if canEdit && !centerMode}<button class:active={adding} disabled={!ready} onclick={() => adding = !adding}>{adding ? 'ピン追加をやめる' : '＋ 地図にピンを刺す'}</button>{/if}
   </div>
   {#if adding}<div class="map-hint" role="status">行きたい場所をタップ。<button onclick={() => { const p = map?.getCenter(); if (p) { onPin({ lat: p.lat, lng: p.wrap().lng }); adding = false; } }}>地図の中心に追加</button></div>{/if}
   {#if failed}<div class="map-error" role="status">地図を読み込めません。候補リストから計画を続けられます。<button onclick={() => { failed = false; tiles?.redraw(); }}>再試行</button></div>{/if}
@@ -94,6 +97,7 @@
   .map-frame { position:relative; height:100%; min-height:460px; background:#e7ece1; isolation:isolate; border-radius:20px; overflow:hidden; }
   .canvas { position:absolute; inset:0; z-index:0; }
   .adding .canvas { cursor:crosshair; }
+  .center-pin { position:absolute; z-index:2; top:50%; left:50%; transform:translate(-50%,-100%); font-size:36px; pointer-events:none; filter:drop-shadow(0 2px 3px #3338); }
   .map-tools { position:absolute; top:18px; right:18px; display:flex; gap:8px; z-index:2; }
   button { min-height:40px; padding:9px 13px; border:1px solid #d9dfd7; border-radius:9px; background:#fff; color:#294b42; font:inherit; font-size:12px; cursor:pointer; box-shadow:0 3px 12px #253e2910; }
   button.active { background:#35695d; color:white; }

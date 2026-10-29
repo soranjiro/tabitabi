@@ -161,6 +161,8 @@ export class ItineraryService {
   }
 
   async update(id: string, input: UpdateItineraryInput): Promise<Itinerary | null> {
+    // Defense in depth: never allow a collaborator to alter the edit password.
+    if (input.password !== undefined) throw new Error('PASSWORD_IMMUTABLE');
     const existing = await this.get(id);
     if (!existing) return null;
 
@@ -204,12 +206,6 @@ export class ItineraryService {
       fields.push('memo = ?', 'memo_text = ?');
       values.push(legacyTextJson(input.memo, legacy?.memo), input.memo);
     }
-    if (input.password !== undefined) {
-      fields.push('password = ?');
-      const hashedPassword = input.password ? await hashPassword(input.password) : null;
-      values.push(hashedPassword);
-    }
-
     if (fields.length > 1) {
       values.push(id);
       await this.db
@@ -632,11 +628,12 @@ export class ItineraryService {
 
   // フロントエンド用：パスワード除外したレスポンスを返す
   toResponseItinerary(itinerary: Itinerary, includePrivateSettings = false) {
-    const { password: _, secret_settings, ...rest } = itinerary;
+    const { password: _, secret_settings, source_itinerary_id, ...rest } = itinerary;
     return {
       ...rest,
       ...(includePrivateSettings && secret_settings ? { secret_settings } : {}),
       is_password_protected: !!itinerary.password,
+      is_shared_snapshot: Boolean(source_itinerary_id),
     };
   }
 }

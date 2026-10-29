@@ -7,6 +7,11 @@ beforeAll(() => installFirebaseCertMock());
 
 async function applyMigrations(db: D1Database) {
   const migrations = [
+    `CREATE TABLE IF NOT EXISTS api_rate_limit_counters (
+      bucket_key TEXT PRIMARY KEY,
+      window_start INTEGER NOT NULL,
+      hit_count INTEGER NOT NULL DEFAULT 0 CHECK (hit_count >= 0)
+    );`,
     `CREATE TABLE IF NOT EXISTS itineraries (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -152,6 +157,7 @@ async function applyMigrations(db: D1Database) {
 describe('Itineraries API', () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
+    await env.DB.prepare('DELETE FROM api_rate_limit_counters').run();
     await env.DB.prepare('DELETE FROM steps').run();
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();
     await env.DB.prepare('DELETE FROM itinerary_money_item_splits').run();
@@ -697,7 +703,8 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     const snapshotRes = await app.request(`/api/v1/itineraries/${data.id}`, {}, env);
     const { data: snapshot } = await snapshotRes.json() as any;
     expect(snapshot.title).toBe('旅のしおり');
-    expect(snapshot.source_itinerary_id).toBe(original.id);
+    expect(snapshot.is_shared_snapshot).toBe(true);
+    expect(snapshot).not.toHaveProperty('source_itinerary_id');
   });
 
   it('masks trip member names in a shared snapshot', async () => {
@@ -826,9 +833,15 @@ describe('POST /api/v1/itineraries/:id/publish', () => {
     expect(JSON.stringify(publicMoney)).not.toContain('佐藤花子');
     expect(JSON.stringify(publicMoney)).not.toContain('090-1234-5678');
 
-    expect((await app.request(`/api/v1/itineraries/${original.id}/members`, {}, env)).status).toBe(403);
-    expect((await app.request(`/api/v1/itineraries/${original.id}/money`, {}, env)).status).toBe(403);
-    expect((await app.request(`/api/v1/itineraries/${original.id}/packing`, {}, env)).status).toBe(403);
+    const sourceMembersRes = await app.request(`/api/v1/itineraries/${original.id}/members`, {}, env);
+    expect(sourceMembersRes.status).toBe(200);
+    expect((await sourceMembersRes.json() as any).data.map((member: { name: string }) => member.name))
+      .toEqual(['山田太郎', '佐藤花子']);
+
+    const sourceMoneyRes = await app.request(`/api/v1/itineraries/${original.id}/money`, {}, env);
+    expect(sourceMoneyRes.status).toBe(200);
+    expect((await sourceMoneyRes.json() as any).data.items[0].title).toContain('山田太郎');
+
     const privateItineraryRes = await app.request(`/api/v1/itineraries/${original.id}`, {}, env);
     expect((await privateItineraryRes.json() as any).data.secret_settings).toBeUndefined();
     const ownedItineraryRes = await app.request(`/api/v1/itineraries/${original.id}`, {

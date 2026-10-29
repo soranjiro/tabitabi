@@ -104,6 +104,58 @@ describe('Money API', () => {
     expect((await settleResponse.json() as any).data).toMatchObject({ is_settled: true, paid_by_member_id: alice.id });
   });
 
+  it('allows feature reads without edit permission while protected writes stay blocked', async () => {
+    const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '閲覧権限テスト', password: 'password123' }),
+    }), env);
+    const { data: itinerary } = await create.json() as any;
+    const authHeaders = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${itinerary.token}`,
+    };
+
+    const memberResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/members`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ name: 'Alice' }),
+    }), env);
+    expect(memberResponse.status).toBe(201);
+
+    const settingsResponse = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/settings`, {
+      method: 'PUT',
+      headers: authHeaders,
+      body: JSON.stringify({ budget_amount: 50000 }),
+    }), env);
+    expect(settingsResponse.status).toBe(200);
+
+    const membersRead = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/members`), env);
+    expect(membersRead.status).toBe(200);
+    expect((await membersRead.json() as any).data.map((member: { name: string }) => member.name)).toEqual(['Alice']);
+
+    const moneyRead = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money`), env);
+    expect(moneyRead.status).toBe(200);
+    expect((await moneyRead.json() as any).data.budget_amount).toBe(50000);
+
+    const packingRead = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/packing`), env);
+    expect(packingRead.status).toBe(200);
+
+    const deniedSettings = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/money/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ budget_amount: 60000 }),
+    }), env);
+    expect(deniedSettings.status).toBe(403);
+
+    const deniedMember = await app.fetch(new Request(`http://localhost/api/v1/itineraries/${itinerary.id}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Bob' }),
+    }), env);
+    expect(deniedMember.status).toBe(403);
+  });
+
   it('rejects individual shares that do not match the expense total', async () => {
     const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '個別負担テスト' }),

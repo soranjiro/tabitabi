@@ -1,4 +1,4 @@
-.PHONY: build build-docs deploy deploy-api deploy-web dev down lighthouse migrate-status migrate-up migrate-down migrate-status-remote migrate-up-remote migrate-down-remote migrate-new schema seed-local seed-remote test test-api test-web
+.PHONY: build build-docs check-web deploy deploy-api deploy-web dev down lighthouse migrate-status migrate-up migrate-down migrate-status-remote migrate-up-remote migrate-down-remote migrate-new schema seed-local seed-remote test test-api test-web test-home-poster
 
 build: build-docs
 	pnpm run build
@@ -63,6 +63,9 @@ test-api:
 
 test-web:
 	pnpm run test:web
+
+test-home-poster:
+	cd apps/web && pnpm exec playwright test tests/e2e/home-feature-poster.spec.ts --reporter=list
 
 check-web:
 	cd apps/web && pnpm exec svelte-check --tsconfig ./tsconfig.json

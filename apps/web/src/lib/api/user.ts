@@ -30,7 +30,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}, authRequi
     token = await userAuth.getToken();
   }
 
-  const itineraryId = endpoint.match(/\/bookmarks\/([^/]+)/)?.[1];
+  const itineraryId = endpoint.match(/\/(?:bookmarks|editor-access)\/([^/]+)/)?.[1];
   let itineraryToken: string | null = null;
   if (itineraryId) {
     const { auth } = await import('../auth');
@@ -59,6 +59,13 @@ function clearFavoriteCache() {
 }
 
 export const userApi = {
+  // Saving a bookmark is not authorization. Only a verified itinerary JWT can
+  // bind a collaborator's editing rights to their Firebase account.
+  claimEditorAccess: (id: string) =>
+    request<{ itinerary_id: string }>(`/users/me/editor-access/${encodeURIComponent(id)}`, { method: 'POST' }),
+  restoreEditorAccess: (id: string) =>
+    request<{ token: string }>(`/users/me/editor-access/${encodeURIComponent(id)}`),
+
   previewPublication: (id: string) => request<BookContent>(`/users/me/bookmarks/${id}/preview`),
   savePublication: (id: string, content: BookContent) => request<{ id: string }>(`/users/me/bookmarks/${id}/publication/content`, { method: 'POST', body: JSON.stringify(content) }),
   restorePublication: (id: string) => request<{ id: string }>(`/users/me/bookmarks/${id}/publication/restore`, { method: 'POST' }),

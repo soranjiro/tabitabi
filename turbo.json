@@ -7,7 +7,12 @@
       ],
       "outputs": [
         ".svelte-kit/**",
-        "dist/**"
+        "dist/**",
+        "static/docs/**"
+      ],
+      "env": [
+        "PUBLIC_*",
+        "VITE_*"
       ]
     },
     "dev": {
@@ -23,5 +28,8 @@
     "test:run": {
       "cache": false
     }
-  }
+  },
+  "globalDependencies": [
+    "docs/**"
+  ]
 }

@@ -7,6 +7,33 @@ body {
   background-color: #f9fafb;
 }
 
+
+:root {
+  --home-ink: #24364b;
+  --home-ink-strong: #17263d;
+  --home-muted: #66778a;
+  --home-paper: #fffcf8;
+  --home-surface: #ffffff;
+  --home-surface-soft: #f7f5f0;
+  --home-border: #dce2e7;
+  --home-action: #315b7d;
+  --home-action-hover: #274b69;
+  --home-focus: #4f7fa6;
+  --home-danger: #b44747;
+  --home-radius-sm: 8px;
+  --home-radius-md: 12px;
+  --home-radius-lg: 18px;
+  --home-radius-pill: 999px;
+  --home-shadow-sm: 0 4px 14px rgba(23, 38, 61, 0.1);
+  --home-shadow-md: 0 16px 40px rgba(23, 38, 61, 0.11);
+  --home-shadow-card: 0 24px 64px rgba(13, 32, 47, 0.2);
+  --home-content-wide: 1280px;
+  --home-content-main: 960px;
+  --home-content-form: 820px;
+  --home-font-sans: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif;
+  --home-font-serif: Georgia, "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+}
+
 /*
  * iOS Safari zooms the page when a form control with text smaller than 16px
  * receives focus. Keep text-entry controls at the no-zoom threshold on touch

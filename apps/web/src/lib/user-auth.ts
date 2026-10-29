@@ -9,6 +9,7 @@ import {
 
 const USER_KEY = 'user_info';
 const PENDING_PROFILE_KEY = 'pending_firebase_profile';
+const PENDING_EMAIL_LINK_KEY = 'tabitabi_email_link_address';
 
 export interface PendingProfile {
   uid: string;
@@ -32,7 +33,9 @@ async function getAuthInstance(): Promise<Auth> {
         throw new Error('FIREBASE_CONFIG_MISSING');
       }
       const app = appModule.getApps()[0] ?? appModule.initializeApp(config);
-      return authModule.getAuth(app);
+      const auth = authModule.getAuth(app);
+      auth.languageCode = 'ja';
+      return auth;
     });
   }
   return authPromise;
@@ -68,6 +71,11 @@ export const userAuth = {
     return (await signInWithEmailAndPassword(await getAuthInstance(), email, password)).user;
   },
 
+  async signInWithCustomToken(token: string): Promise<User> {
+    const { signInWithCustomToken } = await import('firebase/auth');
+    return (await signInWithCustomToken(await getAuthInstance(), token)).user;
+  },
+
   async signOut(): Promise<void> {
     const { signOut } = await import('firebase/auth');
     await signOut(await getAuthInstance());
@@ -90,9 +98,68 @@ export const userAuth = {
     return user;
   },
 
+  // Passwordless sign-in and recovery. Firebase email links verify the email address.
+  async sendEmailLink(email: string): Promise<void> {
+    const { sendSignInLinkToEmail } = await import('firebase/auth');
+    const address = email.trim();
+    if (!address) throw new Error('EMAIL_REQUIRED');
+    const callback = new URL('/profile', window.location.origin);
+    await sendSignInLinkToEmail(await getAuthInstance(), address, {
+      url: callback.toString(),
+      handleCodeInApp: true,
+    });
+    // Never pass an email address via the callback URL (session injection risk).
+    localStorage.setItem(PENDING_EMAIL_LINK_KEY, address);
+  },
+
+  getPendingEmailLink(): string {
+    try { return localStorage.getItem(PENDING_EMAIL_LINK_KEY) ?? ''; }
+    catch { return ''; }
+  },
+
+  async isEmailSignInLink(url: string): Promise<boolean> {
+    const { isSignInWithEmailLink } = await import('firebase/auth');
+    return isSignInWithEmailLink(await getAuthInstance(), url);
+  },
+
+  async completeEmailLink(email: string, url: string): Promise<User> {
+    const { isSignInWithEmailLink, signInWithEmailLink } = await import('firebase/auth');
+    const auth = await getAuthInstance();
+    if (!email.trim() || !isSignInWithEmailLink(auth, url)) throw new Error('INVALID_EMAIL_LINK');
+    const result = await signInWithEmailLink(auth, email.trim(), url);
+    try { localStorage.removeItem(PENDING_EMAIL_LINK_KEY); } catch { /* storage unavailable */ }
+    return result.user;
+  },
+
   async sendPasswordReset(email: string): Promise<void> {
     const { sendPasswordResetEmail } = await import('firebase/auth');
     await sendPasswordResetEmail(await getAuthInstance(), email);
+  },
+
+  async applyActionCode(code: string): Promise<void> {
+    const { applyActionCode } = await import('firebase/auth');
+    await applyActionCode(await getAuthInstance(), code);
+  },
+
+  async checkActionCode(code: string): Promise<{ email: string | null; previousEmail: string | null; operation: string }> {
+    const { checkActionCode } = await import('firebase/auth');
+    const info = await checkActionCode(await getAuthInstance(), code);
+    const data = info.data as { email?: string | null; previousEmail?: string | null };
+    return {
+      email: data.email ?? null,
+      previousEmail: data.previousEmail ?? null,
+      operation: String(info.operation),
+    };
+  },
+
+  async verifyPasswordResetCode(code: string): Promise<string> {
+    const { verifyPasswordResetCode } = await import('firebase/auth');
+    return verifyPasswordResetCode(await getAuthInstance(), code);
+  },
+
+  async confirmPasswordReset(code: string, newPassword: string): Promise<void> {
+    const { confirmPasswordReset } = await import('firebase/auth');
+    await confirmPasswordReset(await getAuthInstance(), code, newPassword);
   },
 
   async requestEmailChange(newEmail: string): Promise<void> {

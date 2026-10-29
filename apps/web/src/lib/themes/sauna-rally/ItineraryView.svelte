@@ -10,10 +10,10 @@
   import StepList from "./StepList.svelte";
   import "./styles/index.css";
   import PasswordDialog from "./components/PasswordDialog.svelte";
-  import PasswordSettingsDialog from "./components/PasswordSettingsDialog.svelte";
   import ShareDialog from "./components/ShareDialog.svelte";
 
   interface Props {
+    readOnly?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: {
@@ -47,6 +47,7 @@
   }
 
   let {
+    readOnly = false,
     itinerary,
     steps,
     onUpdateItinerary,
@@ -63,12 +64,11 @@
   let hasEditPermission = $state(false);
   let isViewMode = $state(false);
   let showPasswordDialog = $state(false);
-  let showPasswordSettingsDialog = $state(false);
   let showThemeSelect = $state(false);
   let showShareDialog = $state(false);
   let showCopyMessage = $state(false);
   let passwordDialogAuthenticating = $state(false);
-  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
 
   interface SaunaData {
     visited?: boolean;
@@ -95,6 +95,10 @@
   }
 
   onMount(() => {
+    if (readOnly) {
+      hasEditPermission = false;
+      return;
+    }
     if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
       return;
@@ -123,7 +127,7 @@
   }
 
   async function attemptEditModeActivation() {
-    if (isSharedSnapshot) return;
+    if (readOnly || isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -140,7 +144,7 @@
       }
     }
 
-    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
     } else {
@@ -222,7 +226,7 @@
 
   async function copyViewOnlyLink() {
     try {
-      const url = window.location.origin + window.location.pathname;
+      const url = `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
       await navigator.clipboard.writeText(url);
       showCopyMessage = true;
       setTimeout(() => {
@@ -235,7 +239,9 @@
 
   async function copyShareLink(includeToken: boolean) {
     try {
-      let url = window.location.origin + window.location.pathname;
+      let url = includeToken
+        ? `${window.location.origin}/itineraries/${encodeURIComponent(itinerary.id)}`
+        : `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
 
       if (includeToken && hasEditPermission) {
         const token = auth.getToken(itinerary.id);
@@ -263,12 +269,6 @@
     isAddingSauna = false;
   }
 
-  async function handlePasswordSettingsSave(password: string | null) {
-    if (onUpdateItinerary) {
-      await onUpdateItinerary({ password });
-    }
-    showPasswordSettingsDialog = false;
-  }
 </script>
 
 <div class="sauna-rally-container">
@@ -335,15 +335,8 @@
             >
               テーマ変更
             </button>
-            <button
-              class="password-settings-button"
-              onclick={() => (showPasswordSettingsDialog = true)}
-              aria-label="パスワード設定"
-            >
-              🔑
-            </button>
           {/if}
-        {:else if !isSharedSnapshot}
+        {:else if !readOnly && !isSharedSnapshot}
           <button class="edit-button" onclick={attemptEditModeActivation}>
             編集モード
           </button>
@@ -404,13 +397,6 @@
   isAuthenticating={passwordDialogAuthenticating}
   onAuth={onPasswordAuth}
   onClose={() => (showPasswordDialog = false)}
-/>
-
-<PasswordSettingsDialog
-  show={showPasswordSettingsDialog}
-  isPasswordProtected={itinerary.is_password_protected}
-  onSave={handlePasswordSettingsSave}
-  onClose={() => (showPasswordSettingsDialog = false)}
 />
 
 {#if showCopyMessage}

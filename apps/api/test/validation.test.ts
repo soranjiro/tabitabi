@@ -163,12 +163,12 @@ describe('POST /api/v1/users/me/bootstrap — validation', () => {
 
   it('rejects username with special characters', async () => {
     const res = await jsonPost('/api/v1/users/me/bootstrap', { username: 'user@name!', prefecture: '東京都' }, { Authorization: `Bearer ${token}` });
-    await expectValidationError(res, 'alphanumeric');
+    await expectValidationError(res, 'letters and numbers');
   });
 
-  it('accepts username with underscores', async () => {
+  it('rejects username with underscores', async () => {
     const res = await jsonPost('/api/v1/users/me/bootstrap', { username: 'user_name_1', prefecture: '東京都' }, { Authorization: `Bearer ${token}` });
-    expect(res.status).toBe(200);
+    await expectValidationError(res, 'letters and numbers');
   });
 });
 

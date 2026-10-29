@@ -32,6 +32,7 @@
   import { openPrintStudio } from "$lib/print";
 
   interface Props {
+    readOnly?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: {
@@ -44,6 +45,8 @@
       tags?: string[];
       metadata_initialized?: boolean;
       memo?: string;
+      background_image?: string | null;
+      background_display?: "cover" | "page";
       secret_settings?: {
         enabled: boolean;
         offset_minutes: number;
@@ -81,6 +84,7 @@
   }
 
   let {
+    readOnly = false,
     itinerary,
     steps,
     onUpdateItinerary,
@@ -98,7 +102,7 @@
   let editedTitle = $state(itinerary.title);
   let isCreatingStep = $state(false);
   let createStepTemplate = $state<Step | null>(null);
-  let showCopyMessage = $state(false);
+  let copyMessage = $state<string | null>(null);
   let showShareDialog = $state(false);
   let showMoreMenu = $state(false);
   let hasEditPermission = $state(false);
@@ -107,13 +111,15 @@
   let showSettingsDialog = $state(false);
   let showMetadataDialog = $state(false);
   let isAuthenticating = $state(false);
-  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
   let bulkDateOpen = $state(false);
   let pendingDates = $state<Record<string, string>>({});
   let applyingDates = $state(false);
 
   let selectedThemeId = $state(itinerary.theme_id || "accordion");
   let selectedPaletteId = $state(itinerary.palette_id || getThemePreset(selectedThemeId).defaultPaletteId);
+  let selectedBackgroundImage = $state<string | null>(itinerary.background_image ?? null);
+  let selectedBackgroundDisplay = $state<"cover" | "page">(itinerary.background_display ?? "cover");
   let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
   let secretModeOffset = $state(
     itinerary.secret_settings?.offset_minutes ?? 60,
@@ -128,7 +134,7 @@
   let itineraryTags = $state([...(itinerary.tags ?? [])]);
   let currentViewMode = $derived(getThemePreset(selectedThemeId).viewMode as ViewMode);
   let paletteStyle = $derived(Object.entries(getPalette(selectedPaletteId).colors).map(([key, value]) => `${key}:${value}`).join(";"));
-  let publicNotice = $derived(itinerary.source_itinerary_id && steps.some((step) => step.link)
+  let publicNotice = $derived(itinerary.is_shared_snapshot && steps.some((step) => step.link)
     ? "このページにはアフィリエイトリンクが含まれる場合があります。"
     : "");
 
@@ -221,6 +227,10 @@
     };
     openFeatureFromHash();
     window.addEventListener('hashchange', openFeatureFromHash);
+    if (readOnly) {
+      hasEditPermission = false;
+      return () => window.removeEventListener('hashchange', openFeatureFromHash);
+    }
     if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
       return () => window.removeEventListener('hashchange', openFeatureFromHash);
@@ -232,7 +242,7 @@
     }
     hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
 
-    if (!hasEditPermission && !itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!hasEditPermission && !itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
     }
 
@@ -255,6 +265,12 @@
     else showPacking = false;
   }
 
+  function openMemberSettings(feature: 'money' | 'packing') {
+    if (!hasEditPermission || isSharedSnapshot) return;
+    closeFeature(feature);
+    showSettingsDialog = true;
+  }
+
   async function onPasswordAuth(password: string) {
     await handlePasswordAuth({
       shioriId: itinerary.id,
@@ -270,7 +286,7 @@
   }
 
   function handleEditModeToggle() {
-    if (isSharedSnapshot) return;
+    if (readOnly || isSharedSnapshot) return;
     if (hasEditPermission) {
       // Check if currently editing
       if (stepListRef?.isCurrentlyEditing?.()) {
@@ -290,6 +306,7 @@
   }
 
   async function attemptEditModeActivation() {
+    if (readOnly || isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -307,7 +324,7 @@
     }
 
     // パスワード不要かつ共有スナップショットでなければ即許可、必要なら入力ダイアログを開く
-    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
     } else {
@@ -326,39 +343,61 @@
     openPrintStudio();
   }
 
-  async function copyViewOnlyLink() {
+  function shouldUseNativeShare(): boolean {
+    return (
+      typeof navigator.share === "function" &&
+      (navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches)
+    );
+  }
+
+  async function shareOrCopyLink(url: string, copiedMessage: string) {
+    if (shouldUseNativeShare()) {
+      showShareDialog = false;
+      try {
+        await navigator.share({ title: itinerary.title, url });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.error("Failed to share:", err);
+      }
+      return;
+    }
+
     try {
-      const url = window.location.origin + window.location.pathname;
       await navigator.clipboard.writeText(url);
-      showCopyMessage = true;
+      showShareDialog = false;
+      copyMessage = copiedMessage;
       setTimeout(() => {
-        showCopyMessage = false;
+        copyMessage = null;
       }, 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
     }
   }
 
+  async function copyViewOnlyLink() {
+    const url = `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
+    await shareOrCopyLink(url, "閲覧用リンクをコピーしました");
+  }
+
   async function copyShareLink(includeToken: boolean) {
-    try {
-      let url = window.location.origin + window.location.pathname;
+    let url = includeToken
+      ? `${window.location.origin}/itineraries/${encodeURIComponent(itinerary.id)}`
+      : `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
 
-      if (includeToken && hasEditPermission) {
-        const token = auth.getToken(itinerary.id);
-        if (token) {
-          url += `?token=${token}`;
-        }
+    if (includeToken && hasEditPermission) {
+      const token = auth.getToken(itinerary.id);
+      if (token) {
+        url += `?token=${token}`;
       }
-
-      await navigator.clipboard.writeText(url);
-      showShareDialog = false;
-      showCopyMessage = true;
-      setTimeout(() => {
-        showCopyMessage = false;
-      }, 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
     }
+
+    const copiedMessage = itinerary.is_password_protected
+      ? includeToken
+        ? "編集用リンクをコピーしました"
+        : "閲覧用リンクをコピーしました"
+      : "リンクをコピーしました";
+
+    await shareOrCopyLink(url, copiedMessage);
   }
 
   async function saveMetadata(metadata: { prefectureSlugs: string[]; areas: string[]; tags: string[] }) {
@@ -432,6 +471,26 @@
     if (onUpdateItinerary) await onUpdateItinerary({ palette_id: paletteId });
   }
 
+  async function handleBackgroundChange(backgroundImage: string | null, backgroundDisplay: "cover" | "page") {
+    selectedBackgroundImage = backgroundImage;
+    selectedBackgroundDisplay = backgroundDisplay;
+    if (onUpdateItinerary) {
+      await onUpdateItinerary({
+        background_image: backgroundImage,
+        background_display: backgroundDisplay,
+      });
+    }
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("tabitabi:background-changed", {
+        detail: {
+          itineraryId: itinerary.id,
+          backgroundImage,
+          backgroundDisplay,
+        },
+      }));
+    }
+  }
+
   async function handleSecretModeUpdate(enabled: boolean, offset: number) {
     secretModeEnabled = enabled;
     secretModeOffset = offset;
@@ -465,8 +524,8 @@
 >
   <div class="standard-container">
     <header class="standard-header">
-      {#if showCopyMessage}
-        <div class="standard-copy-msg">コピーしました</div>
+      {#if copyMessage}
+        <div class="standard-copy-msg">{copyMessage}</div>
       {/if}
       {#if isEditingTitle}
         <input
@@ -550,7 +609,7 @@
         onOpenDateEditor={openBulkDateEditor}
       />
 
-      {#if itinerary.source_itinerary_id && publicNotice}
+      {#if itinerary.is_shared_snapshot && publicNotice}
         <p class="standard-public-disclosure">{publicNotice}</p>
       {/if}
     <BottomNav
@@ -584,6 +643,7 @@
     requestedEditItemId={requestedMoneyItemId}
     onEditItemOpened={() => (requestedMoneyItemId = null)}
     onViewStep={openStepFromMoney}
+    onOpenMemberSettings={() => openMemberSettings('money')}
     onClose={() => closeFeature('money')}
   />
 
@@ -604,6 +664,7 @@
       show={showPacking}
       itineraryId={itinerary.id}
       canEdit={hasEditPermission && !isSharedSnapshot}
+      onOpenMemberSettings={() => openMemberSettings('packing')}
       onClose={() => closeFeature('packing')}
     />
   {/if}
@@ -618,9 +679,17 @@
   <MoreMenu
     show={showMoreMenu}
     canConfigure={hasEditPermission}
-    canRequestEdit={!isSharedSnapshot}
+    canRequestEdit={!readOnly && !isSharedSnapshot}
     {hasEditPermission}
-    onShare={() => hasEditPermission && !isSharedSnapshot ? (showShareDialog = true) : void copyViewOnlyLink()}
+    onShare={() => {
+      if (hasEditPermission && !isSharedSnapshot && !itinerary.is_password_protected) {
+        void copyShareLink(true);
+      } else if (hasEditPermission && !isSharedSnapshot) {
+        showShareDialog = true;
+      } else {
+        void copyViewOnlyLink();
+      }
+    }}
     onPrint={openPrintPreview}
     onSettings={() => (showSettingsDialog = true)}
     onEditModeToggle={handleEditModeToggle}
@@ -644,14 +713,20 @@
     {palettes}
     {selectedThemeId}
     {selectedPaletteId}
+    backgroundImage={selectedBackgroundImage}
+    backgroundDisplay={selectedBackgroundDisplay}
     {secretModeEnabled}
     {secretModeOffset}
     {packingEnabled}
+    {prefectureSlugs}
+    areas={itineraryAreas}
+    tags={itineraryTags}
     onThemeChange={handleThemeChange}
     onPaletteChange={handlePaletteChange}
     onSecretModeChange={handleSecretModeUpdate}
     onPackingEnabledChange={handlePackingEnabledUpdate}
-    onEditMetadata={() => (showMetadataDialog = true)}
+    onMetadataChange={saveMetadata}
+    onBackgroundChange={handleBackgroundChange}
     onClose={() => (showSettingsDialog = false)}
   />
 

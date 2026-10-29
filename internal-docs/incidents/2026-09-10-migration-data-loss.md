@@ -4,4 +4,4 @@ PR #297 recreated the `itineraries` table to change a column default. Because ch
 
 The affected production database was restored with D1 Time Travel before the migration was recorded as applied. The migration is therefore rewritten in the follow-up fix to update theme IDs in place without recreating `itineraries`.
 
-This incident led to the migration safety checks documented in `docs/migration-safety.md`.
+This incident led to the migration safety checks documented in `internal-docs/migration-safety.md`.

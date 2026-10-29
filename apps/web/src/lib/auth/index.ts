@@ -122,6 +122,12 @@ export const auth = {
     this.saveHistory(filtered);
   },
 
+  restoreHistoryEntry(entry: ShioriHistory): void {
+    const history = this.getHistory().filter(h => h.shioriId !== entry.shioriId);
+    history.unshift(entry);
+    this.saveHistory(history.slice(0, 10));
+  },
+
   getRecentItineraries(limit: number = 5) {
     const history = this.getHistory();
     return history

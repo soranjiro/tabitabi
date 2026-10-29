@@ -469,3 +469,40 @@ BEGIN
   WHERE id = NEW.id;
 END;
 CREATE INDEX idx_steps_source_step_id ON steps(itinerary_id, source_step_id);
+CREATE TABLE user_passkeys (
+  credential_id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  public_key TEXT NOT NULL,
+  counter INTEGER NOT NULL DEFAULT 0 CHECK (counter >= 0),
+  transports TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(transports)),
+  created_at TEXT NOT NULL,
+  last_used_at TEXT,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_user_passkeys_user ON user_passkeys(user_id);
+CREATE TABLE passkey_challenges (
+  id TEXT PRIMARY KEY,
+  action TEXT NOT NULL CHECK (action IN ('register', 'login')),
+  user_id TEXT,
+  challenge TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_passkey_challenges_expires ON passkey_challenges(expires_at);
+CREATE INDEX idx_passkey_challenges_user ON passkey_challenges(user_id, action);
+CREATE TABLE itinerary_editor_grants (
+  itinerary_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  granted_at TEXT NOT NULL,
+  PRIMARY KEY (itinerary_id, user_id),
+  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_itinerary_editor_grants_user ON itinerary_editor_grants(user_id);
+CREATE TABLE api_rate_limit_counters (
+  bucket_key TEXT PRIMARY KEY,
+  window_start INTEGER NOT NULL,
+  hit_count INTEGER NOT NULL DEFAULT 0 CHECK (hit_count >= 0)
+);
+CREATE INDEX idx_api_rate_limits_window ON api_rate_limit_counters(window_start);

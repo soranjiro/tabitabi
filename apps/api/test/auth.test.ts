@@ -4,6 +4,11 @@ import app from '../src/index';
 
 async function applyMigrations(db: D1Database) {
   const migrations = [
+    `CREATE TABLE IF NOT EXISTS api_rate_limit_counters (
+      bucket_key TEXT PRIMARY KEY,
+      window_start INTEGER NOT NULL,
+      hit_count INTEGER NOT NULL DEFAULT 0 CHECK (hit_count >= 0)
+    );`,
     `CREATE TABLE IF NOT EXISTS itineraries (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -78,6 +83,7 @@ async function applyMigrations(db: D1Database) {
 describe('Password Authentication', () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
+    await env.DB.prepare('DELETE FROM api_rate_limit_counters').run();
     await env.DB.prepare('DELETE FROM steps').run();
     await env.DB.prepare('DELETE FROM itinerary_secrets').run();
     await env.DB.prepare('DELETE FROM itinerary_money_settings').run();
@@ -171,6 +177,36 @@ describe('Password Authentication', () => {
       const { success, data } = await response.json() as { success: boolean; data: { token: string } };
       expect(success).toBe(true);
       expect(data.token).toBeDefined();
+    });
+
+    it('limits repeated guesses per IP and itinerary before bcrypt verification', async () => {
+      const created = await app.request('/api/v1/itineraries', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Protected with rate limit', password: 'secret123' }),
+      }, env);
+      const { data: book } = await created.json() as { data: { id: string } };
+      const attempt = (ip: string) => app.request('/api/v1/auth/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': ip },
+        body: JSON.stringify({ shioriId: book.id, password: 'incorrect-password' }),
+      }, env);
+      for (let i = 0; i < 8; i += 1) {
+        expect((await attempt('198.51.100.24')).status).toBe(401);
+      }
+      const blocked = await attempt('198.51.100.24');
+      expect(blocked.status).toBe(429);
+      expect(blocked.headers.get('Retry-After')).toBeTruthy();
+      const separateClient = await attempt('198.51.100.25');
+      expect(separateClient.status).toBe(401);
+    });
+
+    it('rejects invalid JSON and oversized password payloads without executing bcrypt', async () => {
+      for (const payload of ['{invalid', JSON.stringify({ shioriId: 'a', password: 'a'.repeat(2000) })]) {
+        const response = await app.request('/api/v1/auth/password', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload,
+        }, env);
+        expect(response.status).toBe(400);
+      }
     });
 
     it('returns 404 for non-existent itinerary', async () => {

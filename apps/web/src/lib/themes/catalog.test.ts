@@ -4,7 +4,6 @@ import { getAvailableThemes } from './catalog';
 describe('theme catalog', () => {
   it('offers view-based presets', () => {
     expect(getAvailableThemes().map((theme) => theme.id)).toEqual([
-      'planning-map',
       'planning-draft',
       'daycard',
       'accordion',
@@ -16,7 +15,7 @@ describe('theme catalog', () => {
 
   it('binds each preset to one itinerary view', () => {
     expect(getAvailableThemes().map((theme) => theme.viewMode)).toEqual([
-      'list', 'list', 'dayCard', 'accordion', 'list', 'week', 'month',
+      'list', 'dayCard', 'accordion', 'list', 'week', 'month',
     ]);
   });
 });

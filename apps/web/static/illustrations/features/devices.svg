@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="240" viewBox="0 0 360 240" fill="none" stroke="#30302d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <title>同じ旅のしおりをパソコンとスマートフォンで見る</title>
+  <path d="M83 72C70 72 68 60 78 55C75 43 91 38 98 47C107 36 123 41 125 53C141 48 149 65 138 72ZM248 96C235 96 230 82 240 75C241 61 258 55 268 64C280 52 300 61 298 74C316 73 322 95 307 96Z"/>
+  <circle cx="287" cy="42" r="15"/>
+  <path d="M287 17V8M311 42H320M307 23L313 16M267 23L261 16M287 68V74M262 42H253"/>
+  <rect fill="#fbf9f5" x="47" y="103" width="176" height="112" rx="8"/>
+  <path d="M57 114H213V199H57Z"/>
+  <path d="M68 183L94 155L112 172L143 139L163 159L177 149L202 181M76 128H111M76 136H97"/>
+  <path fill="#fbf9f5" d="M36 215H233L215 226H56L36 215Z"/>
+  <path d="M113 215L119 220H153L159 215"/>
+  <g transform="rotate(7 267 169)">
+    <rect fill="#fbf9f5" x="242" y="116" width="56" height="108" rx="8"/>
+    <path d="M250 130H290V207H250ZM263 123H277M265 216H275M254 189L267 169L278 181L285 173M256 141H282M256 149H273"/>
+  </g>
+</svg>

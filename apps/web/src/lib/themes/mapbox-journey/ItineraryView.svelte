@@ -28,6 +28,7 @@
   type MapStyle = "day" | "night" | "satellite" | "pixel";
 
   interface Props {
+    readOnly?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: any) => Promise<void>;
@@ -37,6 +38,7 @@
   }
 
   let {
+    readOnly = false,
     itinerary,
     steps,
     onUpdateItinerary,
@@ -57,7 +59,7 @@
   let showControlPanel = $state(false);
 
   let hasEditPermission = $state(false);
-  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
   let password = $state("");
   let isAuthenticating = $state(false);
   let shareUrl = $state("");
@@ -116,7 +118,9 @@
     if (browser) {
       const module = await import("./components/MapboxMap.svelte");
       MapComponent = module.default;
-      if (getIsDemoMode() || isSharedSnapshot) {
+      if (readOnly) {
+        hasEditPermission = false;
+      } else if (getIsDemoMode() || isSharedSnapshot) {
         hasEditPermission = true;
       } else {
         const token = auth.extractTokenFromUrl();
@@ -127,7 +131,7 @@
         auth.updateAccessTime(itinerary.id, itinerary.title);
       }
 
-      shareUrl = window.location.href.split("?")[0];
+      shareUrl = `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
 
       const memoData = parseMemoData(itinerary.memo);
       if (typeof memoData.showRoute === "boolean") {
@@ -171,7 +175,7 @@
   }
 
   async function attemptEditModeActivation() {
-    if (isSharedSnapshot) return;
+    if (readOnly || isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -189,7 +193,7 @@
     }
 
     // パスワード未設定かつ共有スナップショットでなければ編集可、設定ありなら入力ダイアログ
-    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
     } else {
@@ -529,7 +533,7 @@
     {/each}
   </div>
 
-  {#if !hasEditPermission && !isSharedSnapshot}
+  {#if !readOnly && !hasEditPermission && !isSharedSnapshot}
     <button class="action-btn edit-btn" onclick={attemptEditModeActivation}>
       <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
         <path

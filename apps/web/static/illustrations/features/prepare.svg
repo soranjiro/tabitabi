@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="240" viewBox="0 0 360 240" fill="none" stroke="#30302d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <title>予算を管理する財布と、旅の持ち物チェックリスト</title>
+  <!-- Filled silhouettes hide strokes belonging to objects behind them. -->
+  <circle cx="95" cy="87" r="28"/>
+  <path d="M83 74L95 89L107 74M95 89V107M83 91H107M83 98H107"/>
+  <path fill="#fbf9f5" d="M49 126L130 116C136 115 140 120 140 126V145H52C37 145 34 127 49 126Z"/>
+  <path fill="#fbf9f5" d="M41 134C46 140 54 141 63 140L139 131V193C139 201 133 205 126 205H51C42 205 37 199 37 190V143C37 139 38 136 41 134Z"/>
+  <path fill="#fbf9f5" d="M120 155H148V183H120C106 183 106 155 120 155Z"/>
+  <circle cx="122" cy="169" r="4"/>
+  <g fill="#fbf9f5">
+    <path d="M163 165V190C163 200 188 200 188 190V165Z"/><ellipse cx="175.5" cy="165" rx="12.5" ry="5"/>
+    <path d="M160 184V209C160 219 185 219 185 209V184Z"/><ellipse cx="172.5" cy="184" rx="12.5" ry="5"/>
+  </g>
+  <path d="M164 196C170 200 179 200 185 196M164 204C170 208 179 208 185 204"/>
+  <rect fill="#fbf9f5" x="213" y="63" width="98" height="145" rx="8"/>
+  <path d="M223 77V197H300V77"/>
+  <path fill="#fbf9f5" d="M246 63V58C246 48 264 48 264 58V63H278V77H233V63Z"/>
+  <circle cx="255" cy="58" r="2"/>
+  <path d="M233 103L238 108L247 97M257 104H285M233 132L238 137L247 126M257 133H279M233 162L238 167L247 156M257 163H275"/>
+  <g transform="rotate(7 307 167)">
+    <rect fill="#fbf9f5" x="285" y="136" width="44" height="58" rx="6"/>
+    <path d="M297 136V126H317V136M297 143V186M317 143V186M294 194V201M321 194V201"/>
+  </g>
+  <path d="M172 89L178 77M185 101L198 97M155 86V73"/>
+</svg>

@@ -1,6 +1,6 @@
 # Contributing
 
-コントリビューションありがとうございます！詳細は [docs/developer/](docs/developer/) を参照してください。
+コントリビューションありがとうございます！詳細は [開発者ガイド](docs/developer/index.md) を参照してください。
 
 ## セットアップ
 
@@ -33,4 +33,4 @@ Conventional Commits に従ってください：
 <type>(<scope>): <subject>
 ```
 
-詳しくは [docs/developer/](docs/developer/) を確認してください。
+詳しくは [開発者ガイド](docs/developer/index.md) を確認してください。

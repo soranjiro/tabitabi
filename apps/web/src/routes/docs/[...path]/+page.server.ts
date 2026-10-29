@@ -2,6 +2,7 @@ import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, EntryGenerator } from './$types';
 import fs from 'node:fs';
 import path from 'node:path';
+import { resolveContainedHtmlPath } from '$lib/server/security';
 
 // Generate all documentation page entries for prerendering
 export const entries: EntryGenerator = () => {
@@ -33,18 +34,20 @@ export const entries: EntryGenerator = () => {
 
 export const load: PageServerLoad = async ({ params, url }) => {
 	const docPath = params.path || 'index';
+	const cleanPath = docPath.endsWith('.html') ? docPath.slice(0, -5) : docPath;
 
-	// Redirect .html URLs to clean URLs
-	// Check both the path parameter and the actual URL
+	// Validate the catch-all input before using it for either redirects or disk reads.
+	const docsRoot = path.join(process.cwd(), 'static', 'docs');
+	const staticDocsPath = resolveContainedHtmlPath(docsRoot, cleanPath);
+	if (!staticDocsPath) {
+		throw error(404, 'Documentation page not found');
+	}
+
+	// Redirect .html URLs to clean URLs only after the path is known to be safe.
 	if (docPath.endsWith('.html') || url.pathname.endsWith('.html')) {
-		const cleanPath = docPath.endsWith('.html') ? docPath.slice(0, -5) : docPath;
 		throw redirect(301, `/docs/${cleanPath}`);
 	}
 
-	// Construct the file path
-	const staticDocsPath = path.join(process.cwd(), 'static', 'docs', `${docPath}.html`);
-
-	// Check if file exists
 	if (!fs.existsSync(staticDocsPath)) {
 		throw error(404, 'Documentation page not found');
 	}

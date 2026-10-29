@@ -194,6 +194,20 @@ describe('PATCH /api/v1/users/me/profile', () => {
     expect(json.error.code).toBe('VALIDATION_ERROR');
   });
 
+  it('returns 400 for usernames containing underscores', async () => {
+    const token = await registerAndGetToken('user4', 'user4@example.com');
+
+    const res = await app.request('/api/v1/users/me/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ username: 'user_name' }),
+    }, env);
+
+    expect(res.status).toBe(400);
+    const json = await res.json() as { success: boolean; error: { code: string } };
+    expect(json.error.code).toBe('VALIDATION_ERROR');
+  });
+
   it('returns 409 for duplicate username', async () => {
     await registerAndGetToken('takenname', 'taken@example.com');
     const token = await registerAndGetToken('user5', 'user5@example.com');

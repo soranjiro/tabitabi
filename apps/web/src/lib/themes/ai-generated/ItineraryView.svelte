@@ -27,6 +27,7 @@
   import "./styles/index.css";
 
   interface Props {
+    readOnly?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: {
@@ -59,6 +60,7 @@
   }
 
   let {
+    readOnly = false,
     itinerary,
     steps,
     onUpdateItinerary,
@@ -76,7 +78,7 @@
   let showPasswordDialog = $state(false);
   let showMemoDialog = $state(false);
   let isAuthenticating = $state(false);
-  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
 
   let selectedThemeId = $state(itinerary.theme_id || "ai-generated");
   let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
@@ -98,6 +100,10 @@
   }
 
   onMount(() => {
+    if (readOnly) {
+      hasEditPermission = false;
+      return;
+    }
     if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
       return;
@@ -109,7 +115,7 @@
     }
     hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
 
-    if (!hasEditPermission && !itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!hasEditPermission && !itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       attemptEditModeActivation();
     }
 
@@ -131,7 +137,7 @@
   }
 
   function handleEditModeToggle() {
-    if (isSharedSnapshot) return;
+    if (readOnly || isSharedSnapshot) return;
     if (hasEditPermission) {
       hasEditPermission = false;
     } else {
@@ -140,7 +146,7 @@
   }
 
   async function attemptEditModeActivation() {
-    if (isSharedSnapshot) return;
+    if (readOnly || isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -158,7 +164,7 @@
     }
 
     // パスワード未設定かつ共有スナップショットでなければ即座に編集可能、設定ありなら入力ダイアログ
-    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
     } else {
@@ -183,7 +189,7 @@
 
   async function copyViewOnlyLink() {
     try {
-      const url = window.location.origin + window.location.pathname;
+      const url = `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
       await navigator.clipboard.writeText(url);
       showCopyMessage = true;
       setTimeout(() => {
@@ -196,7 +202,9 @@
 
   async function copyShareLink(includeToken: boolean) {
     try {
-      let url = window.location.origin + window.location.pathname;
+      let url = includeToken
+        ? `${window.location.origin}/itineraries/${encodeURIComponent(itinerary.id)}`
+        : `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
 
       if (includeToken && hasEditPermission) {
         const token = auth.getToken(itinerary.id);
@@ -359,7 +367,7 @@
 
   <BottomNav
     {hasEditPermission}
-    canRequestEdit={!isSharedSnapshot}
+    canRequestEdit={!readOnly && !isSharedSnapshot}
     {selectedThemeId}
     {secretModeEnabled}
     {secretModeOffset}

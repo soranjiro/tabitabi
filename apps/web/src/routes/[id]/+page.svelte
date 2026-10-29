@@ -1,6 +1,7 @@
 <script lang="ts">
   import { invalidateAll } from "$app/navigation";
   import { itineraryApi } from "$lib/api/itinerary";
+  import { backgroundApi } from "$lib/api/background";
   import { userApi } from "$lib/api/user";
   import { stepApi } from "$lib/api/step";
   import { auth } from "$lib/auth";
@@ -12,7 +13,7 @@
   import SharedBook from '$lib/sharing/SharedBook.svelte';
   let copiedNotice = $state(false);
 
-  let { data } = $props();
+  let { data, readOnly = false } = $props();
 
   let ItineraryView = $derived(data.theme.components.ItineraryView);
   let backgroundColor = $derived(
@@ -59,6 +60,7 @@
 
   // Use local state for steps to allow client-side updates (e.g. unmasking secrets)
   let steps = $state(data.steps);
+  let editAccessEpoch = $state(0);
 
   // Freeze itinerary object to prevent accidental modification
   let itinerary = $derived.by(() => {
@@ -73,7 +75,7 @@
   onMount(() => {
     const init = async () => {
       // 公開スナップショットは最近のしおり・アカウント同期の対象にしない。
-      if (!data.itinerary.source_itinerary_id) {
+      if (!data.itinerary.is_shared_snapshot && !readOnly) {
         // Record password protection state for client-side header resolution
         auth.setPasswordProtected(
           data.itinerary.id,
@@ -86,7 +88,7 @@
 
       // 開いた通常しおりは、ログイン中のアカウントにも保存する。
       // 公開スナップショットは閲覧専用のため紐付けない。
-      if (!data.itinerary.source_itinerary_id && userAuth.isLoggedIn()) {
+      if (!data.itinerary.is_shared_snapshot && !readOnly && userAuth.isLoggedIn()) {
         try {
           await userApi.syncBookmarks([data.itinerary.id]);
         } catch {
@@ -94,21 +96,39 @@
         }
       }
 
-      // Check if we have edit permission and need to re-fetch steps to reveal secrets
-      const token =
-        auth.extractTokenFromUrl() || auth.getToken(data.itinerary.id);
-      if (token && data.itinerary.is_password_protected) {
-        // If we have a token, we might be in edit mode.
-        // If the initial load was SSR, steps might be masked.
-        // We should re-fetch to get the unmasked data.
-        // We can check if any step is hidden or just force re-fetch if secret mode is enabled.
-        if (data.itinerary.secret_settings?.enabled) {
+      // A valid edit JWT can be linked to the currently signed-in account.
+      // Bookmark synchronization above intentionally never grants edit rights.
+      const urlToken = auth.extractTokenFromUrl();
+      if (urlToken && !data.itinerary.is_shared_snapshot && !readOnly) {
+        auth.setToken(data.itinerary.id, data.itinerary.title, urlToken);
+      }
+      let token = auth.getToken(data.itinerary.id);
+      const hadLocalToken = Boolean(token);
+      if (!data.itinerary.is_shared_snapshot && !readOnly && userAuth.isLoggedIn()) {
+        if (token) {
           try {
-            const unmaskedSteps = await stepApi.list(data.itinerary.id);
-            steps = unmaskedSteps;
-          } catch (e) {
-            console.error("Failed to re-fetch steps:", e);
+            await userApi.claimEditorAccess(data.itinerary.id);
+          } catch {
+            // Expired/invalid local tokens must never create account permissions.
           }
+        }
+        try {
+          const restored = await userApi.restoreEditorAccess(data.itinerary.id);
+          token = restored.token;
+          auth.setToken(data.itinerary.id, data.itinerary.title, token);
+          // Themes decide edit visibility during mount; remount only when a
+          // fresh device has just regained its editing capability.
+          if (!hadLocalToken) editAccessEpoch += 1;
+        } catch {
+          // No saved grant: protected itineraries still require a password.
+        }
+      }
+      if (token && data.itinerary.is_password_protected) {
+        try {
+          // Server rendering may have masked secret steps before authentication.
+          steps = await stepApi.list(data.itinerary.id);
+        } catch (error) {
+          console.error("Failed to re-fetch steps:", error);
         }
       }
     };
@@ -140,13 +160,33 @@
     tags?: string[];
     metadata_initialized?: boolean;
     memo?: string;
+    background_image?: string | null;
+    background_display?: "cover" | "page";
     secret_settings?: {
       enabled: boolean;
       offset_minutes: number;
     } | null;
   }) {
     try {
-      await itineraryApi.update(data.itinerary.id, updateData);
+      const {
+        background_image: backgroundImage,
+        background_display: backgroundDisplay,
+        ...itineraryUpdate
+      } = updateData;
+
+      if (backgroundImage !== undefined || backgroundDisplay !== undefined) {
+        await backgroundApi.update(data.itinerary.id, {
+          background_image: backgroundImage !== undefined
+            ? backgroundImage
+            : (data.itinerary.background_image ?? null),
+          background_display: backgroundDisplay ?? data.itinerary.background_display ?? "cover",
+        });
+      }
+
+      if (Object.keys(itineraryUpdate).length > 0) {
+        await itineraryApi.update(data.itinerary.id, itineraryUpdate);
+      }
+
       await invalidateAll();
       if (updateData.title) {
         auth.updateAccessTime(data.itinerary.id, updateData.title);
@@ -237,7 +277,8 @@
     }
   }
 
-  let isViewOnly = $derived(!!data.itinerary.source_itinerary_id);
+  let isPublishedSnapshot = $derived(!!data.itinerary.is_shared_snapshot);
+  let canonicalPath = $derived(readOnly ? `/s/${data.itinerary.id}` : `/itineraries/${data.itinerary.id}`);
 
 
 </script>
@@ -248,14 +289,14 @@
     name="description"
     content="{data.itinerary.title}の旅のしおり。たびたびで作成された旅行計画を確認できます。"
   />
-  <link rel="canonical" href="https://tabitabi.pages.dev/itineraries/{data.itinerary.id}" />
+  <link rel="canonical" href="https://tabitabi.pages.dev{canonicalPath}" />
   <meta property="og:title" content="{data.itinerary.title} - たびたび" />
   <meta
     property="og:description"
     content="{data.itinerary.title}の旅のしおり。たびたびで作成された旅行計画を確認できます。"
   />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://tabitabi.pages.dev/itineraries/{data.itinerary.id}" />
+  <meta property="og:url" content="https://tabitabi.pages.dev{canonicalPath}" />
   <meta property="og:image" content="https://tabitabi.pages.dev/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -271,20 +312,21 @@
   <meta name="theme-color" content={backgroundColor} />
 </svelte:head>
 
-{#if isViewOnly}
+{#if isPublishedSnapshot}
   <SharedBook content={{ itinerary: data.itinerary, steps: data.steps }} />
 {:else}
   {#if copiedNotice}<p class="copy-notice" role="status">✓ 自分のしおりを作りました</p>{/if}
 
-{#key data.itinerary.theme_id}
+{#key `${data.itinerary.theme_id}:${editAccessEpoch}`}
   <ItineraryView
     {itinerary}
     {steps}
-    onUpdateItinerary={isViewOnly ? undefined : handleUpdateItinerary}
-    onCreateStep={isViewOnly ? undefined : handleCreateStep}
-    onUpdateStep={isViewOnly ? undefined : handleUpdateStep}
-    onBatchUpdateDates={isViewOnly ? undefined : handleBatchUpdateDates}
-    onDeleteStep={isViewOnly ? undefined : handleDeleteStep}
+    {readOnly}
+    onUpdateItinerary={readOnly ? undefined : handleUpdateItinerary}
+    onCreateStep={readOnly ? undefined : handleCreateStep}
+    onUpdateStep={readOnly ? undefined : handleUpdateStep}
+    onBatchUpdateDates={readOnly ? undefined : handleBatchUpdateDates}
+    onDeleteStep={readOnly ? undefined : handleDeleteStep}
   />
 {/key}
 

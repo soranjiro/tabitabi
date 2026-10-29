@@ -24,6 +24,7 @@
   import "./styles/index.css";
 
   interface Props {
+    readOnly?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: {
@@ -56,6 +57,7 @@
   }
 
   let {
+    readOnly = false,
     itinerary,
     steps,
     onUpdateItinerary,
@@ -76,7 +78,7 @@
   let planBEntries = $state<PlanBEntry[]>([]);
   let newPlanBEntries = $state<PlanBEntry[]>([]);
   let hasEditPermission = $state(false);
-  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
   let showPasswordDialog = $state(false);
   let password = $state("");
   let isAuthenticating = $state(false);
@@ -420,7 +422,9 @@
   onMount(() => {
     (async () => {
       // In demo mode, skip auth checks and allow editing locally
-      if (getIsDemoMode() || isSharedSnapshot) {
+      if (readOnly) {
+        hasEditPermission = false;
+      } else if (getIsDemoMode() || isSharedSnapshot) {
         hasEditPermission = true;
       } else {
         const fromUrl = auth.extractTokenFromUrl();
@@ -600,14 +604,14 @@
   }
 
   function copyShareUrl() {
-    const url = window.location.href;
+    const url = `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
     navigator.clipboard.writeText(url);
     showCopyMessage = true;
     setTimeout(() => (showCopyMessage = false), 2000);
   }
 
   async function attemptEditModeActivation(): Promise<boolean> {
-    if (isSharedSnapshot) return false;
+    if (readOnly || isSharedSnapshot) return false;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return true;
@@ -625,7 +629,7 @@
       }
     }
 
-    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
       return true;
@@ -636,7 +640,7 @@
   }
 
   async function handleEditButtonClick() {
-    if (isSharedSnapshot) return;
+    if (readOnly || isSharedSnapshot) return;
     if (hasEditPermission) {
       isEditMode = !isEditMode;
       return;
@@ -741,7 +745,7 @@
             </svg>
           </button>
         {/if}
-        {#if !isSharedSnapshot}
+        {#if !readOnly && !isSharedSnapshot}
           <button
             class="pq-btn pq-btn-icon"
             onclick={handleEditButtonClick}
@@ -1275,7 +1279,7 @@
       <h2 class="pq-form-title">SHARE ADVENTURE</h2>
       <p class="pq-share-description">Share this URL with your party:</p>
       <div class="pq-share-url">
-        {typeof window !== "undefined" ? window.location.href : ""}
+        {typeof window !== "undefined" ? `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}` : ""}
       </div>
       <div class="pq-form-actions">
         <button class="pq-btn" onclick={() => (showShareDialog = false)}

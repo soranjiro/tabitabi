@@ -12,6 +12,7 @@
   import "./styles/index.css";
 
   interface Props {
+    readOnly?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: {
@@ -42,6 +43,7 @@
   }
 
   let {
+    readOnly = false,
     itinerary,
     steps,
     onUpdateItinerary,
@@ -61,7 +63,7 @@
   let editedMemo = $state(itinerary.memo || "");
   let password = $state("");
   let isAuthenticating = $state(false);
-  let isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  let isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
 
   function isCompleted(step: Step): boolean {
     return step.notes?.startsWith("Done") ?? false;
@@ -75,6 +77,10 @@
   );
 
   onMount(() => {
+    if (readOnly) {
+      hasEditPermission = false;
+      return;
+    }
     if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
       return;
@@ -104,7 +110,7 @@
   }
 
   async function attemptEditModeActivation() {
-    if (isSharedSnapshot) return;
+    if (readOnly || isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -122,7 +128,7 @@
     }
 
     // パスワード未設定かつ共有スナップショットでなければ即編集可、設定ありならダイアログ表示
-    if (!itinerary.is_password_protected && !itinerary.source_itinerary_id) {
+    if (!itinerary.is_password_protected && !itinerary.is_shared_snapshot) {
       hasEditPermission = true;
       auth.updateAccessTime(itinerary.id, itinerary.title);
     } else {
@@ -283,7 +289,7 @@
     </div>
 
     <div class="shopping-header-controls">
-      {#if !hasEditPermission && !isSharedSnapshot}
+      {#if !readOnly && !hasEditPermission && !isSharedSnapshot}
         <button onclick={attemptEditModeActivation} class="shopping-header-btn">
           編集モード
         </button>

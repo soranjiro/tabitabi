@@ -7,8 +7,8 @@
   import { CloseIcon } from '$lib/themes/standard/core/components/icons/index.svelte';
   import './packing.css';
 
-  interface Props { show: boolean; itineraryId: string; canEdit: boolean; onClose: () => void; }
-  let { show, itineraryId, canEdit, onClose }: Props = $props();
+  interface Props { show: boolean; itineraryId: string; canEdit: boolean; onOpenMemberSettings: () => void; onClose: () => void; }
+  let { show, itineraryId, canEdit, onOpenMemberSettings, onClose }: Props = $props();
   let data = $state<PackingData>({ members: [], groups: [], items: [] });
   let loading = $state(false);
   let loaded = $state(false);
@@ -300,7 +300,14 @@
       {#if loading}<p class="standard-packing-status">読み込み中…</p>
       {:else if error}<p class="standard-packing-status">{error}</p>
       {:else if !data.members.length}
-        <div class="standard-packing-empty"><span>👥</span><h3>旅行メンバーを登録しましょう</h3><p>しおり設定の「旅行メンバー」から追加すると、持ち物とお金の管理で共通して使えます。</p></div>
+        <div class="standard-packing-empty">
+          <span>👥</span>
+          <h3>旅行メンバーを登録しましょう</h3>
+          <p>旅行メンバーは、持ち物とお金の管理で共通して使えます。</p>
+          {#if canEdit}
+            <button type="button" class="standard-packing-add-members" onclick={onOpenMemberSettings}>メンバーを追加 <span aria-hidden="true">→</span></button>
+          {/if}
+        </div>
       {:else}
         <button class="standard-packing-me" onclick={() => showIdentity = true}><span>👤 自分</span><strong>{me?.name ?? '選択してください'}</strong><i>⌄</i></button>
         <div class="standard-packing-tabs" role="tablist"><button class:active={tab === 'mine'} onclick={() => tab = 'mine'}>自分</button><button class:active={tab === 'everyone'} onclick={() => tab = 'everyone'}>みんな</button></div>

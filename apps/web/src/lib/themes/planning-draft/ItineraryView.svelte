@@ -12,9 +12,17 @@
   import { getMemoText, updateMemoText } from "$lib/memo";
   import { getAvailablePalettes, getAvailableThemes, getPalette } from "$lib/themes/catalog";
   import {
+    buildStepOrderUpdates,
     getStepSchedule,
     getStepTimeLabel,
   } from "$lib/planning/schedule";
+  import {
+    nextLocalDate,
+    planningDateRange,
+    planningDuration,
+    planningEndFromStart,
+    type PlanningWhen,
+  } from "$lib/planning/datetime";
   import BottomNav from "../standard/core/components/BottomNav.svelte";
   import MoreMenu from "../standard/core/components/MoreMenu.svelte";
   import SettingsDialog from "../standard/core/components/SettingsDialog.svelte";
@@ -25,16 +33,21 @@
   import PackingOverlay from "$lib/features/packing/PackingOverlay.svelte";
   import { openPrintStudio } from "$lib/print";
   import TypePicker from "../standard/core/components/TypePicker.svelte";
+  import PlaceMap from "../planning-map/PlaceMap.svelte";
+  import StepDetail from "./StepDetail.svelte";
+  import PlaceEditor from "./PlaceEditor.svelte";
   import "../standard/core/styles/index.css";
 
   interface Props {
+    readOnly?: boolean;
     mapPlanning?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
     onUpdateItinerary?: (data: {
       title?: string; theme_id?: string; palette_id?: string; packing_enabled?: boolean;
       prefecture_slugs?: string[]; areas?: string[]; tags?: string[]; metadata_initialized?: boolean;
-      memo?: string; secret_settings?: { enabled: boolean; offset_minutes: number } | null;
+      memo?: string; background_image?: string | null; background_display?: "cover" | "page";
+      secret_settings?: { enabled: boolean; offset_minutes: number } | null;
     }) => Promise<void>;
     onCreateStep?: (data: {
       title: string;
@@ -64,19 +77,22 @@
     onBatchUpdateDates?: (updates: import("@tabitabi/types").BatchStepDateUpdate[]) => Promise<void>;
   }
 
-  let { itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, onBatchUpdateDates, mapPlanning = false }: Props = $props();
+  let { readOnly = false, itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, onBatchUpdateDates, mapPlanning = false }: Props = $props();
   let placeDraft = $state<Place | null>(null);
   let formError = $state('');
   let descriptionEditing = $state(false);
   function selectPlace(place: PlaceResult) {
-    placeDraft = { lat:place.lat, lng:place.lng, priority:placeDraft?.priority };
-    if (!form.title.trim() || !editingStep) form.title = place.name;
+    placeDraft = { lat:place.lat, lng:place.lng, priority:form.isPriority };
+    if (!form.title.trim()) form.title = place.name;
     form.location = `${place.name} ${place.address}`;
   }
 
   function focusSheet(node: HTMLElement) {
     const previous = document.activeElement as HTMLElement | null;
-    node.querySelector<HTMLInputElement>('input')?.focus();
+    const initialFocus = editingStep
+      ? node.querySelector<HTMLButtonElement>('.sheet-title button')
+      : node.querySelector<HTMLInputElement>('input');
+    initialFocus?.focus();
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !saving) { sheetOpen = false; event.preventDefault(); }
       if (event.key !== 'Tab') return;
@@ -89,10 +105,17 @@
     return { destroy() { node.removeEventListener('keydown', keydown); previous?.focus(); } };
   }
 
-  type ScreenMode = "plan" | "preview";
-  type WhenChoice = "undecided" | "day";
+  type ScreenMode = "plan" | "map" | "schedule";
+  type WhenChoice = PlanningWhen;
 
-  let screenMode = $state<ScreenMode>("plan");
+  let screenMode = $state<ScreenMode>(mapPlanning ? "map" : "plan");
+  let selectedStepId = $state<string | null>(null);
+  let detailOpen = $state(false);
+  let placeEditing = $state(false);
+  let mapPinEditing = $state(false);
+  let extraFieldsOpen = $state(false);
+  let timeDurationMs = $state(60 * 60 * 1000);
+  let searchQuery = $state("");
   let hasEditPermission = $state(false);
   let editingTitle = $state(false);
   let titleDraft = $state("");
@@ -101,7 +124,7 @@
   let saving = $state(false);
   let batchDayOpen = $state(false);
   let dayDateDrafts = $state<Record<number, string>>({});
-  let memoOpen = $state(true);
+  let memoOpen = $state(false);
   let memoDraft = $state("");
   let themeChoicesOpen = $state(false);
   let showMoreMenu = $state(false);
@@ -110,10 +133,12 @@
   let showMoney = $state(false);
   let showPacking = $state(false);
   let isAuthenticating = $state(false);
-  let showCopyMessage = $state(false);
+  let copyMessage = $state<string | null>(null);
   let showSettingsDialog = $state(false);
   let showMetadataDialog = $state(false);
   let selectedPaletteId = $state(itinerary.palette_id ?? "neutral");
+  let selectedBackgroundImage = $state<string | null>(itinerary.background_image ?? null);
+  let selectedBackgroundDisplay = $state<"cover" | "page">(itinerary.background_display ?? "cover");
   let secretModeEnabled = $state(itinerary.secret_settings?.enabled ?? false);
   let secretModeOffset = $state(itinerary.secret_settings?.offset_minutes ?? 60);
   let packingEnabled = $state(itinerary.packing_enabled ?? true);
@@ -121,7 +146,7 @@
   let itineraryAreas = $state([...(itinerary.areas ?? [])]);
   let itineraryTags = $state([...(itinerary.tags ?? [])]);
 
-  const isSharedSnapshot = $derived(!!itinerary.source_itinerary_id);
+  const isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
 
   let form = $state({
     title: "",
@@ -129,15 +154,20 @@
     when: "undecided" as WhenChoice,
     date: "",
     time: "",
+    endDate: "",
     endTime: "",
     location: "",
     link: "",
     type: STEP_TYPE.NORMAL_GENERAL as StepType,
+    isPriority: false,
   });
 
   const previewPin = $derived<Step[]>(placeDraft ? [{ id:'preview-pin', itinerary_id:itinerary.id, title:form.title || '選んだ場所', location:form.location, notes:'', start_at:null, end_at:null, time_unspecified:false, ...placeFields(placeDraft), sort_order:null, created_at:'', updated_at:'' }] : []);
+  const selectedStep = $derived(steps.find((step) => step.id === selectedStepId) ?? null);
+  const mapNumbers = $derived(Object.fromEntries(steps.map((step, index) => [step.id, index + 1])));
+  const filteredSteps = $derived(steps.filter((step) => `${step.title} ${step.location ?? ''}`.toLowerCase().includes(searchQuery.toLowerCase())));
 
-  const otherThemes = $derived(getAvailableThemes().filter((theme) => theme.id !== itinerary.theme_id));
+  const otherThemes = $derived(getAvailableThemes().filter((theme) => theme.id !== itinerary.theme_id && !(mapPlanning && theme.id === 'planning-draft')));
   const palettes = getAvailablePalettes();
   const paletteStyle = $derived(Object.entries(getPalette(selectedPaletteId).colors).map(([name, value]) => `${name}:${value}`).join(";"));
 
@@ -150,6 +180,10 @@
     window.addEventListener('hashchange', openFeatureFromHash);
     titleDraft = itinerary.title;
     memoDraft = getMemoText(itinerary.memo);
+    if (readOnly) {
+      hasEditPermission = false;
+      return () => window.removeEventListener('hashchange', openFeatureFromHash);
+    }
     if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
       return () => window.removeEventListener('hashchange', openFeatureFromHash);
@@ -168,6 +202,12 @@
     else showPacking = false;
   }
 
+  function openMemberSettings(feature: 'money' | 'packing') {
+    if (!hasEditPermission || isSharedSnapshot) return;
+    closeFeature(feature);
+    showSettingsDialog = true;
+  }
+
   async function onPasswordAuth(password: string) {
     await handlePasswordAuth({
       shioriId: itinerary.id,
@@ -183,6 +223,7 @@
   }
 
   async function attemptEditModeActivation() {
+    if (readOnly || isSharedSnapshot) return;
     if (getIsDemoMode()) {
       hasEditPermission = true;
       return;
@@ -202,18 +243,53 @@
   }
 
   function handleEditModeToggle() {
-    if (isSharedSnapshot) return;
+    if (readOnly || isSharedSnapshot) return;
     if (hasEditPermission) hasEditPermission = false;
     else void attemptEditModeActivation();
   }
 
+  function shouldUseNativeShare(): boolean {
+    return (
+      typeof navigator.share === "function" &&
+      (navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches)
+    );
+  }
+
+  async function shareOrCopyLink(url: string, copiedMessage: string) {
+    if (shouldUseNativeShare()) {
+      showShareDialog = false;
+      try {
+        await navigator.share({ title: itinerary.title, url });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.error("Failed to share:", err);
+      }
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      showShareDialog = false;
+      copyMessage = copiedMessage;
+      setTimeout(() => (copyMessage = null), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  }
+
   async function copyShareLink(includeToken: boolean) {
     const token = includeToken ? auth.getToken(itinerary.id) : null;
-    const url = `${window.location.origin}${window.location.pathname}${token ? `?token=${token}` : ""}`;
-    await navigator.clipboard.writeText(url);
-    showShareDialog = false;
-    showCopyMessage = true;
-    setTimeout(() => (showCopyMessage = false), 2000);
+    const base = includeToken
+      ? `${window.location.origin}/itineraries/${encodeURIComponent(itinerary.id)}`
+      : `${window.location.origin}/s/${encodeURIComponent(itinerary.id)}`;
+    const url = `${base}${token ? `?token=${token}` : ""}`;
+    const copiedMessage = itinerary.is_password_protected
+      ? includeToken
+        ? "編集用リンクをコピーしました"
+        : "閲覧用リンクをコピーしました"
+      : "リンクをコピーしました";
+
+    await shareOrCopyLink(url, copiedMessage);
   }
 
   function localDateKey(value: number): string {
@@ -263,11 +339,60 @@
 
   const isComplete = $derived(steps.length > 0 && steps.every((step) => getStepSchedule(step).precision === "time"));
 
-  function timestampFor(dateValue: string, time: string): number {
-    const date = new Date(`${dateValue}T00:00:00`);
-    const [hour, minute] = (time || "12:00").split(":").map(Number);
-    date.setHours(hour, minute, 0, 0);
-    return date.getTime();
+  function timeFor(value: number | null): string {
+    if (value === null) return "";
+    const date = new Date(value);
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  }
+
+  function dateTimeLabel(step: Step): string {
+    const precision = getStepSchedule(step).precision;
+    if (precision === "undecided") return "未定";
+    const start = new Date(step.start_at!);
+    const startDate = start.toLocaleDateString("ja-JP");
+    if (precision === "day") return `${startDate} · 日付決定（時刻未定）`;
+    const end = step.end_at === null ? null : new Date(step.end_at);
+    const endLabel = end ? `${localDateKey(end.getTime()) !== localDateKey(step.start_at!) ? `${end.toLocaleDateString("ja-JP")} ` : ""}${timeFor(step.end_at)}` : "";
+    return `${startDate} ${timeFor(step.start_at)}${endLabel ? ` 〜 ${endLabel}` : ""}`;
+  }
+
+  function stepIcon(type: Step['type']): string {
+    if (type?.includes('food') || type?.includes('meal')) return '🍽';
+    if (type?.includes('hotel')) return '🛏';
+    if (type?.includes('sightseeing')) return '📍';
+    if (type?.includes('train')) return '🚆';
+    if (type?.includes('bus')) return '🚌';
+    if (type?.includes('plane')) return '✈';
+    if (type?.includes('car')) return '🚗';
+    if (type?.includes('shopping')) return '🛍';
+    return '📝';
+  }
+
+  function openDetail(step: Step) { selectedStepId = step.id; detailOpen = true; }
+
+  function openPlaceEditor(step: Step) {
+    selectedStepId = step.id;
+    detailOpen = false;
+    placeEditing = true;
+  }
+
+  async function savePlace(place: Place) {
+    if (!selectedStep || !onUpdateStep) return;
+    await onUpdateStep(selectedStep.id, placeFields(place));
+    placeEditing = false;
+  }
+
+  async function removePin() {
+    if (!selectedStep || !onUpdateStep) return;
+    await onUpdateStep(selectedStep.id, { pin_latitude: null, pin_longitude: null });
+    placeEditing = false;
+  }
+
+  async function removeSelectedStep() {
+    if (!selectedStep || !hasEditPermission || !onDeleteStep || !confirm(`「${selectedStep.title}」を削除しますか？`)) return;
+    await onDeleteStep(selectedStep.id);
+    selectedStepId = null;
+    detailOpen = false;
   }
 
   function openCreate(place?: Place) {
@@ -275,7 +400,9 @@
     placeDraft = place ?? null;
     formError = '';
     editingStep = null;
-    form = { title: "", note: "", when: "undecided", date: legacyDates.at(-1) ?? localDateKey(Date.now()), time: "", endTime: "", location: "", link: "", type: STEP_TYPE.NORMAL_GENERAL as StepType };
+    form = { title: "", note: "", when: "undecided", date: legacyDates.at(-1) ?? localDateKey(Date.now()), time: "09:00", endDate: legacyDates.at(-1) ?? localDateKey(Date.now()), endTime: "10:00", location: "", link: "", type: STEP_TYPE.NORMAL_GENERAL as StepType, isPriority: false };
+    timeDurationMs = 60 * 60 * 1000;
+    extraFieldsOpen = false;
     sheetOpen = true;
   }
 
@@ -291,17 +418,39 @@
     form = {
       title: step.title,
       note: getMemoText(step.notes),
-      when: schedule.precision === "undecided" ? "undecided" : "day",
+      when: schedule.precision === "undecided" ? "undecided" : schedule.precision === "day" ? "day" : "time",
       date: step.start_at === null ? (legacyDates.at(-1) ?? localDateKey(Date.now())) : localDateKey(step.start_at),
-      time,
+      time: time || "09:00",
+      endDate: step.end_at === null ? (legacyDates.at(-1) ?? localDateKey(Date.now())) : localDateKey(step.end_at),
       endTime: schedule.precision === "time"
-        ? `${String(new Date(step.end_at!).getHours()).padStart(2, "0")}:${String(new Date(step.end_at!).getMinutes()).padStart(2, "0")}`
-        : "",
+        ? timeFor(step.end_at) : "10:00",
       location: step.location ?? "",
       link: step.link ?? "",
       type: step.type ?? STEP_TYPE.NORMAL_GENERAL,
+      isPriority: !!step.is_priority,
     };
+    timeDurationMs = step.start_at !== null && step.end_at !== null && step.end_at > step.start_at
+      ? step.end_at - step.start_at
+      : 60 * 60 * 1000;
+    extraFieldsOpen = !!(form.note || form.link || placeDraft?.priority);
     sheetOpen = true;
+  }
+
+  function syncEndFromStart() {
+    if (form.when !== "time" || !form.date || !form.time) return;
+    const next = planningEndFromStart({
+      date: form.date,
+      time: form.time,
+      durationMs: timeDurationMs,
+    });
+    form.endDate = next.endDate;
+    form.endTime = next.endTime;
+  }
+
+  function rememberDuration() {
+    if (form.when !== "time") return;
+    const duration = planningDuration(form);
+    if (duration !== null) timeDurationMs = duration;
   }
 
   async function saveStep(event: SubmitEvent) {
@@ -310,25 +459,20 @@
     formError = '';
     saving = true;
     try {
-      const isUndecided = form.when === "undecided";
-      const startAt = isUndecided ? null : timestampFor(form.date, form.time || "12:00");
-      const endAt = startAt === null ? null : form.time && form.endTime
-        ? timestampFor(form.date, form.endTime)
-        : startAt + 60 * 60 * 1000;
-      if (startAt !== null && endAt !== null && endAt < startAt) {
-        alert("終了時刻は開始時刻より後に設定してください");
-        return;
-      }
+      let range: ReturnType<typeof planningDateRange>;
+      try { range = planningDateRange(form); }
+      catch (error) { formError = error instanceof Error ? error.message : '日時を確認してください。'; return; }
       const data = {
         title: form.title.trim(),
-        start_at: startAt,
-        end_at: endAt,
+        start_at: range.start_at,
+        end_at: range.end_at,
         notes: updateMemoText(editingStep?.notes, form.note),
         type: form.type,
         is_all_day: false,
-        time_unspecified: !isUndecided && !form.time,
+        time_unspecified: range.time_unspecified,
         sort_order: editingStep?.sort_order ?? Date.now(),
-        ...(mapPlanning ? placeFields(placeDraft) : {}),
+        ...placeFields(placeDraft),
+        is_priority: form.isPriority,
       };
       const location = form.location.trim();
       const link = form.link.trim();
@@ -339,6 +483,8 @@
       }
       sheetOpen = false;
       editingStep = null;
+      selectedStepId = null;
+      detailOpen = false;
     } catch {
       formError = '保存できませんでした。入力内容は残っています。もう一度お試しください。';
     } finally {
@@ -359,13 +505,10 @@
 
   async function moveStep(step: Step, direction: -1 | 1, group: Step[]) {
     if (!onUpdateStep) return;
-    const currentIndex = group.findIndex((item) => item.id === step.id);
-    const target = group[currentIndex + direction];
-    if (!target) return;
-    const currentOrder = step.sort_order ?? currentIndex;
-    const targetOrder = target.sort_order ?? currentIndex + direction;
-    await onUpdateStep(step.id, { sort_order: targetOrder });
-    await onUpdateStep(target.id, { sort_order: currentOrder });
+    const updates = buildStepOrderUpdates(group, step.id, direction);
+    await Promise.all(updates.map((update) =>
+      onUpdateStep!(update.id, { sort_order: update.sort_order }),
+    ));
   }
 
   async function moveDay(group: { steps: Step[] }, value: string) {
@@ -436,6 +579,24 @@
     await onUpdateItinerary?.({ palette_id: paletteId });
   }
 
+  async function handleBackgroundChange(backgroundImage: string | null, backgroundDisplay: "cover" | "page") {
+    selectedBackgroundImage = backgroundImage;
+    selectedBackgroundDisplay = backgroundDisplay;
+    await onUpdateItinerary?.({
+      background_image: backgroundImage,
+      background_display: backgroundDisplay,
+    });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("tabitabi:background-changed", {
+        detail: {
+          itineraryId: itinerary.id,
+          backgroundImage,
+          backgroundDisplay,
+        },
+      }));
+    }
+  }
+
   async function handleSecretModeChange(enabled: boolean, offset: number) {
     secretModeEnabled = enabled;
     secretModeOffset = offset;
@@ -452,7 +613,7 @@
 <svelte:head><meta name="theme-color" content="#faf9f5" /></svelte:head>
 
 <div class="draft-theme" style={paletteStyle} class:map-planning={mapPlanning}>
-  {#if showCopyMessage}<div class="copy-message">コピーしました</div>{/if}
+  {#if copyMessage}<div class="copy-message">{copyMessage}</div>{/if}
   <header class="draft-header">
     <a class="brand" href="/">たびたび</a>
     {#if editingTitle}
@@ -460,49 +621,42 @@
     {:else}
       <button class="title-button" onclick={() => hasEditPermission && (editingTitle = true)} disabled={!hasEditPermission}>{itinerary.title}</button>
     {/if}
-    <p>{mapPlanning ? '地図を見ながら、行きたい場所と日程をまとめる' : 'まだ決まっていなくても、ここから。'}</p>
-    {#if mapPlanning}
+    <p>候補を集め、場所と日程を少しずつ決める。</p>
       <section class="trip-description" aria-label="旅のメモ">
-        <div class="description-heading"><strong>旅のメモ</strong>{#if hasEditPermission && !descriptionEditing}<button onclick={() => descriptionEditing = true}>編集</button>{/if}</div>
-        {#if descriptionEditing}
+        <div class="description-heading"><button class="memo-toggle" onclick={() => memoOpen = !memoOpen}>旅のメモ {memoOpen ? '▴' : '▾'}</button>{#if memoOpen && hasEditPermission && !descriptionEditing}<button onclick={() => descriptionEditing = true}>編集</button>{/if}</div>
+        {#if memoOpen && descriptionEditing}
           <textarea aria-label="旅のメモ" bind:value={memoDraft} rows="5"></textarea>
           <div class="description-actions"><button class="cancel" onclick={() => { memoDraft = getMemoText(itinerary.memo); descriptionEditing = false; }}>キャンセル</button><button onclick={saveMemo}>保存</button></div>
-        {:else}
+        {:else if memoOpen}
           <p class="description-copy">{getMemoText(itinerary.memo) || '旅の目的や、忘れたくないことをメモできます。'}</p>
         {/if}
       </section>
-    {/if}
   </header>
 
   <nav class="mode-tabs" aria-label="表示切り替え">
-    <button class:active={screenMode === "plan"} onclick={() => (screenMode = "plan")}>{mapPlanning ? '地図' : '予定を決める'}</button>
-    <button class:active={screenMode === "preview"} onclick={() => (screenMode = "preview")}>日程</button>
+    <button class:active={screenMode === "plan"} onclick={() => (screenMode = "plan")}>計画</button>
+    <button class:active={screenMode === "map"} onclick={() => (screenMode = "map")}>地図</button>
+    <button class:active={screenMode === "schedule"} onclick={() => (screenMode = "schedule")}>日程</button>
   </nav>
 
   <main>
-    {#if screenMode === "plan" && mapPlanning}
-      {#await import('../planning-map/PlanningBoard.svelte')}
-        <p role="status">地図を読み込んでいます…</p>
-      {:then module}
-        <module.default {steps} canEdit={hasEditPermission} onCreate={openCreate} onEdit={openEdit} onPreview={() => screenMode = 'preview'} />
-      {:catch}
-        <p role="alert">地図画面を読み込めませんでした。再読み込みするか、旅程を見る画面をご利用ください。</p>
-      {/await}
-    {:else if screenMode === "plan"}
+    {#if screenMode === "plan"}
+      <div class="planning-workspace"><div class="planning-list">
       <section class="planning-intro">
         <span>候補を作る</span><i>→</i><span>日を決める</span><i>→</i><span>時間を決める</span>
       </section>
 
       {#if hasEditPermission}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
+      <label class="plan-search">予定を検索<input bind:value={searchQuery} placeholder="タイトル・場所" /></label>
 
       {#if undecidedSteps.length > 0}
         <section class="draft-section">
           <div class="section-heading"><div><h2>まだ決めていない</h2><p>{undecidedSteps.length}件の候補</p></div></div>
           <div class="step-list">
-            {#each undecidedSteps as step, index}
+            {#each undecidedSteps.filter((step) => filteredSteps.includes(step)) as step, index}
               <article class="step-row">
-                <button class="step-main" onclick={() => hasEditPermission && openEdit(step)} disabled={!hasEditPermission}>
-                  <span class="circle"></span><span><strong>{step.title}</strong>{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</span>
+                <button class="step-main" onclick={() => openDetail(step)}>
+                  <span class="circle" aria-hidden="true">{stepIcon(step.type)}</span><span><strong>{step.title}</strong><small>未定{step.location ? ` · ${step.location}` : ''}</small>{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</span>
                 </button>
                 {#if hasEditPermission}<div class="order-buttons"><button onclick={() => moveStep(step, -1, undecidedSteps)} disabled={index === 0} aria-label="上へ移動">↑</button><button onclick={() => moveStep(step, 1, undecidedSteps)} disabled={index === undecidedSteps.length - 1} aria-label="下へ移動">↓</button></div>{/if}
               </article>
@@ -516,10 +670,10 @@
           <div class="section-heading"><div><h2>{group.date.replaceAll('-', '/')}</h2><p>Day {group.day} · {group.steps.length}件</p></div></div>
           {#if group.steps.length}
             <div class="step-list">
-              {#each group.steps as step, index}
+              {#each group.steps.filter((step) => filteredSteps.includes(step)) as step, index}
                 <article class="step-row">
-                  <button class="step-main" onclick={() => hasEditPermission && openEdit(step)} disabled={!hasEditPermission}>
-                    <span class="circle"></span><span><strong>{step.title}</strong><small class:time-decided={getStepSchedule(step).precision === "time"}>{getStepTimeLabel(step)}</small>{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</span>
+                  <button class="step-main" onclick={() => openDetail(step)}>
+                    <span class="circle" aria-hidden="true">{stepIcon(step.type)}</span><span><strong>{step.title}</strong><small class:time-decided={getStepSchedule(step).precision === "time"}>{dateTimeLabel(step)}</small>{#if step.location}<small>{step.location}</small>{/if}{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</span>
                   </button>
                   {#if hasEditPermission}<div class="order-buttons"><button onclick={() => moveStep(step, -1, group.steps)} disabled={index === 0} aria-label="上へ移動">↑</button><button onclick={() => moveStep(step, 1, group.steps)} disabled={index === group.steps.length - 1} aria-label="下へ移動">↓</button></div>{/if}
                 </article>
@@ -532,18 +686,19 @@
       {#if steps.length === 0}<div class="empty"><strong>まずは、行きたい場所をひとつ。</strong><p>日付や時間はあとで決められます。</p></div>{/if}
 
       {#if hasEditPermission}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
-      <button class="memo-button" onclick={() => (memoOpen = !memoOpen)}>旅のメモ {memoOpen ? "−" : "+"}</button>
-      {#if memoOpen}
-        <div class="memo-panel"><textarea bind:value={memoDraft} rows="6" placeholder={'例:\n□ 新幹線を予約\n□ ホテルを予約'} disabled={!hasEditPermission}></textarea>{#if hasEditPermission}<button onclick={saveMemo}>保存</button>{/if}</div>
-      {/if}
+      </div><div class="desktop-map"><PlaceMap steps={filteredSteps} numbers={mapNumbers} selected={selectedStepId} canEdit={false} onSelect={(id) => selectedStepId = id} onPin={openCreate} /></div></div>
+    {:else if screenMode === "map"}
+      {#if hasEditPermission}<div class="map-actions"><button onclick={() => openCreate()}>＋ 予定を追加</button><button class:active={mapPinEditing} onclick={() => mapPinEditing = !mapPinEditing}>{mapPinEditing ? '位置編集を終了' : 'ピンの位置を編集'}</button></div>{/if}
+      <div class="map-view"><PlaceMap {steps} numbers={mapNumbers} selected={selectedStepId} canEdit={hasEditPermission} onSelect={(id) => selectedStepId = id} onPin={openCreate} onMove={mapPinEditing ? (id, place) => onUpdateStep?.(id, placeFields(place)) : undefined} /></div>
+      {#if selectedStep}<div class="map-card"><button class="map-card-close" onclick={() => selectedStepId = null} aria-label="選択を閉じる">×</button><strong>{selectedStep.title}</strong><span>{dateTimeLabel(selectedStep)}</span><span>{selectedStep.location || '場所名未設定'}</span><div><button onclick={() => openDetail(selectedStep!)}>詳細を見る</button>{#if hasEditPermission}<button onclick={() => openPlaceEditor(selectedStep!)}>位置を修正</button>{/if}</div></div>{/if}
     {:else}
       <div class="preview-heading"><p>旅程プレビュー</p><h2>{itinerary.title}</h2></div>
       {#if undecidedSteps.length > 0}
-        <section class="preview-unscheduled"><strong>まだ決めていない予定</strong><span>{undecidedSteps.length}件</span>{#each undecidedSteps as step}<p>{step.title} {#if mapPlanning && hasEditPermission}<button onclick={() => openEdit(step)}>行く日を決める →</button>{/if}</p>{/each}</section>
+        <section class="preview-unscheduled"><strong>まだ決めていない予定</strong><span>{undecidedSteps.length}件</span>{#each undecidedSteps as step}<p><button onclick={() => openDetail(step)}>{step.title}</button></p>{/each}</section>
       {/if}
       <div class="preview-days">
         {#each dayGroups.filter((group) => group.steps.length > 0) as group}
-          <section class="preview-day"><header><span>Day {group.day}</span><strong>{group.date.slice(5).replace('-', '/')}</strong></header><ol>{#each group.steps as step, index}<li><time class:pending={getStepSchedule(step).precision !== "time"}>{getStepTimeLabel(step)}</time><div><strong>{step.title}</strong>{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}{#if mapPlanning && hasEditPermission}<div class="preview-controls"><button onclick={() => openEdit(step)}>編集</button><button disabled={index === 0 || saving} onclick={() => moveStep(step, -1, group.steps)} aria-label={`${step.title}を上へ`}>↑</button><button disabled={index === group.steps.length - 1 || saving} onclick={() => moveStep(step, 1, group.steps)} aria-label={`${step.title}を下へ`}>↓</button></div>{/if}</div></li>{/each}</ol></section>
+          <section class="preview-day"><header><span>Day {group.day}</span><strong>{group.date.slice(5).replace('-', '/')}</strong></header><ol>{#each group.steps as step}<li><time class:pending={getStepSchedule(step).precision !== "time"}>{getStepTimeLabel(step)}</time><div><button class="schedule-step" onclick={() => openDetail(step)}><strong>{step.title}</strong><small>{dateTimeLabel(step)}</small></button>{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</div></li>{/each}</ol></section>
         {/each}
       </div>
       {#if steps.length === 0}<div class="empty"><strong>旅程はまだ空です。</strong><p>「考える」から候補を追加しましょう。</p></div>{/if}
@@ -560,33 +715,38 @@
     {/if}
   </main>
 
+  {#if selectedStep && detailOpen && !sheetOpen && !placeEditing}
+    <StepDetail step={selectedStep} canEdit={hasEditPermission} dateLabel={dateTimeLabel(selectedStep)} icon={stepIcon(selectedStep.type)} onClose={() => detailOpen = false} onEdit={() => openEdit(selectedStep!)} onPlaceEdit={() => openPlaceEditor(selectedStep!)} onDelete={removeSelectedStep} />
+  {/if}
+
+  {#if placeEditing && selectedStep}
+    <PlaceEditor step={selectedStep} initialPlace={getPlace(selectedStep)} onClose={() => placeEditing = false} onSave={savePlace} onRemove={removePin} />
+  {/if}
+
   {#if sheetOpen}
     <div class="sheet-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (sheetOpen = false)}>
       <div class="sheet" use:focusSheet role="dialog" aria-modal="true" aria-label={editingStep ? "予定を編集" : "予定を追加"}>
         <div class="sheet-handle"></div><div class="sheet-title"><h2>{editingStep ? "予定を編集" : "予定を追加"}</h2><button onclick={() => (sheetOpen = false)} aria-label="閉じる">×</button></div>
         <form onsubmit={saveStep}>
           {#if formError}<p role="alert">{formError}</p>{/if}
+          <label>タイトル<input bind:value={form.title} placeholder="清水寺に行きたい" required /></label>
           <div class="location-field"><span>場所 <small>任意</small></span><PlaceSearch bind:value={form.location} onSelect={selectPlace} /></div>
-          {#if mapPlanning}
             {#if placeDraft}
               <div class="pin-fields"><strong>✓ 場所を選択済み</strong><p>{form.location || '地図で選んだ場所'} · ピンの位置を確かめてください。</p>
-                {#await import('../planning-map/PlaceMap.svelte') then module}
-                  {#key `${placeDraft.lat},${placeDraft.lng}`}
-                    <div class="pin-preview"><module.default steps={previewPin} numbers={{'preview-pin':1}} selected="preview-pin" canEdit={true} onSelect={() => {}} onPin={(place) => placeDraft = { ...place, priority:placeDraft?.priority }} /></div>
-                  {/key}
-                {/await}
-                <label class="radio"><input type="checkbox" bind:checked={placeDraft.priority} />★ 絶対行きたい</label><button type="button" onclick={() => { placeDraft = null; form.location = ''; }}>場所を外してあとで決める</button>
+                {#key `${placeDraft.lat},${placeDraft.lng}`}
+                  <div class="pin-preview"><PlaceMap steps={previewPin} numbers={{'preview-pin':1}} selected="preview-pin" canEdit={true} onSelect={() => {}} onPin={(place) => placeDraft = { ...place, priority:form.isPriority }} /></div>
+                {/key}
+                <button type="button" onclick={() => placeDraft = null}>ピンを外す</button>
               </div>
             {:else}<p class="place-help">まだ場所が決まらないときは、下のタイトルだけで候補を保存できます。</p>{/if}
-          {/if}
-          <label>タイトル<input bind:value={form.title} placeholder="清水寺に行きたい" required /></label>
-          <label>メモ<textarea bind:value={form.note} rows="3" placeholder="朝の方が空いてそう"></textarea></label>
           <div class="type-picker"><span>予定のアイコン</span><TypePicker value={form.type} onSelect={(type: StepType) => form.type = type} /></div>
-          <label>リンク <small>任意</small><input type="url" bind:value={form.link} placeholder="https://..." /></label>
-          <fieldset><legend>いつ？</legend><label class="radio"><input type="radio" bind:group={form.when} value="undecided" />まだ決めない</label><label class="radio"><input type="radio" bind:group={form.when} value="day" />日を決める</label></fieldset>
-          {#if form.when === "day"}
-            <div class="date-fields"><label>日付<input type="date" bind:value={form.date} required /></label><div class="time-fields"><label>開始時刻 <small>任意</small><input type="time" bind:value={form.time} /></label>{#if form.time}<label>終了時刻 <small>任意</small><input type="time" bind:value={form.endTime} /></label>{/if}</div></div>
+          <fieldset><legend>日時</legend><label class="radio"><input type="radio" bind:group={form.when} value="undecided" />まだ決めない</label><label class="radio"><input type="radio" bind:group={form.when} value="day" />日付だけ</label><label class="radio"><input type="radio" bind:group={form.when} value="time" />日時まで</label></fieldset>
+          {#if form.when !== "undecided"}
+            <div class="date-fields"><label>開始日<input type="date" bind:value={form.date} onchange={syncEndFromStart} required /></label>{#if form.when === 'time'}<label>開始時刻<input type="time" bind:value={form.time} onchange={syncEndFromStart} required /></label><label>終了日<input type="date" bind:value={form.endDate} onchange={rememberDuration} required /></label><label>終了時刻<input type="time" bind:value={form.endTime} onchange={rememberDuration} required /></label>{/if}</div>
+            {#if form.when === 'time' && form.endDate === form.date && form.endTime <= form.time}<button type="button" class="next-day" onclick={() => { form.endDate = nextLocalDate(form.date); rememberDuration(); }}>翌日 {form.endTime} として設定</button>{/if}
           {/if}
+          <button type="button" class="extra-toggle" onclick={() => extraFieldsOpen = !extraFieldsOpen}>{extraFieldsOpen ? '詳細を閉じる' : '＋ メモ・リンクなどを追加'}</button>
+          {#if extraFieldsOpen}<label>メモ<textarea bind:value={form.note} rows="3" placeholder="朝の方が空いてそう"></textarea></label><label>リンク <small>任意</small><input type="url" bind:value={form.link} placeholder="https://..." /></label><label class="radio"><input type="checkbox" bind:checked={form.isPriority} />優先予定</label>{/if}
           <button class="save-button" type="submit" disabled={saving}>{saving ? "保存中…" : editingStep ? "保存" : "追加"}</button>
           {#if editingStep}<button class="delete-button" type="button" onclick={deleteStep}>この予定を削除</button>{/if}
         </form>
@@ -597,6 +757,7 @@
   {#if batchDayOpen}<div class="batch-day-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && (batchDayOpen = false)}><section class="batch-day-modal" role="dialog" aria-modal="true" aria-label="日程をまとめて変更"><header><div><strong>日程をまとめて変更</strong><small>時刻と所要時間はそのままです</small></div><button onclick={() => batchDayOpen = false} aria-label="閉じる">×</button></header>{#each dayGroups as group}<label><span>Day {group.day} · {group.date.slice(5).replace('-', '/')}<small>{group.steps.length}件の予定</small></span><input type="date" bind:value={dayDateDrafts[group.day]} /></label>{/each}<footer><button class="cancel" onclick={() => batchDayOpen = false}>キャンセル</button><button onclick={() => void applyBatchDayChanges()} disabled={saving}>{saving ? '変更中…' : '変更する'}</button></footer></section></div>{/if}
 
   <BottomNav
+    {packingEnabled}
     onMoneyOpen={() => (showMoney = true)}
     onPackingOpen={() => (showPacking = true)}
     onMenuClick={() => (showMoreMenu = true)}
@@ -607,15 +768,19 @@
     itineraryId={itinerary.id}
     canEdit={hasEditPermission && !isSharedSnapshot}
     {steps}
+    onOpenMemberSettings={() => openMemberSettings('money')}
     onClose={() => closeFeature('money')}
   />
 
-  <PackingOverlay
-    show={showPacking}
-    itineraryId={itinerary.id}
-    canEdit={hasEditPermission && !isSharedSnapshot}
-    onClose={() => closeFeature('packing')}
-  />
+  {#if packingEnabled}
+    <PackingOverlay
+      show={showPacking}
+      itineraryId={itinerary.id}
+      canEdit={hasEditPermission && !isSharedSnapshot}
+      onOpenMemberSettings={() => openMemberSettings('packing')}
+      onClose={() => closeFeature('packing')}
+    />
+  {/if}
 
   <PasswordDialog
     show={showPasswordDialog}
@@ -634,11 +799,16 @@
   <MoreMenu
     show={showMoreMenu}
     canConfigure={hasEditPermission}
-    canRequestEdit={!isSharedSnapshot}
+    canRequestEdit={!readOnly && !isSharedSnapshot}
     {hasEditPermission}
     onShare={() => {
-      if (hasEditPermission) showShareDialog = true;
-      else void copyShareLink(false);
+      if (hasEditPermission && !isSharedSnapshot && !itinerary.is_password_protected) {
+        void copyShareLink(true);
+      } else if (hasEditPermission) {
+        showShareDialog = true;
+      } else {
+        void copyShareLink(false);
+      }
     }}
     onPrint={openPrintStudio}
     onSettings={() => (showSettingsDialog = true)}
@@ -653,14 +823,20 @@
     {palettes}
     selectedThemeId={itinerary.theme_id}
     {selectedPaletteId}
+    backgroundImage={selectedBackgroundImage}
+    backgroundDisplay={selectedBackgroundDisplay}
     {secretModeEnabled}
     {secretModeOffset}
     {packingEnabled}
+    {prefectureSlugs}
+    areas={itineraryAreas}
+    tags={itineraryTags}
     onThemeChange={switchTheme}
     onPaletteChange={handlePaletteChange}
     onSecretModeChange={handleSecretModeChange}
     onPackingEnabledChange={handlePackingEnabledChange}
-    onEditMetadata={() => (showMetadataDialog = true)}
+    onMetadataChange={saveMetadata}
+    onBackgroundChange={handleBackgroundChange}
     onClose={() => (showSettingsDialog = false)}
   />
 
@@ -709,10 +885,10 @@
   .title-button:disabled { opacity: 1; }
   .title-input { border-bottom: 1px solid #91a39c; outline: none; }
   .draft-header p { margin: .55rem 0 0; color: #7a8581; font-size: .82rem; }
-  .mode-tabs { position: sticky; z-index: 10; top: 0; display: grid; width: min(680px, 100%); margin: .65rem auto 0; padding: 0 16px; grid-template-columns: 1fr 1fr; background: rgba(250,249,245,.94); backdrop-filter: blur(10px); }
+  .mode-tabs { position: sticky; z-index: 10; top: 0; display: grid; width: min(680px, 100%); margin: .65rem auto 0; padding: 0 16px; grid-template-columns: repeat(3, 1fr); background: rgba(250,249,245,.94); backdrop-filter: blur(10px); }
   .mode-tabs button { padding: .9rem; border: 0; border-bottom: 1px solid #d9ddd9; color: #7a8581; background: none; font-size: .88rem; font-weight: 700; cursor: pointer; }
   .mode-tabs button.active { border-bottom: 2px solid #2f6657; color: #2f6657; }
-  main { width: min(680px, calc(100% - 32px)); margin: 0 auto; }
+  main { width: min(1240px, calc(100% - 32px)); margin: 0 auto; }
   .planning-intro { display: flex; margin: 1.25rem 0 1.8rem; align-items: center; justify-content: center; gap: .55rem; color: #87908c; font-size: .67rem; }
   .planning-intro span { padding: .42rem .55rem; border: 1px solid #e0e2de; border-radius: 999px; background: #fff; }
   .planning-intro i { font-style: normal; }
@@ -729,9 +905,9 @@
   .step-list { border-bottom: 1px solid #e5e6e3; }
   .step-row { display: grid; min-height: 68px; border-bottom: 1px solid #e5e6e3; grid-template-columns: 1fr auto; align-items: stretch; }
   .step-row:last-child { border-bottom: 0; }
-  .step-main { display: grid; min-width: 0; padding: .8rem 0; border: 0; grid-template-columns: 18px 1fr; gap: .55rem; color: inherit; background: transparent; text-align: left; cursor: pointer; }
+  .step-main { display: grid; min-width: 0; padding: .8rem 0; border: 0; grid-template-columns: 32px 1fr; gap: .55rem; color: inherit; background: transparent; text-align: left; cursor: pointer; }
   .step-main:disabled { cursor: default; }
-  .circle { width: 10px; height: 10px; margin-top: .25rem; border: 1.5px solid #638076; border-radius: 50%; }
+  .circle { display:grid; width:30px; height:30px; place-items:center; border-radius:9px; background:#edf4ef; font-size:16px; }
   .step-main span:last-child { display: grid; min-width: 0; gap: .2rem; }
   .step-main strong { overflow: hidden; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
   .step-main small { color: #8a928e; font-size: .72rem; white-space: pre-line; }
@@ -753,16 +929,16 @@
   .preview-unscheduled span { color: #8a928e; font-size: .72rem; }
   .preview-unscheduled p { margin: 0; grid-column: 1 / -1; color: #58645f; font-size: .8rem; }
   .preview-days { display: grid; gap: 1rem; }
-  .preview-day { display: grid; border: 1px solid #dde1dd; background: #fff; grid-template-columns: 70px 1fr; }
-  .preview-day > header { display: grid; padding: 1rem; align-content: start; color: white; background: #3d6f61; text-align: center; }
+  .preview-day { display: grid; border: 1px solid #dde1dd; background: #fff; grid-template-columns: 84px minmax(0, 1fr); }
+  .preview-day > header { display: grid; min-width: 0; padding: 1rem .5rem; align-content: start; color: white; background: #3d6f61; text-align: center; }
   .preview-day > header span { font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; }
-  .preview-day > header strong { font-size: 1.45rem; }
-  .preview-day ol { margin: 0; padding: .6rem 1rem; list-style: none; }
-  .preview-day li { display: grid; min-height: 58px; padding: .7rem 0; border-bottom: 1px solid #eceeeb; grid-template-columns: 72px 1fr; gap: .65rem; }
+  .preview-day > header strong { font-size: 1.2rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .preview-day ol { min-width: 0; margin: 0; padding: .6rem 1rem; list-style: none; }
+  .preview-day li { display: grid; min-height: 58px; padding: .7rem 0; border-bottom: 1px solid #eceeeb; grid-template-columns: 72px minmax(0, 1fr); gap: .65rem; }
   .preview-day li:last-child { border-bottom: 0; }
   .preview-day time { padding-top: .08rem; color: #2f6657; font-size: .75rem; font-weight: 800; }
   .preview-day time.pending { color: #a06d4e; font-weight: 650; }
-  .preview-day li div { display: grid; gap: .25rem; }
+  .preview-day li div { display: grid; min-width: 0; gap: .25rem; }
   .preview-day li strong { font-size: .88rem; }
   .preview-day li small { color: #8a928e; font-size: .69rem; white-space: pre-line; }
   .theme-guide { margin: 2.5rem 0; padding: 1.35rem; border: 1px solid #e2ddd4; background: #f5f1e9; text-align: center; }
@@ -787,18 +963,42 @@
   .sheet input:focus, .sheet textarea:focus, .sheet select:focus { border-color: #638076; box-shadow: 0 0 0 3px rgba(99,128,118,.1); }
   .sheet fieldset { display: flex; margin: 0; padding: .75rem; border: 1px solid #e1e4e1; gap: 1rem; }
   .sheet .radio { display: flex; align-items: center; gap: .4rem; }
-  .date-fields { display: grid; grid-template-columns: 1fr 2fr; gap: .8rem; }
+  .date-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
   .time-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
   .date-fields label { display: grid; gap: .4rem; }
   .date-fields small { color: #929a96; font-size: .65rem; font-weight: 400; }
   .save-button { padding: .85rem; border: 0; border-radius: 999px; color: white; background: #2f6657; font-weight: 750; cursor: pointer; }
   .delete-button { padding: .5rem; border: 0; color: #a14e45; background: transparent; font-size: .75rem; cursor: pointer; }
+  .memo-toggle { color:#35695d !important; background:transparent !important; padding:0 !important; font-weight:700; }
+  .trip-description { max-width:100%; margin-top:8px; padding:8px 12px; }
+  .planning-workspace { display:grid; grid-template-columns:minmax(300px, 38%) minmax(0, 1fr); gap:20px; align-items:start; }
+  .planning-list { min-width:0; }
+  .desktop-map { position:sticky; top:72px; height:min(76vh,760px); min-width:0; }
+  .map-actions { display:flex; justify-content:flex-end; gap:8px; margin:10px 0; }
+  .map-actions button { padding:9px 13px; border:1px solid #d3ded6; border-radius:8px; background:white; color:#35695d; cursor:pointer; }
+  .map-actions button.active { background:#35695d; color:white; }
+  .preview-days,.preview-unscheduled,.theme-guide,.preview-heading,.batch-day-button { max-width:760px; margin-left:auto; margin-right:auto; }
+  .plan-search { display:grid; gap:5px; margin:0 0 20px; color:#60736a; font-size:12px; }
+  .plan-search input { width:100%; padding:10px; border:1px solid #d9ddd9; border-radius:9px; font:inherit; }
+  .map-view { height:calc(100dvh - 220px); min-height:480px; }
+  .map-card { position:fixed; z-index:20; bottom:76px; left:50%; display:grid; gap:5px; width:min(430px,calc(100% - 24px)); padding:16px; border-radius:16px; background:white; box-shadow:0 5px 24px #1c352c3d; transform:translateX(-50%); }
+  .map-card span { color:#637269; font-size:12px; }
+  .map-card .map-card-close { position:absolute; top:8px; right:8px; padding:2px 7px; background:transparent; color:#637269; font-size:20px; }
+  .map-card div { display:flex; gap:8px; }
+  .map-card button { padding:10px 15px; border:0; border-radius:9px; background:#2f6657; color:white; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+  .map-card div button + button { background:#edf3ef; color:#2f6657; }
+  .next-day,.extra-toggle { margin:8px 0; padding:9px; border:1px solid #b9d1c6; border-radius:8px; color:#2f6657; background:#f2f8f4; cursor:pointer; }
+  .schedule-step { display:grid; gap:4px; padding:0; border:0; text-align:left; color:inherit; background:transparent; cursor:pointer; }
+  .schedule-step small { color:#748078; }
+  @media(max-width:760px) { .planning-workspace { display:block; } .desktop-map { display:none; } .map-view { height:calc(100dvh - 190px); min-height:380px; } .map-view :global(.map-frame) { height:100%; } }
   @media (max-width: 520px) {
     .planning-intro { gap: .28rem; }
     .planning-intro span { padding: .38rem .4rem; font-size: .61rem; }
     .order-buttons button { width: 29px; }
-    .preview-day { grid-template-columns: 56px 1fr; }
-    .preview-day li { grid-template-columns: 68px 1fr; }
+    .preview-day { grid-template-columns: 76px minmax(0, 1fr); }
+    .preview-day > header { padding: .8rem .25rem; }
+    .preview-day > header strong { font-size: 1.1rem; }
+    .preview-day li { grid-template-columns: 68px minmax(0, 1fr); }
     .date-fields { grid-template-columns: 1fr; }
   }
 </style>

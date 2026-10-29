@@ -20,6 +20,13 @@
     actionCode = params.get("oobCode") ?? "";
     backHref = safeContinueUrl(params.get("continueUrl"));
 
+    // Custom email action links can be sent to this route by Firebase.
+    // The profile page completes passwordless sign-in, including cross-device links.
+    if (mode === "signIn") {
+      window.location.replace("/profile" + window.location.search);
+      return;
+    }
+
     if (!mode || !actionCode) {
       fail("この確認リンクは正しくありません。メールに記載された最新のリンクをもう一度開いてください。");
       return;

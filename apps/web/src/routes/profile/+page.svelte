@@ -13,7 +13,7 @@
   import AppIcon from "$lib/icons/AppIcon.svelte";
   import { PREFECTURES, type Prefecture, type PublicFeedItem, type UserBookmarkWithItinerary, type UserSessionProfile } from "@tabitabi/types";
 
-  type Mode = "login" | "register" | "verify" | "forgot" | "setup";
+  type Mode = "login" | "register" | "verify" | "forgot" | "setup" | "email-sent" | "email-link";
   const usernamePattern = "[\\p{L}\\p{N}\\p{M}]+";
   const betaMailNotice = "現在はベータ版のため noreply@tabitabi-47ccd.firebaseapp.com というアカウントから確認メールが届きます。迷惑メールに含まれていないか確認してください。";
 
@@ -49,6 +49,9 @@
   let unlinkTarget = $state<UserBookmarkWithItinerary | null>(null);
   let showAccount = $state(false);
   let showPassword = $state(false);
+  let showLegacyPasswordLogin = $state(false);
+  let pendingEmailLink = $state("");
+  let suggestPasskey = $state(false);
   let showLogoutConfirm = $state(false);
   let shareFocusToken = $state(0);
   let activeTab = $state<"itineraries" | "favorites" | "map">("itineraries");
@@ -64,6 +67,14 @@
     // An unconfigured preview or unsupported browser keeps the existing login UX.
     void passkeyAuth.available().then((available) => passkeyAvailable = available);
     try {
+      // The link may have been opened on a different device.
+      if (await userAuth.isEmailSignInLink(window.location.href)) {
+        pendingEmailLink = window.location.href;
+        const address = userAuth.getPendingEmailLink();
+        if (address) { email = address; await completeEmailLink(); }
+        else mode = "email-link";
+        return;
+      }
       const firebaseUser = await userAuth.ready();
       if (!firebaseUser) return;
       email = firebaseUser.email ?? "";
@@ -116,34 +127,42 @@
     }
   }
 
-  async function handleAuthSubmit() {
-    error = null;
-    notice = null;
-    submitting = true;
+  async function sendEmailLink() {
+    error = null; notice = null; submitting = true;
     try {
-      if (mode === "register") {
-        if (!prefecture) throw new Error("PREFECTURE_REQUIRED");
-        const firebaseUser = await userAuth.signUp(email, password);
-        userAuth.setPendingProfile({ uid: firebaseUser.uid, username: usernameInput, prefecture });
-        await userAuth.sendVerification();
+      await userAuth.sendEmailLink(email);
+      verificationSentTo = email.trim();
+      mode = "email-sent";
+    } catch (e) { error = firebaseMessage(e); }
+    finally { submitting = false; }
+  }
+
+  async function completeEmailLink() {
+    error = null; submitting = true;
+    try {
+      await userAuth.completeEmailLink(email, pendingEmailLink);
+      // Drop the single-use token from the URL only after successful consumption.
+      window.history.replaceState(window.history.state, "", "/profile");
+      pendingEmailLink = "";
+      suggestPasskey = true;
+      await finishAuthentication();
+    } catch (e) { error = firebaseMessage(e); mode = "email-link"; }
+    finally { submitting = false; }
+  }
+
+  async function handlePasswordLogin() {
+    error = null; notice = null; submitting = true;
+    try {
+      const firebaseUser = await userAuth.signIn(email, password);
+      password = "";
+      if (!firebaseUser.emailVerified) {
         verificationSentTo = firebaseUser.email ?? email;
-        password = "";
         mode = "verify";
-      } else {
-        const firebaseUser = await userAuth.signIn(email, password);
-        password = "";
-        if (!firebaseUser.emailVerified) {
-          verificationSentTo = firebaseUser.email ?? email;
-          mode = "verify";
-          return;
-        }
-        await finishAuthentication();
+        return;
       }
-    } catch (e) {
-      error = firebaseMessage(e);
-    } finally {
-      submitting = false;
-    }
+      await finishAuthentication();
+    } catch (e) { error = firebaseMessage(e); }
+    finally { submitting = false; }
   }
 
   async function checkVerification() {
@@ -421,6 +440,9 @@
     if (code.includes("too-many-requests")) return "試行回数が多すぎます。しばらく待ってからお試しください。";
     if (code.includes("requires-recent-login")) return "安全のため、いったんログアウトして再ログインしてください。";
     if (code.includes("invalid-email")) return "メールアドレスの形式が正しくありません。";
+    if (code.includes("invalid-action-code") || code.includes("expired-action-code") || code === "INVALID_EMAIL_LINK") return "リンクが無効か期限切れです。新しいログインリンクを発行してください。";
+    if (code.includes("operation-not-allowed")) return "メールリンク認証が未設定です。管理者にお問い合わせください。";
+    if (code === "EMAIL_REQUIRED") return "メールアドレスを入力してください。";
     if (code === "PREFECTURE_REQUIRED") return "お住まいの都道府県を選択してください。";
     if (code === "FIREBASE_CONFIG_MISSING") return "認証設定が未完了です。管理者にお問い合わせください。";
     return "処理に失敗しました。時間をおいてもう一度お試しください。";
@@ -474,7 +496,11 @@
               ? "メールを確認してください。"
               : mode === "forgot"
                 ? "パスワードを再設定。"
-                : mode === "setup"
+                : mode === "email-sent"
+                  ? "メールを確認してください。"
+                  : mode === "email-link"
+                    ? "ログインを完了する。"
+                    : mode === "setup"
                   ? "旅のプロフィールを整える。"
                   : "ログイン / 新規登録"}
           </h1>
@@ -482,8 +508,12 @@
             {mode === "verify"
               ? "届いた確認メールから手続きを完了すると、旅の本棚を使えます。"
               : mode === "forgot"
-                ? "登録したメールアドレスへ、再設定の案内をお送りします。"
-                : mode === "setup"
+                ? "従来のパスワードをご利用の方に、再設定メールを送ります。"
+                : mode === "email-sent"
+                  ? "届いたログインリンクを開いてください。パスワードは不要です。"
+                  : mode === "email-link"
+                    ? "受信したメールアドレスで本人確認します。"
+                    : mode === "setup"
                   ? "最後に公開名と地域を設定して、旅の本棚を完成させましょう。"
                   : "旅の予定を、もっと自由に、もっと楽しく。"}
           </p>
@@ -545,6 +575,25 @@
             <button onclick={resendVerification} disabled={submitting} class="secondary auth-submit">確認メールを再送</button>
             <button onclick={requestLogout} class="text-link">別のアカウントでログイン</button>
           </div>
+        {:else if mode === "email-sent"}
+          <div class="auth-state">
+            <span class="state-icon" aria-hidden="true"><AppIcon name="mail" size={23} /></span>
+            <h2>ログインリンクを送りました</h2>
+            <p><strong>{verificationSentTo}</strong> に届いたリンクを開いてください。確認後、旅の本棚を利用できます。</p>
+            <div class="beta-mail-note"><strong>メールについて</strong><span>{betaMailNotice}</span></div>
+            <button type="button" class="secondary auth-submit" disabled={submitting} onclick={sendEmailLink}>メールを再送する</button>
+            <button type="button" class="text-link" onclick={() => mode = "login"}>戻る</button>
+          </div>
+        {:else if mode === "email-link"}
+          <form class="auth-form" onsubmit={(event) => { event.preventDefault(); completeEmailLink(); }}>
+            <p class="field-help">安全のため、ログインリンクを受け取ったメールアドレスを入力してください。</p>
+            <div class="field-group">
+              <label for="link-email">メールアドレス</label>
+              <div class="input-shell"><input id="link-email" type="email" bind:value={email} autocomplete="email" required /></div>
+            </div>
+            <button class="primary auth-submit" type="submit" disabled={submitting}>{submitting ? "確認中..." : "ログインを完了する"}</button>
+            <a href="/profile" class="text-link">最初からやり直す</a>
+          </form>
         {:else if mode === "forgot"}
           <form onsubmit={(event) => { event.preventDefault(); requestPasswordReset(); }} class="auth-form">
             <div class="field-group">
@@ -583,85 +632,43 @@
         {:else}
           {#if mode === "login" && passkeyAvailable}
             <button type="button" class="primary auth-submit passkey-login" disabled={submitting} onclick={handlePasskeyLogin}>
-              <AppIcon name="lock" size={20} />
-              {submitting ? "認証中..." : "パスキーでログイン"}
+              <AppIcon name="lock" size={20} />{submitting ? "認証中..." : "パスキーでログイン"}
             </button>
-            <p class="field-help passkey-help">Face ID・指紋認証・端末のPINを利用できます。</p>
-            <div class="auth-divider"><span>またはメール・パスワードで</span></div>
+            <p class="field-help passkey-help">Face ID・指紋認証・端末のPINでログインできます。</p>
+            <div class="auth-divider"><span>またはメールで</span></div>
           {/if}
-          <form onsubmit={(event) => { event.preventDefault(); handleAuthSubmit(); }} class="auth-form">
-            {#if mode === "register"}
-              <div class="field-group">
-                <label for="username">ユーザー名 <em>*</em></label>
-                <div class="input-shell">
-                    <input id="username" bind:value={usernameInput} minlength="3" maxlength="20" pattern={usernamePattern} title="3〜20文字の日本語・英数字が使えます" autocomplete="username" placeholder="例：tabitabitaro" required />
-                </div>
-              </div>
-            {/if}
-
+          <form onsubmit={(event) => { event.preventDefault(); sendEmailLink(); }} class="auth-form">
             <div class="field-group">
               <label for="email">メールアドレス <em>*</em></label>
-              <div class="input-shell">
-                <input id="email" type="email" bind:value={email} autocomplete="email" placeholder="例：taro@tabitabi.jp" required />
-              </div>
+              <div class="input-shell"><input id="email" type="email" bind:value={email} autocomplete="email" placeholder="例：taro@tabitabi.jp" required /></div>
+              <p class="field-help">確認リンクを送信します。パスワードの設定は不要です。</p>
             </div>
-
-            <div class="field-group">
-              <label for="password">パスワード <em>*</em></label>
-              <div class="input-shell">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  bind:value={password}
-                  minlength={mode === "register" ? 8 : undefined}
-                  maxlength="128"
-                  autocomplete={mode === "register" ? "new-password" : "current-password"}
-                  placeholder={mode === "register" ? "8文字以上で入力" : "パスワードを入力してください"}
-                  required
-                />
-                <button
-                  type="button"
-                  class="visibility-toggle"
-                  aria-label={showPassword ? "パスワードを隠す" : "パスワードを表示"}
-                  aria-pressed={showPassword}
-                  onclick={() => showPassword = !showPassword}
-                ><AppIcon name={showPassword ? "eye-off" : "eye"} size={20} /></button>
-              </div>
-            </div>
-
-            {#if mode === "register"}
-              <div class="field-group">
-                <label for="prefecture">お住まいの都道府県 <em>*</em></label>
-                <div class="input-shell select-shell">
-                    <select id="prefecture" bind:value={prefecture} required>
-                    <option value="" disabled>選択してください</option>
-                    {#each PREFECTURES as item}<option value={item}>{item}</option>{/each}
-                  </select>
-                </div>
-                <p class="field-help">公開されないプロフィール情報です。</p>
-              </div>
-              <div class="beta-mail-note">
-                <strong>登録後の確認メールについて</strong>
-                <span>{betaMailNotice}</span>
-              </div>
-            {/if}
-
             <button type="submit" disabled={submitting} class="primary auth-submit">
-              {submitting ? "処理中..." : mode === "register" ? "確認メールを送る" : "ログイン"}
+              {submitting ? "送信中..." : mode === "register" ? "メールで無料登録" : "メールでログイン"}
               <span class="inline-svg" aria-hidden="true"><AppIcon name="arrow-right" size={17} /></span>
             </button>
           </form>
-
           {#if mode === "login"}
-            <button onclick={() => mode = "forgot"} class="text-link forgot-link">パスワードを忘れた方</button>
+            <button type="button" class="text-link forgot-link" onclick={() => showLegacyPasswordLogin = !showLegacyPasswordLogin} aria-expanded={showLegacyPasswordLogin}>
+              {showLegacyPasswordLogin ? "メールリンクでログインする" : "従来のパスワードでログイン"}
+            </button>
+            {#if showLegacyPasswordLogin}
+              <form onsubmit={(event) => { event.preventDefault(); handlePasswordLogin(); }} class="auth-form legacy-password-form">
+                <div class="field-group"><label for="legacy-email">メールアドレス</label><div class="input-shell"><input id="legacy-email" type="email" bind:value={email} autocomplete="email" required /></div></div>
+                <div class="field-group">
+                  <label for="password">パスワード</label>
+                  <div class="input-shell">
+                    <input id="password" type={showPassword ? "text" : "password"} bind:value={password} maxlength="128" autocomplete="current-password" required />
+                    <button type="button" class="visibility-toggle" aria-label={showPassword ? "パスワードを隠す" : "パスワードを表示"} aria-pressed={showPassword} onclick={() => showPassword = !showPassword}><AppIcon name={showPassword ? "eye-off" : "eye"} size={20} /></button>
+                  </div>
+                </div>
+                <button type="submit" disabled={submitting} class="secondary auth-submit">パスワードでログイン</button>
+                <button type="button" class="text-link" onclick={() => mode = "forgot"}>パスワードを忘れた方</button>
+              </form>
+            {/if}
           {/if}
-
           <div class="auth-divider"><span>または</span></div>
-          <button
-            type="button"
-            class="register-cta"
-            onclick={() => mode = mode === "login" ? "register" : "login"}
-          >
+          <button type="button" class="register-cta" onclick={() => { mode = mode === "login" ? "register" : "login"; error = null; notice = null; }}>
             {mode === "login" ? "新規登録する" : "ログインに戻る"}
             <span class="inline-svg" aria-hidden="true"><AppIcon name="arrow-right" size={17} /></span>
           </button>
@@ -707,6 +714,15 @@
       </section>
 
       {#if editSuccess}<p class="notice success dashboard-notice" role="status">{editSuccess}</p>{/if}
+      {#if suggestPasskey && passkeyAvailable && passkeys.length === 0}
+        <section class="passkey-onboarding" aria-label="パスキー登録の案内">
+          <div><strong>次回はパスキーで、もっとかんたんに。</strong>
+            <p>Face IDや指紋認証を利用できます。紛失した場合も登録メールから復旧できます。</p>
+          </div>
+          <button type="button" class="primary" onclick={() => { showAccount = true; editSection = "passkeys"; suggestPasskey = false; }}>パスキーを登録</button>
+          <button type="button" class="text-link" onclick={() => suggestPasskey = false}>あとで</button>
+        </section>
+      {/if}
       {#if error}<p class="notice error dashboard-notice" role="alert">{error}</p>{/if}
 
       <section class="account-actions" aria-label="アカウント操作">
@@ -898,6 +914,11 @@
   }
   .passkey-help { text-align: center; margin: .4rem 0 .8rem; }
   .passkey-settings { display: grid; gap: 1rem; }
+  .legacy-password-form { margin-top: 1rem; padding: 1rem; border: 1px solid #e4eaf0; border-radius: 1rem; background: #f9fbfc; }
+  .passkey-onboarding { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin: 1rem 0; padding: 1.1rem; border: 1px solid #d4e5ed; border-radius: 1rem; background: #f2f9fc; }
+  .passkey-onboarding > div { flex: 1 1 15rem; }
+  .passkey-onboarding p { margin: .3rem 0 0; color: #52677c; font-size: .8rem; line-height: 1.6; }
+  .passkey-onboarding .text-link { width: auto; }
   .passkey-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
   .passkey-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem; border: 1px solid #e4eaf0; border-radius: .75rem; }
   .passkey-list li div { display: grid; gap: .2rem; min-width: 0; }

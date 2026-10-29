@@ -754,7 +754,7 @@
           {#if editSection === "none"}
             <div class="account-menu">
               <p class="account-group-label">基本情報</p>
-              <button onclick={() => editSection = "profile"><span>プロフィール</span><small>ユーザー名・都道府県</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
+              <button onclick={() => editSection = "profile"}><span>プロフィール</span><small>ユーザー名・都道府県</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
               <button onclick={() => { editEmail = account?.email ?? ""; editSection = "email"; }}><span>メールアドレス変更</span><small>{account?.email}</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
               <p class="account-group-label">ログインとセキュリティ</p>
               {#if passkeyAvailable}

@@ -68,7 +68,7 @@ for (const viewport of viewports) {
     const preview = (await page
       .locator(".shiori-preview.active")
       .boundingBox())!;
-    const journey = (await page.locator(".journey-section").boundingBox())!;
+    const poster = (await page.locator(".feature-poster").boundingBox())!;
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBeLessThanOrEqual(viewport.width);
@@ -76,21 +76,20 @@ for (const viewport of viewports) {
     expect(preview.x).toBeGreaterThanOrEqual(0);
     expect(preview.x + preview.width).toBeLessThanOrEqual(viewport.width);
     expect(preview.y + preview.height).toBeLessThanOrEqual(hero.height);
-    expect(journey.y).toBeGreaterThanOrEqual(hero.height);
-    const labels = await page.locator(".scene-label").evaluateAll((nodes) =>
+    expect(poster.y).toBeGreaterThanOrEqual(hero.height);
+    const captions = await page.locator(".feature-caption").evaluateAll((nodes) =>
       nodes.map((node) => {
         const rect = node.getBoundingClientRect();
         return {
           left: rect.left,
           right: rect.right,
-          lines: rect.height / parseFloat(getComputedStyle(node).lineHeight),
         };
       }),
     );
-    for (const label of labels) {
-      expect(label.left).toBeGreaterThanOrEqual(0);
-      expect(label.right).toBeLessThanOrEqual(viewport.width);
-      expect(label.lines).toBeLessThan(1.01);
+    expect(captions).toHaveLength(6);
+    for (const caption of captions) {
+      expect(caption.left).toBeGreaterThanOrEqual(0);
+      expect(caption.right).toBeLessThanOrEqual(viewport.width);
     }
     if (viewport.width < 768) {
       expect(copy.y + copy.height).toBeLessThan(preview.y);
@@ -164,7 +163,7 @@ test("preview buttons, horizontal scroll and resize keep the selected sample cen
   const track = page.locator(".preview-track");
   const beforeScrollTitle = await active.locator("h2").textContent();
   await track.evaluate((element) => {
-    // A real gesture cancels any pending button-driven snap before scrolling.
+    // User-initiated gesture cancels any button-driven snap before scrolling.
     element.dispatchEvent(new WheelEvent("wheel", { bubbles: true }));
     element.scrollLeft += 232;
     element.dispatchEvent(new Event("scroll"));
@@ -240,86 +239,72 @@ for (const viewport of [
   { width: 390, height: 844 },
   { width: 1440, height: 900 },
 ]) {
-  test(`the static journey artwork stays centered and joins the form at ${viewport.width}px`, async ({
+  test(`the feature poster stays contained and readable at ${viewport.width}px`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize(viewport);
     await page.goto("/");
-    await page.locator(".journey-section").scrollIntoViewIfNeeded();
+    const poster = page.locator(".feature-poster");
+    await poster.scrollIntoViewIfNeeded();
 
-    const journey = page.locator(".journey-section");
-    await expect(journey.locator(".create-label")).toHaveText("しおりを作る");
-    await expect(journey.locator(".share-label")).toHaveText("SNSで共有");
-    await expect(journey.locator(".view-label")).toHaveText("みんなで見る");
-    await page.screenshot({ path: testInfo.outputPath("journey.png") });
+    await expect(
+      poster.getByRole("heading", { name: "旅のしおりを、もっと自由に。" }),
+    ).toBeVisible();
+    await expect(poster.locator(".feature")).toHaveCount(6);
+    await expect(
+      poster.getByRole("heading", { name: "しおりを作る" }),
+    ).toBeVisible();
+    await expect(
+      poster.getByRole("heading", { name: "SNSで共有" }),
+    ).toBeVisible();
+    await expect(
+      poster.getByRole("heading", { name: "シークレットモード" }),
+    ).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("feature-poster.png") });
 
     const geometry = await page.evaluate(() => {
-      const drawing = document
-        .querySelector<HTMLElement>(".journey-inner")!
+      const inner = document
+        .querySelector<HTMLElement>(".poster-inner")!
         .getBoundingClientRect();
-      const art = document
-        .querySelector(".journey-art")!
-        .getBoundingClientRect();
-      const thread = document
-        .querySelector(".form-thread")!
-        .getBoundingClientRect();
-      const form = document
-        .querySelector(".form-outline")!
-        .getBoundingClientRect();
-      const labels = Array.from(
-        document.querySelectorAll<HTMLElement>(".scene-label"),
-      ).map((label) => label.getBoundingClientRect());
+      const features = Array.from(
+        document.querySelectorAll<HTMLElement>(".feature"),
+      ).map((feature) => feature.getBoundingClientRect());
 
       return {
-        width: drawing.width,
-        drawingProgress: document
-          .querySelector<HTMLElement>(".journey-inner")!
-          .getAttribute("data-drawing-progress"),
-        firstJoin: Math.abs(art.bottom - thread.top),
-        secondJoin: Math.abs(thread.bottom - form.top),
-        centerJoin: Math.abs(
-          art.left + art.width / 2 - thread.left - thread.width / 2,
-        ),
-        maxLabelCenterDelta: Math.max(
-          ...labels.map((label) =>
-            Math.abs(
-              label.left +
-                label.width / 2 -
-                (drawing.left + drawing.width / 2),
-            ),
-          ),
-        ),
-        labelTops: labels.map((label) => label.top),
+        inner: {
+          left: inner.left,
+          right: inner.right,
+          width: inner.width,
+        },
+        features: features.map((feature) => ({
+          left: feature.left,
+          right: feature.right,
+          width: feature.width,
+        })),
         documentOverflow:
           document.documentElement.scrollWidth -
           document.documentElement.clientWidth,
       };
     });
 
-    expect(geometry.drawingProgress).toBeNull();
-    expect(geometry.firstJoin).toBeLessThan(1);
-    expect(geometry.secondJoin).toBeLessThan(1);
-    expect(geometry.centerJoin).toBeLessThan(1);
-    expect(geometry.maxLabelCenterDelta).toBeLessThan(1);
-    expect(geometry.labelTops[0]).toBeLessThan(geometry.labelTops[1]!);
-    expect(geometry.labelTops[1]).toBeLessThan(geometry.labelTops[2]!);
     expect(geometry.documentOverflow).toBeLessThanOrEqual(1);
-    expect(geometry.width).toBeLessThanOrEqual(761);
-
-    if (viewport.width === 390) {
-      expect(geometry.width).toBeGreaterThan(370);
-    } else {
-      expect(geometry.width).toBeGreaterThan(700);
+    expect(geometry.inner.left).toBeGreaterThanOrEqual(0);
+    expect(geometry.inner.right).toBeLessThanOrEqual(viewport.width);
+    expect(geometry.inner.width).toBeLessThanOrEqual(1120);
+    expect(geometry.features).toHaveLength(6);
+    for (const feature of geometry.features) {
+      expect(feature.left).toBeGreaterThanOrEqual(0);
+      expect(feature.right).toBeLessThanOrEqual(viewport.width);
+      expect(feature.width).toBeGreaterThan(0);
     }
 
-    await expect(page.locator(".entry-line")).toHaveCSS(
-      "transition-duration",
-      "0s",
-    );
-    await expect(page.locator(".form-outline path")).toHaveCSS(
-      "transition-duration",
-      "0s",
-    );
+    if (viewport.width === 390) {
+      expect(geometry.inner.width).toBeGreaterThan(300);
+      await expect(poster.locator(".journey-thread")).toBeHidden();
+    } else {
+      expect(geometry.inner.width).toBeGreaterThan(1000);
+      await expect(poster.locator(".journey-thread")).toBeVisible();
+    }
   });
 }
 

@@ -59,27 +59,6 @@ export async function corsMiddleware(c: Context<{ Bindings: Env }>, next: () => 
     }
   }
 
-  // Log all requests for debugging
-  try {
-    const url = new URL(c.req.url);
-    console.log('[CORS_ALLOW]', JSON.stringify({
-      method: c.req.method,
-      path: url.pathname,
-      origin,
-      userAgent: userAgent.substring(0, 100),
-      allowedOrigin,
-      timestamp: new Date().toISOString(),
-    }));
-  } catch (_) {
-    console.log('[CORS_ALLOW]', JSON.stringify({
-      method: c.req.method,
-      origin,
-      userAgent: userAgent.substring(0, 100),
-      allowedOrigin,
-      timestamp: new Date().toISOString(),
-    }));
-  }
-
   const reqAllowedHeaders = c.req.header('Access-Control-Request-Headers');
 
   c.header('Access-Control-Allow-Origin', allowedOrigin);

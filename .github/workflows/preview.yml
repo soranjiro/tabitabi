@@ -128,15 +128,10 @@ jobs:
 
       - name: Generate wrangler.toml from example
         run: |
-          if [ -z "${APP_GITHUB_ISSUES_TOKEN:-}" ]; then
-            echo "::error::APP_GITHUB_ISSUES_TOKEN GitHub secret is not available"
-            exit 1
-          fi
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${{ steps.preview-db.outputs.database_id }}/g" wrangler.toml
           sed -i "s/database_name = \"tabitabi\"/database_name = \"${PREVIEW_DB_NAME}\"/g" wrangler.toml
           sed -i "s/PLACEHOLDER_PR_NUMBER/${PR_NUMBER}/g" wrangler.toml
-          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const token = JSON.stringify(process.env.APP_GITHUB_ISSUES_TOKEN ?? ""); fs.writeFileSync(path, fs.readFileSync(path, "utf8").replaceAll("\"PLACEHOLDER_GITHUB_ISSUES_TOKEN\"", token));'
 
       - name: Generate API wrangler.toml from example
         working-directory: apps/api
@@ -146,7 +141,7 @@ jobs:
             exit 1
           fi
           cp wrangler.toml.example wrangler.toml
-          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const replacements = { PLACEHOLDER_DATABASE_ID: process.env.PREVIEW_DATABASE_ID, PLACEHOLDER_PREVIEW_SECRET: process.env.JWT_SECRET, "your-firebase-project-id": process.env.PUBLIC_FIREBASE_PROJECT_ID, "database_name = \"tabitabi\"": `database_name = "${process.env.PREVIEW_DB_NAME}"` }; let config = fs.readFileSync(path, "utf8"); for (const [from, to] of Object.entries(replacements)) config = config.replaceAll(from, to); fs.writeFileSync(path, config);'
+          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const replacements = { PLACEHOLDER_DATABASE_ID: process.env.PREVIEW_DATABASE_ID, "your-firebase-project-id": process.env.PUBLIC_FIREBASE_PROJECT_ID, "database_name = \"tabitabi\"": `database_name = "${process.env.PREVIEW_DB_NAME}"` }; let config = fs.readFileSync(path, "utf8"); for (const [from, to] of Object.entries(replacements)) config = config.replaceAll(from, to); fs.writeFileSync(path, config);'
         env:
           PREVIEW_DATABASE_ID: ${{ steps.preview-db.outputs.database_id }}
 
@@ -158,11 +153,20 @@ jobs:
         working-directory: apps/api
         run: node scripts/d1-migrate.mjs seed --remote --env preview
 
-      - name: Deploy API to preview environment
+      - name: Deploy API to preview environment with encrypted JWT binding
         working-directory: apps/api
+        shell: bash
         run: |
+          set -euo pipefail
+          if [ -z "${JWT_SECRET:-}" ]; then
+            echo "::error::PREVIEW_JWT_SECRET GitHub secret is not available" >&2
+            exit 1
+          fi
           WORKER_NAME="tabitabi-api-preview-pr-${PR_NUMBER}"
-          pnpm wrangler deploy --name ${WORKER_NAME} --env preview
+          secrets_file="$RUNNER_TEMP/tabitabi-preview-api-secrets.json"
+          trap 'rm -f "$secrets_file"' EXIT
+          node -e 'const fs = require("node:fs"); fs.writeFileSync(process.argv[1], JSON.stringify({ JWT_SECRET: process.env.JWT_SECRET }), { mode: 0o600 });' "$secrets_file"
+          pnpm wrangler deploy --name "$WORKER_NAME" --env preview --secrets-file "$secrets_file"
 
       - name: Get API preview URL
         id: api-url
@@ -177,6 +181,16 @@ jobs:
           PUBLIC_FIREBASE_APP_ID: ${{ secrets.PUBLIC_FIREBASE_APP_ID }}
           PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN }}
           PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}
+
+      - name: Configure encrypted Pages feedback token (preview)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${APP_GITHUB_ISSUES_TOKEN:-}" ]; then
+            echo "::error::APP_GITHUB_ISSUES_TOKEN GitHub secret is not available" >&2
+            exit 1
+          fi
+          printf '%s' "$APP_GITHUB_ISSUES_TOKEN" | pnpm wrangler pages secret put APP_GITHUB_ISSUES_TOKEN --project-name=tabitabi --env preview
 
       - name: Deploy Web to Pages preview
         id: pages-deploy
@@ -222,7 +236,9 @@ jobs:
       - resolve-preview
       - deploy-preview
     if: needs.deploy-preview.result == 'success'
-    runs-on: ubuntu-latest
+    # Playwright 1.57 does not provide chromium-headless-shell for Ubuntu 26.04.
+    # Pin the smoke runner until the browser toolchain supports that image.
+    runs-on: ubuntu-24.04
     env:
       PR_NUMBER: ${{ needs.resolve-preview.outputs.pr_number }}
     steps:

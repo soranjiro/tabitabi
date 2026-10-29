@@ -27,7 +27,6 @@ name = "tabitabi-api"
 ALLOWED_ORIGINS = "https://tabitabi.pages.dev"
 PASSKEY_ORIGIN = "https://tabitabi.pages.dev"
 PASSKEY_RP_ID = "tabitabi.pages.dev"
-JWT_SECRET = "PLACEHOLDER_PROD_SECRET"
 FIREBASE_PROJECT_ID = "your-firebase-project-id"
 ENVIRONMENT = "production"
 
@@ -47,7 +46,6 @@ ALLOWED_ORIGINS = "*"
 # Use a dedicated, exact preview origin and its matching RP ID.
 # PASSKEY_ORIGIN = "https://preview.example.com"
 # PASSKEY_RP_ID = "preview.example.com"
-JWT_SECRET = "PLACEHOLDER_PREVIEW_SECRET"
 FIREBASE_PROJECT_ID = "your-firebase-project-id"
 ENVIRONMENT = "preview"
 

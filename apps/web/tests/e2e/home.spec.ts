@@ -69,7 +69,7 @@ test("mobile hero keeps the background unobstructed", async ({ page }) => {
 
   const viewport = page.viewportSize();
   const heroBox = await page.locator(".hero-stage").boundingBox();
-  const journeyBox = await page.locator(".journey-section").boundingBox();
+  const journeyBox = await page.locator(".feature-poster").boundingBox();
   expect(viewport).not.toBeNull();
   expect(heroBox).not.toBeNull();
   expect(journeyBox).not.toBeNull();

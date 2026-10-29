@@ -120,8 +120,9 @@
               <span class="more" aria-hidden="true"><AppIcon name="more-horizontal" size={20} /></span>
             </span>
             <span class="book-body">
-              <span class="destination">{destination(book)} / {days(book) || "日程未定"}</span>
+              <span class="destination">{destination(book)} ・ {days(book) || "日程未定"}</span>
               <strong>{book.shared_title ?? book.title}</strong>
+              <span class="tags">{#each (book.tags ?? []).slice(0, 2) as tag}<span>#{tag}</span>{/each}</span>
               <span class="book-meta"><span>{dateRange(book)}</span><small>共有版を管理</small></span>
             </span>
           </button>
@@ -132,9 +133,10 @@
               {#if book.is_visible}<span class="shared-badge">共有中</span>{/if}
             </span>
             <span class="book-body">
-              <span class="destination">{destination(book)} / {days(book) || "日程未定"}</span>
+              <span class="destination">{destination(book)} ・ {days(book) || "日程未定"}</span>
               <strong>{book.title}</strong>
-              <span class="book-meta"><span>{dateRange(book)}</span><small>{days(book)}</small></span>
+              <span class="tags">{#each (book.tags ?? []).slice(0, 2) as tag}<span>#{tag}</span>{/each}</span>
+              <span class="book-meta"><span>{dateRange(book)}</span><small>しおりを開く</small></span>
             </span>
           </a>
           <button class="menu" aria-label="{book.title}のメニュー" onclick={() => open(book)}><AppIcon name="more-horizontal" size={20} /></button>
@@ -237,10 +239,10 @@
     position: relative;
     min-width: 0;
     overflow: hidden;
-    border: 1px solid #e2e8ec;
+    border: 1px solid #e4eaf4;
     border-radius: 1rem;
     background: white;
-    box-shadow: 0 8px 24px rgba(36, 58, 74, .055);
+    box-shadow: 0 8px 28px rgba(51, 77, 123, .06);
     transition: transform 160ms ease, box-shadow 160ms ease;
   }
 
@@ -270,7 +272,7 @@
   .visual {
     position: relative;
     display: block;
-    aspect-ratio: 16 / 8.7;
+    height: 100px;
     overflow: hidden;
     background: #eef5f7;
   }
@@ -326,46 +328,50 @@
   }
 
   .book-body {
-    display: grid;
-    min-height: 9rem;
-    padding: .85rem .9rem .9rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 9.5rem;
+    padding: 1rem;
   }
 
   .destination {
     overflow: hidden;
-    color: #7d8b97;
-    font-size: .62rem;
-    font-weight: 700;
+    color: #4c72bc;
+    font-size: .68rem;
+    font-weight: 800;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .book-body strong {
     display: -webkit-box;
-    min-height: 3.2rem;
-    margin: .5rem 0 .7rem;
+    min-height: 2.9em;
+    margin: .45rem 0 .5rem;
     overflow: hidden;
-    color: #1d3348;
-    font-family: var(--home-font-serif, Georgia, serif);
-    font-size: clamp(.95rem, 2.5vw, 1.18rem);
-    font-weight: 500;
-    line-height: 1.55;
+    color: #24344f;
+    font-family: var(--home-font-sans, sans-serif);
+    font-size: 1rem;
+    font-weight: 750;
+    line-height: 1.45;
     letter-spacing: .035em;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
 
+  .tags { display: flex; min-height: 1.4rem; gap: .3rem; flex-wrap: wrap; margin-bottom: .6rem; }
+  .tags span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    padding: .2rem .45rem; border-radius: .4rem; color: #60708a; background: #f5f7fb; font-size: .65rem; }
   .book-meta {
     display: flex;
     margin-top: auto;
-    padding-top: .62rem;
-    border-top: 1px solid #edf0f2;
-    align-items: flex-end;
+    padding-top: .7rem;
+    border-top: 1px solid #eef1f6;
+    align-items: center;
     justify-content: space-between;
     gap: .6rem;
-    color: #4d6173;
-    font-family: var(--home-font-serif, Georgia, serif);
-    font-size: .83rem;
+    color: #78879b;
+    font-family: var(--home-font-sans, sans-serif);
+    font-size: .72rem;
   }
 
   .book-meta small {
@@ -514,10 +520,8 @@
       gap: 1.15rem;
     }
 
-    .book-body {
-      min-height: 10.5rem;
-      padding: 1rem;
-    }
+    .book-body { min-height: 9.5rem; padding: 1rem; }
+    .visual { height: 100px; }
   }
 
   @media (max-width: 430px) {
@@ -529,15 +533,15 @@
       border-radius: .75rem;
     }
 
-    .book-body {
-      min-height: 8.2rem;
-      padding: .7rem;
-    }
+    .book-body { min-height: 9rem; padding: .7rem; }
+    .visual { height: 86px; }
+    .tags { margin-bottom: .4rem; }
+    .tags span { font-size: .55rem; }
 
     .book-body strong {
-      min-height: 2.9rem;
-      margin: .4rem 0 .55rem;
-      font-size: .9rem;
+      min-height: 2.7em;
+      margin: .35rem 0 .45rem;
+      font-size: .82rem;
     }
 
     .destination {

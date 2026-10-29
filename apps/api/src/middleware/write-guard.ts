@@ -40,6 +40,7 @@ export async function protectApiWrites(
   // Password verification has stricter, account-specific budgets, but still
   // needs a streaming body bound before c.req.text() materializes it.
   const isPasswordAuth = c.req.path === '/api/v1/auth/password';
+  const isPasskeyWrite = c.req.path.startsWith('/api/v1/passkeys/');
   const clientIp = c.req.header('CF-Connecting-IP');
   // Unit tests without a Cloudflare edge header share one test database.
   // Production never trusts client-supplied X-Forwarded-For for IP identity.
@@ -48,6 +49,12 @@ export async function protectApiWrites(
     const budgets: Array<{ key: string; max: number; windowMs: number }> = [
       { key: `write-ip:${ipHash}`, max: 240, windowMs: 60_000 },
     ];
+
+    // Authentication challenges and verification get stricter IP budgets.
+    if (isPasskeyWrite) {
+      budgets.push({ key: `passkey-minute:${ipHash}`, max: 30, windowMs: 60_000 });
+      budgets.push({ key: `passkey-hour:${ipHash}`, max: 200, windowMs: 60 * 60_000 });
+    }
 
     if (c.req.method === 'POST' && (
       c.req.path === '/api/v1/itineraries'
@@ -69,11 +76,11 @@ export async function protectApiWrites(
     }
   }
 
-  const maxBytes = isPasswordAuth ? 4096 : MAX_WRITE_BYTES;
+  const maxBytes = isPasswordAuth ? 4096 : isPasskeyWrite ? 32768 : MAX_WRITE_BYTES;
   if (await exceedsBodyLimit(c.req.raw, maxBytes)) {
     return c.json({
       success: false,
-      error: { code: 'PAYLOAD_TOO_LARGE', message: isPasswordAuth ? 'Request body exceeds 4 KiB' : 'Request body exceeds 2 MiB' },
+      error: { code: 'PAYLOAD_TOO_LARGE', message: isPasswordAuth ? 'Request body exceeds 4 KiB' : isPasskeyWrite ? 'Request body exceeds 32 KiB' : 'Request body exceeds 2 MiB' },
     }, 413);
   }
   return next();

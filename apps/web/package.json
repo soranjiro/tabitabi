@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
+    "@simplewebauthn/browser": "^13.3.0",
     "@tabitabi/types": "workspace:*",
     "firebase": "^12.4.0",
     "leaflet": "1.9.4",

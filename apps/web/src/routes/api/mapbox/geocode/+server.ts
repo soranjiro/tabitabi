@@ -1,10 +1,11 @@
 import type { D1Database } from '@cloudflare/workers-types';
-import { dev } from '$app/environment';
+import { dev } from '$app/env';
+import { env as cloudflareEnv } from 'cloudflare:workers';
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 
-export const GET: RequestHandler = async ({ url, platform, request }) => {
+export const GET: RequestHandler = async ({ url, request }) => {
   const query = url.searchParams.get('query')?.trim();
   const lng = url.searchParams.get('lng');
   const lat = url.searchParams.get('lat');
@@ -28,7 +29,7 @@ export const GET: RequestHandler = async ({ url, platform, request }) => {
     }
   }
 
-  const db = (platform?.env as { DB?: D1Database } | undefined)?.DB;
+  const db = (cloudflareEnv as { DB?: D1Database }).DB;
   // Pages and the API Worker share the D1 binding configured in wrangler.toml.
   // Fail closed outside local development when the global limiter is unavailable.
   if (!db && !dev) throw error(503, 'Geocoding temporarily unavailable');

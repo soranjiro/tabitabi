@@ -1,5 +1,6 @@
 import { env } from "$env/dynamic/private";
-import { dev } from "$app/environment";
+import { dev } from "$app/env";
+import { env as cloudflareEnv } from "cloudflare:workers";
 import type { D1Database } from "@cloudflare/workers-types";
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
@@ -14,7 +15,7 @@ function isSameOrigin(request: Request): boolean {
   return !origin || origin === new URL(request.url).origin;
 }
 
-export const POST: RequestHandler = async ({ request, fetch, platform }) => {
+export const POST: RequestHandler = async ({ request, fetch }) => {
   if (!isSameOrigin(request)) {
     return json({ message: "このページから送信してください" }, { status: 403 });
   }
@@ -45,7 +46,7 @@ export const POST: RequestHandler = async ({ request, fetch, platform }) => {
 
   // In-memory counters are per-instance and can be evaded by Workers/Pages
   // instance changes. Store counters atomically in the shared Cloudflare D1 DB.
-  const db = (platform?.env as { DB?: D1Database } | undefined)?.DB;
+  const db = (cloudflareEnv as { DB?: D1Database }).DB;
   if (!db && !dev) {
     return json({ message: "現在、要望を送信できません。時間をおいてお試しください" }, { status: 503 });
   }

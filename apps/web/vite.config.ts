@@ -47,16 +47,8 @@ export default defineConfig({
   build: {
     cssCodeSplit: true,
     cssMinify: true,
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          // Keep the very large map renderer isolated, but otherwise let
-          // Rollup/SvelteKit create route-aware chunks. A catch-all vendor
-          // chunk makes public pages download code used only by other routes.
-          if (id.includes('mapbox-gl')) return 'mapbox';
-        }
-      }
-    }
+    // SvelteKit 3 also builds a single-file service worker. Allow Vite/Rolldown
+    // to handle route-aware and dynamic-import chunk boundaries automatically.
   },
   test: {
     include: ['src/**/*.{test,spec}.{js,ts}'],

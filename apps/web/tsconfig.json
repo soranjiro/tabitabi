@@ -11,6 +11,7 @@
     "strict": true,
     "moduleResolution": "bundler",
     "types": [
+      "$app/types",
       "node",
       "google.maps"
     ]

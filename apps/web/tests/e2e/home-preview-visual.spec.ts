@@ -163,6 +163,8 @@ test("preview buttons, horizontal scroll and resize keep the selected sample cen
   const track = page.locator(".preview-track");
   const beforeScrollTitle = await active.locator("h2").textContent();
   await track.evaluate((element) => {
+    // User-initiated gesture cancels any button-driven snap before scrolling.
+    element.dispatchEvent(new WheelEvent("wheel", { bubbles: true }));
     element.scrollLeft += 232;
     element.dispatchEvent(new Event("scroll"));
   });

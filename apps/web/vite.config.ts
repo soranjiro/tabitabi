@@ -1,4 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
+import adapter from '@sveltejs/adapter-cloudflare';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vitest/config';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,13 +21,26 @@ export default defineConfig({
         });
       }
     },
-    sveltekit()
+    sveltekit({
+      preprocess: vitePreprocess(),
+      adapter: adapter({
+        routes: { include: ['/*'], exclude: ['<all>'] }
+      }),
+      alias: { $lib: './src/lib' },
+      inlineStyleThreshold: 100_000,
+      prerender: {
+        handleMissingId: 'warn',
+        handleHttpError: ({ status, path, referrer, referenceType }) => {
+          if (status === 404 && path.startsWith('/favicon')) return;
+          throw new Error(`${status} ${path}${referrer ? ` (${referenceType} from ${referrer})` : ''}`);
+        }
+      }
+    })
   ],
   server: {
     port: 5173
   },
-  // SvelteKit 2.x preview on Windows is vulnerable when exposed to untrusted
-  // clients. Keep the preview server loopback-only by default until Kit 3.
+  // Keep local preview loopback-only.
   preview: {
     host: '127.0.0.1'
   },

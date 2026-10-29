@@ -16,6 +16,8 @@ migrations_dir = "../db/migrations/sql"
 ALLOWED_ORIGINS = "*"
 JWT_SECRET = "local-dev-secret"
 FIREBASE_PROJECT_ID = "your-firebase-project-id"
+PASSKEY_ORIGIN = "http://localhost:5173"
+PASSKEY_RP_ID = "localhost"
 ENVIRONMENT = "development"
 
 [env.production]
@@ -23,6 +25,8 @@ name = "tabitabi-api"
 
 [env.production.vars]
 ALLOWED_ORIGINS = "https://tabitabi.pages.dev"
+PASSKEY_ORIGIN = "https://tabitabi.pages.dev"
+PASSKEY_RP_ID = "tabitabi.pages.dev"
 FIREBASE_PROJECT_ID = "your-firebase-project-id"
 ENVIRONMENT = "production"
 
@@ -39,6 +43,9 @@ migrations_dir = "../db/migrations/sql"
 
 [env.preview.vars]
 ALLOWED_ORIGINS = "*"
+# Use a dedicated, exact preview origin and its matching RP ID.
+# PASSKEY_ORIGIN = "https://preview.example.com"
+# PASSKEY_RP_ID = "preview.example.com"
 FIREBASE_PROJECT_ID = "your-firebase-project-id"
 ENVIRONMENT = "preview"
 

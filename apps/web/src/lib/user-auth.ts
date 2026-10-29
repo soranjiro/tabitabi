@@ -9,6 +9,7 @@ import {
 
 const USER_KEY = 'user_info';
 const PENDING_PROFILE_KEY = 'pending_firebase_profile';
+const PENDING_EMAIL_LINK_KEY = 'tabitabi_email_link_address';
 
 export interface PendingProfile {
   uid: string;
@@ -95,6 +96,39 @@ export const userAuth = {
     await reload(user);
     await user.getIdToken(true);
     return user;
+  },
+
+  // Passwordless sign-in and recovery. Firebase email links verify the email address.
+  async sendEmailLink(email: string): Promise<void> {
+    const { sendSignInLinkToEmail } = await import('firebase/auth');
+    const address = email.trim();
+    if (!address) throw new Error('EMAIL_REQUIRED');
+    const callback = new URL('/profile', window.location.origin);
+    await sendSignInLinkToEmail(await getAuthInstance(), address, {
+      url: callback.toString(),
+      handleCodeInApp: true,
+    });
+    // Never pass an email address via the callback URL (session injection risk).
+    localStorage.setItem(PENDING_EMAIL_LINK_KEY, address);
+  },
+
+  getPendingEmailLink(): string {
+    try { return localStorage.getItem(PENDING_EMAIL_LINK_KEY) ?? ''; }
+    catch { return ''; }
+  },
+
+  async isEmailSignInLink(url: string): Promise<boolean> {
+    const { isSignInWithEmailLink } = await import('firebase/auth');
+    return isSignInWithEmailLink(await getAuthInstance(), url);
+  },
+
+  async completeEmailLink(email: string, url: string): Promise<User> {
+    const { isSignInWithEmailLink, signInWithEmailLink } = await import('firebase/auth');
+    const auth = await getAuthInstance();
+    if (!email.trim() || !isSignInWithEmailLink(auth, url)) throw new Error('INVALID_EMAIL_LINK');
+    const result = await signInWithEmailLink(auth, email.trim(), url);
+    try { localStorage.removeItem(PENDING_EMAIL_LINK_KEY); } catch { /* storage unavailable */ }
+    return result.user;
   },
 
   async sendPasswordReset(email: string): Promise<void> {

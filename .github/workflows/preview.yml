@@ -101,14 +101,7 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: |
-          pnpm install --no-frozen-lockfile
-          echo 'TABITABI_LOCKFILE_START'
-          base64 -w 0 pnpm-lock.yaml
-          echo
-          echo 'TABITABI_LOCKFILE_END'
-          # Stop here: never run database or deploy steps during lockfile regeneration.
-          exit 1
+        run: pnpm install --frozen-lockfile
 
       - name: Delete existing preview D1 database
         run: |

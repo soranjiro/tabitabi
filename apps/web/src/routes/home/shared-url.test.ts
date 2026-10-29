@@ -4,6 +4,20 @@ import { resolveSharedItineraryPath } from "./shared-url";
 const origin = "https://tabitabi.pages.dev";
 
 describe("resolveSharedItineraryPath", () => {
+  it("accepts a bare itinerary ID", () => {
+    expect(resolveSharedItineraryPath("abc-123", origin)).toBe("/itineraries/abc-123");
+    expect(resolveSharedItineraryPath("  abc_123  ", origin)).toBe("/itineraries/abc_123");
+    expect(resolveSharedItineraryPath("official-map-public", origin)).toBe(
+      "/itineraries/official-map-public",
+    );
+  });
+
+  it("rejects malformed bare IDs", () => {
+    expect(resolveSharedItineraryPath("abc/123", origin)).toBeNull();
+    expect(resolveSharedItineraryPath("abc?token=secret", origin)).toBeNull();
+    expect(resolveSharedItineraryPath("abc#section", origin)).toBeNull();
+  });
+
   it("accepts a normal itinerary URL", () => {
     expect(
       resolveSharedItineraryPath(

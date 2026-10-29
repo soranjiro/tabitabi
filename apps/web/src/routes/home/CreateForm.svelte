@@ -78,14 +78,14 @@
     urlError = "";
 
     if (!url.trim()) {
-      urlError = "URLを入力してください";
+      urlError = "URLまたはIDを入力してください";
       return;
     }
 
     const destination = resolveSharedItineraryPath(url, window.location.origin);
 
     if (!destination) {
-      urlError = "たびたびのしおりURLを入力してください";
+      urlError = "たびたびのしおりURLまたはIDを入力してください";
       return;
     }
 
@@ -450,18 +450,20 @@
     >
       <div class="open-intro">
         <strong>共有されたしおりを開く</strong>
-        <p>たびたびの共有URLをそのまま貼り付けてください。</p>
+        <p>たびたびのしおりURLかIDを入力してください。</p>
       </div>
 
       <div class="form-group">
         <label for="url" class="form-label">
-          しおりのURL <span class="required" aria-hidden="true">*</span>
+          しおりのURL・ID <span class="required" aria-hidden="true">*</span>
         </label>
         <input
           id="url"
-          type="url"
+          type="text"
+          autocapitalize="none"
+          spellcheck="false"
           bind:value={url}
-          placeholder="https://tabitabi.pages.dev/s/..."
+          placeholder="しおりのURL または ID"
           class:error={Boolean(urlError)}
           class="form-input"
           aria-invalid={Boolean(urlError)}

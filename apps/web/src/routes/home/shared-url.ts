@@ -1,6 +1,13 @@
 export function resolveSharedItineraryPath(value: string, origin: string): string | null {
+  const input = value.trim();
+
+  // A bare ID resolves to the editable itinerary URL. Public snapshots redirect to /s/:id.
+  if (/^[a-zA-Z0-9_-]+$/.test(input)) {
+    return `/itineraries/${input}`;
+  }
+
   try {
-    const urlObj = new URL(value.trim(), origin);
+    const urlObj = new URL(input, origin);
 
     if (urlObj.origin !== origin) {
       return null;

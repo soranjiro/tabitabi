@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { onMount } from "svelte";
   import { backgroundApi } from "$lib/api/background";
   import type { ItineraryResponse } from "@tabitabi/types";
@@ -8,7 +8,7 @@
   let backgroundDisplay = $state<'cover' | 'page'>('cover');
   let loadedId = $state<string | null>(null);
 
-  const itinerary = $derived(($page.data?.itinerary ?? null) as ItineraryResponse | null);
+  const itinerary = $derived((page.data?.itinerary ?? null) as ItineraryResponse | null);
 
   $effect(() => {
     const id = itinerary?.id;

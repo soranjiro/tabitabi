@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { goto } from "$app/navigation";
 
-  $: status = $page.status;
-  $: message = $page.error?.message || "エラーが発生しました";
+  const status = $derived(page.status);
+  const message = $derived(page.error?.message || "エラーが発生しました");
 
   function goHome() {
     goto("/");

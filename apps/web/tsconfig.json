@@ -1,5 +1,5 @@
 {
-  "extends": "./.svelte-kit/tsconfig.json",
+  "extends": "$app/tsconfig",
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,
@@ -14,5 +14,13 @@
       "node",
       "google.maps"
     ]
-  }
+  },
+  "include": [
+    "src/**/*",
+    "scripts/**/*",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "src/service-worker/**/*"
+  ]
 }

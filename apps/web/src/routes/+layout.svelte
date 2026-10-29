@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import "../app.css";
+  const pathname = $derived(page.url.pathname);
 
   function isIndexablePath(pathname: string) {
     if (pathname === "/" || pathname === "/explore") return true;
@@ -12,7 +13,7 @@
 <svelte:head>
   <meta
     name="robots"
-    content={isIndexablePath($page.url.pathname)
+    content={isIndexablePath(pathname)
       ? "index, follow, max-image-preview:large"
       : "noindex, nofollow"}
   />

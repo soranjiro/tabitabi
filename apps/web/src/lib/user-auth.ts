@@ -5,7 +5,7 @@ import {
   PUBLIC_FIREBASE_APP_ID,
   PUBLIC_FIREBASE_AUTH_DOMAIN,
   PUBLIC_FIREBASE_PROJECT_ID,
-} from '$env/static/public';
+} from '$app/env/public';
 
 const USER_KEY = 'user_info';
 const PENDING_PROFILE_KEY = 'pending_firebase_profile';

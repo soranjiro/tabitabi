@@ -128,6 +128,9 @@ jobs:
       - name: Verify generated database schema
         run: pnpm run db:schema:check
 
+      - name: Test step cleanup safety audit
+        run: pnpm run db:cleanup:audit:test
+
       # The test suites use separate workspaces and do not share mutable state.
       # Collect each exit status so a failure in either suite fails this check.
       - name: Run API and Web Tests in parallel

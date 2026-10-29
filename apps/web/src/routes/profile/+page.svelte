@@ -4,6 +4,7 @@
   import { userApi } from "$lib/api/user";
   import { itineraryApi } from "$lib/api/itinerary";
   import { userAuth } from "$lib/user-auth";
+  import { firebaseMessage } from "$lib/firebase-error-message";
   import { passkeyAuth, type Passkey } from "$lib/passkey-auth";
   import { auth } from "$lib/auth";
   import BookShelf from "$lib/sharing/BookShelf.svelte";
@@ -429,22 +430,6 @@
     const code = errorCode(value);
     if (code === "USERNAME_ALREADY_EXISTS") return "このユーザー名はすでに使われています。";
     if (code === "EMAIL_ALREADY_EXISTS") return "このメールアドレスはすでに使われています。";
-    return "処理に失敗しました。時間をおいてもう一度お試しください。";
-  }
-
-  function firebaseMessage(value: unknown): string {
-    const code = (value as { code?: string })?.code ?? errorCode(value);
-    if (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found")) return "メールアドレスまたはパスワードが正しくありません。";
-    if (code.includes("email-already-in-use")) return "このメールアドレスはすでに使われています。";
-    if (code.includes("weak-password")) return "パスワードは8文字以上で入力してください。";
-    if (code.includes("too-many-requests")) return "試行回数が多すぎます。しばらく待ってからお試しください。";
-    if (code.includes("requires-recent-login")) return "安全のため、いったんログアウトして再ログインしてください。";
-    if (code.includes("invalid-email")) return "メールアドレスの形式が正しくありません。";
-    if (code.includes("invalid-action-code") || code.includes("expired-action-code") || code === "INVALID_EMAIL_LINK") return "リンクが無効か期限切れです。新しいログインリンクを発行してください。";
-    if (code.includes("operation-not-allowed")) return "メールリンク認証が未設定です。管理者にお問い合わせください。";
-    if (code === "EMAIL_REQUIRED") return "メールアドレスを入力してください。";
-    if (code === "PREFECTURE_REQUIRED") return "お住まいの都道府県を選択してください。";
-    if (code === "FIREBASE_CONFIG_MISSING") return "認証設定が未完了です。管理者にお問い合わせください。";
     return "処理に失敗しました。時間をおいてもう一度お試しください。";
   }
 

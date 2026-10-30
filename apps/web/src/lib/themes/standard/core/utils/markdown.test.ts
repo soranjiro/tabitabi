@@ -34,6 +34,24 @@ describe('renderMarkdown', () => {
     expect(result).not.toContain('javascript:');
   });
 
+  it('rejects entity-encoded executable URLs', () => {
+    const html = renderMarkdown('<a href="&#x6a;avascript:alert(1)">bad</a>');
+    expect(html).not.toMatch(/href=["']\\s*javascript:/i);
+  });
+
+  it('drops dangerous SVG and event handlers', () => {
+    const html = renderMarkdown('<svg onload=alert(1)><a href="javascript:alert(2)">bad</a></svg>');
+    expect(html).not.toContain('<svg');
+    expect(html).not.toContain('onload=');
+    expect(html).not.toContain('javascript:');
+  });
+
+  it('preserves safe links and checkbox markup', () => {
+    const html = renderMarkdown('[site](https://example.com/path)\\n\\n- [x] Done');
+    expect(html).toContain('href="https://example.com/path"');
+    expect(html).toContain('type="checkbox"');
+  });
+
   it('allows safe HTML elements', () => {
     const result = renderMarkdown('# Heading\n\n- item1\n- item2');
     expect(result).toContain('<h1>');

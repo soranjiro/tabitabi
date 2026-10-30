@@ -21,7 +21,8 @@ CommonJS bundle, and UMD bundle. Normal object/symbol/array merging remains inta
 
 `apps/web/scripts/security.node-test.mjs` resolves the actual deepmerge dependency
 of `@sveltejs/vite-plugin-svelte` and tests both runtime bundles. Tests cover both
-inputs, nested merging, null-prototype inputs, and `clone: false`, along with
+inputs, nested merging, null-prototype inputs, `clone: false`, array cloning, and
+`merge.all`, along with
 normal configuration merging. These tests run under `make test`.
 
 A local pnpm patch does not change the published package version, so version-based
@@ -46,7 +47,7 @@ contents; GitHub's open-alert count is zero after the dismissal is processed.
 ## Validation
 
 - `pnpm install --frozen-lockfile`: passes.
-- `make test`: passes (API: 171 Vitest + 9 Node tests; web: 118 Vitest + 10 Node tests).
+- `make test`: passes (API: 171 Vitest + 9 Node tests; web: 118 Vitest + 12 Node tests).
 - `make build`: passes.
 - `git diff --check`: passes.
 - `make check-web`: still reports application/tooling diagnostics; these are not

@@ -21,24 +21,33 @@ CommonJS bundle, and UMD bundle. Normal object/symbol/array merging remains inta
 
 `apps/web/scripts/security.node-test.mjs` resolves the actual deepmerge dependency
 of `@sveltejs/vite-plugin-svelte` and tests both runtime bundles. Tests cover both
-inputs, nested merging, null-prototype inputs, and `clone: false`, along with
+inputs, nested merging, null-prototype inputs, `clone: false`, array cloning, and
+`merge.all`, along with
 normal configuration merging. These tests run under `make test`.
 
-A local pnpm patch does not change the published package version, so GitHub
-Dependabot and `pnpm audit` will continue to report #186. **After this change is
-merged into the default branch**, #186 can be dismissed as `custom mitigation`,
-referencing this patch and its regression tests. Do not dismiss it as a false
-positive or suppress all deepmerge advisories. Replace the patch with an upstream
-fixed release when one becomes available.
+A local pnpm patch does not change the published package version, so version-based
+scanners still identify deepmerge 4.3.1. Replace the patch with an upstream fixed
+release when one becomes available; do not suppress all deepmerge advisories.
 
-The other eleven alerts should close after the updated lockfile reaches the
-default branch and GitHub rescans it. No remote alerts were dismissed as part of
-the local dependency update.
+## Production rollout result
+
+PR #366 was merged to main as `2624a36f3c401d764434c022fb0be9ba6a843905`.
+The automatic production deployment succeeded for both API Workers and Web Pages:
+https://github.com/soranjiro/tabitabi/actions/runs/40987149784
+
+The eleven fixed-version alerts closed automatically as `fixed`. After deployment,
+#186 was dismissed with the supported API reason `tolerable_risk`, explicitly
+referencing the deployed local patch and regression tests. The risk is mitigated,
+not simply accepted without treatment. Dependabot's API does not support a
+`custom mitigation` reason. This is not a false-positive dismissal.
+
+`pnpm audit` still reports the patched package because it does not inspect patch
+contents; GitHub's open-alert count is zero after the dismissal is processed.
 
 ## Validation
 
 - `pnpm install --frozen-lockfile`: passes.
-- `make test`: passes (API: 171 Vitest + 9 Node tests; web: 118 Vitest + 10 Node tests).
+- `make test`: passes (API: 171 Vitest + 9 Node tests; web: 118 Vitest + 12 Node tests).
 - `make build`: passes.
 - `git diff --check`: passes.
 - `make check-web`: still reports application/tooling diagnostics; these are not

@@ -41,6 +41,23 @@ for (const entry of ['deepmerge', 'deepmerge/dist/umd.js']) {
     assert.equal(Reflect.get({}, 'polluted'), undefined);
   });
 
+  test(`${entry}: array cloning and merge.all also reject prototype poisoning`, () => {
+    const payload = JSON.parse('{"__proto__":{"polluted":true},"safe":1}');
+    const nullPrototypePayload = Object.assign(Object.create(null), payload);
+    for (const malicious of [payload, nullPrototypePayload]) {
+      for (const result of [
+        merge([], [malicious])[0],
+        merge([malicious], [])[0],
+        merge.all([malicious, { additional: 2 }]),
+      ]) {
+        assert.equal(Object.getPrototypeOf(result), Object.prototype);
+        assert.equal(result.polluted, undefined);
+        assert.equal(Object.hasOwn(result, '__proto__'), false);
+        assert.equal(result.safe, 1);
+      }
+    }
+  });
+
   test(`${entry}: normal configuration merging still works`, () => {
     const symbol = Symbol('option');
     assert.deepEqual(

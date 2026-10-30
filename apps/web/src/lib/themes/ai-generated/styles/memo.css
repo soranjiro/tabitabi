@@ -28,52 +28,52 @@
   line-height: 1.7;
 }
 
-.ai-memo-content :global(h1),
-.ai-memo-content :global(h2),
-.ai-memo-content :global(h3) {
+.ai-memo-content h1,
+.ai-memo-content h2,
+.ai-memo-content h3 {
   color: var(--ai-text-primary);
   margin-top: 1rem;
   margin-bottom: 0.5rem;
 }
 
-.ai-memo-content :global(h1) {
+.ai-memo-content h1 {
   font-size: 1.25rem;
 }
 
-.ai-memo-content :global(h2) {
+.ai-memo-content h2 {
   font-size: 1.125rem;
 }
 
-.ai-memo-content :global(h3) {
+.ai-memo-content h3 {
   font-size: 1rem;
 }
 
-.ai-memo-content :global(ul),
-.ai-memo-content :global(ol) {
+.ai-memo-content ul,
+.ai-memo-content ol {
   margin: 0.75rem 0;
   padding-left: 1.5rem;
 }
 
-.ai-memo-content :global(li) {
+.ai-memo-content li {
   margin: 0.25rem 0;
 }
 
-.ai-memo-content :global(input[type="checkbox"]) {
+.ai-memo-content input[type="checkbox"] {
   margin-right: 0.5rem;
   accent-color: var(--ai-primary);
 }
 
-.ai-memo-content :global(a) {
+.ai-memo-content a {
   color: var(--ai-primary);
   text-decoration: underline;
 }
 
-.ai-memo-content :global(strong) {
+.ai-memo-content strong {
   color: var(--ai-text-primary);
   font-weight: 600;
 }
 
-.ai-memo-content :global(code) {
+.ai-memo-content code {
   padding: 0.125rem 0.375rem;
   background: var(--ai-surface-active);
   border-radius: var(--ai-radius-sm);
@@ -81,7 +81,7 @@
   font-size: 0.875em;
 }
 
-.ai-memo-content :global(blockquote) {
+.ai-memo-content blockquote {
   margin: 0.75rem 0;
   padding: 0.5rem 1rem;
   border-left: 3px solid var(--ai-primary-light);

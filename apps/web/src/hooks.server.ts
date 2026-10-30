@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import type { Handle } from '@sveltejs/kit';
+import type { Handle } from '@sveltejs/kit/hooks';
 import { hasUnsafeLeadingDoubleSlash } from '$lib/server/security';
 
 export const handle: Handle = async ({ event, resolve }) => {

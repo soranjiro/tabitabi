@@ -1,13 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { userApi } from "$lib/api/user";
   import type { PublicBookmark, PublicFeedItem } from "@tabitabi/types";
   import ItineraryCard from "$lib/explore/ItineraryCard.svelte";
   import PublicFooter from "$lib/explore/PublicFooter.svelte";
   import PublicHeader from "$lib/explore/PublicHeader.svelte";
 
-  const username = $derived($page.params.username);
+  const username = $derived(page.params.username);
   const displayName = $derived(username === "tabitabi_official" ? "たびたび公式" : `@${username}`);
 
   let bookmarks: PublicBookmark[] = $state([]);

@@ -1,11 +1,12 @@
 /// <reference lib="webworker" />
 
-import { build, version } from "$service-worker";
+import { immutable } from "$app/manifest";
+import { version } from "$app/env";
 import { mayCacheOffline } from "$lib/offline-cache-policy";
 
 const worker = self as unknown as ServiceWorkerGlobalScope;
 const CACHE_NAME = `tabitabi-cache-${version}`;
-const BUILD_ASSETS = new Set(build);
+const BUILD_ASSETS = new Set(immutable.map(({ path }) => `/${path}`));
 
 worker.addEventListener("install", () => {
   // Cache immutable bundles on demand instead of delaying the first page.

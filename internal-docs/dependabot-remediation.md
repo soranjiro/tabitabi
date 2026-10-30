@@ -24,16 +24,24 @@ of `@sveltejs/vite-plugin-svelte` and tests both runtime bundles. Tests cover bo
 inputs, nested merging, null-prototype inputs, and `clone: false`, along with
 normal configuration merging. These tests run under `make test`.
 
-A local pnpm patch does not change the published package version, so GitHub
-Dependabot and `pnpm audit` will continue to report #186. **After this change is
-merged into the default branch**, #186 can be dismissed as `custom mitigation`,
-referencing this patch and its regression tests. Do not dismiss it as a false
-positive or suppress all deepmerge advisories. Replace the patch with an upstream
-fixed release when one becomes available.
+A local pnpm patch does not change the published package version, so version-based
+scanners still identify deepmerge 4.3.1. Replace the patch with an upstream fixed
+release when one becomes available; do not suppress all deepmerge advisories.
 
-The other eleven alerts should close after the updated lockfile reaches the
-default branch and GitHub rescans it. No remote alerts were dismissed as part of
-the local dependency update.
+## Production rollout result
+
+PR #366 was merged to main as `2624a36f3c401d764434c022fb0be9ba6a843905`.
+The automatic production deployment succeeded for both API Workers and Web Pages:
+https://github.com/soranjiro/tabitabi/actions/runs/40987149784
+
+The eleven fixed-version alerts closed automatically as `fixed`. After deployment,
+#186 was dismissed with the supported API reason `tolerable_risk`, explicitly
+referencing the deployed local patch and regression tests. The risk is mitigated,
+not simply accepted without treatment. Dependabot's API does not support a
+`custom mitigation` reason. This is not a false-positive dismissal.
+
+`pnpm audit` still reports the patched package because it does not inspect patch
+contents; GitHub's open-alert count is zero after the dismissal is processed.
 
 ## Validation
 

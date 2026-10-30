@@ -17,6 +17,10 @@
 
 Webで必要なFirebase公開設定は、`apps/web/.env.example`と環境変数チェック処理を正本として確認してください。
 
+本番・プレビューの GitHub Actions ビルドには、次の4つの GitHub Actions secrets を設定します。`PUBLIC_FIREBASE_API_KEY`、`PUBLIC_FIREBASE_AUTH_DOMAIN`、`PUBLIC_FIREBASE_PROJECT_ID`、`PUBLIC_FIREBASE_APP_ID`。SvelteKit 3 の公開環境変数は既定で実行時読み込みですが、これら4つは `apps/web/src/env.ts` で `static: true` に設定し、ビルド時にクライアントへ埋め込みます。GitHub Actions の secret は Cloudflare Pages の実行時環境変数へ自動的には引き継がれません。
+
+ログイン画面で「認証設定が未完了です」と表示される場合は、まず GitHub Actions の4つの設定値と Web の最新デプロイを確認してください。環境変数を変更した場合は再ビルド・再デプロイが必要です。Firebase のメールリンク設定や承認済みドメインは別途 Firebase Console で設定します。
+
 公開設定値はクライアント識別に必要な値です。サーバー専用の秘密値を`PUBLIC_`などクライアントへ公開される変数へ入れないでください。
 
 ## 確認メールとカスタムアクション画面

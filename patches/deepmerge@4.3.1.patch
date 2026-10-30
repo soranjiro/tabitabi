@@ -1,0 +1,72 @@
+diff --git a/dist/cjs.js b/dist/cjs.js
+index 7c36cbdd06cc22c92d590be3f87a08a91ca06b40..797d1d905f20914b414455248818914e388681f8 100644
+--- a/dist/cjs.js
++++ b/dist/cjs.js
+@@ -71,6 +71,9 @@ function propertyIsOnObject(object, property) {
+ 
+ // Protects from prototype poisoning and unexpected merging up the prototype chain.
+ function propertyIsUnsafe(target, key) {
++	if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
++		return true
++	}
+ 	return propertyIsOnObject(target, key) // Properties are safe to merge if they don't exist in the target yet,
+ 		&& !(Object.hasOwnProperty.call(target, key) // unsafe if they exist up the prototype chain,
+ 			&& Object.propertyIsEnumerable.call(target, key)) // and also unsafe if they're nonenumerable.
+@@ -80,6 +83,9 @@ function mergeObject(target, source, options) {
+ 	var destination = {};
+ 	if (options.isMergeableObject(target)) {
+ 		getKeys(target).forEach(function(key) {
++			if (propertyIsUnsafe(target, key)) {
++				return
++			}
+ 			destination[key] = cloneUnlessOtherwiseSpecified(target[key], options);
+ 		});
+ 	}
+diff --git a/dist/umd.js b/dist/umd.js
+index 4071e7c56ec8e5273fe166f6e723ac460fab8b72..1fdd803de399db87752e789befbc72376c154122 100644
+--- a/dist/umd.js
++++ b/dist/umd.js
+@@ -75,6 +75,9 @@
+ 
+ 	// Protects from prototype poisoning and unexpected merging up the prototype chain.
+ 	function propertyIsUnsafe(target, key) {
++		if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
++			return true
++		}
+ 		return propertyIsOnObject(target, key) // Properties are safe to merge if they don't exist in the target yet,
+ 			&& !(Object.hasOwnProperty.call(target, key) // unsafe if they exist up the prototype chain,
+ 				&& Object.propertyIsEnumerable.call(target, key)) // and also unsafe if they're nonenumerable.
+@@ -84,6 +87,9 @@
+ 		var destination = {};
+ 		if (options.isMergeableObject(target)) {
+ 			getKeys(target).forEach(function(key) {
++				if (propertyIsUnsafe(target, key)) {
++					return
++				}
+ 				destination[key] = cloneUnlessOtherwiseSpecified(target[key], options);
+ 			});
+ 		}
+diff --git a/index.js b/index.js
+index 77968aed5d456cccc294f60912ef381fa1e52a7b..05226df6767b0856e879854af9fb470d34a474ec 100644
+--- a/index.js
++++ b/index.js
+@@ -46,6 +46,9 @@ function propertyIsOnObject(object, property) {
+ 
+ // Protects from prototype poisoning and unexpected merging up the prototype chain.
+ function propertyIsUnsafe(target, key) {
++	if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
++		return true
++	}
+ 	return propertyIsOnObject(target, key) // Properties are safe to merge if they don't exist in the target yet,
+ 		&& !(Object.hasOwnProperty.call(target, key) // unsafe if they exist up the prototype chain,
+ 			&& Object.propertyIsEnumerable.call(target, key)) // and also unsafe if they're nonenumerable.
+@@ -55,6 +58,9 @@ function mergeObject(target, source, options) {
+ 	var destination = {}
+ 	if (options.isMergeableObject(target)) {
+ 		getKeys(target).forEach(function(key) {
++			if (propertyIsUnsafe(target, key)) {
++				return
++			}
+ 			destination[key] = cloneUnlessOtherwiseSpecified(target[key], options)
+ 		})
+ 	}

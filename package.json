@@ -25,7 +25,7 @@
     "chrome-launcher": "^1.2.1",
     "dbmate": "2.34.1",
     "husky": "^9.1.7",
-    "lighthouse": "^13.4.1",
+    "lighthouse": "^13.6.0",
     "turbo": "^2.10.9",
     "wrangler": "^4.120.0"
   }

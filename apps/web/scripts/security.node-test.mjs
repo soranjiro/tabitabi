@@ -13,6 +13,50 @@ const consumers = {
   ),
 };
 
+// Exercise the dependency loaded by the Svelte Vite plugin, not a test-only copy.
+const pluginRequire = createRequire(import.meta.resolve('@sveltejs/vite-plugin-svelte'));
+for (const entry of ['deepmerge', 'deepmerge/dist/umd.js']) {
+  const merge = pluginRequire(entry);
+
+  test(`${entry}: GHSA-gcqx-w48m-w2h4 blocks prototype poisoning in both inputs`, () => {
+    const payload = JSON.parse('{"__proto__":{"polluted":true},"constructor":{"prototype":{"polluted":true}},"prototype":{"polluted":true}}');
+    const nullPrototypePayload = Object.assign(Object.create(null), payload);
+    for (const malicious of [payload, nullPrototypePayload]) {
+      for (const options of [{}, { clone: false }]) {
+        for (const result of [
+          merge(malicious, {}, options),
+          merge(Object.create(null), malicious, options),
+          merge({ nested: malicious }, { nested: {} }, options),
+          merge({ nested: Object.create(null) }, { nested: malicious }, options),
+        ]) {
+          const value = result.nested ?? result;
+          assert.equal(Object.getPrototypeOf(value), Object.prototype);
+          assert.equal(value.polluted, undefined);
+          for (const key of ['__proto__', 'constructor', 'prototype']) {
+            assert.equal(Object.hasOwn(value, key), false);
+          }
+        }
+      }
+    }
+    assert.equal(Reflect.get({}, 'polluted'), undefined);
+  });
+
+  test(`${entry}: normal configuration merging still works`, () => {
+    const symbol = Symbol('option');
+    assert.deepEqual(
+      merge({ nested: { a: 1 }, list: [1], [symbol]: { a: 1 } },
+        { nested: { b: 2 }, list: [2], [symbol]: { b: 2 } }),
+      { nested: { a: 1, b: 2 }, list: [1, 2], [symbol]: { a: 1, b: 2 } },
+    );
+    assert.deepEqual(merge.all([{ a: 1 }, { b: 2 }]), { a: 1, b: 2 });
+    assert.deepEqual(merge({ toString: 'custom' }, {}), { toString: 'custom' });
+    /** @type {(target: unknown[], source: unknown[]) => unknown[]} */
+    const replaceArray = (_, source) => source;
+    assert.deepEqual(merge({ list: [1] }, { list: [2] }, { arrayMerge: replaceArray }), { list: [2] });
+  });
+}
+
+/** @param {string} open @param {string} close @param {number} depth */
 const nested = (open, close, depth) => open.repeat(depth) + 'a' + close.repeat(depth);
 
 for (const [consumer, consumerRequire] of Object.entries(consumers)) {

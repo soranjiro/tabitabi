@@ -205,8 +205,11 @@ export const demoStorage = {
       this.updateItinerarySecrets(secret_settings ?? null);
     }
 
-    const updated = { ...data.itinerary, ...rest, updated_at: now };
-    this.saveData({ ...data, itinerary: updated });
+    // Read the updated in-memory secrets before saving the other fields.
+    // Otherwise the stale snapshot would undo the secret-mode change.
+    const current = this.getData() ?? data;
+    const updated = { ...current.itinerary, ...rest, updated_at: now };
+    this.saveData({ ...current, itinerary: updated });
     return this.getItinerary();
   },
 

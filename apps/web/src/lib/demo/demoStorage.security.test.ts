@@ -6,6 +6,7 @@ const itinerary = {
   id: 'demo',
   title: 'Sample',
   secret_settings: { enabled: true, offset_minutes: 60 },
+  password: 'DEMO_PASSWORD',
 } as Itinerary;
 const secrets = {
   itinerary_id: 'demo',
@@ -24,9 +25,12 @@ describe('demo storage privacy', () => {
     demoStorage.initializeDemo({ itinerary, steps: [], itinerary_secrets: secrets });
     expect(demoStorage.getItinerarySecrets()).toEqual(secrets);
     expect(demoStorage.getItinerary()?.secret_settings?.enabled).toBe(true);
+    expect(demoStorage.getItinerary()?.password).toBe('DEMO_PASSWORD');
     const stored = sessionStorage.getItem('tabitabi_demo') ?? '';
     expect(stored).not.toContain('itinerary_secrets');
     expect(stored).not.toContain('secret_settings');
+    expect(stored).not.toContain('password');
+    expect(stored).not.toContain('DEMO_PASSWORD');
     expect(localStorage.getItem('tabitabi_demo')).toBeNull();
   });
 
@@ -36,6 +40,16 @@ describe('demo storage privacy', () => {
     }));
     expect(demoStorage.getItinerarySecrets()).toEqual(secrets);
     expect(localStorage.getItem('tabitabi_demo')).toBeNull();
+    expect(sessionStorage.getItem('tabitabi_demo')).not.toContain('itinerary_secrets');
+    expect(sessionStorage.getItem('tabitabi_demo')).not.toContain('DEMO_PASSWORD');
+    expect(demoStorage.getItinerary()?.password).toBe('DEMO_PASSWORD');
+  });
+  it('scrubs stale persistent secrets even when a clean session copy exists', () => {
+    demoStorage.initializeDemo({ itinerary, steps: [] });
+    localStorage.setItem('tabitabi_demo', JSON.stringify({ itinerary, steps: [], itinerary_secrets: secrets }));
+    expect(demoStorage.getData()).not.toBeNull();
+    expect(localStorage.getItem('tabitabi_demo')).toBeNull();
+    expect(sessionStorage.getItem('tabitabi_demo')).not.toContain('DEMO_PASSWORD');
     expect(sessionStorage.getItem('tabitabi_demo')).not.toContain('itinerary_secrets');
   });
 });

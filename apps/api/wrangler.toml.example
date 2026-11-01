@@ -14,6 +14,7 @@ migrations_dir = "../db/migrations/sql"
 
 [vars]
 ALLOWED_ORIGINS = "*"
+APP_ORIGIN = "http://localhost:5173"
 JWT_SECRET = "local-dev-secret"
 FIREBASE_PROJECT_ID = "your-firebase-project-id"
 PASSKEY_ORIGIN = "http://localhost:5173"
@@ -25,6 +26,7 @@ name = "tabitabi-api"
 
 [env.production.vars]
 ALLOWED_ORIGINS = "https://tabitabi.pages.dev"
+APP_ORIGIN = "https://tabitabi.pages.dev"
 PASSKEY_ORIGIN = "https://tabitabi.pages.dev"
 PASSKEY_RP_ID = "tabitabi.pages.dev"
 FIREBASE_PROJECT_ID = "your-firebase-project-id"
@@ -48,6 +50,7 @@ ALLOWED_ORIGINS = "*"
 # PASSKEY_RP_ID = "preview.example.com"
 FIREBASE_PROJECT_ID = "your-firebase-project-id"
 ENVIRONMENT = "preview"
+APP_ORIGIN = "https://preview-pr-PLACEHOLDER_PR_NUMBER.tabitabi.pages.dev"
 
 [env.preview.observability]
 enabled = true

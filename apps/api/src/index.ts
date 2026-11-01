@@ -19,6 +19,8 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.use('*', corsMiddleware);
 app.use('/api/v1/*', protectApiWrites);
+app.use('/oauth/*', protectApiWrites);
+app.use('/mcp', protectApiWrites);
 
 app.get('/health', (c) => {
   return c.json({ status: 'ok', service: 'tabitabi-api' });

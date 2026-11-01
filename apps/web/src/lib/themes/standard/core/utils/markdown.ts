@@ -12,7 +12,7 @@ const renderer = new Renderer();
 renderer.html = () => "";
 renderer.image = ({ text }) => escapeHtml(text);
 renderer.link = function ({ href, title, tokens }) {
-  const safe = /^(https?:|mailto:)/i.test(href) && !/[\\u0000-\\u001f\\u007f]/.test(href);
+  const safe = /^(https?:|mailto:)/i.test(href) && !/[\u0000-\u001f\u007f]/.test(href);
   const label = this.parser.parseInline(tokens);
   if (!safe) return label;
   const titleAttr = title ? ` title="${escapeHtml(title)}"` : "";

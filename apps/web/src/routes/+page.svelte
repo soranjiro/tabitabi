@@ -255,6 +255,7 @@
               <span>しおりを作る</span>
               <span class="action-arrow" aria-hidden="true">→</span>
             </a>
+            <a class="text-link" href="/plan-with-chatgpt">ChatGPTで考える <span aria-hidden="true">›</span></a>
             <a class="text-link" href="/explore"
               >みんなのしおりを見る <span aria-hidden="true">›</span></a
             >

@@ -79,6 +79,7 @@
       },
     ) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
+    onPlanWithChatGpt?: () => void;
     onBatchUpdateDates?: (updates: import("@tabitabi/types").BatchStepDateUpdate[]) => Promise<void>;
     onReorderSteps?: (...args: unknown[]) => Promise<void> | void;
   }
@@ -91,6 +92,7 @@
     onCreateStep,
     onUpdateStep,
     onDeleteStep,
+    onPlanWithChatGpt,
     onBatchUpdateDates,
     onReorderSteps: _onReorderSteps,
   }: Props = $props();
@@ -691,6 +693,7 @@
       }
     }}
     onPrint={openPrintPreview}
+    {onPlanWithChatGpt}
     onSettings={() => (showSettingsDialog = true)}
     onEditModeToggle={handleEditModeToggle}
     onClose={() => (showMoreMenu = false)}

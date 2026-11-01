@@ -14,7 +14,9 @@ function historyMetadata(entry: ShioriHistory): ShioriHistory {
     title: entry.title,
     accessedAt: entry.accessedAt,
     // This is a UI boolean, never a password or editing credential.
-    is_password_protected: entry.is_password_protected === true,
+    ...(typeof entry.is_password_protected === 'boolean'
+      ? { is_password_protected: entry.is_password_protected === true }
+      : {}),
     token: null,
   };
 }

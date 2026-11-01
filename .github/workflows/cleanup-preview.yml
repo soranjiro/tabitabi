@@ -11,8 +11,6 @@ jobs:
   cleanup-preview:
     runs-on: ubuntu-latest
     env:
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
       PREVIEW_DB_NAME: tabitabi-preview-pr-${{ github.event.pull_request.number }}
     steps:
@@ -32,6 +30,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Delete Preview API Worker
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         working-directory: apps/api
         run: |
           WORKER_NAME="tabitabi-api-preview-pr-${PR_NUMBER}"
@@ -39,6 +40,9 @@ jobs:
         continue-on-error: true
 
       - name: Delete Preview D1 Database
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           pnpm wrangler d1 delete "${PREVIEW_DB_NAME}" --skip-confirmation || echo "Preview database may not exist"
         continue-on-error: true

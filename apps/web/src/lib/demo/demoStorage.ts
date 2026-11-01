@@ -63,16 +63,7 @@ export const demoStorage = {
       let parsed = JSON.parse(raw) as StoredDemoData;
       if (parsed.itinerary_secrets || parsed.itinerary?.secret_settings || parsed.itinerary?.password) {
         // Sanitize older session data before returning it or writing it again.
-        const settings = parsed.itinerary.secret_settings;
-        const legacySecrets = parsed.itinerary_secrets ??
-          (settings ? {
-            itinerary_id: parsed.itinerary.id,
-            enabled: settings.enabled,
-            offset_minutes: settings.offset_minutes,
-            created_at: parsed.itinerary.created_at,
-            updated_at: parsed.itinerary.updated_at,
-          } : null);
-        this.saveData({ ...parsed, itinerary_secrets: legacySecrets });
+        this.saveData(parsed);
         const cleaned = sessionStorage.getItem(DEMO_KEY);
         if (!cleaned) return null;
         parsed = JSON.parse(cleaned) as StoredDemoData;
@@ -94,7 +85,15 @@ export const demoStorage = {
    * Save all demo data
    */
   saveData(data: StoredDemoData): void {
-    volatileSecretSettings = data.itinerary_secrets ?? null;
+    const legacySettings = data.itinerary.secret_settings;
+    volatileSecretSettings = data.itinerary_secrets ??
+      (legacySettings ? {
+        itinerary_id: data.itinerary.id,
+        enabled: legacySettings.enabled,
+        offset_minutes: legacySettings.offset_minutes,
+        created_at: data.itinerary.created_at,
+        updated_at: data.itinerary.updated_at,
+      } : null);
     volatilePassword = data.itinerary.password ?? null;
     const { password: _legacyPassword, secret_settings: _legacySettings, ...safeItinerary } = data.itinerary;
     // Serialize only explicitly allowed demo fields. Never serialize

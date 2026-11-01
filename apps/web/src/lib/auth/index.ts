@@ -42,7 +42,7 @@ export const auth = {
       // instead of only scrubbing records that contain an edit token.
       const metadata = entries.map(historyMetadata);
       const safeRaw = JSON.stringify(metadata);
-      if (raw !== safeRaw) localStorage.setItem(STORAGE_KEY, safeRaw);
+      if (raw !== null && raw !== safeRaw) localStorage.setItem(STORAGE_KEY, safeRaw);
       return metadata.map(entry => ({
         ...entry,
         token: memoryTokens.get(entry.shioriId) ?? null,

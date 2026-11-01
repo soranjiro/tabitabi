@@ -22,6 +22,7 @@ describe('ApiClient', () => {
 
   beforeEach(() => {
     mockLocalStorage.clear();
+    sessionStorage.clear();
     client = new ApiClient('http://localhost:8787/api/v1');
     vi.clearAllMocks();
   });

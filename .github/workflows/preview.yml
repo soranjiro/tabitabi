@@ -136,8 +136,6 @@ jobs:
           sed -i "s/PLACEHOLDER_PR_NUMBER/${PR_NUMBER}/g" wrangler.toml
 
       - name: Generate API wrangler.toml from example
-        env:
-          PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}
         working-directory: apps/api
         run: |
           if [ -z "${PUBLIC_FIREBASE_PROJECT_ID:-}" ]; then
@@ -148,6 +146,7 @@ jobs:
           node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; const replacements = { PLACEHOLDER_DATABASE_ID: process.env.PREVIEW_DATABASE_ID, "your-firebase-project-id": process.env.PUBLIC_FIREBASE_PROJECT_ID, "database_name = \"tabitabi\"": `database_name = "${process.env.PREVIEW_DB_NAME}"` }; let config = fs.readFileSync(path, "utf8"); for (const [from, to] of Object.entries(replacements)) config = config.replaceAll(from, to); fs.writeFileSync(path, config);'
         env:
           PREVIEW_DATABASE_ID: ${{ steps.preview-db.outputs.database_id }}
+          PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}
 
       - name: Load D1 schema into preview database
         env:

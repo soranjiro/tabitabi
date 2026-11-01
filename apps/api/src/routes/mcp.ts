@@ -10,15 +10,15 @@ const stringField = { type: 'string' } as const;
 const tools = [
   {
     name: 'list_itineraries',
-    title: '編集可能なしおり一覧',
-    description: 'ログイン済みのtabitabiアカウントが編集権限を持つしおりを一覧表示します。',
+    title: 'アカウントのしおり一覧',
+    description: 'tabitabiアカウントに保存したしおりと、編集権限を紐付けたしおりを一覧表示します。can_edit が true の場合だけ変更できます。',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     annotations: { readOnlyHint: true },
   },
   {
     name: 'get_itinerary',
     title: 'しおりと予定を確認',
-    description: '指定した編集可能なしおりの予定・タイトル・URLを取得します。シークレットな予定を含む場合があるため、他者に転載しないでください。',
+    description: 'アカウントに保存したしおりのタイトル・URL・予定を取得します。編集権限がない保護付きしおりの予定や、未公開のシークレット予定は取得できません。can_edit が true の場合だけ変更できます。',
     inputSchema: { type: 'object', properties: { itinerary_id: stringField }, required: ['itinerary_id'], additionalProperties: false },
     annotations: { readOnlyHint: true },
   },
@@ -84,34 +84,59 @@ function isDate(value: unknown) {
 function invalidFields(args: Args, fields: Array<[keyof Args, number]>) {
   return fields.some(([key, limit]) => args[key] !== undefined && args[key] !== null && !isString(args[key], limit));
 }
-async function canEdit(env: Env, userId: string, id: string) {
-  const row = await env.DB.prepare('SELECT i.id FROM itinerary_editor_grants g JOIN itineraries i ON i.id = g.itinerary_id WHERE g.itinerary_id = ? AND g.user_id = ? AND i.source_itinerary_id IS NULL')
-    .bind(id, userId).first();
-  return Boolean(row);
+async function accessFor(env: Env, userId: string, id: string) {
+  const row = await env.DB.prepare(`
+    SELECT
+      EXISTS(SELECT 1 FROM user_bookmarks b WHERE b.itinerary_id = i.id AND b.user_id = ?) AS is_saved,
+      EXISTS(SELECT 1 FROM itinerary_editor_grants g WHERE g.itinerary_id = i.id AND g.user_id = ?) AS can_edit
+    FROM itineraries i WHERE i.id = ? AND i.source_itinerary_id IS NULL
+  `).bind(userId, userId, id).first<{ is_saved: number; can_edit: number }>();
+  return { isSaved: Boolean(row?.is_saved), canEdit: Boolean(row?.can_edit) };
 }
 async function invoke(env: Env, userId: string, name: string, args: Args) {
   if (name === 'list_itineraries') {
-    const result = await env.DB.prepare('SELECT i.id, i.title, i.updated_at FROM itinerary_editor_grants g JOIN itineraries i ON i.id = g.itinerary_id WHERE g.user_id = ? AND i.source_itinerary_id IS NULL ORDER BY i.updated_at DESC LIMIT 50')
-      .bind(userId).all();
-    return output(result.results ?? []);
+    const result = await env.DB.prepare(`
+      SELECT i.id, i.title, i.updated_at,
+        EXISTS(SELECT 1 FROM itinerary_editor_grants g WHERE g.itinerary_id = i.id AND g.user_id = ?) AS can_edit
+      FROM itineraries i
+      WHERE i.source_itinerary_id IS NULL
+        AND (EXISTS(SELECT 1 FROM user_bookmarks b WHERE b.itinerary_id = i.id AND b.user_id = ?)
+          OR EXISTS(SELECT 1 FROM itinerary_editor_grants g WHERE g.itinerary_id = i.id AND g.user_id = ?))
+      ORDER BY i.updated_at DESC LIMIT 100
+    `).bind(userId, userId, userId).all<{ id: string; title: string; updated_at: string; can_edit: number }>();
+    return output((result.results ?? []).map(row => ({
+      id: row.id, title: row.title, updated_at: row.updated_at,
+      can_edit: Boolean(row.can_edit),
+      url: (env.APP_ORIGIN || 'https://tabitabi.pages.dev') + '/itineraries/' + encodeURIComponent(row.id),
+    })));
   }
   const id = args.itinerary_id;
-  if (!isString(id, 128, true) || !(await canEdit(env, userId, id))) {
-    return output({ error: '編集権限がありません。tabitabiにログインして、しおりの編集権限をアカウントに紐付けてください。' }, true);
-  }
-  const itineraryService = new ItineraryService(env.DB, env);
-  const steps = new StepService(env.DB);
+  if (!isString(id, 128, true)) return output({ error: '正しいしおりIDを指定してください。' }, true);
+  const access = await accessFor(env, userId, id);
   if (name === 'get_itinerary') {
+    if (!access.isSaved && !access.canEdit) return output({ error: 'このアカウントに保存されていないしおりです。' }, true);
+    const itineraryService = new ItineraryService(env.DB, env);
     const itinerary = await itineraryService.get(id);
-    const entries = await steps.list(id);
+    if (!itinerary) return output({ error: 'しおりが見つかりません。' }, true);
+    const isProtected = Boolean(itinerary.password);
+    const secret = itinerary.secret_settings?.enabled;
+    const entries = (isProtected && !access.canEdit) ? [] : await new StepService(env.DB).list(id,
+      secret && !access.canEdit ? { currentTime: Date.now(), offsetMinutes: itinerary.secret_settings?.offset_minutes ?? 60, maskSecrets: true } : undefined);
     return output({
-      id, title: itinerary?.title, url: (env.APP_ORIGIN || 'https://tabitabi.pages.dev') + '/itineraries/' + encodeURIComponent(id),
-      steps: entries.map(s => ({
+      id, title: itinerary.title, can_edit: access.canEdit,
+      url: (env.APP_ORIGIN || 'https://tabitabi.pages.dev') + '/itineraries/' + encodeURIComponent(id),
+      ...(isProtected && !access.canEdit ? { notice: 'パスワード保護されたしおりです。予定を読むには編集権限をアカウントに紐付けてください。' } : {}),
+      steps: entries.filter(s => access.canEdit || !s.is_hidden).map(s => ({
         id: s.id, title: s.title, start_at: s.start_at, end_at: s.end_at,
-        time_unspecified: s.time_unspecified, location: s.location, notes: s.notes,
+        time_unspecified: s.time_unspecified, location: s.location,
+        ...(access.canEdit ? { notes: s.notes } : {}),
       })),
     });
   }
+  if (!access.canEdit) {
+    return output({ error: 'このアカウントには編集権限がありません。閲覧用に保存しただけでは編集できません。' }, true);
+  }
+  const steps = new StepService(env.DB);
   if (name === 'add_step') {
     if (!isString(args.title, 200, true) || !Object.hasOwn(args, 'start_at') || !isDate(args.start_at) ||
       (args.end_at !== undefined && !isDate(args.end_at)) ||

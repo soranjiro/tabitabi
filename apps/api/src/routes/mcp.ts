@@ -147,6 +147,7 @@ async function invoke(env: Env, userId: string, name: string, args: Args) {
     );
     if (Object.keys(changes).length === 0) return output({ error: '更新する項目がありません。' }, true);
     const updated = await steps.update(args.step_id, changes);
+    if (!updated) return output({ error: '更新対象の予定が見つかりません。' }, true);
     return output({ id: updated.id, title: updated.title, itinerary_id: id, saved: true });
   }
   return output({ error: '不明な操作です。' }, true);

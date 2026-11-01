@@ -506,8 +506,6 @@ CREATE TABLE api_rate_limit_counters (
   hit_count INTEGER NOT NULL DEFAULT 0 CHECK (hit_count >= 0)
 );
 CREATE INDEX idx_api_rate_limits_window ON api_rate_limit_counters(window_start);
-
-
 CREATE TABLE mcp_oauth_clients (
   client_id TEXT PRIMARY KEY,
   redirect_uris TEXT NOT NULL,

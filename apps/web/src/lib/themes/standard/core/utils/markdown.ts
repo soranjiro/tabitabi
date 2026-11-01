@@ -1,43 +1,40 @@
-import { marked } from "marked";
-import sanitizeHtml from "sanitize-html";
+import { marked, Renderer } from "marked";
 import { getMemoText } from "$lib/memo";
 
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-});
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
-const SANITIZE_OPTIONS = {
-  allowedTags: [
-    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'hr',
-    'ul', 'ol', 'li', 'strong', 'em', 'del', 'code', 'pre',
-    'blockquote', 'a', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'input',
-  ],
-  allowedAttributes: {
-    a: ['href', 'target', 'rel'],
-    input: ['type', 'checked', 'disabled'],
-  },
-  allowedSchemes: ['http', 'https', 'mailto'],
-  allowProtocolRelative: false,
-} satisfies sanitizeHtml.IOptions;
+const renderer = new Renderer();
+// Never render raw HTML from user-controlled memos or itinerary notes.
+renderer.html = () => "";
+renderer.image = ({ text }) => escapeHtml(text);
+renderer.link = function ({ href, title, tokens }) {
+  const safe = /^(https?:|mailto:)/i.test(href) && !/[\\u0000-\\u001f\\u007f]/.test(href);
+  const label = this.parser.parseInline(tokens);
+  if (!safe) return label;
+  const titleAttr = title ? ` title="${escapeHtml(title)}"` : "";
+  return `<a href="${escapeHtml(href)}"${titleAttr}>${label}</a>`;
+};
+
+marked.setOptions({ breaks: true, gfm: true, renderer });
 
 const cache = new Map<string, string>();
 
 export function renderMarkdown(memoOrNotes: string | null | undefined): string {
   const text = getMemoText(memoOrNotes);
-  if (!text) return '';
+  if (!text) return "";
 
   const cached = cache.get(text);
-  if (cached) return cached;
+  if (cached !== undefined) return cached;
 
-  const raw = marked.parse(text, { async: false }) as string;
-  const result = sanitizeHtml(raw, SANITIZE_OPTIONS);
-
-  if (cache.size > 200) {
-    const firstKey = cache.keys().next().value!;
-    cache.delete(firstKey);
+  const result = marked.parse(text, { async: false }) as string;
+  if (cache.size >= 200) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey !== undefined) cache.delete(firstKey);
   }
   cache.set(text, result);
-
   return result;
 }

@@ -1,6 +1,6 @@
 /**
  * Demo Local Storage Manager
- * All demo data is stored in a single localStorage key.
+ * Demo data is scoped to the current browser session (not persisted indefinitely).
  * Mimics the actual database table structure for demo purposes.
  * No backend requests are made - all data is stored locally.
  */
@@ -44,7 +44,15 @@ export const demoStorage = {
    */
   getData(): StoredDemoData | null {
     try {
-      const data = localStorage.getItem(DEMO_KEY);
+      let data = sessionStorage.getItem(DEMO_KEY);
+      if (!data) {
+        // Migrate old demo state once, without keeping it in persistent storage.
+        data = localStorage.getItem(DEMO_KEY);
+        if (data) {
+          sessionStorage.setItem(DEMO_KEY, data);
+          localStorage.removeItem(DEMO_KEY);
+        }
+      }
       return data ? JSON.parse(data) : null;
     } catch {
       return null;
@@ -55,7 +63,9 @@ export const demoStorage = {
    * Save all demo data
    */
   saveData(data: StoredDemoData): void {
-    localStorage.setItem(DEMO_KEY, JSON.stringify(data));
+    sessionStorage.setItem(DEMO_KEY, JSON.stringify(data));
+    // A previous version persisted demo/secret settings; remove legacy copies.
+    localStorage.removeItem(DEMO_KEY);
   },
 
   /**
@@ -253,6 +263,7 @@ export const demoStorage = {
    * Clear all demo data
    */
   clear(): void {
+    sessionStorage.removeItem(DEMO_KEY);
     localStorage.removeItem(DEMO_KEY);
   },
 

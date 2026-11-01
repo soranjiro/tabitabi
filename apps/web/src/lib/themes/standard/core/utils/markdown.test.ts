@@ -47,7 +47,7 @@ describe('renderMarkdown', () => {
   });
 
   it('preserves safe links and checkbox markup', () => {
-    const html = renderMarkdown('[site](https://example.com/path)\\n\\n- [x] Done');
+    const html = renderMarkdown('[site](https://example.com/path)\n\n- [x] Done');
     expect(html).toContain('href="https://example.com/path"');
     expect(html).toContain('type="checkbox"');
   });

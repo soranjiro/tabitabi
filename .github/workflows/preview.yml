@@ -329,6 +329,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      pull-requests: write
     needs:
       - resolve-preview
       - deploy-preview

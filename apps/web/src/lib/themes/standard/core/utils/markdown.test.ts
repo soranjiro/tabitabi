@@ -36,7 +36,8 @@ describe('renderMarkdown', () => {
 
   it('rejects entity-encoded executable URLs', () => {
     const html = renderMarkdown('<a href="&#x6a;avascript:alert(1)">bad</a>');
-    expect(html).not.toMatch(/href=["']\\s*javascript:/i);
+    expect(html).not.toMatch(/href=["']\s*javascript:/i);
+    expect(renderMarkdown('[bad](&#x6a;avascript:alert(1))')).not.toContain('href="javascript:');
   });
 
   it('drops dangerous SVG and event handlers', () => {

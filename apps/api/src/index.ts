@@ -12,6 +12,8 @@ import money from './routes/money';
 import members from './routes/members';
 import packing from './routes/packing';
 import passkeys from './routes/passkeys';
+import mcp from './routes/mcp';
+import mcpAuth from './routes/mcp-auth';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -21,6 +23,9 @@ app.use('/api/v1/*', protectApiWrites);
 app.get('/health', (c) => {
   return c.json({ status: 'ok', service: 'tabitabi-api' });
 });
+
+app.route('/', mcpAuth);
+app.route('/', mcp);
 
 app.route('/api/v1/auth', auth);
 app.route('/api/v1/passkeys', passkeys);

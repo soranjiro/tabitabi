@@ -241,6 +241,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      pull-requests: write
     env:
       PR_NUMBER: ${{ needs.resolve-preview.outputs.pr_number }}
       PREVIEW_DB_NAME: tabitabi-preview-pr-${{ needs.resolve-preview.outputs.pr_number }}

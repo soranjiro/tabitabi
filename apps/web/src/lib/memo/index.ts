@@ -53,10 +53,12 @@ export function removeMemoFields(
   return stringifyMemoData(data);
 }
 
+/**
+ * Memo/notes are Markdown source, not HTML. Do not mutate user content with
+ * regex-based tag removal: overlapping tags can defeat it and the mutation
+ * also damages harmless plain text. Escape/sanitize when rendering instead
+ * (Svelte text interpolation or the restricted Markdown renderer).
+ */
 export function sanitizeMemoText(text: string): string {
-  return text
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-    .replace(/javascript:/gi, '');
+  return text;
 }

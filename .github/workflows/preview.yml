@@ -84,8 +84,14 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          persist-credentials: false
           ref: ${{ needs.resolve-preview.outputs.sha }}
+
+      # This repository contains a legacy gitlink without a .gitmodules entry.
+      # checkout@v4 with persist-credentials:false fails while cleaning its auth
+      # during checkout. Strip the credential immediately before any PR code runs.
+      - name: Remove checkout token from Git configuration
+        shell: bash
+        run: git config --local --unset-all 'http.https://github.com/.extraheader' || true
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
@@ -280,8 +286,14 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          persist-credentials: false
           ref: ${{ needs.resolve-preview.outputs.sha }}
+
+      # This repository contains a legacy gitlink without a .gitmodules entry.
+      # checkout@v4 with persist-credentials:false fails while cleaning its auth
+      # during checkout. Strip the credential immediately before any PR code runs.
+      - name: Remove checkout token from Git configuration
+        shell: bash
+        run: git config --local --unset-all 'http.https://github.com/.extraheader' || true
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4

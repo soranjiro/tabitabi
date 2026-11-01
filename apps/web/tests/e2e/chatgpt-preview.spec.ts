@@ -18,9 +18,18 @@ test('ChatGPT editing opens inside the current itinerary and carries existing pl
     });
     expect(added.ok()).toBeTruthy();
 
-    await page.goto('/itineraries/' + id + '?token=' + encodeURIComponent(token));
-    await page.getByRole('button', { name: 'メニュー' }).click();
-    await page.getByRole('button', { name: /ChatGPTで考える/ }).click();
+    await page.goto('/itineraries/' + id + '?token=' + encodeURIComponent(token), { waitUntil: 'networkidle' });
+    const menu = page.getByRole('button', { name: 'メニュー' });
+    const menuContent = page.locator('.standard-more-menu');
+    // SSR buttons can appear before hydration; wait for the click to become interactive.
+    let opened = false;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await menu.click();
+      if (await menuContent.isVisible()) { opened = true; break; }
+      await page.waitForTimeout(300);
+    }
+    expect(opened, 'the itinerary menu should open after hydration').toBe(true);
+    await menuContent.getByRole('button', { name: /ChatGPTで考える/ }).click();
     const dialog = page.locator('.standard-dialog').filter({ has: page.getByRole('heading', { name: 'ChatGPTで考える' }) });
     await expect(dialog).toBeVisible();
     await expect(dialog.locator('.planner-current strong')).toHaveText('ChatGPT Preview旅程');
@@ -42,9 +51,14 @@ test('ChatGPT editing opens inside the current itinerary and carries existing pl
     await expect(dialog).toBeHidden();
     await expect(page).toHaveURL(new RegExp('/itineraries/' + id));
   } finally {
-    await request.delete(apiBaseUrl + '/itineraries/' + id, {
-      headers: { Authorization: 'Bearer ' + token },
-    });
+    try {
+      await request.delete(apiBaseUrl + '/itineraries/' + id, {
+        headers: { Authorization: 'Bearer ' + token },
+        timeout: 10_000,
+      });
+    } catch (error) {
+      console.warn('Failed to clean up preview itinerary:', error);
+    }
   }
 });
 

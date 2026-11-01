@@ -74,9 +74,17 @@ export const demoStorage = {
    */
   saveData(data: StoredDemoData): void {
     volatileSecretSettings = data.itinerary_secrets ?? null;
-    const { itinerary_secrets: _secretSettings, ...nonSensitive } = data;
-    const { secret_settings: _legacySettings, ...safeItinerary } = nonSensitive.itinerary;
-    sessionStorage.setItem(DEMO_KEY, JSON.stringify({ ...nonSensitive, itinerary: safeItinerary }));
+    const { secret_settings: _legacySettings, ...safeItinerary } = data.itinerary;
+    // Serialize only explicitly allowed demo fields. Never serialize
+    // itinerary_secrets, password credentials, or secret_settings.
+    const safeData = {
+      itinerary: safeItinerary,
+      steps: data.steps,
+      itinerary_money: data.itinerary_money ?? null,
+      itinerary_members: data.itinerary_members ?? [],
+      itinerary_packing: data.itinerary_packing ?? null,
+    };
+    sessionStorage.setItem(DEMO_KEY, JSON.stringify(safeData));
     // A previous version persisted demo/secret settings; remove legacy copies.
     localStorage.removeItem(DEMO_KEY);
   },

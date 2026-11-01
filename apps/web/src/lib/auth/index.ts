@@ -13,7 +13,8 @@ function historyMetadata(entry: ShioriHistory): ShioriHistory {
     shioriId: entry.shioriId,
     title: entry.title,
     accessedAt: entry.accessedAt,
-    is_password_protected: entry.is_password_protected,
+    // This is a UI boolean, never a password or editing credential.
+    is_password_protected: entry.is_password_protected === true,
     token: null,
   };
 }
@@ -31,16 +32,21 @@ export const auth = {
         (item): item is ShioriHistory =>
           item !== null && typeof item === 'object' && typeof item.shioriId === 'string'
       );
-      const oldEntries = entries.filter(entry => typeof entry.token === 'string' && entry.token);
-      if (oldEntries.length > 0) {
-        // Migrate old tokens for this page lifetime, then scrub persistent copies.
-        for (const entry of oldEntries) {
-          if (!memoryTokens.has(entry.shioriId)) memoryTokens.set(entry.shioriId, entry.token!);
+      // Recover legacy edit grants for this page lifetime, never to Web Storage.
+      for (const entry of entries) {
+        if (typeof entry.token === 'string' && entry.token && !memoryTokens.has(entry.shioriId)) {
+          memoryTokens.set(entry.shioriId, entry.token);
         }
-        const metadata = entries.map(historyMetadata);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(metadata));
       }
-      return entries.map(entry => ({ ...entry, token: memoryTokens.get(entry.shioriId) ?? null }));
+      // Normalize every legacy record, including unexpected sensitive fields,
+      // instead of only scrubbing records that contain an edit token.
+      const metadata = entries.map(historyMetadata);
+      const safeRaw = JSON.stringify(metadata);
+      if (raw !== safeRaw) localStorage.setItem(STORAGE_KEY, safeRaw);
+      return metadata.map(entry => ({
+        ...entry,
+        token: memoryTokens.get(entry.shioriId) ?? null,
+      }));
     } catch {
       return [];
     }

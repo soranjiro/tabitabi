@@ -333,7 +333,11 @@
 <LazyPrintStudio {itinerary} {steps} />
 {/if}
 
+<a class="chatgpt-planner-link" href={"/plan-with-chatgpt?itinerary=" + encodeURIComponent(data.itinerary.id)} aria-label="このしおりをChatGPTで考える">✧ ChatGPTで考える</a>
+
 
 <style>
+  .chatgpt-planner-link { position:fixed; z-index:90; left:16px; bottom:max(85px, calc(env(safe-area-inset-bottom) + 76px)); display:flex; align-items:center; padding:11px 15px; border-radius:999px; background:#f8faf6; border:1px solid #b9cdc1; box-shadow:0 5px 16px #23382b20; color:#285c45; font-size:13px; font-weight:700; text-decoration:none; line-height:1.4; }
+  .chatgpt-planner-link:hover { background:#e8f3eb; }
   .copy-notice { position: fixed; z-index: 3000; top: 3rem; left: 50%; transform: translateX(-50%); padding: .8rem 1rem; background: #355f50; color: white; border-radius: .5rem; font-size: .8rem; }
 </style>

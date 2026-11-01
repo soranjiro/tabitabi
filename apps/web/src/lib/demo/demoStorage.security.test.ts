@@ -46,6 +46,24 @@ describe('demo storage privacy', () => {
     expect(sessionStorage.getItem('tabitabi_demo')).not.toContain('DEMO_PASSWORD');
     expect(demoStorage.getItinerary()?.password).toBe('DEMO_PASSWORD');
   });
+  it('keeps changed secret settings in memory without persisting them', () => {
+    demoStorage.initializeDemo({ itinerary, steps: [], itinerary_secrets: secrets });
+    demoStorage.updateItinerary({ secret_settings: { enabled: false, offset_minutes: 30 } });
+    expect(demoStorage.getItinerarySecrets()?.offset_minutes).toBe(30);
+    expect(demoStorage.getItinerarySecrets()?.enabled).toBe(false);
+    expect(demoStorage.getItinerary()?.secret_settings?.enabled).toBe(false);
+    expect(sessionStorage.getItem('tabitabi_demo')).not.toContain('secret_settings');
+    expect(sessionStorage.getItem('tabitabi_demo')).not.toContain('itinerary_secrets');
+  });
+
+  it('preserves legacy itinerary-only secret settings in memory', () => {
+    const legacy = '{"itinerary":{"id":"demo","title":"Sample","secret_settings":{"enabled":true,"offset_minutes":60}},"steps":[]}';
+    localStorage.setItem('tabitabi_demo', legacy);
+    expect(demoStorage.getItinerary()?.secret_settings?.offset_minutes).toBe(60);
+    expect(localStorage.getItem('tabitabi_demo')).toBeNull();
+    expect(sessionStorage.getItem('tabitabi_demo')).not.toContain('secret_settings');
+  });
+
   it('scrubs stale persistent secrets even when a clean session copy exists', () => {
     demoStorage.initializeDemo({ itinerary, steps: [] });
     localStorage.setItem('tabitabi_demo', LEGACY_RAW);

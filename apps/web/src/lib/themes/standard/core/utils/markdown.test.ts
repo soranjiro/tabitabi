@@ -52,6 +52,19 @@ describe('renderMarkdown', () => {
     expect(html).toContain('type="checkbox"');
   });
 
+  it('preserves relative and fragment links', () => {
+    const html = renderMarkdown('[trip](/itineraries/123) [section](#details) [query](?tab=notes)');
+    expect(html).toContain('href="/itineraries/123"');
+    expect(html).toContain('href="#details"');
+    expect(html).toContain('href="?tab=notes"');
+  });
+
+  it('rejects data URLs without removing safe HTTP links', () => {
+    const html = renderMarkdown('[bad](data:text/html,hello) [good](http://foo.test/0)');
+    expect(html).not.toContain('href="data:');
+    expect(html).toContain('href="http://foo.test/0"');
+  });
+
   it('allows safe HTML elements', () => {
     const result = renderMarkdown('# Heading\n\n- item1\n- item2');
     expect(result).toContain('<h1>');

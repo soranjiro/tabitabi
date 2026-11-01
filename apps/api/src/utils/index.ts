@@ -1,6 +1,7 @@
 export interface Env {
   DB: D1Database;
   ALLOWED_ORIGINS?: string;
+  APP_ORIGIN?: string;
   JWT_SECRET?: string;
   FIREBASE_PROJECT_ID?: string;
   FIREBASE_SERVICE_ACCOUNT_EMAIL?: string;

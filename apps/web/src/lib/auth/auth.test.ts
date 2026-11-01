@@ -19,7 +19,7 @@ Object.defineProperty(globalThis, 'localStorage', {
 describe('auth', () => {
   beforeEach(() => {
     mockLocalStorage.clear();
-    sessionStorage.clear();
+    auth.clearHistory();
   });
 
   describe('getHistory', () => {
@@ -56,13 +56,14 @@ describe('auth', () => {
       expect(localStorage.getItem('shiori_history')).not.toContain('OLD_TOKEN');
     });
 
-    it('clears session tokens on removal and clear history', () => {
+    it('removes credentials from memory when access is removed', () => {
       auth.setToken('private', 'Trip', 'secret');
       auth.removeToken('private');
-      expect(sessionStorage.getItem('shiori_edit_tokens_session')).not.toContain('secret');
+      expect(auth.getToken('private')).toBeNull();
       auth.setToken('private', 'Trip', 'other');
       auth.clearHistory();
-      expect(sessionStorage.getItem('shiori_edit_tokens_session')).toBeNull();
+      expect(auth.getToken('private')).toBeNull();
+      expect(localStorage.getItem('shiori_history')).toBeNull();
     });
   });
 

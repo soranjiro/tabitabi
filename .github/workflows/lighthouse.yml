@@ -14,11 +14,11 @@ on:
 
 permissions:
   contents: read
-  issues: write
-  pull-requests: write
 
 jobs:
   lighthouse:
+    permissions:
+      contents: read
     name: Lighthouse (${{ matrix.page }} / ${{ matrix.device }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -114,6 +114,9 @@ jobs:
           retention-days: 14
 
   aggregate:
+    permissions:
+      contents: read
+      issues: write
     name: Lighthouse report
     needs: lighthouse
     if: always()

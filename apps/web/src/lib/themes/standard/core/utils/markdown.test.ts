@@ -34,6 +34,38 @@ describe('renderMarkdown', () => {
     expect(result).not.toContain('javascript:');
   });
 
+  it('rejects entity-encoded executable URLs', () => {
+    const html = renderMarkdown('<a href="&#x6a;avascript:alert(1)">bad</a>');
+    expect(html).not.toMatch(/href=["']\s*javascript:/i);
+    expect(renderMarkdown('[bad](&#x6a;avascript:alert(1))')).not.toContain('href="javascript:');
+  });
+
+  it('drops dangerous SVG and event handlers', () => {
+    const html = renderMarkdown('<svg onload=alert(1)><a href="javascript:alert(2)">bad</a></svg>');
+    expect(html).not.toContain('<svg');
+    expect(html).not.toContain('onload=');
+    expect(html).not.toContain('javascript:');
+  });
+
+  it('preserves safe links and checkbox markup', () => {
+    const html = renderMarkdown('[site](https://example.com/path)\n\n- [x] Done');
+    expect(html).toContain('href="https://example.com/path"');
+    expect(html).toContain('type="checkbox"');
+  });
+
+  it('preserves relative and fragment links', () => {
+    const html = renderMarkdown('[trip](/itineraries/123) [section](#details) [query](?tab=notes)');
+    expect(html).toContain('href="/itineraries/123"');
+    expect(html).toContain('href="#details"');
+    expect(html).toContain('href="?tab=notes"');
+  });
+
+  it('rejects data URLs without removing safe HTTP links', () => {
+    const html = renderMarkdown('[bad](data:text/html,hello) [good](http://foo.test/0)');
+    expect(html).not.toContain('href="data:');
+    expect(html).toContain('href="http://foo.test/0"');
+  });
+
   it('allows safe HTML elements', () => {
     const result = renderMarkdown('# Heading\n\n- item1\n- item2');
     expect(result).toContain('<h1>');

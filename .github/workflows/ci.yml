@@ -21,11 +21,13 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   migration-safety:
     runs-on: ubuntu-latest
+    outputs:
+      policy: ${{ steps.policy.outcome }}
+      preservation: ${{ steps.preservation.outcome }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,12 +41,22 @@ jobs:
         id: preservation
         run: node apps/db/scripts/test-migrations.mjs
 
+
+  # Never run PR-controlled scripts with a write-capable GITHUB_TOKEN.
+  # This job uses only trusted workflow code and GitHub API metadata.
+  migration-comment:
+    needs: migration-safety
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
       - name: Comment migration safety result
-        if: always() && github.event_name == 'pull_request'
         uses: actions/github-script@v7
         env:
-          POLICY_OUTCOME: ${{ steps.policy.outcome }}
-          PRESERVATION_OUTCOME: ${{ steps.preservation.outcome }}
+          POLICY_OUTCOME: ${{ needs.migration-safety.outputs.policy }}
+          PRESERVATION_OUTCOME: ${{ needs.migration-safety.outputs.preservation }}
         with:
           script: |
             const files = await github.paginate(github.rest.pulls.listFiles, {

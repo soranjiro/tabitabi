@@ -38,6 +38,9 @@ interface StoredDemoData {
   itinerary_packing?: PackingData | null;
 }
 
+// Secret-mode settings in a demo are transient and never serialized to Web Storage.
+let volatileSecretSettings: ItinerarySecretRecord | null = null;
+
 export const demoStorage = {
   /**
    * Get all demo data
@@ -53,7 +56,14 @@ export const demoStorage = {
           localStorage.removeItem(DEMO_KEY);
         }
       }
-      return data ? JSON.parse(data) : null;
+      if (!data) return null;
+      const parsed = JSON.parse(data) as StoredDemoData;
+      if (parsed.itinerary_secrets || parsed.itinerary.secret_settings) {
+        // Scrub data saved by older versions during first read.
+        volatileSecretSettings ??= parsed.itinerary_secrets ?? null;
+        this.saveData(parsed);
+      }
+      return { ...parsed, itinerary_secrets: volatileSecretSettings };
     } catch {
       return null;
     }
@@ -63,7 +73,10 @@ export const demoStorage = {
    * Save all demo data
    */
   saveData(data: StoredDemoData): void {
-    sessionStorage.setItem(DEMO_KEY, JSON.stringify(data));
+    volatileSecretSettings = data.itinerary_secrets ?? null;
+    const { itinerary_secrets: _secretSettings, ...nonSensitive } = data;
+    const { secret_settings: _legacySettings, ...safeItinerary } = nonSensitive.itinerary;
+    sessionStorage.setItem(DEMO_KEY, JSON.stringify({ ...nonSensitive, itinerary: safeItinerary }));
     // A previous version persisted demo/secret settings; remove legacy copies.
     localStorage.removeItem(DEMO_KEY);
   },
@@ -263,6 +276,7 @@ export const demoStorage = {
    * Clear all demo data
    */
   clear(): void {
+    volatileSecretSettings = null;
     sessionStorage.removeItem(DEMO_KEY);
     localStorage.removeItem(DEMO_KEY);
   },

@@ -2,76 +2,44 @@ import type { ShioriHistory } from '@tabitabi/types';
 import { replaceState } from '$app/navigation';
 
 const STORAGE_KEY = 'shiori_history';
-const SESSION_TOKENS_KEY = 'shiori_edit_tokens_session';
-
-// Editing credentials must not be persisted indefinitely with recent-trip metadata.
-// sessionStorage survives reloads within this tab, but not the browser session.
+// Keep editing credentials in memory only. Password-protected books can be
+// reauthenticated; logged-in users can recover claimed editing rights.
+// Persisting raw edit tokens in localStorage OR sessionStorage exposes them.
 const memoryTokens = new Map<string, string>();
-
-function readSessionTokens(): Record<string, string> {
-  try {
-    const stored = sessionStorage.getItem(SESSION_TOKENS_KEY);
-    const parsed: unknown = stored ? JSON.parse(stored) : {};
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-    return Object.fromEntries(
-      Object.entries(parsed).filter(([id, token]) =>
-        id !== '__proto__' && typeof token === 'string' && token.length > 0)
-    ) as Record<string, string>;
-  } catch {
-    return Object.fromEntries(memoryTokens);
-  }
-}
-
-function persistSessionTokens(tokens: Record<string, string>): void {
-  memoryTokens.clear();
-  for (const [id, token] of Object.entries(tokens)) memoryTokens.set(id, token);
-  try { sessionStorage.setItem(SESSION_TOKENS_KEY, JSON.stringify(tokens)); }
-  catch { /* Keep credentials in memory if browser storage is disabled. */ }
-}
-
 
 const isDemoShiori = (shioriId: string) => shioriId === 'demo';
 
 export const auth = {
   getHistory(): ShioriHistory[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      const history: unknown = data ? JSON.parse(data) : [];
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const history: unknown = raw ? JSON.parse(raw) : [];
       if (!Array.isArray(history)) return [];
-
-      const sessionTokens = readSessionTokens();
-      let needsMigration = false;
       const entries = history.filter(
         (item): item is ShioriHistory =>
           item !== null && typeof item === 'object' && typeof item.shioriId === 'string'
       );
-      for (const entry of entries) {
-        // One-time migration of existing edit permissions from persistent storage.
-        if (typeof entry.token === 'string' && entry.token) {
-          if (!sessionTokens[entry.shioriId]) sessionTokens[entry.shioriId] = entry.token;
-          needsMigration = true;
+      const oldEntries = entries.filter(entry => typeof entry.token === 'string' && entry.token);
+      if (oldEntries.length > 0) {
+        // Migrate old tokens for this page lifetime, then scrub persistent copies.
+        for (const entry of oldEntries) {
+          if (!memoryTokens.has(entry.shioriId)) memoryTokens.set(entry.shioriId, entry.token!);
         }
-      }
-
-      if (needsMigration) {
-        persistSessionTokens(sessionTokens);
-        // Do not leave plaintext legacy tokens in localStorage.
         const metadata = entries.map(({ token: _token, ...entry }) => ({ ...entry, token: null }));
         localStorage.setItem(STORAGE_KEY, JSON.stringify(metadata));
       }
-      return entries.map(entry => ({ ...entry, token: sessionTokens[entry.shioriId] ?? null }));
+      return entries.map(entry => ({ ...entry, token: memoryTokens.get(entry.shioriId) ?? null }));
     } catch {
       return [];
     }
   },
 
   saveHistory(history: ShioriHistory[]): void {
-    const tokens: Record<string, string> = {};
+    memoryTokens.clear();
     const metadata = history.map(({ token, ...entry }) => {
-      if (typeof token === 'string' && token) tokens[entry.shioriId] = token;
+      if (typeof token === 'string' && token) memoryTokens.set(entry.shioriId, token);
       return { ...entry, token: null };
     });
-    persistSessionTokens(tokens);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(metadata));
   },
 
@@ -170,8 +138,7 @@ export const auth = {
 
   clearHistory(): void {
     localStorage.removeItem(STORAGE_KEY);
-    persistSessionTokens({});
-    try { sessionStorage.removeItem(SESSION_TOKENS_KEY); } catch { /* session unavailable */ }
+    memoryTokens.clear();
   },
 
   removeFromHistory(shioriId: string): void {

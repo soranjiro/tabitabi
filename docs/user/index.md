@@ -13,6 +13,7 @@
 - [編集パスワードと編集モード](features/common/auth.md)
 - [共有リンク・公開・コピー](features/common/sharing.md)
 - [アカウントとマイページ](features/common/account.md)
+- [ChatGPTで考える・MCP連携](features/common/chatgpt.md)
 - [最近のしおり](features/home/recent-items.md)
 
 ## 旅行を準備する

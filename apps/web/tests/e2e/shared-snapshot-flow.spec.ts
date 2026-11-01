@@ -51,7 +51,7 @@ test('デモではタイトル変更がブラウザ内に保存される', async
   await input.press('Enter');
 
   await expect(page.getByRole('button', { name: 'デモで変更した旅程' })).toBeVisible();
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('tabitabi_demo') || '{}').itinerary?.title))
+  await expect.poll(() => page.evaluate(() => JSON.parse(sessionStorage.getItem('tabitabi_demo') || '{}').itinerary?.title))
     .toBe('デモで変更した旅程');
 });
 

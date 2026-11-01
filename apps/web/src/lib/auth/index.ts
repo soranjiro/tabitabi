@@ -2,21 +2,67 @@ import type { ShioriHistory } from '@tabitabi/types';
 import { replaceState } from '$app/navigation';
 
 const STORAGE_KEY = 'shiori_history';
+// Keep editing credentials in memory only. Password-protected books can be
+// reauthenticated; logged-in users can recover claimed editing rights.
+// Persisting raw edit tokens in localStorage OR sessionStorage exposes them.
+const memoryTokens = new Map<string, string>();
+
+// Explicit allowlist: credentials must never enter serialized history.
+function historyMetadata(entry: ShioriHistory): ShioriHistory {
+  return {
+    shioriId: entry.shioriId,
+    title: entry.title,
+    accessedAt: entry.accessedAt,
+    // This is a UI boolean, never a password or editing credential.
+    ...(typeof entry.is_password_protected === 'boolean'
+      ? { is_password_protected: entry.is_password_protected === true }
+      : {}),
+    token: null,
+  };
+}
+
 
 const isDemoShiori = (shioriId: string) => shioriId === 'demo';
 
 export const auth = {
   getHistory(): ShioriHistory[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      return data ? JSON.parse(data) : [];
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const history: unknown = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(history)) return [];
+      const entries = history.filter(
+        (item): item is ShioriHistory =>
+          item !== null && typeof item === 'object' && typeof item.shioriId === 'string'
+      );
+      // Recover legacy edit grants for this page lifetime, never to Web Storage.
+      for (const entry of entries) {
+        if (typeof entry.token === 'string' && entry.token && !memoryTokens.has(entry.shioriId)) {
+          memoryTokens.set(entry.shioriId, entry.token);
+        }
+      }
+      // Normalize every legacy record, including unexpected sensitive fields,
+      // instead of only scrubbing records that contain an edit token.
+      const metadata = entries.map(historyMetadata);
+      const safeRaw = JSON.stringify(metadata);
+      if (raw !== null && raw !== safeRaw) localStorage.setItem(STORAGE_KEY, safeRaw);
+      return metadata.map(entry => ({
+        ...entry,
+        token: memoryTokens.get(entry.shioriId) ?? null,
+      }));
     } catch {
       return [];
     }
   },
 
   saveHistory(history: ShioriHistory[]): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    memoryTokens.clear();
+    const metadata = history.map(entry => {
+      if (typeof entry.token === 'string' && entry.token) {
+        memoryTokens.set(entry.shioriId, entry.token);
+      }
+      return historyMetadata(entry);
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(metadata));
   },
 
   getToken(shioriId: string): string | null {
@@ -114,6 +160,7 @@ export const auth = {
 
   clearHistory(): void {
     localStorage.removeItem(STORAGE_KEY);
+    memoryTokens.clear();
   },
 
   removeFromHistory(shioriId: string): void {

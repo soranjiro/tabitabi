@@ -19,6 +19,7 @@ Object.defineProperty(globalThis, 'localStorage', {
 describe('auth', () => {
   beforeEach(() => {
     mockLocalStorage.clear();
+    auth.clearHistory();
   });
 
   describe('getHistory', () => {
@@ -38,6 +39,43 @@ describe('auth', () => {
     it('returns empty array on parse error', () => {
       mockLocalStorage.setItem('shiori_history', 'invalid json');
       expect(auth.getHistory()).toEqual([]);
+    });
+  });
+
+  describe('token storage privacy', () => {
+    it('does not leave editing credentials in persistent localStorage', () => {
+      auth.setToken('private', 'Trip', 'SECRET_TOKEN');
+      expect(localStorage.getItem('shiori_history')).not.toContain('SECRET_TOKEN');
+      expect(auth.getToken('private')).toBe('SECRET_TOKEN');
+    });
+
+    it('migrates a legacy stored credential into memory', () => {
+      const history = [{ shioriId: 'legacy', title: 'Old', token: 'OLD_TOKEN', accessedAt: 1 }];
+      localStorage.setItem('shiori_history', JSON.stringify(history));
+      expect(auth.getToken('legacy')).toBe('OLD_TOKEN');
+      expect(localStorage.getItem('shiori_history')).not.toContain('OLD_TOKEN');
+    });
+
+    it('normalizes legacy history even without an edit token', () => {
+      localStorage.setItem('shiori_history', JSON.stringify([{
+        shioriId: 'legacy', title: 'Trip', token: null, accessedAt: 1,
+        is_password_protected: true, unexpected: 'discard-me',
+      }]));
+      expect(auth.isPasswordProtected('legacy')).toBe(true);
+      const persisted = localStorage.getItem('shiori_history') ?? '';
+      expect(persisted).not.toContain('unexpected');
+      expect(persisted).not.toContain('discard-me');
+      expect(JSON.parse(persisted)[0].is_password_protected).toBe(true);
+    });
+
+    it('removes credentials from memory when access is removed', () => {
+      auth.setToken('private', 'Trip', 'secret');
+      auth.removeToken('private');
+      expect(auth.getToken('private')).toBeNull();
+      auth.setToken('private', 'Trip', 'other');
+      auth.clearHistory();
+      expect(auth.getToken('private')).toBeNull();
+      expect(localStorage.getItem('shiori_history')).toBeNull();
     });
   });
 

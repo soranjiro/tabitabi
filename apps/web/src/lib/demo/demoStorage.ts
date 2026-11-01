@@ -1,6 +1,6 @@
 /**
  * Demo Local Storage Manager
- * All demo data is stored in a single localStorage key.
+ * Demo data is scoped to the current browser session (not persisted indefinitely).
  * Mimics the actual database table structure for demo purposes.
  * No backend requests are made - all data is stored locally.
  */
@@ -38,14 +38,44 @@ interface StoredDemoData {
   itinerary_packing?: PackingData | null;
 }
 
+// Secret-mode settings in a demo are transient and never serialized to Web Storage.
+let volatileSecretSettings: ItinerarySecretRecord | null = null;
+let volatilePassword: string | null = null;
+
 export const demoStorage = {
   /**
    * Get all demo data
    */
   getData(): StoredDemoData | null {
     try {
-      const data = localStorage.getItem(DEMO_KEY);
-      return data ? JSON.parse(data) : null;
+      let raw = sessionStorage.getItem(DEMO_KEY);
+      const legacyRaw = localStorage.getItem(DEMO_KEY);
+      if (legacyRaw !== null) {
+        // Remove old persistent copies even when a session copy already exists.
+        // Never copy the unredacted legacy JSON into sessionStorage.
+        localStorage.removeItem(DEMO_KEY);
+        if (!raw) {
+          this.saveData(JSON.parse(legacyRaw) as StoredDemoData);
+          raw = sessionStorage.getItem(DEMO_KEY);
+        }
+      }
+      if (!raw) return null;
+      let parsed = JSON.parse(raw) as StoredDemoData;
+      if (parsed.itinerary_secrets || parsed.itinerary?.secret_settings || parsed.itinerary?.password) {
+        // Sanitize older session data before returning it or writing it again.
+        this.saveData(parsed);
+        const cleaned = sessionStorage.getItem(DEMO_KEY);
+        if (!cleaned) return null;
+        parsed = JSON.parse(cleaned) as StoredDemoData;
+      }
+      return {
+        ...parsed,
+        itinerary: {
+          ...parsed.itinerary,
+          ...(volatilePassword !== null ? { password: volatilePassword } : {}),
+        },
+        itinerary_secrets: volatileSecretSettings,
+      };
     } catch {
       return null;
     }
@@ -55,7 +85,29 @@ export const demoStorage = {
    * Save all demo data
    */
   saveData(data: StoredDemoData): void {
-    localStorage.setItem(DEMO_KEY, JSON.stringify(data));
+    const legacySettings = data.itinerary.secret_settings;
+    volatileSecretSettings = data.itinerary_secrets ??
+      (legacySettings ? {
+        itinerary_id: data.itinerary.id,
+        enabled: legacySettings.enabled,
+        offset_minutes: legacySettings.offset_minutes,
+        created_at: data.itinerary.created_at,
+        updated_at: data.itinerary.updated_at,
+      } : null);
+    volatilePassword = data.itinerary.password ?? null;
+    const { password: _legacyPassword, secret_settings: _legacySettings, ...safeItinerary } = data.itinerary;
+    // Serialize only explicitly allowed demo fields. Never serialize
+    // itinerary_secrets, password credentials, or secret_settings.
+    const safeData = {
+      itinerary: safeItinerary,
+      steps: data.steps,
+      itinerary_money: data.itinerary_money ?? null,
+      itinerary_members: data.itinerary_members ?? [],
+      itinerary_packing: data.itinerary_packing ?? null,
+    };
+    sessionStorage.setItem(DEMO_KEY, JSON.stringify(safeData));
+    // A previous version persisted demo/secret settings; remove legacy copies.
+    localStorage.removeItem(DEMO_KEY);
   },
 
   /**
@@ -153,8 +205,11 @@ export const demoStorage = {
       this.updateItinerarySecrets(secret_settings ?? null);
     }
 
-    const updated = { ...data.itinerary, ...rest, updated_at: now };
-    this.saveData({ ...data, itinerary: updated });
+    // Read the updated in-memory secrets before saving the other fields.
+    // Otherwise the stale snapshot would undo the secret-mode change.
+    const current = this.getData() ?? data;
+    const updated = { ...current.itinerary, ...rest, updated_at: now };
+    this.saveData({ ...current, itinerary: updated });
     return this.getItinerary();
   },
 
@@ -253,6 +308,9 @@ export const demoStorage = {
    * Clear all demo data
    */
   clear(): void {
+    volatileSecretSettings = null;
+    volatilePassword = null;
+    sessionStorage.removeItem(DEMO_KEY);
     localStorage.removeItem(DEMO_KEY);
   },
 

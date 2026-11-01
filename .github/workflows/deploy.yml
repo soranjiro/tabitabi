@@ -15,16 +15,6 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_DATABASE_ID: ${{ secrets.CLOUDFLARE_DATABASE_ID }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      APP_GITHUB_ISSUES_TOKEN: ${{ secrets.APP_GITHUB_ISSUES_TOKEN }}
-      PUBLIC_FIREBASE_API_KEY: ${{ secrets.PUBLIC_FIREBASE_API_KEY }}
-      PUBLIC_FIREBASE_APP_ID: ${{ secrets.PUBLIC_FIREBASE_APP_ID }}
-      PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.PUBLIC_FIREBASE_AUTH_DOMAIN }}
-      PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,11 +42,16 @@ jobs:
             turbo-deploy-${{ runner.os }}-
 
       - name: Generate wrangler.toml from example
+        env:
+          CLOUDFLARE_DATABASE_ID: ${{ secrets.CLOUDFLARE_DATABASE_ID }}
         run: |
           cp wrangler.toml.example wrangler.toml
           sed -i "s/PLACEHOLDER_DATABASE_ID/${CLOUDFLARE_DATABASE_ID}/g" wrangler.toml
 
       - name: Generate API wrangler.toml from example
+        env:
+          CLOUDFLARE_DATABASE_ID: ${{ secrets.CLOUDFLARE_DATABASE_ID }}
+          PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}
         working-directory: apps/api
         run: |
           if [ -z "${PUBLIC_FIREBASE_PROJECT_ID:-}" ]; then
@@ -76,10 +71,16 @@ jobs:
           PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.PUBLIC_FIREBASE_PROJECT_ID }}
 
       - name: Create D1 database (remote)
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         working-directory: apps/api
         run: pnpm wrangler d1 create tabitabi --remote || echo "Database may already exist"
 
       - name: Check pending D1 migrations
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         id: migrations
         working-directory: apps/api
         run: |
@@ -92,6 +93,9 @@ jobs:
           fi
 
       - name: Capture D1 rollback bookmark
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         if: steps.migrations.outputs.pending == 'true'
         id: bookmark
         working-directory: apps/api
@@ -120,17 +124,27 @@ jobs:
           echo "Restore command: \`pnpm wrangler d1 time-travel restore DB --env production --bookmark=${BOOKMARK}\`" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Apply D1 migrations (api)
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         if: steps.migrations.outputs.pending == 'true'
         working-directory: apps/api
         run: node scripts/d1-migrate.mjs up --remote --env production
 
       - name: Verify D1 after migrations
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         working-directory: apps/api
         run: node scripts/d1-migrate.mjs verify --remote --env production
 
       # Production intentionally does NOT execute apps/db/migrations/seed.sql.
 
       - name: Deploy API (Workers) with encrypted JWT binding
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         working-directory: apps/api
         shell: bash
         run: |
@@ -147,6 +161,10 @@ jobs:
           pnpm wrangler deploy --env production --secrets-file "$secrets_file"
 
       - name: Configure encrypted Pages feedback token (production)
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          APP_GITHUB_ISSUES_TOKEN: ${{ secrets.APP_GITHUB_ISSUES_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
@@ -157,4 +175,7 @@ jobs:
           printf '%s' "$APP_GITHUB_ISSUES_TOKEN" | pnpm wrangler pages secret put APP_GITHUB_ISSUES_TOKEN --project-name=tabitabi --env production
 
       - name: Deploy Web (Pages)
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: pnpm wrangler pages deploy apps/web/.svelte-kit/cloudflare --project-name=tabitabi --branch=main --commit-message="$(git log -1 --format=%H)"

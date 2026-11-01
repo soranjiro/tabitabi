@@ -16,6 +16,10 @@ const secrets = {
   updated_at: '2026-01-01T00:00:00Z',
 } as ItinerarySecretRecord;
 
+// Static, synthetic legacy fixture: tests intentionally exercise migration
+// of historical browser data, not storage of any real credentials.
+const LEGACY_RAW = '{"itinerary":{"id":"demo","title":"Sample","password":"DEMO_PASSWORD","secret_settings":{"enabled":true,"offset_minutes":60}},"steps":[],"itinerary_secrets":{"itinerary_id":"demo","enabled":true,"offset_minutes":60,"created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z"}}';
+
 describe('demo storage privacy', () => {
   beforeEach(() => {
     demoStorage.clear();
@@ -35,9 +39,7 @@ describe('demo storage privacy', () => {
   });
 
   it('migrates legacy demo storage and strips secret-mode data', () => {
-    localStorage.setItem('tabitabi_demo', JSON.stringify({
-      itinerary, steps: [], itinerary_secrets: secrets,
-    }));
+    localStorage.setItem('tabitabi_demo', LEGACY_RAW);
     expect(demoStorage.getItinerarySecrets()).toEqual(secrets);
     expect(localStorage.getItem('tabitabi_demo')).toBeNull();
     expect(sessionStorage.getItem('tabitabi_demo')).not.toContain('itinerary_secrets');
@@ -46,7 +48,7 @@ describe('demo storage privacy', () => {
   });
   it('scrubs stale persistent secrets even when a clean session copy exists', () => {
     demoStorage.initializeDemo({ itinerary, steps: [] });
-    localStorage.setItem('tabitabi_demo', JSON.stringify({ itinerary, steps: [], itinerary_secrets: secrets }));
+    localStorage.setItem('tabitabi_demo', LEGACY_RAW);
     expect(demoStorage.getData()).not.toBeNull();
     expect(localStorage.getItem('tabitabi_demo')).toBeNull();
     expect(sessionStorage.getItem('tabitabi_demo')).not.toContain('DEMO_PASSWORD');

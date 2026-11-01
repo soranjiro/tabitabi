@@ -18,34 +18,38 @@ const step = {
 } as Step;
 const hidden = { ...step, title: 'シークレットな行き先', is_hidden: true } as Step;
 
-describe('ChatGPT handoff', () => {
-  it('passes the itinerary URL but never the edit capability or notes', () => {
+describe('ChatGPT itinerary editing handoff', () => {
+  it('passes the current itinerary ID and link but never tokens or notes', () => {
     const prompt = buildPlannerPrompt({
-      itinerary, steps: [step, hidden], origin: 'https://tabitabi.pages.dev',
-      includeSchedule: true,
+      itinerary, steps: [step, hidden], origin: 'https://tabitabi.pages.dev', includeSchedule: true,
     });
     expect(prompt).toContain('/itineraries/' + itinerary.id);
+    expect(prompt).toContain('しおりID: ' + itinerary.id);
+    expect(prompt).toContain('同じしおりIDに対してadd_stepやupdate_stepで変更');
     expect(prompt).toContain('清水寺');
     expect(prompt).not.toContain('シークレットな行き先');
     expect(prompt).not.toContain('PRIVATE_DETAILS_DO_NOT_SHARE');
     expect(prompt).not.toContain('token=');
   });
 
-  it('does not include existing plans when disabled', () => {
+  it('does not include existing plans when user opts out', () => {
     const prompt = buildPlannerPrompt({
-      itinerary, steps: [step], origin: 'https://tabitabi.pages.dev',
-      includeSchedule: false,
+      itinerary, steps: [step], origin: 'https://tabitabi.pages.dev', includeSchedule: false,
     });
+    expect(prompt).toContain('京都旅行');
     expect(prompt).not.toContain('清水寺');
   });
 
-  it('asks for missing trip conditions when no itinerary exists', () => {
-    const prompt = buildPlannerPrompt({ origin: 'https://tabitabi.pages.dev' });
-    expect(prompt).toContain('しおりはまだ作成していません');
-    expect(prompt).toContain('日付・目的地・人数');
+  it('handles empty itineraries without proposing a second shiori', () => {
+    const prompt = buildPlannerPrompt({
+      itinerary, steps: [], origin: 'https://tabitabi.pages.dev', includeSchedule: true,
+    });
+    expect(prompt).toContain('まだ予定がありません');
+    expect(prompt).toContain('このしおり');
+    expect(prompt).not.toContain('新しいしおりを作');
   });
 
-  it('encodes a best-effort unsent ChatGPT draft URL', () => {
+  it('encodes an unsent ChatGPT draft URL', () => {
     const prompt = '京都でおいしいお店を探す\n旅程も考える';
     const url = new URL(buildChatGptUrl(prompt));
     expect(url.origin).toBe('https://chatgpt.com');

@@ -34,20 +34,25 @@ const TYPE_LABELS: Partial<Record<StepType, string>> = {
   [STEP_TYPE.NORMAL_SHOPPING]: "買い物リンク",
 };
 
+// Check DNS label boundaries, not substrings (e.g. evil-jalan.net is not jalan.net).
+function isHostOrSubdomain(hostname: string, domain: string): boolean {
+  return hostname === domain || hostname.endsWith(`.${domain}`);
+}
+
 function detectProvider(url: string): string {
   const hostname = new URL(url).hostname.toLowerCase();
-  if (hostname.includes("jalan.net")) return "jalan";
-  if (hostname.includes("travel.rakuten")) return "rakuten_travel";
-  if (hostname.includes("ikyu.com")) return "ikyu";
-  if (hostname.includes("booking.com")) return "booking";
-  if (hostname.includes("agoda.com")) return "agoda";
-  if (hostname.includes("tabelog.com")) return "tabelog";
-  if (hostname.includes("gnavi.co.jp")) return "gnavi";
-  if (hostname.includes("hotpepper.jp")) return "hotpepper";
-  if (hostname.includes("asoview.com")) return "asoview";
-  if (hostname.includes("klook.com")) return "klook";
-  if (hostname.includes("rakuten.co.jp")) return "rakuten_market";
-  if (hostname.includes("shopping.yahoo.co.jp")) return "yahoo_shopping";
+  if (isHostOrSubdomain(hostname, "jalan.net")) return "jalan";
+  if (isHostOrSubdomain(hostname, "travel.rakuten.co.jp")) return "rakuten_travel";
+  if (isHostOrSubdomain(hostname, "ikyu.com")) return "ikyu";
+  if (isHostOrSubdomain(hostname, "booking.com")) return "booking";
+  if (isHostOrSubdomain(hostname, "agoda.com")) return "agoda";
+  if (isHostOrSubdomain(hostname, "tabelog.com")) return "tabelog";
+  if (isHostOrSubdomain(hostname, "gnavi.co.jp")) return "gnavi";
+  if (isHostOrSubdomain(hostname, "hotpepper.jp")) return "hotpepper";
+  if (isHostOrSubdomain(hostname, "asoview.com")) return "asoview";
+  if (isHostOrSubdomain(hostname, "klook.com")) return "klook";
+  if (isHostOrSubdomain(hostname, "rakuten.co.jp")) return "rakuten_market";
+  if (isHostOrSubdomain(hostname, "shopping.yahoo.co.jp")) return "yahoo_shopping";
   return "default";
 }
 

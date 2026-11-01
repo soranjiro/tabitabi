@@ -49,11 +49,23 @@ describe('auth', () => {
       expect(auth.getToken('private')).toBe('SECRET_TOKEN');
     });
 
-    it('migrates a legacy stored credential into session storage', () => {
+    it('migrates a legacy stored credential into memory', () => {
       const history = [{ shioriId: 'legacy', title: 'Old', token: 'OLD_TOKEN', accessedAt: 1 }];
       localStorage.setItem('shiori_history', JSON.stringify(history));
       expect(auth.getToken('legacy')).toBe('OLD_TOKEN');
       expect(localStorage.getItem('shiori_history')).not.toContain('OLD_TOKEN');
+    });
+
+    it('normalizes legacy history even without an edit token', () => {
+      localStorage.setItem('shiori_history', JSON.stringify([{
+        shioriId: 'legacy', title: 'Trip', token: null, accessedAt: 1,
+        is_password_protected: true, unexpected: 'discard-me',
+      }]));
+      expect(auth.isPasswordProtected('legacy')).toBe(true);
+      const persisted = localStorage.getItem('shiori_history') ?? '';
+      expect(persisted).not.toContain('unexpected');
+      expect(persisted).not.toContain('discard-me');
+      expect(JSON.parse(persisted)[0].is_password_protected).toBe(true);
     });
 
     it('removes credentials from memory when access is removed', () => {

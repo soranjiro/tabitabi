@@ -19,6 +19,7 @@ Object.defineProperty(globalThis, 'localStorage', {
 describe('auth', () => {
   beforeEach(() => {
     mockLocalStorage.clear();
+    sessionStorage.clear();
   });
 
   describe('getHistory', () => {
@@ -38,6 +39,30 @@ describe('auth', () => {
     it('returns empty array on parse error', () => {
       mockLocalStorage.setItem('shiori_history', 'invalid json');
       expect(auth.getHistory()).toEqual([]);
+    });
+  });
+
+  describe('token storage privacy', () => {
+    it('does not leave editing credentials in persistent localStorage', () => {
+      auth.setToken('private', 'Trip', 'SECRET_TOKEN');
+      expect(localStorage.getItem('shiori_history')).not.toContain('SECRET_TOKEN');
+      expect(auth.getToken('private')).toBe('SECRET_TOKEN');
+    });
+
+    it('migrates a legacy stored credential into session storage', () => {
+      const history = [{ shioriId: 'legacy', title: 'Old', token: 'OLD_TOKEN', accessedAt: 1 }];
+      localStorage.setItem('shiori_history', JSON.stringify(history));
+      expect(auth.getToken('legacy')).toBe('OLD_TOKEN');
+      expect(localStorage.getItem('shiori_history')).not.toContain('OLD_TOKEN');
+    });
+
+    it('clears session tokens on removal and clear history', () => {
+      auth.setToken('private', 'Trip', 'secret');
+      auth.removeToken('private');
+      expect(sessionStorage.getItem('shiori_edit_tokens_session')).not.toContain('secret');
+      auth.setToken('private', 'Trip', 'other');
+      auth.clearHistory();
+      expect(sessionStorage.getItem('shiori_edit_tokens_session')).toBeNull();
     });
   });
 

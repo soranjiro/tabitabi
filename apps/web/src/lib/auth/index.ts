@@ -7,6 +7,18 @@ const STORAGE_KEY = 'shiori_history';
 // Persisting raw edit tokens in localStorage OR sessionStorage exposes them.
 const memoryTokens = new Map<string, string>();
 
+// Explicit allowlist: credentials must never enter serialized history.
+function historyMetadata(entry: ShioriHistory): ShioriHistory {
+  return {
+    shioriId: entry.shioriId,
+    title: entry.title,
+    accessedAt: entry.accessedAt,
+    is_password_protected: entry.is_password_protected,
+    token: null,
+  };
+}
+
+
 const isDemoShiori = (shioriId: string) => shioriId === 'demo';
 
 export const auth = {
@@ -25,7 +37,7 @@ export const auth = {
         for (const entry of oldEntries) {
           if (!memoryTokens.has(entry.shioriId)) memoryTokens.set(entry.shioriId, entry.token!);
         }
-        const metadata = entries.map(({ token: _token, ...entry }) => ({ ...entry, token: null }));
+        const metadata = entries.map(historyMetadata);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(metadata));
       }
       return entries.map(entry => ({ ...entry, token: memoryTokens.get(entry.shioriId) ?? null }));
@@ -36,9 +48,11 @@ export const auth = {
 
   saveHistory(history: ShioriHistory[]): void {
     memoryTokens.clear();
-    const metadata = history.map(({ token, ...entry }) => {
-      if (typeof token === 'string' && token) memoryTokens.set(entry.shioriId, token);
-      return { ...entry, token: null };
+    const metadata = history.map(entry => {
+      if (typeof entry.token === 'string' && entry.token) {
+        memoryTokens.set(entry.shioriId, entry.token);
+      }
+      return historyMetadata(entry);
     });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(metadata));
   },

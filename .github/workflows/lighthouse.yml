@@ -117,6 +117,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      pull-requests: write
     name: Lighthouse report
     needs: lighthouse
     if: always()

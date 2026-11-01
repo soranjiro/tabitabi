@@ -7,14 +7,25 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+function isSafeHref(href: string): boolean {
+  // URL() resolves relative links and normalizes schemes before we validate them.
+  // Reject control characters rather than letting URL() silently strip them.
+  if (/[\u0000-\u001f\u007f]/.test(href)) return false;
+  try {
+    const protocol = new URL(href, "https://tabitabi.invalid").protocol;
+    return protocol === "https:" || protocol === "http:" || protocol === "mailto:";
+  } catch {
+    return false;
+  }
+}
+
 const renderer = new Renderer();
 // Never render raw HTML from user-controlled memos or itinerary notes.
 renderer.html = () => "";
 renderer.image = ({ text }) => escapeHtml(text);
 renderer.link = function ({ href, title, tokens }) {
-  const safe = /^(https?:|mailto:)/i.test(href) && !/[\u0000-\u001f\u007f]/.test(href);
   const label = this.parser.parseInline(tokens);
-  if (!safe) return label;
+  if (!isSafeHref(href)) return label;
   const titleAttr = title ? ` title="${escapeHtml(title)}"` : "";
   return `<a href="${escapeHtml(href)}"${titleAttr}>${label}</a>`;
 };

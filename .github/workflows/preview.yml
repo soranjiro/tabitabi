@@ -232,7 +232,8 @@ jobs:
           fi
           echo "url=${URL}" >> $GITHUB_OUTPUT
 
-  comment-preview:
+  publish-deployment:
+    name: Publish preview deployment
     needs:
       - resolve-preview
       - deploy-preview
@@ -240,36 +241,24 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      issues: write
-      pull-requests: write
-    env:
-      PR_NUMBER: ${{ needs.resolve-preview.outputs.pr_number }}
-      PREVIEW_DB_NAME: tabitabi-preview-pr-${{ needs.resolve-preview.outputs.pr_number }}
+      deployments: write
+    environment:
+      name: preview-pr-${{ needs.resolve-preview.outputs.pr_number }}
+      url: ${{ needs.deploy-preview.outputs.web_url }}
     steps:
-      - name: Comment PR with preview URLs
-        uses: actions/github-script@v7
+      - name: Show deployed URLs
         env:
-          API_URL: ${{ needs.deploy-preview.outputs.api_url }}
           WEB_URL: ${{ needs.deploy-preview.outputs.web_url }}
-          PREVIEW_DB_NAME: ${{ env.PREVIEW_DB_NAME }}
-        with:
-          script: |
-            const body = `<!-- tabitabi-preview -->
-            ## 🚀 Preview Environment Ready
-
-            - **Web App**: ${process.env.WEB_URL}
-            - **API**: ${process.env.API_URL}
-            - **D1 Database**: \`${process.env.PREVIEW_DB_NAME}\`
-
-            This preview is generated from the current pull request commit.
-            `;
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: process.env.PR_NUMBER,
-              body,
-            });
+          API_URL: ${{ needs.deploy-preview.outputs.api_url }}
+          PR_NUMBER: ${{ needs.resolve-preview.outputs.pr_number }}
+        run: |
+          {
+            echo '### Preview environment'
+            echo
+            printf -- '- **Web:** %s\n' "$WEB_URL"
+            printf -- '- **API:** %s\n' "$API_URL"
+            printf -- '- **D1 Database:** `tabitabi-preview-pr-%s`\n' "$PR_NUMBER"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   preview-smoke:
     permissions:
@@ -328,8 +317,6 @@ jobs:
   lighthouse:
     permissions:
       contents: read
-      issues: write
-      pull-requests: write
     needs:
       - resolve-preview
       - deploy-preview

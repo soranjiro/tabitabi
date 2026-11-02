@@ -4,6 +4,7 @@ import { env as cloudflareEnv } from "cloudflare:workers";
 import type { D1Database } from "@cloudflare/workers-types";
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
+import { readBoundedText } from "$lib/feedback/read-bounded-text";
 import {
   FeedbackValidationError,
   buildGitHubIssue,
@@ -25,8 +26,9 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
     return json({ message: "入力内容が長すぎます" }, { status: 413 });
   }
 
-  const raw = await request.text();
-  if (raw.length > 16_000) {
+  // Enforce the limit while streaming, even when Content-Length is missing or false.
+  const raw = await readBoundedText(request.body, 16_000);
+  if (raw === null) {
     return json({ message: "入力内容が長すぎます" }, { status: 413 });
   }
   let feedback;

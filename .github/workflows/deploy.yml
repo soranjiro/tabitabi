@@ -3,7 +3,6 @@ name: Deploy on main
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,7 +12,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Never deploy unreviewed refs with production Cloudflare / Firebase credentials.
   deploy:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

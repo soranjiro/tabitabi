@@ -45,3 +45,10 @@ test('Pages feedback GitHub token is an encrypted binding, not a plaintext var',
     assert.doesNotMatch(content, /PLACEHOLDER_GITHUB_ISSUES_TOKEN/);
   }
 });
+
+test('production deploy runs only for protected main pushes, never manual branch dispatch', () => {
+  const workflow = read('.github/workflows/deploy.yml');
+  assert.match(workflow, /^  push:\n    branches: \[main\]$/m);
+  assert.doesNotMatch(workflow, /^\s*workflow_dispatch:/m);
+  assert.match(workflow, /^  deploy:\n    if: github\.ref == 'refs\/heads\/main'$/m);
+});

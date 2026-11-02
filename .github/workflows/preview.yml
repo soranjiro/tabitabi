@@ -96,11 +96,11 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
 
+      # PR-controlled dependency scripts must not persist a package-manager cache.
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -299,11 +299,11 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
 
+      # PR-controlled dependency scripts must not persist a package-manager cache.
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

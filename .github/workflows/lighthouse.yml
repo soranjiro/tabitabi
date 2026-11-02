@@ -42,13 +42,8 @@ jobs:
       PREVIEW_URL: ${{ inputs.preview_url }}
 
     steps:
-      # Reuse the npx installation across PR updates and all audit matrices.
-      - name: Cache Lighthouse CLI
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm/_npx
-          key: lighthouse-npx-${{ runner.os }}-13.4.1-v1
-
+      # Do not persist an npm/npx cache from PR-controlled preview audits.
+      # A compromised audit runner must not poison later workflow executions.
       - name: Wait for preview page to become available
         run: |
           target_url="${PREVIEW_URL%/}${{ matrix.path }}"

@@ -5,6 +5,7 @@
   import type * as Leaflet from 'leaflet';
   import { getPlace, type Place } from '$lib/planning/places';
   import { getStepSchedule } from '$lib/planning/schedule';
+  import { getStepTypeIcon } from '../standard/core/utils/step-type';
   import 'leaflet/dist/leaflet.css';
   let { steps, numbers, selected, canEdit, onSelect, onPin, onMove, onCenterChange, centerMode = false }: { steps: Step[]; numbers: Record<string, number>; selected: string | null; canEdit: boolean; onSelect: (id: string) => void; onPin: (place: Place) => void; onMove?: (id: string, place: Place) => void; onCenterChange?: (place: Place) => void; centerMode?: boolean } = $props();
   let container: HTMLDivElement;
@@ -84,21 +85,6 @@
       layoutLabels();
     });
   }
-  const svg = (content: string) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${content}</svg>`;
-  function stepIcon(type: Step['type']): string {
-    switch (type) {
-      case 'normal:food': case 'normal:meal': return svg('<circle cx="12" cy="14" r="6"/><path d="M6 14h12M12 8v12"/><path d="M3 3v7M5 3v7M3 7h2M5 10v11"/><path d="M19 3v18M19 3c2 2 2 5 0 7"/>');
-      case 'normal:hotel': return svg('<path d="M3 19V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12M3 14h18M3 19h18"/><path d="M6 14v-3h5a2 2 0 0 1 2 2v1M17 14v-2a2 2 0 0 0-2-2h-2"/>');
-      case 'normal:sightseeing': return svg('<path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"/>');
-      case 'normal:shopping': return svg('<path d="M6 7h12l-1 12H7L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/><path d="M8 11h8"/>');
-      case 'transport:train': return svg('<rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 12h16M8 18l-2 3M16 18l2 3M8 7h.01M16 7h.01M8 22h8"/>');
-      case 'transport:car': case 'transport:general': return svg('<rect x="3" y="5" width="18" height="10" rx="2"/><circle cx="7" cy="18" r="1"/><circle cx="17" cy="18" r="1"/><path d="M3 5v13M21 5v13"/>');
-      case 'transport:plane': return svg('<path d="M2 16l8-2V4a2 2 0 0 1 4 0v10l8 2v2l-8-1v3l2 1v1H8v-1l2-1v-3l-8 1z"/>');
-      case 'transport:bus': return svg('<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M7 10h.01M17 10h.01"/><path d="M5 19h14"/><circle cx="6" cy="19" r="1"/><circle cx="18" cy="19" r="1"/><path d="M2 6v2h20V6"/>');
-      case 'transport:ship': return svg('<path d="M3 17h18l-2-6H5l-2 6z"/><path d="M7 11l5-6 5 6"/><path d="M12 5v6"/><path d="M2 19h20"/><path d="M6 21h4"/><path d="M14 21h4"/>');
-      default: return svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>');
-    }
-  }
   function fit() {
     const points = steps.map(s => getPlace(s)).filter((p): p is Place => !!p);
     if (points.length) map?.fitBounds(points.map(p => [p.lat, p.lng] as [number, number]), { padding: [55, 55], maxZoom: 14 });
@@ -141,7 +127,7 @@
       const day = getStepSchedule(step);
       const color = selected === step.id ? '#b75b38' : day.precision === 'undecided' ? '#35695d' : '#556ca1';
       const title = step.title.trim() || '名称未設定';
-      const html = '<span class="atelier-marker-pin" style="background:' + color + '">' + stepIcon(step.type) +
+      const html = '<span class="atelier-marker-pin" style="background:' + color + '"><span class="atelier-marker-symbol" aria-hidden="true">' + escapeHtml(getStepTypeIcon(step.type)) + '</span>' +
         '</span><span class="atelier-marker-label' + (selected === step.id ? ' is-selected' : '') + '">' + escapeHtml(title) + '</span>';
       const marker = L.marker([place.lat, place.lng], {
         title, keyboard: true, draggable: canEdit && !centerMode && !!onMove,
@@ -183,7 +169,7 @@
   .map-error { background:#fff5e5; }
   :global(.atelier-marker) { background:none; border:0; }
   :global(.atelier-marker .atelier-marker-pin) { display:grid; place-items:center; width:38px; height:38px; box-sizing:border-box; border:3px solid white; border-radius:50% 50% 50% 4px; color:white; box-shadow:0 3px 10px #213b3440; }
-  :global(.atelier-marker .atelier-marker-pin svg) { width:19px; height:19px; }
+  :global(.atelier-marker .atelier-marker-symbol) { display:block; font-size:20px; line-height:1; }
   :global(.atelier-marker .atelier-marker-label) {
     position:absolute; top:4px; left:44px; display:block; width:max-content; max-width:min(168px, 42vw);
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; box-sizing:border-box;

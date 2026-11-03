@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["copilot/**"]
+    branches: [main, "copilot/**"]
     paths-ignore:
       - "**/*.md"
       - "**/*.png"
@@ -24,7 +24,9 @@ permissions:
 
 jobs:
   migration-safety:
-    runs-on: ubuntu-latest
+    # Pull requests (including forks) are always intended to use GitHub-hosted runners.
+    # Only the trusted post-merge main push selects the Intel iMac.
+    runs-on: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'soranjiro/tabitabi' && fromJSON('["self-hosted","macOS","X64"]') || 'ubuntu-latest' }}
     outputs:
       policy: ${{ steps.policy.outcome }}
       preservation: ${{ steps.preservation.outcome }}
@@ -121,7 +123,9 @@ jobs:
             }
 
   test:
-    runs-on: ubuntu-latest
+    # Pull requests (including forks) are always intended to use GitHub-hosted runners.
+    # Only the trusted post-merge main push selects the Intel iMac.
+    runs-on: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'soranjiro/tabitabi' && fromJSON('["self-hosted","macOS","X64"]') || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -173,7 +177,9 @@ jobs:
   # Building does not depend on the test or migration results. All three
   # required checks still have to pass before the pull request can be merged.
   build:
-    runs-on: ubuntu-latest
+    # Pull requests (including forks) are always intended to use GitHub-hosted runners.
+    # Only the trusted post-merge main push selects the Intel iMac.
+    runs-on: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'soranjiro/tabitabi' && fromJSON('["self-hosted","macOS","X64"]') || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
 

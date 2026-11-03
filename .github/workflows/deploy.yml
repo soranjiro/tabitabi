@@ -14,13 +14,19 @@ concurrency:
 jobs:
   # Never deploy unreviewed refs with production Cloudflare / Firebase credentials.
   deploy:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'soranjiro/tabitabi'
+    runs-on: [self-hosted, macOS, X64]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # This repository has a legacy gitlink, so checkout cannot safely use
+      # persist-credentials:false. Remove its Git token before repo code runs.
+      - name: Remove checkout token from Git configuration
+        shell: bash
+        run: git config --local --unset-all 'http.https://github.com/.extraheader' || true
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
@@ -47,7 +53,8 @@ jobs:
           CLOUDFLARE_DATABASE_ID: ${{ secrets.CLOUDFLARE_DATABASE_ID }}
         run: |
           cp wrangler.toml.example wrangler.toml
-          sed -i "s/PLACEHOLDER_DATABASE_ID/${CLOUDFLARE_DATABASE_ID}/g" wrangler.toml
+          # BSD sed on macOS does not support GNU sed -i without a suffix.
+          node -e 'const fs = require("node:fs"); const path = "wrangler.toml"; fs.writeFileSync(path, fs.readFileSync(path, "utf8").replaceAll("PLACEHOLDER_DATABASE_ID", process.env.CLOUDFLARE_DATABASE_ID));'
 
       - name: Generate API wrangler.toml from example
         env:

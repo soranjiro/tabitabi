@@ -4,8 +4,7 @@
   import type { Step } from '@tabitabi/types';
   import type * as Leaflet from 'leaflet';
   import { getPlace, type Place } from '$lib/planning/places';
-  import { getStepSchedule } from '$lib/planning/schedule';
-  import { getStepTypeIcon } from '../standard/core/utils/step-type';
+  import { getStepTypeSvg } from '../standard/core/utils/step-type-svg';
   import 'leaflet/dist/leaflet.css';
   let { steps, numbers, selected, canEdit, onSelect, onPin, onMove, onCenterChange, centerMode = false }: { steps: Step[]; numbers: Record<string, number>; selected: string | null; canEdit: boolean; onSelect: (id: string) => void; onPin: (place: Place) => void; onMove?: (id: string, place: Place) => void; onCenterChange?: (place: Place) => void; centerMode?: boolean } = $props();
   let container: HTMLDivElement;
@@ -124,11 +123,11 @@
     steps.forEach(step => {
       const place = getPlace(step);
       if (!place) return;
-      const day = getStepSchedule(step);
-      const color = selected === step.id ? '#b75b38' : day.precision === 'undecided' ? '#35695d' : '#556ca1';
+      const isSelected = selected === step.id;
       const title = step.title.trim() || '名称未設定';
-      const html = '<span class="atelier-marker-pin" style="background:' + color + '"><span class="atelier-marker-symbol" aria-hidden="true">' + escapeHtml(getStepTypeIcon(step.type)) + '</span>' +
-        '</span><span class="atelier-marker-label' + (selected === step.id ? ' is-selected' : '') + '">' + escapeHtml(title) + '</span>';
+      // Icon markup comes only from a static map; user-provided text is escaped.
+      const html = '<span class="atelier-marker-pin' + (isSelected ? ' is-selected' : '') + '">' + getStepTypeSvg(step.type) +
+        '</span><span class="atelier-marker-label' + (isSelected ? ' is-selected' : '') + '">' + escapeHtml(title) + '</span>';
       const marker = L.marker([place.lat, place.lng], {
         title, keyboard: true, draggable: canEdit && !centerMode && !!onMove,
         icon: L.divIcon({ className: 'atelier-marker', html, iconSize: [38, 46], iconAnchor: [19, 46] }),
@@ -148,7 +147,7 @@
 </script>
 <div class="map-frame" class:adding>
   <div class="canvas" bind:this={container} aria-label="行きたい場所の地図"></div>
-  {#if centerMode}<div class="center-pin" aria-hidden="true">📍</div>{/if}
+  {#if centerMode}<div class="center-pin" aria-hidden="true"><svg viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>{/if}
   <div class="map-tools">
     <button onclick={fit} disabled={!ready}>全候補を表示</button>
     {#if canEdit && !centerMode}<button class:active={adding} disabled={!ready} onclick={() => adding = !adding}>{adding ? 'ピン追加をやめる' : '＋ 地図にピンを刺す'}</button>{/if}
@@ -161,15 +160,17 @@
   .map-frame { position:relative; height:100%; min-height:460px; background:#e7ece1; isolation:isolate; border-radius:20px; overflow:hidden; }
   .canvas { position:absolute; inset:0; z-index:0; }
   .adding .canvas { cursor:crosshair; }
-  .center-pin { position:absolute; z-index:2; top:50%; left:50%; transform:translate(-50%,-100%); font-size:36px; pointer-events:none; filter:drop-shadow(0 2px 3px #3338); }
+  .center-pin { position:absolute; z-index:2; top:50%; left:50%; width:36px; height:36px; transform:translate(-50%,-100%); color:#34403b; pointer-events:none; filter:drop-shadow(0 2px 3px #3338); }
+  .center-pin svg { width:100%; height:100%; }
   .map-tools { position:absolute; top:18px; right:18px; display:flex; gap:8px; z-index:2; }
   button { min-height:40px; padding:9px 13px; border:1px solid #d9dfd7; border-radius:9px; background:#fff; color:#294b42; font:inherit; font-size:12px; cursor:pointer; box-shadow:0 3px 12px #253e2910; }
   button.active { background:#35695d; color:white; }
   .map-hint,.map-error { position:absolute; top:75px; left:50%; transform:translateX(-50%); width:max-content; max-width:85%; padding:12px 16px; background:white; border-radius:12px; z-index:3; font-size:12px; box-shadow:0 3px 15px #0002; }
   .map-error { background:#fff5e5; }
   :global(.atelier-marker) { background:none; border:0; }
-  :global(.atelier-marker .atelier-marker-pin) { display:grid; place-items:center; width:38px; height:38px; box-sizing:border-box; border:3px solid white; border-radius:50% 50% 50% 4px; color:white; box-shadow:0 3px 10px #213b3440; }
-  :global(.atelier-marker .atelier-marker-symbol) { display:block; font-size:20px; line-height:1; }
+  :global(.atelier-marker .atelier-marker-pin) { display:grid; place-items:center; width:38px; height:38px; box-sizing:border-box; border:2px solid #51615a; border-radius:50% 50% 50% 4px; background:#fff; color:#34403b; box-shadow:0 3px 10px #213b3440; }
+  :global(.atelier-marker .atelier-marker-pin svg) { display:block; width:21px; height:21px; }
+  :global(.atelier-marker .atelier-marker-pin.is-selected) { border-color:#34403b; background:#34403b; color:#fff; box-shadow:0 0 0 3px #fff, 0 4px 12px #213b3440; }
   :global(.atelier-marker .atelier-marker-label) {
     position:absolute; top:4px; left:44px; display:block; width:max-content; max-width:min(168px, 42vw);
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; box-sizing:border-box;
@@ -180,6 +181,6 @@
   :global(.atelier-marker .atelier-marker-label.is-left) { left:auto; right:44px; }
   :global(.atelier-marker .atelier-marker-label.is-hidden) { visibility:hidden; pointer-events:none; }
   :global(.atelier-marker[title] .atelier-marker-label) { cursor:pointer; }
-  :global(.atelier-marker .atelier-marker-label.is-selected) { border-color:#b75b38; background:#fff9f4; }
+  :global(.atelier-marker .atelier-marker-label.is-selected) { border-color:#34403b; background:#f4f6f4; }
   @media(max-width:700px) { .map-frame { min-height:360px; border-radius:14px; } .map-tools { top:12px; right:10px; gap:4px; } button { padding:8px; font-size:11px; } }
 </style>

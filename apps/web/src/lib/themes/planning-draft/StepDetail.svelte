@@ -2,6 +2,7 @@
   import type { Step } from '@tabitabi/types';
   import { getPlace } from '$lib/planning/places';
   import { getMemoText } from '$lib/memo';
+  import { getStepTypeLabel } from '../standard/core/utils/step-type';
   import PlaceMap from '../planning-map/PlaceMap.svelte';
 
   let { step, canEdit, dateLabel, icon, onClose, onEdit, onPlaceEdit, onDelete }: {
@@ -31,7 +32,7 @@
     <h2>{step.title}</h2>
     <p class="status">{dateLabel}</p>
     <dl>
-      <dt>種類</dt><dd>{step.type ?? '一般'}</dd>
+      <dt>種類</dt><dd>{getStepTypeLabel(step.type)}</dd>
       <dt>場所</dt><dd>{step.location || '未定'}</dd>
       <dt>メモ</dt><dd class="note">{getMemoText(step.notes) || 'なし'}</dd>
       {#if relatedUrl}<dt>関連リンク</dt><dd><a href={relatedUrl.href} target="_blank" rel="noopener noreferrer">{relatedUrl.hostname} · 開く ↗</a></dd>{/if}

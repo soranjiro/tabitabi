@@ -83,17 +83,17 @@ export const STEP_TYPE_CONFIGS: Record<StepType, StepTypeConfig> = {
   },
 };
 
-export function getStepTypeIcon(type: StepType | undefined): string {
+export function getStepTypeIcon(type?: StepType): string {
   if (!type) return STEP_TYPE_CONFIGS[STEP_TYPE.NORMAL_GENERAL].icon;
   return STEP_TYPE_CONFIGS[type]?.icon ?? STEP_TYPE_CONFIGS[STEP_TYPE.NORMAL_GENERAL].icon;
 }
 
-export function getStepTypeLabel(type: StepType | undefined): string {
+export function getStepTypeLabel(type?: StepType): string {
   if (!type) return STEP_TYPE_CONFIGS[STEP_TYPE.NORMAL_GENERAL].label;
   return STEP_TYPE_CONFIGS[type]?.label ?? STEP_TYPE_CONFIGS[STEP_TYPE.NORMAL_GENERAL].label;
 }
 
-export function isTransportType(type: StepType | undefined): boolean {
+export function isTransportType(type?: StepType): boolean {
   if (!type) return false;
   return STEP_TYPE_CONFIGS[type]?.category === "transport";
 }

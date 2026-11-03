@@ -23,7 +23,7 @@
 </script>
 
 <div class={layout === "grid" ? "standard-type-picker standard-type-picker--grid" : "standard-type-picker"}>
-  <div class="standard-type-picker-section">
+  <div class="standard-type-picker-section" role="group" aria-label="予定">
     <h4 class="standard-type-picker-title">予定</h4>
     <div class="standard-type-picker-grid">
       {#each STEP_TYPES_BY_CATEGORY.normal as type}
@@ -46,7 +46,7 @@
     </div>
   </div>
 
-  <div class="standard-type-picker-section">
+  <div class="standard-type-picker-section" role="group" aria-label="移動">
     <h4 class="standard-type-picker-title">移動</h4>
     <div class="standard-type-picker-grid">
       {#each STEP_TYPES_BY_CATEGORY.transport as type}
@@ -68,4 +68,7 @@
       {/each}
     </div>
   </div>
+  {#if layout === "grid"}
+    <p class="standard-type-picker-help" aria-live="polite">{STEP_TYPE_CONFIGS[value]?.description ?? STEP_TYPE_CONFIGS[STEP_TYPE.NORMAL_GENERAL].description}</p>
+  {/if}
 </div>

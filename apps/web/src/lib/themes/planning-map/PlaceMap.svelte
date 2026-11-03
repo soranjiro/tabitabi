@@ -141,7 +141,7 @@
       const color = selected === step.id ? '#b75b38' : day.precision === 'undecided' ? '#35695d' : '#556ca1';
       const title = step.title.trim() || '名称未設定';
       const html = '<span class="atelier-marker-pin" style="background:' + color + '">' + stepIcon(step.type) +
-        '</span><span class="atelier-marker-label">' + escapeHtml(title) + '</span>';
+        '</span><span class="atelier-marker-label' + (selected === step.id ? ' is-selected' : '') + '">' + escapeHtml(title) + '</span>';
       const marker = L.marker([place.lat, place.lng], {
         title, keyboard: true, draggable: canEdit && !centerMode && !!onMove,
         icon: L.divIcon({ className: 'atelier-marker', html, iconSize: [38, 46], iconAnchor: [19, 46] }),
@@ -151,7 +151,6 @@
       marker.on('dragend', () => { const p = marker.getLatLng(); onMove?.(step.id, { lat: p.lat, lng: p.wrap().lng, priority: place.priority }); scheduleLabelLayout(); });
     });
     scheduleLabelLayout();
-    });
   });
   $effect(() => {
     if (!ready || !selected) return;
@@ -194,6 +193,6 @@
   :global(.atelier-marker .atelier-marker-label.is-left) { left:auto; right:44px; }
   :global(.atelier-marker .atelier-marker-label.is-hidden) { visibility:hidden; pointer-events:none; }
   :global(.atelier-marker[title] .atelier-marker-label) { cursor:pointer; }
-  :global(.atelier-marker .atelier-marker-pin[style*="#b75b38"] + .atelier-marker-label) { border-color:#b75b38; background:#fff9f4; }
+  :global(.atelier-marker .atelier-marker-label.is-selected) { border-color:#b75b38; background:#fff9f4; }
   @media(max-width:700px) { .map-frame { min-height:360px; border-radius:14px; } .map-tools { top:12px; right:10px; gap:4px; } button { padding:8px; font-size:11px; } }
 </style>

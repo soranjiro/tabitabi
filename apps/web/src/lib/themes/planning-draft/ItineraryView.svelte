@@ -33,7 +33,7 @@
   import PackingOverlay from "$lib/features/packing/PackingOverlay.svelte";
   import { openPrintStudio } from "$lib/print";
   import TypePicker from "../standard/core/components/TypePicker.svelte";
-  import { getStepTypeIcon } from "../standard/core/utils/step-type";
+  import StepTypeIcon from "../standard/core/icons/StepTypeIcon.svelte";
   import PlaceMap from "../planning-map/PlaceMap.svelte";
   import StepDetail from "./StepDetail.svelte";
   import PlaceEditor from "./PlaceEditor.svelte";
@@ -357,8 +357,6 @@
     return `${startDate} ${timeFor(step.start_at)}${endLabel ? ` 〜 ${endLabel}` : ""}`;
   }
 
-  // The picker, list, detail drawer, and map share one semantic symbol per type.
-  const stepIcon = (type: Step['type']) => getStepTypeIcon(type);
 
   function openDetail(step: Step) { selectedStepId = step.id; detailOpen = true; }
 
@@ -648,7 +646,7 @@
             {#each undecidedSteps.filter((step) => filteredSteps.includes(step)) as step, index}
               <article class="step-row">
                 <button class="step-main" onclick={() => openDetail(step)}>
-                  <span class="circle" aria-hidden="true">{stepIcon(step.type)}</span><span><strong>{step.title}</strong><small>未定{step.location ? ` · ${step.location}` : ''}</small>{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</span>
+                  <span class="circle" aria-hidden="true"><StepTypeIcon type={step.type} size="sm" /></span><span><strong>{step.title}</strong><small>未定{step.location ? ` · ${step.location}` : ''}</small>{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</span>
                 </button>
                 {#if hasEditPermission}<div class="order-buttons"><button onclick={() => moveStep(step, -1, undecidedSteps)} disabled={index === 0} aria-label="上へ移動">↑</button><button onclick={() => moveStep(step, 1, undecidedSteps)} disabled={index === undecidedSteps.length - 1} aria-label="下へ移動">↓</button></div>{/if}
               </article>
@@ -665,7 +663,7 @@
               {#each group.steps.filter((step) => filteredSteps.includes(step)) as step, index}
                 <article class="step-row">
                   <button class="step-main" onclick={() => openDetail(step)}>
-                    <span class="circle" aria-hidden="true">{stepIcon(step.type)}</span><span><strong>{step.title}</strong><small class:time-decided={getStepSchedule(step).precision === "time"}>{dateTimeLabel(step)}</small>{#if step.location}<small>{step.location}</small>{/if}{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</span>
+                    <span class="circle" aria-hidden="true"><StepTypeIcon type={step.type} size="sm" /></span><span><strong>{step.title}</strong><small class:time-decided={getStepSchedule(step).precision === "time"}>{dateTimeLabel(step)}</small>{#if step.location}<small>{step.location}</small>{/if}{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</span>
                   </button>
                   {#if hasEditPermission}<div class="order-buttons"><button onclick={() => moveStep(step, -1, group.steps)} disabled={index === 0} aria-label="上へ移動">↑</button><button onclick={() => moveStep(step, 1, group.steps)} disabled={index === group.steps.length - 1} aria-label="下へ移動">↓</button></div>{/if}
                 </article>
@@ -708,7 +706,7 @@
   </main>
 
   {#if selectedStep && detailOpen && !sheetOpen && !placeEditing}
-    <StepDetail step={selectedStep} canEdit={hasEditPermission} dateLabel={dateTimeLabel(selectedStep)} icon={stepIcon(selectedStep.type)} onClose={() => detailOpen = false} onEdit={() => openEdit(selectedStep!)} onPlaceEdit={() => openPlaceEditor(selectedStep!)} onDelete={removeSelectedStep} />
+    <StepDetail step={selectedStep} canEdit={hasEditPermission} dateLabel={dateTimeLabel(selectedStep)} onClose={() => detailOpen = false} onEdit={() => openEdit(selectedStep!)} onPlaceEdit={() => openPlaceEditor(selectedStep!)} onDelete={removeSelectedStep} />
   {/if}
 
   {#if placeEditing && selectedStep}
@@ -731,7 +729,7 @@
                 <button type="button" onclick={() => placeDraft = null}>ピンを外す</button>
               </div>
             {:else}<p class="place-help">まだ場所が決まらないときは、下のタイトルだけで候補を保存できます。</p>{/if}
-          <div class="type-picker"><span>予定の種類</span><TypePicker value={form.type} iconStyle="emoji" layout="grid" onSelect={(type: StepType) => form.type = type} /></div>
+          <div class="type-picker"><span>予定の種類</span><TypePicker value={form.type} layout="grid" onSelect={(type: StepType) => form.type = type} /></div>
           <fieldset><legend>日時</legend><label class="radio"><input type="radio" bind:group={form.when} value="undecided" />まだ決めない</label><label class="radio"><input type="radio" bind:group={form.when} value="day" />日付だけ</label><label class="radio"><input type="radio" bind:group={form.when} value="time" />日時まで</label></fieldset>
           {#if form.when !== "undecided"}
             <div class="date-fields"><label>開始日<input type="date" bind:value={form.date} onchange={syncEndFromStart} required /></label>{#if form.when === 'time'}<label>開始時刻<input type="time" bind:value={form.time} onchange={syncEndFromStart} required /></label><label>終了日<input type="date" bind:value={form.endDate} onchange={rememberDuration} required /></label><label>終了時刻<input type="time" bind:value={form.endTime} onchange={rememberDuration} required /></label>{/if}</div>
@@ -899,7 +897,7 @@
   .step-row:last-child { border-bottom: 0; }
   .step-main { display: grid; min-width: 0; padding: .8rem 0; border: 0; grid-template-columns: 32px 1fr; gap: .55rem; color: inherit; background: transparent; text-align: left; cursor: pointer; }
   .step-main:disabled { cursor: default; }
-  .circle { display:grid; width:30px; height:30px; place-items:center; border-radius:9px; background:#edf4ef; font-size:16px; }
+  .circle { display:grid; width:32px; height:32px; place-items:center; border:1px solid #e1e5e2; border-radius:9px; background:#f5f5f3; color:#34403b; }
   .step-main span:last-child { display: grid; min-width: 0; gap: .2rem; }
   .step-main strong { overflow: hidden; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
   .step-main small { color: #8a928e; font-size: .72rem; white-space: pre-line; }

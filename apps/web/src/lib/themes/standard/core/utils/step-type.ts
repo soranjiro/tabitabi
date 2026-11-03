@@ -10,14 +10,14 @@ export interface StepTypeConfig {
 
 export const STEP_TYPE_CONFIGS: Record<StepType, StepTypeConfig> = {
   [STEP_TYPE.NORMAL_GENERAL]: {
-    label: "一般的な予定",
-    icon: "📋",
+    label: "その他",
+    icon: "📌",
     category: "normal",
-    description: "その他の予定",
+    description: "ほかの種類に当てはまらない予定",
   },
   [STEP_TYPE.NORMAL_FOOD]: {
     label: "食事",
-    icon: "🍽️",
+    icon: "🍴",
     category: "normal",
     description: "レストラン、食事場所",
   },
@@ -29,13 +29,13 @@ export const STEP_TYPE_CONFIGS: Record<StepType, StepTypeConfig> = {
   },
   [STEP_TYPE.NORMAL_SIGHTSEEING]: {
     label: "観光",
-    icon: "🎌",
+    icon: "🏯",
     category: "normal",
     description: "観光地、名所",
   },
   [STEP_TYPE.NORMAL_MEAL]: {
     label: "食事",
-    icon: "🍽️",
+    icon: "🍴",
     category: "normal",
     description: "レストラン、食事場所",
   },
@@ -46,20 +46,20 @@ export const STEP_TYPE_CONFIGS: Record<StepType, StepTypeConfig> = {
     description: "お土産やショッピング",
   },
   [STEP_TYPE.TRANSPORT_GENERAL]: {
-    label: "一般的な移動",
-    icon: "🚗",
+    label: "その他の移動",
+    icon: "🚶",
     category: "transport",
-    description: "その他の移動手段",
+    description: "徒歩や移動手段が決まっていないとき",
   },
   [STEP_TYPE.TRANSPORT_TRAIN]: {
     label: "電車",
-    icon: "🚄",
+    icon: "🚃",
     category: "transport",
     description: "電車、列車での移動",
   },
   [STEP_TYPE.TRANSPORT_CAR]: {
     label: "車",
-    icon: "🚙",
+    icon: "🚗",
     category: "transport",
     description: "車での移動",
   },
@@ -84,13 +84,13 @@ export const STEP_TYPE_CONFIGS: Record<StepType, StepTypeConfig> = {
 };
 
 export function getStepTypeIcon(type: StepType | undefined): string {
-  if (!type) return "📋";
-  return STEP_TYPE_CONFIGS[type]?.icon ?? "📋";
+  if (!type) return STEP_TYPE_CONFIGS[STEP_TYPE.NORMAL_GENERAL].icon;
+  return STEP_TYPE_CONFIGS[type]?.icon ?? STEP_TYPE_CONFIGS[STEP_TYPE.NORMAL_GENERAL].icon;
 }
 
 export function getStepTypeLabel(type: StepType | undefined): string {
-  if (!type) return "予定";
-  return STEP_TYPE_CONFIGS[type]?.label ?? "予定";
+  if (!type) return STEP_TYPE_CONFIGS[STEP_TYPE.NORMAL_GENERAL].label;
+  return STEP_TYPE_CONFIGS[type]?.label ?? STEP_TYPE_CONFIGS[STEP_TYPE.NORMAL_GENERAL].label;
 }
 
 export function isTransportType(type: StepType | undefined): boolean {

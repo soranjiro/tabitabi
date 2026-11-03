@@ -53,6 +53,27 @@ test('title-only, date-only and overnight steps persist', async ({ page }) => {
   await expect(page.locator('.step-main').filter({ hasText: '夜行バス' })).toBeVisible();
 });
 
+test('map shows readable place titles before tapping and keeps the selected title visible', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const pins = page.locator('.leaflet-marker-icon');
+  const labels = page.locator('.atelier-marker-label');
+  await expect(pins).toHaveCount(5);
+  await expect(labels).toHaveCount(5);
+
+  // At least one non-selected pin label remains visible even on a narrow screen.
+  await expect.poll(() => labels.evaluateAll(nodes =>
+    nodes.filter(node => getComputedStyle(node).visibility !== 'hidden').length
+  )).toBeGreaterThan(0);
+
+  const pin = page.locator('.leaflet-marker-icon[title="南禅寺"]');
+  await pin.click();
+  await expect(page.locator('.map-card')).toContainText('南禅寺');
+  await expect(pin.locator('.atelier-marker-label')).toHaveClass(/is-selected/);
+  await expect(pin.locator('.atelier-marker-label')).not.toHaveClass(/is-hidden/);
+  await page.locator('.leaflet-control-zoom-in').click();
+  await expect(pin.locator('.atelier-marker-label')).not.toHaveClass(/is-hidden/);
+});
+
 test('mobile map keeps the list separate and allows pin-only removal', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('.leaflet-marker-icon').first().click();

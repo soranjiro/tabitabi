@@ -15,6 +15,75 @@
   let failed = $state(false);
   let adding = $state(false);
   let tiles: Leaflet.TileLayer;
+  let labelMarkers: { id: string; marker: Leaflet.Marker }[] = [];
+  let layoutFrame: number | null = null;
+  const htmlEntities: Record<string, string> = {
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  };
+  const escapeHtml = (text: string) => text.replace(/[&<>"']/g, char => htmlEntities[char]);
+  const overlaps = (a: DOMRect, b: DOMRect) =>
+    a.left < b.right + 4 && a.right + 4 > b.left &&
+    a.top < b.bottom + 4 && a.bottom + 4 > b.top;
+
+  // Keep titles readable at a glance, but never cover other markers or labels.
+  // Try both sides of each pin before hiding a label in a dense map.
+  function layoutLabels() {
+    if (!map || !container) return;
+    const frame = container.getBoundingClientRect();
+    if (!frame.width || !frame.height) return;
+    const entries = labelMarkers.map(({ id, marker }) => {
+      const element = marker.getElement();
+      return {
+        id,
+        label: element?.querySelector<HTMLElement>('.atelier-marker-label'),
+        pin: element?.querySelector<HTMLElement>('.atelier-marker-pin'),
+      };
+    });
+    const pins = entries.flatMap(entry => entry.pin ? [{ id: entry.id, rect: entry.pin.getBoundingClientRect() }] : []);
+    const controls = Array.from(container.parentElement?.querySelectorAll<HTMLElement>('.map-tools, .map-hint, .map-error') ?? [])
+      .filter(element => element.getClientRects().length)
+      .map(element => element.getBoundingClientRect());
+    const occupied: DOMRect[] = [];
+    const ordered = [...entries].sort((a, b) => Number(b.id === selected) - Number(a.id === selected));
+    for (const entry of ordered) {
+      if (!entry.label || !entry.pin) continue;
+      const label = entry.label;
+      label.classList.remove('is-hidden');
+      const pin = entry.pin.getBoundingClientRect();
+      const preferLeft = pin.left + pin.width / 2 > frame.left + frame.width / 2;
+      const sides = preferLeft ? [true, false] : [false, true];
+      let placed = false;
+      for (const left of sides) {
+        label.classList.toggle('is-left', left);
+        const rect = label.getBoundingClientRect();
+        const inFrame = rect.left >= frame.left + 5 && rect.right <= frame.right - 5 &&
+          rect.top >= frame.top + 5 && rect.bottom <= frame.bottom - 5;
+        const blocked = occupied.some(other => overlaps(rect, other)) ||
+          pins.some(other => other.id !== entry.id && overlaps(rect, other.rect)) ||
+          controls.some(other => overlaps(rect, other));
+        if (inFrame && !blocked) {
+          occupied.push(rect);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed && entry.id === selected) {
+        // The active place must stay identifiable even in a crowded area.
+        label.classList.toggle('is-left', preferLeft);
+        occupied.push(label.getBoundingClientRect());
+      } else if (!placed) {
+        label.classList.add('is-hidden');
+      }
+    }
+  }
+
+  function scheduleLabelLayout() {
+    if (layoutFrame !== null) cancelAnimationFrame(layoutFrame);
+    layoutFrame = requestAnimationFrame(() => {
+      layoutFrame = null;
+      layoutLabels();
+    });
+  }
   const svg = (content: string) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${content}</svg>`;
   function stepIcon(type: Step['type']): string {
     switch (type) {
@@ -50,30 +119,39 @@
       map.on('click', (e: Leaflet.LeafletMouseEvent) => {
         if (canEdit && adding) { onPin({ lat: e.latlng.lat, lng: e.latlng.wrap().lng }); adding = false; }
       });
-      map.on('moveend', () => { if (centerMode && map) { const p = map.getCenter(); onCenterChange?.({ lat: p.lat, lng: p.wrap().lng }); } });
-      observer = new ResizeObserver(() => { map?.invalidateSize(); fit(); });
+      map.on('moveend', () => {
+        if (centerMode && map) { const p = map.getCenter(); onCenterChange?.({ lat: p.lat, lng: p.wrap().lng }); }
+        scheduleLabelLayout();
+      });
+      map.on('zoomend', scheduleLabelLayout);
+      observer = new ResizeObserver(() => { map?.invalidateSize(); fit(); scheduleLabelLayout(); });
       observer.observe(container);
       ready = true;
       fit();
     }).catch(() => failed = true);
-    return () => { disposed = true; observer?.disconnect(); map?.remove(); };
+    return () => { disposed = true; observer?.disconnect(); if (layoutFrame !== null) cancelAnimationFrame(layoutFrame); map?.remove(); };
   });
   $effect(() => {
     if (!ready) return;
     layer.clearLayers();
-    steps.forEach((step, index) => {
+    labelMarkers = [];
+    steps.forEach(step => {
       const place = getPlace(step);
       if (!place) return;
       const day = getStepSchedule(step);
+      const color = selected === step.id ? '#b75b38' : day.precision === 'undecided' ? '#35695d' : '#556ca1';
+      const title = step.title.trim() || '名称未設定';
+      const html = '<span class="atelier-marker-pin" style="background:' + color + '">' + stepIcon(step.type) +
+        '</span><span class="atelier-marker-label' + (selected === step.id ? ' is-selected' : '') + '">' + escapeHtml(title) + '</span>';
       const marker = L.marker([place.lat, place.lng], {
-        title: step.title, keyboard: true, draggable: canEdit && !centerMode && !!onMove,
-        icon: L.divIcon({ className: 'atelier-marker', html: `<span style="background:${selected === step.id ? '#b75b38' : day.precision === 'undecided' ? '#35695d' : '#556ca1'}">${stepIcon(step.type)}</span>`, iconSize: [38, 46], iconAnchor: [19, 46] }),
+        title, keyboard: true, draggable: canEdit && !centerMode && !!onMove,
+        icon: L.divIcon({ className: 'atelier-marker', html, iconSize: [38, 46], iconAnchor: [19, 46] }),
       }).addTo(layer);
-      const label = document.createElement('span'); label.textContent = step.title;
-      marker.bindTooltip(label, { direction: 'top', offset: [0, -35] });
+      labelMarkers.push({ id: step.id, marker });
       marker.on('click', () => onSelect(step.id));
-      marker.on('dragend', () => { const p = marker.getLatLng(); onMove?.(step.id, { lat: p.lat, lng: p.wrap().lng, priority: place.priority }); });
+      marker.on('dragend', () => { const p = marker.getLatLng(); onMove?.(step.id, { lat: p.lat, lng: p.wrap().lng, priority: place.priority }); scheduleLabelLayout(); });
     });
+    scheduleLabelLayout();
   });
   $effect(() => {
     if (!ready || !selected) return;
@@ -103,7 +181,19 @@
   button.active { background:#35695d; color:white; }
   .map-hint,.map-error { position:absolute; top:75px; left:50%; transform:translateX(-50%); width:max-content; max-width:85%; padding:12px 16px; background:white; border-radius:12px; z-index:3; font-size:12px; box-shadow:0 3px 15px #0002; }
   .map-error { background:#fff5e5; }
-  :global(.atelier-marker span) { display:grid; place-items:center; width:38px; height:38px; border:3px solid white; border-radius:50% 50% 50% 4px; color:white; box-shadow:0 3px 10px #213b3440; }
-  :global(.atelier-marker svg) { width:19px; height:19px; }
+  :global(.atelier-marker) { background:none; border:0; }
+  :global(.atelier-marker .atelier-marker-pin) { display:grid; place-items:center; width:38px; height:38px; box-sizing:border-box; border:3px solid white; border-radius:50% 50% 50% 4px; color:white; box-shadow:0 3px 10px #213b3440; }
+  :global(.atelier-marker .atelier-marker-pin svg) { width:19px; height:19px; }
+  :global(.atelier-marker .atelier-marker-label) {
+    position:absolute; top:4px; left:44px; display:block; width:max-content; max-width:min(168px, 42vw);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; box-sizing:border-box;
+    padding:7px 10px; border:1px solid #d7dfda; border-radius:10px;
+    background:#fffefa; color:#27453d; box-shadow:0 2px 9px #172e2428;
+    font-size:12px; font-weight:600; line-height:17px; pointer-events:auto;
+  }
+  :global(.atelier-marker .atelier-marker-label.is-left) { left:auto; right:44px; }
+  :global(.atelier-marker .atelier-marker-label.is-hidden) { visibility:hidden; pointer-events:none; }
+  :global(.atelier-marker[title] .atelier-marker-label) { cursor:pointer; }
+  :global(.atelier-marker .atelier-marker-label.is-selected) { border-color:#b75b38; background:#fff9f4; }
   @media(max-width:700px) { .map-frame { min-height:360px; border-radius:14px; } .map-tools { top:12px; right:10px; gap:4px; } button { padding:8px; font-size:11px; } }
 </style>

@@ -5,17 +5,16 @@
     STEP_TYPES_BY_CATEGORY,
     STEP_TYPE_CONFIGS,
   } from "../utils/step-type";
-  import IconRenderer from "../icons/IconRenderer.svelte";
+  import StepTypeIcon from "../icons/StepTypeIcon.svelte";
   import "../styles/TypePicker.css";
 
   interface Props {
     value?: StepType;
     onSelect?: (type: StepType) => void;
-    iconStyle?: "svg" | "emoji";
     layout?: "row" | "grid";
   }
 
-  const { value = STEP_TYPE.NORMAL_GENERAL, onSelect, iconStyle = "svg", layout = "row" } = $props();
+  const { value = STEP_TYPE.NORMAL_GENERAL, onSelect, layout = "row" } = $props();
 
   function handleSelect(type: StepType) {
     onSelect?.(type);
@@ -35,8 +34,8 @@
           aria-pressed={value === type}
           title={STEP_TYPE_CONFIGS[type as StepType].description}
         >
-          <span class={iconStyle === "emoji" ? "standard-type-picker-icon standard-type-picker-emoji" : "standard-type-picker-icon"} aria-hidden="true">
-            {#if iconStyle === "emoji"}{STEP_TYPE_CONFIGS[type as StepType].icon}{:else}<IconRenderer {type} size="sm" />{/if}
+          <span class="standard-type-picker-icon" aria-hidden="true">
+            <StepTypeIcon {type} size="sm" />
           </span>
           <div class="standard-type-picker-label">
             {STEP_TYPE_CONFIGS[type as StepType].label}
@@ -58,8 +57,8 @@
           aria-pressed={value === type}
           title={STEP_TYPE_CONFIGS[type as StepType].description}
         >
-          <span class={iconStyle === "emoji" ? "standard-type-picker-icon standard-type-picker-emoji" : "standard-type-picker-icon"} aria-hidden="true">
-            {#if iconStyle === "emoji"}{STEP_TYPE_CONFIGS[type as StepType].icon}{:else}<IconRenderer {type} size="sm" />{/if}
+          <span class="standard-type-picker-icon" aria-hidden="true">
+            <StepTypeIcon {type} size="sm" />
           </span>
           <div class="standard-type-picker-label">
             {STEP_TYPE_CONFIGS[type as StepType].label}

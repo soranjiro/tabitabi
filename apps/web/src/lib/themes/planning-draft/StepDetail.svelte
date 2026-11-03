@@ -3,13 +3,13 @@
   import { getPlace } from '$lib/planning/places';
   import { getMemoText } from '$lib/memo';
   import { getStepTypeLabel } from '../standard/core/utils/step-type';
+  import StepTypeIcon from '../standard/core/icons/StepTypeIcon.svelte';
   import PlaceMap from '../planning-map/PlaceMap.svelte';
 
-  let { step, canEdit, dateLabel, icon, onClose, onEdit, onPlaceEdit, onDelete }: {
+  let { step, canEdit, dateLabel, onClose, onEdit, onPlaceEdit, onDelete }: {
     step: Step;
     canEdit: boolean;
     dateLabel: string;
-    icon: string;
     onClose: () => void;
     onEdit: () => void;
     onPlaceEdit: () => void;
@@ -28,7 +28,7 @@
 <div class="backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && onClose()}>
   <div class="drawer" role="dialog" aria-modal="true" aria-label="予定詳細">
     <button class="close" onclick={onClose} aria-label="閉じる">×</button>
-    <p class="kicker">{icon} 予定詳細</p>
+    <p class="kicker"><StepTypeIcon type={step.type} size="sm" />予定詳細</p>
     <h2>{step.title}</h2>
     <p class="status">{dateLabel}</p>
     <dl>
@@ -46,7 +46,7 @@
   .backdrop { position:fixed; z-index:200; inset:0; display:flex; justify-content:flex-end; background:#192b254d; }
   .drawer { position:relative; width:min(440px,100%); height:100%; overflow:auto; padding:28px 24px 100px; background:#fff; box-shadow:-8px 0 30px #0002; }
   .close { position:absolute; top:18px; right:18px; border:0; background:transparent; font-size:28px; cursor:pointer; }
-  .kicker { margin:0 0 8px; color:#638175; font-size:12px; }
+  .kicker { display:flex; align-items:center; gap:8px; margin:0 0 8px; color:#34403b; font-size:12px; }
   h2 { margin:0 35px 8px 0; font-size:24px; }
   .status { padding:10px 12px; border-radius:9px; background:#edf4ef; color:#28594d; font-weight:700; }
   dl { display:grid; gap:6px; }

@@ -11,18 +11,20 @@
   interface Props {
     value?: StepType;
     onSelect?: (type: StepType) => void;
+    iconStyle?: "svg" | "emoji";
+    layout?: "row" | "grid";
   }
 
-  const { value = STEP_TYPE.NORMAL_GENERAL, onSelect } = $props();
+  const { value = STEP_TYPE.NORMAL_GENERAL, onSelect, iconStyle = "svg", layout = "row" } = $props();
 
   function handleSelect(type: StepType) {
     onSelect?.(type);
   }
 </script>
 
-<div class="standard-type-picker">
+<div class={layout === "grid" ? "standard-type-picker standard-type-picker--grid" : "standard-type-picker"}>
   <div class="standard-type-picker-section">
-    <h4 class="standard-type-picker-title">通常の予定</h4>
+    <h4 class="standard-type-picker-title">予定</h4>
     <div class="standard-type-picker-grid">
       {#each STEP_TYPES_BY_CATEGORY.normal as type}
         <button
@@ -30,10 +32,12 @@
           class="standard-type-picker-item"
           class:standard-type-picker-item-active={value === type}
           onclick={() => handleSelect(type)}
+          aria-pressed={value === type}
+          title={STEP_TYPE_CONFIGS[type as StepType].description}
         >
-          <div class="standard-type-picker-icon">
-            <IconRenderer {type} size="sm" />
-          </div>
+          <span class={iconStyle === "emoji" ? "standard-type-picker-icon standard-type-picker-emoji" : "standard-type-picker-icon"} aria-hidden="true">
+            {#if iconStyle === "emoji"}{STEP_TYPE_CONFIGS[type as StepType].icon}{:else}<IconRenderer {type} size="sm" />{/if}
+          </span>
           <div class="standard-type-picker-label">
             {STEP_TYPE_CONFIGS[type as StepType].label}
           </div>
@@ -51,10 +55,12 @@
           class="standard-type-picker-item"
           class:standard-type-picker-item-active={value === type}
           onclick={() => handleSelect(type)}
+          aria-pressed={value === type}
+          title={STEP_TYPE_CONFIGS[type as StepType].description}
         >
-          <div class="standard-type-picker-icon">
-            <IconRenderer {type} size="sm" />
-          </div>
+          <span class={iconStyle === "emoji" ? "standard-type-picker-icon standard-type-picker-emoji" : "standard-type-picker-icon"} aria-hidden="true">
+            {#if iconStyle === "emoji"}{STEP_TYPE_CONFIGS[type as StepType].icon}{:else}<IconRenderer {type} size="sm" />{/if}
+          </span>
           <div class="standard-type-picker-label">
             {STEP_TYPE_CONFIGS[type as StepType].label}
           </div>

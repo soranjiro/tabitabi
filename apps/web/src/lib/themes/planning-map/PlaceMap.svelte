@@ -17,9 +17,10 @@
   let tiles: Leaflet.TileLayer;
   let labelMarkers: { id: string; marker: Leaflet.Marker }[] = [];
   let layoutFrame: number | null = null;
-  const escapeHtml = (text: string) => text.replace(/[&<>"']/g, char => ({
+  const htmlEntities: Record<string, string> = {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  })[char] ?? char);
+  };
+  const escapeHtml = (text: string) => text.replace(/[&<>"']/g, char => htmlEntities[char]);
   const overlaps = (a: DOMRect, b: DOMRect) =>
     a.left < b.right + 4 && a.right + 4 > b.left &&
     a.top < b.bottom + 4 && a.bottom + 4 > b.top;

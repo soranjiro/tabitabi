@@ -33,6 +33,7 @@
   import PackingOverlay from "$lib/features/packing/PackingOverlay.svelte";
   import { openPrintStudio } from "$lib/print";
   import TypePicker from "../standard/core/components/TypePicker.svelte";
+  import { getStepTypeIcon } from "../standard/core/utils/step-type";
   import PlaceMap from "../planning-map/PlaceMap.svelte";
   import StepDetail from "./StepDetail.svelte";
   import PlaceEditor from "./PlaceEditor.svelte";
@@ -356,17 +357,8 @@
     return `${startDate} ${timeFor(step.start_at)}${endLabel ? ` 〜 ${endLabel}` : ""}`;
   }
 
-  function stepIcon(type: Step['type']): string {
-    if (type?.includes('food') || type?.includes('meal')) return '🍽';
-    if (type?.includes('hotel')) return '🛏';
-    if (type?.includes('sightseeing')) return '📍';
-    if (type?.includes('train')) return '🚆';
-    if (type?.includes('bus')) return '🚌';
-    if (type?.includes('plane')) return '✈';
-    if (type?.includes('car')) return '🚗';
-    if (type?.includes('shopping')) return '🛍';
-    return '📝';
-  }
+  // The picker, list, detail drawer, and map share one semantic symbol per type.
+  const stepIcon = (type: Step['type']) => getStepTypeIcon(type);
 
   function openDetail(step: Step) { selectedStepId = step.id; detailOpen = true; }
 
@@ -739,7 +731,7 @@
                 <button type="button" onclick={() => placeDraft = null}>ピンを外す</button>
               </div>
             {:else}<p class="place-help">まだ場所が決まらないときは、下のタイトルだけで候補を保存できます。</p>{/if}
-          <div class="type-picker"><span>予定のアイコン</span><TypePicker value={form.type} onSelect={(type: StepType) => form.type = type} /></div>
+          <div class="type-picker"><span>予定の種類</span><TypePicker value={form.type} iconStyle="emoji" layout="grid" onSelect={(type: StepType) => form.type = type} /></div>
           <fieldset><legend>日時</legend><label class="radio"><input type="radio" bind:group={form.when} value="undecided" />まだ決めない</label><label class="radio"><input type="radio" bind:group={form.when} value="day" />日付だけ</label><label class="radio"><input type="radio" bind:group={form.when} value="time" />日時まで</label></fieldset>
           {#if form.when !== "undecided"}
             <div class="date-fields"><label>開始日<input type="date" bind:value={form.date} onchange={syncEndFromStart} required /></label>{#if form.when === 'time'}<label>開始時刻<input type="time" bind:value={form.time} onchange={syncEndFromStart} required /></label><label>終了日<input type="date" bind:value={form.endDate} onchange={rememberDuration} required /></label><label>終了時刻<input type="time" bind:value={form.endTime} onchange={rememberDuration} required /></label>{/if}</div>

@@ -43,8 +43,10 @@ before merging this PR or allowing external PR Actions runs:**
    suspected compromise, and do not share the macOS runner account with daily use.
 
 The currently proposed YAML is an **interim routing change** and is **not safe to
-merge when hard fork isolation is a requirement** without implementing the
-repository/group isolation above.
+merge when hard fork isolation is a requirement**. **After moving the runner to
+a private repository, the direct `runs-on: self-hosted` jobs in this PR cannot
+reach it and must be replaced** with a trusted private-workflow dispatch setup.
+Do not merge this PR as-is; use it as the basis for the isolated implementation.
 
 ## macOS runtime compatibility
 

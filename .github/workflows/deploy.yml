@@ -14,7 +14,7 @@ concurrency:
 jobs:
   # Never deploy unreviewed refs with production Cloudflare / Firebase credentials.
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'soranjiro/tabitabi'
+    if: github.ref == 'refs/heads/main'
     runs-on: [self-hosted, macOS, X64]
     steps:
       - name: Checkout

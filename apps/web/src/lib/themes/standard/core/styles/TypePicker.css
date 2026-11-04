@@ -59,7 +59,7 @@
 .standard-type-picker-icon {
   width: 1.1rem;
   height: 1.1rem;
-  color: var(--theme-primary);
+  color: #34403b;
   flex: 0 0 auto;
 }
 
@@ -106,4 +106,84 @@
   .standard-type-picker-label {
     font-size: 0.7rem;
   }
+}
+
+/* The planning view exposes every category without horizontal scrolling. */
+.standard-type-picker-icon {
+  display: grid;
+  place-items: center;
+}
+
+.standard-type-picker--grid .standard-type-picker-icon {
+  width: 1.4rem;
+  height: 1.4rem;
+  color: #34403b;
+}
+
+.standard-type-picker-item:focus-visible {
+  outline: 3px solid var(--theme-primary);
+  outline-offset: 2px;
+}
+
+.standard-type-picker-item-active .standard-type-picker-label {
+  font-weight: 800;
+}
+
+.standard-type-picker--grid {
+  gap: 1rem;
+}
+
+.standard-type-picker--grid .standard-type-picker-section {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.55rem;
+}
+
+.standard-type-picker--grid .standard-type-picker-title {
+  color: var(--theme-text);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.standard-type-picker--grid .standard-type-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: visible;
+  gap: 0.5rem;
+  padding: 0;
+}
+
+.standard-type-picker--grid .standard-type-picker-item {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0.55rem 0.65rem;
+  justify-content: flex-start;
+  background: #fff;
+}
+
+.standard-type-picker--grid .standard-type-picker-item-active {
+  border-color: #34403b;
+  background: #f4f6f4;
+  box-shadow: inset 0 0 0 1px #34403b;
+}
+
+.standard-type-picker--grid .standard-type-picker-label {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+  line-height: 1.35;
+}
+
+@media (max-width: 520px) {
+  .standard-type-picker--grid .standard-type-picker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.standard-type-picker--grid .standard-type-picker-help {
+  margin: -0.25rem 0 0;
+  min-height: 1.3rem;
+  color: var(--theme-text-light);
+  font-size: 0.75rem;
+  line-height: 1.5;
 }

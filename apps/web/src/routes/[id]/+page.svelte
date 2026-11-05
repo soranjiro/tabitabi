@@ -7,11 +7,15 @@
   import { auth } from "$lib/auth";
   import { userAuth } from "$lib/user-auth";
   import LazyPrintStudio from "$lib/print/LazyPrintStudio.svelte";
+  import ItineraryChatGptDialog from "$lib/chatgpt/ItineraryChatGptDialog.svelte";
   import { onMount } from "svelte";
   import type { Theme } from "@tabitabi/types";
   import { getPalette } from "$lib/themes";
   import SharedBook from '$lib/sharing/SharedBook.svelte';
   let copiedNotice = $state(false);
+  let showChatGptPlanner = $state(false);
+  // Standard and planning themes expose the action inside their existing menu.
+  const menuThemeIds = new Set(["planning-draft", "planning-map", "daycard", "accordion", "list", "week", "month"]);
 
   let { data, readOnly = false } = $props();
 
@@ -317,9 +321,16 @@
 {:else}
   {#if copiedNotice}<p class="copy-notice" role="status">✓ 自分のしおりを作りました</p>{/if}
 
+<div class="planner-nonstandard-toolbar" class:planner-toolbar-hidden={menuThemeIds.has(data.itinerary.theme_id)}>
+  <button type="button" onclick={() => (showChatGptPlanner = true)}>
+    <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2Z"/></svg>
+    ChatGPTで考える
+  </button>
+</div>
 {#key `${data.itinerary.theme_id}:${editAccessEpoch}`}
   <ItineraryView
     {itinerary}
+    onPlanWithChatGpt={() => (showChatGptPlanner = true)}
     {steps}
     {readOnly}
     onUpdateItinerary={readOnly ? undefined : handleUpdateItinerary}
@@ -333,7 +344,15 @@
 <LazyPrintStudio {itinerary} {steps} />
 {/if}
 
+{#if showChatGptPlanner && !readOnly && !isPublishedSnapshot}
+  <ItineraryChatGptDialog {itinerary} {steps} onClose={() => (showChatGptPlanner = false)} />
+{/if}
+
 
 <style>
+.planner-nonstandard-toolbar { display:flex; justify-content:flex-end; padding:12px clamp(16px,5vw,40px); background:var(--theme-bg,#f8f8f6); }
+  .planner-toolbar-hidden { display:none; }
+  .planner-nonstandard-toolbar button { display:inline-flex; align-items:center; gap:8px; padding:10px 14px; background:color-mix(in srgb,var(--theme-primary,#647b70) 9%,white); color:var(--theme-text,#344137); border:1px solid var(--theme-border,#d4ddd4); border-radius:99px; cursor:pointer; font-size:13px; font-weight:600; }
+  .planner-nonstandard-toolbar button:hover { border-color:var(--theme-primary,#647b70); }
   .copy-notice { position: fixed; z-index: 3000; top: 3rem; left: 50%; transform: translateX(-50%); padding: .8rem 1rem; background: #355f50; color: white; border-radius: .5rem; font-size: .8rem; }
 </style>

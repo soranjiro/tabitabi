@@ -75,10 +75,11 @@
       pin_latitude?: number | null; pin_longitude?: number | null; is_priority?: boolean; sort_order?: number | null;
     }) => Promise<void>;
     onDeleteStep?: (stepId: string) => Promise<void>;
+    onPlanWithChatGpt?: () => void;
     onBatchUpdateDates?: (updates: import("@tabitabi/types").BatchStepDateUpdate[]) => Promise<void>;
   }
 
-  let { readOnly = false, itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, onBatchUpdateDates, mapPlanning = false }: Props = $props();
+  let { readOnly = false, itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, onBatchUpdateDates, onPlanWithChatGpt, mapPlanning = false }: Props = $props();
   let placeDraft = $state<Place | null>(null);
   let formError = $state('');
   let descriptionEditing = $state(false);
@@ -801,6 +802,7 @@
       }
     }}
     onPrint={openPrintStudio}
+    {onPlanWithChatGpt}
     onSettings={() => (showSettingsDialog = true)}
     onEditModeToggle={handleEditModeToggle}
     onClose={() => (showMoreMenu = false)}

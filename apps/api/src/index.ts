@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { Env } from './utils';
 import { corsMiddleware } from './middleware/cors';
 import { protectApiWrites } from './middleware/write-guard';
+import { protectPublicApiReads } from './middleware/read-guard';
 import auth from './routes/auth';
 import itineraries from './routes/itineraries';
 import backgrounds from './routes/backgrounds';
@@ -16,6 +17,15 @@ import passkeys from './routes/passkeys';
 const app = new Hono<{ Bindings: Env }>();
 
 app.use('*', corsMiddleware);
+// Sensitive account, editor-grant and itinerary responses must never be cached by
+// an intermediate proxy, even if it uses aggressive default cache rules.
+app.use('/api/v1/*', async (c, next) => {
+  await next();
+  c.header('Cache-Control', 'private, no-store');
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('Referrer-Policy', 'no-referrer');
+});
+app.use('/api/v1/*', protectPublicApiReads);
 app.use('/api/v1/*', protectApiWrites);
 
 app.get('/health', (c) => {

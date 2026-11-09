@@ -54,6 +54,15 @@ jobs:
               pull_number: prNumber,
             });
 
+            // issue_comment and workflow_dispatch are not scoped by the
+            // pull_request.branches filter. Reject closed or off-main PRs
+            // before any secret-bearing preview deployment is scheduled.
+            if (pr.state !== 'open' || pr.base.ref !== 'main' ||
+                pr.base.repo?.full_name !== context.repo.owner + '/' + context.repo.repo) {
+              core.setFailed('Preview deployments require an open PR targeting this repository main');
+              return;
+            }
+
             core.setOutput('pr_number', String(pr.number));
             core.setOutput('sha', pr.head.sha);
             core.setOutput('head_repo', pr.head.repo?.full_name ?? '');

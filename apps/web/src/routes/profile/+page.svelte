@@ -746,6 +746,11 @@
                 <button onclick={() => { editSection = "passkeys"; editError = null; loadPasskeys(); }}><span>パスキー</span><small>{passkeys.length}件登録済み · 追加・削除</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
               {/if}
               <button onclick={() => editSection = "password"}><span>従来のパスワード変更</span><small>パスワードを設定している方のみ</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
+              <p class="account-group-label">外部サービス連携</p>
+              <button type="button" onclick={() => goto("/docs/user/features/common/chatgpt")}>
+                <span>ChatGPT・MCP連携</span><small>アカウントのしおりを確認・編集する</small>
+                <b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b>
+              </button>
               <p class="account-security-help">パスキーを紛失した場合は、ログイン画面から登録メールにリンクを送り、本人確認して再登録できます。</p>
               <button class="logout-setting" type="button" onclick={requestLogout}><span>ログアウト</span><small>この端末のログインを終了</small><b aria-hidden="true"><AppIcon name="chevron-right" size={18} /></b></button>
             </div>

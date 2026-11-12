@@ -14,6 +14,7 @@
 |---|---|
 | [編集パスワードと編集モード](common/auth.md) | しおりの編集権限を管理 |
 | [アカウントとマイページ](common/account.md) | 保存、プロフィール、公開など |
+| [ChatGPTで考える・MCP連携](common/chatgpt.md) | 今のしおりの編集相談とアカウント連携 |
 | [メモ](common/memo.md) | しおり全体のメモ |
 | [共有リンク・公開・コピー](common/sharing.md) | 用途に合わせた共有 |
 | [旅行メンバー](common/members.md) | 旅に参加する人を管理 |

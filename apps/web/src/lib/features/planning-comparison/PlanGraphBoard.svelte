@@ -381,9 +381,22 @@
     if (!canEdit || busy) return false;
     busy = true; error = '';
     try {
+      // The persisted DAG needs every endpoint, including ordinary Steps that
+      // existed before the first branch was created.
+      const normalizedNodes = [...nodes];
+      const included = new Set(normalizedNodes.map(node => node.id));
+      for (const edge of edges) {
+        for (const id of [edge.from, edge.to]) {
+          if (included.has(id)) continue;
+          const source = displayNodes.find(node => node.id === id);
+          if (!source) throw new Error('接続先の予定が見つかりません。再読み込みしてください。');
+          normalizedNodes.push(source);
+          included.add(id);
+        }
+      }
       graph = demo
-        ? { ...graph, nodes, edges, revision: graph.revision + 1, updated_at: new Date().toISOString() }
-        : await planGraphApi.save(itineraryId, { nodes, edges, revision: graph.revision });
+        ? { ...graph, nodes: normalizedNodes, edges, revision: graph.revision + 1, updated_at: new Date().toISOString() }
+        : await planGraphApi.save(itineraryId, { nodes: normalizedNodes, edges, revision: graph.revision });
       return true;
     } catch (cause) {
       error = cause instanceof Error ? cause.message : '変更を保存できませんでした。';

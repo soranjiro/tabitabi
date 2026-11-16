@@ -7,11 +7,13 @@
   import { planGraphApi } from '$lib/api/plan-graph';
   import { getMemoText } from '$lib/memo';
 
-  let { itineraryId, steps, canEdit, demo = false, showGraph = false, branchRequest = null, optionRequest = null, selectRequest = null, onGraphState, onEditExistingStep, onOpenExistingStep, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
+  let { itineraryId, steps, canEdit, demo = false, showGraph = false, branchRequest = null, optionRequest = null, selectRequest = null, createdStepRequest = null, onRequestCreate, onGraphState, onEditExistingStep, onOpenExistingStep, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
     itineraryId: string; steps: Step[]; canEdit: boolean; demo?: boolean; showGraph?: boolean;
     branchRequest?: { id: string; sequence: number; independent?: boolean } | null;
     optionRequest?: { id: string; sequence: number; optionId?: string } | null;
     selectRequest?: { id: string; sequence: number; optionId: string | null } | null;
+    createdStepRequest?: { step: Step; parentId: string | null; label: string; sequence: number } | null;
+    onRequestCreate?: (parentId: string | null, label: string) => void;
     onGraphState?: (state: { branched: boolean; choices: Record<string, ComparisonOption[]>; selected: Record<string, string | null> }) => void;
     onEditExistingStep?: (stepId: string) => void;
     onOpenExistingStep?: (stepId: string) => void;
@@ -321,6 +323,7 @@
   let handledBranchRequest = -1;
   let handledOptionRequest = -1;
   let handledSelectRequest = -1;
+  let handledCreatedRequest = -1;
   $effect(() => {
     const request = branchRequest;
     if (loading || !request || handledBranchRequest === request.sequence) return;
@@ -341,6 +344,29 @@
     const node = displayNodes.find(value => value.id === request.id);
     if (node) void selectOption(node, request.optionId);
   });
+
+  $effect(() => {
+    const request = createdStepRequest;
+    if (loading || !request || handledCreatedRequest === request.sequence) return;
+    handledCreatedRequest = request.sequence;
+    void attachCreatedStep(request);
+  });
+  async function attachCreatedStep(request: { step: Step; parentId: string | null; label: string }) {
+    if (!canEdit) return;
+    const node = fromStep(request.step);
+    const nodes = graph.nodes.some(item => item.id === node.id)
+      ? graph.nodes : [...graph.nodes, node];
+    const edges = displayEdges.filter(edge => edge.to !== node.id && edge.from !== node.id);
+    if (request.parentId) {
+      if (request.parentId === node.id) return;
+      edges.push({ id: crypto.randomUUID(), from: request.parentId, to: node.id, label: request.label });
+    }
+    const success = await save(nodes, edges);
+    if (success) {
+      selectedId = node.id;
+      folded = [];
+    }
+  }
 
   async function load() {
     if (demo) { loading = false; return; }
@@ -367,6 +393,10 @@
 
   function newStep(source: string | null = null, asChoice = false, label = '') {
     if (!canEdit) return;
+    if (!asChoice && onRequestCreate) {
+      onRequestCreate(source, label);
+      return;
+    }
     editingId = null; parentId = source; branchLabel = label;
     draft = nodeTemplate(asChoice ? 'choices' : 'step', crypto.randomUUID());
     if (source) {

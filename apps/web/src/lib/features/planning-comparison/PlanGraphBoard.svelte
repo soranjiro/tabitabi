@@ -7,7 +7,7 @@
   import { planGraphApi } from '$lib/api/plan-graph';
   import { getMemoText } from '$lib/memo';
 
-  let { itineraryId, steps, canEdit, demo = false, showGraph = false, branchRequest = null, optionRequest = null, selectRequest = null, createdStepRequest = null, onRequestCreate, onGraphState, onEditExistingStep, onOpenExistingStep, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
+  let { itineraryId, steps, canEdit, demo = false, showGraph = false, branchRequest = null, optionRequest = null, selectRequest = null, createdStepRequest = null, onRequestCreate, onGraphState, onGraphError, onEditExistingStep, onOpenExistingStep, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
     itineraryId: string; steps: Step[]; canEdit: boolean; demo?: boolean; showGraph?: boolean;
     branchRequest?: { id: string; sequence: number; independent?: boolean } | null;
     optionRequest?: { id: string; sequence: number; optionId?: string } | null;
@@ -15,6 +15,7 @@
     createdStepRequest?: { step: Step; parentId: string | null; label: string; sequence: number } | null;
     onRequestCreate?: (parentId: string | null, label: string) => void;
     onGraphState?: (state: { branched: boolean; choices: Record<string, ComparisonOption[]>; selected: Record<string, string | null> }) => void;
+    onGraphError?: (message: string) => void;
     onEditExistingStep?: (stepId: string) => void;
     onOpenExistingStep?: (stepId: string) => void;
     onCreateStep?: (data: {
@@ -379,7 +380,7 @@
 
   async function save(nodes: PlanGraphNode[], edges: PlanGraphEdge[]) {
     if (!canEdit || busy) return false;
-    busy = true; error = '';
+    busy = true; error = ''; onGraphError?.('');
     try {
       // The persisted DAG needs every endpoint, including ordinary Steps that
       // existed before the first branch was created.
@@ -400,6 +401,7 @@
       return true;
     } catch (cause) {
       error = cause instanceof Error ? cause.message : '変更を保存できませんでした。';
+      onGraphError?.(error);
       return false;
     } finally { busy = false; }
   }

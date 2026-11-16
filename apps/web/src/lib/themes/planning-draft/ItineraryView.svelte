@@ -718,6 +718,7 @@
       <div class="planning-workspace"><div class="planning-list">
 {#if canPlanEdit}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
       <label class="plan-search">予定を検索<input bind:value={searchQuery} placeholder="タイトル・場所" /></label>
+      {#if canPlanEdit && steps.length > 0}<button class="plan-independent-start" onclick={() => requestBranch('', true)}>＋ 別の出発点を作る</button>{/if}
 
       {#if undecidedSteps.length > 0}
         <section class="draft-section">
@@ -1154,6 +1155,7 @@
   .plan-loading { padding:2rem; color:#8a928e; font-size:.8rem; text-align:center; }
   .order-buttons .plan-mini-action { width:40px; height:30px; padding:0 3px; margin-right:2px; border:1px solid #d5e0d8; border-radius:8px; background:#f5faf6; color:#316b57; font-size:.68rem; font-weight:750; }
   @media(max-width:520px) { .planning-list,.step-row { min-width:0; max-width:100%; }.step-main { min-width:0; overflow:hidden; }.order-buttons .plan-mini-action { width:34px; padding:0 2px; font-size:.61rem; } }
+  .plan-independent-start { display:block; width:max-content; max-width:100%; margin:-9px 0 20px auto; padding:4px 2px; border:0; background:none; color:#4a7c66; font-size:.73rem; font-weight:700; cursor:pointer; }
   .plan-candidates { padding:0 0 8px 42px; max-width:100%; }
   .plan-candidates-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:1px solid #e0e9e1; border-radius:8px; background:#f8fbf8; color:#39715d; font-size:.74rem; cursor:pointer; }
   .plan-candidates-content { display:grid; gap:7px; margin-top:7px; }

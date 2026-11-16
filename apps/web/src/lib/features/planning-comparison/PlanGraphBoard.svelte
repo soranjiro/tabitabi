@@ -7,8 +7,13 @@
   import { planGraphApi } from '$lib/api/plan-graph';
   import { getMemoText } from '$lib/memo';
 
-  let { itineraryId, steps, canEdit, demo = false, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
-    itineraryId: string; steps: Step[]; canEdit: boolean; demo?: boolean;
+  let { itineraryId, steps, canEdit, demo = false, showGraph = false, branchRequest = null, optionRequest = null, onGraphState, onEditExistingStep, onOpenExistingStep, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
+    itineraryId: string; steps: Step[]; canEdit: boolean; demo?: boolean; showGraph?: boolean;
+    branchRequest?: { id: string; sequence: number; independent?: boolean } | null;
+    optionRequest?: { id: string; sequence: number; optionId?: string } | null;
+    onGraphState?: (state: { branched: boolean; choices: Record<string, ComparisonOption[]>; selected: Record<string, string | null> }) => void;
+    onEditExistingStep?: (stepId: string) => void;
+    onOpenExistingStep?: (stepId: string) => void;
     onCreateStep?: (data: {
       title: string; start_at: number | null; end_at: number | null;
       time_unspecified?: boolean; location?: string; notes?: string; link?: string | null;
@@ -268,6 +273,33 @@
   const selected = $derived(displayNodes.find(n => n.id === selectedId) ?? null);
   const optionNode = $derived(displayNodes.find(n => n.id === optionNodeId) ?? null);
   const targets = $derived(selected ? displayNodes.filter(n => canLink(selected.id, n.id, displayNodes, displayEdges)) : []);
+  $effect(() => {
+    if (loading) return;
+    const choices: Record<string, ComparisonOption[]> = {};
+    const selected: Record<string, string | null> = {};
+    for (const node of displayNodes) {
+      if (node.options.length) {
+        choices[node.id] = node.options;
+        selected[node.id] = node.selected_option_id;
+      }
+    }
+    onGraphState?.({ branched: isBranched, choices, selected });
+  });
+  let handledBranchRequest = -1;
+  let handledOptionRequest = -1;
+  $effect(() => {
+    const request = branchRequest;
+    if (loading || !request || handledBranchRequest === request.sequence) return;
+    handledBranchRequest = request.sequence;
+    newStep(request.independent ? null : request.id, false, request.independent ? '' : '別プラン');
+  });
+  $effect(() => {
+    const request = optionRequest;
+    if (loading || !request || handledOptionRequest === request.sequence) return;
+    handledOptionRequest = request.sequence;
+    const node = displayNodes.find(value => value.id === request.id);
+    if (node) openOption(node, request.optionId ? node.options.find(value => value.id === request.optionId) : undefined);
+  });
 
   async function load() {
     if (demo) { loading = false; return; }
@@ -412,6 +444,7 @@
   function hideEdge(id: string) { folded = folded.includes(id) ? folded.filter(value => value !== id) : [...folded, id]; }
 </script>
 
+{#if showGraph}
 <section class="graph-board" aria-label="分岐・合流プラン">
   <div class="graph-toolbar">
     <div class="graph-title"><h2>予定</h2><span>{displayNodes.length}件</span></div>
@@ -502,7 +535,13 @@
             <button class="primary" onclick={() => newStep(selected!.id)}>＋ 次の予定</button>
             <button onclick={() => newStep(selected!.id, false, '別プラン')}>↗ ここから分岐</button>
             <button onclick={() => openOption(selected!)}>◇ 候補を追加</button>
-            <button onclick={() => editStep(selected!)}>編集</button>
+            <button onclick={() => {
+              if (steps.some(step => step.id === selected!.id) && onEditExistingStep) onEditExistingStep(selected!.id);
+              else editStep(selected!);
+            }}>編集</button>
+            {#if steps.some(step => step.id === selected!.id) && onOpenExistingStep}
+              <button onclick={() => onOpenExistingStep?.(selected!.id)}>詳細</button>
+            {/if}
             {#if selected.kind === 'choices' && selected.selected_option_id}
               <button onclick={() => onPlan(selected!, selected!.options.find(o => o.id === selected!.selected_option_id))}>選択案を予定に追加</button>
             {/if}
@@ -533,6 +572,7 @@
     {/if}
   {/if}
 </section>
+{/if}
 
 {#if formOpen && canEdit}
   <div class="backdrop" role="presentation" onclick={event => event.target === event.currentTarget && !busy && (formOpen = false)}>

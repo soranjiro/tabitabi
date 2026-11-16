@@ -139,4 +139,32 @@ describe('normalized storage against production triggers', () => {
       .bind(published.id).first<{ nodes_json: string }>();
     expect(JSON.parse(refreshed!.nodes_json)[0].title).toBe('移動先を変更');
   });
+
+  it('keeps branching edges attached to copied Step IDs in a public snapshot', async () => {
+    const { book, first, second } = await trip();
+    const graphNode = (step: typeof first) => ({
+      id: step.id, kind: 'step', title: step.title, type: 'normal:general',
+      start_local: '', end_local: '', location: '', notes: '', link: '',
+      amount: null, currency: 'JPY', participants: [], options: [], selected_option_id: null,
+    });
+    await env.DB.prepare(
+      'INSERT INTO itinerary_plan_graphs (itinerary_id, nodes_json, edges_json, revision, updated_at) VALUES (?, ?, ?, 1, ?)',
+    ).bind(book.id, JSON.stringify([graphNode(first), graphNode(second)]),
+      JSON.stringify([{ id: 'e1', from: first.id, to: second.id, label: '' }]),
+      '2026-11-16T00:00:00.000Z').run();
+    const shared = await books().publish(book.id);
+    const copied = await env.DB.prepare(
+      'SELECT id, source_step_id FROM steps WHERE itinerary_id = ?',
+    ).bind(shared.id).all<{ id: string; source_step_id: string }>();
+    const bySource = new Map(copied.results.map(step => [step.source_step_id, step.id]));
+    const data = await env.DB.prepare(
+      'SELECT nodes_json, edges_json FROM itinerary_plan_graphs WHERE itinerary_id = ?',
+    ).bind(shared.id).first<{ nodes_json: string; edges_json: string }>();
+    const nodes = JSON.parse(data!.nodes_json) as { id: string }[];
+    const edges = JSON.parse(data!.edges_json) as { from: string; to: string }[];
+    expect(nodes.map(node => node.id)).toEqual([bySource.get(first.id), bySource.get(second.id)]);
+    expect(edges).toEqual([{ id: 'e1', from: bySource.get(first.id), to: bySource.get(second.id), label: '' }]);
+    expect(JSON.stringify(data)).not.toContain(first.id);
+    expect(JSON.stringify(data)).not.toContain(second.id);
+  });
 });

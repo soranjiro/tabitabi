@@ -57,9 +57,9 @@ test('deployed planning graph splits, merges, compares alternatives and publishe
     // Fold and reopen a branch, without deleting any nodes or links.
     await page.locator('.graph-node').filter({ hasText: '東京集合' }).locator('.node-main').click();
     await page.locator('.branches button').filter({ hasText: '閉じる' }).first().click();
-    await expect(page.getByText('2件を表示')).toBeVisible();
+    await expect(page.locator('.graph-footer').getByText('2件')).toBeVisible();
     await page.locator('.branches button').filter({ hasText: '展開' }).first().click();
-    await expect(page.getByText('3件を表示')).toBeVisible();
+    await expect(page.locator('.graph-footer').getByText('3件')).toBeVisible();
 
     // Hotel and flight alternatives live inside existing steps without a second schedule.
     await pick('プランB');

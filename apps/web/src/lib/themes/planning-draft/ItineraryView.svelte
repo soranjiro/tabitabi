@@ -37,6 +37,8 @@
   import PlaceMap from "../planning-map/PlaceMap.svelte";
   import StepDetail from "./StepDetail.svelte";
   import ComparisonBoard from "$lib/features/planning-comparison/ComparisonBoard.svelte";
+  import PlanGraphBoard from "$lib/features/planning-comparison/PlanGraphBoard.svelte";
+  import type { PlanGraphNode } from '@tabitabi/types';
   import PlaceEditor from "./PlaceEditor.svelte";
   import "../standard/core/styles/index.css";
 
@@ -111,6 +113,7 @@
   type WhenChoice = PlanningWhen;
 
   let screenMode = $state<ScreenMode>(mapPlanning ? "map" : "plan");
+  let planningPanel = $state<'steps' | 'graph'>('steps');
   let selectedStepId = $state<string | null>(null);
   let detailOpen = $state(false);
   let placeEditing = $state(false);
@@ -421,6 +424,26 @@
     extraFieldsOpen = true;
   }
 
+  function planGraphSelection(node: PlanGraphNode, picked?: ComparisonOption) {
+    if (!hasEditPermission || isSharedSnapshot) return;
+    if (node.kind === 'choices' && !picked) return;
+    const kind = node.type === STEP_TYPE.NORMAL_HOTEL ? 'stay'
+      : node.type === STEP_TYPE.TRANSPORT_PLANE ? 'flight'
+      : node.type.startsWith('transport:') ? 'transport' : 'other';
+    const option = picked ?? {
+      id: node.id, title: node.title, provider: '', amount: node.amount, currency: node.currency,
+      start_local: node.start_local, end_local: node.end_local,
+      from: '', to: node.location, cancellation: '', url: node.link,
+      notes: [node.notes, node.participants.length ? '参加者: ' + node.participants.join('、') : ''].filter(Boolean).join('\n'),
+    };
+    const group: ComparisonGroup = {
+      id: node.id, itinerary_id: itinerary.id, title: node.title, kind,
+      options: [option], selected_option_id: option.id, revision: 0,
+      created_at: '', updated_at: '',
+    };
+    planComparisonOption(group, option);
+  }
+
   function openEdit(step: Step) {
     if (!hasEditPermission) return;
     placeDraft = getPlace(step);
@@ -656,9 +679,19 @@
 
   <main>
     {#if screenMode === "plan"}
-      {#if !isSharedSnapshot && (!itinerary.is_password_protected || hasEditPermission)}
-        <ComparisonBoard itineraryId={itinerary.id} canEdit={hasEditPermission} demo={getIsDemoMode()} onPlan={planComparisonOption} />
-      {/if}
+      <div class="plan-panel-tabs" role="group" aria-label="計画の表示">
+        <button class:active={planningPanel === 'steps'} onclick={() => planningPanel = 'steps'}>予定一覧</button>
+        <button class:active={planningPanel === 'graph'} onclick={() => planningPanel = 'graph'}>分岐プラン</button>
+      </div>
+      {#if planningPanel === 'graph'}
+        {#if !itinerary.is_password_protected || hasEditPermission || isSharedSnapshot}
+          <PlanGraphBoard itineraryId={itinerary.id} canEdit={hasEditPermission && !isSharedSnapshot && !readOnly} demo={getIsDemoMode()} onPlan={planGraphSelection} />
+          <details class="comparison-details">
+            <summary>飛行機・宿などの候補一覧</summary>
+            <ComparisonBoard itineraryId={itinerary.id} canEdit={hasEditPermission && !isSharedSnapshot && !readOnly} demo={getIsDemoMode()} onPlan={planComparisonOption} />
+          </details>
+        {/if}
+      {:else}
       <div class="planning-workspace"><div class="planning-list">
       <section class="planning-intro">
         <span>候補を作る</span><i>→</i><span>日を決める</span><i>→</i><span>時間を決める</span>
@@ -705,6 +738,7 @@
 
       {#if hasEditPermission}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
       </div><div class="desktop-map"><PlaceMap steps={filteredSteps} numbers={mapNumbers} selected={selectedStepId} canEdit={false} onSelect={(id) => selectedStepId = id} onPin={openCreate} /></div></div>
+      {/if}
     {:else if screenMode === "map"}
       {#if hasEditPermission}<div class="map-actions"><button onclick={() => openCreate()}>＋ 予定を追加</button><button class:active={mapPinEditing} onclick={() => mapPinEditing = !mapPinEditing}>{mapPinEditing ? '位置編集を終了' : 'ピンの位置を編集'}</button></div>{/if}
       <div class="map-view"><PlaceMap {steps} numbers={mapNumbers} selected={selectedStepId} canEdit={hasEditPermission} onSelect={(id) => selectedStepId = id} onPin={openCreate} onMove={mapPinEditing ? (id, place) => onUpdateStep?.(id, placeFields(place)) : undefined} /></div>
@@ -989,6 +1023,11 @@
   .delete-button { padding: .5rem; border: 0; color: #a14e45; background: transparent; font-size: .75rem; cursor: pointer; }
   .memo-toggle { color:#35695d !important; background:transparent !important; padding:0 !important; font-weight:700; }
   .trip-description { max-width:100%; margin-top:8px; padding:8px 12px; }
+  .plan-panel-tabs { display:flex; gap:4px; width:max-content; max-width:100%; padding:4px; margin:14px 0 8px; background:#edf2ed; border-radius:999px; }
+  .plan-panel-tabs button { padding:9px 19px; border:0; border-radius:999px; background:transparent; color:#6a7d70; font-size:12px; font-weight:700; cursor:pointer; }
+  .plan-panel-tabs button.active { background:#2f6657; color:white; box-shadow:0 2px 7px #1a362b25; }
+  .comparison-details { margin:20px 0; border-top:1px solid #e3e9e3; }
+  .comparison-details summary { padding:14px 0; cursor:pointer; color:#416d5d; font-size:12px; font-weight:700; }
   .planning-workspace { display:grid; grid-template-columns:minmax(300px, 38%) minmax(0, 1fr); gap:20px; align-items:start; }
   .planning-list { min-width:0; }
   .desktop-map { position:sticky; top:72px; height:min(76vh,760px); min-width:0; }

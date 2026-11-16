@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import { STEP_TYPE, type PlanGraph, type PlanGraphEdge, type PlanGraphNode } from '@tabitabi/types';
 import { ItineraryService } from '../services/itinerary.service';
@@ -91,7 +91,7 @@ const graphSchema = z.object({
 });
 type GraphRow = { itinerary_id: string; nodes_json: string; edges_json: string; revision: number; updated_at: string };
 const error = (code: string, message: string) => ({ success: false as const, error: { code, message } });
-async function access(c: Parameters<Parameters<typeof route.get>[1]>[0], id: string, write: boolean) {
+async function access(c: Context<{ Bindings: Env; Variables: Variables }>, id: string, write: boolean) {
   const itinerary = await new ItineraryService(c.env.DB).get(id);
   if (!itinerary) return 'NOT_FOUND';
   if (write && itinerary.source_itinerary_id) return 'FORBIDDEN';

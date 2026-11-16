@@ -102,8 +102,6 @@
   let endUserChanged = $state(false);
   let originalDuration = $state(60);
   let editIsAllDay = $state(step?.is_all_day || false);
-  let linkHelperOpen = $state(false);
-  let linkBrowserUrl = $state("");
   let bookingCard = $derived(step ? getBookingCard(step) : null);
   let linkedBudgetItems = $state<MoneyItem[]>([]);
   let moneyMembers = $state<MoneyData["members"]>([]);
@@ -287,20 +285,6 @@
     if (type === STEP_TYPE.NORMAL_FOOD || type === STEP_TYPE.NORMAL_MEAL) return "https://tabelog.com/...";
     if (type === STEP_TYPE.NORMAL_SIGHTSEEING) return "https://www.asoview.com/...";
     return "https://...";
-  }
-
-  function openLinkProvider(url: string) {
-    linkBrowserUrl = url;
-    linkHelperOpen = true;
-  }
-
-  function closeLinkHelper() {
-    linkHelperOpen = false;
-  }
-
-  function insertLinkFromBrowser() {
-    editedStep.link = linkBrowserUrl.trim();
-    closeLinkHelper();
   }
 
   function initializeEditedStep() {
@@ -535,13 +519,7 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") {
-      if (linkHelperOpen) {
-        closeLinkHelper();
-        return;
-      }
-      onClose();
-    }
+    if (e.key === "Escape") onClose();
   }
 </script>
 
@@ -731,12 +709,13 @@
             </div>
             <div class="standard-link-provider-tools">
               {#each getLinkProviders(editedStep.type) as provider}
-                <button
-                  type="button"
+                <a
                   class="standard-link-provider-btn"
-                  title={`${provider.label}で探す`}
-                  aria-label={`${provider.label}で探す`}
-                  onclick={() => openLinkProvider(provider.url)}
+                  href={provider.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`${provider.label}を別タブで開く`}
+                  aria-label={`${provider.label}を別タブで開く`}
                 >
                   <span class="standard-link-provider-icon-wrap" aria-hidden="true">
                     <span class="standard-link-provider-icon-fallback">
@@ -752,9 +731,10 @@
                     />
                   </span>
                   <span>{provider.label}</span>
-                </button>
+                </a>
               {/each}
             </div>
+            <p class="standard-link-provider-hint">サイトでページのURLをコピーし、上の欄に貼り付けてください。</p>
           </div>
           <div class="standard-form-field standard-form-field-wide">
             <label for="notes-textarea" class="standard-form-label">メモ</label>
@@ -920,40 +900,4 @@
     {/if}
   </div>
 
-  {#if linkHelperOpen}
-    <div class="standard-link-browser-overlay" role="dialog" aria-modal="true">
-      <div class="standard-link-browser-header">
-        <button
-          type="button"
-          class="standard-link-browser-action standard-link-browser-close"
-          onclick={closeLinkHelper}
-        >
-          閉じる
-        </button>
-        <input
-          type="url"
-          bind:value={linkBrowserUrl}
-          placeholder="開きたいページのURL"
-          class="standard-link-browser-address"
-          aria-label="開いているURL"
-        />
-        <button
-          type="button"
-          class="standard-link-browser-action standard-link-browser-insert"
-          onclick={insertLinkFromBrowser}
-        >
-          リンクを挿入
-        </button>
-      </div>
-      <div class="standard-link-browser-surface">
-        {#if linkBrowserUrl}
-          <iframe
-            src={linkBrowserUrl}
-            title="リンク先サイト"
-            class="standard-link-browser-frame"
-          ></iframe>
-        {/if}
-      </div>
-    </div>
-  {/if}
 </div>

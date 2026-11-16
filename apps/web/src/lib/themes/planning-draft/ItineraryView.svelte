@@ -3,7 +3,7 @@
   import PlaceSearch from "$lib/planning/PlaceSearch.svelte";
   import type { PlaceResult } from "$lib/planning/search";
   import { getPlace, placeFields, type Place } from '$lib/planning/places';
-  import type { ItineraryResponse, Step, StepType } from "@tabitabi/types";
+  import type { ItineraryResponse, Step, StepType, ComparisonGroup, ComparisonOption } from "@tabitabi/types";
   import { STEP_TYPE } from "@tabitabi/types";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
@@ -36,6 +36,7 @@
   import StepTypeIcon from "../standard/core/icons/StepTypeIcon.svelte";
   import PlaceMap from "../planning-map/PlaceMap.svelte";
   import StepDetail from "./StepDetail.svelte";
+  import ComparisonBoard from "$lib/features/planning-comparison/ComparisonBoard.svelte";
   import PlaceEditor from "./PlaceEditor.svelte";
   import "../standard/core/styles/index.css";
 
@@ -396,6 +397,30 @@
     sheetOpen = true;
   }
 
+  // A selected alternative becomes a normal step only after its details are reviewed.
+  // Keep city-local flight times as text rather than guessing a time zone.
+  function planComparisonOption(group: ComparisonGroup, option: ComparisonOption) {
+    if (!hasEditPermission) return;
+    openCreate();
+    form.title = option.title;
+    form.type = group.kind === "flight" ? STEP_TYPE.TRANSPORT_PLANE
+      : group.kind === "stay" ? STEP_TYPE.NORMAL_HOTEL
+      : group.kind === "transport" ? STEP_TYPE.TRANSPORT_GENERAL : STEP_TYPE.NORMAL_GENERAL;
+    form.link = option.url;
+    form.location = option.to || option.from || "";
+    const parts = [
+      option.provider,
+      option.amount === null ? "" : `参考価格: ${option.amount.toLocaleString("ja-JP")} ${option.currency}`,
+      option.from && option.to ? `${option.from} → ${option.to}` : "",
+      option.start_local ? `開始（現地時刻）: ${option.start_local.replace("T", " ")}` : "",
+      option.end_local ? `終了（現地時刻）: ${option.end_local.replace("T", " ")}` : "",
+      option.cancellation ? `条件: ${option.cancellation}` : "",
+      option.notes,
+    ].filter(Boolean);
+    form.note = parts.join("\n");
+    extraFieldsOpen = true;
+  }
+
   function openEdit(step: Step) {
     if (!hasEditPermission) return;
     placeDraft = getPlace(step);
@@ -631,6 +656,9 @@
 
   <main>
     {#if screenMode === "plan"}
+      {#if !isSharedSnapshot && (!itinerary.is_password_protected || hasEditPermission)}
+        <ComparisonBoard itineraryId={itinerary.id} canEdit={hasEditPermission} demo={getIsDemoMode()} onPlan={planComparisonOption} />
+      {/if}
       <div class="planning-workspace"><div class="planning-list">
       <section class="planning-intro">
         <span>候補を作る</span><i>→</i><span>日を決める</span><i>→</i><span>時間を決める</span>

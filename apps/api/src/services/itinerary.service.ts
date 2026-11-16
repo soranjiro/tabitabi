@@ -380,6 +380,9 @@ export class ItineraryService {
       const moneyStatements = await this.publicMoneyStatements(
         sourceId, newId, rows, memberNames, now, false,
       );
+      const planningStatements = await this.publicPlanningStatements(
+        sourceId, newId, memberNames, now, false,
+      );
 
       try {
         await this.db.batch([
@@ -397,6 +400,8 @@ export class ItineraryService {
             source.page_background_image ?? null, source.background_display ?? 'cover', newId),
           ...stepStatements,
           ...moneyStatements,
+        ...planningStatements,
+          ...planningStatements,
           ...(userId ? [this.db.prepare(`INSERT INTO itinerary_publications
             (source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(sourceId, newId, userId,
@@ -433,6 +438,9 @@ export class ItineraryService {
       const moneyStatements = await this.publicMoneyStatements(
         sourceId, sharedId, rows, memberNames, now, true,
       );
+      const planningStatements = await this.publicPlanningStatements(
+        sourceId, sharedId, memberNames, now, true,
+      );
 
       await this.db.batch([
         this.db
@@ -450,10 +458,68 @@ export class ItineraryService {
           .bind(sharedId),
         ...stepStatements,
         ...moneyStatements,
+        ...planningStatements,
       ]);
 
       return (await this.get(sharedId))!;
     }
+  }
+
+
+  /** Public planning boards are independent snapshots: never grant access to the private source. */
+  private async publicPlanningStatements(
+    sourceId: string, sharedId: string, sensitiveNames: string[], now: string, replace: boolean,
+  ) {
+    let graph: { nodes_json: string; edges_json: string } | null = null;
+    let groups: { id: string; title: string; kind: string; options_json: string; selected_option_id: string | null }[] = [];
+    try {
+      [graph, { results: groups }] = await Promise.all([
+        this.db.prepare('SELECT nodes_json, edges_json FROM itinerary_plan_graphs WHERE itinerary_id = ?')
+          .bind(sourceId).first<{ nodes_json: string; edges_json: string }>(),
+        this.db.prepare('SELECT id, title, kind, options_json, selected_option_id FROM itinerary_comparison_groups WHERE itinerary_id = ? ORDER BY created_at, id')
+          .bind(sourceId).all<{ id: string; title: string; kind: string; options_json: string; selected_option_id: string | null }>(),
+      ]);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('no such table')) return [];
+      throw err;
+    }
+    const clean = (text: string) => createPublicTextSnapshot(text, sensitiveNames);
+    const cleanOptions = (options: Record<string, unknown>[]) => options.map(option => ({
+      ...option,
+      title: clean(String(option.title ?? '')),
+      provider: clean(String(option.provider ?? '')),
+      from: clean(String(option.from ?? '')),
+      to: clean(String(option.to ?? '')),
+      cancellation: clean(String(option.cancellation ?? '')),
+      notes: clean(String(option.notes ?? '')),
+      // Booking URLs may include personal reservation IDs or one-use tokens.
+      url: '',
+    }));
+    const statements = replace ? [
+      this.db.prepare('DELETE FROM itinerary_plan_graphs WHERE itinerary_id = ?').bind(sharedId),
+      this.db.prepare('DELETE FROM itinerary_comparison_groups WHERE itinerary_id = ?').bind(sharedId),
+    ] : [];
+    if (graph) {
+      const nodes = (JSON.parse(graph.nodes_json) as Record<string, unknown>[]).map(node => ({
+        ...node,
+        title: clean(String(node.title ?? '')),
+        location: clean(String(node.location ?? '')),
+        notes: clean(String(node.notes ?? '')),
+        link: '',
+        participants: [], // No member names are published.
+        options: cleanOptions((node.options as Record<string, unknown>[]) ?? []),
+      }));
+      statements.push(this.db.prepare(
+        'INSERT INTO itinerary_plan_graphs (itinerary_id, nodes_json, edges_json, revision, updated_at) VALUES (?, ?, ?, 1, ?)',
+      ).bind(sharedId, JSON.stringify(nodes), graph.edges_json, now));
+    }
+    for (const group of groups) {
+      statements.push(this.db.prepare(
+        'INSERT INTO itinerary_comparison_groups (id, itinerary_id, title, kind, options_json, selected_option_id, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)',
+      ).bind(generateId(), sharedId, clean(group.title), group.kind,
+        JSON.stringify(cleanOptions(JSON.parse(group.options_json))), group.selected_option_id, now, now));
+    }
+    return statements;
   }
 
   async delete(id: string): Promise<boolean> {

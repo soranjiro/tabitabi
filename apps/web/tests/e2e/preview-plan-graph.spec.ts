@@ -71,7 +71,9 @@ test('classic single-column planning remains usable on mobile, then branches and
     await page.screenshot({ path: 'test-results/plan-second-route-continued.png', fullPage: false });
 
     await pick('プランA');
+    await expect(page.locator('.detail-panel h3')).toHaveText('プランA');
     await page.getByLabel('この予定から合流').selectOption({ label: 'プランB' });
+    await expect(page.locator('.detail-panel h3')).toHaveText('プランA');
     await page.getByRole('button', { name: '接続', exact: true }).click();
     await expect.poll(async () => {
       const response = await request.get(apiBaseUrl + '/itineraries/' + id + '/plan-graph', { headers });

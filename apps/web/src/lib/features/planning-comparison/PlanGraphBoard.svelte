@@ -7,10 +7,11 @@
   import { planGraphApi } from '$lib/api/plan-graph';
   import { getMemoText } from '$lib/memo';
 
-  let { itineraryId, steps, canEdit, demo = false, showGraph = false, branchRequest = null, optionRequest = null, onGraphState, onEditExistingStep, onOpenExistingStep, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
+  let { itineraryId, steps, canEdit, demo = false, showGraph = false, branchRequest = null, optionRequest = null, selectRequest = null, onGraphState, onEditExistingStep, onOpenExistingStep, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
     itineraryId: string; steps: Step[]; canEdit: boolean; demo?: boolean; showGraph?: boolean;
     branchRequest?: { id: string; sequence: number; independent?: boolean } | null;
     optionRequest?: { id: string; sequence: number; optionId?: string } | null;
+    selectRequest?: { id: string; sequence: number; optionId: string | null } | null;
     onGraphState?: (state: { branched: boolean; choices: Record<string, ComparisonOption[]>; selected: Record<string, string | null> }) => void;
     onEditExistingStep?: (stepId: string) => void;
     onOpenExistingStep?: (stepId: string) => void;
@@ -287,6 +288,7 @@
   });
   let handledBranchRequest = -1;
   let handledOptionRequest = -1;
+  let handledSelectRequest = -1;
   $effect(() => {
     const request = branchRequest;
     if (loading || !request || handledBranchRequest === request.sequence) return;
@@ -299,6 +301,13 @@
     handledOptionRequest = request.sequence;
     const node = displayNodes.find(value => value.id === request.id);
     if (node) openOption(node, request.optionId ? node.options.find(value => value.id === request.optionId) : undefined);
+  });
+  $effect(() => {
+    const request = selectRequest;
+    if (loading || !request || handledSelectRequest === request.sequence) return;
+    handledSelectRequest = request.sequence;
+    const node = displayNodes.find(value => value.id === request.id);
+    if (node) void selectOption(node, request.optionId);
   });
 
   async function load() {

@@ -47,6 +47,10 @@ test('deployed planning graph splits, merges, compares alternatives and publishe
     await pick('プランA');
     await page.getByLabel('この予定から合流').selectOption({ label: 'プランB' });
     await page.getByRole('button', { name: '接続', exact: true }).click();
+    await expect.poll(async () => {
+      const response = await request.get(apiBaseUrl + '/itineraries/' + id + '/plan-graph', { headers });
+      return (await response.json()).data.edges.length;
+    }, { timeout: 15_000 }).toBe(3);
     let result = await request.get(apiBaseUrl + '/itineraries/' + id + '/plan-graph', { headers });
     expect(result.ok()).toBeTruthy();
     let graph = (await result.json()).data;

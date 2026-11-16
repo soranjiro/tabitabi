@@ -824,7 +824,7 @@
                 {#each linkedBudgetItems as item}
                   <div class="standard-event-budget-card" data-expanded={expandedBudgetItemId === item.id}>
                     <button type="button" class="standard-event-budget-summary" aria-expanded={expandedBudgetItemId === item.id} onclick={(event) => toggleBudgetDetails(event, item.id)}>
-                      <span class:planned={item.status === "planned"}>{item.status === "paid" ? "確定" : "予定"}</span>
+                      <span class:planned={item.status === "planned"}>{item.status === "paid" ? "支払い済み" : "支払予定"}</span>
                       <b>{item.title}</b>
                       <strong>{formatYen(item.amount)}</strong>
                     </button>
@@ -835,7 +835,7 @@
                       </div>
                       <dl>
                         <div><dt>支払い方法</dt><dd>{payerLabel(item)}</dd></div>
-                        <div><dt>精算状態</dt><dd>{item.status === "planned" ? "支払い前" : item.paid_from_fund ? "精算不要（基金払い）" : item.is_settled ? "精算済み" : "未精算"}</dd></div>
+                        <div><dt>精算状態</dt><dd>{item.status === "planned" ? "支払予定" : item.paid_from_fund ? "精算不要（基金払い）" : item.is_settled ? "精算済み" : "未精算"}</dd></div>
                         {#if item.occurred_on}<div><dt>登録日</dt><dd>{item.occurred_on}</dd></div>{/if}
                       </dl>
                       <div class="standard-event-budget-splits">

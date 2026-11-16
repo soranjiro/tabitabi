@@ -56,7 +56,7 @@ test('planning-draft preserves ordinary Step editing, dates, search and inline c
     await expect(page.locator('.step-row')).toHaveCount(3);
     await expect(page.locator('.graph-scroll')).toHaveCount(0);
 
-    const overflow = await page.locator('main').evaluate(element => element.scrollWidth - element.clientWidth);
+    const overflow = await page.locator('main').last().evaluate(element => element.scrollWidth - element.clientWidth);
     expect(overflow).toBeLessThanOrEqual(2);
     await page.screenshot({ path: 'test-results/plan-default-mobile.png', fullPage: false });
   } finally {

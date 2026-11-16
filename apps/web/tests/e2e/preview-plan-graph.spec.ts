@@ -24,7 +24,9 @@ test('classic single-column planning remains usable on mobile, then branches and
     await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
   }
   async function pick(label: string) {
-    const card = page.locator('.graph-node').filter({ hasText: label });
+    const card = page.locator('.graph-node').filter({
+      has: page.locator('.node-copy strong').getByText(label, { exact: true }),
+    });
     const button = card.locator('.node-main');
     if (await button.getAttribute('aria-pressed') !== 'true') await button.click();
   }
@@ -95,7 +97,9 @@ test('classic single-column planning remains usable on mobile, then branches and
     await candidateDialog.getByLabel('リンク').fill('https://example.com/booking?token=private');
     await candidateDialog.getByRole('button', { name: '保存', exact: true }).click();
     await expect(candidateDialog).toBeHidden();
-    await page.locator('.graph-node').filter({ hasText: 'プランB' }).getByRole('button', { name: /比較する/ }).click();
+    await page.locator('.graph-node').filter({
+      has: page.locator('.node-copy strong').getByText('プランB', { exact: true }),
+    }).getByRole('button', { name: /比較する/ }).click();
     await expect(page.getByText('京都駅前ホテル')).toBeVisible();
 
     await page.reload();

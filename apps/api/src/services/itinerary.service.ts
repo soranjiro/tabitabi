@@ -381,7 +381,7 @@ export class ItineraryService {
         sourceId, newId, rows, memberNames, now, false,
       );
       const planningStatements = await this.publicPlanningStatements(
-        sourceId, newId, memberNames, now, false,
+        sourceId, newId, memberNames, now, false, rows, sourceStepIds,
       );
 
       try {
@@ -438,7 +438,7 @@ export class ItineraryService {
         sourceId, sharedId, rows, memberNames, now, true,
       );
       const planningStatements = await this.publicPlanningStatements(
-        sourceId, sharedId, memberNames, now, true,
+        sourceId, sharedId, memberNames, now, true, rows, sourceStepIds,
       );
 
       await this.db.batch([
@@ -468,7 +468,12 @@ export class ItineraryService {
   /** Public planning boards are independent snapshots: never grant access to the private source. */
   private async publicPlanningStatements(
     sourceId: string, sharedId: string, sensitiveNames: string[], now: string, replace: boolean,
+    steps: Array<{ source_step_id?: string; snapshot_step_id: string }>, sourceStepIds: Set<unknown>,
   ) {
+    const publicStepIds = new Map(steps.filter(step => step.source_step_id)
+      .map(step => [step.source_step_id!, step.snapshot_step_id]));
+    const remap = (id: string) => publicStepIds.get(id)
+      ?? (sourceStepIds.has(id) ? null : id);
     let graph: { nodes_json: string; edges_json: string } | null = null;
     let groups: { id: string; title: string; kind: string; options_json: string; selected_option_id: string | null }[] = [];
     try {
@@ -499,19 +504,27 @@ export class ItineraryService {
       this.db.prepare('DELETE FROM itinerary_comparison_groups WHERE itinerary_id = ?').bind(sharedId),
     ] : [];
     if (graph) {
-      const nodes = (JSON.parse(graph.nodes_json) as Record<string, unknown>[]).map(node => ({
-        ...node,
-        title: clean(String(node.title ?? '')) || '予定',
-        location: clean(String(node.location ?? '')),
-        notes: clean(String(node.notes ?? '')),
-        link: '',
-        participants: [], // No member names are published.
-        options: cleanOptions((node.options as Record<string, unknown>[]) ?? []),
-      }));
+      const nodes = (JSON.parse(graph.nodes_json) as Record<string, unknown>[])
+        .filter(node => remap(String(node.id)) !== null)
+        .map(node => ({
+          ...node,
+          id: remap(String(node.id))!,
+          title: clean(String(node.title ?? '')) || '予定',
+          location: clean(String(node.location ?? '')),
+          notes: clean(String(node.notes ?? '')),
+          link: '',
+          participants: [], // No member names are published.
+          options: cleanOptions((node.options as Record<string, unknown>[]) ?? []),
+        }));
       statements.push(this.db.prepare(
         'INSERT INTO itinerary_plan_graphs (itinerary_id, nodes_json, edges_json, revision, updated_at) VALUES (?, ?, ?, 1, ?)',
       ).bind(sharedId, JSON.stringify(nodes), JSON.stringify((JSON.parse(graph.edges_json) as Record<string, unknown>[])
-        .map(edge => ({ ...edge, label: clean(String(edge.label ?? '')) }))), now));
+        .filter(edge => remap(String(edge.from)) !== null && remap(String(edge.to)) !== null)
+        .map(edge => ({ ...edge,
+          from: remap(String(edge.from))!,
+          to: remap(String(edge.to))!,
+          label: clean(String(edge.label ?? '')),
+        }))), now));
     }
     for (const group of groups) {
       statements.push(this.db.prepare(

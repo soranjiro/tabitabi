@@ -655,14 +655,14 @@
             {#if displayBudget !== null}
               <div class="standard-money-budget-bar" aria-label="予算の使用状況"><i class="paid" style={`width: ${paidPercent}%`}></i><i class="planned" style={`width: ${plannedPercent}%`}></i></div>
             {/if}
-            <div class="standard-money-budget-legend"><span><i class="paid"></i>確定支出 <b>{formatYen(displayPaid)}</b></span><span><i class="planned"></i>予定支出 <b>{formatYen(displayPlanned)}</b></span><span class:standard-money-over={remainingBudget !== null && remainingBudget < 0}>残り <b>{remainingBudget === null ? '—' : formatYen(budgetView === 'perPerson' && data.members.length ? Math.round(remainingBudget / data.members.length) : remainingBudget)}</b></span></div>
+            <div class="standard-money-budget-legend"><span><i class="paid"></i>確定支出 <b>{formatYen(displayPaid)}</b></span><span><i class="planned"></i>未払い支出 <b>{formatYen(displayPlanned)}</b></span><span class:standard-money-over={remainingBudget !== null && remainingBudget < 0}>残り <b>{remainingBudget === null ? '—' : formatYen(budgetView === 'perPerson' && data.members.length ? Math.round(remainingBudget / data.members.length) : remainingBudget)}</b></span></div>
           </section>
       {/if}
 
       <div class="standard-money-tabs" role="tablist"><button class:active={activeTab === 'expenses'} onclick={() => activeTab = 'expenses'} role="tab">立て替え</button><button class:active={activeTab === 'settlement'} onclick={() => activeTab = 'settlement'} role="tab">精算</button></div>
         {#if activeTab === 'settlement'}
           {#if data.members.length}
-            <section class="standard-money-settlements"><div class="standard-money-settlements-heading"><div><h3>いま精算するなら</h3><small>予定支出と精算済みの支出は、精算額に含めていません。</small></div><button class="standard-money-share-button" onclick={() => { shareMessage = ''; shareSheetOpen = true; }}>共有</button></div>{#if settlements.length}{#each settlements as settlement}<p><b>{settlement.from}</b> → <b>{settlement.to}</b><strong>{formatYen(settlement.amount)}</strong></p>{/each}{:else}<p>精算は不要です</p>{/if}</section>
+            <section class="standard-money-settlements"><div class="standard-money-settlements-heading"><div><h3>いま精算するなら</h3><small>未払い支出と精算済みの支出は、精算額に含めていません。</small></div><button class="standard-money-share-button" onclick={() => { shareMessage = ''; shareSheetOpen = true; }}>共有</button></div>{#if settlements.length}{#each settlements as settlement}<p><b>{settlement.from}</b> → <b>{settlement.to}</b><strong>{formatYen(settlement.amount)}</strong></p>{/each}{:else}<p>精算は不要です</p>{/if}</section>
           {/if}
           {#if fundEnabled}
             <section class="standard-money-fund-card">
@@ -762,7 +762,7 @@
               {/if}
               <div class="standard-money-status-options">
                 <label><input type="checkbox" bind:checked={isSettled} disabled={status === 'planned'} /> 精算済みにする</label>
-                <label><input type="checkbox" checked={status === 'planned'} onchange={(event) => { status = event.currentTarget.checked ? 'planned' : 'paid'; if (status === 'planned') isSettled = false; }} /> 予定支出</label>
+                <label><input type="checkbox" checked={status === 'planned'} onchange={(event) => { status = event.currentTarget.checked ? 'planned' : 'paid'; if (status === 'planned') isSettled = false; }} /> 未払い支出</label>
               </div>
               {#if formError}<p class="standard-money-form-error" role="alert">{formError}</p>{/if}
               <div class="standard-money-form-actions">

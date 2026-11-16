@@ -153,6 +153,7 @@
   const isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
   const canPlanEdit = $derived(hasEditPermission && !isSharedSnapshot && !readOnly);
   let isPlanBranched = $state(false);
+  let graphError = $state('');
   let planChoices = $state<Record<string, ComparisonOption[]>>({});
   let planSelected = $state<Record<string, string | null>>({});
   let expandedCandidateId = $state<string | null>(null);
@@ -727,6 +728,7 @@
 
   <main>
     {#if screenMode === "plan"}
+      {#if graphError}<div class="plan-save-error" role="alert"><span>{graphError}</span><button aria-label="閉じる" onclick={() => graphError = ''}>×</button></div>{/if}
       {#if planningReady}
         {#if !isPlanBranched}
 
@@ -871,6 +873,7 @@
         {onCreateStep} {onUpdateStep} {onDeleteStep}
         onRequestCreate={openGraphCreate} {createdStepRequest}
         onGraphState={updateGraphState}
+        onGraphError={(message) => graphError = message}
         onEditExistingStep={(id) => { const step = steps.find(item => item.id === id); if (step) openEdit(step); }}
         onOpenExistingStep={(id) => { const step = steps.find(item => item.id === id); if (step) openDetail(step); }}
         {branchRequest} {optionRequest} {selectRequest}
@@ -1172,6 +1175,8 @@
   .comparison-details { margin:20px 0; border-top:1px solid #e3e9e3; }
   .comparison-details summary { padding:14px 0; cursor:pointer; color:#416d5d; font-size:12px; font-weight:700; }
   .plan-loading { padding:2rem; color:#8a928e; font-size:.8rem; text-align:center; }
+  .plan-save-error { display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;margin:12px 0;border:1px solid #ebc5c1;border-radius:10px;background:#fff2f0;color:#a24b43;font-size:.8rem; }
+  .plan-save-error button { border:0;background:transparent;color:inherit;font-size:20px;cursor:pointer; }
   .order-buttons .plan-mini-action { width:40px; height:30px; padding:0 3px; margin-right:2px; border:1px solid #d5e0d8; border-radius:8px; background:#f5faf6; color:#316b57; font-size:.68rem; font-weight:750; }
   @media(max-width:520px) { .planning-list,.step-row { min-width:0; max-width:100%; }.step-main { min-width:0; overflow:hidden; }.order-buttons .plan-mini-action { width:34px; padding:0 2px; font-size:.61rem; } }
   .plan-independent-start { display:block; width:max-content; max-width:100%; margin:-9px 0 20px auto; padding:4px 2px; border:0; background:none; color:#4a7c66; font-size:.73rem; font-weight:700; cursor:pointer; }

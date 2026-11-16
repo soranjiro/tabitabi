@@ -501,7 +501,7 @@ export class ItineraryService {
     if (graph) {
       const nodes = (JSON.parse(graph.nodes_json) as Record<string, unknown>[]).map(node => ({
         ...node,
-        title: clean(String(node.title ?? '')),
+        title: clean(String(node.title ?? '')) || '予定',
         location: clean(String(node.location ?? '')),
         notes: clean(String(node.notes ?? '')),
         link: '',
@@ -510,12 +510,13 @@ export class ItineraryService {
       }));
       statements.push(this.db.prepare(
         'INSERT INTO itinerary_plan_graphs (itinerary_id, nodes_json, edges_json, revision, updated_at) VALUES (?, ?, ?, 1, ?)',
-      ).bind(sharedId, JSON.stringify(nodes), graph.edges_json, now));
+      ).bind(sharedId, JSON.stringify(nodes), JSON.stringify((JSON.parse(graph.edges_json) as Record<string, unknown>[])
+        .map(edge => ({ ...edge, label: clean(String(edge.label ?? '')) }))), now));
     }
     for (const group of groups) {
       statements.push(this.db.prepare(
         'INSERT INTO itinerary_comparison_groups (id, itinerary_id, title, kind, options_json, selected_option_id, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)',
-      ).bind(generateId(), sharedId, clean(group.title), group.kind,
+      ).bind(generateId(), sharedId, clean(group.title) || '候補', group.kind,
         JSON.stringify(cleanOptions(JSON.parse(group.options_json))), group.selected_option_id, now, now));
     }
     return statements;

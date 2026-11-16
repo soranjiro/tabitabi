@@ -392,7 +392,7 @@
       ? optionNode.options.map(item => item.id === editingOptionId ? next : item)
       : [...optionNode.options, next];
     const nodes = graph.nodes.some(n => n.id === optionNode.id)
-      ? graph.nodes.map(n => n.id === optionNode.id ? { ...n, options } : n)
+      ? graph.nodes.map(n => n.id === optionNode.id ? { ...n, kind: 'choices' as const, options } : n)
       : [...graph.nodes, { ...optionNode, kind: 'choices' as const, options }];
     if (await save(nodes, displayEdges)) optionOpen = false;
   }

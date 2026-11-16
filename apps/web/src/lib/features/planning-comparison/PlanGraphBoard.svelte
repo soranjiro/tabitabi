@@ -1,13 +1,25 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
-    STEP_TYPE, type StepType, type PlanGraph, type PlanGraphNode, type PlanGraphEdge,
+    STEP_TYPE, type Step, type StepType, type PlanGraph, type PlanGraphNode, type PlanGraphEdge,
     type ComparisonOption,
   } from '@tabitabi/types';
   import { planGraphApi } from '$lib/api/plan-graph';
+  import { getMemoText } from '$lib/memo';
 
-  let { itineraryId, canEdit, demo = false, onPlan }: {
-    itineraryId: string; canEdit: boolean; demo?: boolean;
+  let { itineraryId, steps, canEdit, demo = false, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
+    itineraryId: string; steps: Step[]; canEdit: boolean; demo?: boolean;
+    onCreateStep?: (data: {
+      title: string; start_at: number | null; end_at: number | null;
+      time_unspecified?: boolean; location?: string; notes?: string; link?: string | null;
+      type?: StepType; is_all_day?: boolean; sort_order?: number | null;
+    }) => Promise<Step | void>;
+    onUpdateStep?: (id: string, data: {
+      title?: string; start_at?: number | null; end_at?: number | null;
+      time_unspecified?: boolean; location?: string | null; notes?: string;
+      link?: string | null; type?: StepType; is_all_day?: boolean;
+    }) => Promise<void>;
+    onDeleteStep?: (id: string) => Promise<void>;
     onPlan: (node: PlanGraphNode, option?: ComparisonOption) => void;
   } = $props();
 
@@ -30,15 +42,15 @@
   const colors = ['#357764', '#498cba', '#be7894', '#9d8458', '#8075b2', '#469a91'];
   const currencies = ['JPY', 'USD', 'EUR', 'KRW', 'TWD', 'THB', 'GBP', 'AUD', 'CNY'];
 
-  function nodeTemplate(kind: 'step' | 'choices' = 'step'): PlanGraphNode {
+  function nodeTemplate(kind: 'step' | 'choices' = 'step', id = ''): PlanGraphNode {
     return {
-      id: crypto.randomUUID(), kind, title: '', type: STEP_TYPE.NORMAL_GENERAL,
+      id, kind, title: '', type: STEP_TYPE.NORMAL_GENERAL,
       start_local: '', end_local: '', location: '', notes: '', link: '',
       amount: null, currency: 'JPY', participants: [], options: [], selected_option_id: null,
     };
   }
-  function optionTemplate(): ComparisonOption {
-    return { id: crypto.randomUUID(), title: '', provider: '', amount: null, currency: 'JPY',
+  function optionTemplate(id = ''): ComparisonOption {
+    return { id, title: '', provider: '', amount: null, currency: 'JPY',
       start_local: '', end_local: '', from: '', to: '', cancellation: '', url: '', notes: '' };
   }
   function cost(amount: number | null, currency = 'JPY') {
@@ -199,10 +211,63 @@
   let optionOpen = $state(false);
   let mobileHelpOpen = $state(false);
 
-  const drawn = $derived(layout(graph.nodes, graph.edges, folded, expandedChoices));
-  const selected = $derived(graph.nodes.find(n => n.id === selectedId) ?? null);
-  const optionNode = $derived(graph.nodes.find(n => n.id === optionNodeId) ?? null);
-  const targets = $derived(selected ? graph.nodes.filter(n => canLink(selected.id, n.id, graph.nodes, graph.edges)) : []);
+  function localInput(timestamp: number | null) {
+    if (timestamp === null || !Number.isFinite(timestamp)) return '';
+    const d = new Date(timestamp);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' +
+      pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function fromStep(step: Step): PlanGraphNode {
+    return {
+      id: step.id, kind: 'step', title: step.title,
+      type: step.type ?? STEP_TYPE.NORMAL_GENERAL,
+      start_local: localInput(step.start_at), end_local: localInput(step.end_at),
+      location: step.location ?? '', notes: getMemoText(step.notes),
+      link: step.link ?? '', amount: null, currency: 'JPY', participants: [],
+      options: [], selected_option_id: null,
+    };
+  }
+  // Existing itinerary steps are always the source of truth. The graph stores only
+  // routes, participants, comparison choices, and other planning metadata.
+  const displayNodes = $derived.by(() => {
+    const ids = new Set(steps.map(step => step.id));
+    return [
+      ...steps.map(step => {
+        const extra = graph.nodes.find(node => node.id === step.id);
+        return { ...fromStep(step), ...extra, ...fromStep(step),
+          kind: extra?.kind ?? 'step',
+          amount: extra?.amount ?? null, currency: extra?.currency ?? 'JPY',
+          participants: extra?.participants ?? [], options: extra?.options ?? [],
+          selected_option_id: extra?.selected_option_id ?? null } satisfies PlanGraphNode;
+      }),
+      ...graph.nodes.filter(node => !ids.has(node.id)),
+    ];
+  });
+  const displayEdges = $derived.by(() => {
+    const valid = new Set(displayNodes.map(node => node.id));
+    const persisted = graph.edges.filter(edge => valid.has(edge.from) && valid.has(edge.to));
+    if (graph.revision > 0 || graph.nodes.length > 0) return persisted;
+    const ordered = [...steps].sort((a, b) => (a.start_at ?? Infinity) - (b.start_at ?? Infinity)
+      || (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    return ordered.slice(1).map((step, i) => ({
+      id: 'auto-' + ordered[i].id + '-' + step.id, from: ordered[i].id, to: step.id, label: '',
+    }));
+  });
+  const isBranched = $derived.by(() => {
+    if (displayNodes.length <= 1) return false;
+    const out = new Map<string, number>(), incoming = new Map<string, number>();
+    for (const edge of displayEdges) {
+      out.set(edge.from, (out.get(edge.from) ?? 0) + 1);
+      incoming.set(edge.to, (incoming.get(edge.to) ?? 0) + 1);
+    }
+    const roots = displayNodes.filter(node => !incoming.has(node.id));
+    return roots.length > 1 || [...out.values()].some(n => n > 1) || [...incoming.values()].some(n => n > 1);
+  });
+  const drawn = $derived(layout(displayNodes, displayEdges, folded, expandedChoices));
+  const selected = $derived(displayNodes.find(n => n.id === selectedId) ?? null);
+  const optionNode = $derived(displayNodes.find(n => n.id === optionNodeId) ?? null);
+  const targets = $derived(selected ? displayNodes.filter(n => canLink(selected.id, n.id, displayNodes, displayEdges)) : []);
 
   async function load() {
     if (demo) { loading = false; return; }
@@ -230,9 +295,9 @@
   function newStep(source: string | null = null, asChoice = false, label = '') {
     if (!canEdit) return;
     editingId = null; parentId = source; branchLabel = label;
-    draft = nodeTemplate(asChoice ? 'choices' : 'step');
+    draft = nodeTemplate(asChoice ? 'choices' : 'step', crypto.randomUUID());
     if (source) {
-      const parent = graph.nodes.find(n => n.id === source);
+      const parent = displayNodes.find(n => n.id === source);
       if (parent) { draft.start_local = parent.end_local || parent.start_local; draft.participants = [...parent.participants]; }
     }
     if (asChoice) draft.title = '移動・宿泊の候補';
@@ -260,25 +325,60 @@
     const participants = [...new Set(participantsText.split(/[,、\n]/).map(x => x.trim()).filter(Boolean))];
     if (participants.length > 20 || participants.some(x => x.length > 40)) { error = '参加者は20人まで登録できます。'; return; }
     const next = { ...draft, title: draft.title.trim(), amount, participants };
-    const nodes = editingId ? graph.nodes.map(n => n.id === editingId ? next : n) : [...graph.nodes, next];
-    const edges = parentId ? [...graph.edges, { id: crypto.randomUUID(), from: parentId, to: next.id, label: branchLabel }] : graph.edges;
-    if (await save(nodes, edges)) { formOpen = false; selectedId = next.id; }
+    if (next.start_local && next.end_local && next.end_local < next.start_local) {
+      error = '終了時刻は開始時刻以降にしてください。'; return;
+    }
+    if (!onCreateStep || !onUpdateStep) { error = '予定を編集できません。'; return; }
+    busy = true; error = '';
+    let actualId = next.id;
+    try {
+      const start = next.start_local ? new Date(next.start_local).getTime() : null;
+      const end = start === null ? null : (next.end_local ? new Date(next.end_local).getTime() : start + 3600000);
+      if ((start !== null && !Number.isFinite(start)) || (end !== null && !Number.isFinite(end)) || (start !== null && end! < start)) {
+        error = '日時を確認してください。'; return;
+      }
+      const fields = {
+        title: next.title, start_at: start, end_at: end,
+        time_unspecified: false, type: next.type, is_all_day: false,
+        location: next.location, notes: next.notes, link: next.link || null,
+      };
+      if (editingId && steps.some(step => step.id === editingId)) {
+        await onUpdateStep(editingId, fields);
+      } else if (!editingId) {
+        const created = await onCreateStep(fields);
+        if (created?.id) actualId = created.id;
+      }
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : '予定の保存に失敗しました。';
+      return;
+    } finally { busy = false; }
+    const stored = { ...next, id: actualId };
+    const nodes = graph.nodes.some(n => n.id === actualId)
+      ? graph.nodes.map(n => n.id === actualId ? stored : n) : [...graph.nodes, stored];
+    const edges = parentId ? [...displayEdges, {
+      id: crypto.randomUUID(), from: parentId, to: actualId, label: branchLabel,
+    }] : [...displayEdges];
+    if (await save(nodes, edges)) { formOpen = false; selectedId = actualId; }
   }
   async function removeNode(node: PlanGraphNode) {
     if (!confirm('「' + node.title + '」を削除しますか？ 接続も解除されます。')) return;
-    if (await save(graph.nodes.filter(n => n.id !== node.id), graph.edges.filter(e => e.from !== node.id && e.to !== node.id))) selectedId = null;
+    if (steps.some(step => step.id === node.id) && onDeleteStep) {
+      try { await onDeleteStep(node.id); }
+      catch (cause) { error = cause instanceof Error ? cause.message : '予定を削除できませんでした。'; return; }
+    }
+    if (await save(graph.nodes.filter(n => n.id !== node.id), displayEdges.filter(e => e.from !== node.id && e.to !== node.id))) selectedId = null;
   }
   async function join() {
-    if (!selected || !canLink(selected.id, joinTarget, graph.nodes, graph.edges)) return;
-    if (await save(graph.nodes, [...graph.edges, { id: crypto.randomUUID(), from: selected.id, to: joinTarget, label: '' }])) joinTarget = '';
+    if (!selected || !canLink(selected.id, joinTarget, displayNodes, displayEdges)) return;
+    if (await save(graph.nodes, [...displayEdges, { id: crypto.randomUUID(), from: selected.id, to: joinTarget, label: '' }])) joinTarget = '';
   }
   async function unlink(edge: PlanGraphEdge) {
     if (!confirm('この接続を外しますか？')) return;
-    await save(graph.nodes, graph.edges.filter(e => e.id !== edge.id));
+    await save(graph.nodes, displayEdges.filter(e => e.id !== edge.id));
   }
   function openOption(node: PlanGraphNode, current?: ComparisonOption) {
     optionNodeId = node.id; editingOptionId = current?.id ?? null;
-    option = current ? { ...current } : optionTemplate();
+    option = current ? { ...current } : optionTemplate(crypto.randomUUID());
     optionAmountText = current?.amount == null ? '' : String(current.amount);
     optionOpen = true; error = '';
   }
@@ -291,39 +391,45 @@
     const options = editingOptionId
       ? optionNode.options.map(item => item.id === editingOptionId ? next : item)
       : [...optionNode.options, next];
-    const nodes = graph.nodes.map(n => n.id === optionNode.id ? { ...n, options } : n);
-    if (await save(nodes, graph.edges)) optionOpen = false;
+    const nodes = graph.nodes.some(n => n.id === optionNode.id)
+      ? graph.nodes.map(n => n.id === optionNode.id ? { ...n, options } : n)
+      : [...graph.nodes, { ...optionNode, kind: 'choices' as const, options }];
+    if (await save(nodes, displayEdges)) optionOpen = false;
   }
   async function selectOption(node: PlanGraphNode, id: string | null) {
-    await save(graph.nodes.map(n => n.id === node.id ? { ...n, selected_option_id: id } : n), graph.edges);
+    const nodes = graph.nodes.some(n => n.id === node.id)
+      ? graph.nodes.map(n => n.id === node.id ? { ...n, kind: 'choices' as const, selected_option_id: id } : n)
+      : [...graph.nodes, { ...node, kind: 'choices' as const, selected_option_id: id }];
+    await save(nodes, displayEdges);
   }
   async function removeOption(node: PlanGraphNode, id: string) {
     if (!confirm('この候補を削除しますか？')) return;
     await save(graph.nodes.map(n => n.id === node.id ? {
       ...n, options: n.options.filter(o => o.id !== id),
       selected_option_id: n.selected_option_id === id ? null : n.selected_option_id,
-    } : n), graph.edges);
+    } : n), displayEdges);
   }
   function hideEdge(id: string) { folded = folded.includes(id) ? folded.filter(value => value !== id) : [...folded, id]; }
 </script>
 
 <section class="graph-board" aria-label="分岐・合流プラン">
   <div class="graph-toolbar">
-    <div class="graph-title"><h2>分岐プラン</h2><span>{graph.nodes.length}件の予定</span></div>
+    <div class="graph-title"><h2>予定</h2><span>{displayNodes.length}件</span></div>
     {#if canEdit}<div class="toolbar-actions">
-      <button class="primary" onclick={() => newStep()}>＋ 独立した予定</button>
+      {#if displayNodes.length > 0 && isBranched}<button class="outline" onclick={() => newStep()}>＋ 別の出発点</button>{/if}
+      <button class="primary" onclick={() => newStep(displayNodes.at(-1)?.id ?? null)}>＋ 予定を追加</button>
     </div>{/if}
   </div>
   {#if error}<div class="error" role="alert">{error}<button onclick={load}>再読込</button></div>{/if}
   {#if loading}<p class="status">読み込み中…</p>
-  {:else if graph.nodes.length === 0}
+  {:else if displayNodes.length === 0}
     <div class="graph-empty">
       <svg viewBox="0 0 220 120" aria-hidden="true"><path d="M110 12V38 M110 38C110 55 55 42 55 70V94 M110 38C110 55 165 42 165 70V94" stroke="#73a490" stroke-width="3" fill="none"/><circle cx="110" cy="12" r="8"/><circle cx="55" cy="94" r="8"/><circle cx="165" cy="94" r="8"/></svg>
       <strong>最初の予定を追加</strong>
       {#if canEdit}<button class="primary" onclick={() => newStep()}>＋ 予定を追加</button>{/if}
     </div>
   {:else}
-    <div class="graph-scroll" role="region" aria-label="上から下へ時間が進むプラン図。横にスクロールできます。">
+    <div class="graph-scroll" class:single={!isBranched} role="region" aria-label="上から下へ時間が進むプラン図。横にスクロールできます。">
       <div class="graph-canvas" style:width={drawn.width + 'px'} style:height={drawn.height + 'px'}>
         <svg class="graph-wires" width={drawn.width} height={drawn.height} viewBox={'0 0 ' + drawn.width + ' ' + drawn.height} aria-hidden="true">
           <line x1="113" x2="113" y1="30" y2={drawn.height - 40} stroke="#d1ddd3" stroke-width="1.5"/>
@@ -384,7 +490,7 @@
         {/each}
       </div>
     </div>
-    <div class="graph-footer"><span>上 → 下：時間の流れ</span><span>{drawn.count}件を表示</span></div>
+    {#if isBranched}<div class="graph-footer"><span>上から下へ時系列</span><span>{drawn.count}件</span></div>{/if}
     {#if selected}
       <div class="detail-panel">
         <div class="panel-heading"><div><small>{typeLabel(selected.type)}</small><h3>{selected.title}</h3></div><button aria-label="閉じる" onclick={() => selectedId = null}>×</button></div>
@@ -395,10 +501,10 @@
           {#if canEdit}
             <button class="primary" onclick={() => newStep(selected!.id)}>＋ 次の予定</button>
             <button onclick={() => newStep(selected!.id, false, '別プラン')}>↗ ここから分岐</button>
-            <button onclick={() => newStep(selected!.id, true)}>◇ 候補を比較</button>
+            <button onclick={() => openOption(selected!)}>◇ 候補を追加</button>
             <button onclick={() => editStep(selected!)}>編集</button>
-            {#if selected.kind !== 'choices' || selected.selected_option_id}
-              <button onclick={() => onPlan(selected!, selected!.options.find(o => o.id === selected!.selected_option_id))}>予定表へ追加</button>
+            {#if selected.kind === 'choices' && selected.selected_option_id}
+              <button onclick={() => onPlan(selected!, selected!.options.find(o => o.id === selected!.selected_option_id))}>選択案を予定に追加</button>
             {/if}
             <button class="danger" onclick={() => removeNode(selected!)}>削除</button>
           {/if}
@@ -413,10 +519,10 @@
             </select><button disabled={!joinTarget || busy} onclick={join}>接続</button>
           </div>
         {/if}
-        {#if graph.edges.some(e => e.from === selected!.id)}
+        {#if displayEdges.some(e => e.from === selected!.id)}
           <div class="branches"><small>この先のルート</small>
-            {#each graph.edges.filter(e => e.from === selected!.id) as edge (edge.id)}
-              <div><span>{edge.label || graph.nodes.find(n => n.id === edge.to)?.title}</span>
+            {#each displayEdges.filter(e => e.from === selected!.id) as edge (edge.id)}
+              <div><span>{edge.label || displayNodes.find(n => n.id === edge.to)?.title}</span>
                 <button onclick={() => hideEdge(edge.id)}>{folded.includes(edge.id) ? '展開' : '閉じる'}</button>
                 {#if canEdit}<button onclick={() => unlink(edge)} class="danger">解除</button>{/if}
               </div>
@@ -483,6 +589,8 @@
   .graph-title{display:flex;align-items:baseline;gap:12px}.graph-title h2{margin:0;font-size:19px}.graph-title span{font-size:11px;color:#87928b}
   .toolbar-actions{display:flex;gap:7px;flex-wrap:wrap}.primary{border:0;border-radius:999px;padding:10px 16px;background:#2f6657;color:white;font-size:12px;font-weight:750}
   .graph-scroll{width:100%;overflow:auto;border:1px solid #e4eae4;border-radius:16px;background:radial-gradient(ellipse at top,#f7faf6,#fff 70%);scrollbar-color:#c9d7cc transparent}
+  .graph-scroll.single{border-color:transparent;background:transparent}
+  .graph-scroll.single .graph-canvas{margin:0 auto}
   .graph-canvas{position:relative;min-height:240px}.graph-wires{position:absolute;inset:0;pointer-events:none}
   .time-tick{position:absolute;left:10px;width:96px;text-align:right;font-size:10px;font-variant-numeric:tabular-nums;color:#6d8674;white-space:nowrap}
   .graph-node{position:absolute;width:260px;min-height:91px;border:1px solid #dfe6df;border-left:3px solid var(--lane-color);border-radius:14px;background:white;box-shadow:0 4px 16px #1d3c2a0e;z-index:1}

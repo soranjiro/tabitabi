@@ -47,6 +47,15 @@ test('planning-draft preserves ordinary Step editing, dates, search and inline c
     await expect(page.getByText('京都駅前のホテル')).toBeVisible();
     await expect(page.locator('.graph-scroll')).toHaveCount(0);
 
+    // Saving a hotel comparison must not make the next ordinary Step a new route.
+    await page.getByRole('button', { name: '＋ 予定を追加' }).first().click();
+    const thirdDialog = page.getByRole('dialog', { name: '予定を追加' });
+    await thirdDialog.getByLabel('タイトル').fill('夕食');
+    await thirdDialog.getByRole('button', { name: '追加', exact: true }).click();
+    await expect(thirdDialog).toBeHidden();
+    await expect(page.locator('.step-row')).toHaveCount(3);
+    await expect(page.locator('.graph-scroll')).toHaveCount(0);
+
     const overflow = await page.locator('main').evaluate(element => element.scrollWidth - element.clientWidth);
     expect(overflow).toBeLessThanOrEqual(2);
     await page.screenshot({ path: 'test-results/plan-default-mobile.png', fullPage: false });

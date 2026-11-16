@@ -158,6 +158,7 @@
   let expandedCandidateId = $state<string | null>(null);
   let branchRequest = $state<{ id: string; sequence: number; independent?: boolean } | null>(null);
   let optionRequest = $state<{ id: string; sequence: number; optionId?: string } | null>(null);
+  let selectRequest = $state<{ id: string; sequence: number; optionId: string | null } | null>(null);
   let planRequestCounter = 0;
   let graphStateSignature = '';
   function updateGraphState(state: { branched: boolean; choices: Record<string, ComparisonOption[]>; selected: Record<string, string | null> }) {
@@ -173,6 +174,9 @@
   }
   function requestOption(id: string, optionId?: string) {
     optionRequest = { id, optionId, sequence: ++planRequestCounter };
+  }
+  function requestSelect(id: string, optionId: string | null) {
+    selectRequest = { id, optionId, sequence: ++planRequestCounter };
   }
   function formatComparisonPrice(amount: number, currency: string) {
     try { return new Intl.NumberFormat('ja-JP', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount); }
@@ -731,6 +735,47 @@
                   <button class="plan-mini-action" aria-label={step.title + 'に候補を追加'} title="比較候補を追加" onclick={() => requestOption(step.id)}>候補</button>
                   <button onclick={() => moveStep(step, -1, undecidedSteps)} disabled={index === 0} aria-label="上へ移動">↑</button><button onclick={() => moveStep(step, 1, undecidedSteps)} disabled={index === undecidedSteps.length - 1} aria-label="下へ移動">↓</button></div>{/if}
               </article>
+              {#if planChoices[step.id]?.length}
+                <div class="plan-candidates">
+                  <button class="plan-candidates-toggle" aria-expanded={expandedCandidateId === step.id}
+                    onclick={() => expandedCandidateId = expandedCandidateId === step.id ? null : step.id}>
+                    <span>◇ 候補 {planChoices[step.id].length}件</span>
+                    <span>{expandedCandidateId === step.id ? '閉じる −' : '比較する ＋'}</span>
+                  </button>
+                  {#if expandedCandidateId === step.id}
+                    <div class="plan-candidates-content">
+                      {#each planChoices[step.id] as choice (choice.id)}
+                        <div class="plan-candidate" class:selected={planSelected[step.id] === choice.id}>
+                          {#if canPlanEdit}
+                            <button class="plan-candidate-pick" aria-label={choice.title + 'を選択'}
+                              title={planSelected[step.id] === choice.id ? '選択を解除' : 'この候補を選択'}
+                              onclick={() => requestSelect(step.id, planSelected[step.id] === choice.id ? null : choice.id)}>
+                              {planSelected[step.id] === choice.id ? '●' : '○'}
+                            </button>
+                          {:else}
+                            <span class="plan-candidate-pick">{planSelected[step.id] === choice.id ? '●' : '○'}</span>
+                          {/if}
+                          <div class="plan-candidate-info">
+                            <strong>{choice.title}</strong>
+                            {#if choice.provider}<small>{choice.provider}</small>{/if}
+                            {#if choice.start_local}<small>{choice.start_local.slice(5).replace('T',' ')}</small>{/if}
+                            {#if choice.from || choice.to}<small>{[choice.from, choice.to].filter(Boolean).join(' → ')}</small>{/if}
+                            {#if choice.notes}<small class="candidate-memo">{choice.notes}</small>{/if}
+                            {#if choice.url}<a href={choice.url} target="_blank" rel="noopener noreferrer">リンクを開く</a>{/if}
+                          </div>
+                          <div class="plan-candidate-price">
+                            {#if choice.amount !== null}<strong>{formatComparisonPrice(choice.amount, choice.currency)}</strong>{/if}
+                            {#if canPlanEdit}<button onclick={() => requestOption(step.id, choice.id)}>編集</button>{/if}
+                          </div>
+                        </div>
+                      {/each}
+                      {#if canPlanEdit && planChoices[step.id].length < 30}
+                        <button class="plan-candidate-add" onclick={() => requestOption(step.id)}>＋ 候補を追加</button>
+                      {/if}
+                    </div>
+                  {/if}
+                </div>
+              {/if}
             {/each}
           </div>
         </section>
@@ -751,6 +796,47 @@
                   <button class="plan-mini-action" aria-label={step.title + 'に候補を追加'} title="比較候補を追加" onclick={() => requestOption(step.id)}>候補</button>
                   <button onclick={() => moveStep(step, -1, group.steps)} disabled={index === 0} aria-label="上へ移動">↑</button><button onclick={() => moveStep(step, 1, group.steps)} disabled={index === group.steps.length - 1} aria-label="下へ移動">↓</button></div>{/if}
                 </article>
+              {#if planChoices[step.id]?.length}
+                <div class="plan-candidates">
+                  <button class="plan-candidates-toggle" aria-expanded={expandedCandidateId === step.id}
+                    onclick={() => expandedCandidateId = expandedCandidateId === step.id ? null : step.id}>
+                    <span>◇ 候補 {planChoices[step.id].length}件</span>
+                    <span>{expandedCandidateId === step.id ? '閉じる −' : '比較する ＋'}</span>
+                  </button>
+                  {#if expandedCandidateId === step.id}
+                    <div class="plan-candidates-content">
+                      {#each planChoices[step.id] as choice (choice.id)}
+                        <div class="plan-candidate" class:selected={planSelected[step.id] === choice.id}>
+                          {#if canPlanEdit}
+                            <button class="plan-candidate-pick" aria-label={choice.title + 'を選択'}
+                              title={planSelected[step.id] === choice.id ? '選択を解除' : 'この候補を選択'}
+                              onclick={() => requestSelect(step.id, planSelected[step.id] === choice.id ? null : choice.id)}>
+                              {planSelected[step.id] === choice.id ? '●' : '○'}
+                            </button>
+                          {:else}
+                            <span class="plan-candidate-pick">{planSelected[step.id] === choice.id ? '●' : '○'}</span>
+                          {/if}
+                          <div class="plan-candidate-info">
+                            <strong>{choice.title}</strong>
+                            {#if choice.provider}<small>{choice.provider}</small>{/if}
+                            {#if choice.start_local}<small>{choice.start_local.slice(5).replace('T',' ')}</small>{/if}
+                            {#if choice.from || choice.to}<small>{[choice.from, choice.to].filter(Boolean).join(' → ')}</small>{/if}
+                            {#if choice.notes}<small class="candidate-memo">{choice.notes}</small>{/if}
+                            {#if choice.url}<a href={choice.url} target="_blank" rel="noopener noreferrer">リンクを開く</a>{/if}
+                          </div>
+                          <div class="plan-candidate-price">
+                            {#if choice.amount !== null}<strong>{formatComparisonPrice(choice.amount, choice.currency)}</strong>{/if}
+                            {#if canPlanEdit}<button onclick={() => requestOption(step.id, choice.id)}>編集</button>{/if}
+                          </div>
+                        </div>
+                      {/each}
+                      {#if canPlanEdit && planChoices[step.id].length < 30}
+                        <button class="plan-candidate-add" onclick={() => requestOption(step.id)}>＋ 候補を追加</button>
+                      {/if}
+                    </div>
+                  {/if}
+                </div>
+              {/if}
               {/each}
             </div>
           {/if}
@@ -772,7 +858,7 @@
         onGraphState={updateGraphState}
         onEditExistingStep={(id) => { const step = steps.find(item => item.id === id); if (step) openEdit(step); }}
         onOpenExistingStep={(id) => { const step = steps.find(item => item.id === id); if (step) openDetail(step); }}
-        {branchRequest} {optionRequest}
+        {branchRequest} {optionRequest} {selectRequest}
         onPlan={planGraphSelection}
       />
       {:else}
@@ -1072,6 +1158,21 @@
   .plan-branch-heading button { padding:8px 12px; border:1px solid #cadbcf; border-radius:999px; background:#fff; color:#326a56; font:inherit; font-size:.75rem; cursor:pointer; }
   .order-buttons .plan-mini-action { width:40px; height:30px; padding:0 3px; margin-right:2px; border:1px solid #d5e0d8; border-radius:8px; background:#f5faf6; color:#316b57; font-size:.68rem; font-weight:750; }
   @media(max-width:520px) { .planning-list,.step-row { min-width:0; max-width:100%; }.step-main { min-width:0; overflow:hidden; }.order-buttons .plan-mini-action { width:34px; padding:0 2px; font-size:.61rem; } }
+  .plan-candidates { padding:0 0 8px 42px; max-width:100%; }
+  .plan-candidates-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:1px solid #e0e9e1; border-radius:8px; background:#f8fbf8; color:#39715d; font-size:.74rem; cursor:pointer; }
+  .plan-candidates-content { display:grid; gap:7px; margin-top:7px; }
+  .plan-candidate { display:flex; align-items:flex-start; gap:9px; min-width:0; padding:10px; border:1px solid #e3e9e3; border-radius:9px; background:#fff; }
+  .plan-candidate.selected { border-color:#8bbda4; background:#f3faf5; }
+  .plan-candidate-pick { flex:none; display:grid; place-items:center; width:25px; height:25px; padding:0; border:0; background:none; color:#3a8066; cursor:pointer; font-size:1.1rem; }
+  .plan-candidate-info { flex:1; min-width:0; display:grid; gap:3px; }
+  .plan-candidate-info strong { overflow-wrap:anywhere; font-size:.78rem; }
+  .plan-candidate-info small { color:#75857a; font-size:.69rem; overflow-wrap:anywhere; }
+  .plan-candidate-info .candidate-memo { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; white-space:pre-wrap; }
+  .plan-candidate-info a { color:#367560; font-size:.7rem; text-decoration:underline; }
+  .plan-candidate-price { flex:none; display:grid; justify-items:end; gap:6px; font-size:.73rem; font-variant-numeric:tabular-nums; }
+  .plan-candidate-price button,.plan-candidate-add { border:0; background:transparent; color:#367560; font-size:.7rem; cursor:pointer; }
+  .plan-candidate-add { justify-self:start; padding:6px 8px; }
+  @media(max-width:520px) { .plan-candidates { padding-left:0; }.plan-candidate-price { max-width:35%; overflow-wrap:anywhere; } }
   .planning-workspace { display:grid; grid-template-columns:minmax(300px, 38%) minmax(0, 1fr); gap:20px; align-items:start; }
   .planning-list { min-width:0; }
   .desktop-map { position:sticky; top:72px; height:min(76vh,760px); min-width:0; }

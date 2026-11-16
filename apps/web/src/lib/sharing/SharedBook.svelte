@@ -44,9 +44,11 @@
   async function updateItinerary(update: Partial<ItineraryResponse>) { itinerary = { ...itinerary, ...update }; changed(); }
   async function createStep(input: Partial<Step>) {
     const now = new Date().toISOString();
-    steps = [...steps, { id: crypto.randomUUID(), itinerary_id: itinerary.id, title: '', start_at: 0, end_at: 0,
-      location: null, notes: '', link: null, type: 'normal:general', is_all_day: false, created_at: now, updated_at: now, ...input }];
+    const created: Step = { id: crypto.randomUUID(), itinerary_id: itinerary.id, title: '', start_at: 0, end_at: 0,
+      location: null, notes: '', link: null, type: 'normal:general', is_all_day: false, created_at: now, updated_at: now, ...input };
+    steps = [...steps, created];
     changed();
+    return created;
   }
   async function updateStep(id: string, update: Partial<Step>) { steps = steps.map(step => step.id === id ? { ...step, ...update } : step); changed(); }
   async function deleteStep(id: string) { steps = steps.filter(step => step.id !== id); changed(); }

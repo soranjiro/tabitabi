@@ -591,6 +591,7 @@
       <div class="sheet-header"><div><small>{draft.kind === 'choices' ? '候補を比較' : '分岐プラン'}</small><h3>{editingId ? '予定を編集' : '予定を追加'}</h3></div>
         <button aria-label="閉じる" onclick={() => formOpen = false}>×</button></div>
       <form onsubmit={submitStep}>
+        {#if error}<p class="form-error" role="alert">{error}</p>{/if}
         <label>タイトル<input bind:value={draft.title} maxlength="140" required placeholder="例：京都へ移動" /></label>
         <label>種類<select bind:value={draft.type}>{#each types as t}<option value={t.value}>{t.label}</option>{/each}</select></label>
         {#if parentId}<label>ルート名 <small>任意</small><input bind:value={branchLabel} maxlength="80" placeholder="例：プラン B" /></label>{/if}
@@ -613,6 +614,7 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-label="候補の編集">
       <div class="sheet-header"><div><small>{optionNode.title}</small><h3>候補{editingOptionId ? 'を編集' : 'を追加'}</h3></div><button onclick={() => optionOpen = false} aria-label="閉じる">×</button></div>
       <form onsubmit={submitOption}>
+        {#if error}<p class="form-error" role="alert">{error}</p>{/if}
         <label>タイトル<input bind:value={option.title} maxlength="140" required /></label>
         <div class="two"><label>提供元<input bind:value={option.provider} maxlength="100" /></label>
           <label>料金<input type="text" inputmode="numeric" pattern="[0-9]*" bind:value={optionAmountText} /></label></div>
@@ -676,6 +678,7 @@
   .backdrop{position:fixed;z-index:450;inset:0;display:flex;align-items:end;justify-content:center;background:#17272088}
   .sheet{width:min(560px,100%);max-height:92dvh;overflow:auto;padding:20px 22px calc(22px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;background:white}
   .sheet-header{display:flex;justify-content:space-between;align-items:start}.sheet-header small{font-size:11px;color:#7f9185}.sheet-header h3{margin:3px 0 18px;font-size:18px}.sheet-header button{border:0;background:#f2f5f2;border-radius:50%;width:32px;height:32px;font-size:20px;color:#6c7d70}
+  .form-error{margin:0;padding:8px 10px;border-radius:8px;background:#fff1ed;color:#a34c45;font-size:12px}
   .sheet form{display:grid;gap:12px}.sheet label{display:grid;gap:6px;font-size:12px;color:#435c4e;font-weight:700}.sheet label small{font-weight:400;color:#91a092}
   .sheet input,.sheet textarea,.sheet select{min-width:0;width:100%;font-weight:400}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .form-actions{display:flex;justify-content:end;gap:8px;padding-top:8px}.form-actions button:not(.primary){padding:9px 13px;border:1px solid #d9e1db;border-radius:9px;background:white;color:#516759;font-size:12px}

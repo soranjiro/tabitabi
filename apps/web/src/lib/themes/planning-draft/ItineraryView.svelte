@@ -922,6 +922,9 @@
         <form onsubmit={saveStep}>
           {#if formError}<p role="alert">{formError}</p>{/if}
           <label>タイトル<input bind:value={form.title} placeholder="清水寺に行きたい" required /></label>
+          {#if graphCreateContext?.label}
+            <label>プラン名<input bind:value={graphCreateContext.label} maxlength="80" placeholder="プラン2" /></label>
+          {/if}
           <div class="location-field"><span>場所 <small>任意</small></span><PlaceSearch bind:value={form.location} onSelect={selectPlace} /></div>
             {#if placeDraft}
               <div class="pin-fields"><strong>✓ 場所を選択済み</strong><p>{form.location || '地図で選んだ場所'} · ピンの位置を確かめてください。</p>

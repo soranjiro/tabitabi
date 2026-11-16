@@ -713,9 +713,7 @@
   <main>
     {#if screenMode === "plan"}
       {#if planningReady}
-        {#if isPlanBranched}
-          <div class="plan-branch-heading"><strong>複数のルート</strong>{#if canPlanEdit}<button onclick={() => requestBranch('', true)}>＋ 別の出発点</button>{/if}</div>
-        {:else}
+        {#if !isPlanBranched}
 
       <div class="planning-workspace"><div class="planning-list">
 {#if canPlanEdit}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
@@ -1154,8 +1152,6 @@
   .comparison-details { margin:20px 0; border-top:1px solid #e3e9e3; }
   .comparison-details summary { padding:14px 0; cursor:pointer; color:#416d5d; font-size:12px; font-weight:700; }
   .plan-loading { padding:2rem; color:#8a928e; font-size:.8rem; text-align:center; }
-  .plan-branch-heading { display:flex; justify-content:space-between; align-items:center; margin:16px 0; color:#426951; font-size:.85rem; }
-  .plan-branch-heading button { padding:8px 12px; border:1px solid #cadbcf; border-radius:999px; background:#fff; color:#326a56; font:inherit; font-size:.75rem; cursor:pointer; }
   .order-buttons .plan-mini-action { width:40px; height:30px; padding:0 3px; margin-right:2px; border:1px solid #d5e0d8; border-radius:8px; background:#f5faf6; color:#316b57; font-size:.68rem; font-weight:750; }
   @media(max-width:520px) { .planning-list,.step-row { min-width:0; max-width:100%; }.step-main { min-width:0; overflow:hidden; }.order-buttons .plan-mini-action { width:34px; padding:0 2px; font-size:.61rem; } }
   .plan-candidates { padding:0 0 8px 42px; max-width:100%; }

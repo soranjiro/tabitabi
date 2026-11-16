@@ -14,6 +14,7 @@ import members from './routes/members';
 import packing from './routes/packing';
 import passkeys from './routes/passkeys';
 import comparisons from './routes/comparisons';
+import planGraph from './routes/plan-graph';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -37,6 +38,7 @@ app.route('/api/v1/auth', auth);
 app.route('/api/v1/passkeys', passkeys);
 app.route('/api/v1/itineraries', itineraries);
 app.route('/api/v1/itineraries', comparisons);
+app.route('/api/v1/itineraries', planGraph);
 app.route('/api/v1/backgrounds', backgrounds);
 app.route('/api/v1/steps', steps);
 app.route('/api/v1/users', users);

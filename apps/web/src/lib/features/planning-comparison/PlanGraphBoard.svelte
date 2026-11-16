@@ -407,7 +407,10 @@
   function newStep(source: string | null = null, asChoice = false, label = '') {
     if (!canEdit) return;
     if (!asChoice && onRequestCreate) {
-      onRequestCreate(source, label);
+      const named = label === '別プラン'
+        ? 'プラン' + (2 + displayEdges.filter(edge => edge.from === source && edge.label.trim()).length)
+        : label;
+      onRequestCreate(source, named);
       return;
     }
     editingId = null; parentId = source; branchLabel = label;

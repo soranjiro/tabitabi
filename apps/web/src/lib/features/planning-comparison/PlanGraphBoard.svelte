@@ -253,7 +253,9 @@
   const displayEdges = $derived.by(() => {
     const valid = new Set(displayNodes.map(node => node.id));
     const persisted = graph.edges.filter(edge => valid.has(edge.from) && valid.has(edge.to));
-    if (graph.revision > 0 || graph.nodes.length > 0) return persisted;
+    // Comparison metadata alone must never turn a conventional itinerary into independent lanes.
+    // An explicit Step node or connection is required to activate route editing.
+    if (persisted.length || graph.nodes.some(node => node.kind === 'step')) return persisted;
     const ordered = [...steps].sort((a, b) => (a.start_at ?? Infinity) - (b.start_at ?? Infinity)
       || (a.sort_order ?? 0) - (b.sort_order ?? 0));
     return ordered.slice(1).map((step, i) => ({

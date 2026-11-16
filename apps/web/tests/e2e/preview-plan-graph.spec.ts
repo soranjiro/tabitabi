@@ -49,7 +49,7 @@ test('classic single-column planning remains usable on mobile, then branches and
     await expect(page.getByText('まだ決めていない')).toBeVisible();
     await expect(page.locator('.step-main').filter({ hasText: '東京集合' })).toBeVisible();
     await expect(page.locator('.graph-scroll')).toHaveCount(0);
-    expect(await page.locator('main').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
+    expect(await page.locator('main').last().evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
     await page.screenshot({ path: 'test-results/plan-single-mobile.png', fullPage: false });
 
     // The first candidate still looks like a normal scheduled step. A second branch enables the graph.

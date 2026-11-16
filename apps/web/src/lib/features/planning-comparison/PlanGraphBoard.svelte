@@ -492,10 +492,9 @@
 <section class="graph-board" aria-label="分岐・合流プラン">
   <div class="graph-toolbar">
     <div class="graph-title"><h2>予定</h2><span>{displayNodes.length}件</span></div>
-    {#if canEdit && displayNodes.length > 0}<div class="toolbar-actions">
-      <button class="outline" onclick={() => newStep()}>＋ 別の出発点</button>
-      <button class="primary" onclick={() => newStep(displayNodes.at(-1)?.id ?? null)}>＋ 予定を追加</button>
-    </div>{/if}
+    {#if canEdit && displayNodes.length > 0}
+      <button class="outline new-plan-button" onclick={() => newStep()}>＋ 新しいプラン</button>
+    {/if}
   </div>
   {#if error}<div class="error" role="alert">{error}<button onclick={load}>再読込</button></div>{/if}
   {#if loading}<p class="status">読み込み中…</p>
@@ -506,7 +505,7 @@
       {#if canEdit}<button class="primary" onclick={() => newStep()}>＋ 予定を追加</button>{/if}
     </div>
   {:else}
-    <div class="graph-scroll" class:single={!isBranched} role="region" aria-label="上から下へ時間が進むプラン図。横にスクロールできます。">
+    <div class="graph-scroll" class:single={!isBranched} role="region" aria-label="分岐したプランの予定一覧">
       <div class="graph-canvas" style:width={drawn.width + 'px'} style:height={drawn.height + 'px'}>
         <svg class="graph-wires" width={drawn.width} height={drawn.height} viewBox={'0 0 ' + drawn.width + ' ' + drawn.height} aria-hidden="true">
           <line x1="113" x2="113" y1="30" y2={drawn.height - 40} stroke="#d1ddd3" stroke-width="1.5"/>
@@ -562,6 +561,15 @@
                   {#if canEdit && node.options.length < 30}<button class="add-choice" onclick={() => openOption(node)}>＋ 候補を追加</button>{/if}
                 </div>
               {/if}
+            {/if}
+            {#if canEdit && !displayEdges.some(edge => edge.from === node.id)}
+              <div class="route-end">
+                <button class="continue-route" aria-label={node.title + 'の次の予定を追加'}
+                  onclick={() => newStep(node.id)}>
+                  <span class="route-plus" aria-hidden="true">＋</span>
+                  <span>次の予定</span>
+                </button>
+              </div>
             {/if}
           </div>
         {/each}
@@ -671,7 +679,7 @@
 <style>
   .graph-board{padding:0 0 24px;color:#293a32}
   button{font:inherit;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}
-  .graph-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:18px 0}
+  .graph-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0 18px}
   .graph-title{display:flex;align-items:baseline;gap:12px}.graph-title h2{margin:0;font-size:19px}.graph-title span{font-size:11px;color:#87928b}
   .toolbar-actions{display:flex;gap:7px;flex-wrap:wrap}.primary{border:0;border-radius:999px;padding:10px 16px;background:#2f6657;color:white;font-size:12px;font-weight:750}
   .graph-scroll{width:100%;overflow:auto;border:1px solid #e4eae4;border-radius:16px;background:radial-gradient(ellipse at top,#f7faf6,#fff 70%);scrollbar-color:#c9d7cc transparent}
@@ -687,6 +695,12 @@
   .node-copy{display:grid;gap:3px;min-width:0;flex:1}.node-copy strong{overflow:hidden;text-overflow:ellipsis;font-size:12px;line-height:1.3}
   .node-copy small{overflow:hidden;text-overflow:ellipsis;color:#7a887e;font-size:10px;white-space:nowrap}
   .node-copy .participants{color:#387864}.node-price{font-size:11px;white-space:nowrap;font-weight:750;font-variant-numeric:tabular-nums}
+  .new-plan-button{font-size:12px;white-space:nowrap}
+  .route-end{position:absolute;top:calc(100% + 4px);left:0;width:100%;display:flex;flex-direction:column;align-items:center;z-index:3;pointer-events:none}
+  .route-end::before{content:'';height:12px;border-left:2px solid var(--lane-color);opacity:.55}
+  .continue-route{pointer-events:auto;display:flex;align-items:center;gap:7px;min-height:34px;padding:5px 13px;border:1px dashed var(--lane-color);border-radius:999px;background:#fff;color:#315b4c;box-shadow:0 2px 8px #233a2b12;font-size:11px;font-weight:750;white-space:nowrap}
+  .continue-route:hover,.continue-route:focus-visible{background:#eaf5ed;outline:2px solid #b4d5c0;outline-offset:2px}
+  .route-plus{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#2f6657;color:#fff;font-size:15px;font-weight:650;line-height:1}
   .choice-node{z-index:2}.choice-summary{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-top:1px solid #edf1eb;font-size:11px;color:#6a7e70}
   .choice-summary button{border:0;background:transparent;color:#356d5b;font-weight:700;font-size:11px}
   .choice-list{max-height:260px;overflow-y:auto;padding:6px 8px 10px;display:grid;gap:5px}

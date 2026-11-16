@@ -87,4 +87,56 @@ describe('normalized storage against production triggers', () => {
     const fork = await books().fork(book.id, content);
     expect((await steps().list(fork.itinerary.id))[0]).toMatchObject({ title: 'Candidate', start_at: null, notes: 'keep' });
   });
+
+  it('publishes a sanitized independent planning graph and updates it on republish', async () => {
+    const { book } = await trip();
+    const node = {
+      id: 'start', kind: 'step', title: '東京へ移動', type: 'transport:plane',
+      start_local: '2026-12-10T10:00', end_local: '2026-12-10T11:00',
+      location: '羽田空港', notes: '予約番号: ABCD1234',
+      link: 'https://example.com/booking?token=secret', amount: 15800, currency: 'JPY',
+      participants: ['Alice'], options: [], selected_option_id: null,
+    };
+    await env.DB.prepare(
+      'INSERT INTO itinerary_plan_graphs (itinerary_id, nodes_json, edges_json, revision, updated_at) VALUES (?, ?, ?, 1, ?)',
+    ).bind(book.id, JSON.stringify([node]), JSON.stringify([]), '2026-11-16T00:00:00.000Z').run();
+    const originalOption = {
+      id: 'flight-1', title: '直行便', provider: '航空会社', amount: 15800,
+      currency: 'JPY', start_local: '2026-12-10T10:00', end_local: '2026-12-10T11:00',
+      from: '関西空港', to: '羽田空港', cancellation: '取消可',
+      url: 'https://example.com/booking?token=secret', notes: '予約番号: ABCD1234',
+    };
+    await env.DB.prepare(
+      'INSERT INTO itinerary_comparison_groups (id, itinerary_id, title, kind, options_json, selected_option_id, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)',
+    ).bind('test-group-' + book.id, book.id, '飛行機の候補', 'flight', JSON.stringify([originalOption]),
+      originalOption.id, '2026-11-16', '2026-11-16').run();
+    const published = await books().publish(book.id);
+    const publishedGraph = await env.DB.prepare(
+      'SELECT nodes_json, edges_json FROM itinerary_plan_graphs WHERE itinerary_id = ?',
+    ).bind(published.id).first<{ nodes_json: string; edges_json: string }>();
+    expect(publishedGraph).not.toBeNull();
+    const [sanitized] = JSON.parse(publishedGraph!.nodes_json);
+    expect(sanitized.title).toBe('東京へ移動');
+    expect(sanitized.link).toBe('');
+    expect(sanitized.participants).toEqual([]);
+    expect(sanitized.notes).not.toContain('ABCD1234');
+    const publicGroups = await env.DB.prepare(
+      'SELECT options_json FROM itinerary_comparison_groups WHERE itinerary_id = ?',
+    ).bind(published.id).all<{ options_json: string }>();
+    expect(publicGroups.results).toHaveLength(1);
+    const [publicOption] = JSON.parse(publicGroups.results[0].options_json);
+    expect(publicOption.url).toBe('');
+    expect(publicOption.notes).not.toContain('ABCD1234');
+    expect((await env.DB.prepare('SELECT nodes_json FROM itinerary_plan_graphs WHERE itinerary_id = ?')
+      .bind(book.id).first<{ nodes_json: string }>())!.nodes_json).toContain('token=secret');
+
+    node.title = '移動先を変更';
+    await env.DB.prepare('UPDATE itinerary_plan_graphs SET nodes_json = ? WHERE itinerary_id = ?')
+      .bind(JSON.stringify([node]), book.id).run();
+    const republished = await books().publish(book.id);
+    expect(republished.id).toBe(published.id);
+    const refreshed = await env.DB.prepare('SELECT nodes_json FROM itinerary_plan_graphs WHERE itinerary_id = ?')
+      .bind(published.id).first<{ nodes_json: string }>();
+    expect(JSON.parse(refreshed!.nodes_json)[0].title).toBe('移動先を変更');
+  });
 });

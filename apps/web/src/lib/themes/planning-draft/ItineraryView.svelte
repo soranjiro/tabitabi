@@ -36,7 +36,6 @@
   import StepTypeIcon from "../standard/core/icons/StepTypeIcon.svelte";
   import PlaceMap from "../planning-map/PlaceMap.svelte";
   import StepDetail from "./StepDetail.svelte";
-  import ComparisonBoard from "$lib/features/planning-comparison/ComparisonBoard.svelte";
   import PlanGraphBoard from "$lib/features/planning-comparison/PlanGraphBoard.svelte";
   import type { PlanGraphNode } from '@tabitabi/types';
   import PlaceEditor from "./PlaceEditor.svelte";
@@ -64,7 +63,7 @@
       is_all_day?: boolean;
       time_unspecified?: boolean;
       pin_latitude?: number | null; pin_longitude?: number | null; is_priority?: boolean; sort_order?: number | null;
-    }) => Promise<void>;
+    }) => Promise<void | Step>;
     onUpdateStep?: (stepId: string, data: {
       title?: string;
       start_at?: number | null;
@@ -113,7 +112,6 @@
   type WhenChoice = PlanningWhen;
 
   let screenMode = $state<ScreenMode>(mapPlanning ? "map" : "plan");
-  let planningPanel = $state<'steps' | 'graph'>('steps');
   let selectedStepId = $state<string | null>(null);
   let detailOpen = $state(false);
   let placeEditing = $state(false);
@@ -679,65 +677,19 @@
 
   <main>
     {#if screenMode === "plan"}
-      <div class="plan-panel-tabs" role="group" aria-label="計画の表示">
-        <button class:active={planningPanel === 'steps'} onclick={() => planningPanel = 'steps'}>予定一覧</button>
-        <button class:active={planningPanel === 'graph'} onclick={() => planningPanel = 'graph'}>分岐プラン</button>
-      </div>
-      {#if planningPanel === 'graph'}
-        {#if !itinerary.is_password_protected || hasEditPermission || isSharedSnapshot}
-          <PlanGraphBoard itineraryId={itinerary.id} canEdit={hasEditPermission && !isSharedSnapshot && !readOnly} demo={getIsDemoMode()} onPlan={planGraphSelection} />
-          <details class="comparison-details">
-            <summary>飛行機・宿などの候補一覧</summary>
-            <ComparisonBoard itineraryId={itinerary.id} canEdit={hasEditPermission && !isSharedSnapshot && !readOnly} demo={getIsDemoMode()} onPlan={planComparisonOption} />
-          </details>
-        {/if}
+      {#if !itinerary.is_password_protected || hasEditPermission || isSharedSnapshot}
+        <PlanGraphBoard
+          itineraryId={itinerary.id}
+          {steps}
+          canEdit={hasEditPermission && !isSharedSnapshot && !readOnly}
+          demo={getIsDemoMode()}
+          {onCreateStep}
+          {onUpdateStep}
+          {onDeleteStep}
+          onPlan={planGraphSelection}
+        />
       {:else}
-      <div class="planning-workspace"><div class="planning-list">
-      <section class="planning-intro">
-        <span>候補を作る</span><i>→</i><span>日を決める</span><i>→</i><span>時間を決める</span>
-      </section>
-
-      {#if hasEditPermission}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
-      <label class="plan-search">予定を検索<input bind:value={searchQuery} placeholder="タイトル・場所" /></label>
-
-      {#if undecidedSteps.length > 0}
-        <section class="draft-section">
-          <div class="section-heading"><div><h2>まだ決めていない</h2><p>{undecidedSteps.length}件の候補</p></div></div>
-          <div class="step-list">
-            {#each undecidedSteps.filter((step) => filteredSteps.includes(step)) as step, index}
-              <article class="step-row">
-                <button class="step-main" onclick={() => openDetail(step)}>
-                  <span class="circle" aria-hidden="true"><StepTypeIcon type={step.type} size="sm" /></span><span><strong>{step.title}</strong><small>未定{step.location ? ` · ${step.location}` : ''}</small>{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</span>
-                </button>
-                {#if hasEditPermission}<div class="order-buttons"><button onclick={() => moveStep(step, -1, undecidedSteps)} disabled={index === 0} aria-label="上へ移動">↑</button><button onclick={() => moveStep(step, 1, undecidedSteps)} disabled={index === undecidedSteps.length - 1} aria-label="下へ移動">↓</button></div>{/if}
-              </article>
-            {/each}
-          </div>
-        </section>
-      {/if}
-
-      {#each dayGroups as group}
-        <section class="draft-section">
-          <div class="section-heading"><div><h2>{group.date.replaceAll('-', '/')}</h2><p>Day {group.day} · {group.steps.length}件</p></div></div>
-          {#if group.steps.length}
-            <div class="step-list">
-              {#each group.steps.filter((step) => filteredSteps.includes(step)) as step, index}
-                <article class="step-row">
-                  <button class="step-main" onclick={() => openDetail(step)}>
-                    <span class="circle" aria-hidden="true"><StepTypeIcon type={step.type} size="sm" /></span><span><strong>{step.title}</strong><small class:time-decided={getStepSchedule(step).precision === "time"}>{dateTimeLabel(step)}</small>{#if step.location}<small>{step.location}</small>{/if}{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</span>
-                  </button>
-                  {#if hasEditPermission}<div class="order-buttons"><button onclick={() => moveStep(step, -1, group.steps)} disabled={index === 0} aria-label="上へ移動">↑</button><button onclick={() => moveStep(step, 1, group.steps)} disabled={index === group.steps.length - 1} aria-label="下へ移動">↓</button></div>{/if}
-                </article>
-              {/each}
-            </div>
-          {/if}
-        </section>
-      {/each}
-
-      {#if steps.length === 0}<div class="empty"><strong>まずは、行きたい場所をひとつ。</strong><p>日付や時間はあとで決められます。</p></div>{/if}
-
-      {#if hasEditPermission}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
-      </div><div class="desktop-map"><PlaceMap steps={filteredSteps} numbers={mapNumbers} selected={selectedStepId} canEdit={false} onSelect={(id) => selectedStepId = id} onPin={openCreate} /></div></div>
+        <p class="plan-locked">編集権限があると、予定を確認できます。</p>
       {/if}
     {:else if screenMode === "map"}
       {#if hasEditPermission}<div class="map-actions"><button onclick={() => openCreate()}>＋ 予定を追加</button><button class:active={mapPinEditing} onclick={() => mapPinEditing = !mapPinEditing}>{mapPinEditing ? '位置編集を終了' : 'ピンの位置を編集'}</button></div>{/if}

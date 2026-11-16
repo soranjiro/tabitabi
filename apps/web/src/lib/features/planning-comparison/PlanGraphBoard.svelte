@@ -416,7 +416,7 @@
   <div class="graph-toolbar">
     <div class="graph-title"><h2>予定</h2><span>{displayNodes.length}件</span></div>
     {#if canEdit && displayNodes.length > 0}<div class="toolbar-actions">
-      {#if displayNodes.length > 0 && isBranched}<button class="outline" onclick={() => newStep()}>＋ 別の出発点</button>{/if}
+      <button class="outline" onclick={() => newStep()}>＋ 別の出発点</button>
       <button class="primary" onclick={() => newStep(displayNodes.at(-1)?.id ?? null)}>＋ 予定を追加</button>
     </div>{/if}
   </div>

@@ -330,11 +330,11 @@
         <label>候補名 <span>必須</span><input bind:value={optionDraft.title} maxlength="140" required placeholder={editingGroup.kind === 'stay' ? '例：駅近くのホテル A' : '例：航空会社 A / 直行便'} /></label>
         <div class="fields">
           <label>航空会社・ホテル・販売元<input bind:value={optionDraft.provider} maxlength="100" placeholder="任意" /></label>
-          <label>料金（総額）<div class="money-field"><input type="number" min="0" max="1000000000000" step="1" bind:value={amountDraft} placeholder="未入力" /><select aria-label="通貨" bind:value={optionDraft.currency}>{#each currencies as c}<option value={c}>{c}</option>{/each}</select></div></label>
+          <label>料金（総額）<div class="money-field"><input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="13" bind:value={amountDraft} placeholder="未入力" /><select aria-label="通貨" bind:value={optionDraft.currency}>{#each currencies as c}<option value={c}>{c}</option>{/each}</select></div></label>
         </div>
         <div class="fields">
-          <label>{editingGroup.kind === 'stay' ? 'チェックイン' : '出発（現地時刻）'}<input type={editingGroup.kind === 'stay' ? 'date' : 'datetime-local'} bind:value={optionDraft.start_local} /></label>
-          <label>{editingGroup.kind === 'stay' ? 'チェックアウト' : '到着（現地時刻）'}<input type={editingGroup.kind === 'stay' ? 'date' : 'datetime-local'} bind:value={optionDraft.end_local} /></label>
+          <label>{editingGroup.kind === 'stay' ? 'チェックイン' : '出発（現地時刻）'}{#if editingGroup.kind === 'stay'}<input type="date" bind:value={optionDraft.start_local} />{:else}<input type="datetime-local" bind:value={optionDraft.start_local} />{/if}</label>
+          <label>{editingGroup.kind === 'stay' ? 'チェックアウト' : '到着（現地時刻）'}{#if editingGroup.kind === 'stay'}<input type="date" bind:value={optionDraft.end_local} />{:else}<input type="datetime-local" bind:value={optionDraft.end_local} />{/if}</label>
         </div>
         {#if editingGroup.kind === 'flight' || editingGroup.kind === 'transport'}
           <div class="fields">

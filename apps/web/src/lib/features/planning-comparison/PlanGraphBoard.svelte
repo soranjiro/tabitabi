@@ -362,9 +362,12 @@
       if (request.parentId === node.id) return;
       edges.push({ id: crypto.randomUUID(), from: request.parentId, to: node.id, label: request.label });
     }
+    // Saving a new Step may finish after the user has clicked another route.
+    // Never steal that newer selection when the network response arrives.
+    const selectionAtSaveStart = selectedId;
     const success = await save(nodes, edges);
     if (success) {
-      selectedId = node.id;
+      if (selectedId === selectionAtSaveStart) selectedId = node.id;
       folded = [];
     }
   }

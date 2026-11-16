@@ -44,7 +44,7 @@ test('classic single-column planning remains usable on mobile, then branches and
     await nativeDialog.getByRole('button', { name: '追加', exact: true }).click();
     await expect(nativeDialog).toBeHidden();
     await expect(page.getByText('まだ決めていない')).toBeVisible();
-    await expect(page.getByRole('button', { name: '東京集合', exact: false })).toBeVisible();
+    await expect(page.locator('.step-main').filter({ hasText: '東京集合' })).toBeVisible();
     await expect(page.locator('.graph-scroll')).toHaveCount(0);
     expect(await page.locator('main').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
     await page.screenshot({ path: 'test-results/plan-single-mobile.png', fullPage: false });

@@ -6,8 +6,12 @@
   } from '@tabitabi/types';
   import { planGraphApi } from '$lib/api/plan-graph';
   import { getMemoText } from '$lib/memo';
+  import { demoStorage } from '$lib/demo';
+  import { moveStop } from './graph';
+  import StepTypeIcon from '$lib/themes/standard/core/icons/StepTypeIcon.svelte';
 
-  let { itineraryId, steps, canEdit, demo = false, showGraph = false, branchRequest = null, optionRequest = null, selectRequest = null, createdStepRequest = null, onRequestCreate, onGraphState, onGraphError, onEditExistingStep, onOpenExistingStep, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
+  let { itineraryId, steps, canEdit, demo = false, showGraph = false, branchRequest = null, optionRequest = null, selectRequest = null, createdStepRequest = null, localGraph = null, onSaveLocalGraph, onRequestCreate, onGraphState, onGraphError, onEditExistingStep, onOpenExistingStep, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
+    localGraph?: PlanGraph | null; onSaveLocalGraph?: (graph: PlanGraph) => void;
     itineraryId: string; steps: Step[]; canEdit: boolean; demo?: boolean; showGraph?: boolean;
     branchRequest?: { id: string; sequence: number; independent?: boolean } | null;
     optionRequest?: { id: string; sequence: number; optionId?: string } | null;
@@ -48,7 +52,7 @@
     { value: STEP_TYPE.TRANSPORT_GENERAL, label: '移動' },
     { value: STEP_TYPE.NORMAL_SHOPPING, label: '買い物' },
   ];
-  const colors = ['#357764', '#498cba', '#be7894', '#9d8458', '#8075b2', '#469a91'];
+  const colors = ['#619fe2', '#db83ac', '#64a58c', '#b2945e', '#9183bf', '#469a91'];
   const currencies = ['JPY', 'USD', 'EUR', 'KRW', 'TWD', 'THB', 'GBP', 'AUD', 'CNY'];
 
   function nodeTemplate(kind: 'step' | 'choices' = 'step', id = ''): PlanGraphNode {
@@ -67,7 +71,7 @@
     try { return new Intl.NumberFormat('ja-JP', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount); }
     catch { return amount.toLocaleString('ja-JP') + ' ' + currency; }
   }
-  function localDate(value: string) { return value ? value.slice(5).replace('-', '/') + (value.includes('T') ? ' ' + value.slice(11, 16) : '') : ''; }
+  function localDate(value: string) { return value ? value.slice(5, 10).replace('-', '/') + (value.includes('T') ? ' ' + value.slice(11, 16) : '') : ''; }
   function typeLabel(type: StepType) { return types.find(t => t.value === type)?.label ?? '予定'; }
   function icon(type: StepType) {
     if (type === STEP_TYPE.NORMAL_HOTEL) return '⌂';
@@ -155,7 +159,7 @@
     const minimum = Math.min(0, ...xs.values());
     const maximum = Math.max(0, ...xs.values()) - minimum;
     const maxRank = Math.max(0, ...ranks.values());
-    const heights = Array.from({ length: maxRank + 1 }, () => 164);
+    const heights = Array.from({ length: maxRank + 1 }, () => 136);
     for (const node of sorted) {
       if (node.kind === 'choices' && expanded.includes(node.id)) {
         const rank = ranks.get(node.id)!;
@@ -163,7 +167,7 @@
       }
     }
     const rowY: number[] = [];
-    let cursor = 95;
+    let cursor = 78;
     for (const height of heights) { rowY.push(cursor); cursor += height; }
     const colorIds = new Map<string, number>();
     for (const node of sorted) {
@@ -175,21 +179,26 @@
         colorIds.set(node.id, ((colorIds.get(parent.from) ?? 0) + branchOffset) % colors.length);
       }
     }
+    const routeLabels = new Map<string, string>();
+    for (const node of sorted) {
+      const incoming = shownEdges.filter(edge => edge.to === node.id);
+      routeLabels.set(node.id, incoming.length > 1 ? '共通' : incoming.length === 1
+        ? incoming[0].label || routeLabels.get(incoming[0].from) || '' : '');
+    }
     const draws: DrawNode[] = sorted.map(n => {
-      const parent = shownEdges.find(e => e.to === n.id && !!e.label);
       return { node: n, x: 270 + ((xs.get(n.id) ?? 0) - minimum) * 302,
-        y: rowY[ranks.get(n.id) ?? 0], label: parent?.label ?? '',
-        exit: n.kind === 'choices' && expanded.includes(n.id) ? 102 + Math.min(260, n.options.length * 75 + 52) : 48,
-        color: colors[colorIds.get(n.id) ?? 0] };
+        y: rowY[ranks.get(n.id) ?? 0], label: routeLabels.get(n.id) ?? '',
+        exit: n.kind === 'choices' ? 66 + (expanded.includes(n.id) ? Math.min(260, n.options.length * 75 + 52) : 0) : 36,
+        color: !shownEdges.some(edge => edge.to === n.id) || shownEdges.filter(edge => edge.to === n.id).length > 1 ? '#64a58c' : colors[colorIds.get(n.id) ?? 0] };
     });
     const positions = new Map(draws.map(d => [d.node.id, d]));
     const links: DrawEdge[] = shownEdges.map(edge => {
       const a = positions.get(edge.from)!, b = positions.get(edge.to)!;
-      const start = a.y + a.exit, end = b.y - 48;
+      const start = a.y + a.exit, end = b.y - 36;
       const delta = Math.max(18, (end - start) / 2);
       return { edge, path: 'M ' + a.x + ' ' + start + ' C ' + a.x + ' ' + (start + delta) + ', ' +
         b.x + ' ' + (end - delta) + ', ' + b.x + ' ' + end,
-        color: b.color, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        color: shownEdges.filter(edge => edge.to === b.node.id).length > 1 ? a.color : b.color, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     });
     const ticks = [...new Map(draws.filter(d => d.node.start_local).map(d =>
       [d.y, { y: d.y, label: localDate(d.node.start_local) }]
@@ -210,7 +219,10 @@
   let amountText = $state('');
   let participantsText = $state('');
   let formOpen = $state(false);
+  let metadataOnly = $state(false);
   let joinTarget = $state('');
+  let moveTarget = $state('');
+  let routeNames = $state<Record<string, string>>({});
   let folded = $state<string[]>([]);
   let expandedChoices = $state<string[]>([]);
   let optionNodeId = $state<string | null>(null);
@@ -305,8 +317,14 @@
     const roots = displayNodes.filter(node => !incoming.has(node.id));
     return roots.length > 1 || [...out.values()].some(n => n > 1) || [...incoming.values()].some(n => n > 1);
   });
-  const drawn = $derived(layout(displayNodes, displayEdges, folded, expandedChoices));
   const selected = $derived(displayNodes.find(n => n.id === selectedId) ?? null);
+  const routeStarts = $derived(displayEdges.filter(edge => edge.label || displayEdges.filter(other => other.from === edge.from).length > 1));
+  const candidateNodes = $derived(displayNodes.filter(node => node.options.length));
+  const moveTargets = $derived(selected ? displayNodes.filter(node => {
+    try { moveStop(displayNodes, displayEdges, selected.id, node.id, () => crypto.randomUUID()); return true; }
+    catch { return false; }
+  }) : []);
+  const drawn = $derived(layout(displayNodes, displayEdges, folded, expandedChoices));
   const optionNode = $derived(displayNodes.find(n => n.id === optionNodeId) ?? null);
   const targets = $derived(selected ? displayNodes.filter(n => canLink(selected.id, n.id, displayNodes, displayEdges)) : []);
   $effect(() => {
@@ -373,7 +391,7 @@
   }
 
   async function load() {
-    if (demo) { loading = false; return; }
+    if (onSaveLocalGraph || demo) { graph = localGraph ?? (demo ? demoStorage.getPlanGraph() : null) ?? emptyGraph(); loading = false; return; }
     loading = true;
     try { graph = await planGraphApi.get(itineraryId); error = ''; }
     catch { error = 'タイムラインを読み込めませんでした。'; }
@@ -387,7 +405,10 @@
     try {
       // The persisted DAG needs every endpoint, including ordinary Steps that
       // existed before the first branch was created.
-      const normalizedNodes = [...nodes];
+      const normalizedNodes = nodes.filter(node => displayNodes.some(current => current.id === node.id)).map(node => {
+        const current = displayNodes.find(value => value.id === node.id);
+        return current ? { ...node, title: current.title, type: current.type, start_local: current.start_local, end_local: current.end_local } : node;
+      });
       const included = new Set(normalizedNodes.map(node => node.id));
       for (const edge of edges) {
         for (const id of [edge.from, edge.to]) {
@@ -398,9 +419,11 @@
           included.add(id);
         }
       }
-      graph = demo
+      graph = demo || onSaveLocalGraph
         ? { ...graph, nodes: normalizedNodes, edges, revision: graph.revision + 1, updated_at: new Date().toISOString() }
         : await planGraphApi.save(itineraryId, { nodes: normalizedNodes, edges, revision: graph.revision });
+      if (demo) demoStorage.setPlanGraph(graph);
+      onSaveLocalGraph?.(graph);
       return true;
     } catch (cause) {
       error = cause instanceof Error ? cause.message : '変更を保存できませんでした。';
@@ -418,6 +441,7 @@
       onRequestCreate(source, named);
       return;
     }
+    metadataOnly = false;
     editingId = null; parentId = source; branchLabel = label;
     draft = nodeTemplate(asChoice ? 'choices' : 'step', crypto.randomUUID());
     if (source) {
@@ -427,7 +451,8 @@
     if (asChoice) draft.title = '移動・宿泊の候補';
     amountText = ''; participantsText = draft.participants.join('、'); formOpen = true;
   }
-  function editStep(node: PlanGraphNode) {
+  function editStep(node: PlanGraphNode, metadata = false) {
+    metadataOnly = metadata;
     if (!canEdit) return;
     editingId = node.id; parentId = null; branchLabel = '';
     draft = { ...node, participants: [...node.participants], options: [...node.options] };
@@ -466,7 +491,9 @@
         time_unspecified: false, type: next.type, is_all_day: false,
         location: next.location, notes: next.notes, link: next.link || null,
       };
-      if (editingId && steps.some(step => step.id === editingId)) {
+      if (metadataOnly) {
+        // Keep the common Step, its day-only precision and rich memo untouched.
+      } else if (editingId && steps.some(step => step.id === editingId)) {
         await onUpdateStep(editingId, fields);
       } else if (!editingId) {
         const created = await onCreateStep(fields);
@@ -486,6 +513,36 @@
       id: crypto.randomUUID(), from: parentId, to: actualId, label: branchLabel,
     }] : [...displayEdges];
     if (await save(nodes, edges)) { formOpen = false; selectedId = actualId; }
+  }
+  async function moveSelected() {
+    if (!selected || !moveTarget || busy) return;
+    try {
+      const edges = moveStop(displayNodes, displayEdges, selected.id, moveTarget, () => crypto.randomUUID());
+      if (await save(graph.nodes, edges)) { moveTarget = ''; folded = []; }
+    } catch (cause) { error = cause instanceof Error ? cause.message : '移動できませんでした。'; }
+  }
+  async function renameRoute(edge: PlanGraphEdge) {
+    const label = (routeNames[edge.id] ?? edge.label).trim();
+    if (!label) return;
+    await save(graph.nodes, displayEdges.map(item => item.id === edge.id ? { ...item, label } : item));
+  }
+  async function applyOption(node: PlanGraphNode) {
+    const candidate = node.options.find(value => value.id === node.selected_option_id);
+    if (!candidate || !onUpdateStep || busy) return;
+    const start = candidate.start_local ? new Date(candidate.start_local).getTime() : undefined;
+    const end = candidate.end_local ? new Date(candidate.end_local).getTime() : start;
+    const dates = { ...node, start_local: candidate.start_local || node.start_local, end_local: candidate.end_local || candidate.start_local || node.end_local };
+    if (displayEdges.some(edge => {
+      const a = edge.from === node.id ? dates : displayNodes.find(n => n.id === edge.from);
+      const b = edge.to === node.id ? dates : displayNodes.find(n => n.id === edge.to);
+      return a?.start_local && b?.start_local && a.start_local > b.start_local;
+    })) { error = '前後の予定と時刻が前後します。日時を編集してから反映してください。'; return; }
+    busy = true; error = '';
+    try { await onUpdateStep(node.id, { title: candidate.title,
+      ...(start === undefined ? {} : { start_at: start, end_at: end, time_unspecified: !candidate.start_local.includes('T') }),
+      ...(candidate.to ? { location: candidate.to } : {}),
+    }); } catch (cause) { error = cause instanceof Error ? cause.message : '反映できませんでした。'; }
+    finally { busy = false; }
   }
   async function removeNode(node: PlanGraphNode) {
     if (!confirm('「' + node.title + '」を削除しますか？ 接続も解除されます。')) return;
@@ -536,17 +593,53 @@
       selected_option_id: n.selected_option_id === id ? null : n.selected_option_id,
     } : n), displayEdges);
   }
+  function routeSummary(id: string) {
+    const visited = new Set<string>(), stack = [id];
+    const amounts = new Map<string, number>();
+    const participants = new Set<string>();
+    while (stack.length) {
+      const current = stack.pop()!;
+      if (visited.has(current) || displayEdges.filter(edge => edge.to === current).length > 1) continue;
+      visited.add(current);
+      const node = displayNodes.find(node => node.id === current);
+      if (!node) continue;
+      node.participants.forEach(name => participants.add(name));
+      const picked = node.options.find(candidate => candidate.id === node.selected_option_id);
+      const amount = node.amount ?? picked?.amount;
+      if (amount != null) {
+        const currency = node.amount !== null ? node.currency : picked!.currency;
+        amounts.set(currency, (amounts.get(currency) ?? 0) + amount);
+      }
+      stack.push(...displayEdges.filter(edge => edge.from === current).map(edge => edge.to));
+    }
+    return { cost: [...amounts].map(([currency, amount]) => cost(amount, currency)).join(' + '), participants: [...participants].join('・') };
+  }
+  function focusDialog(element: HTMLElement) {
+    const previous = document.activeElement as HTMLElement | null;
+    element.querySelector<HTMLInputElement>('input')?.focus();
+    const onKeydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !busy) { formOpen = false; optionOpen = false; event.preventDefault(); }
+      if (event.key !== 'Tab') return;
+      const controls = [...element.querySelectorAll<HTMLElement>('button:not(:disabled),input,select,textarea,a[href]')];
+      const first = controls[0], last = controls.at(-1);
+      if (event.shiftKey && document.activeElement === first) { last?.focus(); event.preventDefault(); }
+      else if (!event.shiftKey && document.activeElement === last) { first?.focus(); event.preventDefault(); }
+    };
+    element.addEventListener('keydown', onKeydown);
+    return { destroy() { element.removeEventListener('keydown', onKeydown); previous?.focus(); } };
+  }
   function hideEdge(id: string) { folded = folded.includes(id) ? folded.filter(value => value !== id) : [...folded, id]; }
 </script>
 
 {#if showGraph}
 <section class="graph-board" aria-label="分岐・合流プラン">
   <div class="graph-toolbar">
-    <div class="graph-title"><h2>予定</h2><span>{displayNodes.length}件</span></div>
+    <div class="graph-title"><h2>プラン比較</h2><span>{displayNodes.length}件 · 予定を選んで編集・移動</span></div>
     {#if canEdit && displayNodes.length > 0}
       <button class="outline new-plan-button" onclick={() => newStep()}>＋ 新しいプラン</button>
     {/if}
   </div>
+  {#if !demo}<a class="demo-link" href="/demo/planning-comparison" target="_blank" rel="noopener noreferrer">サンプルで操作を試す ↗</a>{/if}
   {#if error}<div class="error" role="alert">{error}<button onclick={load}>再読込</button></div>{/if}
   {#if loading}<p class="status">読み込み中…</p>
   {:else if displayNodes.length === 0}
@@ -556,7 +649,7 @@
       {#if canEdit}<button class="primary" onclick={() => newStep()}>＋ 予定を追加</button>{/if}
     </div>
   {:else}
-    <div class="graph-scroll" class:single={!isBranched} role="region" aria-label="分岐したプランの予定一覧">
+    <div class="comparison-workspace"><div class="timeline-column"><div class="graph-scroll" class:single={!isBranched} role="region" aria-label="分岐したプランの予定一覧">
       <div class="graph-canvas" style:width={drawn.width + 'px'} style:height={drawn.height + 'px'}>
         <svg class="graph-wires" width={drawn.width} height={drawn.height} viewBox={'0 0 ' + drawn.width + ' ' + drawn.height} aria-hidden="true">
           <line x1="113" x2="113" y1="30" y2={drawn.height - 40} stroke="#d1ddd3" stroke-width="1.5"/>
@@ -574,19 +667,20 @@
         {/each}
         {#each drawn.nodes as item (item.node.id)}
           {@const node = item.node}
+          {@const picked = node.options.find(candidate => candidate.id === node.selected_option_id)}
           <div class="graph-node" class:is-selected={selectedId === node.id} class:choice-node={node.kind === 'choices'}
-            style:left={(item.x - 130) + 'px'} style:top={(item.y - 46) + 'px'} style:--lane-color={item.color}>
-            {#if item.label}<span class="lane-caption">{item.label}</span>{/if}
-            <button class="node-main" onclick={() => selectedId = selectedId === node.id ? null : node.id} aria-pressed={selectedId === node.id}>
-              <span class="node-mark">{icon(node.type)}</span>
-              <span class="node-copy"><small>{localDate(node.start_local) || typeLabel(node.type)}</small><strong>{node.title}</strong>
+            style:left={(item.x - 130) + 'px'} style:top={(item.y - 36) + 'px'} style:--lane-color={item.color}>
+            {#if item.label}<span class="lane-caption">{item.label}</span>{:else}<span class="mobile-common lane-caption">共通の予定</span>{/if}
+            <button class="node-main" onclick={() => { selectedId = selectedId === node.id ? null : node.id; moveTarget = ''; joinTarget = ''; }} aria-pressed={selectedId === node.id}>
+              <span class="node-mark"><StepTypeIcon type={node.type} size="sm" /></span>
+              <span class="node-copy"><strong>{node.title}</strong><small>{localDate(node.start_local) || '日時未定'}{node.end_local.includes('T') ? ' – ' + node.end_local.slice(11, 16) : ''}</small>
                 {#if node.location}<small>{node.location}</small>{/if}
                 {#if node.participants.length}<small class="participants">{node.participants.join('・')}</small>{/if}
               </span>
-              {#if node.amount !== null}<span class="node-price">{cost(node.amount, node.currency)}</span>{/if}
+              {#if node.amount !== null || picked?.amount != null}<span class="node-price">{cost(node.amount ?? picked?.amount ?? null, node.amount !== null ? node.currency : picked?.currency)}</span>{/if}
             </button>
             {#if node.kind === 'choices'}
-              <div class="choice-summary"><span>{node.options.length}案</span>
+              <div class="choice-summary"><span>{node.options.length}案 · {node.selected_option_id ? '選択済み' : '検討中'}</span>
                 <button onclick={() => expandedChoices = expandedChoices.includes(node.id) ? expandedChoices.filter(id => id !== node.id) : [...expandedChoices, node.id]}>
                   {expandedChoices.includes(node.id) ? '閉じる' : '比較する'} <span aria-hidden="true">⌄</span>
                 </button>
@@ -627,8 +721,45 @@
       </div>
     </div>
     {#if isBranched}<div class="graph-footer"><span>上から下へ時系列</span><span>{drawn.count}件</span></div>{/if}
+    </div>
+    <aside class="comparison-sidebar" aria-label="プランと候補">
+      <section class="sidebar-card"><h3>プラン</h3><p>別行動や、迷っているルートを比較</p>
+        {#each routeStarts as edge, index (edge.id)}
+          {@const summary = routeSummary(edge.to)}
+          <div class="route-summary" style:--route-color={colors[index % colors.length]}>
+            <span class="route-dot"></span>
+            {#if canEdit}<form onsubmit={event => { event.preventDefault(); void renameRoute(edge); }}>
+              <input aria-label={'ルート名：' + (edge.label || 'プラン ' + (index + 1))} maxlength="80" value={routeNames[edge.id] ?? edge.label} placeholder={'プラン ' + (index + 1)} oninput={event => routeNames[edge.id] = event.currentTarget.value} />
+              <button disabled={busy} aria-label="ルート名を保存">保存</button>
+            </form>{:else}<strong>{edge.label || 'プラン ' + (index + 1)}</strong>{/if}
+            <button aria-label={(folded.includes(edge.id) ? '表示：' : '非表示：') + edge.label} aria-pressed={!folded.includes(edge.id)} onclick={() => hideEdge(edge.id)}>{folded.includes(edge.id) ? '表示' : '隠す'}</button>
+          </div>
+          {#if summary.cost || summary.participants}<small class="route-meta">{summary.participants}{summary.participants && summary.cost ? ' · ' : ''}{summary.cost ? '入力済み ' + summary.cost : ''}</small>{/if}
+        {/each}
+        <p class="route-cost-note">金額は入力済みの参考額。共通の予定は含みません。</p>
+        {#if routeStarts.length === 0}<small>共通の予定</small>{/if}
+        {#if canEdit}<button class="sidebar-add" onclick={() => newStep()}>＋ 別の出発点を作る</button>{/if}
+      </section>
+      <section class="sidebar-card"><h3>候補 <span>{candidateNodes.reduce((sum, node) => sum + node.options.length, 0)}</span></h3>
+        <p>選んだ案は「この予定に反映」で日程にも反映できます。</p>
+        {#each candidateNodes as node (node.id)}
+          <details open><summary><span>{node.title}</span><small>{node.options.length}案</small></summary>
+            {#each node.options as candidate (candidate.id)}
+              <div class="sidebar-candidate" class:adopted={node.selected_option_id === candidate.id}>
+                <button aria-label={candidate.title + 'を選択'} aria-pressed={node.selected_option_id === candidate.id} disabled={!canEdit || busy} onclick={() => selectOption(node, node.selected_option_id === candidate.id ? null : candidate.id)}><span aria-hidden="true">{node.selected_option_id === candidate.id ? '●' : '○'}</span><span>{candidate.title}<small>{candidate.start_local ? localDate(candidate.start_local) : '日時未定'}</small></span><b>{cost(candidate.amount, candidate.currency)}</b></button>
+                {#if canEdit}<button class="candidate-edit" onclick={() => openOption(node, candidate)}>編集</button>{/if}
+              </div>
+            {/each}
+            {#if canEdit}<button class="sidebar-add" disabled={busy || node.options.length >= 30} onclick={() => openOption(node)}>＋ 候補を追加</button>
+              {#if node.selected_option_id}<button class="sidebar-add apply" disabled={busy} onclick={() => applyOption(node)}>選択案をこの予定に反映</button>{/if}
+            {/if}
+          </details>
+        {/each}
+        {#if candidateNodes.length === 0}<small>予定を選んで、飛行機や宿の候補を追加できます。</small>{/if}
+      </section>
+    </aside></div>
     {#if selected}
-      <div class="detail-panel">
+      <div class="detail-panel" role="region" aria-label="選択した予定の操作">
         <div class="panel-heading"><div><small>{typeLabel(selected.type)}</small><h3>{selected.title}</h3></div><button aria-label="閉じる" onclick={() => selectedId = null}>×</button></div>
         {#if selected.start_local || selected.end_local}<p class="panel-sub">{localDate(selected.start_local)}{selected.end_local ? ' ― ' + localDate(selected.end_local) : ''}</p>{/if}
         {#if selected.notes}<p class="note">{selected.notes}</p>{/if}
@@ -646,13 +777,22 @@
               <button onclick={() => onOpenExistingStep?.(selected!.id)}>詳細</button>
             {/if}
             {#if selected.kind === 'choices' && selected.selected_option_id}
-              <button onclick={() => onPlan(selected!, selected!.options.find(o => o.id === selected!.selected_option_id))}>選択案を予定に追加</button>
+              <button disabled={busy} onclick={() => applyOption(selected!)}>選択案をこの予定に反映</button>
             {/if}
-            <button class="danger" onclick={() => removeNode(selected!)}>削除</button>
+            <button disabled={busy} onclick={() => editStep(selected!, true)}>参加者・参考金額</button>
+            <button class="danger" disabled={busy} onclick={() => removeNode(selected!)}>削除</button>
           {/if}
         </div>
         {#if selected.kind === 'choices' && canEdit && selected.options.length < 30}
           <button class="small-action" onclick={() => openOption(selected!)}>＋ 候補を追加</button>
+        {/if}
+        {#if canEdit && moveTargets.length}
+          <div class="join-form"><label for="move-target">別プランへ移動</label>
+            <select id="move-target" bind:value={moveTarget}><option value="">挿入する直前の予定を選択</option>
+              {#each moveTargets as target}<option value={target.id}>{target.title} の後</option>{/each}
+            </select><button disabled={!moveTarget || busy} onclick={moveSelected}>移動する</button>
+            <small>この予定だけを移動します。移動元の前後はつなぎ直します。</small>
+          </div>
         {/if}
         {#if canEdit && targets.length}
           <div class="join-form"><label for="join-target">この予定から合流</label>
@@ -679,23 +819,24 @@
 
 {#if formOpen && canEdit}
   <div class="backdrop" role="presentation" onclick={event => event.target === event.currentTarget && !busy && (formOpen = false)}>
-    <div class="sheet" role="dialog" aria-modal="true" aria-label="分岐プランの予定">
+    <div class="sheet" use:focusDialog role="dialog" aria-modal="true" aria-label="分岐プランの予定">
       <div class="sheet-header"><div><small>{draft.kind === 'choices' ? '候補を比較' : '分岐プラン'}</small><h3>{editingId ? '予定を編集' : '予定を追加'}</h3></div>
         <button aria-label="閉じる" onclick={() => formOpen = false}>×</button></div>
       <form onsubmit={submitStep}>
         {#if error}<p class="form-error" role="alert">{error}</p>{/if}
-        <label>タイトル<input bind:value={draft.title} maxlength="140" required placeholder="例：京都へ移動" /></label>
+        {#if !metadataOnly}<label>タイトル<input bind:value={draft.title} maxlength="140" required placeholder="例：京都へ移動" /></label>
         <label>種類<select bind:value={draft.type}>{#each types as t}<option value={t.value}>{t.label}</option>{/each}</select></label>
         {#if parentId}<label>ルート名 <small>任意</small><input bind:value={branchLabel} maxlength="80" placeholder="例：プラン B" /></label>{/if}
         <div class="two"><label>開始（現地時刻）<input type="datetime-local" bind:value={draft.start_local} /></label>
           <label>終了（現地時刻）<input type="datetime-local" bind:value={draft.end_local} /></label></div>
         <label>場所<input bind:value={draft.location} maxlength="250" placeholder="任意" /></label>
+        {/if}
         <div class="two"><label>参考金額<input type="text" inputmode="numeric" pattern="[0-9]*" bind:value={amountText} placeholder="未入力" /></label>
           <label>通貨<select bind:value={draft.currency}>{#each currencies as currency}<option value={currency}>{currency}</option>{/each}</select></label></div>
         <label>参加者 <small>「、」区切り</small><input bind:value={participantsText} placeholder="例：Aさん、Bさん" /></label>
-        <label>メモ<textarea bind:value={draft.notes} maxlength="2000" rows="3" placeholder="検討中のことなど"></textarea></label>
+        {#if !metadataOnly}<label>メモ<textarea bind:value={draft.notes} maxlength="2000" rows="3" placeholder="検討中のことなど"></textarea></label>
         <label>リンク<input type="url" bind:value={draft.link} maxlength="2048" placeholder="https://" /></label>
-        <div class="form-actions"><button type="button" onclick={() => formOpen = false}>キャンセル</button><button class="primary" disabled={busy || !draft.title.trim()}>保存</button></div>
+        {/if}<div class="form-actions"><button type="button" onclick={() => formOpen = false}>キャンセル</button><button class="primary" disabled={busy || !draft.title.trim()}>保存</button></div>
       </form>
     </div>
   </div>
@@ -703,7 +844,7 @@
 
 {#if optionOpen && optionNode && canEdit}
   <div class="backdrop" role="presentation" onclick={event => event.target === event.currentTarget && !busy && (optionOpen = false)}>
-    <div class="sheet" role="dialog" aria-modal="true" aria-label="候補の編集">
+    <div class="sheet" use:focusDialog role="dialog" aria-modal="true" aria-label="候補の編集">
       <div class="sheet-header"><div><small>{optionNode.title}</small><h3>候補{editingOptionId ? 'を編集' : 'を追加'}</h3></div><button onclick={() => optionOpen = false} aria-label="閉じる">×</button></div>
       <form onsubmit={submitOption}>
         {#if error}<p class="form-error" role="alert">{error}</p>{/if}
@@ -728,6 +869,31 @@
 {/if}
 
 <style>
+  .mobile-common{display:none}
+  .comparison-workspace{display:grid;grid-template-columns:minmax(0,1fr) 258px;align-items:start;gap:22px}
+  .timeline-column{min-width:0}.comparison-sidebar{display:grid;gap:16px;position:sticky;top:20px}
+  .sidebar-card{padding:16px 12px;border:1px solid #e2e4e2;border-radius:16px;background:#ffffffbd;box-shadow:0 4px 14px #273b3006}
+  .sidebar-card h3{display:flex;justify-content:space-between;margin:0 2px 12px;font-size:15px}.sidebar-card h3 span{font-size:12px;color:#6d8178}
+  .sidebar-card p,.sidebar-card>small{display:block;margin:8px 2px 12px;color:#738078;font-size:11px;line-height:1.7}
+  .route-summary{display:flex;align-items:center;gap:7px;padding:8px;border:1px solid #dfe4e1;border-radius:11px;margin:7px 0;background:color-mix(in srgb,var(--route-color) 8%,white)}
+  .route-meta{display:block;margin:0 8px 10px;color:#5d7468;font-size:11px}.sidebar-card .route-cost-note{font-size:10px}
+  .route-dot{width:11px;height:11px;border-radius:50%;background:var(--route-color);flex:none}
+  .route-summary form{display:flex;min-width:0;flex:1;gap:3px}.route-summary input{width:100%;min-width:0;border:0;background:transparent;font:inherit;font-size:12px;color:#293a32;font-weight:700}
+  .route-summary button,.candidate-edit{border:0;background:transparent;color:#3b7160;font-size:10px;padding:5px;white-space:nowrap}
+  .route-summary strong{flex:1;font-size:12px}.sidebar-add{width:100%;padding:10px 5px;border:1px dashed #cfdcd4;border-radius:10px;background:transparent;color:#306a58;font-size:11px;margin-top:8px}
+  .sidebar-add.apply{border-style:solid;background:#eaf4ee}
+  .sidebar-card details{overflow:hidden;margin-top:10px;border:1px solid #e0e5e1;border-radius:12px;background:white}
+  .sidebar-card summary{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:12px 10px;cursor:pointer;font-size:12px;font-weight:700}.sidebar-card summary span{overflow-wrap:anywhere}.sidebar-card summary small{flex:none;color:#809087;font-size:10px}
+  .sidebar-candidate{border-top:1px solid #edf0ed;padding:4px}.sidebar-candidate.adopted{background:#eff7f3}
+  .sidebar-candidate>button:first-child{display:flex;gap:6px;align-items:center;width:100%;padding:7px 4px;border:0;background:transparent;text-align:left;font-size:11px;color:#2b4b3e}
+  .sidebar-candidate>button:first-child:disabled{opacity:1;cursor:default}.sidebar-candidate span:nth-child(2){flex:1;min-width:0;overflow-wrap:anywhere}.sidebar-candidate small{display:block;font-size:9px;color:#75857b;margin-top:4px}.sidebar-candidate b{white-space:nowrap;font-size:10px}.candidate-edit{display:block;margin-left:auto}
+  .sidebar-card details>.sidebar-add{border-radius:0;border-width:1px 0 0;margin:0}
+  .join-form>small{flex-basis:100%;font-size:11px;color:#728579}
+  button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid #357764;outline-offset:3px}
+  @media(max-width:1000px){.comparison-workspace{grid-template-columns:minmax(0,1fr)}.comparison-sidebar{position:static;grid-template-columns:1fr 1fr}.graph-canvas{margin:0 auto}}
+  @media(max-width:540px){.comparison-sidebar{grid-template-columns:minmax(0,1fr)}.graph-title span{display:block;margin-top:6px}.graph-scroll{max-height:65dvh}.graph-toolbar{position:sticky;top:0;background:#faf9f5;z-index:4;padding:8px 0}}
+
+  .demo-link{display:inline-block;margin:-4px 0 14px;color:#4b7967;font-size:11px;text-underline-offset:3px}
   .graph-board{padding:0 0 24px;color:#293a32}
   button{font:inherit;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}
   .graph-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0 18px}
@@ -738,14 +904,15 @@
   .graph-scroll.single .graph-canvas{margin:0 auto}
   .graph-canvas{position:relative;min-height:240px}.graph-wires{position:absolute;inset:0;pointer-events:none}
   .time-tick{position:absolute;left:10px;width:96px;text-align:right;font-size:10px;font-variant-numeric:tabular-nums;color:#6d8674;white-space:nowrap}
-  .graph-node{position:absolute;width:260px;min-height:91px;border:1px solid #dfe6df;border-left:3px solid var(--lane-color);border-radius:14px;background:white;box-shadow:0 4px 16px #1d3c2a0e;z-index:1}
+  .graph-node{position:absolute;width:260px;min-height:72px;border:1px solid #dfe6df;border-top:2px solid var(--lane-color);border-radius:18px;background:white;box-shadow:0 4px 16px #1d3c2a0e;z-index:1}
   .graph-node.is-selected{border-color:var(--lane-color);box-shadow:0 0 0 3px #c7e5d47a,0 6px 19px #1d3c2a14}
   .lane-caption{position:absolute;top:-24px;left:8px;padding:3px 8px;border:1px solid #e0e7df;border-radius:999px;background:#fff;color:var(--lane-color);font-size:10px;font-weight:800;white-space:nowrap}
-  .node-main{display:flex;align-items:center;gap:10px;width:100%;min-height:88px;padding:12px 10px;border:0;background:transparent;text-align:left}
+  .node-main{display:flex;align-items:center;gap:10px;width:100%;min-height:70px;padding:12px 10px;border:0;background:transparent;text-align:left}
   .node-mark{flex:none;width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:#eff5ef;color:#3b7767;font-size:20px}
-  .node-copy{display:grid;gap:3px;min-width:0;flex:1}.node-copy strong{overflow:hidden;text-overflow:ellipsis;font-size:12px;line-height:1.3}
-  .node-copy small{overflow:hidden;text-overflow:ellipsis;color:#7a887e;font-size:10px;white-space:nowrap}
+  .node-copy{display:grid;gap:3px;min-width:0;flex:1}.node-copy strong{overflow:hidden;text-overflow:ellipsis;font-size:14px;line-height:1.4}
+  .node-copy small{overflow:hidden;text-overflow:ellipsis;color:#7a887e;font-size:11px;white-space:nowrap}
   .node-copy .participants{color:#387864}.node-price{font-size:11px;white-space:nowrap;font-weight:750;font-variant-numeric:tabular-nums}
+  .outline{border:1px solid #dce3df;border-radius:999px;padding:10px 16px;color:#2f6657;background:white;box-shadow:0 3px 10px #26332f0a}
   .new-plan-button{font-size:12px;white-space:nowrap}
   .route-end{position:absolute;top:calc(100% + 4px);left:0;width:100%;display:flex;flex-direction:column;align-items:center;z-index:3;pointer-events:none}
   .route-end::before{content:'';height:12px;border-left:2px solid var(--lane-color);opacity:.55}
@@ -763,7 +930,7 @@
   .graph-footer{display:flex;justify-content:space-between;margin:8px 0 12px;font-size:10px;color:#89958e}
   .graph-empty{display:grid;justify-items:center;gap:12px;padding:35px 16px;border:1px dashed #d4dfd6;border-radius:16px;color:#3c6c5b}
   .graph-empty svg{width:170px;fill:#f8faf6}.status{text-align:center;padding:32px;color:#859288}
-  .detail-panel{padding:16px;border:1px solid #e0e9e0;border-radius:15px;background:white;box-shadow:0 5px 16px #1d3c2a09}
+  .detail-panel{position:fixed;right:16px;bottom:90px;z-index:95;width:min(440px,calc(100vw - 32px));max-height:65dvh;overflow:auto;padding:16px;border:1px solid #e0e9e0;border-radius:15px;background:white;box-shadow:0 5px 16px #1d3c2a09}
   .panel-heading{display:flex;align-items:center;justify-content:space-between}.panel-heading small{font-size:10px;color:#6d8575}.panel-heading h3{margin:4px 0;font-size:15px}
   .panel-heading>button{border:0;background:transparent;font-size:22px;color:#84948a}.panel-sub{font-size:11px;color:#61796b}.note{font-size:12px;line-height:1.6;white-space:pre-wrap}
   .panel-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.panel-actions button,.join-form button{border:1px solid #d5e1d8;border-radius:9px;padding:7px 10px;background:#f9fbf9;color:#416c5e;font-size:11px}
@@ -780,5 +947,16 @@
   .sheet form{display:grid;gap:12px}.sheet label{display:grid;gap:6px;font-size:12px;color:#435c4e;font-weight:700}.sheet label small{font-weight:400;color:#91a092}
   .sheet input,.sheet textarea,.sheet select{min-width:0;width:100%;font-weight:400}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .form-actions{display:flex;justify-content:end;gap:8px;padding-top:8px}.form-actions button:not(.primary){padding:9px 13px;border:1px solid #d9e1db;border-radius:9px;background:white;color:#516759;font-size:12px}
+  @media(max-width:670px){
+    .graph-scroll{overflow:visible;max-height:none;border:0;background:transparent}
+    .graph-canvas{display:grid;gap:16px;width:100%!important;height:auto!important;min-height:0}
+    .graph-wires,.time-tick{display:none}
+    .graph-node{position:relative;left:auto!important;top:auto!important;width:100%;border-left:3px solid var(--lane-color);border-top:1px solid #dfe6df}
+    .lane-caption,.mobile-common{position:static;display:inline-block;margin:10px 10px 0;font-size:11px;background:color-mix(in srgb,var(--lane-color) 8%,white)}
+    .node-main{min-height:70px;padding:12px}.node-copy strong{font-size:14px}.node-copy small{font-size:12px}.node-price{font-size:12px}
+    .route-end{position:relative;top:auto;padding-bottom:10px}.route-end::before{display:none}
+    .graph-toolbar{position:static}.sidebar-card{padding:16px}.sidebar-candidate>button:first-child{min-height:44px;font-size:13px}.sidebar-candidate b{font-size:12px}
+    .sidebar-card p,.sidebar-card>small{font-size:12px}.sidebar-card summary{font-size:13px}.route-summary input{font-size:14px}.route-summary button{min-height:32px}
+  }
   @media(max-width:670px){.graph-toolbar{align-items:start}.graph-title{display:block}.graph-title h2{font-size:17px}.toolbar-actions{justify-content:end}.toolbar-actions button{font-size:10px;padding:8px}.two{grid-template-columns:1fr}.sheet{padding:18px 16px calc(20px + env(safe-area-inset-bottom))}}
 </style>

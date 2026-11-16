@@ -168,3 +168,60 @@ describe('normalized storage against production triggers', () => {
     expect(JSON.stringify(data)).not.toContain(second.id);
   });
 });
+
+describe('planning content snapshots', () => {
+  it('carries edited preview graphs through publication and copy with remapped Step IDs', async () => {
+    const { book, first, second } = await trip();
+    const node = (id: string, title: string) => ({ id,title,kind:'step' as const,type:'normal:general' as const,
+      start_local:'',end_local:'',location:'',notes:'',link:'',amount:null,currency:'JPY',participants:[],options:[],selected_option_id:null });
+    const planGraph = { itinerary_id:book.id,updated_at:null,revision:0,
+      nodes:[node(first.id,'First'),node(second.id,'Second'),node('preview-new','Preview stop')],
+      edges:[{id:'route-one',from:first.id,to:second.id,label:'プラン A'},{id:'route-two',from:first.id,to:'preview-new',label:'プラン B'}] };
+    const current = await publications().read(book.id);
+    const content = bookContentSchema.parse({ ...current,planGraph,steps:[...current.steps,
+      {id:'preview-new',title:'Preview stop',start_at:null,end_at:null,type:'normal:general',notes:''}] });
+    const shared = await books().publish(book.id,undefined,undefined,content);
+    const graphRow = await env.DB.prepare('SELECT nodes_json, edges_json FROM itinerary_plan_graphs WHERE itinerary_id = ?').bind(shared.id).first<{nodes_json:string;edges_json:string}>();
+    const publishedSteps = await steps().list(shared.id);
+    const graphNodes = JSON.parse(graphRow!.nodes_json);
+    const graphEdges = JSON.parse(graphRow!.edges_json);
+    expect(graphNodes).toHaveLength(3);
+    expect(graphNodes.every((n: {id:string}) => publishedSteps.some(step=>step.id===n.id))).toBe(true);
+    expect(graphEdges.every((e: {from:string;to:string}) => graphNodes.some((n:{id:string})=>n.id===e.from) && graphNodes.some((n:{id:string})=>n.id===e.to))).toBe(true);
+    expect(await steps().list(book.id)).toHaveLength(2);
+    const copy = await books().fork(shared.id);
+    const copyContent = await publications().read(copy.itinerary.id);
+    expect(copyContent.planGraph?.nodes).toHaveLength(3);
+    expect(copyContent.planGraph?.edges).toHaveLength(2);
+    expect(copyContent.planGraph?.nodes.every(node=>copyContent.steps.some(step=>step.id===node.id))).toBe(true);
+  });
+
+  it('sanitizes the graph in publication previews and retains it when the theme changes', async () => {
+    const { book, first } = await trip();
+    const graph = { id:first.id,title:'Hotel',kind:'choices',type:'normal:hotel',start_local:'',end_local:'',location:'Kyoto',
+      notes:'予約番号: PRIVATE123',link:'https://example.com/?token=private',amount:9800,currency:'JPY',participants:['Member'],selected_option_id:'hotel-a',
+      options:[{id:'hotel-a',title:'Hotel A',provider:'',amount:9800,currency:'JPY',start_local:'',end_local:'',from:'',to:'Kyoto',cancellation:'',notes:'',url:'https://example.com/?token=private'}] };
+    await env.DB.prepare('INSERT INTO itinerary_plan_graphs (itinerary_id,nodes_json,edges_json,revision,updated_at) VALUES (?,?,?,1,?)').bind(book.id,JSON.stringify([graph]),'[]','2026-12-01').run();
+    const preview = await publications().read(book.id,true);
+    expect(JSON.stringify(preview.planGraph)).not.toContain('PRIVATE123');
+    expect(JSON.stringify(preview.planGraph)).not.toContain('token=private');
+    expect(preview.planGraph?.nodes[0].participants).toEqual([]);
+    await books().update(book.id,{theme_id:'list'});
+    await books().update(book.id,{theme_id:'planning-draft'});
+    const restored = await publications().read(book.id);
+    expect(restored.planGraph?.nodes[0].selected_option_id).toBe('hotel-a');
+    expect(restored.planGraph?.nodes[0].participants).toEqual(['Member']);
+  });
+
+  it('copies multiple preview steps without IDs into distinct Steps', async () => {
+    const { book } = await trip();
+    const content = bookContentSchema.parse({ itinerary:{title:'Copy',memo:''},steps:[
+      {title:'One',start_at:null,end_at:null,type:'normal:general'},
+      {title:'Two',start_at:null,end_at:null,type:'normal:general'},
+    ] });
+    const copy = await books().fork(book.id,content);
+    const copied = await steps().list(copy.itinerary.id);
+    expect(copied).toHaveLength(2);
+    expect(new Set(copied.map(step=>step.id)).size).toBe(2);
+  });
+});

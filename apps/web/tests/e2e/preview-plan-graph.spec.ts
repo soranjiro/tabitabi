@@ -102,7 +102,7 @@ test('classic single-column planning remains usable on mobile, then branches and
     await page.locator('.graph-node').filter({
       has: page.locator('.node-copy strong').getByText('プランB', { exact: true }),
     }).getByRole('button', { name: /比較する/ }).click();
-    await expect(page.getByText('京都駅前ホテル')).toBeVisible();
+    await expect(page.getByText('京都駅前ホテル').first()).toBeVisible();
 
     await page.reload();
     await expect(page.locator('.graph-node')).toHaveCount(4);
@@ -118,8 +118,8 @@ test('classic single-column planning remains usable on mobile, then branches and
 
     await page.goto('/itineraries/' + publicId);
     await expect(page.locator('.graph-node')).toHaveCount(4);
-    await expect(page.getByRole('button', { name: 'プランBの続きの次の予定を追加' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: '＋ 新しいプラン' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'プランBの続きの次の予定を追加' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '＋ 新しいプラン' })).toBeVisible();
     await page.screenshot({ path: 'test-results/plan-graph-public.png', fullPage: false });
   } finally {
     try { await request.delete(apiBaseUrl + '/itineraries/' + id, { headers }); }

@@ -4,6 +4,8 @@
   import { loadTheme } from '$lib/themes';
   import { itineraryApi } from '$lib/api/itinerary';
   import { userApi, type BookContent } from '$lib/api/user';
+  import { planGraphApi } from '$lib/api/plan-graph';
+  import type { PlanGraph } from '@tabitabi/types';
   import { auth } from '$lib/auth';
 
   let { content, preview = false, onBack, onConfirm }: {
@@ -12,8 +14,27 @@
   // `content` can be a Svelte reactive proxy when opened from the publish dialog.
   // Snapshot it before making the editable local copy.
   let itinerary = $state<ItineraryResponse>($state.snapshot(content.itinerary));
+  let planGraph = $state<PlanGraph | null>(content.planGraph ? $state.snapshot(content.planGraph) : null);
+  let graphReady = $state(false);
+  let graphLoadError = $state(false);
+  async function loadGraph() {
+    graphLoadError = false;
+    try {
+      planGraph = content.planGraph ? $state.snapshot(content.planGraph) : await planGraphApi.get(content.itinerary.id);
+      graphReady = true;
+    } catch { graphLoadError = true; }
+  }
+  const currentContent = () => {
+    const ids = new Set(steps.map(step => step.id));
+    return { itinerary, steps, ...(planGraph ? { planGraph: { ...planGraph,
+      nodes: planGraph.nodes.filter(node => ids.has(node.id)),
+      edges: planGraph.edges.filter(edge => ids.has(edge.from) && ids.has(edge.to)),
+    } } : {}) };
+  };
   let steps = $state<Step[]>($state.snapshot(content.steps));
   let theme = $state<Theme | null>(null);
+  let planningPreview = $state(preview);
+  const viewThemeId = $derived(planningPreview ? 'planning-draft' : itinerary.theme_id);
   let edited = $state(false);
   let notice = $state('');
   let busy = $state(false);
@@ -22,10 +43,11 @@
   let timer: ReturnType<typeof setTimeout>;
   $effect(() => {
     let current = true;
-    loadTheme(itinerary.theme_id).then(value => { if (current) theme = value; });
+    loadTheme(viewThemeId).then(value => { if (current) theme = value; });
     return () => { current = false; };
   });
   onMount(() => {
+    void loadGraph();
     if (!preview && new URLSearchParams(window.location.search).get('manage') === '1') {
       userApi.getMyBookmarks().then(({ bookmarks }) => {
         ownerSource = bookmarks.find(item => item.shared_itinerary_id === content.itinerary.id)?.itinerary_id ?? null;
@@ -41,7 +63,7 @@
     }
     edited = true;
   }
-  async function updateItinerary(update: Partial<ItineraryResponse>) { itinerary = { ...itinerary, ...update }; changed(); }
+  async function updateItinerary(update: Partial<ItineraryResponse>) { if (update.theme_id) planningPreview = false; itinerary = { ...itinerary, ...update }; changed(); }
   async function createStep(input: Partial<Step>) {
     const now = new Date().toISOString();
     const created: Step = { id: crypto.randomUUID(), itinerary_id: itinerary.id, title: '', start_at: 0, end_at: 0,
@@ -57,7 +79,7 @@
     busy = true;
     try {
       if (preview) {
-        const published = await onConfirm?.({ itinerary, steps });
+        const published = await onConfirm?.(currentContent());
         if (typeof published === 'string') {
           notice = published;
           clearTimeout(timer);
@@ -66,10 +88,10 @@
         return;
       }
       if (editingPublication && ownerSource) {
-        await userApi.savePublication(ownerSource, { itinerary, steps });
+        await userApi.savePublication(ownerSource, currentContent());
         notice = '共有版を保存しました'; edited = false;
       } else {
-        const result = await itineraryApi.fork(content.itinerary.id, { itinerary, steps });
+        const result = await itineraryApi.fork(content.itinerary.id, currentContent());
         auth.setToken(result.id, result.title, result.token);
         window.location.assign(`/itineraries/${result.id}?copied=1`);
       }
@@ -84,7 +106,7 @@
       <button class="preview-back" onclick={onBack} aria-label="公開情報に戻る">←</button>
       <span>プレビュー</span>
       <details><summary>共有される情報について ⓘ</summary><p>ここに表示される内容が共有されます。共有版は元のしおりと自動同期しません。</p></details>
-      <button type="button" class="publish" onclick={act} disabled={busy}>{busy ? '作成中…' : '共有版を作成'}</button>
+      <button type="button" class="publish" onclick={act} disabled={busy || !graphReady}>{busy ? '作成中…' : '共有版を作成'}</button>
     {:else}
       <div class="header-left">
         <a class="brand" href="/" aria-label="たびたび ホーム">tabitabi</a>
@@ -97,21 +119,31 @@
       </div>
       <nav class="header-actions" aria-label="共有されたしおりの操作">
         {#if !editingPublication}
-          <button class="copy" onclick={act} disabled={busy}>{busy ? '保存中…' : 'コピー'}</button>
+          <button class="copy" onclick={act} disabled={busy || !graphReady}>{busy ? '保存中…' : 'コピー'}</button>
         {/if}
       </nav>
     {/if}
   </header>
+  {#if graphReady}
+    <nav class="preview-view" aria-label="プレビューの表示">
+      <button aria-pressed={planningPreview || itinerary.theme_id === 'planning-draft'} onclick={() => planningPreview = true}>予定表で編集</button>
+      {#if itinerary.theme_id !== 'planning-draft'}<button aria-pressed={!planningPreview} onclick={() => planningPreview = false}>元のテーマで表示</button>{/if}
+      <span>編集内容はコピー・共有版の保存時に反映されます</span>
+    </nav>
+  {/if}
   {#if notice}<div class="notice" role="status">{notice}</div>{/if}
-  {#if theme}
+  {#if graphLoadError}<p role="alert">プランを読み込めませんでした。<button onclick={loadGraph}>再読込</button></p>{/if}
+  {#if theme && graphReady}
     {@const View = theme.components.ItineraryView}
-    {#key itinerary.theme_id}
-      <View {itinerary} {steps} onUpdateItinerary={updateItinerary} onCreateStep={createStep} onUpdateStep={updateStep} onDeleteStep={deleteStep} />
+    {#key viewThemeId}
+      <View {itinerary} {steps} localPlanning={true} {planGraph} onSavePlanGraph={(graph: PlanGraph) => { planGraph = graph; changed(); }} onUpdateItinerary={updateItinerary} onCreateStep={createStep} onUpdateStep={updateStep} onDeleteStep={deleteStep} />
     {/key}
   {:else}<p class="loading">しおりを開いています…</p>{/if}
 </div>
 
 <style>
+  .preview-view{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 16px;background:#f4f7f4;color:#748078;font-size:11px}.preview-view button{padding:7px 12px;border:1px solid #d8e1db;border-radius:999px;background:white;color:#306653;font:inherit;cursor:pointer}.preview-view button[aria-pressed="true"]{background:#306653;color:white}.preview-view span{margin-left:auto}@media(max-width:600px){.preview-view span{width:100%;margin:0}}
+
   .shared-book > header { position: relative; z-index: 90; display: flex; align-items: center; gap: 1rem; min-height: 42px; padding: .4rem 1rem; background: #faf9f5; border-bottom: 1px solid #e2dfd5; color: #686d63; font-size: .75rem; }
   .shared-book > header > span { min-width: 0; }
   header button { border: 0; padding: .5rem; background: transparent; font-size: 1rem; }

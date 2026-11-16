@@ -16,7 +16,7 @@ import type {
   PublishItineraryResponse,
 } from '@tabitabi/types';
 import type { ItineraryResponse, Step } from '@tabitabi/types';
-export interface BookContent { itinerary: ItineraryResponse; steps: Step[] }
+export interface BookContent { itinerary: ItineraryResponse; steps: Step[]; planGraph?: import('@tabitabi/types').PlanGraph }
 
 const API_BASE_URL =
   (import.meta.env.PUBLIC_API_URL as string | undefined) ||

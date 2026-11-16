@@ -37,12 +37,15 @@
   import PlaceMap from "../planning-map/PlaceMap.svelte";
   import StepDetail from "./StepDetail.svelte";
   import PlanGraphBoard from "$lib/features/planning-comparison/PlanGraphBoard.svelte";
-  import type { PlanGraphNode } from '@tabitabi/types';
+  import type { PlanGraphNode, PlanGraph } from '@tabitabi/types';
   import PlaceEditor from "./PlaceEditor.svelte";
   import "../standard/core/styles/index.css";
 
   interface Props {
     readOnly?: boolean;
+    localPlanning?: boolean;
+    planGraph?: PlanGraph | null;
+    onSavePlanGraph?: (graph: PlanGraph) => void;
     mapPlanning?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
@@ -80,7 +83,7 @@
     onBatchUpdateDates?: (updates: import("@tabitabi/types").BatchStepDateUpdate[]) => Promise<void>;
   }
 
-  let { readOnly = false, itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, onBatchUpdateDates, mapPlanning = false }: Props = $props();
+  let { localPlanning = false, planGraph = null, onSavePlanGraph, readOnly = false, itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, onBatchUpdateDates, mapPlanning = false }: Props = $props();
   let placeDraft = $state<Place | null>(null);
   let formError = $state('');
   let descriptionEditing = $state(false);
@@ -151,8 +154,9 @@
   let itineraryTags = $state([...(itinerary.tags ?? [])]);
 
   const isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
-  const canPlanEdit = $derived(hasEditPermission && !isSharedSnapshot && !readOnly);
+  const canPlanEdit = $derived(hasEditPermission && (!isSharedSnapshot || localPlanning) && !readOnly);
   let isPlanBranched = $state(false);
+  let planView = $state<'list' | 'compare' | null>(null);
   let graphError = $state('');
   let planChoices = $state<Record<string, ComparisonOption[]>>({});
   let planSelected = $state<Record<string, string | null>>({});
@@ -203,6 +207,13 @@
   const previewPin = $derived<Step[]>(placeDraft ? [{ id:'preview-pin', itinerary_id:itinerary.id, title:form.title || '選んだ場所', location:form.location, notes:'', start_at:null, end_at:null, time_unspecified:false, ...placeFields(placeDraft), sort_order:null, created_at:'', updated_at:'' }] : []);
   const selectedStep = $derived(steps.find((step) => step.id === selectedStepId) ?? null);
   const mapNumbers = $derived(Object.fromEntries(steps.map((step, index) => [step.id, index + 1])));
+  const tripDateLabel = $derived.by(() => {
+    const dated = steps.flatMap(step => step.start_at == null ? [] : [step.start_at, step.end_at ?? step.start_at]);
+    if (!dated.length) return '日程未定 · 候補から旅をつくろう';
+    const first = localDateKey(Math.min(...dated)).replaceAll('-', '/');
+    const last = localDateKey(Math.max(...dated)).replaceAll('-', '/');
+    return first === last ? first : first + ' – ' + last;
+  });
   const filteredSteps = $derived(steps.filter((step) => `${step.title} ${step.location ?? ''}`.toLowerCase().includes(searchQuery.toLowerCase())));
 
   const otherThemes = $derived(getAvailableThemes().filter((theme) => theme.id !== itinerary.theme_id && !(mapPlanning && theme.id === 'planning-draft')));
@@ -223,7 +234,7 @@
       planningReady = true;
       return () => window.removeEventListener('hashchange', openFeatureFromHash);
     }
-    if (getIsDemoMode() || isSharedSnapshot) {
+    if (getIsDemoMode() || isSharedSnapshot || localPlanning) {
       hasEditPermission = true;
       planningReady = true;
       return () => window.removeEventListener('hashchange', openFeatureFromHash);
@@ -244,7 +255,7 @@
   }
 
   function openMemberSettings(feature: 'money' | 'packing') {
-    if (!hasEditPermission || isSharedSnapshot) return;
+    if (!hasEditPermission || (isSharedSnapshot && !localPlanning)) return;
     closeFeature(feature);
     showSettingsDialog = true;
   }
@@ -466,7 +477,7 @@
   }
 
   function planGraphSelection(node: PlanGraphNode, picked?: ComparisonOption) {
-    if (!hasEditPermission || isSharedSnapshot) return;
+    if (!hasEditPermission || (isSharedSnapshot && !localPlanning)) return;
     if (node.kind === 'choices' && !picked) return;
     const kind = node.type === STEP_TYPE.NORMAL_HOTEL ? 'stay'
       : node.type === STEP_TYPE.TRANSPORT_PLANE ? 'flight'
@@ -701,14 +712,14 @@
 
 <div class="draft-theme" style={paletteStyle} class:map-planning={mapPlanning}>
   {#if copyMessage}<div class="copy-message">{copyMessage}</div>{/if}
-  <header class="draft-header">
+  <header class="draft-header" style:background-image={"linear-gradient(90deg,#11291ecd,#11291e22),url(\"" + (itinerary.background_image ?? "/itinerary-backgrounds/japanese.avif") + "\")"}>
     <a class="brand" href="/">たびたび</a>
     {#if editingTitle}
       <input class="title-input" bind:value={titleDraft} onblur={saveTitle} onkeydown={(event) => event.key === "Enter" && saveTitle()} />
     {:else}
       <button class="title-button" onclick={() => hasEditPermission && (editingTitle = true)} disabled={!hasEditPermission}>{itinerary.title}</button>
     {/if}
-    <p>候補を集め、場所と日程を少しずつ決める。</p>
+    <p>{tripDateLabel}</p>
       <section class="trip-description" aria-label="旅のメモ">
         <div class="description-heading"><button class="memo-toggle" onclick={() => memoOpen = !memoOpen}>旅のメモ {memoOpen ? '▴' : '▾'}</button>{#if memoOpen && hasEditPermission && !descriptionEditing}<button onclick={() => descriptionEditing = true}>編集</button>{/if}</div>
         {#if memoOpen && descriptionEditing}
@@ -730,7 +741,11 @@
     {#if screenMode === "plan"}
       {#if graphError}<div class="plan-save-error" role="alert"><span>{graphError}</span><button aria-label="閉じる" onclick={() => graphError = ''}>×</button></div>{/if}
       {#if planningReady}
-        {#if !isPlanBranched}
+        <div class="plan-view-switch" role="group" aria-label="計画の表示">
+          <button class:active={planView === 'list' || (planView === null && !isPlanBranched)} onclick={() => { planView = 'list'; }}>予定</button>
+          <button class:active={planView === 'compare' || (planView === null && isPlanBranched)} onclick={() => planView = 'compare'}>プラン比較</button>
+        </div>
+        {#if planView === 'list' || (planView === null && !isPlanBranched)}
 
       <div class="planning-workspace"><div class="planning-list">
 {#if canPlanEdit}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
@@ -868,7 +883,8 @@
         itineraryId={itinerary.id}
         {steps}
         canEdit={canPlanEdit}
-        showGraph={isPlanBranched}
+        showGraph={planView === 'compare' || (planView === null && isPlanBranched)}
+        localGraph={planGraph} onSaveLocalGraph={onSavePlanGraph}
         demo={getIsDemoMode()}
         {onCreateStep} {onUpdateStep} {onDeleteStep}
         onRequestCreate={openGraphCreate} {createdStepRequest}
@@ -901,7 +917,7 @@
       {#if hasEditPermission && dayGroups.length}<button class="batch-day-button" onclick={openBatchDayEditor}>日程をまとめて変更</button>{/if}
       <aside class:complete={isComplete} class="theme-guide">
         <p>{isComplete ? "予定が整いました。" : "予定が固まってきたら、"}</p>
-        <strong>見るためのテーマに着替えてみませんか？</strong>
+        <strong>見るためのテーマに着替えてみませんか？</strong><small class="theme-preservation">ほかのテーマでは全プランの予定を時系列で表示します。分岐・参加者・候補は保存され、予定表に戻すと再び表示できます。</small>
         {#if hasEditPermission}<button onclick={() => (themeChoicesOpen = !themeChoicesOpen)}>ほかのテーマを試す</button>{/if}
         {#if themeChoicesOpen}
           <div class="theme-choices">{#each otherThemes as theme}<button onclick={() => switchTheme(theme.id)}><strong>{theme.name}</strong><small>{theme.description}</small></button>{/each}</div>
@@ -1049,6 +1065,10 @@
 </div>
 
 <style>
+  .plan-view-switch{display:inline-flex;gap:3px;padding:4px;margin:10px 0 20px;border:1px solid #e2e6e2;border-radius:999px;background:#fff;box-shadow:0 3px 10px #26332f08}
+  .plan-view-switch button{min-width:100px;padding:9px 18px;border:0;border-radius:999px;color:#3f6153;background:transparent;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  .plan-view-switch button.active{background:#2f6657;color:white}.theme-preservation{display:block;margin:10px auto;max-width:400px;color:#6c7c73;font-size:12px;line-height:1.8}
+
   .trip-description { max-width:760px; margin-top:20px; padding:16px 18px; border:1px solid #dfe4dc; border-radius:12px; background:#fff; font-size:12px; }
   .description-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .description-heading strong { color:#42514a; font-size:11px; }
@@ -1077,7 +1097,8 @@
   @media(max-width:700px) { .map-planning .draft-header,.map-planning main { width:calc(100% - 28px); } }
   .draft-theme { min-height: 100vh; padding-bottom: 7rem; color: #26332f; background: #faf9f5; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; --theme-primary: #2f6657; --theme-text: #26332f; --theme-text-light: #7a8581; --theme-border: #d9ddd9; --theme-line-color: #d9ddd9; }
   .copy-message { position: fixed; z-index: 1100; top: 1rem; left: 50%; padding: .6rem .9rem; border-radius: 999px; color: #fff; background: #2f6657; font-size: .8rem; font-weight: 700; transform: translateX(-50%); }
-  .draft-header { width: min(680px, calc(100% - 32px)); margin: 0 auto; padding: 1.5rem 0 .8rem; }
+  .draft-header { width:min(1140px,calc(100% - 32px));margin:20px auto 0;padding:24px 28px;border-radius:18px;background-size:cover;background-position:center 50%;color:white; }
+  .draft-header .brand,.draft-header .title-button,.draft-header>p,.draft-header .memo-toggle,.draft-header .description-heading button{color:white}.draft-header .brand{opacity:.9;margin-bottom:8px}.draft-header .title-button{font-size:28px}.draft-header .description-copy{color:#f5faf6}.draft-header>p{color:#fff}.draft-header .description-heading button{color:#fff}.draft-header .trip-description{max-width:600px;margin-top:8px;padding:0;border:0;background:transparent}
   .brand { display: inline-block; margin-bottom: 2rem; color: #2f6657; font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-decoration: none; }
   .title-button, .title-input { display: block; width: 100%; padding: 0; border: 0; color: #26332f; background: transparent; font: inherit; font-size: clamp(1.65rem, 6vw, 2.3rem); font-weight: 750; text-align: left; }
   .title-button:disabled { opacity: 1; }
@@ -1225,4 +1246,5 @@
     .preview-day li { grid-template-columns: 68px minmax(0, 1fr); }
     .date-fields { grid-template-columns: 1fr; }
   }
+  .draft-header > p,.draft-header .description-heading .memo-toggle{color:#fff}
 </style>

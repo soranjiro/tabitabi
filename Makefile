@@ -75,3 +75,6 @@ create-planning-example:
 
 test-planning-map:
 	cd apps/web && pnpm exec playwright test tests/e2e/planning-map.spec.ts --reporter=list
+
+test-planning-comparison:
+	cd apps/web && pnpm exec playwright test tests/e2e/planning-comparison.spec.ts --reporter=list

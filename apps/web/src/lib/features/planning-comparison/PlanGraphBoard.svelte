@@ -69,9 +69,9 @@
     }
     return true;
   }
-  type DrawNode = { node: PlanGraphNode; x: number; y: number; color: string };
+  type DrawNode = { node: PlanGraphNode; x: number; y: number; color: string; label: string; exit: number };
   type DrawEdge = { edge: PlanGraphEdge; path: string; color: string; x: number; y: number };
-  function layout(nodes: PlanGraphNode[], edges: PlanGraphEdge[], folded: string[]) {
+  function layout(nodes: PlanGraphNode[], edges: PlanGraphEdge[], folded: string[], expanded: string[]) {
     const originalParents = new Map(nodes.map(n => [n.id, edges.filter(e => e.to === n.id).map(e => e.from)]));
     const roots = nodes.filter(n => !originalParents.get(n.id)?.length);
     const visible = new Set(roots.map(n => n.id));
@@ -133,25 +133,45 @@
     }
     const minimum = Math.min(0, ...xs.values());
     const maximum = Math.max(0, ...xs.values()) - minimum;
+    const maxRank = Math.max(0, ...ranks.values());
+    const heights = Array.from({ length: maxRank + 1 }, () => 164);
+    for (const node of sorted) {
+      if (node.kind === 'choices' && expanded.includes(node.id)) {
+        const rank = ranks.get(node.id)!;
+        heights[rank] = Math.max(heights[rank], 176 + Math.min(260, node.options.length * 75 + 52));
+      }
+    }
+    const rowY: number[] = [];
+    let cursor = 95;
+    for (const height of heights) { rowY.push(cursor); cursor += height; }
+    const colorIds = new Map<string, number>();
+    for (const node of sorted) {
+      const parent = shownEdges.find(e => e.to === node.id);
+      if (!parent) colorIds.set(node.id, Math.max(0, rootsSorted.findIndex(root => root.id === node.id)) % colors.length);
+      else {
+        const siblings = shownEdges.filter(e => e.from === parent.from);
+        const branchOffset = siblings.length > 1 ? siblings.findIndex(e => e.id === parent.id) : 0;
+        colorIds.set(node.id, ((colorIds.get(parent.from) ?? 0) + branchOffset) % colors.length);
+      }
+    }
     const draws: DrawNode[] = sorted.map(n => {
-      const rootIndex = Math.max(0, rootsSorted.findIndex(root => root.id === n.id));
-      const parent = shownEdges.find(e => e.to === n.id);
-      const inherited = parent ? sorted.findIndex(item => item.id === parent.from) : rootIndex;
+      const parent = shownEdges.find(e => e.to === n.id && !!e.label);
       return { node: n, x: 174 + ((xs.get(n.id) ?? 0) - minimum) * 302,
-        y: 95 + (ranks.get(n.id) ?? 0) * 164,
-        color: colors[Math.max(0, inherited) % colors.length] };
+        y: rowY[ranks.get(n.id) ?? 0], label: parent?.label ?? '',
+        exit: n.kind === 'choices' && expanded.includes(n.id) ? 102 + Math.min(260, n.options.length * 75 + 52) : 48,
+        color: colors[colorIds.get(n.id) ?? 0] };
     });
     const positions = new Map(draws.map(d => [d.node.id, d]));
     const links: DrawEdge[] = shownEdges.map(edge => {
       const a = positions.get(edge.from)!, b = positions.get(edge.to)!;
-      const start = a.y + 48, end = b.y - 48;
+      const start = a.y + a.exit, end = b.y - 48;
       const delta = Math.max(18, (end - start) / 2);
       return { edge, path: 'M ' + a.x + ' ' + start + ' C ' + a.x + ' ' + (start + delta) + ', ' +
         b.x + ' ' + (end - delta) + ', ' + b.x + ' ' + end,
         color: b.color, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     });
     return { nodes: draws, links, width: Math.max(450, 348 + maximum * 302),
-      height: Math.max(210, 180 + Math.max(0, ...ranks.values()) * 164), count: shownNodes.length };
+      height: Math.max(210, cursor + 90), count: shownNodes.length };
   }
 
   let graph = $state<PlanGraph>(emptyGraph());
@@ -176,7 +196,7 @@
   let optionOpen = $state(false);
   let mobileHelpOpen = $state(false);
 
-  const drawn = $derived(layout(graph.nodes, graph.edges, folded));
+  const drawn = $derived(layout(graph.nodes, graph.edges, folded, expandedChoices));
   const selected = $derived(graph.nodes.find(n => n.id === selectedId) ?? null);
   const optionNode = $derived(graph.nodes.find(n => n.id === optionNodeId) ?? null);
   const targets = $derived(selected ? graph.nodes.filter(n => canLink(selected.id, n.id, graph.nodes, graph.edges)) : []);
@@ -313,6 +333,7 @@
           {@const node = item.node}
           <div class="graph-node" class:is-selected={selectedId === node.id} class:choice-node={node.kind === 'choices'}
             style:left={(item.x - 130) + 'px'} style:top={(item.y - 46) + 'px'} style:--lane-color={item.color}>
+            {#if item.label}<span class="lane-caption">{item.label}</span>{/if}
             <button class="node-main" onclick={() => selectedId = selectedId === node.id ? null : node.id} aria-pressed={selectedId === node.id}>
               <span class="node-mark">{icon(node.type)}</span>
               <span class="node-copy"><small>{localDate(node.start_local) || typeLabel(node.type)}</small><strong>{node.title}</strong>
@@ -454,6 +475,7 @@
   .graph-canvas{position:relative;min-height:240px}.graph-wires{position:absolute;inset:0;pointer-events:none}
   .graph-node{position:absolute;width:260px;min-height:91px;border:1px solid #dfe6df;border-left:3px solid var(--lane-color);border-radius:14px;background:white;box-shadow:0 4px 16px #1d3c2a0e;z-index:1}
   .graph-node.is-selected{border-color:var(--lane-color);box-shadow:0 0 0 3px #c7e5d47a,0 6px 19px #1d3c2a14}
+  .lane-caption{position:absolute;top:-24px;left:8px;padding:3px 8px;border:1px solid #e0e7df;border-radius:999px;background:#fff;color:var(--lane-color);font-size:10px;font-weight:800;white-space:nowrap}
   .node-main{display:flex;align-items:center;gap:10px;width:100%;min-height:88px;padding:12px 10px;border:0;background:transparent;text-align:left}
   .node-mark{flex:none;width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:#eff5ef;color:#3b7767;font-size:20px}
   .node-copy{display:grid;gap:3px;min-width:0;flex:1}.node-copy strong{overflow:hidden;text-overflow:ellipsis;font-size:12px;line-height:1.3}

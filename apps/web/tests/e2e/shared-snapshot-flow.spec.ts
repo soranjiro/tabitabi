@@ -63,7 +63,7 @@ test('デモのお金管理はAPIを待たずに表示・操作できる', async
   await footerMenu.getByRole('button', { name: 'お金の管理' }).click();
   await expect(page.getByRole('heading', { name: 'お金の管理' })).toBeVisible();
   await expect(page.getByText('読み込み中…')).toHaveCount(0);
-  await expect(page.getByText('確定支出 ¥74,000')).toBeVisible();
+  await expect(page.getByText('支払い済み ¥74,000')).toBeVisible();
 
   await page.getByRole('button', { name: '支出一覧' }).click();
   await expect(page.getByText('1人あたり ¥12,000')).toBeVisible();

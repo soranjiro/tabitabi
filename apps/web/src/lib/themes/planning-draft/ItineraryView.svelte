@@ -120,6 +120,7 @@
   let timeDurationMs = $state(60 * 60 * 1000);
   let searchQuery = $state("");
   let hasEditPermission = $state(false);
+  let planningReady = $state(false);
   let editingTitle = $state(false);
   let titleDraft = $state("");
   let sheetOpen = $state(false);
@@ -185,10 +186,12 @@
     memoDraft = getMemoText(itinerary.memo);
     if (readOnly) {
       hasEditPermission = false;
+      planningReady = true;
       return () => window.removeEventListener('hashchange', openFeatureFromHash);
     }
     if (getIsDemoMode() || isSharedSnapshot) {
       hasEditPermission = true;
+      planningReady = true;
       return () => window.removeEventListener('hashchange', openFeatureFromHash);
     }
     const token = auth.extractTokenFromUrl();
@@ -196,6 +199,7 @@
     hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
     if (!hasEditPermission && !itinerary.is_password_protected && !isSharedSnapshot) hasEditPermission = true;
     if (hasEditPermission) auth.updateAccessTime(itinerary.id, itinerary.title);
+    planningReady = true;
     return () => window.removeEventListener('hashchange', openFeatureFromHash);
   });
 
@@ -677,7 +681,7 @@
 
   <main>
     {#if screenMode === "plan"}
-      {#if !itinerary.is_password_protected || hasEditPermission || isSharedSnapshot}
+      {#if planningReady && (!itinerary.is_password_protected || hasEditPermission || isSharedSnapshot)}
         <PlanGraphBoard
           itineraryId={itinerary.id}
           {steps}

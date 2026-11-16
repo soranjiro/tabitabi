@@ -260,14 +260,37 @@
   const displayEdges = $derived.by(() => {
     const valid = new Set(displayNodes.map(node => node.id));
     const persisted = graph.edges.filter(edge => valid.has(edge.from) && valid.has(edge.to));
-    // Comparison metadata alone must never turn a conventional itinerary into independent lanes.
-    // An explicit Step node or connection is required to activate route editing.
-    if (persisted.length || graph.nodes.some(node => node.kind === 'step' && valid.has(node.id))) return persisted;
     const ordered = [...steps].sort((a, b) => (a.start_at ?? Infinity) - (b.start_at ?? Infinity)
       || (a.sort_order ?? 0) - (b.sort_order ?? 0));
-    return ordered.slice(1).map((step, i) => ({
+    const allLinear = () => ordered.slice(1).map((step, i) => ({
       id: 'auto-' + i, from: ordered[i].id, to: step.id, label: '',
     }));
+    const involved = new Set(persisted.flatMap(edge => [edge.from, edge.to]));
+    const independent = graph.nodes.some(node =>
+      node.kind === 'step' && valid.has(node.id) && !involved.has(node.id));
+    // Graph metadata for a hotel or flight comparison does not split the itinerary.
+    if (!persisted.length) return independent ? [] : allLinear();
+    const out = new Map<string, number>(), incoming = new Map<string, number>();
+    for (const edge of persisted) {
+      out.set(edge.from, (out.get(edge.from) ?? 0) + 1);
+      incoming.set(edge.to, (incoming.get(edge.to) ?? 0) + 1);
+    }
+    const branched = independent || [...out.values()].some(count => count > 1)
+      || [...incoming.values()].some(count => count > 1);
+    if (branched) return persisted;
+    // A normal Step created after a linear graph is already saved extends that same
+    // route; it does not become a surprise independent branch.
+    const unlinked = ordered.filter(step => !involved.has(step.id));
+    if (unlinked.length === 0) return persisted;
+    const ends = [...involved].filter(id => !out.has(id));
+    if (ends.length !== 1) return persisted;
+    let tail = ends[0];
+    const additions: PlanGraphEdge[] = [];
+    for (const step of unlinked) {
+      additions.push({ id: 'auto-extend-' + additions.length, from: tail, to: step.id, label: '' });
+      tail = step.id;
+    }
+    return [...persisted, ...additions];
   });
   const isBranched = $derived.by(() => {
     if (displayNodes.length <= 1) return false;

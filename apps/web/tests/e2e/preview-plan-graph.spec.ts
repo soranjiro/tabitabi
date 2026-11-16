@@ -58,6 +58,14 @@ test('classic single-column planning remains usable on mobile, then branches and
     await expect(page.locator('.graph-node')).toHaveCount(3);
     await expect(page.locator('.graph-scroll')).toBeVisible();
     await page.screenshot({ path: 'test-results/plan-branches-mobile.png', fullPage: false });
+    // Both branches have a persistent + action at their ends. Continue the second
+    // branch without selecting its card or scrolling to a separate detail panel.
+    await expect(page.getByRole('button', { name: 'プランBの次の予定を追加' })).toBeVisible();
+    await page.getByRole('button', { name: 'プランBの次の予定を追加' }).click();
+    await addBranch('プランBの続き');
+    await expect(page.locator('.graph-node')).toHaveCount(4);
+    await expect(page.getByRole('button', { name: 'プランBの続きの次の予定を追加' })).toBeVisible();
+    await page.screenshot({ path: 'test-results/plan-second-route-continued.png', fullPage: false });
 
     await pick('プランA');
     await page.getByLabel('この予定から合流').selectOption({ label: 'プランB' });
@@ -65,17 +73,17 @@ test('classic single-column planning remains usable on mobile, then branches and
     await expect.poll(async () => {
       const response = await request.get(apiBaseUrl + '/itineraries/' + id + '/plan-graph', { headers });
       return (await response.json()).data.edges.length;
-    }, { timeout: 15_000 }).toBe(3);
+    }, { timeout: 15_000 }).toBe(4);
     const result = await request.get(apiBaseUrl + '/itineraries/' + id + '/plan-graph', { headers });
     const graph = (await result.json()).data;
-    expect(graph.nodes).toHaveLength(3);
-    expect(graph.edges).toHaveLength(3);
+    expect(graph.nodes).toHaveLength(4);
+    expect(graph.edges).toHaveLength(4);
 
     await pick('東京集合');
     await page.locator('.branches button').filter({ hasText: '閉じる' }).first().click();
-    await expect(page.locator('.graph-footer')).toContainText('2件');
-    await page.locator('.branches button').filter({ hasText: '展開' }).first().click();
     await expect(page.locator('.graph-footer')).toContainText('3件');
+    await page.locator('.branches button').filter({ hasText: '展開' }).first().click();
+    await expect(page.locator('.graph-footer')).toContainText('4件');
 
     // Inline comparison belongs to the same Step.
     await pick('プランB');
@@ -90,20 +98,21 @@ test('classic single-column planning remains usable on mobile, then branches and
     await expect(page.getByText('京都駅前ホテル')).toBeVisible();
 
     await page.reload();
-    await expect(page.locator('.graph-node')).toHaveCount(3);
+    await expect(page.locator('.graph-node')).toHaveCount(4);
     const publish = await request.post(apiBaseUrl + '/itineraries/' + id + '/publish', { headers });
     expect(publish.ok()).toBeTruthy();
     const publicId = (await publish.json()).data.id as string;
     const publicGraphResult = await request.get(apiBaseUrl + '/itineraries/' + publicId + '/plan-graph');
     expect(publicGraphResult.ok()).toBeTruthy();
     const snapshot = (await publicGraphResult.json()).data;
-    expect(snapshot.nodes).toHaveLength(3);
+    expect(snapshot.nodes).toHaveLength(4);
     expect(JSON.stringify(snapshot)).not.toContain('ABCD1234');
     expect(JSON.stringify(snapshot)).not.toContain('token=private');
 
     await page.goto('/itineraries/' + publicId);
-    await expect(page.locator('.graph-node')).toHaveCount(3);
-    await expect(page.getByRole('button', { name: '＋ 予定を追加' })).toHaveCount(0);
+    await expect(page.locator('.graph-node')).toHaveCount(4);
+    await expect(page.getByRole('button', { name: 'プランBの続きの次の予定を追加' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '＋ 新しいプラン' })).toHaveCount(0);
     await page.screenshot({ path: 'test-results/plan-graph-public.png', fullPage: false });
   } finally {
     try { await request.delete(apiBaseUrl + '/itineraries/' + id, { headers }); }

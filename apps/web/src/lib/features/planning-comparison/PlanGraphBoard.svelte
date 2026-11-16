@@ -216,6 +216,7 @@
   let optionAmountText = $state('');
   let optionOpen = $state(false);
   let mobileHelpOpen = $state(false);
+  let recentlyCreatedIds = $state<string[]>([]);
 
   function localInput(timestamp: number | null) {
     if (timestamp === null || !Number.isFinite(timestamp)) return '';
@@ -247,15 +248,21 @@
           participants: extra?.participants ?? [], options: extra?.options ?? [],
           selected_option_id: extra?.selected_option_id ?? null } satisfies PlanGraphNode;
       }),
-      ...graph.nodes.filter(node => !ids.has(node.id)),
+      // Deleting an ordinary Step must not resurrect its old graph metadata as a ghost card.
+      ...graph.nodes.filter(node => !ids.has(node.id) && recentlyCreatedIds.includes(node.id)),
     ];
+  });
+  $effect(() => {
+    const current = new Set(steps.map(step => step.id));
+    const pending = recentlyCreatedIds.filter(id => !current.has(id));
+    if (pending.length !== recentlyCreatedIds.length) recentlyCreatedIds = pending;
   });
   const displayEdges = $derived.by(() => {
     const valid = new Set(displayNodes.map(node => node.id));
     const persisted = graph.edges.filter(edge => valid.has(edge.from) && valid.has(edge.to));
     // Comparison metadata alone must never turn a conventional itinerary into independent lanes.
     // An explicit Step node or connection is required to activate route editing.
-    if (persisted.length || graph.nodes.some(node => node.kind === 'step')) return persisted;
+    if (persisted.length || graph.nodes.some(node => node.kind === 'step' && valid.has(node.id))) return persisted;
     const ordered = [...steps].sort((a, b) => (a.start_at ?? Infinity) - (b.start_at ?? Infinity)
       || (a.sort_order ?? 0) - (b.sort_order ?? 0));
     return ordered.slice(1).map((step, i) => ({
@@ -389,7 +396,10 @@
         await onUpdateStep(editingId, fields);
       } else if (!editingId) {
         const created = await onCreateStep(fields);
-        if (created?.id) actualId = created.id;
+        if (created?.id) {
+          actualId = created.id;
+          recentlyCreatedIds = [...recentlyCreatedIds, actualId];
+        }
       }
     } catch (cause) {
       error = cause instanceof Error ? cause.message : '予定の保存に失敗しました。';

@@ -156,7 +156,7 @@
     }
     const draws: DrawNode[] = sorted.map(n => {
       const parent = shownEdges.find(e => e.to === n.id && !!e.label);
-      return { node: n, x: 174 + ((xs.get(n.id) ?? 0) - minimum) * 302,
+      return { node: n, x: 270 + ((xs.get(n.id) ?? 0) - minimum) * 302,
         y: rowY[ranks.get(n.id) ?? 0], label: parent?.label ?? '',
         exit: n.kind === 'choices' && expanded.includes(n.id) ? 102 + Math.min(260, n.options.length * 75 + 52) : 48,
         color: colors[colorIds.get(n.id) ?? 0] };
@@ -170,7 +170,10 @@
         b.x + ' ' + (end - delta) + ', ' + b.x + ' ' + end,
         color: b.color, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     });
-    return { nodes: draws, links, width: Math.max(450, 348 + maximum * 302),
+    const ticks = [...new Map(draws.filter(d => d.node.start_local).map(d =>
+      [d.y, { y: d.y, label: localDate(d.node.start_local) }]
+    )).values()];
+    return { nodes: draws, links, ticks, width: Math.max(545, 444 + maximum * 302),
       height: Math.max(210, cursor + 90), count: shownNodes.length };
   }
 
@@ -308,8 +311,7 @@
   <div class="graph-toolbar">
     <div class="graph-title"><h2>分岐プラン</h2><span>{graph.nodes.length}件の予定</span></div>
     {#if canEdit}<div class="toolbar-actions">
-      <button class="outline" onclick={() => newStep()}>＋ 別の出発点</button>
-      <button class="primary" onclick={() => newStep()}>＋ 予定を追加</button>
+      <button class="primary" onclick={() => newStep()}>＋ 独立した予定</button>
     </div>{/if}
   </div>
   {#if error}<div class="error" role="alert">{error}<button onclick={load}>再読込</button></div>{/if}
@@ -324,11 +326,19 @@
     <div class="graph-scroll" tabindex="0" aria-label="上から下へ時間が進むプラン図。横にスクロールできます。">
       <div class="graph-canvas" style:width={drawn.width + 'px'} style:height={drawn.height + 'px'}>
         <svg class="graph-wires" width={drawn.width} height={drawn.height} viewBox={'0 0 ' + drawn.width + ' ' + drawn.height} aria-hidden="true">
+          <line x1="113" x2="113" y1="30" y2={drawn.height - 40} stroke="#d1ddd3" stroke-width="1.5"/>
+          {#each drawn.ticks as tick}
+            <line x1="109" x2={drawn.width - 12} y1={tick.y} y2={tick.y} stroke="#dce7de" stroke-dasharray="3 7" stroke-width="1"/>
+            <circle cx="113" cy={tick.y} r="4" fill="#f6f9f5" stroke="#8aab99" stroke-width="1.5"/>
+          {/each}
           {#each drawn.links as link (link.edge.id)}
             <path d={link.path} stroke={link.color} stroke-width="3" fill="none" stroke-linecap="round"/>
             <circle cx={link.x} cy={link.y} r="3" fill={link.color}/>
           {/each}
         </svg>
+        {#each drawn.ticks as tick}
+          <div class="time-tick" style:top={(tick.y - 8) + 'px'}>{tick.label}</div>
+        {/each}
         {#each drawn.nodes as item (item.node.id)}
           {@const node = item.node}
           <div class="graph-node" class:is-selected={selectedId === node.id} class:choice-node={node.kind === 'choices'}
@@ -387,7 +397,9 @@
             <button onclick={() => newStep(selected!.id, false, '別プラン')}>↗ ここから分岐</button>
             <button onclick={() => newStep(selected!.id, true)}>◇ 候補を比較</button>
             <button onclick={() => editStep(selected!)}>編集</button>
-            <button onclick={() => onPlan(selected!, selected!.options.find(o => o.id === selected!.selected_option_id))}>予定表へ追加</button>
+            {#if selected.kind !== 'choices' || selected.selected_option_id}
+              <button onclick={() => onPlan(selected!, selected!.options.find(o => o.id === selected!.selected_option_id))}>予定表へ追加</button>
+            {/if}
             <button class="danger" onclick={() => removeNode(selected!)}>削除</button>
           {/if}
         </div>
@@ -473,6 +485,7 @@
   .outline{padding:9px 13px;border:1px solid #d8e1da;border-radius:999px;background:white;color:#416b5b;font-size:12px;font-weight:700}
   .graph-scroll{width:100%;overflow:auto;border:1px solid #e4eae4;border-radius:16px;background:radial-gradient(ellipse at top,#f7faf6,#fff 70%);scrollbar-color:#c9d7cc transparent}
   .graph-canvas{position:relative;min-height:240px}.graph-wires{position:absolute;inset:0;pointer-events:none}
+  .time-tick{position:absolute;left:10px;width:96px;text-align:right;font-size:10px;font-variant-numeric:tabular-nums;color:#6d8674;white-space:nowrap}
   .graph-node{position:absolute;width:260px;min-height:91px;border:1px solid #dfe6df;border-left:3px solid var(--lane-color);border-radius:14px;background:white;box-shadow:0 4px 16px #1d3c2a0e;z-index:1}
   .graph-node.is-selected{border-color:var(--lane-color);box-shadow:0 0 0 3px #c7e5d47a,0 6px 19px #1d3c2a14}
   .lane-caption{position:absolute;top:-24px;left:8px;padding:3px 8px;border:1px solid #e0e7df;border-radius:999px;background:#fff;color:var(--lane-color);font-size:10px;font-weight:800;white-space:nowrap}

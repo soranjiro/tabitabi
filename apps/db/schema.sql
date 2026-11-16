@@ -520,7 +520,6 @@ CREATE TABLE itinerary_comparison_groups (
 );
 CREATE INDEX idx_itinerary_comparison_groups_itinerary
   ON itinerary_comparison_groups(itinerary_id, created_at);
-
 CREATE TABLE itinerary_plan_graphs (
   itinerary_id TEXT PRIMARY KEY REFERENCES itineraries(id) ON DELETE CASCADE,
   nodes_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(nodes_json)),

@@ -160,6 +160,8 @@
   let optionRequest = $state<{ id: string; sequence: number; optionId?: string } | null>(null);
   let selectRequest = $state<{ id: string; sequence: number; optionId: string | null } | null>(null);
   let planRequestCounter = 0;
+  let graphCreateContext = $state<{ parentId: string | null; label: string } | null>(null);
+  let createdStepRequest = $state<{ step: Step; parentId: string | null; label: string; sequence: number } | null>(null);
   let graphStateSignature = '';
   function updateGraphState(state: { branched: boolean; choices: Record<string, ComparisonOption[]>; selected: Record<string, string | null> }) {
     const signature = JSON.stringify(state);
@@ -423,7 +425,8 @@
   }
 
   function openCreate(place?: Place) {
-    if (!hasEditPermission) return;
+    if (!canPlanEdit) return;
+    graphCreateContext = null;
     placeDraft = place ?? null;
     formError = '';
     editingStep = null;
@@ -431,6 +434,10 @@
     timeDurationMs = 60 * 60 * 1000;
     extraFieldsOpen = false;
     sheetOpen = true;
+  }
+  function openGraphCreate(parentId: string | null, label: string) {
+    openCreate();
+    if (sheetOpen) graphCreateContext = { parentId, label };
   }
 
   // A selected alternative becomes a normal step only after its details are reviewed.
@@ -550,8 +557,16 @@
       if (editingStep && onUpdateStep) {
         await onUpdateStep(editingStep.id, { ...data, location: location || null, link: link || null });
       } else if (onCreateStep) {
-        await onCreateStep({ ...data, ...(location && { location }), ...(link && { link }) });
+        const created = await onCreateStep({ ...data, ...(location && { location }), ...(link && { link }) });
+        if (graphCreateContext) {
+          if (!created?.id) throw new Error('作成された予定のIDを確認できませんでした。');
+          createdStepRequest = {
+            step: created, parentId: graphCreateContext.parentId,
+            label: graphCreateContext.label, sequence: ++planRequestCounter,
+          };
+        }
       }
+      graphCreateContext = null;
       sheetOpen = false;
       editingStep = null;
       selectedStepId = null;
@@ -854,6 +869,7 @@
         showGraph={isPlanBranched}
         demo={getIsDemoMode()}
         {onCreateStep} {onUpdateStep} {onDeleteStep}
+        onRequestCreate={openGraphCreate} {createdStepRequest}
         onGraphState={updateGraphState}
         onEditExistingStep={(id) => { const step = steps.find(item => item.id === id); if (step) openEdit(step); }}
         onOpenExistingStep={(id) => { const step = steps.find(item => item.id === id); if (step) openDetail(step); }}

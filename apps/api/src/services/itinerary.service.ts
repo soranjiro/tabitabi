@@ -400,7 +400,6 @@ export class ItineraryService {
             source.page_background_image ?? null, source.background_display ?? 'cover', newId),
           ...stepStatements,
           ...moneyStatements,
-        ...planningStatements,
           ...planningStatements,
           ...(userId ? [this.db.prepare(`INSERT INTO itinerary_publications
             (source_itinerary_id, shared_itinerary_id, user_id, prefecture_slugs, areas, tags, published_at, updated_at)

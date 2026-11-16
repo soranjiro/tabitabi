@@ -223,7 +223,7 @@
       id: step.id, kind: 'step', title: step.title,
       type: step.type ?? STEP_TYPE.NORMAL_GENERAL,
       start_local: localInput(step.start_at), end_local: localInput(step.end_at),
-      location: step.location ?? '', notes: getMemoText(step.notes),
+      location: step.location ?? '', notes: getMemoText(step.notes).slice(0, 2000),
       link: step.link ?? '', amount: null, currency: 'JPY', participants: [],
       options: [], selected_option_id: null,
     };
@@ -251,7 +251,7 @@
     const ordered = [...steps].sort((a, b) => (a.start_at ?? Infinity) - (b.start_at ?? Infinity)
       || (a.sort_order ?? 0) - (b.sort_order ?? 0));
     return ordered.slice(1).map((step, i) => ({
-      id: 'auto-' + ordered[i].id + '-' + step.id, from: ordered[i].id, to: step.id, label: '',
+      id: 'auto-' + i, from: ordered[i].id, to: step.id, label: '',
     }));
   });
   const isBranched = $derived.by(() => {

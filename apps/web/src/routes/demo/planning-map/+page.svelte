@@ -38,7 +38,7 @@
   {#key itinerary.theme_id}
     <View {itinerary} {steps}
       onUpdateItinerary={async (data: Partial<ItineraryResponse>) => { demoStorage.updateItinerary(data); await refresh(); }}
-      onCreateStep={async (data: Omit<Step,'id'|'created_at'|'updated_at'|'itinerary_id'>) => { demoStorage.createStep({...data,itinerary_id:'demo'}); await refresh(); }}
+      onCreateStep={async (data: Omit<Step,'id'|'created_at'|'updated_at'|'itinerary_id'>) => { const created = demoStorage.createStep({...data,itinerary_id:'demo'}); await refresh(); return created; }}
       onUpdateStep={async (id: string, data: Partial<Step>) => { demoStorage.updateStep(id,data); await refresh(); }}
       onDeleteStep={async (id: string) => { demoStorage.deleteStep(id); await refresh(); }} />
   {/key}

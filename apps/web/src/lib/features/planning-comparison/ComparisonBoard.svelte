@@ -260,7 +260,7 @@
                 </div>
               {/if}
               {#if group.options.length > 0}
-                <div class="matrix-scroll" tabindex="0" aria-label="候補比較表。横にスクロールできます">
+                <div class="matrix-scroll" role="region" aria-label="候補比較表。横にスクロールできます">
                   <table>
                     <thead>
                       <tr><th scope="col">候補</th><th scope="col">料金</th><th scope="col">{group.kind === 'stay' ? 'チェックイン・アウト' : '出発・到着'}</th><th scope="col">キャンセル・条件</th><th scope="col">詳細</th>{#if canEdit}<th scope="col">操作</th>{/if}</tr>
@@ -359,8 +359,6 @@
   .comparison-board { margin: 20px 0 28px; padding: 20px; border: 1px solid #dce5dd; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px #26332f08; }
   .board-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
   .board-heading h2 { margin: 3px 0 5px; color: #26332f; font-size: 20px; }
-  .board-heading p:not(.eyebrow) { margin: 0; color: #738078; font-size: 12px; line-height: 1.7; }
-  .eyebrow { margin: 0; color: #547b6a; font-size: 10px; font-weight: 800; letter-spacing: .15em; }
   button { font: inherit; cursor: pointer; }
   button:disabled { cursor: not-allowed; opacity: .55; }
   .primary { flex: none; padding: 10px 15px; border: 0; border-radius: 10px; color: white; background: #2f6657; font-size: 12px; font-weight: 750; }
@@ -370,8 +368,6 @@
   .title-field { flex: 1 1 230px; }
   input, select, textarea { min-width: 0; padding: 10px; border: 1px solid #d6ded8; border-radius: 9px; color: #26332f; background: white; font: inherit; font-size: 13px; }
   .empty { margin: 18px 0 0; padding: 20px 14px; border: 1px dashed #d6ded8; border-radius: 12px; text-align: center; color: #53625b; font-size: 13px; }
-  .empty p { margin: 5px 0 0; color: #87928b; font-size: 12px; }
-  .demo-note, .matrix-hint, .field-hint { color: #809087; font-size: 11px; }
   .error { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0; padding: 10px; border-radius: 8px; background: #fff0ed; color: #9e4e42; font-size: 12px; }
   .error button { padding: 5px 9px; border: 1px solid #eccac1; border-radius: 6px; background: #fff; }
   .group-list { display: grid; gap: 10px; margin-top: 16px; }

@@ -116,9 +116,9 @@ describe('Planning comparisons API', () => {
     expect((await list.json() as any).data[0].revision).toBe(1);
   });
 
-  it('does not expose comparisons on published snapshots', async () => {
+  it('allows public snapshot reads but denies edits', async () => {
     const { id } = await makeTrip(null, true);
-    expect((await request(id + '/comparisons')).status).toBe(403);
+    expect((await request(id + '/comparisons')).status).toBe(200);
     expect((await request(id + '/comparisons', 'POST', { title: '宿', kind: 'stay' })).status).toBe(403);
   });
 

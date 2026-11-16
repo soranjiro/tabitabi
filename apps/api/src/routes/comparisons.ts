@@ -58,12 +58,12 @@ function toGroup(row: GroupRow): ComparisonGroup {
   };
 }
 
-async function canAccess(c: Context<{ Bindings: Env; Variables: Variables }>, id: string) {
+async function canAccess(c: Context<{ Bindings: Env; Variables: Variables }>, id: string, write = false) {
   const itinerary = await new ItineraryService(c.env.DB).get(id);
   if (!itinerary) return 'NOT_FOUND';
-  // Candidate pricing and links stay off public snapshots.
-  if (itinerary.source_itinerary_id) return 'FORBIDDEN';
-  // Unlike a published itinerary, a private comparison requires edit access.
+  // Published snapshots expose only separately copied, sanitized candidates.
+  if (write && itinerary.source_itinerary_id) return 'FORBIDDEN';
+  // Protected source itineraries still require an edit token.
   if (itinerary.password && c.get('shioriId') !== id) return 'FORBIDDEN';
   return null;
 }
@@ -77,7 +77,7 @@ comparisons.use('/:id/comparisons', optionalAuthMiddleware);
 
 comparisons.get('/:id/comparisons', async (c) => {
   const id = c.req.param('id');
-  const denial = await canAccess(c, id);
+  const denial = await canAccess(c, id, c.req.method !== 'GET');
   if (denial) return c.json(denial === 'NOT_FOUND' ? notFound : forbidden, denial === 'NOT_FOUND' ? 404 : 403);
   const rows = await c.env.DB.prepare(
     'SELECT * FROM itinerary_comparison_groups WHERE itinerary_id = ? ORDER BY created_at ASC, id ASC',
@@ -87,7 +87,7 @@ comparisons.get('/:id/comparisons', async (c) => {
 
 comparisons.post('/:id/comparisons', async (c) => {
   const id = c.req.param('id');
-  const denial = await canAccess(c, id);
+  const denial = await canAccess(c, id, c.req.method !== 'GET');
   if (denial) return c.json(denial === 'NOT_FOUND' ? notFound : forbidden, denial === 'NOT_FOUND' ? 404 : 403);
   const parsed = createSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json(invalid, 400);
@@ -111,7 +111,7 @@ comparisons.post('/:id/comparisons', async (c) => {
 
 comparisons.put('/:id/comparisons/:groupId', async (c) => {
   const id = c.req.param('id');
-  const denial = await canAccess(c, id);
+  const denial = await canAccess(c, id, c.req.method !== 'GET');
   if (denial) return c.json(denial === 'NOT_FOUND' ? notFound : forbidden, denial === 'NOT_FOUND' ? 404 : 403);
   const parsed = updateSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json(invalid, 400);
@@ -143,7 +143,7 @@ comparisons.put('/:id/comparisons/:groupId', async (c) => {
 
 comparisons.delete('/:id/comparisons/:groupId', async (c) => {
   const id = c.req.param('id');
-  const denial = await canAccess(c, id);
+  const denial = await canAccess(c, id, c.req.method !== 'GET');
   if (denial) return c.json(denial === 'NOT_FOUND' ? notFound : forbidden, denial === 'NOT_FOUND' ? 404 : 403);
   const result = await c.env.DB.prepare(
     'DELETE FROM itinerary_comparison_groups WHERE id = ? AND itinerary_id = ?',

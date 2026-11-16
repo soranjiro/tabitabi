@@ -323,7 +323,7 @@
       {#if canEdit}<button class="primary" onclick={() => newStep()}>＋ 予定を追加</button>{/if}
     </div>
   {:else}
-    <div class="graph-scroll" tabindex="0" aria-label="上から下へ時間が進むプラン図。横にスクロールできます。">
+    <div class="graph-scroll" role="region" aria-label="上から下へ時間が進むプラン図。横にスクロールできます。">
       <div class="graph-canvas" style:width={drawn.width + 'px'} style:height={drawn.height + 'px'}>
         <svg class="graph-wires" width={drawn.width} height={drawn.height} viewBox={'0 0 ' + drawn.width + ' ' + drawn.height} aria-hidden="true">
           <line x1="113" x2="113" y1="30" y2={drawn.height - 40} stroke="#d1ddd3" stroke-width="1.5"/>
@@ -482,7 +482,6 @@
   .graph-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:18px 0}
   .graph-title{display:flex;align-items:baseline;gap:12px}.graph-title h2{margin:0;font-size:19px}.graph-title span{font-size:11px;color:#87928b}
   .toolbar-actions{display:flex;gap:7px;flex-wrap:wrap}.primary{border:0;border-radius:999px;padding:10px 16px;background:#2f6657;color:white;font-size:12px;font-weight:750}
-  .outline{padding:9px 13px;border:1px solid #d8e1da;border-radius:999px;background:white;color:#416b5b;font-size:12px;font-weight:700}
   .graph-scroll{width:100%;overflow:auto;border:1px solid #e4eae4;border-radius:16px;background:radial-gradient(ellipse at top,#f7faf6,#fff 70%);scrollbar-color:#c9d7cc transparent}
   .graph-canvas{position:relative;min-height:240px}.graph-wires{position:absolute;inset:0;pointer-events:none}
   .time-tick{position:absolute;left:10px;width:96px;text-align:right;font-size:10px;font-variant-numeric:tabular-nums;color:#6d8674;white-space:nowrap}

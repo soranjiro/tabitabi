@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import type { ComparisonGroup, ComparisonOption } from '@tabitabi/types';
 import { ItineraryService } from '../services/itinerary.service';
@@ -58,7 +58,7 @@ function toGroup(row: GroupRow): ComparisonGroup {
   };
 }
 
-async function canAccess(c: Parameters<Parameters<typeof comparisons.use>[1]>[0], id: string) {
+async function canAccess(c: Context<{ Bindings: Env; Variables: Variables }>, id: string) {
   const itinerary = await new ItineraryService(c.env.DB).get(id);
   if (!itinerary) return 'NOT_FOUND';
   // Candidate pricing and links stay off public snapshots.

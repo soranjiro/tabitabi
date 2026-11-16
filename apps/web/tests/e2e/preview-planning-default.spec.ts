@@ -20,7 +20,7 @@ test('planning-draft preserves ordinary Step editing, dates, search and inline c
     await dialog.getByLabel('開始日').fill('2026-12-10');
     await dialog.getByRole('button', { name: '追加', exact: true }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.getByText('2026/12/10')).toBeVisible();
+    await expect(page.locator('.section-heading h2').filter({ hasText: '2026/12/10' })).toBeVisible();
     await expect(page.locator('.graph-scroll')).toHaveCount(0);
 
     await page.getByRole('button', { name: '＋ 予定を追加' }).first().click();

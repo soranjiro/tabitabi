@@ -8,6 +8,10 @@ onlyBuiltDependencies:
   - workerd
 
 overrides:
+  # Tailwind v3 relies on Sucrase; 3.35.1 removes its vulnerable glob@10 dependency.
+  sucrase: '3.35.1'
+  # Sentry's bundler plugin still requests glob@13; use the fixed glob@14 API.
+  '@sentry/bundler-plugins>glob': '^14.0.2'
   '@grpc/grpc-js': ^1.14.5
   '@vitest/mocker': '>=4.1.12 <5'
   baseline-browser-mapping: '>=2.11.0'

@@ -15,10 +15,11 @@ test('classic single-column planning remains usable on mobile, then branches and
   const headers = { Authorization: 'Bearer ' + token };
 
   async function addBranch(label: string) {
-    const dialog = page.getByRole('dialog', { name: '分岐プランの予定' });
+    const dialog = page.getByRole('dialog', { name: '予定を追加' });
     await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('radio', { name: 'まだ決めない' })).toBeChecked();
     await dialog.getByLabel('タイトル').fill(label);
-    await dialog.getByRole('button', { name: '保存', exact: true }).click();
+    await dialog.getByRole('button', { name: '追加', exact: true }).click();
     await expect(dialog).toBeHidden();
     await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
   }

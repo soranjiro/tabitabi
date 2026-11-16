@@ -193,9 +193,7 @@
 <section class="comparison-board" aria-label="飛行機・宿などの比較候補">
   <div class="board-heading">
     <div>
-      <p class="eyebrow">COMPARE OPTIONS</p>
-      <h2>候補を比較する</h2>
-      <p>飛行機や宿を並べて比べ、決まった案だけ予定に追加できます。</p>
+      <h2>候補</h2>
     </div>
     {#if canEdit}
       <button class="primary" onclick={() => (showGroupForm = !showGroupForm)}>
@@ -204,7 +202,7 @@
     {/if}
   </div>
 
-  {#if demo}<p class="demo-note">デモの候補はこの画面内だけで保持されます。</p>{/if}
+
   {#if error}
     <div class="error" role="alert"><span>{error}</span><button onclick={reload}>再読込</button></div>
   {/if}
@@ -227,8 +225,7 @@
     <p class="empty">候補を読み込んでいます。</p>
   {:else if groups.length === 0}
     <div class="empty">
-      <strong>比較する候補はまだありません。</strong>
-      <p>「行きの飛行機」「宿泊先」など、比較したいテーマごとに追加できます。</p>
+      <strong>候補はまだありません</strong>
     </div>
   {:else}
     <div class="group-list">
@@ -304,9 +301,9 @@
                     </tbody>
                   </table>
                 </div>
-                <p class="matrix-hint">料金は入力した条件・通貨のまま表示します。予約時には最新価格と条件を確認してください。</p>
+
               {:else}
-                <p class="group-empty">候補を追加すると、料金や時間などを一覧で比較できます。</p>
+                <p class="group-empty">候補なし</p>
               {/if}
               {#if canEdit}
                 <button class="add-option" disabled={busy || group.options.length >= 50} onclick={() => openOption(group)}>＋ 候補を追加</button>
@@ -341,7 +338,7 @@
             <label>出発地<input bind:value={optionDraft.from} maxlength="140" placeholder="例：関西国際空港" /></label>
             <label>到着地<input bind:value={optionDraft.to} maxlength="140" placeholder="例：羽田空港" /></label>
           </div>
-          <p class="field-hint">出発・到着はそれぞれの現地時刻を入力してください。</p>
+
         {:else}
           <label>場所<input bind:value={optionDraft.to} maxlength="140" placeholder="ホテルの所在地など" /></label>
         {/if}

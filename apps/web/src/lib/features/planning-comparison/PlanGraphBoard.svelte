@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import {
     STEP_TYPE, type Step, type StepType, type PlanGraph, type PlanGraphNode, type PlanGraphEdge,
     type ComparisonOption,
@@ -9,6 +9,7 @@
   import { demoStorage } from '$lib/demo';
   import { moveStop } from './graph';
   import StepTypeIcon from '$lib/themes/standard/core/icons/StepTypeIcon.svelte';
+  import CandidateOptionCard from './CandidateOptionCard.svelte';
 
   let { itineraryId, steps, canEdit, demo = false, showGraph = false, branchRequest = null, optionRequest = null, selectRequest = null, createdStepRequest = null, localGraph = null, onSaveLocalGraph, onRequestCreate, onGraphState, onGraphError, onEditExistingStep, onOpenExistingStep, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
     localGraph?: PlanGraph | null; onSaveLocalGraph?: (graph: PlanGraph) => void;
@@ -560,11 +561,19 @@
     if (!confirm('この接続を外しますか？')) return;
     await save(graph.nodes, displayEdges.filter(e => e.id !== edge.id));
   }
-  function openOption(node: PlanGraphNode, current?: ComparisonOption) {
+  async function openOption(node: PlanGraphNode, current?: ComparisonOption, focusField?: 'notes' | 'url') {
+    if (!canEdit) return;
     optionNodeId = node.id; editingOptionId = current?.id ?? null;
     option = current ? { ...current } : optionTemplate(crypto.randomUUID());
     optionAmountText = current?.amount == null ? '' : String(current.amount);
     optionOpen = true; error = '';
+    if (focusField) {
+      await tick();
+      const field = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+        '[data-candidate-field="' + focusField + '"]',
+      );
+      field?.focus();
+    }
   }
   async function submitOption(event: SubmitEvent) {
     event.preventDefault();
@@ -634,12 +643,12 @@
 {#if showGraph}
 <section class="graph-board" aria-label="分岐・合流プラン">
   <div class="graph-toolbar">
-    <div class="graph-title"><h2>プラン比較</h2><span>{displayNodes.length}件 · 予定を選んで編集・移動</span></div>
+    <div class="graph-title"><h2>プラン比較</h2><span>{displayNodes.length}件</span></div>
     {#if canEdit && displayNodes.length > 0}
       <button class="outline new-plan-button" onclick={() => newStep()}>＋ 新しいプラン</button>
     {/if}
   </div>
-  {#if !demo}<a class="demo-link" href="/demo/planning-comparison" target="_blank" rel="noopener noreferrer">サンプルで操作を試す ↗</a>{/if}
+  {#if !demo}<a class="demo-link" href="/demo/planning-comparison" target="_blank" rel="noopener noreferrer">デモを見る ↗</a>{/if}
   {#if error}<div class="error" role="alert">{error}<button onclick={load}>再読込</button></div>{/if}
   {#if loading}<p class="status">読み込み中…</p>
   {:else if displayNodes.length === 0}
@@ -688,20 +697,12 @@
               {#if expandedChoices.includes(node.id)}
                 <div class="choice-list">
                   {#each node.options as candidate (candidate.id)}
-                    <div class="choice-item" class:adopted={node.selected_option_id === candidate.id}>
-                      <button class="choice-select" title="この候補を選択" disabled={!canEdit || busy}
-                        onclick={() => selectOption(node, node.selected_option_id === candidate.id ? null : candidate.id)}>
-                        {node.selected_option_id === candidate.id ? '●' : '○'}
-                      </button>
-                      <div class="choice-copy">
-                        <strong>{candidate.title}</strong>
-                        {#if candidate.amount !== null}<small>{cost(candidate.amount, candidate.currency)}</small>{/if}
-                        {#if candidate.start_local}<small>{localDate(candidate.start_local)}</small>{/if}
-                        {#if candidate.notes}<small class="clamp">{candidate.notes}</small>{/if}
-                        {#if candidate.url}<a href={candidate.url} target="_blank" rel="noopener noreferrer">リンク</a>{/if}
-                      </div>
-                      {#if canEdit}<button class="choice-edit" onclick={() => openOption(node, candidate)}>編集</button>{/if}
-                    </div>
+                    <CandidateOptionCard option={candidate}
+                      selected={node.selected_option_id === candidate.id}
+                      {canEdit} {busy} compact
+                      onSelect={() => selectOption(node, node.selected_option_id === candidate.id ? null : candidate.id)}
+                      onEdit={(field) => { void openOption(node, candidate, field); }}
+                    />
                   {/each}
                   {#if canEdit && node.options.length < 30}<button class="add-choice" onclick={() => openOption(node)}>＋ 候補を追加</button>{/if}
                 </div>
@@ -720,10 +721,10 @@
         {/each}
       </div>
     </div>
-    {#if isBranched}<div class="graph-footer"><span>上から下へ時系列</span><span>{drawn.count}件</span></div>{/if}
+    {#if isBranched}<div class="graph-footer"><span>{drawn.count}件を表示</span></div>{/if}
     </div>
     <aside class="comparison-sidebar" aria-label="プランと候補">
-      <section class="sidebar-card"><h3>プラン</h3><p>別行動や、迷っているルートを比較</p>
+      <section class="sidebar-card"><h3>プラン</h3>
         {#each routeStarts as edge, index (edge.id)}
           {@const summary = routeSummary(edge.to)}
           <div class="route-summary" style:--route-color={colors[index % colors.length]}>
@@ -736,18 +737,21 @@
           </div>
           {#if summary.cost || summary.participants}<small class="route-meta">{summary.participants}{summary.participants && summary.cost ? ' · ' : ''}{summary.cost ? '入力済み ' + summary.cost : ''}</small>{/if}
         {/each}
-        <p class="route-cost-note">金額は入力済みの参考額。共通の予定は含みません。</p>
+        
         {#if routeStarts.length === 0}<small>共通の予定</small>{/if}
         {#if canEdit}<button class="sidebar-add" onclick={() => newStep()}>＋ 別の出発点を作る</button>{/if}
       </section>
       <section class="sidebar-card"><h3>候補 <span>{candidateNodes.reduce((sum, node) => sum + node.options.length, 0)}</span></h3>
-        <p>選んだ案は「この予定に反映」で日程にも反映できます。</p>
         {#each candidateNodes as node (node.id)}
           <details open><summary><span>{node.title}</span><small>{node.options.length}案</small></summary>
             {#each node.options as candidate (candidate.id)}
-              <div class="sidebar-candidate" class:adopted={node.selected_option_id === candidate.id}>
-                <button aria-label={candidate.title + 'を選択'} aria-pressed={node.selected_option_id === candidate.id} disabled={!canEdit || busy} onclick={() => selectOption(node, node.selected_option_id === candidate.id ? null : candidate.id)}><span aria-hidden="true">{node.selected_option_id === candidate.id ? '●' : '○'}</span><span>{candidate.title}<small>{candidate.start_local ? localDate(candidate.start_local) : '日時未定'}</small></span><b>{cost(candidate.amount, candidate.currency)}</b></button>
-                {#if canEdit}<button class="candidate-edit" onclick={() => openOption(node, candidate)}>編集</button>{/if}
+              <div class="sidebar-candidate">
+                <CandidateOptionCard option={candidate}
+                  selected={node.selected_option_id === candidate.id}
+                  {canEdit} {busy} compact
+                  onSelect={() => selectOption(node, node.selected_option_id === candidate.id ? null : candidate.id)}
+                  onEdit={(field) => { void openOption(node, candidate, field); }}
+                />
               </div>
             {/each}
             {#if canEdit}<button class="sidebar-add" disabled={busy || node.options.length >= 30} onclick={() => openOption(node)}>＋ 候補を追加</button>
@@ -755,7 +759,7 @@
             {/if}
           </details>
         {/each}
-        {#if candidateNodes.length === 0}<small>予定を選んで、飛行機や宿の候補を追加できます。</small>{/if}
+        {#if candidateNodes.length === 0}<small class="candidate-empty">候補なし</small>{/if}
       </section>
     </aside></div>
     {#if selected}
@@ -791,7 +795,7 @@
             <select id="move-target" bind:value={moveTarget}><option value="">挿入する直前の予定を選択</option>
               {#each moveTargets as target}<option value={target.id}>{target.title} の後</option>{/each}
             </select><button disabled={!moveTarget || busy} onclick={moveSelected}>移動する</button>
-            <small>この予定だけを移動します。移動元の前後はつなぎ直します。</small>
+            
           </div>
         {/if}
         {#if canEdit && targets.length}
@@ -857,8 +861,10 @@
         <div class="two"><label>出発地<input bind:value={option.from} maxlength="140" /></label>
           <label>到着地・場所<input bind:value={option.to} maxlength="140" /></label></div>
         <label>キャンセル・変更条件<input bind:value={option.cancellation} maxlength="300" /></label>
-        <label>メモ<textarea bind:value={option.notes} maxlength="2000" rows="3"></textarea></label>
-        <label>リンク<input type="url" bind:value={option.url} maxlength="2048" placeholder="https://" /></label>
+        <div class="candidate-fields">
+          <label>メモ<textarea data-candidate-field="notes" bind:value={option.notes} maxlength="2000" rows="3" placeholder="気になる点・比較したい条件"></textarea></label>
+          <label>リンク<input data-candidate-field="url" type="url" bind:value={option.url} maxlength="2048" placeholder="https://" /></label>
+        </div>
         <div class="form-actions">
           {#if editingOptionId}<button type="button" class="danger" onclick={() => { void removeOption(optionNode!, editingOptionId!); optionOpen = false; }}>削除</button>{/if}
           <button type="button" onclick={() => optionOpen = false}>キャンセル</button><button class="primary" disabled={busy || !option.title.trim()}>保存</button>
@@ -884,9 +890,8 @@
   .sidebar-add.apply{border-style:solid;background:#eaf4ee}
   .sidebar-card details{overflow:hidden;margin-top:10px;border:1px solid #e0e5e1;border-radius:12px;background:white}
   .sidebar-card summary{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:12px 10px;cursor:pointer;font-size:12px;font-weight:700}.sidebar-card summary span{overflow-wrap:anywhere}.sidebar-card summary small{flex:none;color:#809087;font-size:10px}
-  .sidebar-candidate{border-top:1px solid #edf0ed;padding:4px}.sidebar-candidate.adopted{background:#eff7f3}
-  .sidebar-candidate>button:first-child{display:flex;gap:6px;align-items:center;width:100%;padding:7px 4px;border:0;background:transparent;text-align:left;font-size:11px;color:#2b4b3e}
-  .sidebar-candidate>button:first-child:disabled{opacity:1;cursor:default}.sidebar-candidate span:nth-child(2){flex:1;min-width:0;overflow-wrap:anywhere}.sidebar-candidate small{display:block;font-size:9px;color:#75857b;margin-top:4px}.sidebar-candidate b{white-space:nowrap;font-size:10px}.candidate-edit{display:block;margin-left:auto}
+  .sidebar-candidate{padding:4px 6px 9px}
+  .candidate-empty{padding:10px 0;text-align:center}
   .sidebar-card details>.sidebar-add{border-radius:0;border-width:1px 0 0;margin:0}
   .join-form>small{flex-basis:100%;font-size:11px;color:#728579}
   button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid #357764;outline-offset:3px}
@@ -921,12 +926,9 @@
   .route-plus{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#2f6657;color:#fff;font-size:15px;font-weight:650;line-height:1}
   .choice-node{z-index:2}.choice-summary{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-top:1px solid #edf1eb;font-size:11px;color:#6a7e70}
   .choice-summary button{border:0;background:transparent;color:#356d5b;font-weight:700;font-size:11px}
-  .choice-list{max-height:260px;overflow-y:auto;padding:6px 8px 10px;display:grid;gap:5px}
-  .choice-item{display:flex;align-items:start;gap:5px;padding:7px 4px;border:1px solid #edf0ec;border-radius:9px}
-  .choice-item.adopted{border-color:#95cbb0;background:#f1f8f3}
-  .choice-select{border:0;background:transparent;color:#387864}
-  .choice-copy{display:grid;min-width:0;flex:1;gap:2px}.choice-copy strong{font-size:11px;overflow-wrap:anywhere}.choice-copy small{font-size:10px;color:#667c6b}.choice-copy .clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .choice-copy a,.external{font-size:11px;color:#356d5b}.choice-edit,.add-choice{font-size:10px;color:#356d5b;background:transparent;border:0}.add-choice{padding:9px;text-align:center}
+  .choice-list{max-height:300px;overflow-y:auto;padding:6px 8px 10px;display:grid;gap:6px}
+  .external{font-size:11px;color:#356d5b}
+  .add-choice{padding:9px;font-size:11px;color:#356d5b;background:transparent;border:0}
   .graph-footer{display:flex;justify-content:space-between;margin:8px 0 12px;font-size:10px;color:#89958e}
   .graph-empty{display:grid;justify-items:center;gap:12px;padding:35px 16px;border:1px dashed #d4dfd6;border-radius:16px;color:#3c6c5b}
   .graph-empty svg{width:170px;fill:#f8faf6}.status{text-align:center;padding:32px;color:#859288}
@@ -944,6 +946,8 @@
   .sheet{width:min(560px,100%);max-height:92dvh;overflow:auto;padding:20px 22px calc(22px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;background:white}
   .sheet-header{display:flex;justify-content:space-between;align-items:start}.sheet-header small{font-size:11px;color:#7f9185}.sheet-header h3{margin:3px 0 18px;font-size:18px}.sheet-header button{border:0;background:#f2f5f2;border-radius:50%;width:32px;height:32px;font-size:20px;color:#6c7d70}
   .form-error{margin:0;padding:8px 10px;border-radius:8px;background:#fff1ed;color:#a34c45;font-size:12px}
+  .candidate-fields{display:grid;gap:12px;padding:12px;border:1px solid #e2ebe4;border-radius:12px;background:#f8fbf8}
+  .candidate-fields textarea{min-height:88px;resize:vertical;line-height:1.6}
   .sheet form{display:grid;gap:12px}.sheet label{display:grid;gap:6px;font-size:12px;color:#435c4e;font-weight:700}.sheet label small{font-weight:400;color:#91a092}
   .sheet input,.sheet textarea,.sheet select{min-width:0;width:100%;font-weight:400}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .form-actions{display:flex;justify-content:end;gap:8px;padding-top:8px}.form-actions button:not(.primary){padding:9px 13px;border:1px solid #d9e1db;border-radius:9px;background:white;color:#516759;font-size:12px}
@@ -955,7 +959,7 @@
     .lane-caption,.mobile-common{position:static;display:inline-block;margin:10px 10px 0;font-size:11px;background:color-mix(in srgb,var(--lane-color) 8%,white)}
     .node-main{min-height:70px;padding:12px}.node-copy strong{font-size:14px}.node-copy small{font-size:12px}.node-price{font-size:12px}
     .route-end{position:relative;top:auto;padding-bottom:10px}.route-end::before{display:none}
-    .graph-toolbar{position:static}.sidebar-card{padding:16px}.sidebar-candidate>button:first-child{min-height:44px;font-size:13px}.sidebar-candidate b{font-size:12px}
+    .graph-toolbar{position:static}.sidebar-card{padding:16px}.sidebar-candidate{padding:6px 2px}
     .sidebar-card p,.sidebar-card>small{font-size:12px}.sidebar-card summary{font-size:13px}.route-summary input{font-size:14px}.route-summary button{min-height:32px}
   }
   @media(max-width:670px){.graph-toolbar{align-items:start}.graph-title{display:block}.graph-title h2{font-size:17px}.toolbar-actions{justify-content:end}.toolbar-actions button{font-size:10px;padding:8px}.two{grid-template-columns:1fr}.sheet{padding:18px 16px calc(20px + env(safe-area-inset-bottom))}}

@@ -23,6 +23,8 @@ for (const themeId of ['standard-spring', 'planning-draft']) {
       // ON (default): the view link must not show editing affordances.
       await page.goto(`/s/${id}#money`);
       await expect(page.getByRole('heading', { name: 'お金の管理' })).toBeVisible();
+      // A #money deep link intentionally opens the settlement summary first.
+      await page.getByRole('tab', { name: '立て替え' }).click();
       await expect(page.getByRole('button', { name: /立て替えを登録/ })).toHaveCount(0);
 
       // OFF: a viewer without a password or edit token can actually submit an expense.
@@ -31,6 +33,7 @@ for (const themeId of ['standard-spring', 'planning-draft']) {
       });
       expect(moneyOff.ok()).toBeTruthy();
       await page.reload();
+      await page.getByRole('tab', { name: '立て替え' }).click();
       const addExpense = page.getByRole('button', { name: /立て替えを登録/ });
       await expect(addExpense).toBeVisible();
       await addExpense.click();
@@ -48,6 +51,7 @@ for (const themeId of ['standard-spring', 'planning-draft']) {
       });
       expect(moneyOn.ok()).toBeTruthy();
       await page.reload();
+      await page.getByRole('tab', { name: '立て替え' }).click();
       await expect(page.getByRole('button', { name: /立て替えを登録/ })).toHaveCount(0);
 
       const packingOff = await request.put(`${root}/packing/permissions`, {

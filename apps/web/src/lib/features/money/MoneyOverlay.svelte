@@ -67,7 +67,7 @@
   let shareMessage = $state('');
 
   const isDemoMoney = () => itineraryId === 'demo' || getIsDemoMode();
-  const canManageMoney = $derived(canEdit || !data.requires_edit_permission);
+  const canManageMoney = $derived(canEdit || (allowViewerMoneyEdits && !data.requires_edit_permission));
 
   function demoMoneyData(): MoneyData {
     const createdAt = '2026-08-01T09:00:00.000Z';

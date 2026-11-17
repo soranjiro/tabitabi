@@ -37,6 +37,7 @@
   import PlaceMap from "../planning-map/PlaceMap.svelte";
   import StepDetail from "./StepDetail.svelte";
   import PlanGraphBoard from "$lib/features/planning-comparison/PlanGraphBoard.svelte";
+  import CandidateOptionCard from "$lib/features/planning-comparison/CandidateOptionCard.svelte";
   import type { PlanGraphNode, PlanGraph } from '@tabitabi/types';
   import PlaceEditor from "./PlaceEditor.svelte";
   import "../standard/core/styles/index.css";
@@ -162,7 +163,7 @@
   let planSelected = $state<Record<string, string | null>>({});
   let expandedCandidateId = $state<string | null>(null);
   let branchRequest = $state<{ id: string; sequence: number; independent?: boolean } | null>(null);
-  let optionRequest = $state<{ id: string; sequence: number; optionId?: string } | null>(null);
+  let optionRequest = $state<{ id: string; sequence: number; optionId?: string; field?: 'notes' | 'url' } | null>(null);
   let selectRequest = $state<{ id: string; sequence: number; optionId: string | null } | null>(null);
   let planRequestCounter = 0;
   let graphCreateContext = $state<{ parentId: string | null; label: string } | null>(null);
@@ -179,8 +180,8 @@
   function requestBranch(id: string, independent = false) {
     branchRequest = { id, independent, sequence: ++planRequestCounter };
   }
-  function requestOption(id: string, optionId?: string) {
-    optionRequest = { id, optionId, sequence: ++planRequestCounter };
+  function requestOption(id: string, optionId?: string, field?: 'notes' | 'url') {
+    optionRequest = { id, optionId, field, sequence: ++planRequestCounter };
   }
   function requestSelect(id: string, optionId: string | null) {
     selectRequest = { id, optionId, sequence: ++planRequestCounter };
@@ -776,29 +777,12 @@
                   {#if expandedCandidateId === step.id}
                     <div class="plan-candidates-content">
                       {#each planChoices[step.id] as choice (choice.id)}
-                        <div class="plan-candidate" class:selected={planSelected[step.id] === choice.id}>
-                          {#if canPlanEdit}
-                            <button class="plan-candidate-pick" aria-label={choice.title + 'を選択'}
-                              title={planSelected[step.id] === choice.id ? '選択を解除' : 'この候補を選択'}
-                              onclick={() => requestSelect(step.id, planSelected[step.id] === choice.id ? null : choice.id)}>
-                              {planSelected[step.id] === choice.id ? '●' : '○'}
-                            </button>
-                          {:else}
-                            <span class="plan-candidate-pick">{planSelected[step.id] === choice.id ? '●' : '○'}</span>
-                          {/if}
-                          <div class="plan-candidate-info">
-                            <strong>{choice.title}</strong>
-                            {#if choice.provider}<small>{choice.provider}</small>{/if}
-                            {#if choice.start_local}<small>{choice.start_local.slice(5).replace('T',' ')}</small>{/if}
-                            {#if choice.from || choice.to}<small>{[choice.from, choice.to].filter(Boolean).join(' → ')}</small>{/if}
-                            {#if choice.notes}<small class="candidate-memo">{choice.notes}</small>{/if}
-                            {#if choice.url}<a href={choice.url} target="_blank" rel="noopener noreferrer">リンクを開く</a>{/if}
-                          </div>
-                          <div class="plan-candidate-price">
-                            {#if choice.amount !== null}<strong>{formatComparisonPrice(choice.amount, choice.currency)}</strong>{/if}
-                            {#if canPlanEdit}<button onclick={() => requestOption(step.id, choice.id)}>編集</button>{/if}
-                          </div>
-                        </div>
+                        <CandidateOptionCard option={choice}
+                          selected={planSelected[step.id] === choice.id}
+                          canEdit={canPlanEdit}
+                          onSelect={() => requestSelect(step.id, planSelected[step.id] === choice.id ? null : choice.id)}
+                          onEdit={(field) => requestOption(step.id, choice.id, field)}
+                        />
                       {/each}
                       {#if canPlanEdit && planChoices[step.id].length < 30}
                         <button class="plan-candidate-add" onclick={() => requestOption(step.id)}>＋ 候補を追加</button>
@@ -837,29 +821,12 @@
                   {#if expandedCandidateId === step.id}
                     <div class="plan-candidates-content">
                       {#each planChoices[step.id] as choice (choice.id)}
-                        <div class="plan-candidate" class:selected={planSelected[step.id] === choice.id}>
-                          {#if canPlanEdit}
-                            <button class="plan-candidate-pick" aria-label={choice.title + 'を選択'}
-                              title={planSelected[step.id] === choice.id ? '選択を解除' : 'この候補を選択'}
-                              onclick={() => requestSelect(step.id, planSelected[step.id] === choice.id ? null : choice.id)}>
-                              {planSelected[step.id] === choice.id ? '●' : '○'}
-                            </button>
-                          {:else}
-                            <span class="plan-candidate-pick">{planSelected[step.id] === choice.id ? '●' : '○'}</span>
-                          {/if}
-                          <div class="plan-candidate-info">
-                            <strong>{choice.title}</strong>
-                            {#if choice.provider}<small>{choice.provider}</small>{/if}
-                            {#if choice.start_local}<small>{choice.start_local.slice(5).replace('T',' ')}</small>{/if}
-                            {#if choice.from || choice.to}<small>{[choice.from, choice.to].filter(Boolean).join(' → ')}</small>{/if}
-                            {#if choice.notes}<small class="candidate-memo">{choice.notes}</small>{/if}
-                            {#if choice.url}<a href={choice.url} target="_blank" rel="noopener noreferrer">リンクを開く</a>{/if}
-                          </div>
-                          <div class="plan-candidate-price">
-                            {#if choice.amount !== null}<strong>{formatComparisonPrice(choice.amount, choice.currency)}</strong>{/if}
-                            {#if canPlanEdit}<button onclick={() => requestOption(step.id, choice.id)}>編集</button>{/if}
-                          </div>
-                        </div>
+                        <CandidateOptionCard option={choice}
+                          selected={planSelected[step.id] === choice.id}
+                          canEdit={canPlanEdit}
+                          onSelect={() => requestSelect(step.id, planSelected[step.id] === choice.id ? null : choice.id)}
+                          onEdit={(field) => requestOption(step.id, choice.id, field)}
+                        />
                       {/each}
                       {#if canPlanEdit && planChoices[step.id].length < 30}
                         <button class="plan-candidate-add" onclick={() => requestOption(step.id)}>＋ 候補を追加</button>
@@ -1204,18 +1171,11 @@
   .plan-candidates { padding:0 0 8px 42px; max-width:100%; }
   .plan-candidates-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:1px solid #e0e9e1; border-radius:8px; background:#f8fbf8; color:#39715d; font-size:.74rem; cursor:pointer; }
   .plan-candidates-content { display:grid; gap:7px; margin-top:7px; }
-  .plan-candidate { display:flex; align-items:flex-start; gap:9px; min-width:0; padding:10px; border:1px solid #e3e9e3; border-radius:9px; background:#fff; }
-  .plan-candidate.selected { border-color:#8bbda4; background:#f3faf5; }
-  .plan-candidate-pick { flex:none; display:grid; place-items:center; width:25px; height:25px; padding:0; border:0; background:none; color:#3a8066; cursor:pointer; font-size:1.1rem; }
-  .plan-candidate-info { flex:1; min-width:0; display:grid; gap:3px; }
-  .plan-candidate-info strong { overflow-wrap:anywhere; font-size:.78rem; }
-  .plan-candidate-info small { color:#75857a; font-size:.69rem; overflow-wrap:anywhere; }
-  .plan-candidate-info .candidate-memo { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; white-space:pre-wrap; }
-  .plan-candidate-info a { color:#367560; font-size:.7rem; text-decoration:underline; }
-  .plan-candidate-price { flex:none; display:grid; justify-items:end; gap:6px; font-size:.73rem; font-variant-numeric:tabular-nums; }
-  .plan-candidate-price button,.plan-candidate-add { border:0; background:transparent; color:#367560; font-size:.7rem; cursor:pointer; }
-  .plan-candidate-add { justify-self:start; padding:6px 8px; }
-  @media(max-width:520px) { .plan-candidates { padding-left:0; }.plan-candidate-price { max-width:35%; overflow-wrap:anywhere; } }
+  .plan-candidates-content :global(.option-card){width:100%}
+  .plan-candidate-add{justify-self:start;padding:9px 13px;border:1px dashed #bdcebf;border-radius:9px;background:#f8fbf8;color:#356c57;font-size:12px;font-weight:750;cursor:pointer}
+  .plan-candidate-add:hover{background:#eaf5ec}
+  .plan-candidate-add:focus-visible{outline:2px solid #357764;outline-offset:2px}
+  @media(max-width:520px){.plan-candidates{padding-left:0}}
   .planning-workspace { display:grid; grid-template-columns:minmax(300px, 38%) minmax(0, 1fr); gap:20px; align-items:start; }
   .planning-list { min-width:0; }
   .desktop-map { position:sticky; top:72px; height:min(76vh,760px); min-width:0; }

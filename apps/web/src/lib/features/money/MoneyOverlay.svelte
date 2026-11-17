@@ -37,7 +37,7 @@
   let budgetView = $state<'total' | 'perPerson'>('total');
   let settingsOpen = $state(false);
   let permissionsSaving = $state(false);
-  let memberName = $state('');
+  let newMemberName = $state('');
   let memberSaving = $state(false);
   let activeTab = $state<'expenses' | 'settlement'>('expenses');
   let editorOpen = $state(false);
@@ -270,7 +270,7 @@
   }
 
   async function addMoneyMember() {
-    const name = memberName.trim();
+    const name = newMemberName.trim();
     if (!canManageMoney || memberSaving || !name) return;
     memberSaving = true;
     try {
@@ -280,7 +280,7 @@
       saveDemoDataIfNeeded({ ...data, members: [...data.members, member] });
       participantIds = [...participantIds, member.id];
       fundMemberId ||= member.id;
-      memberName = '';
+      newMemberName = '';
     } catch (e) {
       alert(e instanceof Error ? e.message : 'メンバーを追加できませんでした');
     } finally {
@@ -668,8 +668,8 @@
               <button type="button" onclick={onOpenMemberSettings}>メンバーを追加 <span aria-hidden="true">→</span></button>
             {:else if canManageMoney}
               <form class="standard-money-member-add" onsubmit={(event) => { event.preventDefault(); void addMoneyMember(); }}>
-                <input aria-label="メンバー名" placeholder="メンバー名" maxlength="40" bind:value={memberName} />
-                <button type="submit" disabled={memberSaving || !memberName.trim()}>追加</button>
+                <input aria-label="メンバー名" placeholder="メンバー名" maxlength="40" bind:value={newMemberName} />
+                <button type="submit" disabled={memberSaving || !newMemberName.trim()}>追加</button>
               </form>
             {/if}
           </div>
@@ -699,8 +699,8 @@
                {:else}
                  <small>メンバーも追加できます。</small>
                  <form class="standard-money-member-add" onsubmit={(event) => { event.preventDefault(); void addMoneyMember(); }}>
-                   <input aria-label="追加するメンバー名" placeholder="メンバー名" maxlength="40" bind:value={memberName} />
-                   <button type="submit" disabled={memberSaving || !memberName.trim()}>追加</button>
+                   <input aria-label="追加するメンバー名" placeholder="メンバー名" maxlength="40" bind:value={newMemberName} />
+                   <button type="submit" disabled={memberSaving || !newMemberName.trim()}>追加</button>
                  </form>
                {/if}
             </div>

@@ -639,6 +639,7 @@
     show={showMoney}
     itineraryId={itinerary.id}
     canEdit={hasEditPermission && !isSharedSnapshot}
+    allowViewerMoneyEdits={!readOnly && !isSharedSnapshot}
     {steps}
     requestedEditItemId={requestedMoneyItemId}
     onEditItemOpened={() => (requestedMoneyItemId = null)}

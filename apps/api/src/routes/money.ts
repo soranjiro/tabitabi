@@ -4,7 +4,7 @@ import type { MoneyData, MoneyFundTransaction, MoneyItem, MoneyItemSplit, MoneyM
 import { Env, Variables, generateId, getCurrentTimestamp } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
 import { optionalAuthMiddleware } from '../middleware/auth';
-import { moneyFundTransactionsSchema, moneyFundTransactionSchema, moneyItemSchema, moneyMemberSchema, moneySettingsSchema, updateMoneyFundTransactionSchema, updateMoneyItemSchema } from '../validators';
+import { moneyFundTransactionsSchema, moneyFundTransactionSchema, moneyItemSchema, moneyMemberSchema, moneySettingsSchema, moneyPermissionsSchema, updateMoneyFundTransactionSchema, updateMoneyItemSchema } from '../validators';
 import { validationHook } from '../validators/hook';
 import { guardPrivateItineraryRead } from './private-data-access';
 
@@ -56,12 +56,20 @@ function splitStatements(db: D1Database, itemId: string, itineraryId: string, sp
   ).bind(itemId, split.member_id, itineraryId, split.amount));
 }
 
-async function canEdit(c: Context<{ Bindings: Env; Variables: Variables }>, itineraryId: string): Promise<Response | null> {
+async function canEdit(c: Context<{ Bindings: Env; Variables: Variables }>, itineraryId: string, requireEditor = false): Promise<Response | null> {
   const service = new ItineraryService(c.env.DB, c.env);
   const itinerary = await service.get(itineraryId);
   if (!itinerary) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   if (itinerary.source_itinerary_id) return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot edit a shared snapshot' } }, 403);
   if (itinerary.password && c.get('shioriId') !== itineraryId) {
+    // A view-link holder can edit money only after an itinerary editor opts in.
+    // Permission changes still require the itinerary editing capability.
+    if (!requireEditor) {
+      const settings = await c.env.DB.prepare(
+        'SELECT requires_edit_permission FROM itinerary_money_settings WHERE itinerary_id = ?',
+      ).bind(itineraryId).first<{ requires_edit_permission: number }>();
+      if (settings?.requires_edit_permission === 0) return null;
+    }
     return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'You can only edit your own itinerary' } }, 403);
   }
   return null;
@@ -91,8 +99,8 @@ money.get('/itineraries/:id/money', optionalAuthMiddleware, async (c) => {
   const denied = await guardPrivateItineraryRead(c, itineraryId);
   if (denied) return denied;
   const [settings, membersResult, itemsResult, splitsResult, fundTransactionsResult] = await Promise.all([
-    c.env.DB.prepare('SELECT budget_amount FROM itinerary_money_settings WHERE itinerary_id = ?')
-      .bind(itineraryId).first<{ budget_amount: number | null }>(),
+    c.env.DB.prepare('SELECT budget_amount, requires_edit_permission FROM itinerary_money_settings WHERE itinerary_id = ?')
+      .bind(itineraryId).first<{ budget_amount: number | null; requires_edit_permission: number }>(),
     c.env.DB.prepare('SELECT id, itinerary_id, name, created_at FROM itinerary_members WHERE itinerary_id = ? ORDER BY created_at ASC').bind(itineraryId).all<MoneyMember>(),
     c.env.DB.prepare('SELECT * FROM itinerary_money_items WHERE itinerary_id = ? ORDER BY status ASC, occurred_on ASC, created_at DESC').bind(itineraryId).all(),
     c.env.DB.prepare('SELECT item_id, member_id, amount FROM itinerary_money_item_splits WHERE itinerary_id = ? ORDER BY rowid ASC')
@@ -103,6 +111,7 @@ money.get('/itineraries/:id/money', optionalAuthMiddleware, async (c) => {
   const splits = groupSplits(splitsResult.results ?? []);
   const data: MoneyData = {
     budget_amount: settings?.budget_amount ?? null,
+    requires_edit_permission: settings?.requires_edit_permission !== 0,
     members: membersResult.results ?? [],
     items: (itemsResult.results ?? []).map((row) => itemFromRow(
       row as Record<string, unknown>,
@@ -123,6 +132,19 @@ money.put('/itineraries/:id/money/settings', optionalAuthMiddleware, zValidator(
     VALUES (?, ?, ?, ?) ON CONFLICT(itinerary_id) DO UPDATE SET budget_amount = excluded.budget_amount, updated_at = excluded.updated_at`)
     .bind(itineraryId, budget_amount, now, now).run();
   return c.json({ success: true, data: { budget_amount } });
+});
+
+// Only itinerary editors can toggle money editing permissions.
+money.put('/itineraries/:id/money/permissions', optionalAuthMiddleware, zValidator('json', moneyPermissionsSchema, validationHook), async (c) => {
+  const itineraryId = c.req.param('id')!;
+  const denied = await canEdit(c, itineraryId, true);
+  if (denied) return denied;
+  const { requires_edit_permission } = c.req.valid('json');
+  const now = getCurrentTimestamp();
+  await c.env.DB.prepare(`INSERT INTO itinerary_money_settings (itinerary_id, budget_amount, requires_edit_permission, created_at, updated_at)
+    VALUES (?, NULL, ?, ?, ?) ON CONFLICT(itinerary_id) DO UPDATE SET requires_edit_permission = excluded.requires_edit_permission, updated_at = excluded.updated_at`)
+    .bind(itineraryId, requires_edit_permission ? 1 : 0, now, now).run();
+  return c.json({ success: true, data: { requires_edit_permission } });
 });
 
 money.post('/itineraries/:id/money/members', optionalAuthMiddleware, zValidator('json', moneyMemberSchema, validationHook), async (c) => {

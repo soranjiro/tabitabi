@@ -7,7 +7,7 @@ async function setup() {
     `CREATE TABLE IF NOT EXISTS itineraries (id TEXT PRIMARY KEY, title TEXT NOT NULL, theme_id TEXT NOT NULL, palette_id TEXT NOT NULL DEFAULT 'sakura', packing_enabled INTEGER NOT NULL DEFAULT 1, prefecture_slugs TEXT NOT NULL DEFAULT '[]', areas TEXT NOT NULL DEFAULT '[]', tags TEXT NOT NULL DEFAULT '[]', metadata_initialized INTEGER NOT NULL DEFAULT 0, memo TEXT, password TEXT, source_itinerary_id TEXT, background_image TEXT, page_background_image TEXT, background_display TEXT NOT NULL DEFAULT 'cover', memo_text TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`,
     `CREATE TABLE IF NOT EXISTS itinerary_secrets (itinerary_id TEXT PRIMARY KEY, enabled INTEGER, offset_minutes INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS itinerary_fork_stats (itinerary_id TEXT PRIMARY KEY, fork_count INTEGER NOT NULL DEFAULT 0, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
-    `CREATE TABLE IF NOT EXISTS itinerary_money_settings (itinerary_id TEXT PRIMARY KEY, budget_amount INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
+    `CREATE TABLE IF NOT EXISTS itinerary_money_settings (itinerary_id TEXT PRIMARY KEY, budget_amount INTEGER, requires_edit_permission INTEGER NOT NULL DEFAULT 1 CHECK(requires_edit_permission IN (0, 1)), created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS itinerary_members (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(id, itinerary_id), FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE);`,
     `CREATE TABLE IF NOT EXISTS steps (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, start_at INTEGER NOT NULL, end_at INTEGER NOT NULL,
       scheduled_start_at INTEGER,
@@ -154,6 +154,62 @@ describe('Money API', () => {
       body: JSON.stringify({ name: 'Bob' }),
     }), env);
     expect(deniedMember.status).toBe(403);
+  });
+
+
+  it('defaults to editor-only money writes and allows viewers only after an editor opts in', async () => {
+    const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'お金の権限設定テスト', password: 'password123' }),
+    }), env);
+    const { data: itinerary } = await create.json() as any;
+    const base = `http://localhost/api/v1/itineraries/${itinerary.id}/money`;
+    const headers = { 'Content-Type': 'application/json' };
+    const editorHeaders = { ...headers, Authorization: `Bearer ${itinerary.token}` };
+    const request = (path: string, method: string, body: unknown, authorized = false) =>
+      app.fetch(new Request(base + path, {
+        method, headers: authorized ? editorHeaders : headers, body: JSON.stringify(body),
+      }), env);
+
+    const initial = await app.fetch(new Request(base), env);
+    expect((await initial.json() as any).data.requires_edit_permission).toBe(true);
+    expect((await request('/permissions', 'PUT', { requires_edit_permission: false })).status).toBe(403);
+    expect((await request('/settings', 'PUT', { budget_amount: 40000 })).status).toBe(403);
+
+    const member = await request('/members', 'POST', { name: 'Alice' }, true);
+    expect(member.status).toBe(201);
+    const alice = (await member.json() as any).data;
+    const expense = { title: 'ホテル', amount: 10000, status: 'paid', split_member_ids: [alice.id] };
+    expect((await request('/items', 'POST', expense)).status).toBe(403);
+
+    const enabled = await request('/permissions', 'PUT', { requires_edit_permission: false }, true);
+    expect(enabled.status).toBe(200);
+    expect((await enabled.json() as any).data.requires_edit_permission).toBe(false);
+    expect((await request('/permissions', 'PUT', { requires_edit_permission: true })).status).toBe(403);
+    expect((await request('/settings', 'PUT', { budget_amount: 40000 })).status).toBe(200);
+
+    const secondMember = await request('/members', 'POST', { name: 'Bob' });
+    expect(secondMember.status).toBe(201);
+    const bob = (await secondMember.json() as any).data;
+    expect((await request(`/members/${bob.id}`, 'PUT', { name: 'Bobby' })).status).toBe(200);
+
+    const createdItem = await request('/items', 'POST', expense);
+    expect(createdItem.status).toBe(201);
+    const item = (await createdItem.json() as any).data;
+    expect((await request(`/items/${item.id}`, 'PUT', { title: '宿泊費' })).status).toBe(200);
+    const fund = await request('/fund-transactions', 'POST', { member_id: alice.id, kind: 'contribution', amount: 2000 });
+    expect(fund.status).toBe(201);
+    const transaction = (await fund.json() as any).data;
+    expect((await request(`/fund-transactions/${transaction.id}`, 'PUT', { amount: 2500 })).status).toBe(200);
+    expect((await request(`/fund-transactions/${transaction.id}`, 'DELETE', undefined)).status).toBe(200);
+    expect((await request(`/items/${item.id}`, 'DELETE', undefined)).status).toBe(200);
+
+    const after = await app.fetch(new Request(base), env);
+    expect((await after.json() as any).data).toMatchObject({ requires_edit_permission: false, budget_amount: 40000 });
+    expect((await request('/permissions', 'PUT', { requires_edit_permission: true }, true)).status).toBe(200);
+    expect((await request('/items', 'POST', expense)).status).toBe(403);
+    expect((await request('/members', 'POST', { name: 'Charlie' })).status).toBe(403);
+    expect((await request('/settings', 'PUT', { budget_amount: 80000 })).status).toBe(403);
   });
 
   it('rejects individual shares that do not match the expense total', async () => {

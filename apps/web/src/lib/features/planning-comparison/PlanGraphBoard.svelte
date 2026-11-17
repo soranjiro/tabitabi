@@ -15,7 +15,7 @@
     localGraph?: PlanGraph | null; onSaveLocalGraph?: (graph: PlanGraph) => void;
     itineraryId: string; steps: Step[]; canEdit: boolean; demo?: boolean; showGraph?: boolean;
     branchRequest?: { id: string; sequence: number; independent?: boolean } | null;
-    optionRequest?: { id: string; sequence: number; optionId?: string } | null;
+    optionRequest?: { id: string; sequence: number; optionId?: string; field?: 'notes' | 'url' } | null;
     selectRequest?: { id: string; sequence: number; optionId: string | null } | null;
     createdStepRequest?: { step: Step; parentId: string | null; label: string; sequence: number } | null;
     onRequestCreate?: (parentId: string | null, label: string) => void;
@@ -355,7 +355,7 @@
     if (loading || !request || handledOptionRequest === request.sequence) return;
     handledOptionRequest = request.sequence;
     const node = displayNodes.find(value => value.id === request.id);
-    if (node) openOption(node, request.optionId ? node.options.find(value => value.id === request.optionId) : undefined);
+    if (node) void openOption(node, request.optionId ? node.options.find(value => value.id === request.optionId) : undefined, request.field);
   });
   $effect(() => {
     const request = selectRequest;

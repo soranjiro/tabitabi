@@ -893,7 +893,7 @@
   .sidebar-candidate{padding:4px 6px 9px}
   .candidate-empty{padding:10px 0;text-align:center}
   .sidebar-card details>.sidebar-add{border-radius:0;border-width:1px 0 0;margin:0}
-  .join-form>small{flex-basis:100%;font-size:11px;color:#728579}
+
   button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid #357764;outline-offset:3px}
   @media(max-width:1000px){.comparison-workspace{grid-template-columns:minmax(0,1fr)}.comparison-sidebar{position:static;grid-template-columns:1fr 1fr}.graph-canvas{margin:0 auto}}
   @media(max-width:540px){.comparison-sidebar{grid-template-columns:minmax(0,1fr)}.graph-title span{display:block;margin-top:6px}.graph-scroll{max-height:65dvh}.graph-toolbar{position:sticky;top:0;background:#faf9f5;z-index:4;padding:8px 0}}

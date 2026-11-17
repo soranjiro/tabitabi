@@ -164,7 +164,7 @@
     for (const node of sorted) {
       if (node.kind === 'choices' && expanded.includes(node.id)) {
         const rank = ranks.get(node.id)!;
-        heights[rank] = Math.max(heights[rank], 176 + Math.min(260, node.options.length * 75 + 52));
+        heights[rank] = Math.max(heights[rank], 176 + Math.min(300, node.options.length * 92 + 60));
       }
     }
     const rowY: number[] = [];
@@ -189,7 +189,7 @@
     const draws: DrawNode[] = sorted.map(n => {
       return { node: n, x: 270 + ((xs.get(n.id) ?? 0) - minimum) * 302,
         y: rowY[ranks.get(n.id) ?? 0], label: routeLabels.get(n.id) ?? '',
-        exit: n.kind === 'choices' ? 66 + (expanded.includes(n.id) ? Math.min(260, n.options.length * 75 + 52) : 0) : 36,
+        exit: n.kind === 'choices' ? 66 + (expanded.includes(n.id) ? Math.min(300, n.options.length * 92 + 60) : 0) : 36,
         color: !shownEdges.some(edge => edge.to === n.id) || shownEdges.filter(edge => edge.to === n.id).length > 1 ? '#64a58c' : colors[colorIds.get(n.id) ?? 0] };
     });
     const positions = new Map(draws.map(d => [d.node.id, d]));

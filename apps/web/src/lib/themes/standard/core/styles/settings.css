@@ -503,8 +503,7 @@ button.standard-settings-card {
   align-items: flex-start;
 }
 
-.standard-settings-card-body strong,
-.standard-settings-card-heading > strong {
+.standard-settings-card-body strong {
   color: var(--theme-text);
   font-size: .98rem;
   font-weight: 750;
@@ -550,16 +549,6 @@ button.standard-settings-card {
 
 .standard-settings-members-card {
   padding: 1rem;
-}
-
-.standard-settings-card-heading {
-  display: flex;
-  align-items: center;
-  gap: .8rem;
-}
-
-.standard-settings-members-card .standard-member-editor {
-  margin-top: .9rem;
 }
 
 .standard-settings-members-card .standard-member-add input {
@@ -705,8 +694,7 @@ button.standard-settings-card {
     height: 38px;
   }
 
-  .standard-settings-card-body strong,
-  .standard-settings-card-heading > strong {
+  .standard-settings-card-body strong {
     font-size: .95rem;
   }
 

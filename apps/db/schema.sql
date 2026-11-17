@@ -67,13 +67,6 @@ CREATE TABLE itinerary_money_settings (
   updated_at TEXT NOT NULL, requires_edit_permission INTEGER NOT NULL DEFAULT 1 CHECK(requires_edit_permission IN (0, 1)), fund_enabled INTEGER NOT NULL DEFAULT 0 CHECK(fund_enabled IN (0, 1)),
   FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
 );
-CREATE TABLE itinerary_packing_settings (
-  itinerary_id TEXT PRIMARY KEY,
-  requires_edit_permission INTEGER NOT NULL DEFAULT 1 CHECK(requires_edit_permission IN (0, 1)),
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
-);
 CREATE TABLE itinerary_members (
   id TEXT PRIMARY KEY,
   itinerary_id TEXT NOT NULL,
@@ -513,3 +506,10 @@ CREATE TABLE api_rate_limit_counters (
   hit_count INTEGER NOT NULL DEFAULT 0 CHECK (hit_count >= 0)
 );
 CREATE INDEX idx_api_rate_limits_window ON api_rate_limit_counters(window_start);
+CREATE TABLE itinerary_packing_settings (
+  itinerary_id TEXT PRIMARY KEY,
+  requires_edit_permission INTEGER NOT NULL DEFAULT 1 CHECK(requires_edit_permission IN (0, 1)),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+);

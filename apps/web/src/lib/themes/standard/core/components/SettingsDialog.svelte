@@ -1,8 +1,11 @@
 <script lang="ts">
   import { ITINERARY_BACKGROUND_PRESETS } from "$lib/itinerary-backgrounds";
+  import { moneyApi } from "$lib/api/money";
+  import { packingApi } from "$lib/api/packing";
+  import { demoStorage, getIsDemoMode } from "$lib/demo";
   import { prefectures } from "$lib/explore/data";
   import ItineraryMetadataFields from "$lib/features/itinerary-metadata/ItineraryMetadataFields.svelte";
-  import { PaletteIcon, SecretIcon } from "./icons/index.svelte";
+  import { EditIcon, PaletteIcon, SecretIcon } from "./icons/index.svelte";
   import TripMembersEditor from "./TripMembersEditor.svelte";
 
   interface ThemeOption {
@@ -27,6 +30,7 @@
   interface Props {
     show: boolean;
     itineraryId: string;
+    initialPanel?: "main" | "money" | "permissions";
     themes: ThemeOption[];
     palettes: PaletteOption[];
     selectedThemeId: string;
@@ -48,11 +52,12 @@
     onClose: () => void;
   }
 
-  type SettingsPanel = "main" | "metadata" | "theme" | "palette" | "background";
+  type SettingsPanel = "main" | "metadata" | "theme" | "palette" | "background" | "money" | "permissions";
 
   let {
     show,
     itineraryId,
+    initialPanel = "main",
     themes,
     palettes,
     selectedThemeId,
@@ -89,6 +94,26 @@
   let isSaving = $state(false);
   let saveError = $state("");
 
+  type MoneyFeatureSettings = { budget_amount: number | null; fund_enabled: boolean; requires_edit_permission: boolean };
+  let storedMoney = $state<MoneyFeatureSettings>({ budget_amount: null, fund_enabled: false, requires_edit_permission: true });
+  let storedPackingRequiresEdit = $state(true);
+  let featureLoading = $state(false);
+  let featureLoaded = $state(false);
+  let featureError = $state("");
+  let localBudgetEnabled = $state(false);
+  let localBudgetAmount = $state("");
+  let localFundEnabled = $state(false);
+  let localMoneyRequiresEdit = $state(true);
+  let localPackingRequiresEdit = $state(true);
+  let hasFundHistory = $state(false);
+  let nextBudgetAmount = $derived(localBudgetEnabled ? Number(localBudgetAmount) : null);
+  let featureDirty = $derived(featureLoaded && (
+    nextBudgetAmount !== storedMoney.budget_amount
+    || localFundEnabled !== storedMoney.fund_enabled
+    || localMoneyRequiresEdit !== storedMoney.requires_edit_permission
+    || localPackingRequiresEdit !== storedPackingRequiresEdit
+  ));
+
   let selectedTheme = $derived(themes.find((theme) => theme.id === localThemeId));
   let selectedPalette = $derived(palettes.find((palette) => palette.id === localPaletteId));
   let selectedBackground = $derived(
@@ -106,6 +131,7 @@
       || localSecretEnabled !== secretModeEnabled
       || localSecretOffset !== secretModeOffset
       || localPackingEnabled !== packingEnabled
+      || featureDirty
       || metadataChanged
       || localBackgroundImage !== (backgroundImage ?? "")
       || localBackgroundDisplay !== backgroundDisplay,
@@ -114,11 +140,51 @@
   $effect(() => {
     if (show && !wasOpen) {
       resetDraft();
-      activePanel = "main";
+      activePanel = initialPanel;
       saveError = "";
+      void loadFeatureSettings();
     }
     wasOpen = show;
   });
+
+  async function loadFeatureSettings() {
+    featureLoading = true;
+    featureLoaded = false;
+    featureError = "";
+    try {
+      const isDemo = itineraryId === "demo" || getIsDemoMode();
+      const [money, packing] = isDemo
+        ? [demoStorage.getMoneyData(), demoStorage.getPackingData()]
+        : await Promise.all([moneyApi.get(itineraryId), packingApi.get(itineraryId)]);
+      if (!show) return;
+      const hasHistory = Boolean(money?.fund_transactions?.length || money?.items?.some((item) => item.paid_from_fund));
+      storedMoney = {
+        budget_amount: money?.budget_amount ?? null,
+        fund_enabled: Boolean(money?.fund_enabled || hasHistory),
+        requires_edit_permission: money?.requires_edit_permission ?? true,
+      };
+      storedPackingRequiresEdit = packing?.requires_edit_permission ?? true;
+      hasFundHistory = hasHistory;
+      localBudgetEnabled = storedMoney.budget_amount !== null;
+      localBudgetAmount = storedMoney.budget_amount?.toString() ?? "";
+      localFundEnabled = storedMoney.fund_enabled;
+      localMoneyRequiresEdit = storedMoney.requires_edit_permission;
+      localPackingRequiresEdit = storedPackingRequiresEdit;
+      featureLoaded = true;
+    } catch (error) {
+      console.error("Failed to load feature settings:", error);
+      featureError = "お金と持ち物の設定を読み込めませんでした。設定画面を開き直してください。";
+    } finally {
+      featureLoading = false;
+    }
+  }
+
+  function updateDemoFeatureSettings(nextMoney: MoneyFeatureSettings, nextPacking: boolean) {
+    const money = demoStorage.getMoneyData();
+    const packing = demoStorage.getPackingData();
+    if (money) demoStorage.setMoneyData({ ...money, ...nextMoney });
+    if (packing) demoStorage.setPackingData({ ...packing, requires_edit_permission: nextPacking });
+  }
 
   function sameStrings(left: string[], right: string[]) {
     return left.length === right.length && left.every((value, index) => value === right[index]);
@@ -162,9 +228,40 @@
     const nextBackgroundImage = localBackgroundImage || null;
     const nextBackgroundDisplay = localBackgroundDisplay;
 
+    if (featureLoaded && localBudgetEnabled && (
+      !/^[0-9]+$/.test(localBudgetAmount.trim())
+      || nextBudgetAmount === null || nextBudgetAmount < 1 || nextBudgetAmount > 100_000_000
+    )) {
+      saveError = "予算は1円から1億円までの整数で入力してください。";
+      activePanel = "money";
+      return;
+    }
+
     isSaving = true;
     saveError = "";
     try {
+      if (featureLoaded && featureDirty) {
+        const nextMoney: MoneyFeatureSettings = {
+          budget_amount: nextBudgetAmount,
+          fund_enabled: localFundEnabled,
+          requires_edit_permission: localMoneyRequiresEdit,
+        };
+        if (itineraryId === "demo" || getIsDemoMode()) {
+          updateDemoFeatureSettings(nextMoney, localPackingRequiresEdit);
+        } else {
+          if (nextMoney.budget_amount !== storedMoney.budget_amount || nextMoney.fund_enabled !== storedMoney.fund_enabled) {
+            await moneyApi.updateSettings(itineraryId, { budget_amount: nextMoney.budget_amount, fund_enabled: nextMoney.fund_enabled });
+          }
+          if (nextMoney.requires_edit_permission !== storedMoney.requires_edit_permission) {
+            await moneyApi.updatePermissions(itineraryId, nextMoney.requires_edit_permission);
+          }
+          if (localPackingRequiresEdit !== storedPackingRequiresEdit) {
+            await packingApi.updatePermissions(itineraryId, localPackingRequiresEdit);
+          }
+        }
+        storedMoney = nextMoney;
+        storedPackingRequiresEdit = localPackingRequiresEdit;
+      }
       if (
         onMetadataChange
         && (
@@ -238,6 +335,10 @@
           {#if isDirty}<span class="standard-settings-unsaved-dot" title="未保存の変更あり"></span>{/if}
         {:else if activePanel === "metadata"}
           旅行先とタグ
+        {:else if activePanel === "money"}
+          お金の設定
+        {:else if activePanel === "permissions"}
+          編集権限
         {:else if activePanel === "theme"}
           デザインテーマ
         {:else if activePanel === "palette"}
@@ -266,6 +367,32 @@
           <span class="standard-settings-card-body">
             <strong>旅行先とタグ</strong>
             <small>{metadataSummary}</small>
+          </span>
+          <span class="standard-settings-card-chevron" aria-hidden="true">›</span>
+        </button>
+
+        <button
+          type="button"
+          class="standard-settings-card standard-settings-card-action"
+          onclick={() => (activePanel = "permissions")}
+        >
+          <span class="standard-settings-card-icon standard-settings-card-svg" aria-hidden="true">{@html EditIcon}</span>
+          <span class="standard-settings-card-body">
+            <strong>編集権限</strong>
+            <small>お金・持ち物を変更できる人</small>
+          </span>
+          <span class="standard-settings-card-chevron" aria-hidden="true">›</span>
+        </button>
+
+        <button
+          type="button"
+          class="standard-settings-card standard-settings-card-action"
+          onclick={() => (activePanel = "money")}
+        >
+          <span class="standard-settings-card-icon" aria-hidden="true">¥</span>
+          <span class="standard-settings-card-body">
+            <strong>お金の設定</strong>
+            <small>予算・共同基金</small>
           </span>
           <span class="standard-settings-card-chevron" aria-hidden="true">›</span>
         </button>
@@ -398,6 +525,96 @@
         >
           {isSaving ? "保存中…" : "保存"}
         </button>
+      </div>
+    {:else if activePanel === "permissions"}
+      <div class="standard-settings-page standard-settings-subpage standard-settings-feature-panel">
+        <p class="standard-settings-feature-intro">しおりの編集権限がない人にも、変更を許可する機能を選べます。予定やしおり全体の編集権限は変わりません。</p>
+        {#if featureLoading}
+          <p class="standard-settings-page-hint">設定を読み込み中…</p>
+        {:else if featureError}
+          <p class="standard-settings-page-error" role="alert">{featureError}</p>
+        {:else}
+          <section class="standard-settings-card standard-settings-feature-card">
+            <div class="standard-settings-switch-row">
+              <span class="standard-settings-card-body">
+                <strong>お金の登録・編集</strong>
+                <small>{localMoneyRequiresEdit ? "編集権限がある人のみ" : "リンクを知っている人も可能"}</small>
+              </span>
+              <label class="standard-settings-compact-toggle" aria-label="お金の登録・編集にしおりの編集権限を必要とする">
+                <input type="checkbox" bind:checked={localMoneyRequiresEdit} class="standard-toggle-input" />
+                <span class="standard-toggle-slider"></span>
+              </label>
+            </div>
+          </section>
+          <section class="standard-settings-card standard-settings-feature-card">
+            <div class="standard-settings-switch-row">
+              <span class="standard-settings-card-body">
+                <strong>持ち物の登録・編集</strong>
+                <small>{localPackingRequiresEdit ? "編集権限がある人のみ" : "リンクを知っている人も可能"}</small>
+              </span>
+              <label class="standard-settings-compact-toggle" aria-label="持ち物の登録・編集にしおりの編集権限を必要とする">
+                <input type="checkbox" bind:checked={localPackingRequiresEdit} class="standard-toggle-input" />
+                <span class="standard-toggle-slider"></span>
+              </label>
+            </div>
+          </section>
+          <p class="standard-settings-feature-note">オン（初期設定）：編集権限が必要。オフ：閲覧リンクを知る人も登録・編集できます。公開しおりは変更できません。</p>
+        {/if}
+        {#if saveError}<p class="standard-settings-page-error" role="alert">{saveError}</p>{/if}
+        <div class="standard-settings-subpage-actions">
+          <button type="button" class="standard-btn standard-btn-secondary" onclick={returnToOverview}>設定一覧へ</button>
+          <button type="button" class="standard-btn standard-btn-primary" disabled={featureLoading || !featureLoaded || isSaving || !isDirty} onclick={handleSave}>{isSaving ? "保存中…" : "設定を保存"}</button>
+        </div>
+      </div>
+    {:else if activePanel === "money"}
+      <div class="standard-settings-page standard-settings-subpage standard-settings-feature-panel">
+        {#if featureLoading}
+          <p class="standard-settings-page-hint">設定を読み込み中…</p>
+        {:else if featureError}
+          <p class="standard-settings-page-error" role="alert">{featureError}</p>
+        {:else}
+          <section class="standard-settings-card standard-settings-feature-card">
+            <div class="standard-settings-switch-row">
+              <span class="standard-settings-card-body">
+                <strong>予算を設定する</strong>
+                <small>旅行全体の支出の目安</small>
+              </span>
+              <label class="standard-settings-compact-toggle" aria-label="予算を設定する">
+                <input type="checkbox" bind:checked={localBudgetEnabled} class="standard-toggle-input" />
+                <span class="standard-toggle-slider"></span>
+              </label>
+            </div>
+            {#if localBudgetEnabled}
+              <label class="standard-settings-feature-budget-label">
+                全体予算
+                <span><input type="text" inputmode="numeric" bind:value={localBudgetAmount} placeholder="例：50000" class="standard-settings-page-input" /> 円</span>
+              </label>
+            {/if}
+          </section>
+          <section class="standard-settings-card standard-settings-feature-card">
+            <div class="standard-settings-switch-row">
+              <span class="standard-settings-card-body">
+                <strong>共同基金を使用する</strong>
+                <small>旅行メンバーで共有するお金を管理</small>
+              </span>
+              <label class="standard-settings-compact-toggle" aria-label="共同基金を使用する">
+                <input type="checkbox" bind:checked={localFundEnabled} disabled={hasFundHistory} class="standard-toggle-input" />
+                <span class="standard-toggle-slider"></span>
+              </label>
+            </div>
+            {#if hasFundHistory}
+              <p class="standard-settings-feature-note">入出金や共同基金からの支払いがあるため、オフにはできません。</p>
+            {/if}
+          </section>
+          <button type="button" class="standard-settings-feature-link" onclick={() => (activePanel = "permissions")}>
+            お金の編集権限を設定 <span aria-hidden="true">›</span>
+          </button>
+        {/if}
+        {#if saveError}<p class="standard-settings-page-error" role="alert">{saveError}</p>{/if}
+        <div class="standard-settings-subpage-actions">
+          <button type="button" class="standard-btn standard-btn-secondary" onclick={returnToOverview}>設定一覧へ</button>
+          <button type="button" class="standard-btn standard-btn-primary" disabled={featureLoading || !featureLoaded || isSaving || !isDirty} onclick={handleSave}>{isSaving ? "保存中…" : "設定を保存"}</button>
+        </div>
       </div>
     {:else if activePanel === "metadata"}
       <div class="standard-settings-page standard-settings-subpage">

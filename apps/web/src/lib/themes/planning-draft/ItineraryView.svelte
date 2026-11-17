@@ -186,10 +186,6 @@
   function requestSelect(id: string, optionId: string | null) {
     selectRequest = { id, optionId, sequence: ++planRequestCounter };
   }
-  function formatComparisonPrice(amount: number, currency: string) {
-    try { return new Intl.NumberFormat('ja-JP', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount); }
-    catch { return amount.toLocaleString('ja-JP') + ' ' + currency; }
-  }
 
   let form = $state({
     title: "",

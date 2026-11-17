@@ -3,8 +3,8 @@ import { apiClient } from './client';
 
 export const moneyApi = {
   get: (itineraryId: string) => apiClient.get<MoneyData>(`/itineraries/${itineraryId}/money`, itineraryId),
-  updateSettings: (itineraryId: string, budget_amount: number | null) =>
-    apiClient.put<{ budget_amount: number | null }>(`/itineraries/${itineraryId}/money/settings`, { budget_amount }, itineraryId),
+  updateSettings: (itineraryId: string, settings: { budget_amount?: number | null; fund_enabled?: boolean }) =>
+    apiClient.put<{ budget_amount: number | null; fund_enabled: boolean }>(`/itineraries/${itineraryId}/money/settings`, settings, itineraryId),
   updatePermissions: (itineraryId: string, requires_edit_permission: boolean) =>
     apiClient.put<{ requires_edit_permission: boolean }>(`/itineraries/${itineraryId}/money/permissions`, { requires_edit_permission }, itineraryId),
   addMember: (itineraryId: string, name: string) =>

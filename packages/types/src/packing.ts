@@ -27,6 +27,8 @@ export interface PackingItem {
 }
 
 export interface PackingData {
+  /** Defaults to true. Disabled only by the itinerary editor. */
+  requires_edit_permission: boolean;
   members: TripMember[];
   groups: PackingGroup[];
   items: PackingItem[];

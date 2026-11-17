@@ -46,6 +46,8 @@ export interface MoneyFundTransaction {
 
 export interface MoneyData {
   budget_amount: number | null;
+  /** Whether the shared fund is enabled in itinerary settings. */
+  fund_enabled: boolean;
   /** True by default. When false, anyone with the shiori link can edit money. */
   requires_edit_permission: boolean;
   members: MoneyMember[];

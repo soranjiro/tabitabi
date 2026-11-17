@@ -69,6 +69,7 @@ async function applyMigrations(db: D1Database) {
       itinerary_id TEXT PRIMARY KEY,
       budget_amount INTEGER,
       requires_edit_permission INTEGER NOT NULL DEFAULT 1 CHECK(requires_edit_permission IN (0, 1)),
+      fund_enabled INTEGER NOT NULL DEFAULT 0 CHECK(fund_enabled IN (0, 1)),
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE

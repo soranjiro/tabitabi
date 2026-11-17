@@ -757,6 +757,7 @@
     show={showMoney}
     itineraryId={itinerary.id}
     canEdit={hasEditPermission && !isSharedSnapshot}
+    allowViewerMoneyEdits={!readOnly && !isSharedSnapshot}
     {steps}
     onOpenMemberSettings={() => openMemberSettings('money')}
     onClose={() => closeFeature('money')}

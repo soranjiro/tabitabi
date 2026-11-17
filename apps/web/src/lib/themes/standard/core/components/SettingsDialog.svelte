@@ -528,7 +528,6 @@
       </div>
     {:else if activePanel === "permissions"}
       <div class="standard-settings-page standard-settings-subpage standard-settings-feature-panel">
-        <p class="standard-settings-feature-intro">しおりの編集権限がない人にも、変更を許可する機能を選べます。予定やしおり全体の編集権限は変わりません。</p>
         {#if featureLoading}
           <p class="standard-settings-page-hint">設定を読み込み中…</p>
         {:else if featureError}
@@ -537,8 +536,7 @@
           <section class="standard-settings-card standard-settings-feature-card">
             <div class="standard-settings-switch-row">
               <span class="standard-settings-card-body">
-                <strong>お金の登録・編集</strong>
-                <small>{localMoneyRequiresEdit ? "編集権限がある人のみ" : "リンクを知っている人も可能"}</small>
+                <strong>お金の登録・編集に編集権限が必要</strong>
               </span>
               <label class="standard-settings-compact-toggle" aria-label="お金の登録・編集にしおりの編集権限を必要とする">
                 <input type="checkbox" bind:checked={localMoneyRequiresEdit} class="standard-toggle-input" />
@@ -549,8 +547,7 @@
           <section class="standard-settings-card standard-settings-feature-card">
             <div class="standard-settings-switch-row">
               <span class="standard-settings-card-body">
-                <strong>持ち物の登録・編集</strong>
-                <small>{localPackingRequiresEdit ? "編集権限がある人のみ" : "リンクを知っている人も可能"}</small>
+                <strong>持ち物の登録・編集に編集権限が必要</strong>
               </span>
               <label class="standard-settings-compact-toggle" aria-label="持ち物の登録・編集にしおりの編集権限を必要とする">
                 <input type="checkbox" bind:checked={localPackingRequiresEdit} class="standard-toggle-input" />
@@ -558,7 +555,6 @@
               </label>
             </div>
           </section>
-          <p class="standard-settings-feature-note">オン（初期設定）：編集権限が必要。オフ：閲覧リンクを知る人も登録・編集できます。公開しおりは変更できません。</p>
         {/if}
         {#if saveError}<p class="standard-settings-page-error" role="alert">{saveError}</p>{/if}
         <div class="standard-settings-subpage-actions">

@@ -19,7 +19,7 @@
   }
   let { show, itineraryId, canEdit, steps = [], requestedEditItemId = null, onEditItemOpened, onViewStep, onOpenMemberSettings, onClose }: Props = $props();
 
-  let data = $state<MoneyData>({ budget_amount: null, members: [], items: [], fund_transactions: [] });
+  let data = $state<MoneyData>({ budget_amount: null, requires_edit_permission: true, members: [], items: [], fund_transactions: [] });
   let loading = $state(false);
   let error = $state('');
   let title = $state('');
@@ -35,6 +35,9 @@
   let budgetEnabled = $state(false);
   let budgetView = $state<'total' | 'perPerson'>('total');
   let settingsOpen = $state(false);
+  let permissionsSaving = $state(false);
+  let memberName = $state('');
+  let memberSaving = $state(false);
   let activeTab = $state<'expenses' | 'settlement'>('expenses');
   let editorOpen = $state(false);
   let formError = $state('');
@@ -63,6 +66,7 @@
   let shareMessage = $state('');
 
   const isDemoMoney = () => itineraryId === 'demo' || getIsDemoMode();
+  const canManageMoney = $derived(canEdit || !data.requires_edit_permission);
 
   function demoMoneyData(): MoneyData {
     const createdAt = '2026-08-01T09:00:00.000Z';
@@ -83,6 +87,7 @@
     const [misakiId, yosukeId, yuiId] = allMemberIds;
     return {
       budget_amount: 120000,
+      requires_edit_permission: true,
       members,
       items: [
         item('demo-money-admission', '清水寺の拝観料', 5000, null, 'paid', [
@@ -245,13 +250,50 @@
   }
 
   function openMemberHistory(memberId: string) { selectedMemberId = memberId; }
+  async function updateMoneyPermission() {
+    if (!canEdit || permissionsSaving) return;
+    const next = !data.requires_edit_permission;
+    permissionsSaving = true;
+    try {
+      if (isDemoMoney()) {
+        saveDemoData({ ...data, requires_edit_permission: next });
+      } else {
+        const saved = await moneyApi.updatePermissions(itineraryId, next);
+        data = { ...data, requires_edit_permission: saved.requires_edit_permission };
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'お金の編集権限を変更できませんでした');
+    } finally {
+      permissionsSaving = false;
+    }
+  }
+
+  async function addMoneyMember() {
+    const name = memberName.trim();
+    if (!canManageMoney || memberSaving || !name) return;
+    memberSaving = true;
+    try {
+      const member: MoneyMember = isDemoMoney()
+        ? { id: `demo-money-member-${Date.now()}`, itinerary_id: itineraryId, name, created_at: new Date().toISOString() }
+        : await moneyApi.addMember(itineraryId, name);
+      saveDemoDataIfNeeded({ ...data, members: [...data.members, member] });
+      participantIds = [...participantIds, member.id];
+      fundMemberId ||= member.id;
+      memberName = '';
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'メンバーを追加できませんでした');
+    } finally {
+      memberSaving = false;
+    }
+  }
+
   function toggleFundEnabled() {
-    if (hasFundData || !canEdit) return;
+    if (hasFundData || !canManageMoney) return;
     fundEnabled = !fundEnabled;
   }
 
   async function toggleBudgetEnabled() {
-    if (!canEdit) return;
+    if (!canManageMoney) return;
     if (!budgetEnabled) {
       budgetEnabled = true;
       return;
@@ -298,6 +340,7 @@
         data = storedMoney
           ? {
               ...storedMoney,
+              requires_edit_permission: storedMoney.requires_edit_permission ?? true,
               fund_transactions: storedMoney.fund_transactions ?? [],
               items: storedMoney.items.map((item, index) => ({
                 ...item,
@@ -351,7 +394,7 @@
     if (!show || !hasLoaded || handledEditItemId === requestedEditItemId) return;
     handledEditItemId = requestedEditItemId;
     const requestedItem = data.items.find((item) => item.id === requestedEditItemId);
-    if (requestedItem) void editItem(requestedItem).finally(() => onEditItemOpened?.());
+    if (requestedItem && canManageMoney) void editItem(requestedItem).finally(() => onEditItemOpened?.());
     else onEditItemOpened?.();
   });
 

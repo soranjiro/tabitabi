@@ -515,3 +515,89 @@ describe('Packing API', () => {
     }
   });
 });
+
+
+describe('Centralized feature settings API', () => {
+  beforeEach(setup);
+
+  it('requires an editor by default for packing and lets viewers manage items only after opt-in', async () => {
+    const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '持ち物権限のテスト', password: 'password123' }),
+    }), env);
+    const { data: itinerary } = await create.json() as any;
+    const base = `http://localhost/api/v1/itineraries/${itinerary.id}/packing`;
+    const headers = { 'Content-Type': 'application/json' };
+    const editorHeaders = { ...headers, Authorization: `Bearer ${itinerary.token}` };
+    const request = (path: string, method: string, body: unknown, authorized = false) =>
+      app.fetch(new Request(base + path, {
+        method, headers: authorized ? editorHeaders : headers,
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      }), env);
+
+    const initial = await app.fetch(new Request(base), env);
+    expect(initial.status).toBe(200);
+    const initialData = (await initial.json() as any).data;
+    expect(initialData.requires_edit_permission).toBe(true);
+    const groupId = initialData.groups[0]?.id;
+    expect(groupId).toBeTruthy();
+    expect((await request('/permissions', 'PUT', { requires_edit_permission: false })).status).toBe(403);
+    expect((await request('/groups', 'POST', { name: '閲覧者追加' })).status).toBe(403);
+    expect((await request('/members', 'POST', { name: '閲覧者メンバー' })).status).toBe(403);
+
+    expect((await request('/permissions', 'PUT', { requires_edit_permission: false }, true)).status).toBe(200);
+    expect((await request('/permissions', 'PUT', { requires_edit_permission: true })).status).toBe(403);
+    const memberResponse = await request('/members', 'POST', { name: 'Alice' });
+    expect(memberResponse.status).toBe(201);
+    const member = (await memberResponse.json() as any).data;
+    const newGroup = await request('/groups', 'POST', { name: '旅の必需品' });
+    expect(newGroup.status).toBe(201);
+    const group = (await newGroup.json() as any).data;
+    const created = await request('/items', 'POST', {
+      name: '充電器', kind: 'personal', group_id: group.id, quantity: 1,
+    });
+    expect(created.status).toBe(201);
+    const item = (await created.json() as any).data;
+    expect((await request(`/items/${item.id}`, 'PUT', { name: '充電ケーブル' })).status).toBe(200);
+    expect((await request(`/items/${item.id}/check`, 'PUT', { member_id: member.id, checked: true })).status).toBe(200);
+    expect((await request('/groups/order', 'PUT', { group_ids: [...initialData.groups.map((g: any) => g.id), group.id] })).status).toBe(200);
+    expect((await request(`/items/${item.id}`, 'DELETE', undefined)).status).toBe(200);
+    expect((await request('/permissions', 'PUT', { requires_edit_permission: true }, true)).status).toBe(200);
+    expect((await request('/groups', 'POST', { name: '再禁止' })).status).toBe(403);
+    expect((await request('/groups', 'POST', { name: '編集者は追加可能' }, true)).status).toBe(201);
+  });
+
+  it('persists shared fund mode independently of budget and prevents disabling a used fund', async () => {
+    const create = await app.fetch(new Request('http://localhost/api/v1/itineraries', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '共同基金の設定テスト', password: 'password123' }),
+    }), env);
+    const { data: itinerary } = await create.json() as any;
+    const base = `http://localhost/api/v1/itineraries/${itinerary.id}/money`;
+    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${itinerary.token}` };
+    const req = (path: string, body: unknown) => app.fetch(new Request(base + path, {
+      method: 'PUT', headers, body: JSON.stringify(body),
+    }), env);
+    const read = async () => (await (await app.fetch(new Request(base), env)).json() as any).data;
+
+    expect((await read()).fund_enabled).toBe(false);
+    expect((await req('/settings', { fund_enabled: true })).status).toBe(200);
+    expect((await read()).fund_enabled).toBe(true);
+    expect((await req('/settings', { budget_amount: 60000 })).status).toBe(200);
+    expect((await read()).fund_enabled).toBe(true);
+    expect((await read()).budget_amount).toBe(60000);
+    expect((await req('/settings', { fund_enabled: false })).status).toBe(200);
+    expect((await read()).fund_enabled).toBe(false);
+
+    const memberRes = await app.fetch(new Request(base + '/members', {
+      method: 'POST', headers, body: JSON.stringify({ name: 'Alice' }),
+    }), env);
+    const member = (await memberRes.json() as any).data;
+    expect((await app.fetch(new Request(base + '/fund-transactions', {
+      method: 'POST', headers,
+      body: JSON.stringify({ member_id: member.id, kind: 'contribution', amount: 1000 }),
+    }), env)).status).toBe(201);
+    expect((await read()).fund_enabled).toBe(true);
+    expect((await req('/settings', { fund_enabled: false })).status).toBe(400);
+  });
+});

@@ -44,7 +44,18 @@ test('planning-draft preserves ordinary Step editing, dates, search and inline c
     await expect(candidate).toBeHidden();
     await expect(page.getByRole('button', { name: /候補 1件/ })).toBeVisible();
     await page.getByRole('button', { name: /候補 1件/ }).click();
-    await expect(page.getByText('京都駅前のホテル')).toBeVisible();
+    const optionCard = page.locator('.plan-candidates-content .option-card');
+    await expect(optionCard).toContainText('京都駅前のホテル');
+    await optionCard.getByRole('button', { name: /メモ/ }).click();
+    await expect(optionCard.getByLabel('京都駅前のホテルのメモ')).toHaveText('朝食付き');
+    await optionCard.getByRole('button', { name: '＋ リンク' }).click();
+    const linkEditor = page.getByRole('dialog', { name: '候補の編集' });
+    await expect(linkEditor.getByLabel('リンク')).toBeFocused();
+    await linkEditor.getByLabel('リンク').fill('https://example.com/kyoto-hotel');
+    await linkEditor.getByRole('button', { name: '保存', exact: true }).click();
+    await expect(linkEditor).toBeHidden();
+    await expect(optionCard.getByRole('link', { name: '京都駅前のホテルのリンクを開く' }))
+      .toHaveAttribute('href', 'https://example.com/kyoto-hotel');
     await expect(page.locator('.graph-scroll')).toHaveCount(0);
 
     // Saving a hotel comparison must not make the next ordinary Step a new route.

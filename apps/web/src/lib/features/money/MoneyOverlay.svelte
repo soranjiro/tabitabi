@@ -18,7 +18,7 @@
     onOpenMemberSettings: () => void;
     onClose: () => void;
   }
-  let { show, itineraryId, canEdit, steps = [], requestedEditItemId = null, onEditItemOpened, onViewStep, onOpenMemberSettings, onClose }: Props = $props();
+  let { show, itineraryId, canEdit, allowViewerMoneyEdits = true, steps = [], requestedEditItemId = null, onEditItemOpened, onViewStep, onOpenMemberSettings, onClose }: Props = $props();
 
   let data = $state<MoneyData>({ budget_amount: null, requires_edit_permission: true, members: [], items: [], fund_transactions: [] });
   let loading = $state(false);

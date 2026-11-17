@@ -10,6 +10,7 @@
     show: boolean;
     itineraryId: string;
     canEdit: boolean;
+    allowViewerMoneyEdits?: boolean;
     steps?: Step[];
     requestedEditItemId?: string | null;
     onEditItemOpened?: () => void;

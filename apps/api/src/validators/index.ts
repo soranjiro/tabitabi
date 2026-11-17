@@ -104,6 +104,10 @@ export const moneySettingsSchema = z.object({
   budget_amount: z.number().int().positive().max(100_000_000).nullable(),
 });
 
+export const moneyPermissionsSchema = z.object({
+  requires_edit_permission: z.boolean(),
+});
+
 export const moneyFundTransactionSchema = z.object({
   member_id: z.string().min(1),
   kind: z.enum(['contribution', 'refund']),

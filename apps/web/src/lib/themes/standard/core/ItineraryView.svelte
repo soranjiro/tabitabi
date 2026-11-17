@@ -648,7 +648,7 @@
     show={showMoney}
     itineraryId={itinerary.id}
     canEdit={hasEditPermission && !isSharedSnapshot}
-    allowViewerMoneyEdits={!readOnly && !isSharedSnapshot}
+    allowViewerMoneyEdits={!isSharedSnapshot}
     {steps}
     requestedEditItemId={requestedMoneyItemId}
     onEditItemOpened={() => (requestedMoneyItemId = null)}
@@ -675,7 +675,7 @@
       show={showPacking}
       itineraryId={itinerary.id}
       canEdit={hasEditPermission && !isSharedSnapshot}
-      allowViewerPackingEdits={!readOnly && !isSharedSnapshot}
+      allowViewerPackingEdits={!isSharedSnapshot}
       onOpenMemberSettings={() => openMemberSettings('packing')}
       onClose={() => closeFeature('packing')}
     />

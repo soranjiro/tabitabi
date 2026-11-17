@@ -159,3 +159,11 @@
   .standard-money-subdialog-backdrop { align-items:end; padding:0; }
   .standard-money-subdialog { width:100%; max-height:88dvh; border-radius:20px 20px 0 0; padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom)); }
 }
+
+.standard-money-permission-heading { margin-top:.85rem; padding-top:.85rem; border-top:1px solid #d9e5da; }
+.standard-money-setup-body > small { display:block; margin-top:.5rem; color:#68736a; line-height:1.5; }
+.standard-money-setup .standard-money-member-add { margin-top:.55rem; }
+.standard-money-members-required .standard-money-member-add { width:min(100%,360px); }
+.standard-money-member-add input { flex:1; min-width:0; border:1px solid #d6d2c8; border-radius:8px; padding:.65rem; font:inherit; background:#fff; }
+.standard-money-member-add button:disabled { opacity:.6; cursor:not-allowed; }
+.standard-money-readonly { margin:.75rem 0; color:#68736a; font-size:.78rem; }

@@ -154,7 +154,7 @@
     try {
       const isDemo = itineraryId === "demo" || getIsDemoMode();
       const [money, packing] = isDemo
-        ? [demoStorage.getMoneyData(), demoStorage.getPackingData()]
+        ? [demoStorage.getMoneyData(), demoStorage.getPackingData()] as const
         : await Promise.all([moneyApi.get(itineraryId), packingApi.get(itineraryId)]);
       if (!show) return;
       const hasHistory = Boolean(money?.fund_transactions?.length || money?.items?.some((item) => item.paid_from_fund));

@@ -20,6 +20,8 @@ test('trip members open in a dedicated settings page and remain editable', async
 
   try {
     await page.goto(`/itineraries/${id}?token=${encodeURIComponent(token)}`);
+    // The menu becomes configurable only after the edit token has been applied.
+    await expect(page.getByRole('button', { name: '＋ 予定を追加' })).toBeVisible();
     await page.getByRole('button', { name: 'メニュー' }).click();
     await page.getByRole('button', { name: /しおり設定/ }).click();
 

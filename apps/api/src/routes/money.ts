@@ -99,8 +99,8 @@ money.get('/itineraries/:id/money', optionalAuthMiddleware, async (c) => {
   const denied = await guardPrivateItineraryRead(c, itineraryId);
   if (denied) return denied;
   const [settings, membersResult, itemsResult, splitsResult, fundTransactionsResult] = await Promise.all([
-    c.env.DB.prepare('SELECT budget_amount, requires_edit_permission FROM itinerary_money_settings WHERE itinerary_id = ?')
-      .bind(itineraryId).first<{ budget_amount: number | null; requires_edit_permission: number }>(),
+    c.env.DB.prepare('SELECT budget_amount, fund_enabled, requires_edit_permission FROM itinerary_money_settings WHERE itinerary_id = ?')
+      .bind(itineraryId).first<{ budget_amount: number | null; fund_enabled: number; requires_edit_permission: number }>(),
     c.env.DB.prepare('SELECT id, itinerary_id, name, created_at FROM itinerary_members WHERE itinerary_id = ? ORDER BY created_at ASC').bind(itineraryId).all<MoneyMember>(),
     c.env.DB.prepare('SELECT * FROM itinerary_money_items WHERE itinerary_id = ? ORDER BY status ASC, occurred_on ASC, created_at DESC').bind(itineraryId).all(),
     c.env.DB.prepare('SELECT item_id, member_id, amount FROM itinerary_money_item_splits WHERE itinerary_id = ? ORDER BY rowid ASC')
@@ -111,6 +111,8 @@ money.get('/itineraries/:id/money', optionalAuthMiddleware, async (c) => {
   const splits = groupSplits(splitsResult.results ?? []);
   const data: MoneyData = {
     budget_amount: settings?.budget_amount ?? null,
+    fund_enabled: settings?.fund_enabled === 1 || (fundTransactionsResult.results ?? []).length > 0
+      || (itemsResult.results ?? []).some((item) => Number((item as Record<string, unknown>).paid_from_fund) === 1),
     requires_edit_permission: settings?.requires_edit_permission !== 0,
     members: membersResult.results ?? [],
     items: (itemsResult.results ?? []).map((row) => itemFromRow(
@@ -126,12 +128,24 @@ money.put('/itineraries/:id/money/settings', optionalAuthMiddleware, zValidator(
   const itineraryId = c.req.param('id')!;
   const denied = await canEdit(c, itineraryId);
   if (denied) return denied;
-  const { budget_amount } = c.req.valid('json');
+  const { budget_amount, fund_enabled } = c.req.valid('json');
+  if (fund_enabled === false) {
+    const [fundTransactions, fundItems] = await Promise.all([
+      c.env.DB.prepare('SELECT id FROM itinerary_money_fund_transactions WHERE itinerary_id = ? LIMIT 1').bind(itineraryId).first(),
+      c.env.DB.prepare('SELECT id FROM itinerary_money_items WHERE itinerary_id = ? AND paid_from_fund = 1 LIMIT 1').bind(itineraryId).first(),
+    ]);
+    if (fundTransactions || fundItems) return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Cannot disable a fund with transactions' } }, 400);
+  }
+  const previous = await c.env.DB.prepare('SELECT budget_amount, fund_enabled FROM itinerary_money_settings WHERE itinerary_id = ?')
+    .bind(itineraryId).first<{ budget_amount: number | null; fund_enabled: number }>();
+  const nextBudget = budget_amount === undefined ? previous?.budget_amount ?? null : budget_amount;
+  const nextFund = fund_enabled === undefined ? previous?.fund_enabled === 1 : fund_enabled;
   const now = getCurrentTimestamp();
-  await c.env.DB.prepare(`INSERT INTO itinerary_money_settings (itinerary_id, budget_amount, created_at, updated_at)
-    VALUES (?, ?, ?, ?) ON CONFLICT(itinerary_id) DO UPDATE SET budget_amount = excluded.budget_amount, updated_at = excluded.updated_at`)
-    .bind(itineraryId, budget_amount, now, now).run();
-  return c.json({ success: true, data: { budget_amount } });
+  await c.env.DB.prepare(`INSERT INTO itinerary_money_settings (itinerary_id, budget_amount, fund_enabled, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?) ON CONFLICT(itinerary_id) DO UPDATE SET budget_amount = excluded.budget_amount,
+      fund_enabled = excluded.fund_enabled, updated_at = excluded.updated_at`)
+    .bind(itineraryId, nextBudget, nextFund ? 1 : 0, now, now).run();
+  return c.json({ success: true, data: { budget_amount: nextBudget, fund_enabled: nextFund } });
 });
 
 // Only itinerary editors can toggle money editing permissions.

@@ -101,10 +101,17 @@ export const updateMoneyItemSchema = moneyItemFields.partial().superRefine((data
 });
 
 export const moneySettingsSchema = z.object({
-  budget_amount: z.number().int().positive().max(100_000_000).nullable(),
+  budget_amount: z.number().int().positive().max(100_000_000).nullable().optional(),
+  fund_enabled: z.boolean().optional(),
+}).refine((value) => value.budget_amount !== undefined || value.fund_enabled !== undefined, {
+  message: 'No settings to update',
 });
 
 export const moneyPermissionsSchema = z.object({
+  requires_edit_permission: z.boolean(),
+});
+
+export const packingPermissionsSchema = z.object({
   requires_edit_permission: z.boolean(),
 });
 

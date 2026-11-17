@@ -1,15 +1,14 @@
 <script lang="ts">
   import type { PackingData, PackingGroup, PackingItem, PackingItemKind, TripMember } from '@tabitabi/types';
   import { packingApi } from '$lib/api/packing';
-  import { membersApi } from '$lib/api/members';
   import { demoStorage, getIsDemoMode } from '$lib/demo';
   import { movePackingGroup, orderPackingGroups, shouldPromptForPackingIdentity } from './packing';
   import { CloseIcon } from '$lib/themes/standard/core/components/icons/index.svelte';
   import './packing.css';
 
-  interface Props { show: boolean; itineraryId: string; canEdit: boolean; onOpenMemberSettings: () => void; onClose: () => void; }
-  let { show, itineraryId, canEdit, onOpenMemberSettings, onClose }: Props = $props();
-  let data = $state<PackingData>({ members: [], groups: [], items: [] });
+  interface Props { show: boolean; itineraryId: string; canEdit: boolean; allowViewerPackingEdits?: boolean; onOpenMemberSettings: () => void; onClose: () => void; }
+  let { show, itineraryId, canEdit, allowViewerPackingEdits = true, onOpenMemberSettings, onClose }: Props = $props();
+  let data = $state<PackingData>({ requires_edit_permission: true, members: [], groups: [], items: [] });
   let loading = $state(false);
   let loaded = $state(false);
   let error = $state('');
@@ -32,6 +31,7 @@
   let copied = $state(false);
 
   const isDemo = () => itineraryId === 'demo' || getIsDemoMode();
+  const canManagePacking = $derived(canEdit || (allowViewerPackingEdits && !data.requires_edit_permission));
   const me = $derived(data.members.find((member) => member.id === meId));
   const personalItems = $derived(data.items.filter((item) => item.kind === 'personal'));
   const privateItems = $derived(data.items.filter((item) => item.kind === 'private' && item.owner_member_id === meId));
@@ -74,7 +74,7 @@
       id, itinerary_id: itineraryId, name, quantity: 1, kind, group_id: groups[groupIndex].id, assignee_member_id: assignee, is_packed: packed,
       owner_member_id: owner, checked_member_ids: checked, created_at: now, updated_at: now,
     });
-    return { members, groups, items: [
+    return { requires_edit_permission: true, members, groups, items: [
       item('demo-pack-passport', 'パスポート', 'personal', 0, null, false, [members[0]?.id].filter(Boolean) as string[]),
       item('demo-pack-wallet', '財布', 'personal', 0, null, false, members.slice(0, 2).map((member) => member.id)),
       item('demo-pack-phone', 'スマートフォン', 'personal', 1, null),
@@ -90,7 +90,7 @@
   function normalizeDemoPacking(value: PackingData, members: TripMember[]): PackingData {
     const groups = value.groups?.length ? value.groups : demoGroups();
     const fallbackId = groups.find((group) => group.name === 'その他')?.id ?? groups[0].id;
-    return { ...value, members, groups, items: value.items.map((item) => ({
+    return { ...value, requires_edit_permission: value.requires_edit_permission ?? true, members, groups, items: value.items.map((item) => ({
       ...item, quantity: item.quantity ?? 1, group_id: groups.some((group) => group.id === item.group_id) ? item.group_id : fallbackId,
     })) };
   }
@@ -119,7 +119,7 @@
   function itemLabel(item: PackingItem) { return item.quantity > 1 ? `${item.name} ×${item.quantity}` : item.name; }
 
   async function toggle(item: PackingItem, memberId: string | null = meId) {
-    if (!canEdit || (item.kind !== 'shared' && !memberId)) return;
+    if (!canManagePacking || (item.kind !== 'shared' && !memberId)) return;
     const checked = !isChecked(item, memberId ?? '');
     try {
       if (!isDemo()) await packingApi.updateCheck(itineraryId, item.id, { member_id: item.kind !== 'shared' ? memberId : null, checked });
@@ -175,11 +175,11 @@
 
   async function addMember() {
     const name = newMemberName.trim();
-    if (!name) return;
+    if (!name || !canManagePacking) return;
     try {
       const member: TripMember = isDemo()
         ? { id: `demo-member-${Date.now()}`, itinerary_id: itineraryId, name, created_at: new Date().toISOString() }
-        : await membersApi.add(itineraryId, name);
+        : await packingApi.addMember(itineraryId, name);
       const next = { ...data, members: [...data.members, member] };
       if (isDemo()) persist(next); else data = next;
       newMemberName = '';
@@ -297,6 +297,9 @@
         <div><p>TRIP CHECKLIST</p><h2>持ち物</h2></div>
         <div class="standard-packing-header-actions"><div class="standard-packing-link-wrap"><button class="standard-packing-link" onclick={copyPackingLink} aria-label="持ち物画面へのリンクをコピー" title="この画面へのリンクをコピー">🔗</button>{#if copied}<div class="standard-packing-link-toast" role="status" aria-live="polite">リンクをコピーしました</div>{/if}</div><button onclick={onClose} aria-label="閉じる">{@html CloseIcon}</button></div>
       </header>
+      {#if !canManagePacking && !loading && !error}
+        <p class="standard-packing-status">持ち物の変更にはしおりの編集権限が必要です。</p>
+      {/if}
       {#if loading}<p class="standard-packing-status">読み込み中…</p>
       {:else if error}<p class="standard-packing-status">{error}</p>
       {:else if !data.members.length}
@@ -306,36 +309,41 @@
           <p>旅行メンバーは、持ち物とお金の管理で共通して使えます。</p>
           {#if canEdit}
             <button type="button" class="standard-packing-add-members" onclick={onOpenMemberSettings}>メンバーを追加 <span aria-hidden="true">→</span></button>
+          {:else if canManagePacking}
+            <div class="standard-packing-member-add">
+              <input aria-label="メンバー名" placeholder="メンバー名" bind:value={newMemberName} />
+              <button type="button" onclick={addMember}>＋ メンバーを追加</button>
+            </div>
           {/if}
         </div>
       {:else}
         <button class="standard-packing-me" onclick={() => showIdentity = true}><span>👤 自分</span><strong>{me?.name ?? '選択してください'}</strong><i>⌄</i></button>
         <div class="standard-packing-tabs" role="tablist"><button class:active={tab === 'mine'} onclick={() => tab = 'mine'}>自分</button><button class:active={tab === 'everyone'} onclick={() => tab = 'everyone'}>みんな</button></div>
-        {#if canEdit}<div class="standard-packing-actions"><button class="standard-packing-manage" onclick={() => showGroups = true}>グループを管理</button><button class="standard-packing-add" onclick={openAdd}><span>＋</span> 持ち物を追加</button></div>{/if}
+        {#if canManagePacking}<div class="standard-packing-actions"><button class="standard-packing-manage" onclick={() => showGroups = true}>グループを管理</button><button class="standard-packing-add" onclick={openAdd}><span>＋</span> 持ち物を追加</button></div>{/if}
 
         {#if tab === 'mine' && me}
           <div class="standard-packing-content">
             <section class="standard-packing-section"><div class="standard-packing-section-title"><h3>自分の持ち物</h3><span>{donePersonal} / {myPersonal.length}</span></div>
-              <div class="standard-packing-groups">{#each orderedGroups as group (group.id)}{@const items = myPersonal.filter((item) => item.group_id === group.id)}{#if items.length}<div class="standard-packing-group"><h4>{group.name}<small>{items.filter((item) => isChecked(item)).length} / {items.length}</small></h4><div class="standard-packing-list">{#each items as item}<div class:done={isChecked(item)} class="standard-packing-row"><button class="check" aria-label={`${item.name}をチェック`} onclick={() => toggle(item)}>{isChecked(item) ? '✓' : ''}</button><span>{itemLabel(item)}</span>{#if canEdit}<button class="more" aria-label={`${item.name}を編集`} onclick={() => openEdit(item)}>•••</button>{/if}</div>{/each}</div></div>{/if}{/each}</div>
+              <div class="standard-packing-groups">{#each orderedGroups as group (group.id)}{@const items = myPersonal.filter((item) => item.group_id === group.id)}{#if items.length}<div class="standard-packing-group"><h4>{group.name}<small>{items.filter((item) => isChecked(item)).length} / {items.length}</small></h4><div class="standard-packing-list">{#each items as item}<div class:done={isChecked(item)} class="standard-packing-row"><button class="check" disabled={!canManagePacking} aria-label={`${item.name}をチェック`} onclick={() => toggle(item)}>{isChecked(item) ? '✓' : ''}</button><span>{itemLabel(item)}</span>{#if canManagePacking}<button class="more" aria-label={`${item.name}を編集`} onclick={() => openEdit(item)}>•••</button>{/if}</div>{/each}</div></div>{/if}{/each}</div>
             </section>
             <section class="standard-packing-section"><div class="standard-packing-section-title"><h3>自分が担当</h3><span>{doneAssigned} / {myAssigned.length}</span></div>
-              {#if myAssigned.length}<div class="standard-packing-groups">{#each orderedGroups as group (group.id)}{@const items = myAssigned.filter((item) => item.group_id === group.id)}{#if items.length}<div class="standard-packing-group"><h4>{group.name}</h4><div class="standard-packing-list">{#each items as item}<div class:done={item.is_packed} class="standard-packing-row"><button class="check" onclick={() => toggle(item)}>{item.is_packed ? '✓' : ''}</button><span>{itemLabel(item)}</span>{#if canEdit}<button class="more" onclick={() => openEdit(item)}>•••</button>{/if}</div>{/each}</div></div>{/if}{/each}</div>{:else}<p class="standard-packing-note">担当している共通の持ち物はありません。</p>{/if}
+              {#if myAssigned.length}<div class="standard-packing-groups">{#each orderedGroups as group (group.id)}{@const items = myAssigned.filter((item) => item.group_id === group.id)}{#if items.length}<div class="standard-packing-group"><h4>{group.name}</h4><div class="standard-packing-list">{#each items as item}<div class:done={item.is_packed} class="standard-packing-row"><button class="check" disabled={!canManagePacking} onclick={() => toggle(item)}>{item.is_packed ? '✓' : ''}</button><span>{itemLabel(item)}</span>{#if canManagePacking}<button class="more" onclick={() => openEdit(item)}>•••</button>{/if}</div>{/each}</div></div>{/if}{/each}</div>{:else}<p class="standard-packing-note">担当している共通の持ち物はありません。</p>{/if}
             </section>
           </div>
         {:else if tab === 'everyone'}
           <div class="standard-packing-content">
             <section class="standard-packing-section"><div class="standard-packing-section-title"><h3>準備状況</h3></div>
-              <div class="standard-packing-progress-list">{#each data.members as member}{@const count = personalItems.filter((item) => item.checked_member_ids.includes(member.id)).length}<details><summary><span><i>{member.name.slice(0, 1)}</i>{member.name}</span><b>{count} / {personalItems.length}</b></summary><div>{#each orderedGroups as group (group.id)}{@const items = personalItems.filter((item) => item.group_id === group.id)}{#if items.length}<h5>{group.name}</h5>{#each items as item}<button class:done={item.checked_member_ids.includes(member.id)} onclick={() => toggle(item, member.id)}><i>{item.checked_member_ids.includes(member.id) ? '✓' : ''}</i>{itemLabel(item)}</button>{/each}{/if}{/each}</div></details>{/each}</div>
+              <div class="standard-packing-progress-list">{#each data.members as member}{@const count = personalItems.filter((item) => item.checked_member_ids.includes(member.id)).length}<details><summary><span><i>{member.name.slice(0, 1)}</i>{member.name}</span><b>{count} / {personalItems.length}</b></summary><div>{#each orderedGroups as group (group.id)}{@const items = personalItems.filter((item) => item.group_id === group.id)}{#if items.length}<h5>{group.name}</h5>{#each items as item}<button class:done={item.checked_member_ids.includes(member.id)} disabled={!canManagePacking} onclick={() => toggle(item, member.id)}><i>{item.checked_member_ids.includes(member.id) ? '✓' : ''}</i>{itemLabel(item)}</button>{/each}{/if}{/each}</div></details>{/each}</div>
             </section>
             <section class="standard-packing-section"><div class="standard-packing-section-title"><h3>共通の持ち物</h3><span>{doneShared} / {sharedItems.length}</span></div>
-              <div class="standard-packing-groups">{#each orderedGroups as group (group.id)}{@const items = sharedItems.filter((item) => item.group_id === group.id)}{#if items.length}<div class="standard-packing-group"><h4>{group.name}<small>{items.filter((item) => item.is_packed).length} / {items.length}</small></h4><div class="standard-packing-list">{#each items as item}<div class:done={item.is_packed} class="standard-packing-row shared"><button class="check" onclick={() => toggle(item)}>{item.is_packed ? '✓' : ''}</button><span>{itemLabel(item)}</span><select class:undecided={!item.assignee_member_id} value={item.assignee_member_id ?? ''} disabled={!canEdit} aria-label={`${item.name}の担当者`} onchange={(event) => changeAssignee(item, event.currentTarget.value)}><option value="">未定</option>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>{#if canEdit}<button class="more" onclick={() => openEdit(item)}>•••</button>{/if}</div>{/each}</div></div>{/if}{/each}</div>
+              <div class="standard-packing-groups">{#each orderedGroups as group (group.id)}{@const items = sharedItems.filter((item) => item.group_id === group.id)}{#if items.length}<div class="standard-packing-group"><h4>{group.name}<small>{items.filter((item) => item.is_packed).length} / {items.length}</small></h4><div class="standard-packing-list">{#each items as item}<div class:done={item.is_packed} class="standard-packing-row shared"><button class="check" disabled={!canManagePacking} onclick={() => toggle(item)}>{item.is_packed ? '✓' : ''}</button><span>{itemLabel(item)}</span><select class:undecided={!item.assignee_member_id} value={item.assignee_member_id ?? ''} disabled={!canManagePacking} aria-label={`${item.name}の担当者`} onchange={(event) => changeAssignee(item, event.currentTarget.value)}><option value="">未定</option>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select>{#if canManagePacking}<button class="more" onclick={() => openEdit(item)}>•••</button>{/if}</div>{/each}</div></div>{/if}{/each}</div>
             </section>
           </div>
   {/if}
   {/if}
     </div>
 
-    {#if showIdentity}<div class="standard-packing-sheet-backdrop" onclick={() => meId && (showIdentity = false)}><div class="standard-packing-sheet" onclick={(event) => event.stopPropagation()}><span class="handle"></span><h3>この旅では誰ですか？</h3><p>この端末で表示する「自分」を選んでください。</p>{#each data.members as member}<button class:active={member.id === meId} onclick={() => selectMe(member.id)}><i>{member.id === meId ? '✓' : ''}</i><span>{member.name.slice(0, 1)}</span>{member.name}</button>{/each}{#if canEdit}<div class="standard-packing-member-add"><input placeholder="メンバー名" bind:value={newMemberName} onkeydown={(event) => event.key === 'Enter' && addMember()} /><button onclick={addMember}>＋ メンバーを追加</button></div>{/if}<small>あとから画面上部で変更できます</small></div></div>{/if}
+    {#if showIdentity}<div class="standard-packing-sheet-backdrop" onclick={() => meId && (showIdentity = false)}><div class="standard-packing-sheet" onclick={(event) => event.stopPropagation()}><span class="handle"></span><h3>この旅では誰ですか？</h3><p>この端末で表示する「自分」を選んでください。</p>{#each data.members as member}<button class:active={member.id === meId} onclick={() => selectMe(member.id)}><i>{member.id === meId ? '✓' : ''}</i><span>{member.name.slice(0, 1)}</span>{member.name}</button>{/each}{#if canManagePacking}<div class="standard-packing-member-add"><input placeholder="メンバー名" bind:value={newMemberName} onkeydown={(event) => event.key === 'Enter' && addMember()} /><button onclick={addMember}>＋ メンバーを追加</button></div>{/if}<small>あとから画面上部で変更できます</small></div></div>{/if}
 
     {#if showForm}<div class="standard-packing-sheet-backdrop" onclick={closeForm}><form class="standard-packing-sheet standard-packing-form" onclick={(event) => event.stopPropagation()} onsubmit={(event) => { event.preventDefault(); saveItem(); }}><span class="handle"></span><h3>{editingId ? '持ち物を編集' : '持ち物を追加'}</h3><label>持ち物名<input autofocus placeholder="例：トップス" bind:value={itemName} /></label><label>個数<select bind:value={itemQuantity}>{#each Array.from({ length: 10 }, (_, index) => index + 1) as quantity}<option value={quantity}>{quantity}</option>{/each}</select></label><label>グループ<select bind:value={groupId}>{#each orderedGroups as group (group.id)}<option value={group.id}>{group.name}</option>{/each}</select></label><fieldset><legend>誰が持つ？</legend><label><input type="radio" value="private" bind:group={itemKind} /><span><b>自分専用</b><small>自分のリストだけに表示します</small></span></label><label><input type="radio" value="personal" bind:group={itemKind} /><span><b>各自で持つ</b><small>全員に同じチェック項目を作ります</small></span></label><label><input type="radio" value="shared" bind:group={itemKind} /><span><b>誰か1人が持つ</b><small>グループで1つだけ準備します</small></span></label></fieldset>{#if itemKind === 'shared'}<label>担当者<select bind:value={assigneeId}><option value="">未定</option>{#each data.members as member}<option value={member.id}>{member.name}</option>{/each}</select></label>{/if}<div class="actions">{#if editingId}<button type="button" class="delete" onclick={() => { const item = data.items.find((current) => current.id === editingId); if (item) remove(item); }}>削除</button>{/if}<button type="button" class="secondary" onclick={closeForm}>キャンセル</button><button type="submit">保存</button></div></form></div>{/if}
 

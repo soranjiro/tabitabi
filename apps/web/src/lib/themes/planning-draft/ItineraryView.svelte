@@ -136,6 +136,7 @@
   let isAuthenticating = $state(false);
   let copyMessage = $state<string | null>(null);
   let showSettingsDialog = $state(false);
+  let settingsInitialPanel = $state<"main" | "money" | "permissions">("main");
   let showMetadataDialog = $state(false);
   let selectedPaletteId = $state(itinerary.palette_id ?? "neutral");
   let selectedBackgroundImage = $state<string | null>(itinerary.background_image ?? null);
@@ -206,6 +207,14 @@
   function openMemberSettings(feature: 'money' | 'packing') {
     if (!hasEditPermission || isSharedSnapshot) return;
     closeFeature(feature);
+    settingsInitialPanel = "main";
+    showSettingsDialog = true;
+  }
+
+  function openMoneySettings() {
+    if (!hasEditPermission || isSharedSnapshot || readOnly) return;
+    closeFeature("money");
+    settingsInitialPanel = "money";
     showSettingsDialog = true;
   }
 
@@ -760,6 +769,7 @@
     allowViewerMoneyEdits={!readOnly && !isSharedSnapshot}
     {steps}
     onOpenMemberSettings={() => openMemberSettings('money')}
+    onOpenMoneySettings={openMoneySettings}
     onClose={() => closeFeature('money')}
   />
 
@@ -768,6 +778,7 @@
       show={showPacking}
       itineraryId={itinerary.id}
       canEdit={hasEditPermission && !isSharedSnapshot}
+      allowViewerPackingEdits={!readOnly && !isSharedSnapshot}
       onOpenMemberSettings={() => openMemberSettings('packing')}
       onClose={() => closeFeature('packing')}
     />
@@ -802,7 +813,7 @@
       }
     }}
     onPrint={openPrintStudio}
-    onSettings={() => (showSettingsDialog = true)}
+    onSettings={() => { settingsInitialPanel = "main"; showSettingsDialog = true; }}
     onEditModeToggle={handleEditModeToggle}
     onClose={() => (showMoreMenu = false)}
   />
@@ -810,6 +821,7 @@
   <SettingsDialog
     show={showSettingsDialog}
     itineraryId={itinerary.id}
+    initialPanel={settingsInitialPanel}
     themes={getAvailableThemes()}
     {palettes}
     selectedThemeId={itinerary.theme_id}

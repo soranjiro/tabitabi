@@ -136,7 +136,7 @@
   let isAuthenticating = $state(false);
   let copyMessage = $state<string | null>(null);
   let showSettingsDialog = $state(false);
-  let settingsInitialPanel = $state<"main" | "money" | "permissions">("main");
+  let settingsInitialPanel = $state<"main" | "members" | "money" | "permissions">("main");
   let showMetadataDialog = $state(false);
   let selectedPaletteId = $state(itinerary.palette_id ?? "neutral");
   let selectedBackgroundImage = $state<string | null>(itinerary.background_image ?? null);
@@ -207,7 +207,7 @@
   function openMemberSettings(feature: 'money' | 'packing') {
     if (!hasEditPermission || isSharedSnapshot) return;
     closeFeature(feature);
-    settingsInitialPanel = "main";
+    settingsInitialPanel = "members";
     showSettingsDialog = true;
   }
 

@@ -30,7 +30,7 @@
   interface Props {
     show: boolean;
     itineraryId: string;
-    initialPanel?: "main" | "money" | "permissions";
+    initialPanel?: "main" | "members" | "money" | "permissions";
     themes: ThemeOption[];
     palettes: PaletteOption[];
     selectedThemeId: string;
@@ -52,7 +52,7 @@
     onClose: () => void;
   }
 
-  type SettingsPanel = "main" | "metadata" | "theme" | "palette" | "background" | "money" | "permissions";
+  type SettingsPanel = "main" | "members" | "metadata" | "theme" | "palette" | "background" | "money" | "permissions";
 
   let {
     show,
@@ -337,6 +337,8 @@
           旅行先とタグ
         {:else if activePanel === "money"}
           お金の設定
+        {:else if activePanel === "members"}
+          旅行メンバー
         {:else if activePanel === "permissions"}
           編集権限
         {:else if activePanel === "theme"}
@@ -397,13 +399,19 @@
           <span class="standard-settings-card-chevron" aria-hidden="true">›</span>
         </button>
 
-        <section class="standard-settings-card standard-settings-members-card">
-          <div class="standard-settings-card-heading">
-            <span class="standard-settings-card-icon" aria-hidden="true">👥</span>
+        <button
+          type="button"
+          class="standard-settings-card standard-settings-card-action"
+          onclick={() => (activePanel = "members")}
+          aria-label="旅行メンバーを編集"
+        >
+          <span class="standard-settings-card-icon" aria-hidden="true">👥</span>
+          <span class="standard-settings-card-body">
             <strong>旅行メンバー</strong>
-          </div>
-          <TripMembersEditor {show} {itineraryId} />
-        </section>
+            <small>追加・名前変更・削除</small>
+          </span>
+          <span class="standard-settings-card-chevron" aria-hidden="true">›</span>
+        </button>
 
         <button
           type="button"
@@ -525,6 +533,15 @@
         >
           {isSaving ? "保存中…" : "保存"}
         </button>
+      </div>
+    {:else if activePanel === "members"}
+      <div class="standard-settings-page standard-settings-subpage standard-settings-feature-panel">
+        <section class="standard-settings-card standard-settings-members-card">
+          <TripMembersEditor {show} {itineraryId} />
+        </section>
+        <div class="standard-settings-subpage-actions">
+          <button type="button" class="standard-btn standard-btn-secondary" onclick={returnToOverview}>設定一覧へ</button>
+        </div>
       </div>
     {:else if activePanel === "permissions"}
       <div class="standard-settings-page standard-settings-subpage standard-settings-feature-panel">

@@ -109,7 +109,7 @@
   let showPasswordDialog = $state(false);
   let showMemoDialog = $state(false);
   let showSettingsDialog = $state(false);
-  let settingsInitialPanel = $state<"main" | "money" | "permissions">("main");
+  let settingsInitialPanel = $state<"main" | "members" | "money" | "permissions">("main");
   let showMetadataDialog = $state(false);
   let isAuthenticating = $state(false);
   let isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
@@ -269,7 +269,7 @@
   function openMemberSettings(feature: 'money' | 'packing') {
     if (!hasEditPermission || isSharedSnapshot) return;
     closeFeature(feature);
-    settingsInitialPanel = "main";
+    settingsInitialPanel = "members";
     showSettingsDialog = true;
   }
 

@@ -7,7 +7,8 @@ const apiBaseUrl = process.env.PREVIEW_API_URL;
 for (const themeId of ['standard-spring', 'planning-draft']) {
   test(`shared view link honors money and packing edit opt-in (${themeId})`, async ({ page, request }) => {
     test.skip(!apiBaseUrl, 'PREVIEW_API_URL is required for deployed-preview smoke testing');
-    test.setTimeout(90_000);
+    test.setTimeout(60_000);
+    page.setDefaultTimeout(10_000);
 
     const create = await request.post(`${apiBaseUrl}/itineraries`, {
       data: { title: `共有権限確認-${themeId}-${Date.now()}`, theme_id: themeId },
@@ -61,6 +62,9 @@ for (const themeId of ['standard-spring', 'planning-draft']) {
       await page.goto(`/s/${id}#packing`);
       const addPacking = page.getByRole('button', { name: /持ち物を追加/ });
       await expect(addPacking).toBeVisible();
+      // A first-time viewer must identify their trip member before editing.
+      await expect(page.getByRole('heading', { name: 'この旅では誰ですか？' })).toBeVisible();
+      await page.locator('.standard-packing-sheet').getByRole('button', { name: /検証メンバー/ }).click();
       await addPacking.click();
       await page.getByPlaceholder('例：トップス').fill('共有リンクからの持ち物');
       await page.getByRole('button', { name: '保存', exact: true }).click();
@@ -77,8 +81,12 @@ for (const themeId of ['standard-spring', 'planning-draft']) {
       await expect(page.getByRole('button', { name: /持ち物を追加/ })).toHaveCount(0);
     } finally {
       const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-      const removal = await request.delete(root, { headers });
-      if (!removal.ok()) console.warn(`preview-shared-permissions-cleanup-failed=${id}:${removal.status()}`);
+      try {
+        const removal = await request.delete(root, { headers, timeout: 5_000 });
+        if (!removal.ok()) console.warn(`preview-shared-permissions-cleanup-failed=${id}:${removal.status()}`);
+      } catch (error) {
+        console.warn(`preview-shared-permissions-cleanup-error=${id}:${String(error)}`);
+      }
     }
   });
 }

@@ -44,8 +44,10 @@ test('trip members open in a dedicated settings page and remain editable', async
     await expect(memberRow).toBeVisible();
 
     await memberRow.getByRole('button', { name: '名前変更' }).click();
-    await memberRow.getByRole('textbox', { name: 'テスト参加者の名前' }).fill('変更後の参加者');
-    await memberRow.getByRole('button', { name: '保存' }).click();
+    // The name moves from text content into an input when editing starts.
+    const editingRow = page.locator('.standard-member-row').first();
+    await editingRow.getByRole('textbox', { name: 'テスト参加者の名前' }).fill('変更後の参加者');
+    await editingRow.getByRole('button', { name: '保存' }).click();
     const renamedRow = page.locator('.standard-member-row').filter({ hasText: '変更後の参加者' });
     await expect(renamedRow).toBeVisible();
 

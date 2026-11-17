@@ -103,6 +103,12 @@ test('classic single-column planning remains usable on mobile, then branches and
       has: page.locator('.node-copy strong').getByText('プランB', { exact: true }),
     }).getByRole('button', { name: /比較する/ }).click();
     await expect(page.getByText('京都駅前ホテル').first()).toBeVisible();
+    const sidebarOption = page.locator('.comparison-sidebar .option-card').filter({ hasText: '京都駅前ホテル' });
+    await expect(sidebarOption).toBeVisible();
+    await sidebarOption.getByRole('button', { name: /メモ/ }).click();
+    await expect(sidebarOption.getByLabel('京都駅前ホテルのメモ')).toContainText('朝食付き');
+    await expect(sidebarOption.getByRole('link', { name: '京都駅前ホテルのリンクを開く' }))
+      .toHaveAttribute('href', 'https://example.com/booking?token=private');
 
     await page.reload();
     await expect(page.locator('.graph-node')).toHaveCount(4);

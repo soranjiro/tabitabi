@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PlanGraphEdge, PlanGraphNode } from '@tabitabi/types';
-import { moveStop, insertCreatedStop, placeExistingStop, chronologicalLinearEdges } from './graph';
+import { moveStop, insertCreatedStop, placeExistingStop, chronologicalLinearEdges, isReverseTimeOrder } from './graph';
 const nodes = ['start','a','a2','b','b2','end'].map(id => ({ id, start_local: '' }) as PlanGraphNode);
 const edge = (from: string, to: string, label = ''): PlanGraphEdge => ({ id: from + to, from, to, label });
 const edges = [edge('start','a','東山'),edge('a','a2'),edge('a2','end'),edge('start','b','嵐山'),edge('b','b2'),edge('b2','end')];
@@ -88,5 +88,22 @@ describe('chronological sorting of ordinary linear plans', () => {
     expect(chronologicalLinearEdges(['start','a','b','end'], [
       edge('start','a'),edge('start','b'),edge('a','end'),edge('b','end'),
     ], i => 'auto-'+i)).toBeNull();
+  });
+});
+
+
+describe('calendar-only time precision', () => {
+  it('accepts unknown times on the same day and rejects backward days', () => {
+    expect(isReverseTimeOrder('2026-12-10T18:00', '2026-12-10')).toBe(false);
+    expect(isReverseTimeOrder('2026-12-10', '2026-12-10T09:00')).toBe(false);
+    expect(isReverseTimeOrder('2026-12-11', '2026-12-10T22:00')).toBe(true);
+    expect(isReverseTimeOrder('2026-12-10T18:00', '2026-12-10T09:00')).toBe(true);
+  });
+  it('does not invent noon for an inserted date-only step', () => {
+    const day = [
+      { id: 'a', start_local: '2026-12-10T18:00' },
+      { id: 'b', start_local: '2026-12-10' },
+    ] as PlanGraphNode[];
+    expect(insertCreatedStop(day, [], 'b', 'a', null, newId)).toHaveLength(1);
   });
 });

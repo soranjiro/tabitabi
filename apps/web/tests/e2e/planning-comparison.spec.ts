@@ -99,3 +99,31 @@ test('sample comparison is editable without backend writes and survives reload',
   expect(mutations).toEqual([]);
   expect(await page.locator('main').last().evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(2);
 });
+
+
+test('mobile comparison offers gap insertion and direct existing-step merge', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/demo/planning-comparison');
+  await expect(page.locator('.graph-node')).toHaveCount(9);
+  const train = page.locator('.graph-node').filter({
+    has: page.locator('.node-copy strong').getByText('東京 → 京都（新幹線）', { exact: true }),
+  });
+  await train.getByRole('button', { name: '東山でランチの前に予定を追加' }).click();
+  const actions = page.getByRole('dialog', { name: '予定を追加・接続' });
+  await expect(actions).toBeVisible();
+  await actions.getByRole('button', { name: '既存の予定を挿入' }).click();
+  const existing = page.getByRole('dialog', { name: '既存の予定を挿入' });
+  await expect(existing.getByRole('searchbox', { name: '予定を検索' })).toBeVisible();
+  await existing.getByRole('button', { name: '閉じる' }).click();
+
+  await train.locator('.node-main').click();
+  const panel = page.getByRole('region', { name: '選択した予定の操作' });
+  await expect(panel).toBeVisible();
+  await panel.getByRole('button', { name: '既存予定に合流' }).click();
+  await expect(page.getByText('合流先の予定を選択')).toBeVisible();
+  await page.locator('.graph-node').filter({
+    has: page.locator('.node-copy strong').getByText('京都のホテルに集合', { exact: true }),
+  }).locator('.node-main').click();
+  await expect(page.getByText('合流先の予定を選択')).toHaveCount(0);
+  await expect(page.locator('.graph-node')).toHaveCount(9);
+});

@@ -244,6 +244,7 @@
   let optionOpen = $state(false);
   let mobileHelpOpen = $state(false);
   let recentlyCreatedIds = $state<string[]>([]);
+  let failedAttachment = $state<{ step: Step; parentId: string | null; label: string } | null>(null);
 
   function localInput(timestamp: number | null) {
     if (timestamp === null || !Number.isFinite(timestamp)) return '';
@@ -406,6 +407,8 @@
   async function attachCreatedStep(request: { step: Step; parentId: string | null; label: string }) {
     if (!canEdit) return;
     const node = fromStep(request.step);
+    // The Step may arrive before the parent refreshes its steps prop.
+    if (!recentlyCreatedIds.includes(node.id)) recentlyCreatedIds = [...recentlyCreatedIds, node.id];
     const nodes = graph.nodes.some(item => item.id === node.id)
       ? graph.nodes : [...graph.nodes, node];
     const currentEdges = displayEdges.filter(edge => edge.to !== node.id && edge.from !== node.id);
@@ -423,6 +426,7 @@
       }
     } catch (cause) {
       error = cause instanceof Error ? cause.message : '予定を挿入できませんでした。';
+      failedAttachment = request;
       return;
     }
     pendingCreatedGap = null;
@@ -431,10 +435,19 @@
     const selectionAtSaveStart = selectedId;
     const success = await save(nodes, edges, false);
     if (success) {
-      // Creating a step must not open a modal sheet over the next route action.
+      failedAttachment = null;
       if (selectedId === selectionAtSaveStart) selectedId = null;
       folded = [];
+    } else {
+      failedAttachment = request;
     }
+  }
+
+  async function retryAttachment() {
+    const request = failedAttachment;
+    if (!request || busy) return;
+    if (!demo && !onSaveLocalGraph) await load();
+    if (failedAttachment === request) await attachCreatedStep(request);
   }
 
   async function load() {
@@ -453,7 +466,8 @@
     try {
       // The persisted DAG needs every endpoint, including ordinary Steps that
       // existed before the first branch was created.
-      const normalizedNodes = nodes.filter(node => displayNodes.some(current => current.id === node.id)).map(node => {
+      const normalizedNodes = nodes.filter(node =>
+        displayNodes.some(current => current.id === node.id) || recentlyCreatedIds.includes(node.id)).map(node => {
         const current = displayNodes.find(value => value.id === node.id);
         return current ? { ...node, title: current.title, type: current.type, start_local: current.start_local, end_local: current.end_local } : node;
       });
@@ -461,7 +475,8 @@
       for (const edge of edges) {
         for (const id of [edge.from, edge.to]) {
           if (included.has(id)) continue;
-          const source = displayNodes.find(node => node.id === id);
+          const source = displayNodes.find(node => node.id === id) ??
+            nodes.find(node => node.id === id && recentlyCreatedIds.includes(id));
           if (!source) throw new Error('接続先の予定が見つかりません。再読み込みしてください。');
           normalizedNodes.push(source);
           included.add(id);
@@ -806,6 +821,12 @@
   </div>
   {#if !demo}<a class="demo-link" href="/demo/planning-comparison" target="_blank" rel="noopener noreferrer">デモを見る ↗</a>{/if}
   {#if error}<div class="error" role="alert">{error}<button onclick={load}>再読込</button></div>{/if}
+  {#if failedAttachment}
+    <div class="attachment-warning" role="alert">
+      <span>「{failedAttachment.step.title}」は保存済みですが、ルートへの接続が未完了です。</span>
+      <button disabled={busy || loading} onclick={() => void retryAttachment()}>接続を再試行</button>
+    </div>
+  {/if}
   {#if chronologyConflicts.length}
     <div class="chronology-warning" role="status">
       <span>接続した予定の日時が前後しています（{chronologyConflicts.length}か所）</span>
@@ -1247,6 +1268,8 @@
   .route-buttons{display:flex;align-items:center;gap:7px;pointer-events:auto}
   .route-more{display:grid;place-items:center;width:36px;height:36px;border:1px solid #a9c5b2;border-radius:50%;background:white;color:#376e55;font-size:20px}
   .mobile-gap,.mobile-date,.mobile-root-gap,.mobile-route-event{display:none}
+  .attachment-warning{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px;margin:10px 0;border:1px solid #e3c7aa;border-radius:12px;background:#fff5ea;color:#75482a;font-size:12px}
+  .attachment-warning button{min-height:36px;border:1px solid #d4ae87;border-radius:999px;padding:7px 12px;background:white;color:#75482a;font-size:12px;font-weight:750}
   .chronology-warning{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px 12px;margin:10px 0;border:1px solid #ddc9a0;border-radius:12px;background:#f9f5ea;color:#685222;font-size:12px}
   .chronology-warning button{border:1px solid #d7bb83;border-radius:999px;padding:6px 11px;background:#fff;color:#695223;font-size:12px;font-weight:700}
   .node-extras{font-size:11px;color:#608072!important}

@@ -14,7 +14,9 @@ async function access(c: Context<{ Bindings: Env; Variables: Variables }>, id: s
   const itinerary = await new ItineraryService(c.env.DB).get(id);
   if (!itinerary) return 'NOT_FOUND';
   if (write && itinerary.source_itinerary_id) return 'FORBIDDEN';
-  if (itinerary.password && c.get('shioriId') !== id) return 'FORBIDDEN';
+  // The full graph can reveal future destinations even when step details are masked.
+  // Do not expose secret-trip branching data to unauthenticated viewers.
+  if ((itinerary.password || itinerary.secret_settings?.enabled) && c.get('shioriId') !== id) return 'FORBIDDEN';
   return null;
 }
 function read(id: string, row: GraphRow | null): PlanGraph {

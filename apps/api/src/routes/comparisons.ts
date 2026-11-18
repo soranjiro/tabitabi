@@ -64,7 +64,8 @@ async function canAccess(c: Context<{ Bindings: Env; Variables: Variables }>, id
   // Published snapshots expose only separately copied, sanitized candidates.
   if (write && itinerary.source_itinerary_id) return 'FORBIDDEN';
   // Protected source itineraries still require an edit token.
-  if (itinerary.password && c.get('shioriId') !== id) return 'FORBIDDEN';
+  // A candidate's title and route can reveal a secret destination.
+  if ((itinerary.password || itinerary.secret_settings?.enabled) && c.get('shioriId') !== id) return 'FORBIDDEN';
   return null;
 }
 

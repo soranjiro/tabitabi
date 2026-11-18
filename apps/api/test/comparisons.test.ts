@@ -122,6 +122,16 @@ describe('Planning comparisons API', () => {
     expect((await request(id + '/comparisons', 'POST', { title: '宿', kind: 'stay' })).status).toBe(403);
   });
 
+  it('does not expose secret-trip comparison details without an edit token', async () => {
+    const { id, token } = await makeTrip();
+    await env.DB.prepare(
+      'INSERT INTO itinerary_secrets (itinerary_id, enabled, offset_minutes, created_at, updated_at) VALUES (?, 1, 60, ?, ?)',
+    ).bind(id, now, now).run();
+    expect((await request(id + '/comparisons')).status).toBe(403);
+    expect((await request(id + '/comparisons', 'POST', { title: '秘密の宿', kind: 'stay' })).status).toBe(403);
+    expect((await request(id + '/comparisons', 'GET', undefined, token)).status).toBe(200);
+  });
+
   it('scopes group mutations to their itinerary and supports deletion', async () => {
     const one = await makeTrip();
     const other = await makeTrip();

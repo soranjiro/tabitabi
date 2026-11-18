@@ -81,6 +81,18 @@ describe('Branching plan graph API', () => {
     expect((await request(published.id, 'PUT', body)).status).toBe(403);
   });
 
+  it('never discloses a secret itinerary graph without its edit token', async () => {
+    const { id, token } = await trip();
+    await env.DB.prepare(
+      'INSERT INTO itinerary_secrets (itinerary_id, enabled, offset_minutes, created_at, updated_at) VALUES (?, 1, 60, ?, ?)',
+    ).bind(id, now, now).run();
+    const graph = { revision: 0, nodes: [node('hidden-trip', '2027-12-10T10:00')], edges: [] };
+    expect((await request(id, 'PUT', graph)).status).toBe(403);
+    expect((await request(id)).status).toBe(403);
+    expect((await request(id, 'PUT', graph, token)).status).toBe(200);
+    expect((await request(id, 'GET', undefined, token)).status).toBe(200);
+  });
+
   it('validates per-node Step-like fields and choice options', async () => {
     const { id } = await trip();
     const bad = node('a', '');

@@ -111,7 +111,10 @@ export class PublicationService {
     const members = await this.db.prepare('SELECT name FROM itinerary_members WHERE itinerary_id = ?').bind(id).all<{ name: string }>();
     const names = members.results.map(member => member.name);
     return {
-      planGraph: planGraph ? { ...planGraph, ...publicGraph(planGraph.nodes, planGraph.edges, names) } : undefined,
+      // Secret-trip timing must not be bypassed through the planning graph preview.
+      planGraph: !secretOptions && planGraph
+        ? { ...planGraph, ...publicGraph(planGraph.nodes, planGraph.edges, names) }
+        : undefined,
       itinerary: { ...service.toResponseItinerary(itinerary), title: createPublicTextSnapshot(itinerary.title, names) || '旅のしおり',
         memo: createPublicMemoSnapshot(itinerary.memo, names), is_shared_snapshot: true, is_password_protected: false, secret_settings: null },
       steps: steps.map(step => ({ ...step, ...createPublicStepSnapshot({ ...step }, this.env, names),

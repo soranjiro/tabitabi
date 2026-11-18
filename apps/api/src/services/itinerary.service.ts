@@ -512,9 +512,10 @@ export class ItineraryService {
       provider: clean(String(option.provider ?? '')),
       from: clean(String(option.from ?? '')),
       to: clean(String(option.to ?? '')),
-      cancellation: clean(String(option.cancellation ?? '')),
-      notes: clean(String(option.notes ?? '')),
-      // Booking URLs may include personal reservation IDs or one-use tokens.
+      // Free text can contain arbitrary confirmation codes, contact details and tokens.
+      // Regex redaction is not sufficient: keep these private in every public snapshot.
+      cancellation: '',
+      notes: '',
       url: '',
     }));
     const statements = replace ? [
@@ -529,7 +530,7 @@ export class ItineraryService {
           id: remap(String(node.id))!,
           title: clean(String(node.title ?? '')) || '予定',
           location: clean(String(node.location ?? '')),
-          notes: clean(String(node.notes ?? '')),
+          notes: '', // Free-form internal notes must never be included in a publication.
           link: '',
           participants: [], // No member names are published.
           options: cleanOptions((node.options as Record<string, unknown>[]) ?? []),

@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import schema from '../../db/schema.sql?raw';
 import { ItineraryService } from '../src/services/itinerary.service';
 import { StepService } from '../src/services/step.service';
+import app from '../src/index';
 import { PublicationService, bookContentSchema } from '../src/services/publication.service';
 
 // Exercise the actual production schema, including the legacy synchronization
@@ -93,7 +94,7 @@ describe('normalized storage against production triggers', () => {
     const node = {
       id: 'start', kind: 'step', title: '東京へ移動', type: 'transport:plane',
       start_local: '2026-12-10T10:00', end_local: '2026-12-10T11:00',
-      location: '羽田空港', notes: '予約番号: ABCD1234',
+      location: '羽田空港', notes: '予約番号: ABCD1234 / 自由入力の秘密 PRIVATE-NODE-2718',
       link: 'https://example.com/booking?token=secret', amount: 15800, currency: 'JPY',
       participants: ['Alice'], options: [], selected_option_id: null,
     };
@@ -103,8 +104,8 @@ describe('normalized storage against production triggers', () => {
     const originalOption = {
       id: 'flight-1', title: '直行便', provider: '航空会社', amount: 15800,
       currency: 'JPY', start_local: '2026-12-10T10:00', end_local: '2026-12-10T11:00',
-      from: '関西空港', to: '羽田空港', cancellation: '取消可',
-      url: 'https://example.com/booking?token=secret', notes: '予約番号: ABCD1234',
+      from: '関西空港', to: '羽田空港', cancellation: '変更条件に秘密 PRIVATE-CANCEL-2718',
+      url: 'https://example.com/booking?token=secret', notes: '番号なしの秘密 PRIVATE-OPTION-2718',
     };
     await env.DB.prepare(
       'INSERT INTO itinerary_comparison_groups (id, itinerary_id, title, kind, options_json, selected_option_id, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)',
@@ -119,14 +120,29 @@ describe('normalized storage against production triggers', () => {
     expect(sanitized.title).toBe('東京へ移動');
     expect(sanitized.link).toBe('');
     expect(sanitized.participants).toEqual([]);
-    expect(sanitized.notes).not.toContain('ABCD1234');
+    expect(sanitized.notes).toBe('');
     const publicGroups = await env.DB.prepare(
       'SELECT options_json FROM itinerary_comparison_groups WHERE itinerary_id = ?',
     ).bind(published.id).all<{ options_json: string }>();
     expect(publicGroups.results).toHaveLength(1);
     const [publicOption] = JSON.parse(publicGroups.results[0].options_json);
     expect(publicOption.url).toBe('');
-    expect(publicOption.notes).not.toContain('ABCD1234');
+    expect(publicOption.notes).toBe('');
+    expect(publicOption.cancellation).toBe('');
+    // Anonymous published endpoints must not return confidential free text.
+    const [graphResponse, candidatesResponse] = await Promise.all([
+      app.request('/api/v1/itineraries/' + published.id + '/plan-graph', {}, env),
+      app.request('/api/v1/itineraries/' + published.id + '/comparisons', {}, env),
+    ]);
+    expect(graphResponse.status).toBe(200);
+    expect(candidatesResponse.status).toBe(200);
+    const publicPayload = JSON.stringify([await graphResponse.json(), await candidatesResponse.json()]);
+    for (const secret of ['PRIVATE-NODE-2718', 'PRIVATE-CANCEL-2718', 'PRIVATE-OPTION-2718', 'token=secret']) {
+      expect(publicPayload).not.toContain(secret);
+    }
+    const preview = await publications().read(book.id, true);
+    expect(preview.planGraph?.nodes[0].notes).toBe('');
+    expect(preview.planGraph?.nodes[0].options).toEqual([]);
     expect((await env.DB.prepare('SELECT nodes_json FROM itinerary_plan_graphs WHERE itinerary_id = ?')
       .bind(book.id).first<{ nodes_json: string }>())!.nodes_json).toContain('token=secret');
 

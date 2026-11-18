@@ -6,6 +6,7 @@
  */
 
 import type {
+  PlanGraph,
   Itinerary,
   Step,
   ItinerarySecretRecord,
@@ -21,6 +22,7 @@ const cloneMoneyData = (money: MoneyData): MoneyData =>
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 export interface DemoData {
+  planGraph?: PlanGraph;
   itinerary: Itinerary;
   steps: Step[];
   itinerary_secrets?: ItinerarySecretRecord | null;
@@ -30,6 +32,7 @@ export interface DemoData {
 }
 
 interface StoredDemoData {
+  planGraph?: PlanGraph;
   itinerary: Itinerary;
   steps: Step[];
   itinerary_secrets?: ItinerarySecretRecord | null;
@@ -99,6 +102,7 @@ export const demoStorage = {
     // Serialize only explicitly allowed demo fields. Never serialize
     // itinerary_secrets, password credentials, or secret_settings.
     const safeData = {
+      planGraph: data.planGraph,
       itinerary: safeItinerary,
       steps: data.steps,
       itinerary_money: data.itinerary_money ?? null,
@@ -133,6 +137,12 @@ export const demoStorage = {
   /**
    * Get demo steps from local storage
    */
+  getPlanGraph(): PlanGraph | null { return this.getData()?.planGraph ?? null; },
+  setPlanGraph(planGraph: PlanGraph): void {
+    const data = this.getData();
+    if (data) this.saveData({ ...data, planGraph });
+  },
+
   getSteps(): Step[] {
     const data = this.getData();
     if (!data?.steps) return [];
@@ -295,6 +305,7 @@ export const demoStorage = {
    */
   initializeDemo(demoData: DemoData): void {
     this.saveData({
+      planGraph: demoData.planGraph,
       itinerary: demoData.itinerary,
       steps: demoData.steps,
       itinerary_secrets: demoData.itinerary_secrets ?? null,

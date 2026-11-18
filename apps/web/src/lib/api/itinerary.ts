@@ -24,7 +24,7 @@ export const itineraryApi = {
 
   delete: (id: string) => apiClient.delete(`/itineraries/${id}`, id),
 
-  fork: async (id: string, content?: { itinerary: ItineraryResponse; steps: import('@tabitabi/types').Step[] }) => {
+  fork: async (id: string, content?: import('./user').BookContent) => {
     const userToken = await getUserToken();
     if (!userToken) return apiClient.post<ForkItineraryResponse>(`/itineraries/${id}/fork`, content ?? {});
     return apiClient.postWithUserToken<ForkItineraryResponse>(`/itineraries/${id}/fork`, content ?? {}, userToken);

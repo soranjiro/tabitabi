@@ -215,17 +215,15 @@
     sort_order?: number | null;
   }) {
     try {
-      await stepApi.create(
-        {
-          itinerary_id: data.itinerary.id,
-          ...stepData,
-        },
+      const created = await stepApi.create(
+        { itinerary_id: data.itinerary.id, ...stepData },
         data.itinerary.id,
       );
       await invalidateAll();
+      return created;
     } catch (error) {
       console.error("Failed to create step:", error);
-      alert("予定の作成に失敗しました");
+      throw error;
     }
   }
 

@@ -1,5 +1,30 @@
 import { expect, test } from "@playwright/test";
 
+test("landing colors remain readable with a dark system preference", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+
+  await expect(page.locator('meta[name="color-scheme"]')).toHaveAttribute(
+    "content",
+    "only light",
+  );
+  await expect(page.locator(".home-page")).toHaveCSS(
+    "color-scheme",
+    "only light",
+  );
+  await expect(page.locator(".hero-copy h1")).toHaveCSS(
+    "color",
+    "rgb(23, 38, 61)",
+  );
+  await expect(page.locator(".shiori-preview.current").first()).toHaveCSS(
+    "background-color",
+    "rgba(255, 255, 255, 0.95)",
+  );
+});
+
 test("home explains the service and scrolls to create section", async ({
   page,
 }) => {

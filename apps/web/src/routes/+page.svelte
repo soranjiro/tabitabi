@@ -166,6 +166,8 @@
 
 <svelte:head>
   <title>たびたび - 旅の予定を、ひとつに。</title>
+  <!-- Landing visuals use a fixed light palette over photography. -->
+  <meta name="color-scheme" content="only light" />
   <link rel="preload" as="image" href={preview.image} fetchpriority="high" />
   <meta
     name="description"
@@ -352,6 +354,8 @@
     scroll-behavior: smooth;
   }
   .home-page {
+    /* Preserve contrast when the device prefers a dark appearance. */
+    color-scheme: only light;
     --home-muted: #566c80;
     color: var(--home-ink);
     background: var(--home-paper);

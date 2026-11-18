@@ -3,7 +3,7 @@
   import PlaceSearch from "$lib/planning/PlaceSearch.svelte";
   import type { PlaceResult } from "$lib/planning/search";
   import { getPlace, placeFields, type Place } from '$lib/planning/places';
-  import type { ItineraryResponse, Step, StepType } from "@tabitabi/types";
+  import type { ItineraryResponse, Step, StepType, ComparisonGroup, ComparisonOption } from "@tabitabi/types";
   import { STEP_TYPE } from "@tabitabi/types";
   import { auth } from "$lib/auth";
   import { authApi } from "$lib/api/auth";
@@ -36,11 +36,17 @@
   import StepTypeIcon from "../standard/core/icons/StepTypeIcon.svelte";
   import PlaceMap from "../planning-map/PlaceMap.svelte";
   import StepDetail from "./StepDetail.svelte";
+  import PlanGraphBoard from "$lib/features/planning-comparison/PlanGraphBoard.svelte";
+  import CandidateOptionCard from "$lib/features/planning-comparison/CandidateOptionCard.svelte";
+  import type { PlanGraphNode, PlanGraph } from '@tabitabi/types';
   import PlaceEditor from "./PlaceEditor.svelte";
   import "../standard/core/styles/index.css";
 
   interface Props {
     readOnly?: boolean;
+    localPlanning?: boolean;
+    planGraph?: PlanGraph | null;
+    onSavePlanGraph?: (graph: PlanGraph) => void;
     mapPlanning?: boolean;
     itinerary: ItineraryResponse;
     steps: Step[];
@@ -61,7 +67,7 @@
       is_all_day?: boolean;
       time_unspecified?: boolean;
       pin_latitude?: number | null; pin_longitude?: number | null; is_priority?: boolean; sort_order?: number | null;
-    }) => Promise<void>;
+    }) => Promise<void | Step>;
     onUpdateStep?: (stepId: string, data: {
       title?: string;
       start_at?: number | null;
@@ -78,7 +84,7 @@
     onBatchUpdateDates?: (updates: import("@tabitabi/types").BatchStepDateUpdate[]) => Promise<void>;
   }
 
-  let { readOnly = false, itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, onBatchUpdateDates, mapPlanning = false }: Props = $props();
+  let { localPlanning = false, planGraph = null, onSavePlanGraph, readOnly = false, itinerary, steps, onUpdateItinerary, onCreateStep, onUpdateStep, onDeleteStep, onBatchUpdateDates, mapPlanning = false }: Props = $props();
   let placeDraft = $state<Place | null>(null);
   let formError = $state('');
   let descriptionEditing = $state(false);
@@ -118,6 +124,7 @@
   let timeDurationMs = $state(60 * 60 * 1000);
   let searchQuery = $state("");
   let hasEditPermission = $state(false);
+  let planningReady = $state(false);
   let editingTitle = $state(false);
   let titleDraft = $state("");
   let sheetOpen = $state(false);
@@ -149,6 +156,37 @@
   let itineraryTags = $state([...(itinerary.tags ?? [])]);
 
   const isSharedSnapshot = $derived(!!itinerary.is_shared_snapshot);
+  const canPlanEdit = $derived(hasEditPermission && (!isSharedSnapshot || localPlanning) && !readOnly);
+  let isPlanBranched = $state(false);
+  let planView = $state<'list' | 'compare' | null>(null);
+  let graphError = $state('');
+  let planChoices = $state<Record<string, ComparisonOption[]>>({});
+  let planSelected = $state<Record<string, string | null>>({});
+  let expandedCandidateId = $state<string | null>(null);
+  let branchRequest = $state<{ id: string; sequence: number; independent?: boolean } | null>(null);
+  let optionRequest = $state<{ id: string; sequence: number; optionId?: string; field?: 'notes' | 'url' } | null>(null);
+  let selectRequest = $state<{ id: string; sequence: number; optionId: string | null } | null>(null);
+  let planRequestCounter = 0;
+  let graphCreateContext = $state<{ parentId: string | null; label: string } | null>(null);
+  let createdStepRequest = $state<{ step: Step; parentId: string | null; label: string; sequence: number } | null>(null);
+  let graphStateSignature = '';
+  function updateGraphState(state: { branched: boolean; choices: Record<string, ComparisonOption[]>; selected: Record<string, string | null> }) {
+    const signature = JSON.stringify(state);
+    if (signature === graphStateSignature) return;
+    graphStateSignature = signature;
+    isPlanBranched = state.branched;
+    planChoices = state.choices;
+    planSelected = state.selected;
+  }
+  function requestBranch(id: string, independent = false) {
+    branchRequest = { id, independent, sequence: ++planRequestCounter };
+  }
+  function requestOption(id: string, optionId?: string, field?: 'notes' | 'url') {
+    optionRequest = { id, optionId, field, sequence: ++planRequestCounter };
+  }
+  function requestSelect(id: string, optionId: string | null) {
+    selectRequest = { id, optionId, sequence: ++planRequestCounter };
+  }
 
   let form = $state({
     title: "",
@@ -167,6 +205,13 @@
   const previewPin = $derived<Step[]>(placeDraft ? [{ id:'preview-pin', itinerary_id:itinerary.id, title:form.title || '選んだ場所', location:form.location, notes:'', start_at:null, end_at:null, time_unspecified:false, ...placeFields(placeDraft), sort_order:null, created_at:'', updated_at:'' }] : []);
   const selectedStep = $derived(steps.find((step) => step.id === selectedStepId) ?? null);
   const mapNumbers = $derived(Object.fromEntries(steps.map((step, index) => [step.id, index + 1])));
+  const tripDateLabel = $derived.by(() => {
+    const dated = steps.flatMap(step => step.start_at == null ? [] : [step.start_at, step.end_at ?? step.start_at]);
+    if (!dated.length) return '日程未定 · 候補から旅をつくろう';
+    const first = localDateKey(Math.min(...dated)).replaceAll('-', '/');
+    const last = localDateKey(Math.max(...dated)).replaceAll('-', '/');
+    return first === last ? first : first + ' – ' + last;
+  });
   const filteredSteps = $derived(steps.filter((step) => `${step.title} ${step.location ?? ''}`.toLowerCase().includes(searchQuery.toLowerCase())));
 
   const otherThemes = $derived(getAvailableThemes().filter((theme) => theme.id !== itinerary.theme_id && !(mapPlanning && theme.id === 'planning-draft')));
@@ -184,10 +229,12 @@
     memoDraft = getMemoText(itinerary.memo);
     if (readOnly) {
       hasEditPermission = false;
+      planningReady = true;
       return () => window.removeEventListener('hashchange', openFeatureFromHash);
     }
-    if (getIsDemoMode() || isSharedSnapshot) {
+    if (getIsDemoMode() || isSharedSnapshot || localPlanning) {
       hasEditPermission = true;
+      planningReady = true;
       return () => window.removeEventListener('hashchange', openFeatureFromHash);
     }
     const token = auth.extractTokenFromUrl();
@@ -195,6 +242,7 @@
     hasEditPermission = !isSharedSnapshot && auth.hasEditPermission(itinerary.id);
     if (!hasEditPermission && !itinerary.is_password_protected && !isSharedSnapshot) hasEditPermission = true;
     if (hasEditPermission) auth.updateAccessTime(itinerary.id, itinerary.title);
+    planningReady = true;
     return () => window.removeEventListener('hashchange', openFeatureFromHash);
   });
 
@@ -205,7 +253,7 @@
   }
 
   function openMemberSettings(feature: 'money' | 'packing') {
-    if (!hasEditPermission || isSharedSnapshot) return;
+    if (!hasEditPermission || (isSharedSnapshot && !localPlanning)) return;
     closeFeature(feature);
     settingsInitialPanel = "members";
     showSettingsDialog = true;
@@ -395,7 +443,8 @@
   }
 
   function openCreate(place?: Place) {
-    if (!hasEditPermission) return;
+    if (!canPlanEdit) return;
+    graphCreateContext = null;
     placeDraft = place ?? null;
     formError = '';
     editingStep = null;
@@ -403,6 +452,54 @@
     timeDurationMs = 60 * 60 * 1000;
     extraFieldsOpen = false;
     sheetOpen = true;
+  }
+  function openGraphCreate(parentId: string | null, label: string) {
+    openCreate();
+    if (sheetOpen) graphCreateContext = { parentId, label };
+  }
+
+  // A selected alternative becomes a normal step only after its details are reviewed.
+  // Keep city-local flight times as text rather than guessing a time zone.
+  function planComparisonOption(group: ComparisonGroup, option: ComparisonOption) {
+    if (!hasEditPermission) return;
+    openCreate();
+    form.title = option.title;
+    form.type = group.kind === "flight" ? STEP_TYPE.TRANSPORT_PLANE
+      : group.kind === "stay" ? STEP_TYPE.NORMAL_HOTEL
+      : group.kind === "transport" ? STEP_TYPE.TRANSPORT_GENERAL : STEP_TYPE.NORMAL_GENERAL;
+    form.link = option.url;
+    form.location = option.to || option.from || "";
+    const parts = [
+      option.provider,
+      option.amount === null ? "" : `参考価格: ${option.amount.toLocaleString("ja-JP")} ${option.currency}`,
+      option.from && option.to ? `${option.from} → ${option.to}` : "",
+      option.start_local ? `開始（現地時刻）: ${option.start_local.replace("T", " ")}` : "",
+      option.end_local ? `終了（現地時刻）: ${option.end_local.replace("T", " ")}` : "",
+      option.cancellation ? `条件: ${option.cancellation}` : "",
+      option.notes,
+    ].filter(Boolean);
+    form.note = parts.join("\n");
+    extraFieldsOpen = true;
+  }
+
+  function planGraphSelection(node: PlanGraphNode, picked?: ComparisonOption) {
+    if (!hasEditPermission || (isSharedSnapshot && !localPlanning)) return;
+    if (node.kind === 'choices' && !picked) return;
+    const kind = node.type === STEP_TYPE.NORMAL_HOTEL ? 'stay'
+      : node.type === STEP_TYPE.TRANSPORT_PLANE ? 'flight'
+      : node.type.startsWith('transport:') ? 'transport' : 'other';
+    const option = picked ?? {
+      id: node.id, title: node.title, provider: '', amount: node.amount, currency: node.currency,
+      start_local: node.start_local, end_local: node.end_local,
+      from: '', to: node.location, cancellation: '', url: node.link,
+      notes: [node.notes, node.participants.length ? '参加者: ' + node.participants.join('、') : ''].filter(Boolean).join('\n'),
+    };
+    const group: ComparisonGroup = {
+      id: node.id, itinerary_id: itinerary.id, title: node.title, kind,
+      options: [option], selected_option_id: option.id, revision: 0,
+      created_at: '', updated_at: '',
+    };
+    planComparisonOption(group, option);
   }
 
   function openEdit(step: Step) {
@@ -478,8 +575,16 @@
       if (editingStep && onUpdateStep) {
         await onUpdateStep(editingStep.id, { ...data, location: location || null, link: link || null });
       } else if (onCreateStep) {
-        await onCreateStep({ ...data, ...(location && { location }), ...(link && { link }) });
+        const created = await onCreateStep({ ...data, ...(location && { location }), ...(link && { link }) });
+        if (graphCreateContext) {
+          if (!created?.id) throw new Error('作成された予定のIDを確認できませんでした。');
+          createdStepRequest = {
+            step: created, parentId: graphCreateContext.parentId,
+            label: graphCreateContext.label, sequence: ++planRequestCounter,
+          };
+        }
       }
+      graphCreateContext = null;
       sheetOpen = false;
       editingStep = null;
       selectedStepId = null;
@@ -613,14 +718,14 @@
 
 <div class="draft-theme" style={paletteStyle} class:map-planning={mapPlanning}>
   {#if copyMessage}<div class="copy-message">{copyMessage}</div>{/if}
-  <header class="draft-header">
+  <header class="draft-header" style:background-image={"linear-gradient(90deg,#11291ecd,#11291e22),url(\"" + (itinerary.background_image ?? "/itinerary-backgrounds/japanese.avif") + "\")"}>
     <a class="brand" href="/">たびたび</a>
     {#if editingTitle}
       <input class="title-input" bind:value={titleDraft} onblur={saveTitle} onkeydown={(event) => event.key === "Enter" && saveTitle()} />
     {:else}
       <button class="title-button" onclick={() => hasEditPermission && (editingTitle = true)} disabled={!hasEditPermission}>{itinerary.title}</button>
     {/if}
-    <p>候補を集め、場所と日程を少しずつ決める。</p>
+    <p>{tripDateLabel}</p>
       <section class="trip-description" aria-label="旅のメモ">
         <div class="description-heading"><button class="memo-toggle" onclick={() => memoOpen = !memoOpen}>旅のメモ {memoOpen ? '▴' : '▾'}</button>{#if memoOpen && hasEditPermission && !descriptionEditing}<button onclick={() => descriptionEditing = true}>編集</button>{/if}</div>
         {#if memoOpen && descriptionEditing}
@@ -640,13 +745,18 @@
 
   <main>
     {#if screenMode === "plan"}
-      <div class="planning-workspace"><div class="planning-list">
-      <section class="planning-intro">
-        <span>候補を作る</span><i>→</i><span>日を決める</span><i>→</i><span>時間を決める</span>
-      </section>
+      {#if graphError}<div class="plan-save-error" role="alert"><span>{graphError}</span><button aria-label="閉じる" onclick={() => graphError = ''}>×</button></div>{/if}
+      {#if planningReady}
+        <div class="plan-view-switch" role="group" aria-label="計画の表示">
+          <button class:active={planView === 'list' || (planView === null && !isPlanBranched)} onclick={() => { planView = 'list'; }}>予定</button>
+          <button class:active={planView === 'compare' || (planView === null && isPlanBranched)} onclick={() => planView = 'compare'}>プラン比較</button>
+        </div>
+        {#if planView === 'list' || (planView === null && !isPlanBranched)}
 
-      {#if hasEditPermission}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
+      <div class="planning-workspace"><div class="planning-list">
+{#if canPlanEdit}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
       <label class="plan-search">予定を検索<input bind:value={searchQuery} placeholder="タイトル・場所" /></label>
+      {#if canPlanEdit && steps.length > 0}<button class="plan-independent-start" onclick={() => requestBranch('', true)}>＋ 別の出発点を作る</button>{/if}
 
       {#if undecidedSteps.length > 0}
         <section class="draft-section">
@@ -657,8 +767,35 @@
                 <button class="step-main" onclick={() => openDetail(step)}>
                   <span class="circle" aria-hidden="true"><StepTypeIcon type={step.type} size="sm" /></span><span><strong>{step.title}</strong><small>未定{step.location ? ` · ${step.location}` : ''}</small>{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</span>
                 </button>
-                {#if hasEditPermission}<div class="order-buttons"><button onclick={() => moveStep(step, -1, undecidedSteps)} disabled={index === 0} aria-label="上へ移動">↑</button><button onclick={() => moveStep(step, 1, undecidedSteps)} disabled={index === undecidedSteps.length - 1} aria-label="下へ移動">↓</button></div>{/if}
+                {#if canPlanEdit}<div class="order-buttons">
+                  <button class="plan-mini-action" aria-label={step.title + 'から分岐'} title="ここから分岐" onclick={() => requestBranch(step.id)}>分岐</button>
+                  <button class="plan-mini-action" aria-label={step.title + 'に候補を追加'} title="比較候補を追加" onclick={() => requestOption(step.id)}>候補</button>
+                  <button onclick={() => moveStep(step, -1, undecidedSteps)} disabled={index === 0} aria-label="上へ移動">↑</button><button onclick={() => moveStep(step, 1, undecidedSteps)} disabled={index === undecidedSteps.length - 1} aria-label="下へ移動">↓</button></div>{/if}
               </article>
+              {#if planChoices[step.id]?.length}
+                <div class="plan-candidates">
+                  <button class="plan-candidates-toggle" aria-expanded={expandedCandidateId === step.id}
+                    onclick={() => expandedCandidateId = expandedCandidateId === step.id ? null : step.id}>
+                    <span>◇ 候補 {planChoices[step.id].length}件</span>
+                    <span>{expandedCandidateId === step.id ? '閉じる −' : '比較する ＋'}</span>
+                  </button>
+                  {#if expandedCandidateId === step.id}
+                    <div class="plan-candidates-content">
+                      {#each planChoices[step.id] as choice (choice.id)}
+                        <CandidateOptionCard option={choice}
+                          selected={planSelected[step.id] === choice.id}
+                          canEdit={canPlanEdit}
+                          onSelect={() => requestSelect(step.id, planSelected[step.id] === choice.id ? null : choice.id)}
+                          onEdit={(field) => requestOption(step.id, choice.id, field)}
+                        />
+                      {/each}
+                      {#if canPlanEdit && planChoices[step.id].length < 30}
+                        <button class="plan-candidate-add" onclick={() => requestOption(step.id)}>＋ 候補を追加</button>
+                      {/if}
+                    </div>
+                  {/if}
+                </div>
+              {/if}
             {/each}
           </div>
         </section>
@@ -674,8 +811,35 @@
                   <button class="step-main" onclick={() => openDetail(step)}>
                     <span class="circle" aria-hidden="true"><StepTypeIcon type={step.type} size="sm" /></span><span><strong>{step.title}</strong><small class:time-decided={getStepSchedule(step).precision === "time"}>{dateTimeLabel(step)}</small>{#if step.location}<small>{step.location}</small>{/if}{#if getMemoText(step.notes)}<small>{getMemoText(step.notes)}</small>{/if}</span>
                   </button>
-                  {#if hasEditPermission}<div class="order-buttons"><button onclick={() => moveStep(step, -1, group.steps)} disabled={index === 0} aria-label="上へ移動">↑</button><button onclick={() => moveStep(step, 1, group.steps)} disabled={index === group.steps.length - 1} aria-label="下へ移動">↓</button></div>{/if}
+                  {#if canPlanEdit}<div class="order-buttons">
+                  <button class="plan-mini-action" aria-label={step.title + 'から分岐'} title="ここから分岐" onclick={() => requestBranch(step.id)}>分岐</button>
+                  <button class="plan-mini-action" aria-label={step.title + 'に候補を追加'} title="比較候補を追加" onclick={() => requestOption(step.id)}>候補</button>
+                  <button onclick={() => moveStep(step, -1, group.steps)} disabled={index === 0} aria-label="上へ移動">↑</button><button onclick={() => moveStep(step, 1, group.steps)} disabled={index === group.steps.length - 1} aria-label="下へ移動">↓</button></div>{/if}
                 </article>
+              {#if planChoices[step.id]?.length}
+                <div class="plan-candidates">
+                  <button class="plan-candidates-toggle" aria-expanded={expandedCandidateId === step.id}
+                    onclick={() => expandedCandidateId = expandedCandidateId === step.id ? null : step.id}>
+                    <span>◇ 候補 {planChoices[step.id].length}件</span>
+                    <span>{expandedCandidateId === step.id ? '閉じる −' : '比較する ＋'}</span>
+                  </button>
+                  {#if expandedCandidateId === step.id}
+                    <div class="plan-candidates-content">
+                      {#each planChoices[step.id] as choice (choice.id)}
+                        <CandidateOptionCard option={choice}
+                          selected={planSelected[step.id] === choice.id}
+                          canEdit={canPlanEdit}
+                          onSelect={() => requestSelect(step.id, planSelected[step.id] === choice.id ? null : choice.id)}
+                          onEdit={(field) => requestOption(step.id, choice.id, field)}
+                        />
+                      {/each}
+                      {#if canPlanEdit && planChoices[step.id].length < 30}
+                        <button class="plan-candidate-add" onclick={() => requestOption(step.id)}>＋ 候補を追加</button>
+                      {/if}
+                    </div>
+                  {/if}
+                </div>
+              {/if}
               {/each}
             </div>
           {/if}
@@ -684,8 +848,28 @@
 
       {#if steps.length === 0}<div class="empty"><strong>まずは、行きたい場所をひとつ。</strong><p>日付や時間はあとで決められます。</p></div>{/if}
 
-      {#if hasEditPermission}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
+      {#if canPlanEdit}<button class="add-button" onclick={() => openCreate()}>＋ 予定を追加</button>{/if}
       </div><div class="desktop-map"><PlaceMap steps={filteredSteps} numbers={mapNumbers} selected={selectedStepId} canEdit={false} onSelect={(id) => selectedStepId = id} onPin={openCreate} /></div></div>
+        {/if}
+      <PlanGraphBoard
+        itineraryId={itinerary.id}
+        {steps}
+        canEdit={canPlanEdit}
+        showGraph={planView === 'compare' || (planView === null && isPlanBranched)}
+        localGraph={planGraph} onSaveLocalGraph={onSavePlanGraph}
+        demo={getIsDemoMode()}
+        {onCreateStep} {onUpdateStep} {onDeleteStep}
+        onRequestCreate={openGraphCreate} {createdStepRequest}
+        onGraphState={updateGraphState}
+        onGraphError={(message) => graphError = message}
+        onEditExistingStep={(id) => { const step = steps.find(item => item.id === id); if (step) openEdit(step); }}
+        onOpenExistingStep={(id) => { const step = steps.find(item => item.id === id); if (step) openDetail(step); }}
+        {branchRequest} {optionRequest} {selectRequest}
+        onPlan={planGraphSelection}
+      />
+      {:else}
+        <p class="plan-loading">読み込み中…</p>
+      {/if}
     {:else if screenMode === "map"}
       {#if hasEditPermission}<div class="map-actions"><button onclick={() => openCreate()}>＋ 予定を追加</button><button class:active={mapPinEditing} onclick={() => mapPinEditing = !mapPinEditing}>{mapPinEditing ? '位置編集を終了' : 'ピンの位置を編集'}</button></div>{/if}
       <div class="map-view"><PlaceMap {steps} numbers={mapNumbers} selected={selectedStepId} canEdit={hasEditPermission} onSelect={(id) => selectedStepId = id} onPin={openCreate} onMove={mapPinEditing ? (id, place) => onUpdateStep?.(id, placeFields(place)) : undefined} /></div>
@@ -705,7 +889,7 @@
       {#if hasEditPermission && dayGroups.length}<button class="batch-day-button" onclick={openBatchDayEditor}>日程をまとめて変更</button>{/if}
       <aside class:complete={isComplete} class="theme-guide">
         <p>{isComplete ? "予定が整いました。" : "予定が固まってきたら、"}</p>
-        <strong>見るためのテーマに着替えてみませんか？</strong>
+        <strong>見るためのテーマに着替えてみませんか？</strong><small class="theme-preservation">ほかのテーマでは全プランの予定を時系列で表示します。分岐・参加者・候補は保存され、予定表に戻すと再び表示できます。</small>
         {#if hasEditPermission}<button onclick={() => (themeChoicesOpen = !themeChoicesOpen)}>ほかのテーマを試す</button>{/if}
         {#if themeChoicesOpen}
           <div class="theme-choices">{#each otherThemes as theme}<button onclick={() => switchTheme(theme.id)}><strong>{theme.name}</strong><small>{theme.description}</small></button>{/each}</div>
@@ -729,6 +913,9 @@
         <form onsubmit={saveStep}>
           {#if formError}<p role="alert">{formError}</p>{/if}
           <label>タイトル<input bind:value={form.title} placeholder="清水寺に行きたい" required /></label>
+          {#if graphCreateContext?.label}
+            <label>プラン名<input bind:value={graphCreateContext.label} maxlength="80" placeholder="プラン2" /></label>
+          {/if}
           <div class="location-field"><span>場所 <small>任意</small></span><PlaceSearch bind:value={form.location} onSelect={selectPlace} /></div>
             {#if placeDraft}
               <div class="pin-fields"><strong>✓ 場所を選択済み</strong><p>{form.location || '地図で選んだ場所'} · ピンの位置を確かめてください。</p>
@@ -854,6 +1041,10 @@
 </div>
 
 <style>
+  .plan-view-switch{display:inline-flex;gap:3px;padding:4px;margin:10px 0 20px;border:1px solid #e2e6e2;border-radius:999px;background:#fff;box-shadow:0 3px 10px #26332f08}
+  .plan-view-switch button{min-width:100px;padding:9px 18px;border:0;border-radius:999px;color:#3f6153;background:transparent;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  .plan-view-switch button.active{background:#2f6657;color:white}.theme-preservation{display:block;margin:10px auto;max-width:400px;color:#6c7c73;font-size:12px;line-height:1.8}
+
   .trip-description { max-width:760px; margin-top:20px; padding:16px 18px; border:1px solid #dfe4dc; border-radius:12px; background:#fff; font-size:12px; }
   .description-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .description-heading strong { color:#42514a; font-size:11px; }
@@ -882,7 +1073,8 @@
   @media(max-width:700px) { .map-planning .draft-header,.map-planning main { width:calc(100% - 28px); } }
   .draft-theme { min-height: 100vh; padding-bottom: 7rem; color: #26332f; background: #faf9f5; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; --theme-primary: #2f6657; --theme-text: #26332f; --theme-text-light: #7a8581; --theme-border: #d9ddd9; --theme-line-color: #d9ddd9; }
   .copy-message { position: fixed; z-index: 1100; top: 1rem; left: 50%; padding: .6rem .9rem; border-radius: 999px; color: #fff; background: #2f6657; font-size: .8rem; font-weight: 700; transform: translateX(-50%); }
-  .draft-header { width: min(680px, calc(100% - 32px)); margin: 0 auto; padding: 1.5rem 0 .8rem; }
+  .draft-header { width:min(1140px,calc(100% - 32px));margin:20px auto 0;padding:24px 28px;border-radius:18px;background-size:cover;background-position:center 50%;color:white; }
+  .draft-header .brand,.draft-header .title-button,.draft-header>p,.draft-header .memo-toggle,.draft-header .description-heading button{color:white}.draft-header .brand{opacity:.9;margin-bottom:8px}.draft-header .title-button{font-size:28px}.draft-header .description-copy{color:#f5faf6}.draft-header>p{color:#fff}.draft-header .description-heading button{color:#fff}.draft-header .trip-description{max-width:600px;margin-top:8px;padding:0;border:0;background:transparent}
   .brand { display: inline-block; margin-bottom: 2rem; color: #2f6657; font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-decoration: none; }
   .title-button, .title-input { display: block; width: 100%; padding: 0; border: 0; color: #26332f; background: transparent; font: inherit; font-size: clamp(1.65rem, 6vw, 2.3rem); font-weight: 750; text-align: left; }
   .title-button:disabled { opacity: 1; }
@@ -974,6 +1166,25 @@
   .delete-button { padding: .5rem; border: 0; color: #a14e45; background: transparent; font-size: .75rem; cursor: pointer; }
   .memo-toggle { color:#35695d !important; background:transparent !important; padding:0 !important; font-weight:700; }
   .trip-description { max-width:100%; margin-top:8px; padding:8px 12px; }
+  .plan-panel-tabs { display:flex; gap:4px; width:max-content; max-width:100%; padding:4px; margin:14px 0 8px; background:#edf2ed; border-radius:999px; }
+  .plan-panel-tabs button { padding:9px 19px; border:0; border-radius:999px; background:transparent; color:#6a7d70; font-size:12px; font-weight:700; cursor:pointer; }
+  .plan-panel-tabs button.active { background:#2f6657; color:white; box-shadow:0 2px 7px #1a362b25; }
+  .comparison-details { margin:20px 0; border-top:1px solid #e3e9e3; }
+  .comparison-details summary { padding:14px 0; cursor:pointer; color:#416d5d; font-size:12px; font-weight:700; }
+  .plan-loading { padding:2rem; color:#8a928e; font-size:.8rem; text-align:center; }
+  .plan-save-error { display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;margin:12px 0;border:1px solid #ebc5c1;border-radius:10px;background:#fff2f0;color:#a24b43;font-size:.8rem; }
+  .plan-save-error button { border:0;background:transparent;color:inherit;font-size:20px;cursor:pointer; }
+  .order-buttons .plan-mini-action { width:40px; height:30px; padding:0 3px; margin-right:2px; border:1px solid #d5e0d8; border-radius:8px; background:#f5faf6; color:#316b57; font-size:.68rem; font-weight:750; }
+  @media(max-width:520px) { .planning-list,.step-row { min-width:0; max-width:100%; }.step-main { min-width:0; overflow:hidden; }.order-buttons .plan-mini-action { width:34px; padding:0 2px; font-size:.61rem; } }
+  .plan-independent-start { display:block; width:max-content; max-width:100%; margin:-9px 0 20px auto; padding:4px 2px; border:0; background:none; color:#4a7c66; font-size:.73rem; font-weight:700; cursor:pointer; }
+  .plan-candidates { padding:0 0 8px 42px; max-width:100%; }
+  .plan-candidates-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:1px solid #e0e9e1; border-radius:8px; background:#f8fbf8; color:#39715d; font-size:.74rem; cursor:pointer; }
+  .plan-candidates-content { display:grid; gap:7px; margin-top:7px; }
+  .plan-candidates-content :global(.option-card){width:100%}
+  .plan-candidate-add{justify-self:start;padding:9px 13px;border:1px dashed #bdcebf;border-radius:9px;background:#f8fbf8;color:#356c57;font-size:12px;font-weight:750;cursor:pointer}
+  .plan-candidate-add:hover{background:#eaf5ec}
+  .plan-candidate-add:focus-visible{outline:2px solid #357764;outline-offset:2px}
+  @media(max-width:520px){.plan-candidates{padding-left:0}}
   .planning-workspace { display:grid; grid-template-columns:minmax(300px, 38%) minmax(0, 1fr); gap:20px; align-items:start; }
   .planning-list { min-width:0; }
   .desktop-map { position:sticky; top:72px; height:min(76vh,760px); min-width:0; }
@@ -1004,4 +1215,5 @@
     .preview-day li { grid-template-columns: 68px minmax(0, 1fr); }
     .date-fields { grid-template-columns: 1fr; }
   }
+  .draft-header > p,.draft-header .description-heading .memo-toggle{color:#fff}
 </style>

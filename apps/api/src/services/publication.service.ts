@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { graphSchema } from '../validators/plan-graph';
+import { publicGraph } from '../utils/plan-graph';
+import type { PlanGraph } from '@tabitabi/types';
 import type { D1Database } from '@cloudflare/workers-types';
 import { updateItinerarySchema } from '../validators';
 import { ItineraryService } from './itinerary.service';
@@ -8,6 +11,11 @@ import { createPublicMemoSnapshot, createPublicStepSnapshot, createPublicTextSna
 import { normalizeThemeId } from '../utils/theme';
 
 export const bookContentSchema = z.object({
+  planGraph: z.preprocess(value => {
+    if (!value || typeof value !== 'object') return value;
+    const graph = value as Record<string, unknown>;
+    return { revision: graph.revision, nodes: graph.nodes, edges: graph.edges };
+  }, graphSchema).optional(),
   itinerary: updateItinerarySchema.omit({ password: true, secret_settings: true }).extend({
     title: z.string().min(1).max(100),
     memo: z.string().max(100000),
@@ -92,10 +100,21 @@ export class PublicationService {
       ? { currentTime: Date.now(), offsetMinutes: itinerary.secret_settings.offset_minutes ?? 60, maskSecrets: true }
       : undefined;
     const steps = await new StepService(this.db).list(id, secretOptions);
-    if (!sanitize) return { itinerary: service.toResponseItinerary(itinerary), steps };
+    let planGraph: PlanGraph | undefined;
+    try {
+      const row = await this.db.prepare('SELECT nodes_json, edges_json, revision, updated_at FROM itinerary_plan_graphs WHERE itinerary_id = ?').bind(id)
+        .first<{ nodes_json: string; edges_json: string; revision: number; updated_at: string }>();
+      if (row) planGraph = { itinerary_id: id, nodes: JSON.parse(row.nodes_json), edges: JSON.parse(row.edges_json), revision: row.revision, updated_at: row.updated_at };
+    } catch (cause) { if (!(cause instanceof Error) || !cause.message.includes('no such table')) throw cause; }
+    if (!sanitize) return { itinerary: service.toResponseItinerary(itinerary), steps, planGraph };
+
     const members = await this.db.prepare('SELECT name FROM itinerary_members WHERE itinerary_id = ?').bind(id).all<{ name: string }>();
     const names = members.results.map(member => member.name);
     return {
+      // Secret-trip timing must not be bypassed through the planning graph preview.
+      planGraph: !secretOptions && planGraph
+        ? { ...planGraph, ...publicGraph(planGraph.nodes, planGraph.edges, names) }
+        : undefined,
       itinerary: { ...service.toResponseItinerary(itinerary), title: createPublicTextSnapshot(itinerary.title, names) || '旅のしおり',
         memo: createPublicMemoSnapshot(itinerary.memo, names), is_shared_snapshot: true, is_password_protected: false, secret_settings: null },
       steps: steps.map(step => ({ ...step, ...createPublicStepSnapshot({ ...step }, this.env, names),
@@ -148,6 +167,9 @@ export class PublicationService {
           legacyTextJson(book.memo, existingBook?.memo), book.memo, book.packing_enabled === false ? 0 : 1,
           JSON.stringify(book.prefecture_slugs ?? []), JSON.stringify(book.areas ?? []), JSON.stringify(book.tags ?? []), now, id),
       ...stepStatements,
+      ...(content.planGraph ? [this.db.prepare(`INSERT INTO itinerary_plan_graphs (itinerary_id, nodes_json, edges_json, revision, updated_at)
+        VALUES (?, ?, ?, 1, ?) ON CONFLICT(itinerary_id) DO UPDATE SET nodes_json = excluded.nodes_json, edges_json = excluded.edges_json, revision = revision + 1, updated_at = excluded.updated_at`)
+        .bind(id, JSON.stringify(publicGraph(content.planGraph.nodes, content.planGraph.edges).nodes), JSON.stringify(publicGraph(content.planGraph.nodes, content.planGraph.edges).edges), now)] : []),
       ...previous.filter(step => !retainedIds.has(step.id)).map(step => this.db.prepare('DELETE FROM steps WHERE id = ? AND itinerary_id = ?').bind(step.id, id)),
       this.db.prepare('UPDATE itinerary_publications SET prefecture_slugs = ?, areas = ?, tags = ?, updated_at = ? WHERE shared_itinerary_id = ?')
         .bind(JSON.stringify(book.prefecture_slugs ?? []), JSON.stringify(book.areas ?? []), JSON.stringify(book.tags ?? []), now, id),

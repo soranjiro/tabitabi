@@ -24,6 +24,9 @@ test('classic single-column planning remains usable on mobile, then branches and
     await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
   }
   async function pick(label: string) {
+    // On mobile, the selected Step is edited in a modal bottom sheet.
+    const panel = page.locator('.detail-panel');
+    if (await panel.isVisible()) await panel.getByRole('button', { name: '閉じる', exact: true }).first().click();
     const card = page.locator('.graph-node').filter({
       has: page.locator('.node-copy strong').getByText(label, { exact: true }),
     });
@@ -99,6 +102,10 @@ test('classic single-column planning remains usable on mobile, then branches and
     await candidateDialog.getByLabel('リンク').fill('https://example.com/booking?token=private');
     await candidateDialog.getByRole('button', { name: '保存', exact: true }).click();
     await expect(candidateDialog).toBeHidden();
+    // Dismiss the mobile editing sheet before opening comparison details in the timeline.
+    if (await page.locator('.detail-panel').isVisible()) {
+      await page.locator('.detail-panel').getByRole('button', { name: '閉じる', exact: true }).first().click();
+    }
     await page.locator('.graph-node').filter({
       has: page.locator('.node-copy strong').getByText('プランB', { exact: true }),
     }).getByRole('button', { name: /比較する/ }).click();

@@ -7,7 +7,7 @@
   import { planGraphApi } from '$lib/api/plan-graph';
   import { getMemoText } from '$lib/memo';
   import { demoStorage } from '$lib/demo';
-  import { moveStop } from './graph';
+  import { insertCreatedStop, placeExistingStop, chronologicalLinearEdges } from './graph';
   import StepTypeIcon from '$lib/themes/standard/core/icons/StepTypeIcon.svelte';
   import CandidateOptionCard from './CandidateOptionCard.svelte';
 
@@ -168,7 +168,7 @@
       }
     }
     const rowY: number[] = [];
-    let cursor = 78;
+    let cursor = 118;
     for (const height of heights) { rowY.push(cursor); cursor += height; }
     const colorIds = new Map<string, number>();
     for (const node of sorted) {
@@ -187,7 +187,7 @@
         ? incoming[0].label || routeLabels.get(incoming[0].from) || '' : '');
     }
     const draws: DrawNode[] = sorted.map(n => {
-      return { node: n, x: 270 + ((xs.get(n.id) ?? 0) - minimum) * 302,
+      return { node: n, x: 310 + ((xs.get(n.id) ?? 0) - minimum) * 330,
         y: rowY[ranks.get(n.id) ?? 0], label: routeLabels.get(n.id) ?? '',
         exit: n.kind === 'choices' ? 66 + (expanded.includes(n.id) ? Math.min(300, n.options.length * 92 + 60) : 0) : 36,
         color: !shownEdges.some(edge => edge.to === n.id) || shownEdges.filter(edge => edge.to === n.id).length > 1 ? '#64a58c' : colors[colorIds.get(n.id) ?? 0] };
@@ -204,7 +204,7 @@
     const ticks = [...new Map(draws.filter(d => d.node.start_local).map(d =>
       [d.y, { y: d.y, label: localDate(d.node.start_local) }]
     )).values()];
-    return { nodes: draws, links, ticks, width: Math.max(545, 444 + maximum * 302),
+    return { nodes: draws, links, ticks, width: Math.max(640, 465 + maximum * 330),
       height: Math.max(210, cursor + 90), count: shownNodes.length };
   }
 
@@ -223,6 +223,16 @@
   let metadataOnly = $state(false);
   let joinTarget = $state('');
   let moveTarget = $state('');
+  type RouteGap = { from: string | null; to: string | null };
+  let gapMenu = $state<RouteGap | null>(null);
+  let existingGap = $state<RouteGap | null>(null);
+  let existingSearch = $state('');
+  let duplicateMode = $state(false);
+  let undoGraph = $state<PlanGraph | null>(null);
+  let pendingCreatedGap = $state<RouteGap | null>(null);
+  let joinSourceId = $state<string | null>(null);
+  let draggingId = $state<string | null>(null);
+  let dragOverId = $state<string | null>(null);
   let routeNames = $state<Record<string, string>>({});
   let folded = $state<string[]>([]);
   let expandedChoices = $state<string[]>([]);
@@ -297,7 +307,13 @@
     // A normal Step created after a linear graph is already saved extends that same
     // route; it does not become a surprise independent branch.
     const unlinked = ordered.filter(step => !involved.has(step.id));
-    if (unlinked.length === 0) return persisted;
+    if (unlinked.length === 0) {
+      // Ordinary date changes reorder a single route without changing the
+      // meaning of a real branch or a merge.
+      // Undated stops keep their explicitly inserted position until a date is chosen.
+      if (ordered.some(step => step.start_at == null)) return persisted;
+      return chronologicalLinearEdges(ordered.map(step => step.id), persisted, i => 'auto-sorted-' + i) ?? persisted;
+    }
     const ends = [...involved].filter(id => !out.has(id));
     if (ends.length !== 1) return persisted;
     let tail = ends[0];
@@ -321,10 +337,15 @@
   const selected = $derived(displayNodes.find(n => n.id === selectedId) ?? null);
   const routeStarts = $derived(displayEdges.filter(edge => edge.label || displayEdges.filter(other => other.from === edge.from).length > 1));
   const candidateNodes = $derived(displayNodes.filter(node => node.options.length));
-  const moveTargets = $derived(selected ? displayNodes.filter(node => {
-    try { moveStop(displayNodes, displayEdges, selected.id, node.id, () => crypto.randomUUID()); return true; }
-    catch { return false; }
-  }) : []);
+  const moveTargets = $derived(selected ? displayNodes.flatMap(node =>
+    (['before', 'after'] as const).flatMap(side => {
+      try {
+        const gap = placementGap(node.id, side);
+        placeExistingStop(displayNodes, displayEdges, selected.id, gap.from, gap.to, () => crypto.randomUUID());
+        return [{ node, side }];
+      } catch { return []; }
+    }),
+  ) : []);
   const drawn = $derived(layout(displayNodes, displayEdges, folded, expandedChoices));
   const optionNode = $derived(displayNodes.find(n => n.id === optionNodeId) ?? null);
   const targets = $derived(selected ? displayNodes.filter(n => canLink(selected.id, n.id, displayNodes, displayEdges)) : []);
@@ -376,17 +397,31 @@
     const node = fromStep(request.step);
     const nodes = graph.nodes.some(item => item.id === node.id)
       ? graph.nodes : [...graph.nodes, node];
-    const edges = displayEdges.filter(edge => edge.to !== node.id && edge.from !== node.id);
-    if (request.parentId) {
-      if (request.parentId === node.id) return;
-      edges.push({ id: crypto.randomUUID(), from: request.parentId, to: node.id, label: request.label });
+    const currentEdges = displayEdges.filter(edge => edge.to !== node.id && edge.from !== node.id);
+    let edges: PlanGraphEdge[];
+    try {
+      if (pendingCreatedGap && pendingCreatedGap.from === request.parentId) {
+        edges = insertCreatedStop([...displayNodes, node], currentEdges, node.id,
+          pendingCreatedGap.from, pendingCreatedGap.to, () => crypto.randomUUID());
+      } else {
+        edges = [...currentEdges];
+        if (request.parentId) {
+          if (request.parentId === node.id) return;
+          edges.push({ id: crypto.randomUUID(), from: request.parentId, to: node.id, label: request.label });
+        }
+      }
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : '予定を挿入できませんでした。';
+      return;
     }
+    pendingCreatedGap = null;
     // Saving a new Step may finish after the user has clicked another route.
     // Never steal that newer selection when the network response arrives.
     const selectionAtSaveStart = selectedId;
-    const success = await save(nodes, edges);
+    const success = await save(nodes, edges, false);
     if (success) {
-      if (selectedId === selectionAtSaveStart) selectedId = node.id;
+      // Creating a step must not open a modal sheet over the next route action.
+      if (selectedId === selectionAtSaveStart) selectedId = null;
       folded = [];
     }
   }
@@ -400,8 +435,9 @@
   }
   onMount(() => { void load(); });
 
-  async function save(nodes: PlanGraphNode[], edges: PlanGraphEdge[]) {
+  async function save(nodes: PlanGraphNode[], edges: PlanGraphEdge[], recordUndo = true) {
     if (!canEdit || busy) return false;
+    const previous = JSON.parse(JSON.stringify(graph)) as PlanGraph;
     busy = true; error = ''; onGraphError?.('');
     try {
       // The persisted DAG needs every endpoint, including ordinary Steps that
@@ -425,6 +461,7 @@
         : await planGraphApi.save(itineraryId, { nodes: normalizedNodes, edges, revision: graph.revision });
       if (demo) demoStorage.setPlanGraph(graph);
       onSaveLocalGraph?.(graph);
+      undoGraph = recordUndo ? previous : null;
       return true;
     } catch (cause) {
       error = cause instanceof Error ? cause.message : '変更を保存できませんでした。';
@@ -433,8 +470,17 @@
     } finally { busy = false; }
   }
 
-  function newStep(source: string | null = null, asChoice = false, label = '') {
+  async function undoLast() {
+    if (!undoGraph || busy) return;
+    const before = undoGraph;
+    if (await save(before.nodes, before.edges, false)) {
+      folded = [];
+      selectedId = null;
+    }
+  }
+  function newStep(source: string | null = null, asChoice = false, label = '', insertBefore: string | null = null) {
     if (!canEdit) return;
+    pendingCreatedGap = insertBefore ? { from: source, to: insertBefore } : null;
     if (!asChoice && onRequestCreate) {
       const named = label === '別プラン'
         ? 'プラン' + (2 + displayEdges.filter(edge => edge.from === source && edge.label.trim()).length)
@@ -510,15 +556,106 @@
     const stored = { ...next, id: actualId };
     const nodes = graph.nodes.some(n => n.id === actualId)
       ? graph.nodes.map(n => n.id === actualId ? stored : n) : [...graph.nodes, stored];
-    const edges = parentId ? [...displayEdges, {
-      id: crypto.randomUUID(), from: parentId, to: actualId, label: branchLabel,
-    }] : [...displayEdges];
-    if (await save(nodes, edges)) { formOpen = false; selectedId = actualId; }
+    let edges: PlanGraphEdge[];
+    try {
+      if (!editingId && pendingCreatedGap) {
+        edges = insertCreatedStop([...displayNodes, stored], displayEdges, actualId,
+          pendingCreatedGap.from, pendingCreatedGap.to, () => crypto.randomUUID());
+      } else {
+        edges = parentId ? [...displayEdges, {
+          id: crypto.randomUUID(), from: parentId, to: actualId, label: branchLabel,
+        }] : [...displayEdges];
+      }
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : '予定を挿入できませんでした。';
+      return;
+    }
+    if (await save(nodes, edges, metadataOnly)) { pendingCreatedGap = null; formOpen = false; selectedId = actualId; }
+  }
+  function placementGap(anchor: string, side: 'before' | 'after'): RouteGap {
+    const matching = displayEdges.filter(edge => side === 'before' ? edge.to === anchor : edge.from === anchor);
+    if (matching.length > 1) throw new Error('分岐先・合流元の接続を選んでください。');
+    return side === 'before'
+      ? { from: matching[0]?.from ?? null, to: anchor }
+      : { from: anchor, to: matching[0]?.to ?? null };
+  }
+  function openGap(from: string | null, to: string | null) {
+    if (!canEdit) return;
+    gapMenu = { from, to };
+    joinSourceId = null;
+  }
+  function insertFromGap() {
+    if (!gapMenu) return;
+    const { from, to } = gapMenu;
+    gapMenu = null;
+    newStep(from, false, '', to);
+  }
+  function duplicateFromGap(id: string) {
+    if (!existingGap || !canEdit) return;
+    const source = displayNodes.find(node => node.id === id);
+    if (!source) return;
+    const options = source.options.map(candidate => ({ ...candidate, id: crypto.randomUUID() }));
+    const chosenIndex = source.options.findIndex(candidate => candidate.id === source.selected_option_id);
+    draft = {
+      ...source, id: crypto.randomUUID(), title: source.title + '（コピー）',
+      participants: [...source.participants], options,
+      selected_option_id: chosenIndex < 0 ? null : options[chosenIndex].id,
+    };
+    pendingCreatedGap = existingGap;
+    parentId = existingGap.from;
+    editingId = null;
+    metadataOnly = false;
+    branchLabel = '';
+    amountText = source.amount == null ? '' : String(source.amount);
+    participantsText = source.participants.join('、');
+    existingGap = null;
+    duplicateMode = false;
+    formOpen = true;
+  }
+  async function insertExisting(id: string) {
+    if (!existingGap || busy) return;
+    try {
+      const edges = placeExistingStop(displayNodes, displayEdges, id, existingGap.from,
+        existingGap.to, () => crypto.randomUUID());
+      if (await save(graph.nodes, edges)) { existingGap = null; existingSearch = ''; selectedId = id; folded = []; }
+    } catch (cause) { error = cause instanceof Error ? cause.message : '既存予定を挿入できませんでした。'; }
+  }
+  async function dropOn(target: PlanGraphNode, event: DragEvent) {
+    event.preventDefault();
+    const movedId = draggingId;
+    draggingId = null;
+    dragOverId = null;
+    if (!movedId || movedId === target.id || busy) return;
+    const element = event.currentTarget;
+    if (!(element instanceof HTMLElement)) return;
+    const bounds = element.getBoundingClientRect();
+    const side: 'before' | 'after' = event.clientY < bounds.top + bounds.height / 2 ? 'before' : 'after';
+    try {
+      const gap = placementGap(target.id, side);
+      const edges = placeExistingStop(displayNodes, displayEdges, movedId, gap.from, gap.to,
+        () => crypto.randomUUID());
+      if (await save(graph.nodes, edges)) selectedId = movedId;
+    } catch (cause) { error = cause instanceof Error ? cause.message : '予定を移動できませんでした。'; }
+  }
+  async function chooseNode(node: PlanGraphNode) {
+    if (joinSourceId) {
+      if (!canLink(joinSourceId, node.id, displayNodes, displayEdges)) return;
+      if (await save(graph.nodes, [...displayEdges, {
+        id: crypto.randomUUID(), from: joinSourceId, to: node.id, label: '',
+      }])) { joinSourceId = null; selectedId = null; }
+      return;
+    }
+    selectedId = selectedId === node.id ? null : node.id;
+    moveTarget = ''; joinTarget = '';
   }
   async function moveSelected() {
     if (!selected || !moveTarget || busy) return;
     try {
-      const edges = moveStop(displayNodes, displayEdges, selected.id, moveTarget, () => crypto.randomUUID());
+      const [side, anchor] = moveTarget.split('|');
+      if (side !== 'before' && side !== 'after') return;
+      const gap = placementGap(anchor, side);
+      const edges = placeExistingStop(displayNodes, displayEdges, selected.id,
+        gap.from, gap.to, () => crypto.randomUUID());
       if (await save(graph.nodes, edges)) { moveTarget = ''; folded = []; }
     } catch (cause) { error = cause instanceof Error ? cause.message : '移動できませんでした。'; }
   }
@@ -551,7 +688,7 @@
       try { await onDeleteStep(node.id); }
       catch (cause) { error = cause instanceof Error ? cause.message : '予定を削除できませんでした。'; return; }
     }
-    if (await save(graph.nodes.filter(n => n.id !== node.id), displayEdges.filter(e => e.from !== node.id && e.to !== node.id))) selectedId = null;
+    if (await save(graph.nodes.filter(n => n.id !== node.id), displayEdges.filter(e => e.from !== node.id && e.to !== node.id), false)) selectedId = null;
   }
   async function join() {
     if (!selected || !canLink(selected.id, joinTarget, displayNodes, displayEdges)) return;
@@ -625,7 +762,7 @@
   }
   function focusDialog(element: HTMLElement) {
     const previous = document.activeElement as HTMLElement | null;
-    element.querySelector<HTMLInputElement>('input')?.focus();
+    (element.querySelector<HTMLInputElement>('input') ?? element.querySelector<HTMLButtonElement>('button'))?.focus();
     const onKeydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !busy) { formOpen = false; optionOpen = false; event.preventDefault(); }
       if (event.key !== 'Tab') return;
@@ -644,9 +781,14 @@
 <section class="graph-board" aria-label="分岐・合流プラン">
   <div class="graph-toolbar">
     <div class="graph-title"><h2>プラン比較</h2><span>{displayNodes.length}件</span></div>
-    {#if canEdit && displayNodes.length > 0}
-      <button class="outline new-plan-button" onclick={() => newStep()}>＋ 新しいプラン</button>
-    {/if}
+    <div class="toolbar-actions">
+      {#if canEdit && undoGraph}
+        <button class="outline" disabled={busy} onclick={undoLast}>↶ 元に戻す</button>
+      {/if}
+      {#if canEdit && displayNodes.length > 0}
+        <button class="outline new-plan-button" onclick={() => newStep()}>＋ 新しいプラン</button>
+      {/if}
+    </div>
   </div>
   {#if !demo}<a class="demo-link" href="/demo/planning-comparison" target="_blank" rel="noopener noreferrer">デモを見る ↗</a>{/if}
   {#if error}<div class="error" role="alert">{error}<button onclick={load}>再読込</button></div>{/if}
@@ -659,6 +801,12 @@
     </div>
   {:else}
     <div class="comparison-workspace"><div class="timeline-column"><div class="graph-scroll" class:single={!isBranched} role="region" aria-label="分岐したプランの予定一覧">
+      {#if joinSourceId}
+        <div class="join-banner" role="status">
+          <strong>合流先の予定を選択</strong>
+          <button onclick={() => joinSourceId = null}>キャンセル</button>
+        </div>
+      {/if}
       <div class="graph-canvas" style:width={drawn.width + 'px'} style:height={drawn.height + 'px'}>
         <svg class="graph-wires" width={drawn.width} height={drawn.height} viewBox={'0 0 ' + drawn.width + ' ' + drawn.height} aria-hidden="true">
           <line x1="113" x2="113" y1="30" y2={drawn.height - 40} stroke="#d1ddd3" stroke-width="1.5"/>
@@ -671,17 +819,41 @@
             <circle cx={link.x} cy={link.y} r="3" fill={link.color}/>
           {/each}
         </svg>
+        {#if canEdit}
+          {#each drawn.nodes.filter(item => !displayEdges.some(edge => edge.to === item.node.id)) as root (root.node.id)}
+            <button class="graph-gap graph-gap-root" style:left={root.x + 'px'} style:top={(root.y - 80) + 'px'}
+              aria-label={root.node.title + 'の前に予定を追加'} onclick={() => openGap(null, root.node.id)}>＋ 追加</button>
+          {/each}
+          {#each drawn.links as link (link.edge.id)}
+            <button class="graph-gap graph-gap-edge" style:left={link.x + 'px'} style:top={link.y + 'px'}
+              aria-label={(displayNodes.find(node => node.id === link.edge.to)?.title ?? '次の予定') + 'の前に予定を追加'}
+              onclick={() => openGap(link.edge.from, link.edge.to)}>＋</button>
+          {/each}
+        {/if}
         {#each drawn.ticks as tick}
           <div class="time-tick" style:top={(tick.y - 8) + 'px'}>{tick.label}</div>
         {/each}
-        {#each drawn.nodes as item (item.node.id)}
+        {#each drawn.nodes as item, index (item.node.id)}
           {@const node = item.node}
           {@const picked = node.options.find(candidate => candidate.id === node.selected_option_id)}
-          <div class="graph-node" class:is-selected={selectedId === node.id} class:choice-node={node.kind === 'choices'}
-            style:left={(item.x - 130) + 'px'} style:top={(item.y - 36) + 'px'} style:--lane-color={item.color}>
+          <div class="graph-node" class:is-selected={selectedId === node.id} class:choice-node={node.kind === 'choices'} class:is-drag-over={dragOverId === node.id}
+            style:left={(item.x - 155) + 'px'} style:top={(item.y - 36) + 'px'} style:--lane-color={item.color}>
+            {#if canEdit && !displayEdges.some(edge => edge.to === node.id)}
+              <button class="mobile-root-gap" aria-label={node.title + 'の前に予定を追加'}
+                onclick={() => openGap(null, node.id)}>＋ 予定を追加</button>
+            {/if}
+            {#if index === 0 || node.start_local.slice(0, 10) !== drawn.nodes[index - 1].node.start_local.slice(0, 10)}
+              <span class="mobile-date">{node.start_local ? node.start_local.slice(0, 10).replaceAll('-', '/') : '日時未定'}</span>
+            {/if}
             {#if item.label}<span class="lane-caption">{item.label}</span>{:else}<span class="mobile-common lane-caption">共通の予定</span>{/if}
-            <button class="node-main" onclick={() => { selectedId = selectedId === node.id ? null : node.id; moveTarget = ''; joinTarget = ''; }} aria-pressed={selectedId === node.id}>
-              <span class="node-mark"><StepTypeIcon type={node.type} size="sm" /></span>
+            <button class="node-main" draggable={canEdit && !joinSourceId}
+              ondragstart={event => { draggingId = node.id; event.dataTransfer?.setData('text/plain', node.id); }}
+              ondragover={event => { if (draggingId && draggingId !== node.id) { event.preventDefault(); dragOverId = node.id; } }}
+              ondragleave={() => { if (dragOverId === node.id) dragOverId = null; }}
+              ondragend={() => { draggingId = null; dragOverId = null; }}
+              ondrop={event => void dropOn(node, event)}
+              onclick={() => void chooseNode(node)} aria-pressed={selectedId === node.id} aria-label={joinSourceId ? node.title + 'に合流' : node.title + 'の予定を開く'}>
+              {#if canEdit}<span class="drag-grip" aria-hidden="true">⋮⋮</span>{/if}<span class="node-mark"><StepTypeIcon type={node.type} size="sm" /></span>
               <span class="node-copy"><strong>{node.title}</strong><small>{localDate(node.start_local) || '日時未定'}{node.end_local.includes('T') ? ' – ' + node.end_local.slice(11, 16) : ''}</small>
                 {#if node.location}<small>{node.location}</small>{/if}
                 {#if node.participants.length}<small class="participants">{node.participants.join('・')}</small>{/if}
@@ -708,13 +880,23 @@
                 </div>
               {/if}
             {/if}
+            {#if canEdit}
+              {#each displayEdges.filter(edge => edge.from === node.id) as edge (edge.id)}
+                <button class="mobile-gap" onclick={() => openGap(node.id, edge.to)}
+                  aria-label={(displayNodes.find(value => value.id === edge.to)?.title ?? '次の予定') + 'の前に予定を追加'}>＋ 予定を追加</button>
+              {/each}
+            {/if}
             {#if canEdit && !displayEdges.some(edge => edge.from === node.id)}
               <div class="route-end">
-                <button class="continue-route" aria-label={node.title + 'の次の予定を追加'}
-                  onclick={() => newStep(node.id)}>
-                  <span class="route-plus" aria-hidden="true">＋</span>
-                  <span>次の予定</span>
-                </button>
+                <div class="route-buttons">
+                  <button class="continue-route" aria-label={node.title + 'の次の予定を追加'}
+                    onclick={() => newStep(node.id)}>
+                    <span class="route-plus" aria-hidden="true">＋</span>
+                    <span>次の予定</span>
+                  </button>
+                  <button class="route-more" aria-label={node.title + 'の後に予定を追加・接続'}
+                    onclick={() => openGap(node.id, null)}>⋯</button>
+                </div>
               </div>
             {/if}
           </div>
@@ -724,45 +906,8 @@
     {#if isBranched}<div class="graph-footer"><span>{drawn.count}件を表示</span></div>{/if}
     </div>
     <aside class="comparison-sidebar" aria-label="プランと候補">
-      <section class="sidebar-card"><h3>プラン</h3>
-        {#each routeStarts as edge, index (edge.id)}
-          {@const summary = routeSummary(edge.to)}
-          <div class="route-summary" style:--route-color={colors[index % colors.length]}>
-            <span class="route-dot"></span>
-            {#if canEdit}<form onsubmit={event => { event.preventDefault(); void renameRoute(edge); }}>
-              <input aria-label={'ルート名：' + (edge.label || 'プラン ' + (index + 1))} maxlength="80" value={routeNames[edge.id] ?? edge.label} placeholder={'プラン ' + (index + 1)} oninput={event => routeNames[edge.id] = event.currentTarget.value} />
-              <button disabled={busy} aria-label="ルート名を保存">保存</button>
-            </form>{:else}<strong>{edge.label || 'プラン ' + (index + 1)}</strong>{/if}
-            <button aria-label={(folded.includes(edge.id) ? '表示：' : '非表示：') + edge.label} aria-pressed={!folded.includes(edge.id)} onclick={() => hideEdge(edge.id)}>{folded.includes(edge.id) ? '表示' : '隠す'}</button>
-          </div>
-          {#if summary.cost || summary.participants}<small class="route-meta">{summary.participants}{summary.participants && summary.cost ? ' · ' : ''}{summary.cost ? '入力済み ' + summary.cost : ''}</small>{/if}
-        {/each}
-        
-        {#if routeStarts.length === 0}<small>共通の予定</small>{/if}
-        {#if canEdit}<button class="sidebar-add" onclick={() => newStep()}>＋ 別の出発点を作る</button>{/if}
-      </section>
-      <section class="sidebar-card"><h3>候補 <span>{candidateNodes.reduce((sum, node) => sum + node.options.length, 0)}</span></h3>
-        {#each candidateNodes as node (node.id)}
-          <details open><summary><span>{node.title}</span><small>{node.options.length}案</small></summary>
-            {#each node.options as candidate (candidate.id)}
-              <div class="sidebar-candidate">
-                <CandidateOptionCard option={candidate}
-                  selected={node.selected_option_id === candidate.id}
-                  {canEdit} {busy} compact
-                  onSelect={() => selectOption(node, node.selected_option_id === candidate.id ? null : candidate.id)}
-                  onEdit={(field) => { void openOption(node, candidate, field); }}
-                />
-              </div>
-            {/each}
-            {#if canEdit}<button class="sidebar-add" disabled={busy || node.options.length >= 30} onclick={() => openOption(node)}>＋ 候補を追加</button>
-              {#if node.selected_option_id}<button class="sidebar-add apply" disabled={busy} onclick={() => applyOption(node)}>選択案をこの予定に反映</button>{/if}
-            {/if}
-          </details>
-        {/each}
-        {#if candidateNodes.length === 0}<small class="candidate-empty">候補なし</small>{/if}
-      </section>
-    </aside></div>
     {#if selected}
+      <button class="mobile-detail-overlay" aria-label="予定の詳細を閉じる" onclick={() => selectedId = null}></button>
       <div class="detail-panel" role="region" aria-label="選択した予定の操作">
         <div class="panel-heading"><div><small>{typeLabel(selected.type)}</small><h3>{selected.title}</h3></div><button aria-label="閉じる" onclick={() => selectedId = null}>×</button></div>
         {#if selected.start_local || selected.end_local}<p class="panel-sub">{localDate(selected.start_local)}{selected.end_local ? ' ― ' + localDate(selected.end_local) : ''}</p>{/if}
@@ -770,8 +915,18 @@
         {#if selected.link}<a class="external" href={selected.link} target="_blank" rel="noopener noreferrer">参考リンク</a>{/if}
         <div class="panel-actions">
           {#if canEdit}
-            <button class="primary" onclick={() => newStep(selected!.id)}>＋ 次の予定</button>
+            <button class="primary" onclick={() => {
+              const out = displayEdges.filter(edge => edge.from === selected!.id);
+              if (out.length > 1) { error = '挿入する分岐先の＋ボタンを選んでください。'; return; }
+              openGap(selected!.id, out[0]?.to ?? null);
+            }}>＋ この後に追加</button>
+            <button onclick={() => {
+              const incoming = displayEdges.filter(edge => edge.to === selected!.id);
+              if (incoming.length > 1) { error = '合流前の接続を選んでください。'; return; }
+              openGap(incoming[0]?.from ?? null, selected!.id);
+            }}>＋ この前に追加</button>
             <button onclick={() => newStep(selected!.id, false, '別プラン')}>↗ ここから分岐</button>
+            <button onclick={() => { joinSourceId = selected!.id; selectedId = null; }}>↘ 既存予定に合流</button>
             <button onclick={() => openOption(selected!)}>◇ 候補を追加</button>
             <button onclick={() => {
               if (steps.some(step => step.id === selected!.id) && onEditExistingStep) onEditExistingStep(selected!.id);
@@ -792,8 +947,8 @@
         {/if}
         {#if canEdit && moveTargets.length}
           <div class="join-form"><label for="move-target">別プランへ移動</label>
-            <select id="move-target" bind:value={moveTarget}><option value="">挿入する直前の予定を選択</option>
-              {#each moveTargets as target}<option value={target.id}>{target.title} の後</option>{/each}
+            <select id="move-target" bind:value={moveTarget}><option value="">移動先の予定と位置を選択</option>
+              {#each moveTargets as target}<option value={target.side + '|' + target.node.id}>{target.node.title} の{target.side === 'before' ? '前' : '後'}</option>{/each}
             </select><button disabled={!moveTarget || busy} onclick={moveSelected}>移動する</button>
             
           </div>
@@ -817,8 +972,89 @@
         {/if}
       </div>
     {/if}
+      <section class="sidebar-card"><h3>プラン</h3>
+        {#each routeStarts as edge, index (edge.id)}
+          {@const summary = routeSummary(edge.to)}
+          <div class="route-summary" style:--route-color={colors[index % colors.length]}>
+            <span class="route-dot"></span>
+            {#if canEdit}<form onsubmit={event => { event.preventDefault(); void renameRoute(edge); }}>
+              <input aria-label={'ルート名：' + (edge.label || 'プラン ' + (index + 1))} maxlength="80" value={routeNames[edge.id] ?? edge.label} placeholder={'プラン ' + (index + 1)} oninput={event => routeNames[edge.id] = event.currentTarget.value} />
+              <button disabled={busy} aria-label="ルート名を保存">保存</button>
+            </form>{:else}<strong>{edge.label || 'プラン ' + (index + 1)}</strong>{/if}
+            <button aria-label={(folded.includes(edge.id) ? '表示：' : '非表示：') + edge.label} aria-pressed={!folded.includes(edge.id)} onclick={() => hideEdge(edge.id)}>{folded.includes(edge.id) ? '表示' : '隠す'}</button>
+          </div>
+          {#if summary.cost || summary.participants}<small class="route-meta">{summary.participants}{summary.participants && summary.cost ? ' · ' : ''}{summary.cost ? '入力済み ' + summary.cost : ''}</small>{/if}
+        {/each}
+        
+        {#if routeStarts.length === 0}<small>共通の予定</small>{/if}
+        {#if canEdit}<button class="sidebar-add" onclick={() => newStep()}>＋ 別の出発点を作る</button>{/if}
+      </section>
+      {#if candidateNodes.length > 0}<section class="sidebar-card"><h3>候補 <span>{candidateNodes.reduce((sum, node) => sum + node.options.length, 0)}</span></h3>
+        {#each candidateNodes as node (node.id)}
+          <details open><summary><span>{node.title}</span><small>{node.options.length}案</small></summary>
+            {#each node.options as candidate (candidate.id)}
+              <div class="sidebar-candidate">
+                <CandidateOptionCard option={candidate}
+                  selected={node.selected_option_id === candidate.id}
+                  {canEdit} {busy} compact
+                  onSelect={() => selectOption(node, node.selected_option_id === candidate.id ? null : candidate.id)}
+                  onEdit={(field) => { void openOption(node, candidate, field); }}
+                />
+              </div>
+            {/each}
+            {#if canEdit}<button class="sidebar-add" disabled={busy || node.options.length >= 30} onclick={() => openOption(node)}>＋ 候補を追加</button>
+              {#if node.selected_option_id}<button class="sidebar-add apply" disabled={busy} onclick={() => applyOption(node)}>選択案をこの予定に反映</button>{/if}
+            {/if}
+          </details>
+        {/each}
+      </section>{/if}
+    </aside></div>
+
   {/if}
 </section>
+{/if}
+
+
+{#if gapMenu && canEdit}
+  <div class="backdrop" role="presentation" onclick={event => event.target === event.currentTarget && (gapMenu = null)}>
+    <div class="sheet route-action-sheet" role="dialog" aria-modal="true" aria-label="予定を追加・接続" use:focusDialog>
+      <div class="sheet-header"><h3>予定を追加・接続</h3><button aria-label="閉じる" onclick={() => gapMenu = null}>×</button></div>
+      <div class="gap-actions">
+        <button class="gap-primary" onclick={insertFromGap}>＋ 新しい予定を作成</button>
+        <button onclick={() => { existingGap = gapMenu; gapMenu = null; existingSearch = ''; duplicateMode = false; }}>▤ 既存の予定を挿入</button>
+        <button onclick={() => { existingGap = gapMenu; gapMenu = null; existingSearch = ''; duplicateMode = true; }}>⧉ 既存の予定を複製</button>
+        {#if gapMenu.from}
+          <button onclick={() => { const from = gapMenu!.from; gapMenu = null; newStep(from, false, '別プラン'); }}>⑂ ここから分岐</button>
+          <button onclick={() => { joinSourceId = gapMenu!.from; gapMenu = null; }}>↘ 既存予定に合流</button>
+        {/if}
+      </div>
+    </div>
+  </div>
+{/if}
+{#if existingGap && canEdit}
+  <div class="backdrop" role="presentation" onclick={event => event.target === event.currentTarget && (existingGap = null)}>
+    <div class="sheet route-action-sheet" role="dialog" aria-modal="true" aria-label={duplicateMode ? '既存の予定を複製' : '既存の予定を挿入'} use:focusDialog>
+      <div class="sheet-header"><h3>{duplicateMode ? '既存の予定を複製' : '既存の予定を挿入'}</h3><button aria-label="閉じる" onclick={() => existingGap = null}>×</button></div>
+      <label class="existing-search">予定を検索<input type="search" placeholder="タイトル・場所" bind:value={existingSearch} /></label>
+      <div class="existing-options">
+        {#each displayNodes.filter(node => {
+          if (node.id === existingGap?.from || node.id === existingGap?.to) return false;
+          if (existingSearch && !(node.title + ' ' + node.location).toLocaleLowerCase().includes(existingSearch.toLocaleLowerCase())) return false;
+          if (duplicateMode) return true;
+          try {
+            placeExistingStop(displayNodes, displayEdges, node.id, existingGap!.from, existingGap!.to, () => crypto.randomUUID());
+            return true;
+          } catch { return false; }
+        }) as item (item.id)}
+          <button onclick={() => duplicateMode ? duplicateFromGap(item.id) : void insertExisting(item.id)} disabled={busy}>
+            <strong>{item.title}</strong><small>{localDate(item.start_local) || '日時未定'}</small>
+          </button>
+        {:else}
+          <p class="existing-empty">挿入できる予定がありません</p>
+        {/each}
+      </div>
+    </div>
+  </div>
 {/if}
 
 {#if formOpen && canEdit}
@@ -966,4 +1202,66 @@
     .sidebar-card p,.sidebar-card>small{font-size:12px}.sidebar-card summary{font-size:13px}.route-summary input{font-size:14px}.route-summary button{min-height:32px}
   }
   @media(max-width:670px){.graph-toolbar{align-items:start}.graph-title{display:block}.graph-title h2{font-size:17px}.toolbar-actions{justify-content:end}.toolbar-actions button{font-size:10px;padding:8px}.two{grid-template-columns:1fr}.sheet{padding:18px 16px calc(20px + env(safe-area-inset-bottom))}}
+
+  /* Insert directly on the route, rather than adding an accidental new branch. */
+  .graph-scroll.single .graph-canvas{width:100%!important;min-width:640px}
+  .graph-scroll.single .graph-wires{display:none}
+  .graph-scroll.single .graph-node{left:118px!important;width:calc(100% - 138px)}
+  .graph-scroll.single .graph-gap-edge,.graph-scroll.single .graph-gap-root{left:50%!important}
+  .drag-grip{display:grid;place-items:center;flex:none;font-size:16px;letter-spacing:-3px;color:#90a498;cursor:grab}
+  .graph-node.is-drag-over{outline:2px dashed #409477;outline-offset:5px}
+  .graph-gap{position:absolute;transform:translate(-50%,-50%);z-index:4;min-width:36px;min-height:36px;border:1px dashed #97bea9;border-radius:999px;background:#fff;color:#2f6657;box-shadow:0 3px 10px #21433215;font-size:12px;font-weight:750}
+  .graph-gap:hover,.graph-gap:focus-visible{background:#eaf5ee;border-style:solid}
+  .graph-gap-root{padding:6px 12px;white-space:nowrap}
+  .route-buttons{display:flex;align-items:center;gap:7px;pointer-events:auto}
+  .route-more{display:grid;place-items:center;width:36px;height:36px;border:1px solid #a9c5b2;border-radius:50%;background:white;color:#376e55;font-size:20px}
+  .mobile-gap,.mobile-date,.mobile-root-gap{display:none}
+  .join-banner{position:sticky;top:0;z-index:6;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;padding:12px 14px;background:#e9f5ee;border:1px solid #a4cbb6;border-radius:12px;font-size:13px;color:#285c48}
+  .join-banner button{border:1px solid #90bda5;border-radius:999px;padding:7px 12px;background:white;color:#2f6657}
+  .mobile-detail-overlay{display:none}
+  .existing-search{display:grid;gap:8px;font-weight:650;font-size:13px;color:#39574a;margin:16px 0}
+  .existing-search input{padding:12px;border:1px solid #c7d7cc;border-radius:10px;font-size:16px}
+  .gap-actions,.existing-options{display:grid;gap:9px;margin:16px 0}
+  .gap-actions button,.existing-options button{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:48px;width:100%;padding:12px 14px;border:1px solid #d4e0d8;border-radius:12px;background:white;color:#2f6657;text-align:left;font-size:14px;font-weight:700}
+  .gap-actions button:hover,.existing-options button:hover{background:#f1f8f3}
+  .gap-actions .gap-primary{background:#2f6657;color:white;border-color:#2f6657}
+  .existing-options{max-height:min(54dvh,440px);overflow:auto}
+  .existing-options button small{color:#718477;font-size:12px;font-weight:400}
+  .existing-empty{color:#708478;text-align:center;font-size:13px}
+  .comparison-workspace{grid-template-columns:minmax(0,1fr) 320px;gap:16px}
+  .comparison-sidebar{align-content:start}
+  .detail-panel{position:static;width:100%;max-height:min(72dvh,750px);padding:20px;overflow:auto;border-radius:16px;box-shadow:0 6px 20px #1d3c2a12}
+  .panel-heading h3{font-size:18px}
+  .panel-heading small,.panel-sub{font-size:12px}
+  .panel-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .panel-actions button,.join-form button{min-height:40px;font-size:12px;font-weight:650;padding:8px}
+  .join-form label{font-size:12px;font-weight:650}
+  .join-form select{min-height:40px;font-size:13px}
+  .node-copy strong{font-size:15px}
+  .node-copy small{font-size:12px;color:#566d60}
+  .graph-node{width:310px;border-radius:14px}
+  .node-main{min-height:76px}
+  .time-tick{font-size:12px;color:#557360}
+  @media(max-width:1000px){
+    .comparison-workspace{grid-template-columns:minmax(0,1fr)}
+    .comparison-sidebar{position:static;grid-template-columns:repeat(2,minmax(0,1fr))}
+    .comparison-sidebar .detail-panel{grid-column:1/-1;max-height:none}
+  }
+  @media(max-width:670px){
+    .graph-scroll.single .graph-canvas{min-width:0}
+    .graph-scroll.single .graph-node{left:auto!important;width:100%}
+    .graph-gap{display:none}
+    .graph-canvas{gap:16px}
+    .graph-node{width:100%;border-radius:14px}
+    .drag-grip{display:none}
+    .mobile-date{display:block;margin:0 0 8px;padding:9px 12px;background:#f0f6f0;border-radius:10px;color:#285c48;font-size:13px;font-weight:800}
+    .mobile-gap,.mobile-root-gap{display:block;min-height:40px;margin:4px auto 10px;padding:8px 13px;border:1px dashed #9fc4aa;border-radius:999px;background:#fff;color:#316e56;font-size:12px;font-weight:700}
+    .graph-node:has(.mobile-date){margin-top:22px}
+    .detail-panel{position:fixed;bottom:0;left:0;right:0;z-index:110;width:100%;max-height:85dvh;overflow:auto;border-radius:20px 20px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -8px 36px #152f2440}
+    .mobile-detail-overlay{display:block;position:fixed;inset:0;z-index:109;width:100%;height:100%;border:0;background:#152f2477}
+    .panel-actions button{min-height:44px;font-size:13px}
+    .route-action-sheet{padding:20px 16px calc(24px + env(safe-area-inset-bottom))}
+    .comparison-sidebar{grid-template-columns:minmax(0,1fr)}
+    .graph-scroll{max-height:none}
+  }
 </style>

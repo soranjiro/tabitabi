@@ -140,6 +140,34 @@
     editingOptionId = null;
   }
 
+  function focusDialog(element: HTMLElement) {
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusable = () => [...element.querySelectorAll<HTMLElement>(
+      'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href]'
+    )].filter(item => item.getClientRects().length > 0);
+    focusable()[0]?.focus();
+    const onKeydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !busy) {
+        event.preventDefault();
+        closeOption();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const items = focusable();
+      const first = items[0], last = items.at(-1);
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    element.addEventListener('keydown', onKeydown);
+    return { destroy() { element.removeEventListener('keydown', onKeydown); previous?.focus(); } };
+  }
+
   async function saveOption(event: SubmitEvent) {
     event.preventDefault();
     if (!editingGroup || busy || !optionDraft.title.trim()) return;
@@ -268,22 +296,22 @@
                     <tbody>
                       {#each group.options as option (option.id)}
                         <tr class:selected={group.selected_option_id === option.id}>
-                          <td class="name-cell">
+                          <td class="name-cell" data-label="候補">
                             {#if group.selected_option_id === option.id}<span class="picked">採用中</span>{/if}
                             <strong>{option.title}</strong>
                             {#if option.provider}<small>{option.provider}</small>{/if}
                             {#if option.from || option.to}<small>{option.from}{option.to ? ' → ' + option.to : ''}</small>{/if}
                           </td>
-                          <td><strong class="price">{price(option)}</strong></td>
-                          <td class="dates"><span>{localLabel(option.start_local)}</span><span>{localLabel(option.end_local)}</span></td>
-                          <td class="details">{option.cancellation || '未入力'}</td>
-                          <td class="details">
+                          <td data-label="料金"><strong class="price">{price(option)}</strong></td>
+                          <td class="dates" data-label={group.kind === 'stay' ? 'チェックイン・アウト' : '出発・到着'}><span>{localLabel(option.start_local)}</span><span>{localLabel(option.end_local)}</span></td>
+                          <td class="details" data-label="キャンセル・条件">{option.cancellation || '未入力'}</td>
+                          <td class="details" data-label="詳細">
                             {#if option.url}<a href={option.url} target="_blank" rel="noopener noreferrer">予約ページ</a>{/if}
                             {#if option.notes}<p>{option.notes}</p>{/if}
                             {#if !option.url && !option.notes}—{/if}
                           </td>
                           {#if canEdit}
-                            <td>
+                            <td data-label="操作">
                               <div class="option-actions">
                                 {#if group.selected_option_id !== option.id}
                                   <button class="select" onclick={() => updateGroup(group, { selected_option_id: option.id })} disabled={busy}>この案に決める</button>
@@ -318,7 +346,7 @@
 
 {#if editingGroup && canEdit}
   <div class="sheet-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && !busy && closeOption()}>
-    <div class="sheet" role="dialog" aria-modal="true" aria-label="比較候補を編集">
+    <div class="sheet" use:focusDialog role="dialog" aria-modal="true" aria-label="比較候補を編集">
       <div class="sheet-heading">
         <div><small>{editingGroup.title}</small><h3>{editingOptionId ? '候補を編集' : '候補を追加'}</h3></div>
         <button aria-label="閉じる" onclick={closeOption} disabled={busy}>×</button>
@@ -387,6 +415,29 @@
   .rename { display: flex; width: 100%; gap: 8px; }
   .rename input { flex: 1; }
   .matrix-scroll { width: 100%; overflow-x: auto; border: 1px solid #e5ebe5; border-radius: 10px; }
+  @media (max-width: 640px) {
+    .comparison-board { padding: 14px; margin: 12px 0 20px; }
+    .group-inner { padding: 10px; }
+    .matrix-scroll { overflow: visible; border: 0; }
+    table, tbody { display: block; min-width: 0; width: 100%; }
+    thead { display: none; }
+    tbody { display: grid; gap: 10px; }
+    tbody tr { display: grid; gap: 8px; padding: 12px; border: 1px solid #e1e9e2; border-radius: 12px; }
+    tbody tr.selected { border-color: #7db49a; }
+    td { display: grid; grid-template-columns: minmax(78px, 34%) minmax(0, 1fr); align-items: start; gap: 8px; max-width: none; min-width: 0; padding: 0; border-top: 0; font-size: 12px; }
+    td::before { content: attr(data-label); color: #667d6e; font-size: 11px; font-weight: 700; }
+    td.name-cell { grid-template-columns: 1fr; gap: 3px; }
+    td.name-cell::before { display: none; }
+    td.name-cell strong { font-size: 14px; }
+    td.dates { white-space: normal; }
+    td.details { max-width: none; min-width: 0; overflow-wrap: anywhere; }
+    .option-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .option-actions button { min-height: 36px; }
+    .fields { grid-template-columns: 1fr; }
+  }
+  :global(.comparison-board button:focus-visible), :global(.comparison-board a:focus-visible) {
+    outline: 2px solid #246d58; outline-offset: 3px;
+  }
   table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 12px; text-align: left; }
   th { padding: 10px; color: #657c6d; background: #f4f7f3; font-size: 11px; font-weight: 750; white-space: nowrap; }
   td { max-width: 260px; padding: 12px 10px; border-top: 1px solid #e9eee9; vertical-align: top; overflow-wrap: anywhere; line-height: 1.5; }

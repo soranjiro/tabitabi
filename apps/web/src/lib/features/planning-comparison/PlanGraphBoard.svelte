@@ -7,7 +7,7 @@
   import { planGraphApi } from '$lib/api/plan-graph';
   import { getMemoText } from '$lib/memo';
   import { demoStorage } from '$lib/demo';
-  import { moveStop, insertCreatedStop, placeExistingStop, chronologicalLinearEdges } from './graph';
+  import { insertCreatedStop, placeExistingStop, chronologicalLinearEdges } from './graph';
   import StepTypeIcon from '$lib/themes/standard/core/icons/StepTypeIcon.svelte';
   import CandidateOptionCard from './CandidateOptionCard.svelte';
 
@@ -168,7 +168,7 @@
       }
     }
     const rowY: number[] = [];
-    let cursor = 78;
+    let cursor = 118;
     for (const height of heights) { rowY.push(cursor); cursor += height; }
     const colorIds = new Map<string, number>();
     for (const node of sorted) {
@@ -187,7 +187,7 @@
         ? incoming[0].label || routeLabels.get(incoming[0].from) || '' : '');
     }
     const draws: DrawNode[] = sorted.map(n => {
-      return { node: n, x: 270 + ((xs.get(n.id) ?? 0) - minimum) * 302,
+      return { node: n, x: 310 + ((xs.get(n.id) ?? 0) - minimum) * 330,
         y: rowY[ranks.get(n.id) ?? 0], label: routeLabels.get(n.id) ?? '',
         exit: n.kind === 'choices' ? 66 + (expanded.includes(n.id) ? Math.min(300, n.options.length * 92 + 60) : 0) : 36,
         color: !shownEdges.some(edge => edge.to === n.id) || shownEdges.filter(edge => edge.to === n.id).length > 1 ? '#64a58c' : colors[colorIds.get(n.id) ?? 0] };
@@ -204,7 +204,7 @@
     const ticks = [...new Map(draws.filter(d => d.node.start_local).map(d =>
       [d.y, { y: d.y, label: localDate(d.node.start_local) }]
     )).values()];
-    return { nodes: draws, links, ticks, width: Math.max(545, 444 + maximum * 302),
+    return { nodes: draws, links, ticks, width: Math.max(640, 465 + maximum * 330),
       height: Math.max(210, cursor + 90), count: shownNodes.length };
   }
 
@@ -772,11 +772,14 @@
         {#each drawn.ticks as tick}
           <div class="time-tick" style:top={(tick.y - 8) + 'px'}>{tick.label}</div>
         {/each}
-        {#each drawn.nodes as item (item.node.id)}
+        {#each drawn.nodes as item, index (item.node.id)}
           {@const node = item.node}
           {@const picked = node.options.find(candidate => candidate.id === node.selected_option_id)}
           <div class="graph-node" class:is-selected={selectedId === node.id} class:choice-node={node.kind === 'choices'}
-            style:left={(item.x - 130) + 'px'} style:top={(item.y - 36) + 'px'} style:--lane-color={item.color}>
+            style:left={(item.x - 155) + 'px'} style:top={(item.y - 36) + 'px'} style:--lane-color={item.color}>
+            {#if index === 0 || node.start_local.slice(0, 10) !== drawn.nodes[index - 1].node.start_local.slice(0, 10)}
+              <span class="mobile-date">{node.start_local ? node.start_local.slice(0, 10).replaceAll('-', '/') : '日時未定'}</span>
+            {/if}
             {#if item.label}<span class="lane-caption">{item.label}</span>{:else}<span class="mobile-common lane-caption">共通の予定</span>{/if}
             <button class="node-main" onclick={() => void chooseNode(node)} aria-pressed={selectedId === node.id} aria-label={joinSourceId ? node.title + 'に合流' : node.title + 'を選択'}>
               <span class="node-mark"><StepTypeIcon type={node.type} size="sm" /></span>
@@ -829,6 +832,7 @@
     </div>
     <aside class="comparison-sidebar" aria-label="プランと候補">
     {#if selected}
+      <button class="mobile-detail-overlay" aria-label="予定の詳細を閉じる" onclick={() => selectedId = null}></button>
       <div class="detail-panel" role="region" aria-label="選択した予定の操作">
         <div class="panel-heading"><div><small>{typeLabel(selected.type)}</small><h3>{selected.title}</h3></div><button aria-label="閉じる" onclick={() => selectedId = null}>×</button></div>
         {#if selected.start_local || selected.end_local}<p class="panel-sub">{localDate(selected.start_local)}{selected.end_local ? ' ― ' + localDate(selected.end_local) : ''}</p>{/if}
@@ -1121,4 +1125,55 @@
     .sidebar-card p,.sidebar-card>small{font-size:12px}.sidebar-card summary{font-size:13px}.route-summary input{font-size:14px}.route-summary button{min-height:32px}
   }
   @media(max-width:670px){.graph-toolbar{align-items:start}.graph-title{display:block}.graph-title h2{font-size:17px}.toolbar-actions{justify-content:end}.toolbar-actions button{font-size:10px;padding:8px}.two{grid-template-columns:1fr}.sheet{padding:18px 16px calc(20px + env(safe-area-inset-bottom))}}
+
+  /* Insert directly on the route, rather than adding an accidental new branch. */
+  .graph-gap{position:absolute;transform:translate(-50%,-50%);z-index:4;min-width:36px;min-height:36px;border:1px dashed #97bea9;border-radius:999px;background:#fff;color:#2f6657;box-shadow:0 3px 10px #21433215;font-size:12px;font-weight:750}
+  .graph-gap:hover,.graph-gap:focus-visible{background:#eaf5ee;border-style:solid}
+  .graph-gap-root{padding:6px 12px;white-space:nowrap}
+  .mobile-gap,.mobile-date{display:none}
+  .join-banner{position:sticky;top:0;z-index:6;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;padding:12px 14px;background:#e9f5ee;border:1px solid #a4cbb6;border-radius:12px;font-size:13px;color:#285c48}
+  .join-banner button{border:1px solid #90bda5;border-radius:999px;padding:7px 12px;background:white;color:#2f6657}
+  .mobile-detail-overlay{display:none}
+  .existing-search{display:grid;gap:8px;font-weight:650;font-size:13px;color:#39574a;margin:16px 0}
+  .existing-search input{padding:12px;border:1px solid #c7d7cc;border-radius:10px;font-size:16px}
+  .gap-actions,.existing-options{display:grid;gap:9px;margin:16px 0}
+  .gap-actions button,.existing-options button{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:48px;width:100%;padding:12px 14px;border:1px solid #d4e0d8;border-radius:12px;background:white;color:#2f6657;text-align:left;font-size:14px;font-weight:700}
+  .gap-actions button:hover,.existing-options button:hover{background:#f1f8f3}
+  .gap-actions .gap-primary{background:#2f6657;color:white;border-color:#2f6657}
+  .existing-options{max-height:min(54dvh,440px);overflow:auto}
+  .existing-options button small{color:#718477;font-size:12px;font-weight:400}
+  .existing-empty{color:#708478;text-align:center;font-size:13px}
+  .comparison-workspace{grid-template-columns:minmax(0,1fr) 320px;gap:16px}
+  .comparison-sidebar{align-content:start}
+  .detail-panel{position:static;width:100%;max-height:min(72dvh,750px);padding:20px;overflow:auto;border-radius:16px;box-shadow:0 6px 20px #1d3c2a12}
+  .panel-heading h3{font-size:18px}
+  .panel-heading small,.panel-sub{font-size:12px}
+  .panel-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .panel-actions button,.join-form button{min-height:40px;font-size:12px;font-weight:650;padding:8px}
+  .join-form label{font-size:12px;font-weight:650}
+  .join-form select{min-height:40px;font-size:13px}
+  .node-copy strong{font-size:15px}
+  .node-copy small{font-size:12px;color:#566d60}
+  .graph-node{width:310px;border-radius:14px}
+  .node-main{min-height:76px}
+  .time-tick{font-size:12px;color:#557360}
+  @media(max-width:1000px){
+    .comparison-workspace{grid-template-columns:minmax(0,1fr)}
+    .comparison-sidebar{position:static;grid-template-columns:repeat(2,minmax(0,1fr))}
+    .comparison-sidebar .detail-panel{grid-column:1/-1;max-height:none}
+  }
+  @media(max-width:670px){
+    .graph-gap{display:none}
+    .graph-canvas{gap:16px}
+    .graph-node{width:100%;border-radius:14px}
+    .mobile-date{display:block;margin:0 0 8px;padding:9px 12px;background:#f0f6f0;border-radius:10px;color:#285c48;font-size:13px;font-weight:800}
+    .mobile-gap{display:block;min-height:40px;margin:4px auto 10px;padding:8px 13px;border:1px dashed #9fc4aa;border-radius:999px;background:#fff;color:#316e56;font-size:12px;font-weight:700}
+    .graph-node:has(.mobile-date){margin-top:22px}
+    .detail-panel{position:fixed;bottom:0;left:0;right:0;z-index:110;width:100%;max-height:85dvh;overflow:auto;border-radius:20px 20px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -8px 36px #152f2440}
+    .mobile-detail-overlay{display:block;position:fixed;inset:0;z-index:109;width:100%;height:100%;border:0;background:#152f2477}
+    .panel-actions button{min-height:44px;font-size:13px}
+    .route-action-sheet{padding:20px 16px calc(24px + env(safe-area-inset-bottom))}
+    .comparison-sidebar{grid-template-columns:minmax(0,1fr)}
+    .graph-scroll{max-height:none}
+  }
 </style>

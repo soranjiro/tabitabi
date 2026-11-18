@@ -30,6 +30,10 @@ const edgeSchema = z.object({
   id: z.string().min(1).max(64), from: z.string().min(1).max(64),
   to: z.string().min(1).max(64), label: z.string().max(80),
 }).strict();
+// Date-only plans have a calendar order, not an artificial time-of-day.
+const isReverseTimeOrder = (from: string, to: string) => from && to && (
+  from.includes('T') && to.includes('T') ? from > to : from.slice(0, 10) > to.slice(0, 10)
+);
 export const graphSchema = z.object({
   revision: z.number().int().min(0),
   nodes: z.array(nodeSchema).max(100),
@@ -65,7 +69,7 @@ export const graphSchema = z.object({
     const pair = edge.from + ':' + edge.to;
     if (pairs.has(pair)) ctx.addIssue({ code: 'custom', message: 'Duplicate graph connection' });
     pairs.add(pair);
-    if (from.start_local && to.start_local && from.start_local > to.start_local) {
+    if (isReverseTimeOrder(from.start_local, to.start_local)) {
       ctx.addIssue({ code: 'custom', message: 'Connections must not travel back in time' });
     }
     inDegree.set(edge.to, (inDegree.get(edge.to) ?? 0) + 1);

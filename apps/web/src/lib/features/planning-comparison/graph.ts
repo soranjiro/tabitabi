@@ -17,7 +17,7 @@ export function moveStop(nodes: PlanGraphNode[], edges: PlanGraphEdge[], id: str
   const byId = new Map(nodes.map(n => [n.id, n]));
   for (const e of result) {
     const a = byId.get(e.from)!, b = byId.get(e.to)!;
-    if (a.start_local && b.start_local && a.start_local > b.start_local) throw new Error('時刻が前後します。先に予定の日時を編集してください。');
+    if (isReverseTimeOrder(a.start_local, b.start_local)) throw new Error('時刻が前後します。先に予定の日時を編集してください。');
   }
   const done = new Set<string>();
   const visit = (node: string, path: Set<string>): void => {
@@ -33,6 +33,13 @@ export function moveStop(nodes: PlanGraphNode[], edges: PlanGraphEdge[], id: str
 }
 
 
+/** Date-only stops have no time order within their day. */
+export function isReverseTimeOrder(from: string, to: string): boolean {
+  if (!from || !to) return false;
+  return from.includes('T') && to.includes('T')
+    ? from > to : from.slice(0, 10) > to.slice(0, 10);
+}
+
 /** Validate all graph connections before presenting a move or persisting it. */
 function validateConnections(nodes: PlanGraphNode[], edges: PlanGraphEdge[]): void {
   const byId = new Map(nodes.map(node => [node.id, node]));
@@ -45,7 +52,7 @@ function validateConnections(nodes: PlanGraphNode[], edges: PlanGraphEdge[]): vo
     const pair = edge.from + ':' + edge.to;
     if (pairs.has(pair)) throw new Error('同じ接続が重複しています。');
     pairs.add(pair);
-    if (a.start_local && b.start_local && a.start_local > b.start_local) {
+    if (isReverseTimeOrder(a.start_local, b.start_local)) {
       throw new Error('時刻が前後します。先に予定の日時を編集してください。');
     }
     forward.get(a.id)!.push(b.id);
@@ -132,4 +139,51 @@ export function chronologicalLinearEdges(
     from: orderedIds[index], to: id,
     label: index === 0 ? routeName : '',
   }));
+}
+
+
+/**
+ * Reorder only the private, linear portion of each branch by confirmed start time.
+ * The fork and merge endpoints remain fixed, so shared plans and junctions cannot
+ * accidentally be replaced by a new route or turned into a cycle.
+ */
+export function chronologicalBranchEdges(nodes: PlanGraphNode[], edges: PlanGraphEdge[]): PlanGraphEdge[] {
+  const byId = new Map(nodes.map(node => [node.id, node]));
+  const incoming = new Map(nodes.map(node => [node.id, 0]));
+  const outgoing = new Map(nodes.map(node => [node.id, [] as PlanGraphEdge[]]));
+  for (const edge of edges) {
+    if (!byId.has(edge.from) || !byId.has(edge.to)) return edges;
+    outgoing.get(edge.from)!.push(edge);
+    incoming.set(edge.to, (incoming.get(edge.to) ?? 0) + 1);
+  }
+  const changed = new Map<string, PlanGraphEdge>();
+  for (const start of nodes) {
+    const ins = incoming.get(start.id) ?? 0;
+    const outs = outgoing.get(start.id) ?? [];
+    if (ins === 1 && outs.length === 1) continue; // Inside a corridor.
+    for (const first of outs) {
+      const chain: PlanGraphEdge[] = [first];
+      const encountered = new Set([start.id]);
+      let last = first.to;
+      while ((incoming.get(last) ?? 0) === 1 && (outgoing.get(last)?.length ?? 0) === 1) {
+        if (encountered.has(last)) return edges;
+        encountered.add(last);
+        const edge = outgoing.get(last)![0];
+        chain.push(edge);
+        last = edge.to;
+      }
+      const leaf = (incoming.get(last) ?? 0) === 1 && !outgoing.get(last)?.length;
+      const movable = (leaf ? chain : chain.slice(0, -1)).map(edge => byId.get(edge.to)!);
+      if (movable.length < 2 || !movable.every(node => node.start_local.includes('T'))) continue;
+      const sorted = [...movable].sort((a, b) => a.start_local.localeCompare(b.start_local) ||
+        movable.indexOf(a) - movable.indexOf(b));
+      const path = [start.id, ...sorted.map(node => node.id), ...(leaf ? [] : [last])];
+      if (path.some((id, index) => index > 0 &&
+        isReverseTimeOrder(byId.get(path[index - 1])!.start_local, byId.get(id)!.start_local))) continue;
+      chain.forEach((edge, index) => changed.set(edge.id, {
+        ...edge, from: path[index], to: path[index + 1],
+      }));
+    }
+  }
+  return edges.map(edge => changed.get(edge.id) ?? edge);
 }

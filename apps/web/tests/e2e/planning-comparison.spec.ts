@@ -92,6 +92,9 @@ test('sample comparison is editable without backend writes and survives reload',
   await page.setViewportSize({ width:390,height:844 });
   await page.goto('/demo/planning-comparison');
   await expect(page.locator('.graph-node')).toHaveCount(9);
+  // The compact branching overview takes precedence in the first viewport.
+  await expect(page.locator('.mobile-branch-map')).toBeInViewport();
+  await page.locator('.graph-node').first().scrollIntoViewIfNeeded();
   await expect(page.locator('.graph-node').first()).toBeInViewport();
   await page.getByRole('button',{name:'京都駅周辺のホテルを選択',exact:true}).click();
   await page.reload();
@@ -105,6 +108,17 @@ test('mobile comparison offers gap insertion and direct existing-step merge', as
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/demo/planning-comparison');
   await expect(page.locator('.graph-node')).toHaveCount(9);
+  const branches = page.locator('.mobile-branch-map');
+  await expect(branches).toBeVisible();
+  await expect(branches.locator('.route-choice')).toHaveCount(2);
+  await expect(branches.getByText('プラン A')).toBeVisible();
+  await expect(branches.getByText('プラン B')).toBeVisible();
+  await expect(branches.getByText('東京 出発')).toBeVisible();
+  await expect(branches.getByText('京都のホテルに集合')).toBeVisible();
+  await branches.getByRole('button', { name: '京都のホテルに集合の合流予定を開く' }).click();
+  await expect(page.locator('.detail-panel h3')).toHaveText('京都のホテルに集合');
+  await page.locator('.detail-panel .panel-heading > button').click();
+  expect(await page.locator('main').last().evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
   const train = page.locator('.graph-node').filter({
     has: page.locator('.node-copy strong').getByText('東京 → 京都（新幹線）', { exact: true }),
   });

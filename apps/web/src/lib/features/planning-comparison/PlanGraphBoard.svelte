@@ -688,7 +688,7 @@
       try { await onDeleteStep(node.id); }
       catch (cause) { error = cause instanceof Error ? cause.message : '予定を削除できませんでした。'; return; }
     }
-    if (await save(graph.nodes.filter(n => n.id !== node.id), displayEdges.filter(e => e.from !== node.id && e.to !== node.id))) selectedId = null;
+    if (await save(graph.nodes.filter(n => n.id !== node.id), displayEdges.filter(e => e.from !== node.id && e.to !== node.id), false)) selectedId = null;
   }
   async function join() {
     if (!selected || !canLink(selected.id, joinTarget, displayNodes, displayEdges)) return;
@@ -762,7 +762,7 @@
   }
   function focusDialog(element: HTMLElement) {
     const previous = document.activeElement as HTMLElement | null;
-    element.querySelector<HTMLInputElement>('input')?.focus();
+    (element.querySelector<HTMLInputElement>('input') ?? element.querySelector<HTMLButtonElement>('button'))?.focus();
     const onKeydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !busy) { formOpen = false; optionOpen = false; event.preventDefault(); }
       if (event.key !== 'Tab') return;
@@ -838,6 +838,10 @@
           {@const picked = node.options.find(candidate => candidate.id === node.selected_option_id)}
           <div class="graph-node" class:is-selected={selectedId === node.id} class:choice-node={node.kind === 'choices'} class:is-drag-over={dragOverId === node.id}
             style:left={(item.x - 155) + 'px'} style:top={(item.y - 36) + 'px'} style:--lane-color={item.color}>
+            {#if canEdit && !displayEdges.some(edge => edge.to === node.id)}
+              <button class="mobile-root-gap" aria-label={node.title + 'の前に予定を追加'}
+                onclick={() => openGap(null, node.id)}>＋ 予定を追加</button>
+            {/if}
             {#if index === 0 || node.start_local.slice(0, 10) !== drawn.nodes[index - 1].node.start_local.slice(0, 10)}
               <span class="mobile-date">{node.start_local ? node.start_local.slice(0, 10).replaceAll('-', '/') : '日時未定'}</span>
             {/if}
@@ -1211,7 +1215,7 @@
   .graph-gap-root{padding:6px 12px;white-space:nowrap}
   .route-buttons{display:flex;align-items:center;gap:7px;pointer-events:auto}
   .route-more{display:grid;place-items:center;width:36px;height:36px;border:1px solid #a9c5b2;border-radius:50%;background:white;color:#376e55;font-size:20px}
-  .mobile-gap,.mobile-date{display:none}
+  .mobile-gap,.mobile-date,.mobile-root-gap{display:none}
   .join-banner{position:sticky;top:0;z-index:6;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;padding:12px 14px;background:#e9f5ee;border:1px solid #a4cbb6;border-radius:12px;font-size:13px;color:#285c48}
   .join-banner button{border:1px solid #90bda5;border-radius:999px;padding:7px 12px;background:white;color:#2f6657}
   .mobile-detail-overlay{display:none}
@@ -1251,7 +1255,7 @@
     .graph-node{width:100%;border-radius:14px}
     .drag-grip{display:none}
     .mobile-date{display:block;margin:0 0 8px;padding:9px 12px;background:#f0f6f0;border-radius:10px;color:#285c48;font-size:13px;font-weight:800}
-    .mobile-gap{display:block;min-height:40px;margin:4px auto 10px;padding:8px 13px;border:1px dashed #9fc4aa;border-radius:999px;background:#fff;color:#316e56;font-size:12px;font-weight:700}
+    .mobile-gap,.mobile-root-gap{display:block;min-height:40px;margin:4px auto 10px;padding:8px 13px;border:1px dashed #9fc4aa;border-radius:999px;background:#fff;color:#316e56;font-size:12px;font-weight:700}
     .graph-node:has(.mobile-date){margin-top:22px}
     .detail-panel{position:fixed;bottom:0;left:0;right:0;z-index:110;width:100%;max-height:85dvh;overflow:auto;border-radius:20px 20px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -8px 36px #152f2440}
     .mobile-detail-overlay{display:block;position:fixed;inset:0;z-index:109;width:100%;height:100%;border:0;background:#152f2477}

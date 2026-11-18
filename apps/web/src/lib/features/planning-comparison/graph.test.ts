@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PlanGraphEdge, PlanGraphNode } from '@tabitabi/types';
-import { moveStop, insertCreatedStop, placeExistingStop, chronologicalLinearEdges, isReverseTimeOrder } from './graph';
+import { moveStop, insertCreatedStop, placeExistingStop, chronologicalLinearEdges, chronologicalBranchEdges, isReverseTimeOrder } from './graph';
 const nodes = ['start','a','a2','b','b2','end'].map(id => ({ id, start_local: '' }) as PlanGraphNode);
 const edge = (from: string, to: string, label = ''): PlanGraphEdge => ({ id: from + to, from, to, label });
 const edges = [edge('start','a','東山'),edge('a','a2'),edge('a2','end'),edge('start','b','嵐山'),edge('b','b2'),edge('b2','end')];
@@ -105,5 +105,36 @@ describe('calendar-only time precision', () => {
       { id: 'b', start_local: '2026-12-10' },
     ] as PlanGraphNode[];
     expect(insertCreatedStop(day, [], 'b', 'a', null, newId)).toHaveLength(1);
+  });
+});
+
+
+describe('chronological ordering inside branched routes', () => {
+  const data = [
+    ['start', '2026-12-10T08:00'],
+    ['a', '2026-12-10T14:00'],
+    ['a2', '2026-12-10T12:00'],
+    ['b', '2026-12-10T09:00'],
+    ['b2', '2026-12-10T11:00'],
+    ['merge', '2026-12-10T18:00'],
+  ].map(([id, start_local]) => ({ id, start_local }) as PlanGraphNode);
+  const links = [
+    edge('start', 'a', 'プラン A'), edge('a', 'a2'), edge('a2', 'merge'),
+    edge('start', 'b', 'プラン B'), edge('b', 'b2'), edge('b2', 'merge'),
+  ];
+  it('sorts a branch by time but preserves the fork, convergence, and labels', () => {
+    const sorted = chronologicalBranchEdges(data, links);
+    expect(sorted.map(e => [e.from, e.to])).toEqual(expect.arrayContaining([
+      ['start', 'a2'], ['a2', 'a'], ['a', 'merge'],
+      ['start', 'b'], ['b', 'b2'], ['b2', 'merge'],
+    ]));
+    expect(sorted.find(e => e.from === 'start' && e.to === 'a2')?.label).toBe('プラン A');
+    expect(links[0].to).toBe('a'); // immutable
+  });
+  it('does not move a junction or undated stops', () => {
+    const unspecified = data.map(n => n.id === 'a' ? { ...n, start_local: '2026-12-10' } : n);
+    const kept = chronologicalBranchEdges(unspecified, links);
+    expect(kept.find(e => e.from === 'start' && e.label === 'プラン A')?.to).toBe('a');
+    expect(kept.filter(e => e.to === 'merge')).toHaveLength(2);
   });
 });

@@ -116,6 +116,16 @@ test('mobile comparison offers gap insertion and direct existing-step merge', as
   await expect(existing.getByRole('searchbox', { name: '予定を検索' })).toBeVisible();
   await existing.getByRole('button', { name: '閉じる' }).click();
 
+  await train.getByRole('button', { name: '東山でランチの前に予定を追加' }).click();
+  await page.getByRole('dialog', { name: '予定を追加・接続' })
+    .getByRole('button', { name: '既存の予定を複製' }).click();
+  const copy = page.getByRole('dialog', { name: '既存の予定を複製' });
+  await expect(copy).toBeVisible();
+  await copy.getByRole('button', { name: /京都の夜を楽しむ/ }).click();
+  const copyForm = page.getByRole('dialog', { name: '分岐プランの予定' });
+  await expect(copyForm.getByRole('textbox', { name: 'タイトル' })).toHaveValue('京都の夜を楽しむ（コピー）');
+  await copyForm.getByRole('button', { name: '閉じる' }).click();
+
   await train.locator('.node-main').click();
   const panel = page.getByRole('region', { name: '選択した予定の操作' });
   await expect(panel).toBeVisible();
@@ -125,5 +135,8 @@ test('mobile comparison offers gap insertion and direct existing-step merge', as
     has: page.locator('.node-copy strong').getByText('京都のホテルに集合', { exact: true }),
   }).locator('.node-main').click();
   await expect(page.getByText('合流先の予定を選択')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '元に戻す' })).toBeVisible();
+  await page.getByRole('button', { name: '元に戻す' }).click();
+  await expect(page.getByRole('button', { name: '元に戻す' })).toHaveCount(0);
   await expect(page.locator('.graph-node')).toHaveCount(9);
 });

@@ -17,7 +17,7 @@ export function moveStop(nodes: PlanGraphNode[], edges: PlanGraphEdge[], id: str
   const byId = new Map(nodes.map(n => [n.id, n]));
   for (const e of result) {
     const a = byId.get(e.from)!, b = byId.get(e.to)!;
-    if (a.start_local && b.start_local && a.start_local > b.start_local) throw new Error('時刻が前後します。先に予定の日時を編集してください。');
+    if (isReverseTimeOrder(a.start_local, b.start_local)) throw new Error('時刻が前後します。先に予定の日時を編集してください。');
   }
   const done = new Set<string>();
   const visit = (node: string, path: Set<string>): void => {
@@ -32,6 +32,13 @@ export function moveStop(nodes: PlanGraphNode[], edges: PlanGraphEdge[], id: str
   return result;
 }
 
+
+/** Date-only stops have no time order within their day. */
+export function isReverseTimeOrder(from: string, to: string): boolean {
+  if (!from || !to) return false;
+  return from.includes('T') && to.includes('T')
+    ? from > to : from.slice(0, 10) > to.slice(0, 10);
+}
 
 /** Validate all graph connections before presenting a move or persisting it. */
 function validateConnections(nodes: PlanGraphNode[], edges: PlanGraphEdge[]): void {

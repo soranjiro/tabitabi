@@ -24,6 +24,12 @@
     return found;
   }
 
+  const independentRoots = $derived.by(() => {
+    const incoming = new Set(edges.map(edge => edge.to));
+    const roots = nodes.filter(node => !incoming.has(node.id));
+    return roots.length > 1 ? roots : [];
+  });
+
   const forks = $derived.by(() => {
     const byId = new Map(nodes.map(node => [node.id, node]));
     return nodes.flatMap(source => {
@@ -43,17 +49,31 @@
           title: byId.get(edge.to)!.title,
           label: edge.label || 'プラン ' + (index + 1),
           color: palette[index % palette.length],
-          count: [...paths[index].keys()].filter(id => id !== common).length,
+          count: [...paths[index].keys()].filter(id => id !== common && (!common || paths[index].get(id)! < paths[index].get(common)!)).length,
         })),
       }];
     });
   });
 </script>
 
-{#if forks.length}
+{#if forks.length || independentRoots.length > 1}
   <details class="mobile-branch-map" open>
-    <summary><span class="map-heading">分岐ルート</span><span class="map-count">{forks.length}か所 <span aria-hidden="true">⌄</span></span></summary>
+    <summary><span class="map-heading">旅程の分岐</span><span class="map-count">{forks.length + (independentRoots.length > 1 ? 1 : 0)}か所 <span aria-hidden="true">⌄</span></span></summary>
     <div class="branch-maps">
+      {#if independentRoots.length > 1}
+        <section class="route-section" aria-label="別々の出発点">
+          <span class="independent-title">別々の出発点</span>
+          <div class="route-choices">
+            {#each independentRoots as root, index (root.id)}
+              <button class="route-choice" style:--route-color={palette[index % palette.length]}
+                onclick={() => onSelect(root.id)} aria-label={root.title + 'の予定を開く'}>
+                <span class="route-label">プラン {index + 1}</span>
+                <strong>{root.title}</strong>
+              </button>
+            {/each}
+          </div>
+        </section>
+      {/if}
       {#each forks as fork (fork.id)}
         <section class="route-section" aria-label={fork.title + 'からの分岐'}>
           <button class="junction" onclick={() => onSelect(fork.id)} aria-label={fork.title + 'の予定を開く'}>
@@ -106,6 +126,7 @@
     .fork-wire::after,.merge-wire::after{content:'';position:absolute;left:12%;right:12%;height:12px;border:2px solid #a8c5b5}
     .fork-wire::after{bottom:0;border-bottom:0;border-radius:9px 9px 0 0}
     .merge-wire::after{top:0;border-top:0;border-radius:0 0 9px 9px}
+    .independent-title{margin-bottom:10px;font-size:12px;font-weight:750;color:#416750}
     .route-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
     .route-choice{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;border:1px solid #e1e8e1;border-top:3px solid var(--route-color);border-radius:11px;background:#fff;text-align:left;color:#293b31}
     .route-label{font-size:11px;color:#466755;font-weight:750;overflow-wrap:anywhere}

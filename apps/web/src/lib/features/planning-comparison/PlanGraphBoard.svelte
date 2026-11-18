@@ -7,7 +7,7 @@
   import { planGraphApi } from '$lib/api/plan-graph';
   import { getMemoText } from '$lib/memo';
   import { demoStorage } from '$lib/demo';
-  import { insertCreatedStop, placeExistingStop, chronologicalLinearEdges } from './graph';
+  import { insertCreatedStop, placeExistingStop, chronologicalLinearEdges, isReverseTimeOrder } from './graph';
   import StepTypeIcon from '$lib/themes/standard/core/icons/StepTypeIcon.svelte';
   import CandidateOptionCard from './CandidateOptionCard.svelte';
   import MobileBranchMap from './MobileBranchMap.svelte';
@@ -85,7 +85,7 @@
   function canLink(fromId: string, toId: string, nodes: PlanGraphNode[], edges: PlanGraphEdge[]) {
     if (!fromId || !toId || fromId === toId || edges.some(e => e.from === fromId && e.to === toId)) return false;
     const from = nodes.find(n => n.id === fromId), to = nodes.find(n => n.id === toId);
-    if (!from || !to || (from.start_local && to.start_local && from.start_local > to.start_local)) return false;
+    if (!from || !to || isReverseTimeOrder(from.start_local, to.start_local)) return false;
     const visited = new Set<string>(), stack = [toId];
     while (stack.length) {
       const id = stack.pop()!;
@@ -355,9 +355,7 @@
     return displayEdges.filter(edge => {
       const from = byId.get(edge.from)?.start_local ?? '';
       const to = byId.get(edge.to)?.start_local ?? '';
-      if (!from || !to) return false;
-      return from.includes('T') && to.includes('T')
-        ? from > to : from.slice(0, 10) > to.slice(0, 10);
+      return isReverseTimeOrder(from, to);
     });
   });
   const optionNode = $derived(displayNodes.find(n => n.id === optionNodeId) ?? null);
@@ -686,7 +684,7 @@
     if (displayEdges.some(edge => {
       const a = edge.from === node.id ? dates : displayNodes.find(n => n.id === edge.from);
       const b = edge.to === node.id ? dates : displayNodes.find(n => n.id === edge.to);
-      return a?.start_local && b?.start_local && a.start_local > b.start_local;
+      return a && b && isReverseTimeOrder(a.start_local, b.start_local);
     })) { error = '前後の予定と時刻が前後します。日時を編集してから反映してください。'; return; }
     busy = true; error = '';
     try { await onUpdateStep(node.id, { title: candidate.title,

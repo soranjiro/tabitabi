@@ -87,7 +87,7 @@
                 onclick={() => onSelect(route.id)} aria-label={route.label + '：' + route.title + 'の予定を開く'}>
                 <span class="route-label">{route.label}</span>
                 <strong>{route.title}</strong>
-                <small>{route.count}件の予定</small>
+                <span class="route-destination" aria-hidden="true">↗</span>
               </button>
             {/each}
           </div>
@@ -109,29 +109,29 @@
 <style>
   .mobile-branch-map{display:none}
   @media(max-width:670px){
-    .mobile-branch-map{display:block;margin:0 0 18px;border:1px solid #d9e5dc;border-radius:16px;background:#f7faf7;overflow:hidden}
-    summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;cursor:pointer;list-style:none;color:#305e4b}
+    .mobile-branch-map{display:block;margin:0 0 12px;border:1px solid #d9e5dc;border-radius:16px;background:#f7faf7;overflow:hidden}
+    summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 13px;cursor:pointer;list-style:none;color:#305e4b}
     summary::-webkit-details-marker{display:none}
     summary:focus-visible,button:focus-visible{outline:2px solid #2f6657;outline-offset:2px}
     .map-heading{font-size:14px;font-weight:750}
     .map-count{font-size:12px;color:#617b69}
-    .branch-maps{display:grid;gap:12px;padding:0 12px 14px}
-    .route-section{display:grid;justify-items:center;min-width:0;padding:12px;border:1px solid #e5ece5;border-radius:13px;background:white}
-    .junction{width:min(100%,240px);display:grid;gap:3px;justify-items:center;min-height:50px;padding:9px 12px;border:1px solid #cbded0;border-radius:12px;background:#f7fbf8;color:#234c3a;text-align:center}
+    .branch-maps{display:grid;gap:8px;padding:0 9px 10px}
+    .route-section{display:grid;justify-items:center;min-width:0;padding:7px;border:1px solid #e5ece5;border-radius:13px;background:white}
+    .junction{width:min(100%,240px);display:grid;gap:3px;justify-items:center;min-height:42px;padding:7px 10px;border:1px solid #cbded0;border-radius:12px;background:#f7fbf8;color:#234c3a;text-align:center}
     .junction-type{font-size:10px;color:#597967;letter-spacing:.02em}
     .junction strong{font-size:13px;line-height:1.45;overflow-wrap:anywhere}
-    .fork-wire,.merge-wire{height:25px;position:relative;width:74%;min-width:130px}
-    .fork-wire::before,.merge-wire::before{content:'';position:absolute;left:50%;height:12px;border-left:2px solid #a8c5b5;transform:translateX(-50%)}
+    .fork-wire,.merge-wire{height:16px;position:relative;width:74%;min-width:130px}
+    .fork-wire::before,.merge-wire::before{content:'';position:absolute;left:50%;height:8px;border-left:2px solid #a8c5b5;transform:translateX(-50%)}
     .fork-wire::before{top:0}.merge-wire::before{bottom:0}
-    .fork-wire::after,.merge-wire::after{content:'';position:absolute;left:12%;right:12%;height:12px;border:2px solid #a8c5b5}
+    .fork-wire::after,.merge-wire::after{content:'';position:absolute;left:12%;right:12%;height:8px;border:2px solid #a8c5b5}
     .fork-wire::after{bottom:0;border-bottom:0;border-radius:9px 9px 0 0}
     .merge-wire::after{top:0;border-top:0;border-radius:0 0 9px 9px}
     .independent-title{margin-bottom:10px;font-size:12px;font-weight:750;color:#416750}
-    .route-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
-    .route-choice{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px;border:1px solid #e1e8e1;border-top:3px solid var(--route-color);border-radius:11px;background:#fff;text-align:left;color:#293b31}
+    .route-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%}
+    .route-choice{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:8px;border:1px solid #e1e8e1;border-top:3px solid var(--route-color);border-radius:11px;background:#fff;text-align:left;color:#293b31}
     .route-label{font-size:11px;color:#466755;font-weight:750;overflow-wrap:anywhere}
     .route-choice strong{font-size:12px;line-height:1.45;overflow-wrap:anywhere}
-    .route-choice small{font-size:10px;color:#708478;margin-top:auto}
+    .route-destination{align-self:flex-end;margin-top:auto;font-size:12px;color:#739384}
     .merge{background:#f1f7f2}
     .independent-end{padding-top:10px;font-size:11px;color:#69816f}
   }

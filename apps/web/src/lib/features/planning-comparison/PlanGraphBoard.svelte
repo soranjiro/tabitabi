@@ -10,6 +10,7 @@
   import { insertCreatedStop, placeExistingStop, chronologicalLinearEdges } from './graph';
   import StepTypeIcon from '$lib/themes/standard/core/icons/StepTypeIcon.svelte';
   import CandidateOptionCard from './CandidateOptionCard.svelte';
+  import MobileBranchMap from './MobileBranchMap.svelte';
 
   let { itineraryId, steps, canEdit, demo = false, showGraph = false, branchRequest = null, optionRequest = null, selectRequest = null, createdStepRequest = null, localGraph = null, onSaveLocalGraph, onRequestCreate, onGraphState, onGraphError, onEditExistingStep, onOpenExistingStep, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
     localGraph?: PlanGraph | null; onSaveLocalGraph?: (graph: PlanGraph) => void;
@@ -53,7 +54,7 @@
     { value: STEP_TYPE.TRANSPORT_GENERAL, label: '移動' },
     { value: STEP_TYPE.NORMAL_SHOPPING, label: '買い物' },
   ];
-  const colors = ['#619fe2', '#db83ac', '#64a58c', '#b2945e', '#9183bf', '#469a91'];
+  const colors = ['#6499be', '#b785a4', '#5b9a88', '#b0986a', '#8d8bb4', '#5e9995'];
   const currencies = ['JPY', 'USD', 'EUR', 'KRW', 'TWD', 'THB', 'GBP', 'AUD', 'CNY'];
 
   function nodeTemplate(kind: 'step' | 'choices' = 'step', id = ''): PlanGraphNode {
@@ -255,7 +256,9 @@
     return {
       id: step.id, kind: 'step', title: step.title,
       type: step.type ?? STEP_TYPE.NORMAL_GENERAL,
-      start_local: localInput(step.start_at), end_local: localInput(step.end_at),
+      // A date-only Step must never appear to start at 12:00 in comparison.
+      start_local: step.time_unspecified ? localInput(step.start_at).slice(0, 10) : localInput(step.start_at),
+      end_local: step.time_unspecified ? '' : localInput(step.end_at),
       location: step.location ?? '', notes: getMemoText(step.notes).slice(0, 2000),
       link: step.link ?? '', amount: null, currency: 'JPY', participants: [],
       options: [], selected_option_id: null,
@@ -347,6 +350,16 @@
     }),
   ) : []);
   const drawn = $derived(layout(displayNodes, displayEdges, folded, expandedChoices));
+  const chronologyConflicts = $derived.by(() => {
+    const byId = new Map(displayNodes.map(node => [node.id, node]));
+    return displayEdges.filter(edge => {
+      const from = byId.get(edge.from)?.start_local ?? '';
+      const to = byId.get(edge.to)?.start_local ?? '';
+      if (!from || !to) return false;
+      return from.includes('T') && to.includes('T')
+        ? from > to : from.slice(0, 10) > to.slice(0, 10);
+    });
+  });
   const optionNode = $derived(displayNodes.find(n => n.id === optionNodeId) ?? null);
   const targets = $derived(selected ? displayNodes.filter(n => canLink(selected.id, n.id, displayNodes, displayEdges)) : []);
   $effect(() => {
@@ -764,7 +777,10 @@
     const previous = document.activeElement as HTMLElement | null;
     (element.querySelector<HTMLInputElement>('input') ?? element.querySelector<HTMLButtonElement>('button'))?.focus();
     const onKeydown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !busy) { formOpen = false; optionOpen = false; event.preventDefault(); }
+      if (event.key === 'Escape' && !busy) {
+        formOpen = false; optionOpen = false; gapMenu = null; existingGap = null;
+        event.preventDefault();
+      }
       if (event.key !== 'Tab') return;
       const controls = [...element.querySelectorAll<HTMLElement>('button:not(:disabled),input,select,textarea,a[href]')];
       const first = controls[0], last = controls.at(-1);
@@ -792,6 +808,12 @@
   </div>
   {#if !demo}<a class="demo-link" href="/demo/planning-comparison" target="_blank" rel="noopener noreferrer">デモを見る ↗</a>{/if}
   {#if error}<div class="error" role="alert">{error}<button onclick={load}>再読込</button></div>{/if}
+  {#if chronologyConflicts.length}
+    <div class="chronology-warning" role="status">
+      <span>接続した予定の日時が前後しています（{chronologyConflicts.length}か所）</span>
+      <button onclick={() => { selectedId = chronologyConflicts[0].to; }}>該当予定を確認</button>
+    </div>
+  {/if}
   {#if loading}<p class="status">読み込み中…</p>
   {:else if displayNodes.length === 0}
     <div class="graph-empty">
@@ -800,7 +822,9 @@
       {#if canEdit}<button class="primary" onclick={() => newStep()}>＋ 予定を追加</button>{/if}
     </div>
   {:else}
-    <div class="comparison-workspace"><div class="timeline-column"><div class="graph-scroll" class:single={!isBranched} role="region" aria-label="分岐したプランの予定一覧">
+    <div class="comparison-workspace"><div class="timeline-column">
+      <MobileBranchMap nodes={displayNodes} edges={displayEdges} onSelect={id => { selectedId = id; moveTarget = ''; joinTarget = ''; }} />
+      <div class="graph-scroll" class:single={!isBranched} role="region" aria-label="分岐したプランの予定一覧">
       {#if joinSourceId}
         <div class="join-banner" role="status">
           <strong>合流先の予定を選択</strong>
@@ -845,7 +869,15 @@
             {#if index === 0 || node.start_local.slice(0, 10) !== drawn.nodes[index - 1].node.start_local.slice(0, 10)}
               <span class="mobile-date">{node.start_local ? node.start_local.slice(0, 10).replaceAll('-', '/') : '日時未定'}</span>
             {/if}
-            {#if item.label}<span class="lane-caption">{item.label}</span>{:else}<span class="mobile-common lane-caption">共通の予定</span>{/if}
+            {#if item.label}<span class="lane-caption">{item.label}</span>
+            {:else if displayEdges.filter(edge => edge.to === node.id).length > 1 || displayEdges.filter(edge => edge.from === node.id).length > 1}
+              <span class="mobile-common lane-caption">共通の予定</span>
+            {/if}
+            {#if displayEdges.filter(edge => edge.from === node.id).length > 1}
+              <span class="mobile-route-event">分岐</span>
+            {:else if displayEdges.filter(edge => edge.to === node.id).length > 1}
+              <span class="mobile-route-event">合流</span>
+            {/if}
             <button class="node-main" draggable={canEdit && !joinSourceId}
               ondragstart={event => { draggingId = node.id; event.dataTransfer?.setData('text/plain', node.id); }}
               ondragover={event => { if (draggingId && draggingId !== node.id) { event.preventDefault(); dragOverId = node.id; } }}
@@ -854,9 +886,10 @@
               ondrop={event => void dropOn(node, event)}
               onclick={() => void chooseNode(node)} aria-pressed={selectedId === node.id} aria-label={joinSourceId ? node.title + 'に合流' : node.title + 'の予定を開く'}>
               {#if canEdit}<span class="drag-grip" aria-hidden="true">⋮⋮</span>{/if}<span class="node-mark"><StepTypeIcon type={node.type} size="sm" /></span>
-              <span class="node-copy"><strong>{node.title}</strong><small>{localDate(node.start_local) || '日時未定'}{node.end_local.includes('T') ? ' – ' + node.end_local.slice(11, 16) : ''}</small>
+              <span class="node-copy"><strong>{node.title}</strong><small>{localDate(node.start_local) || '日時未定'}{steps.find(step => step.id === node.id)?.time_unspecified ? ' · 時刻未定' : node.end_local.includes('T') ? ' – ' + node.end_local.slice(11, 16) : ''}</small>
                 {#if node.location}<small>{node.location}</small>{/if}
                 {#if node.participants.length}<small class="participants">{node.participants.join('・')}</small>{/if}
+                {#if node.notes || node.link}<small class="node-extras">{node.notes ? 'メモ' : ''}{node.notes && node.link ? ' · ' : ''}{node.link ? 'リンク' : ''}</small>{/if}
               </span>
               {#if node.amount !== null || picked?.amount != null}<span class="node-price">{cost(node.amount ?? picked?.amount ?? null, node.amount !== null ? node.currency : picked?.currency)}</span>{/if}
             </button>
@@ -1215,7 +1248,10 @@
   .graph-gap-root{padding:6px 12px;white-space:nowrap}
   .route-buttons{display:flex;align-items:center;gap:7px;pointer-events:auto}
   .route-more{display:grid;place-items:center;width:36px;height:36px;border:1px solid #a9c5b2;border-radius:50%;background:white;color:#376e55;font-size:20px}
-  .mobile-gap,.mobile-date,.mobile-root-gap{display:none}
+  .mobile-gap,.mobile-date,.mobile-root-gap,.mobile-route-event{display:none}
+  .chronology-warning{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px 12px;margin:10px 0;border:1px solid #ddc9a0;border-radius:12px;background:#f9f5ea;color:#685222;font-size:12px}
+  .chronology-warning button{border:1px solid #d7bb83;border-radius:999px;padding:6px 11px;background:#fff;color:#695223;font-size:12px;font-weight:700}
+  .node-extras{font-size:11px;color:#608072!important}
   .join-banner{position:sticky;top:0;z-index:6;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;padding:12px 14px;background:#e9f5ee;border:1px solid #a4cbb6;border-radius:12px;font-size:13px;color:#285c48}
   .join-banner button{border:1px solid #90bda5;border-radius:999px;padding:7px 12px;background:white;color:#2f6657}
   .mobile-detail-overlay{display:none}
@@ -1254,6 +1290,7 @@
     .graph-canvas{gap:16px}
     .graph-node{width:100%;border-radius:14px}
     .drag-grip{display:none}
+    .mobile-route-event{display:inline-flex;margin:8px 10px 0;padding:4px 8px;border-radius:999px;background:#e9f4ed;color:#356c55;font-size:11px;font-weight:750}
     .mobile-date{display:block;margin:0 0 8px;padding:9px 12px;background:#f0f6f0;border-radius:10px;color:#285c48;font-size:13px;font-weight:800}
     .mobile-gap,.mobile-root-gap{display:block;min-height:40px;margin:4px auto 10px;padding:8px 13px;border:1px dashed #9fc4aa;border-radius:999px;background:#fff;color:#316e56;font-size:12px;font-weight:700}
     .graph-node:has(.mobile-date){margin-top:22px}

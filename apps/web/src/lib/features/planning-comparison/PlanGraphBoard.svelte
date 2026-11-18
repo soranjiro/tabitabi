@@ -642,7 +642,7 @@
       if (!canLink(joinSourceId, node.id, displayNodes, displayEdges)) return;
       if (await save(graph.nodes, [...displayEdges, {
         id: crypto.randomUUID(), from: joinSourceId, to: node.id, label: '',
-      }])) { joinSourceId = null; selectedId = node.id; }
+      }])) { joinSourceId = null; selectedId = null; }
       return;
     }
     selectedId = selectedId === node.id ? null : node.id;

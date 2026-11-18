@@ -7,7 +7,7 @@
   import { planGraphApi } from '$lib/api/plan-graph';
   import { getMemoText } from '$lib/memo';
   import { demoStorage } from '$lib/demo';
-  import { moveStop } from './graph';
+  import { moveStop, insertCreatedStop, placeExistingStop, chronologicalLinearEdges } from './graph';
   import StepTypeIcon from '$lib/themes/standard/core/icons/StepTypeIcon.svelte';
   import CandidateOptionCard from './CandidateOptionCard.svelte';
 
@@ -223,6 +223,12 @@
   let metadataOnly = $state(false);
   let joinTarget = $state('');
   let moveTarget = $state('');
+  type RouteGap = { from: string | null; to: string | null };
+  let gapMenu = $state<RouteGap | null>(null);
+  let existingGap = $state<RouteGap | null>(null);
+  let existingSearch = $state('');
+  let pendingCreatedGap = $state<RouteGap | null>(null);
+  let joinSourceId = $state<string | null>(null);
   let routeNames = $state<Record<string, string>>({});
   let folded = $state<string[]>([]);
   let expandedChoices = $state<string[]>([]);
@@ -297,7 +303,11 @@
     // A normal Step created after a linear graph is already saved extends that same
     // route; it does not become a surprise independent branch.
     const unlinked = ordered.filter(step => !involved.has(step.id));
-    if (unlinked.length === 0) return persisted;
+    if (unlinked.length === 0) {
+      // Ordinary date changes reorder a single route without changing the
+      // meaning of a real branch or a merge.
+      return chronologicalLinearEdges(ordered.map(step => step.id), persisted, i => 'auto-sorted-' + i) ?? persisted;
+    }
     const ends = [...involved].filter(id => !out.has(id));
     if (ends.length !== 1) return persisted;
     let tail = ends[0];
@@ -321,10 +331,15 @@
   const selected = $derived(displayNodes.find(n => n.id === selectedId) ?? null);
   const routeStarts = $derived(displayEdges.filter(edge => edge.label || displayEdges.filter(other => other.from === edge.from).length > 1));
   const candidateNodes = $derived(displayNodes.filter(node => node.options.length));
-  const moveTargets = $derived(selected ? displayNodes.filter(node => {
-    try { moveStop(displayNodes, displayEdges, selected.id, node.id, () => crypto.randomUUID()); return true; }
-    catch { return false; }
-  }) : []);
+  const moveTargets = $derived(selected ? displayNodes.flatMap(node =>
+    (['before', 'after'] as const).flatMap(side => {
+      try {
+        const gap = placementGap(node.id, side);
+        placeExistingStop(displayNodes, displayEdges, selected.id, gap.from, gap.to, () => crypto.randomUUID());
+        return [{ node, side }];
+      } catch { return []; }
+    }),
+  ) : []);
   const drawn = $derived(layout(displayNodes, displayEdges, folded, expandedChoices));
   const optionNode = $derived(displayNodes.find(n => n.id === optionNodeId) ?? null);
   const targets = $derived(selected ? displayNodes.filter(n => canLink(selected.id, n.id, displayNodes, displayEdges)) : []);
@@ -376,11 +391,24 @@
     const node = fromStep(request.step);
     const nodes = graph.nodes.some(item => item.id === node.id)
       ? graph.nodes : [...graph.nodes, node];
-    const edges = displayEdges.filter(edge => edge.to !== node.id && edge.from !== node.id);
-    if (request.parentId) {
-      if (request.parentId === node.id) return;
-      edges.push({ id: crypto.randomUUID(), from: request.parentId, to: node.id, label: request.label });
+    const currentEdges = displayEdges.filter(edge => edge.to !== node.id && edge.from !== node.id);
+    let edges: PlanGraphEdge[];
+    try {
+      if (pendingCreatedGap && pendingCreatedGap.from === request.parentId) {
+        edges = insertCreatedStop([...displayNodes, node], currentEdges, node.id,
+          pendingCreatedGap.from, pendingCreatedGap.to, () => crypto.randomUUID());
+      } else {
+        edges = [...currentEdges];
+        if (request.parentId) {
+          if (request.parentId === node.id) return;
+          edges.push({ id: crypto.randomUUID(), from: request.parentId, to: node.id, label: request.label });
+        }
+      }
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : '予定を挿入できませんでした。';
+      return;
     }
+    pendingCreatedGap = null;
     // Saving a new Step may finish after the user has clicked another route.
     // Never steal that newer selection when the network response arrives.
     const selectionAtSaveStart = selectedId;
@@ -433,8 +461,9 @@
     } finally { busy = false; }
   }
 
-  function newStep(source: string | null = null, asChoice = false, label = '') {
+  function newStep(source: string | null = null, asChoice = false, label = '', insertBefore: string | null = null) {
     if (!canEdit) return;
+    pendingCreatedGap = insertBefore ? { from: source, to: insertBefore } : null;
     if (!asChoice && onRequestCreate) {
       const named = label === '別プラン'
         ? 'プラン' + (2 + displayEdges.filter(edge => edge.from === source && edge.label.trim()).length)
@@ -510,15 +539,67 @@
     const stored = { ...next, id: actualId };
     const nodes = graph.nodes.some(n => n.id === actualId)
       ? graph.nodes.map(n => n.id === actualId ? stored : n) : [...graph.nodes, stored];
-    const edges = parentId ? [...displayEdges, {
-      id: crypto.randomUUID(), from: parentId, to: actualId, label: branchLabel,
-    }] : [...displayEdges];
-    if (await save(nodes, edges)) { formOpen = false; selectedId = actualId; }
+    let edges: PlanGraphEdge[];
+    try {
+      if (!editingId && pendingCreatedGap) {
+        edges = insertCreatedStop([...displayNodes, stored], displayEdges, actualId,
+          pendingCreatedGap.from, pendingCreatedGap.to, () => crypto.randomUUID());
+      } else {
+        edges = parentId ? [...displayEdges, {
+          id: crypto.randomUUID(), from: parentId, to: actualId, label: branchLabel,
+        }] : [...displayEdges];
+      }
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : '予定を挿入できませんでした。';
+      return;
+    }
+    if (await save(nodes, edges)) { pendingCreatedGap = null; formOpen = false; selectedId = actualId; }
+  }
+  function placementGap(anchor: string, side: 'before' | 'after'): RouteGap {
+    const matching = displayEdges.filter(edge => side === 'before' ? edge.to === anchor : edge.from === anchor);
+    if (matching.length > 1) throw new Error('分岐先・合流元の接続を選んでください。');
+    return side === 'before'
+      ? { from: matching[0]?.from ?? null, to: anchor }
+      : { from: anchor, to: matching[0]?.to ?? null };
+  }
+  function openGap(from: string | null, to: string | null) {
+    if (!canEdit) return;
+    gapMenu = { from, to };
+    joinSourceId = null;
+  }
+  function insertFromGap() {
+    if (!gapMenu) return;
+    const { from, to } = gapMenu;
+    gapMenu = null;
+    newStep(from, false, '', to);
+  }
+  async function insertExisting(id: string) {
+    if (!existingGap || busy) return;
+    try {
+      const edges = placeExistingStop(displayNodes, displayEdges, id, existingGap.from,
+        existingGap.to, () => crypto.randomUUID());
+      if (await save(graph.nodes, edges)) { existingGap = null; existingSearch = ''; selectedId = id; folded = []; }
+    } catch (cause) { error = cause instanceof Error ? cause.message : '既存予定を挿入できませんでした。'; }
+  }
+  async function chooseNode(node: PlanGraphNode) {
+    if (joinSourceId) {
+      if (!canLink(joinSourceId, node.id, displayNodes, displayEdges)) return;
+      if (await save(graph.nodes, [...displayEdges, {
+        id: crypto.randomUUID(), from: joinSourceId, to: node.id, label: '',
+      }])) { joinSourceId = null; selectedId = node.id; }
+      return;
+    }
+    selectedId = selectedId === node.id ? null : node.id;
+    moveTarget = ''; joinTarget = '';
   }
   async function moveSelected() {
     if (!selected || !moveTarget || busy) return;
     try {
-      const edges = moveStop(displayNodes, displayEdges, selected.id, moveTarget, () => crypto.randomUUID());
+      const [side, anchor] = moveTarget.split('|');
+      if (side !== 'before' && side !== 'after') return;
+      const gap = placementGap(anchor, side);
+      const edges = placeExistingStop(displayNodes, displayEdges, selected.id,
+        gap.from, gap.to, () => crypto.randomUUID());
       if (await save(graph.nodes, edges)) { moveTarget = ''; folded = []; }
     } catch (cause) { error = cause instanceof Error ? cause.message : '移動できませんでした。'; }
   }

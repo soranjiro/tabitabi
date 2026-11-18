@@ -306,6 +306,8 @@
     if (unlinked.length === 0) {
       // Ordinary date changes reorder a single route without changing the
       // meaning of a real branch or a merge.
+      // Undated stops keep their explicitly inserted position until a date is chosen.
+      if (ordered.some(step => step.start_at == null)) return persisted;
       return chronologicalLinearEdges(ordered.map(step => step.id), persisted, i => 'auto-sorted-' + i) ?? persisted;
     }
     const ends = [...involved].filter(id => !out.has(id));

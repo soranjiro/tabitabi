@@ -52,7 +52,7 @@ function validateConnections(nodes: PlanGraphNode[], edges: PlanGraphEdge[]): vo
     const pair = edge.from + ':' + edge.to;
     if (pairs.has(pair)) throw new Error('同じ接続が重複しています。');
     pairs.add(pair);
-    if (a.start_local && b.start_local && a.start_local > b.start_local) {
+    if (isReverseTimeOrder(a.start_local, b.start_local)) {
       throw new Error('時刻が前後します。先に予定の日時を編集してください。');
     }
     forward.get(a.id)!.push(b.id);

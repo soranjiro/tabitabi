@@ -227,6 +227,8 @@
   let gapMenu = $state<RouteGap | null>(null);
   let existingGap = $state<RouteGap | null>(null);
   let existingSearch = $state('');
+  let duplicateMode = $state(false);
+  let undoGraph = $state<PlanGraph | null>(null);
   let pendingCreatedGap = $state<RouteGap | null>(null);
   let joinSourceId = $state<string | null>(null);
   let draggingId = $state<string | null>(null);
@@ -416,7 +418,7 @@
     // Saving a new Step may finish after the user has clicked another route.
     // Never steal that newer selection when the network response arrives.
     const selectionAtSaveStart = selectedId;
-    const success = await save(nodes, edges);
+    const success = await save(nodes, edges, false);
     if (success) {
       if (selectedId === selectionAtSaveStart) selectedId = node.id;
       folded = [];
@@ -432,8 +434,9 @@
   }
   onMount(() => { void load(); });
 
-  async function save(nodes: PlanGraphNode[], edges: PlanGraphEdge[]) {
+  async function save(nodes: PlanGraphNode[], edges: PlanGraphEdge[], recordUndo = true) {
     if (!canEdit || busy) return false;
+    const previous = JSON.parse(JSON.stringify(graph)) as PlanGraph;
     busy = true; error = ''; onGraphError?.('');
     try {
       // The persisted DAG needs every endpoint, including ordinary Steps that
@@ -457,6 +460,7 @@
         : await planGraphApi.save(itineraryId, { nodes: normalizedNodes, edges, revision: graph.revision });
       if (demo) demoStorage.setPlanGraph(graph);
       onSaveLocalGraph?.(graph);
+      undoGraph = recordUndo ? previous : null;
       return true;
     } catch (cause) {
       error = cause instanceof Error ? cause.message : '変更を保存できませんでした。';
@@ -465,6 +469,14 @@
     } finally { busy = false; }
   }
 
+  async function undoLast() {
+    if (!undoGraph || busy) return;
+    const before = undoGraph;
+    if (await save(before.nodes, before.edges, false)) {
+      folded = [];
+      selectedId = null;
+    }
+  }
   function newStep(source: string | null = null, asChoice = false, label = '', insertBefore: string | null = null) {
     if (!canEdit) return;
     pendingCreatedGap = insertBefore ? { from: source, to: insertBefore } : null;
@@ -557,7 +569,7 @@
       error = cause instanceof Error ? cause.message : '予定を挿入できませんでした。';
       return;
     }
-    if (await save(nodes, edges)) { pendingCreatedGap = null; formOpen = false; selectedId = actualId; }
+    if (await save(nodes, edges, metadataOnly)) { pendingCreatedGap = null; formOpen = false; selectedId = actualId; }
   }
   function placementGap(anchor: string, side: 'before' | 'after'): RouteGap {
     const matching = displayEdges.filter(edge => side === 'before' ? edge.to === anchor : edge.from === anchor);
@@ -576,6 +588,28 @@
     const { from, to } = gapMenu;
     gapMenu = null;
     newStep(from, false, '', to);
+  }
+  function duplicateFromGap(id: string) {
+    if (!existingGap || !canEdit) return;
+    const source = displayNodes.find(node => node.id === id);
+    if (!source) return;
+    const options = source.options.map(candidate => ({ ...candidate, id: crypto.randomUUID() }));
+    const chosenIndex = source.options.findIndex(candidate => candidate.id === source.selected_option_id);
+    draft = {
+      ...source, id: crypto.randomUUID(), title: source.title + '（コピー）',
+      participants: [...source.participants], options,
+      selected_option_id: chosenIndex < 0 ? null : options[chosenIndex].id,
+    };
+    pendingCreatedGap = existingGap;
+    parentId = existingGap.from;
+    editingId = null;
+    metadataOnly = false;
+    branchLabel = '';
+    amountText = source.amount == null ? '' : String(source.amount);
+    participantsText = source.participants.join('、');
+    existingGap = null;
+    duplicateMode = false;
+    formOpen = true;
   }
   async function insertExisting(id: string) {
     if (!existingGap || busy) return;
@@ -746,9 +780,14 @@
 <section class="graph-board" aria-label="分岐・合流プラン">
   <div class="graph-toolbar">
     <div class="graph-title"><h2>プラン比較</h2><span>{displayNodes.length}件</span></div>
-    {#if canEdit && displayNodes.length > 0}
-      <button class="outline new-plan-button" onclick={() => newStep()}>＋ 新しいプラン</button>
-    {/if}
+    <div class="toolbar-actions">
+      {#if canEdit && undoGraph}
+        <button class="outline" disabled={busy} onclick={undoLast}>↶ 元に戻す</button>
+      {/if}
+      {#if canEdit && displayNodes.length > 0}
+        <button class="outline new-plan-button" onclick={() => newStep()}>＋ 新しいプラン</button>
+      {/if}
+    </div>
   </div>
   {#if !demo}<a class="demo-link" href="/demo/planning-comparison" target="_blank" rel="noopener noreferrer">デモを見る ↗</a>{/if}
   {#if error}<div class="error" role="alert">{error}<button onclick={load}>再読込</button></div>{/if}
@@ -973,7 +1012,8 @@
       <div class="sheet-header"><h3>予定を追加・接続</h3><button aria-label="閉じる" onclick={() => gapMenu = null}>×</button></div>
       <div class="gap-actions">
         <button class="gap-primary" onclick={insertFromGap}>＋ 新しい予定を作成</button>
-        <button onclick={() => { existingGap = gapMenu; gapMenu = null; existingSearch = ''; }}>▤ 既存の予定を挿入</button>
+        <button onclick={() => { existingGap = gapMenu; gapMenu = null; existingSearch = ''; duplicateMode = false; }}>▤ 既存の予定を挿入</button>
+        <button onclick={() => { existingGap = gapMenu; gapMenu = null; existingSearch = ''; duplicateMode = true; }}>⧉ 既存の予定を複製</button>
         {#if gapMenu.from}
           <button onclick={() => { const from = gapMenu!.from; gapMenu = null; newStep(from, false, '別プラン'); }}>⑂ ここから分岐</button>
           <button onclick={() => { joinSourceId = gapMenu!.from; gapMenu = null; }}>↘ 既存予定に合流</button>
@@ -984,19 +1024,20 @@
 {/if}
 {#if existingGap && canEdit}
   <div class="backdrop" role="presentation" onclick={event => event.target === event.currentTarget && (existingGap = null)}>
-    <div class="sheet route-action-sheet" role="dialog" aria-modal="true" aria-label="既存の予定を挿入" use:focusDialog>
-      <div class="sheet-header"><h3>既存の予定を挿入</h3><button aria-label="閉じる" onclick={() => existingGap = null}>×</button></div>
+    <div class="sheet route-action-sheet" role="dialog" aria-modal="true" aria-label={duplicateMode ? '既存の予定を複製' : '既存の予定を挿入'} use:focusDialog>
+      <div class="sheet-header"><h3>{duplicateMode ? '既存の予定を複製' : '既存の予定を挿入'}</h3><button aria-label="閉じる" onclick={() => existingGap = null}>×</button></div>
       <label class="existing-search">予定を検索<input type="search" placeholder="タイトル・場所" bind:value={existingSearch} /></label>
       <div class="existing-options">
         {#each displayNodes.filter(node => {
           if (node.id === existingGap?.from || node.id === existingGap?.to) return false;
           if (existingSearch && !(node.title + ' ' + node.location).toLocaleLowerCase().includes(existingSearch.toLocaleLowerCase())) return false;
+          if (duplicateMode) return true;
           try {
             placeExistingStop(displayNodes, displayEdges, node.id, existingGap!.from, existingGap!.to, () => crypto.randomUUID());
             return true;
           } catch { return false; }
         }) as item (item.id)}
-          <button onclick={() => void insertExisting(item.id)} disabled={busy}>
+          <button onclick={() => duplicateMode ? duplicateFromGap(item.id) : void insertExisting(item.id)} disabled={busy}>
             <strong>{item.title}</strong><small>{localDate(item.start_local) || '日時未定'}</small>
           </button>
         {:else}

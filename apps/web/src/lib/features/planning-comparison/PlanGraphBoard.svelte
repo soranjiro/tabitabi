@@ -229,6 +229,8 @@
   let existingSearch = $state('');
   let pendingCreatedGap = $state<RouteGap | null>(null);
   let joinSourceId = $state<string | null>(null);
+  let draggingId = $state<string | null>(null);
+  let dragOverId = $state<string | null>(null);
   let routeNames = $state<Record<string, string>>({});
   let folded = $state<string[]>([]);
   let expandedChoices = $state<string[]>([]);
@@ -583,6 +585,23 @@
       if (await save(graph.nodes, edges)) { existingGap = null; existingSearch = ''; selectedId = id; folded = []; }
     } catch (cause) { error = cause instanceof Error ? cause.message : '既存予定を挿入できませんでした。'; }
   }
+  async function dropOn(target: PlanGraphNode, event: DragEvent) {
+    event.preventDefault();
+    const movedId = draggingId;
+    draggingId = null;
+    dragOverId = null;
+    if (!movedId || movedId === target.id || busy) return;
+    const element = event.currentTarget;
+    if (!(element instanceof HTMLElement)) return;
+    const bounds = element.getBoundingClientRect();
+    const side: 'before' | 'after' = event.clientY < bounds.top + bounds.height / 2 ? 'before' : 'after';
+    try {
+      const gap = placementGap(target.id, side);
+      const edges = placeExistingStop(displayNodes, displayEdges, movedId, gap.from, gap.to,
+        () => crypto.randomUUID());
+      if (await save(graph.nodes, edges)) selectedId = movedId;
+    } catch (cause) { error = cause instanceof Error ? cause.message : '予定を移動できませんでした。'; }
+  }
   async function chooseNode(node: PlanGraphNode) {
     if (joinSourceId) {
       if (!canLink(joinSourceId, node.id, displayNodes, displayEdges)) return;
@@ -777,14 +796,20 @@
         {#each drawn.nodes as item, index (item.node.id)}
           {@const node = item.node}
           {@const picked = node.options.find(candidate => candidate.id === node.selected_option_id)}
-          <div class="graph-node" class:is-selected={selectedId === node.id} class:choice-node={node.kind === 'choices'}
+          <div class="graph-node" class:is-selected={selectedId === node.id} class:choice-node={node.kind === 'choices'} class:is-drag-over={dragOverId === node.id}
             style:left={(item.x - 155) + 'px'} style:top={(item.y - 36) + 'px'} style:--lane-color={item.color}>
             {#if index === 0 || node.start_local.slice(0, 10) !== drawn.nodes[index - 1].node.start_local.slice(0, 10)}
               <span class="mobile-date">{node.start_local ? node.start_local.slice(0, 10).replaceAll('-', '/') : '日時未定'}</span>
             {/if}
             {#if item.label}<span class="lane-caption">{item.label}</span>{:else}<span class="mobile-common lane-caption">共通の予定</span>{/if}
-            <button class="node-main" onclick={() => void chooseNode(node)} aria-pressed={selectedId === node.id} aria-label={joinSourceId ? node.title + 'に合流' : node.title + 'を選択'}>
-              <span class="node-mark"><StepTypeIcon type={node.type} size="sm" /></span>
+            <button class="node-main" draggable={canEdit && !joinSourceId}
+              ondragstart={event => { draggingId = node.id; event.dataTransfer?.setData('text/plain', node.id); }}
+              ondragover={event => { if (draggingId && draggingId !== node.id) { event.preventDefault(); dragOverId = node.id; } }}
+              ondragleave={() => { if (dragOverId === node.id) dragOverId = null; }}
+              ondragend={() => { draggingId = null; dragOverId = null; }}
+              ondrop={event => void dropOn(node, event)}
+              onclick={() => void chooseNode(node)} aria-pressed={selectedId === node.id} aria-label={joinSourceId ? node.title + 'に合流' : node.title + 'を選択'}>
+              {#if canEdit}<span class="drag-grip" aria-hidden="true">⋮⋮</span>{/if}<span class="node-mark"><StepTypeIcon type={node.type} size="sm" /></span>
               <span class="node-copy"><strong>{node.title}</strong><small>{localDate(node.start_local) || '日時未定'}{node.end_local.includes('T') ? ' – ' + node.end_local.slice(11, 16) : ''}</small>
                 {#if node.location}<small>{node.location}</small>{/if}
                 {#if node.participants.length}<small class="participants">{node.participants.join('・')}</small>{/if}
@@ -1129,6 +1154,12 @@
   @media(max-width:670px){.graph-toolbar{align-items:start}.graph-title{display:block}.graph-title h2{font-size:17px}.toolbar-actions{justify-content:end}.toolbar-actions button{font-size:10px;padding:8px}.two{grid-template-columns:1fr}.sheet{padding:18px 16px calc(20px + env(safe-area-inset-bottom))}}
 
   /* Insert directly on the route, rather than adding an accidental new branch. */
+  .graph-scroll.single .graph-canvas{width:100%!important;min-width:640px}
+  .graph-scroll.single .graph-wires{display:none}
+  .graph-scroll.single .graph-node{left:118px!important;width:calc(100% - 138px)}
+  .graph-scroll.single .graph-gap-edge,.graph-scroll.single .graph-gap-root{left:50%!important}
+  .drag-grip{display:grid;place-items:center;flex:none;font-size:16px;letter-spacing:-3px;color:#90a498;cursor:grab}
+  .graph-node.is-drag-over{outline:2px dashed #409477;outline-offset:5px}
   .graph-gap{position:absolute;transform:translate(-50%,-50%);z-index:4;min-width:36px;min-height:36px;border:1px dashed #97bea9;border-radius:999px;background:#fff;color:#2f6657;box-shadow:0 3px 10px #21433215;font-size:12px;font-weight:750}
   .graph-gap:hover,.graph-gap:focus-visible{background:#eaf5ee;border-style:solid}
   .graph-gap-root{padding:6px 12px;white-space:nowrap}
@@ -1165,9 +1196,12 @@
     .comparison-sidebar .detail-panel{grid-column:1/-1;max-height:none}
   }
   @media(max-width:670px){
+    .graph-scroll.single .graph-canvas{min-width:0}
+    .graph-scroll.single .graph-node{left:auto!important;width:100%}
     .graph-gap{display:none}
     .graph-canvas{gap:16px}
     .graph-node{width:100%;border-radius:14px}
+    .drag-grip{display:none}
     .mobile-date{display:block;margin:0 0 8px;padding:9px 12px;background:#f0f6f0;border-radius:10px;color:#285c48;font-size:13px;font-weight:800}
     .mobile-gap{display:block;min-height:40px;margin:4px auto 10px;padding:8px 13px;border:1px dashed #9fc4aa;border-radius:999px;background:#fff;color:#316e56;font-size:12px;font-weight:700}
     .graph-node:has(.mobile-date){margin-top:22px}

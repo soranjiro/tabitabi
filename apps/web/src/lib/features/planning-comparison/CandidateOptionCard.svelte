@@ -31,7 +31,7 @@
   <div class="option-head">
     {#if canEdit}
       <button type="button" class="pick" class:chosen={selected} aria-pressed={selected}
-        aria-label={option.title + (selected ? 'の選択を解除' : 'を選択')}
+        aria-label={option.title + 'を選択'}
         disabled={busy} onclick={() => onSelect?.()}>
         <span aria-hidden="true">{selected ? '✓' : ''}</span>
       </button>

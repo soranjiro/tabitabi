@@ -960,6 +960,9 @@
     .node-main{min-height:70px;padding:12px}.node-copy strong{font-size:14px}.node-copy small{font-size:12px}.node-price{font-size:12px}
     .route-end{position:relative;top:auto;padding-bottom:10px}.route-end::before{display:none}
     .graph-toolbar{position:static}.sidebar-card{padding:16px}.sidebar-candidate{padding:6px 2px}
+    /* Keep selected-step controls in document flow. A fixed sheet blocks candidate cards
+       and the application's bottom navigation on narrow screens. */
+    .detail-panel{position:static;width:100%;max-height:none;overflow:visible;margin:16px 0 0}
     .sidebar-card p,.sidebar-card>small{font-size:12px}.sidebar-card summary{font-size:13px}.route-summary input{font-size:14px}.route-summary button{min-height:32px}
   }
   @media(max-width:670px){.graph-toolbar{align-items:start}.graph-title{display:block}.graph-title h2{font-size:17px}.toolbar-actions{justify-content:end}.toolbar-actions button{font-size:10px;padding:8px}.two{grid-template-columns:1fr}.sheet{padding:18px 16px calc(20px + env(safe-area-inset-bottom))}}

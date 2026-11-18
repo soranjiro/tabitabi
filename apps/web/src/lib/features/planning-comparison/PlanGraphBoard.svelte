@@ -7,7 +7,7 @@
   import { planGraphApi } from '$lib/api/plan-graph';
   import { getMemoText } from '$lib/memo';
   import { demoStorage } from '$lib/demo';
-  import { insertCreatedStop, placeExistingStop, chronologicalLinearEdges, isReverseTimeOrder } from './graph';
+  import { insertCreatedStop, placeExistingStop, chronologicalLinearEdges, chronologicalBranchEdges, isReverseTimeOrder } from './graph';
   import StepTypeIcon from '$lib/themes/standard/core/icons/StepTypeIcon.svelte';
   import CandidateOptionCard from './CandidateOptionCard.svelte';
   import MobileBranchMap from './MobileBranchMap.svelte';
@@ -307,7 +307,7 @@
     }
     const branched = independent || [...out.values()].some(count => count > 1)
       || [...incoming.values()].some(count => count > 1);
-    if (branched) return persisted;
+    if (branched) return chronologicalBranchEdges(displayNodes, persisted);
     // A normal Step created after a linear graph is already saved extends that same
     // route; it does not become a surprise independent branch.
     const unlinked = ordered.filter(step => !involved.has(step.id));

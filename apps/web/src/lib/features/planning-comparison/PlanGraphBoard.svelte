@@ -420,7 +420,8 @@
     const selectionAtSaveStart = selectedId;
     const success = await save(nodes, edges, false);
     if (success) {
-      if (selectedId === selectionAtSaveStart) selectedId = node.id;
+      // Creating a step must not open a modal sheet over the next route action.
+      if (selectedId === selectionAtSaveStart) selectedId = null;
       folded = [];
     }
   }
@@ -847,7 +848,7 @@
               ondragleave={() => { if (dragOverId === node.id) dragOverId = null; }}
               ondragend={() => { draggingId = null; dragOverId = null; }}
               ondrop={event => void dropOn(node, event)}
-              onclick={() => void chooseNode(node)} aria-pressed={selectedId === node.id} aria-label={joinSourceId ? node.title + 'に合流' : node.title + 'を選択'}>
+              onclick={() => void chooseNode(node)} aria-pressed={selectedId === node.id} aria-label={joinSourceId ? node.title + 'に合流' : node.title + 'の予定を開く'}>
               {#if canEdit}<span class="drag-grip" aria-hidden="true">⋮⋮</span>{/if}<span class="node-mark"><StepTypeIcon type={node.type} size="sm" /></span>
               <span class="node-copy"><strong>{node.title}</strong><small>{localDate(node.start_local) || '日時未定'}{node.end_local.includes('T') ? ' – ' + node.end_local.slice(11, 16) : ''}</small>
                 {#if node.location}<small>{node.location}</small>{/if}
@@ -883,11 +884,15 @@
             {/if}
             {#if canEdit && !displayEdges.some(edge => edge.from === node.id)}
               <div class="route-end">
-                <button class="continue-route" aria-label={node.title + 'の次の予定を追加'}
-                  onclick={() => openGap(node.id, null)}>
-                  <span class="route-plus" aria-hidden="true">＋</span>
-                  <span>予定を追加</span>
-                </button>
+                <div class="route-buttons">
+                  <button class="continue-route" aria-label={node.title + 'の次の予定を追加'}
+                    onclick={() => newStep(node.id)}>
+                    <span class="route-plus" aria-hidden="true">＋</span>
+                    <span>次の予定</span>
+                  </button>
+                  <button class="route-more" aria-label={node.title + 'の後に予定を追加・接続'}
+                    onclick={() => openGap(node.id, null)}>⋯</button>
+                </div>
               </div>
             {/if}
           </div>
@@ -1204,6 +1209,8 @@
   .graph-gap{position:absolute;transform:translate(-50%,-50%);z-index:4;min-width:36px;min-height:36px;border:1px dashed #97bea9;border-radius:999px;background:#fff;color:#2f6657;box-shadow:0 3px 10px #21433215;font-size:12px;font-weight:750}
   .graph-gap:hover,.graph-gap:focus-visible{background:#eaf5ee;border-style:solid}
   .graph-gap-root{padding:6px 12px;white-space:nowrap}
+  .route-buttons{display:flex;align-items:center;gap:7px;pointer-events:auto}
+  .route-more{display:grid;place-items:center;width:36px;height:36px;border:1px solid #a9c5b2;border-radius:50%;background:white;color:#376e55;font-size:20px}
   .mobile-gap,.mobile-date{display:none}
   .join-banner{position:sticky;top:0;z-index:6;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;padding:12px 14px;background:#e9f5ee;border:1px solid #a4cbb6;border-radius:12px;font-size:13px;color:#285c48}
   .join-banner button{border:1px solid #90bda5;border-radius:999px;padding:7px 12px;background:white;color:#2f6657}

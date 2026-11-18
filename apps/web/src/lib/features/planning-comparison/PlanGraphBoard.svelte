@@ -740,6 +740,12 @@
     </div>
   {:else}
     <div class="comparison-workspace"><div class="timeline-column"><div class="graph-scroll" class:single={!isBranched} role="region" aria-label="分岐したプランの予定一覧">
+      {#if joinSourceId}
+        <div class="join-banner" role="status">
+          <strong>合流先の予定を選択</strong>
+          <button onclick={() => joinSourceId = null}>キャンセル</button>
+        </div>
+      {/if}
       <div class="graph-canvas" style:width={drawn.width + 'px'} style:height={drawn.height + 'px'}>
         <svg class="graph-wires" width={drawn.width} height={drawn.height} viewBox={'0 0 ' + drawn.width + ' ' + drawn.height} aria-hidden="true">
           <line x1="113" x2="113" y1="30" y2={drawn.height - 40} stroke="#d1ddd3" stroke-width="1.5"/>
@@ -752,6 +758,17 @@
             <circle cx={link.x} cy={link.y} r="3" fill={link.color}/>
           {/each}
         </svg>
+        {#if canEdit}
+          {#each drawn.nodes.filter(item => !displayEdges.some(edge => edge.to === item.node.id)) as root (root.node.id)}
+            <button class="graph-gap graph-gap-root" style:left={root.x + 'px'} style:top={(root.y - 80) + 'px'}
+              aria-label={root.node.title + 'の前に予定を追加'} onclick={() => openGap(null, root.node.id)}>＋ 追加</button>
+          {/each}
+          {#each drawn.links as link (link.edge.id)}
+            <button class="graph-gap graph-gap-edge" style:left={link.x + 'px'} style:top={link.y + 'px'}
+              aria-label={(displayNodes.find(node => node.id === link.edge.to)?.title ?? '次の予定') + 'の前に予定を追加'}
+              onclick={() => openGap(link.edge.from, link.edge.to)}>＋</button>
+          {/each}
+        {/if}
         {#each drawn.ticks as tick}
           <div class="time-tick" style:top={(tick.y - 8) + 'px'}>{tick.label}</div>
         {/each}
@@ -761,7 +778,7 @@
           <div class="graph-node" class:is-selected={selectedId === node.id} class:choice-node={node.kind === 'choices'}
             style:left={(item.x - 130) + 'px'} style:top={(item.y - 36) + 'px'} style:--lane-color={item.color}>
             {#if item.label}<span class="lane-caption">{item.label}</span>{:else}<span class="mobile-common lane-caption">共通の予定</span>{/if}
-            <button class="node-main" onclick={() => { selectedId = selectedId === node.id ? null : node.id; moveTarget = ''; joinTarget = ''; }} aria-pressed={selectedId === node.id}>
+            <button class="node-main" onclick={() => void chooseNode(node)} aria-pressed={selectedId === node.id} aria-label={joinSourceId ? node.title + 'に合流' : node.title + 'を選択'}>
               <span class="node-mark"><StepTypeIcon type={node.type} size="sm" /></span>
               <span class="node-copy"><strong>{node.title}</strong><small>{localDate(node.start_local) || '日時未定'}{node.end_local.includes('T') ? ' – ' + node.end_local.slice(11, 16) : ''}</small>
                 {#if node.location}<small>{node.location}</small>{/if}
@@ -789,12 +806,18 @@
                 </div>
               {/if}
             {/if}
+            {#if canEdit}
+              {#each displayEdges.filter(edge => edge.from === node.id) as edge (edge.id)}
+                <button class="mobile-gap" onclick={() => openGap(node.id, edge.to)}
+                  aria-label={(displayNodes.find(value => value.id === edge.to)?.title ?? '次の予定') + 'の前に予定を追加'}>＋ 予定を追加</button>
+              {/each}
+            {/if}
             {#if canEdit && !displayEdges.some(edge => edge.from === node.id)}
               <div class="route-end">
                 <button class="continue-route" aria-label={node.title + 'の次の予定を追加'}
-                  onclick={() => newStep(node.id)}>
+                  onclick={() => openGap(node.id, null)}>
                   <span class="route-plus" aria-hidden="true">＋</span>
-                  <span>次の予定</span>
+                  <span>予定を追加</span>
                 </button>
               </div>
             {/if}
@@ -805,44 +828,6 @@
     {#if isBranched}<div class="graph-footer"><span>{drawn.count}件を表示</span></div>{/if}
     </div>
     <aside class="comparison-sidebar" aria-label="プランと候補">
-      <section class="sidebar-card"><h3>プラン</h3>
-        {#each routeStarts as edge, index (edge.id)}
-          {@const summary = routeSummary(edge.to)}
-          <div class="route-summary" style:--route-color={colors[index % colors.length]}>
-            <span class="route-dot"></span>
-            {#if canEdit}<form onsubmit={event => { event.preventDefault(); void renameRoute(edge); }}>
-              <input aria-label={'ルート名：' + (edge.label || 'プラン ' + (index + 1))} maxlength="80" value={routeNames[edge.id] ?? edge.label} placeholder={'プラン ' + (index + 1)} oninput={event => routeNames[edge.id] = event.currentTarget.value} />
-              <button disabled={busy} aria-label="ルート名を保存">保存</button>
-            </form>{:else}<strong>{edge.label || 'プラン ' + (index + 1)}</strong>{/if}
-            <button aria-label={(folded.includes(edge.id) ? '表示：' : '非表示：') + edge.label} aria-pressed={!folded.includes(edge.id)} onclick={() => hideEdge(edge.id)}>{folded.includes(edge.id) ? '表示' : '隠す'}</button>
-          </div>
-          {#if summary.cost || summary.participants}<small class="route-meta">{summary.participants}{summary.participants && summary.cost ? ' · ' : ''}{summary.cost ? '入力済み ' + summary.cost : ''}</small>{/if}
-        {/each}
-        
-        {#if routeStarts.length === 0}<small>共通の予定</small>{/if}
-        {#if canEdit}<button class="sidebar-add" onclick={() => newStep()}>＋ 別の出発点を作る</button>{/if}
-      </section>
-      <section class="sidebar-card"><h3>候補 <span>{candidateNodes.reduce((sum, node) => sum + node.options.length, 0)}</span></h3>
-        {#each candidateNodes as node (node.id)}
-          <details open><summary><span>{node.title}</span><small>{node.options.length}案</small></summary>
-            {#each node.options as candidate (candidate.id)}
-              <div class="sidebar-candidate">
-                <CandidateOptionCard option={candidate}
-                  selected={node.selected_option_id === candidate.id}
-                  {canEdit} {busy} compact
-                  onSelect={() => selectOption(node, node.selected_option_id === candidate.id ? null : candidate.id)}
-                  onEdit={(field) => { void openOption(node, candidate, field); }}
-                />
-              </div>
-            {/each}
-            {#if canEdit}<button class="sidebar-add" disabled={busy || node.options.length >= 30} onclick={() => openOption(node)}>＋ 候補を追加</button>
-              {#if node.selected_option_id}<button class="sidebar-add apply" disabled={busy} onclick={() => applyOption(node)}>選択案をこの予定に反映</button>{/if}
-            {/if}
-          </details>
-        {/each}
-        {#if candidateNodes.length === 0}<small class="candidate-empty">候補なし</small>{/if}
-      </section>
-    </aside></div>
     {#if selected}
       <div class="detail-panel" role="region" aria-label="選択した予定の操作">
         <div class="panel-heading"><div><small>{typeLabel(selected.type)}</small><h3>{selected.title}</h3></div><button aria-label="閉じる" onclick={() => selectedId = null}>×</button></div>
@@ -851,8 +836,18 @@
         {#if selected.link}<a class="external" href={selected.link} target="_blank" rel="noopener noreferrer">参考リンク</a>{/if}
         <div class="panel-actions">
           {#if canEdit}
-            <button class="primary" onclick={() => newStep(selected!.id)}>＋ 次の予定</button>
+            <button class="primary" onclick={() => {
+              const out = displayEdges.filter(edge => edge.from === selected!.id);
+              if (out.length > 1) { error = '挿入する分岐先の＋ボタンを選んでください。'; return; }
+              openGap(selected!.id, out[0]?.to ?? null);
+            }}>＋ この後に追加</button>
+            <button onclick={() => {
+              const incoming = displayEdges.filter(edge => edge.to === selected!.id);
+              if (incoming.length > 1) { error = '合流前の接続を選んでください。'; return; }
+              openGap(incoming[0]?.from ?? null, selected!.id);
+            }}>＋ この前に追加</button>
             <button onclick={() => newStep(selected!.id, false, '別プラン')}>↗ ここから分岐</button>
+            <button onclick={() => { joinSourceId = selected!.id; selectedId = null; }}>↘ 既存予定に合流</button>
             <button onclick={() => openOption(selected!)}>◇ 候補を追加</button>
             <button onclick={() => {
               if (steps.some(step => step.id === selected!.id) && onEditExistingStep) onEditExistingStep(selected!.id);
@@ -873,8 +868,8 @@
         {/if}
         {#if canEdit && moveTargets.length}
           <div class="join-form"><label for="move-target">別プランへ移動</label>
-            <select id="move-target" bind:value={moveTarget}><option value="">挿入する直前の予定を選択</option>
-              {#each moveTargets as target}<option value={target.id}>{target.title} の後</option>{/each}
+            <select id="move-target" bind:value={moveTarget}><option value="">移動先の予定と位置を選択</option>
+              {#each moveTargets as target}<option value={target.side + '|' + target.node.id}>{target.node.title} の{target.side === 'before' ? '前' : '後'}</option>{/each}
             </select><button disabled={!moveTarget || busy} onclick={moveSelected}>移動する</button>
             
           </div>
@@ -898,8 +893,87 @@
         {/if}
       </div>
     {/if}
+      <section class="sidebar-card"><h3>プラン</h3>
+        {#each routeStarts as edge, index (edge.id)}
+          {@const summary = routeSummary(edge.to)}
+          <div class="route-summary" style:--route-color={colors[index % colors.length]}>
+            <span class="route-dot"></span>
+            {#if canEdit}<form onsubmit={event => { event.preventDefault(); void renameRoute(edge); }}>
+              <input aria-label={'ルート名：' + (edge.label || 'プラン ' + (index + 1))} maxlength="80" value={routeNames[edge.id] ?? edge.label} placeholder={'プラン ' + (index + 1)} oninput={event => routeNames[edge.id] = event.currentTarget.value} />
+              <button disabled={busy} aria-label="ルート名を保存">保存</button>
+            </form>{:else}<strong>{edge.label || 'プラン ' + (index + 1)}</strong>{/if}
+            <button aria-label={(folded.includes(edge.id) ? '表示：' : '非表示：') + edge.label} aria-pressed={!folded.includes(edge.id)} onclick={() => hideEdge(edge.id)}>{folded.includes(edge.id) ? '表示' : '隠す'}</button>
+          </div>
+          {#if summary.cost || summary.participants}<small class="route-meta">{summary.participants}{summary.participants && summary.cost ? ' · ' : ''}{summary.cost ? '入力済み ' + summary.cost : ''}</small>{/if}
+        {/each}
+        
+        {#if routeStarts.length === 0}<small>共通の予定</small>{/if}
+        {#if canEdit}<button class="sidebar-add" onclick={() => newStep()}>＋ 別の出発点を作る</button>{/if}
+      </section>
+      {#if candidateNodes.length > 0}<section class="sidebar-card"><h3>候補 <span>{candidateNodes.reduce((sum, node) => sum + node.options.length, 0)}</span></h3>
+        {#each candidateNodes as node (node.id)}
+          <details open><summary><span>{node.title}</span><small>{node.options.length}案</small></summary>
+            {#each node.options as candidate (candidate.id)}
+              <div class="sidebar-candidate">
+                <CandidateOptionCard option={candidate}
+                  selected={node.selected_option_id === candidate.id}
+                  {canEdit} {busy} compact
+                  onSelect={() => selectOption(node, node.selected_option_id === candidate.id ? null : candidate.id)}
+                  onEdit={(field) => { void openOption(node, candidate, field); }}
+                />
+              </div>
+            {/each}
+            {#if canEdit}<button class="sidebar-add" disabled={busy || node.options.length >= 30} onclick={() => openOption(node)}>＋ 候補を追加</button>
+              {#if node.selected_option_id}<button class="sidebar-add apply" disabled={busy} onclick={() => applyOption(node)}>選択案をこの予定に反映</button>{/if}
+            {/if}
+          </details>
+        {/each}
+      </section>{/if}
+    </aside></div>
+
   {/if}
 </section>
+{/if}
+
+
+{#if gapMenu && canEdit}
+  <div class="backdrop" role="presentation" onclick={event => event.target === event.currentTarget && (gapMenu = null)}>
+    <div class="sheet route-action-sheet" role="dialog" aria-modal="true" aria-label="予定を追加・接続" use:focusDialog>
+      <div class="sheet-header"><h3>予定を追加・接続</h3><button aria-label="閉じる" onclick={() => gapMenu = null}>×</button></div>
+      <div class="gap-actions">
+        <button class="gap-primary" onclick={insertFromGap}>＋ 新しい予定を作成</button>
+        <button onclick={() => { existingGap = gapMenu; gapMenu = null; existingSearch = ''; }}>▤ 既存の予定を挿入</button>
+        {#if gapMenu.from}
+          <button onclick={() => { const from = gapMenu!.from; gapMenu = null; newStep(from, false, '別プラン'); }}>⑂ ここから分岐</button>
+          <button onclick={() => { joinSourceId = gapMenu!.from; gapMenu = null; }}>↘ 既存予定に合流</button>
+        {/if}
+      </div>
+    </div>
+  </div>
+{/if}
+{#if existingGap && canEdit}
+  <div class="backdrop" role="presentation" onclick={event => event.target === event.currentTarget && (existingGap = null)}>
+    <div class="sheet route-action-sheet" role="dialog" aria-modal="true" aria-label="既存の予定を挿入" use:focusDialog>
+      <div class="sheet-header"><h3>既存の予定を挿入</h3><button aria-label="閉じる" onclick={() => existingGap = null}>×</button></div>
+      <label class="existing-search">予定を検索<input type="search" placeholder="タイトル・場所" bind:value={existingSearch} /></label>
+      <div class="existing-options">
+        {#each displayNodes.filter(node => {
+          if (node.id === existingGap?.from || node.id === existingGap?.to) return false;
+          if (existingSearch && !(node.title + ' ' + node.location).toLocaleLowerCase().includes(existingSearch.toLocaleLowerCase())) return false;
+          try {
+            placeExistingStop(displayNodes, displayEdges, node.id, existingGap!.from, existingGap!.to, () => crypto.randomUUID());
+            return true;
+          } catch { return false; }
+        }) as item (item.id)}
+          <button onclick={() => void insertExisting(item.id)} disabled={busy}>
+            <strong>{item.title}</strong><small>{localDate(item.start_local) || '日時未定'}</small>
+          </button>
+        {:else}
+          <p class="existing-empty">挿入できる予定がありません</p>
+        {/each}
+      </div>
+    </div>
+  </div>
 {/if}
 
 {#if formOpen && canEdit}

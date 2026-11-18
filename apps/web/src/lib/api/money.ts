@@ -1,10 +1,14 @@
-import type { CreateMoneyFundTransactionsInput, CreateMoneyFundTransactionInput, CreateMoneyItemInput, MoneyData, MoneyFundTransaction, MoneyItem, UpdateMoneyFundTransactionInput, UpdateMoneyItemInput } from '@tabitabi/types';
+import type { CreateMoneyFundTransactionsInput, CreateMoneyFundTransactionInput, CreateMoneyItemInput, MoneyData, MoneyFundTransaction, MoneyItem, MoneyMember, UpdateMoneyFundTransactionInput, UpdateMoneyItemInput } from '@tabitabi/types';
 import { apiClient } from './client';
 
 export const moneyApi = {
   get: (itineraryId: string) => apiClient.get<MoneyData>(`/itineraries/${itineraryId}/money`, itineraryId),
-  updateSettings: (itineraryId: string, budget_amount: number | null) =>
-    apiClient.put<{ budget_amount: number | null }>(`/itineraries/${itineraryId}/money/settings`, { budget_amount }, itineraryId),
+  updateSettings: (itineraryId: string, settings: { budget_amount?: number | null; fund_enabled?: boolean }) =>
+    apiClient.put<{ budget_amount: number | null; fund_enabled: boolean }>(`/itineraries/${itineraryId}/money/settings`, settings, itineraryId),
+  updatePermissions: (itineraryId: string, requires_edit_permission: boolean) =>
+    apiClient.put<{ requires_edit_permission: boolean }>(`/itineraries/${itineraryId}/money/permissions`, { requires_edit_permission }, itineraryId),
+  addMember: (itineraryId: string, name: string) =>
+    apiClient.post<MoneyMember>(`/itineraries/${itineraryId}/money/members`, { name }, itineraryId),
   addItem: (itineraryId: string, input: CreateMoneyItemInput) =>
     apiClient.post<MoneyItem>(`/itineraries/${itineraryId}/money/items`, input, itineraryId),
   updateItem: (itineraryId: string, itemId: string, input: UpdateMoneyItemInput) =>

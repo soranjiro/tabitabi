@@ -4,18 +4,23 @@ import type { PackingData, PackingGroup, PackingItem, TripMember } from '@tabita
 import { Env, Variables, generateId, getCurrentTimestamp } from '../utils';
 import { ItineraryService } from '../services/itinerary.service';
 import { optionalAuthMiddleware } from '../middleware/auth';
-import { packingCheckSchema, packingGroupSchema, packingItemSchema, reorderPackingGroupsSchema, updatePackingItemSchema } from '../validators';
+import { moneyMemberSchema, packingCheckSchema, packingGroupSchema, packingItemSchema, packingPermissionsSchema, reorderPackingGroupsSchema, updatePackingItemSchema } from '../validators';
 import { validationHook } from '../validators/hook';
 import { guardPrivateItineraryRead } from './private-data-access';
 
 const packing = new Hono<{ Bindings: Env; Variables: Variables }>();
 const DEFAULT_GROUPS = ['貴重品', 'スマホ・電子機器', '洗面・ケアアイテム', '衣類', 'その他'] as const;
 
-async function canEdit(c: Context<{ Bindings: Env; Variables: Variables }>, itineraryId: string): Promise<Response | null> {
+async function canEdit(c: Context<{ Bindings: Env; Variables: Variables }>, itineraryId: string, requireEditor = false): Promise<Response | null> {
   const itinerary = await new ItineraryService(c.env.DB, c.env).get(itineraryId);
   if (!itinerary) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Itinerary not found' } }, 404);
   if (itinerary.source_itinerary_id) return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Cannot edit a shared snapshot' } }, 403);
   if (itinerary.password && c.get('shioriId') !== itineraryId) {
+    if (!requireEditor) {
+      const settings = await c.env.DB.prepare('SELECT requires_edit_permission FROM itinerary_packing_settings WHERE itinerary_id = ?')
+        .bind(itineraryId).first<{ requires_edit_permission: number }>();
+      if (settings?.requires_edit_permission === 0) return null;
+    }
     return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'You can only edit your own itinerary' } }, 403);
   }
   return null;
@@ -63,7 +68,9 @@ packing.get('/itineraries/:id/packing', optionalAuthMiddleware, async (c) => {
   const denied = await guardPrivateItineraryRead(c, itineraryId);
   if (denied) return denied;
   await ensureDefaultGroups(c.env.DB, itineraryId);
-  const [membersResult, groupsResult, itemsResult, checksResult] = await Promise.all([
+  const [settings, membersResult, groupsResult, itemsResult, checksResult] = await Promise.all([
+    c.env.DB.prepare('SELECT requires_edit_permission FROM itinerary_packing_settings WHERE itinerary_id = ?')
+      .bind(itineraryId).first<{ requires_edit_permission: number }>(),
     c.env.DB.prepare('SELECT id, itinerary_id, name, created_at FROM itinerary_members WHERE itinerary_id = ? ORDER BY created_at ASC').bind(itineraryId).all<TripMember>(),
     c.env.DB.prepare('SELECT * FROM itinerary_packing_groups WHERE itinerary_id = ? ORDER BY sort_order ASC, created_at ASC').bind(itineraryId).all(),
     c.env.DB.prepare('SELECT * FROM itinerary_packing_items WHERE itinerary_id = ? ORDER BY kind ASC, created_at ASC').bind(itineraryId).all(),
@@ -72,11 +79,35 @@ packing.get('/itineraries/:id/packing', optionalAuthMiddleware, async (c) => {
   const checks = new Map<string, string[]>();
   for (const row of checksResult.results ?? []) checks.set(row.item_id, [...(checks.get(row.item_id) ?? []), row.member_id]);
   const data: PackingData = {
+    requires_edit_permission: settings?.requires_edit_permission !== 0,
     members: membersResult.results ?? [],
     groups: (groupsResult.results ?? []).map((row) => groupFromRow(row as Record<string, unknown>)),
     items: (itemsResult.results ?? []).map((row) => itemFromRow(row as Record<string, unknown>, checks.get(String((row as Record<string, unknown>).id)) ?? [])),
   };
   return c.json({ success: true, data });
+});
+
+// Permission policy is editable only by itinerary editors, even after viewer writes are enabled.
+packing.put('/itineraries/:id/packing/permissions', optionalAuthMiddleware, zValidator('json', packingPermissionsSchema, validationHook), async (c) => {
+  const itineraryId = c.req.param('id')!;
+  const denied = await canEdit(c, itineraryId, true);
+  if (denied) return denied;
+  const { requires_edit_permission } = c.req.valid('json');
+  const now = getCurrentTimestamp();
+  await c.env.DB.prepare(`INSERT INTO itinerary_packing_settings (itinerary_id, requires_edit_permission, created_at, updated_at)
+    VALUES (?, ?, ?, ?) ON CONFLICT(itinerary_id) DO UPDATE SET requires_edit_permission = excluded.requires_edit_permission, updated_at = excluded.updated_at`)
+    .bind(itineraryId, requires_edit_permission ? 1 : 0, now, now).run();
+  return c.json({ success: true, data: { requires_edit_permission } });
+});
+
+packing.post('/itineraries/:id/packing/members', optionalAuthMiddleware, zValidator('json', moneyMemberSchema, validationHook), async (c) => {
+  const itineraryId = c.req.param('id')!;
+  const denied = await canEdit(c, itineraryId);
+  if (denied) return denied;
+  const member: TripMember = { id: generateId(), itinerary_id: itineraryId, name: c.req.valid('json').name, created_at: getCurrentTimestamp() };
+  await c.env.DB.prepare('INSERT INTO itinerary_members (id, itinerary_id, name, created_at) VALUES (?, ?, ?, ?)')
+    .bind(member.id, member.itinerary_id, member.name, member.created_at).run();
+  return c.json({ success: true, data: member }, 201);
 });
 
 packing.post('/itineraries/:id/packing/items', optionalAuthMiddleware, zValidator('json', packingItemSchema, validationHook), async (c) => {

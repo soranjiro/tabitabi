@@ -10,16 +10,18 @@
     show: boolean;
     itineraryId: string;
     canEdit: boolean;
+    allowViewerMoneyEdits?: boolean;
     steps?: Step[];
     requestedEditItemId?: string | null;
     onEditItemOpened?: () => void;
     onViewStep?: (step: Step) => void;
     onOpenMemberSettings: () => void;
+    onOpenMoneySettings: () => void;
     onClose: () => void;
   }
-  let { show, itineraryId, canEdit, steps = [], requestedEditItemId = null, onEditItemOpened, onViewStep, onOpenMemberSettings, onClose }: Props = $props();
+  let { show, itineraryId, canEdit, allowViewerMoneyEdits = true, steps = [], requestedEditItemId = null, onEditItemOpened, onViewStep, onOpenMemberSettings, onOpenMoneySettings, onClose }: Props = $props();
 
-  let data = $state<MoneyData>({ budget_amount: null, members: [], items: [], fund_transactions: [] });
+  let data = $state<MoneyData>({ budget_amount: null, fund_enabled: false, requires_edit_permission: true, members: [], items: [], fund_transactions: [] });
   let loading = $state(false);
   let error = $state('');
   let title = $state('');
@@ -31,10 +33,10 @@
   let payerId = $state('');
   let isSettled = $state(false);
   let participantIds = $state<string[]>([]);
-  let budget = $state('');
   let budgetEnabled = $state(false);
   let budgetView = $state<'total' | 'perPerson'>('total');
-  let settingsOpen = $state(false);
+  let newMemberName = $state('');
+  let memberSaving = $state(false);
   let activeTab = $state<'expenses' | 'settlement'>('expenses');
   let editorOpen = $state(false);
   let formError = $state('');
@@ -63,6 +65,7 @@
   let shareMessage = $state('');
 
   const isDemoMoney = () => itineraryId === 'demo' || getIsDemoMode();
+  const canManageMoney = $derived(canEdit || (allowViewerMoneyEdits && !data.requires_edit_permission));
 
   function demoMoneyData(): MoneyData {
     const createdAt = '2026-08-01T09:00:00.000Z';
@@ -83,6 +86,8 @@
     const [misakiId, yosukeId, yuiId] = allMemberIds;
     return {
       budget_amount: 120000,
+      fund_enabled: true,
+      requires_edit_permission: true,
       members,
       items: [
         item('demo-money-admission', '清水寺の拝観料', 5000, null, 'paid', [
@@ -212,7 +217,7 @@
     if (!selectedMember) return [];
     const expenses = data.items.flatMap((item) => {
       const share = itemSplits(item).find((split) => split.member_id === selectedMember.id)?.amount;
-      const settlement = item.status === 'planned' ? '予定' : item.paid_from_fund ? '共同基金から支払い' : item.is_settled ? '精算済み' : '未精算';
+      const settlement = item.status === 'planned' ? '支払予定' : item.paid_from_fund ? '共同基金から支払い' : item.is_settled ? '精算済み' : '未精算';
       return share === undefined ? [] : [{ id: `expense-${item.id}`, kind: '支出', title: item.title, amount: share, date: item.occurred_on ?? '', createdAt: item.created_at, isIncome: false, settlement, note: payerLabel(item) }];
     });
     const fundTransactions = data.fund_transactions
@@ -230,7 +235,7 @@
     }
     if (shareTransactions) {
       sections.push(['【取引の詳細】', data.items.length
-        ? data.items.map((item) => `${item.status === 'paid' ? '確定' : '予定'}｜${item.title}　${formatYen(item.amount)}\n${payerLabel(item)}／${splitLabel(item)}`).join('\n\n')
+        ? data.items.map((item) => `${item.status === 'paid' ? '支払い済み' : '支払予定'}｜${item.title}　${formatYen(item.amount)}\n${payerLabel(item)}／${splitLabel(item)}`).join('\n\n')
         : '登録された取引はありません'].join('\n'));
     }
     return sections.join('\n\n');
@@ -245,28 +250,22 @@
   }
 
   function openMemberHistory(memberId: string) { selectedMemberId = memberId; }
-  function toggleFundEnabled() {
-    if (hasFundData || !canEdit) return;
-    fundEnabled = !fundEnabled;
-  }
-
-  async function toggleBudgetEnabled() {
-    if (!canEdit) return;
-    if (!budgetEnabled) {
-      budgetEnabled = true;
-      return;
-    }
-    if (budget.trim()) return;
+  async function addMoneyMember() {
+    const name = newMemberName.trim();
+    if (!canManageMoney || memberSaving || !name) return;
+    memberSaving = true;
     try {
-      if (isDemoMoney()) {
-        saveDemoData({ ...data, budget_amount: null });
-      } else {
-        await moneyApi.updateSettings(itineraryId, null);
-        data = { ...data, budget_amount: null };
-      }
-      budgetEnabled = false;
+      const member: MoneyMember = isDemoMoney()
+        ? { id: `demo-money-member-${Date.now()}`, itinerary_id: itineraryId, name, created_at: new Date().toISOString() }
+        : await moneyApi.addMember(itineraryId, name);
+      saveDemoDataIfNeeded({ ...data, members: [...data.members, member] });
+      participantIds = [...participantIds, member.id];
+      fundMemberId ||= member.id;
+      newMemberName = '';
     } catch (e) {
-      alert(e instanceof Error ? e.message : '予算を解除できませんでした');
+      alert(e instanceof Error ? e.message : 'メンバーを追加できませんでした');
+    } finally {
+      memberSaving = false;
     }
   }
 
@@ -298,6 +297,8 @@
         data = storedMoney
           ? {
               ...storedMoney,
+              requires_edit_permission: storedMoney.requires_edit_permission ?? true,
+              fund_enabled: storedMoney.fund_enabled ?? false,
               fund_transactions: storedMoney.fund_transactions ?? [],
               items: storedMoney.items.map((item, index) => ({
                 ...item,
@@ -307,19 +308,17 @@
             }
           : defaults;
         if (!storedMoney || data.items.some((item, index) => item.step_id !== storedMoney.items[index]?.step_id)) demoStorage.setMoneyData(data);
-        budget = data.budget_amount?.toString() ?? '';
         participantIds = data.members.map((member) => member.id);
         fundMemberId ||= data.members[0]?.id ?? '';
-        fundEnabled = hasFundData;
+        fundEnabled = data.fund_enabled || hasFundData;
         budgetEnabled = data.budget_amount !== null;
         return;
       }
 
       data = await moneyApi.get(itineraryId);
-      budget = data.budget_amount?.toString() ?? '';
       participantIds = data.members.map((member) => member.id);
       fundMemberId ||= data.members[0]?.id ?? '';
-      fundEnabled = hasFundData;
+      fundEnabled = data.fund_enabled || hasFundData;
       budgetEnabled = data.budget_amount !== null;
     } catch (e) {
       error = e instanceof Error ? e.message : 'お金の管理データを読み込めませんでした';
@@ -351,7 +350,7 @@
     if (!show || !hasLoaded || handledEditItemId === requestedEditItemId) return;
     handledEditItemId = requestedEditItemId;
     const requestedItem = data.items.find((item) => item.id === requestedEditItemId);
-    if (requestedItem) void editItem(requestedItem).finally(() => onEditItemOpened?.());
+    if (requestedItem && canManageMoney) void editItem(requestedItem).finally(() => onEditItemOpened?.());
     else onEditItemOpened?.();
   });
 
@@ -445,27 +444,8 @@
     else data = next;
   }
 
-  async function saveBudget() {
-    if (!budget.trim()) return;
-    const enteredValue = Number(budget);
-    const value = budgetView === 'perPerson' && data.members.length ? enteredValue * data.members.length : enteredValue;
-    if (value !== null && (!Number.isInteger(value) || value <= 0)) return alert('予算は1円以上の整数で入力してください');
-    try {
-      if (isDemoMoney()) {
-        saveDemoData({ ...data, budget_amount: value });
-        budgetEnabled = value !== null;
-        return;
-      }
-      await moneyApi.updateSettings(itineraryId, value);
-      data = { ...data, budget_amount: value };
-      budgetEnabled = value !== null;
-    } catch (e) { alert(e instanceof Error ? e.message : '予算を保存できませんでした'); }
-  }
-
   function selectBudgetView(view: 'total' | 'perPerson') {
     budgetView = view;
-    if (data.budget_amount === null) { budget = ''; return; }
-    budget = String(view === 'perPerson' && data.members.length ? Math.round(data.budget_amount / data.members.length) : data.budget_amount);
   }
 
   function selectAmountInputMode(mode: 'total' | 'perPerson') {
@@ -622,28 +602,22 @@
             <p>旅行メンバーを追加すると、立替と精算額を管理できます。</p>
             {#if canEdit}
               <button type="button" onclick={onOpenMemberSettings}>メンバーを追加 <span aria-hidden="true">→</span></button>
+            {:else if canManageMoney}
+              <form class="standard-money-member-add" onsubmit={(event) => { event.preventDefault(); void addMoneyMember(); }}>
+                <input aria-label="メンバー名" placeholder="メンバー名" maxlength="40" bind:value={newMemberName} />
+                <button type="submit" disabled={memberSaving || !newMemberName.trim()}>追加</button>
+              </form>
             {/if}
           </div>
         {/if}
         {#if canEdit}
-          <details class="standard-money-setup" bind:open={settingsOpen}>
-            <summary>お金の設定 <small>予算・共同基金</small></summary>
-            <div class="standard-money-setup-body">
-              <div class="standard-money-fund-heading">
-                <div><span>旅行全体の目安</span><h3>予算を使用する</h3></div>
-                <button type="button" class="standard-money-toggle" role="switch" aria-checked={budgetEnabled} aria-label="予算を使用する" disabled={budgetEnabled && Boolean(budget.trim())} title={budgetEnabled && budget.trim() ? '予算額を空欄にするとOFFにできます' : undefined} onclick={toggleBudgetEnabled}></button>
-              </div>
-              {#if budgetEnabled}
-                <label>{budgetView === 'total' ? '全体予算' : '1人あたり予算'} <input inputmode="numeric" placeholder="未設定" bind:value={budget} onblur={saveBudget} /> 円</label>
-              {/if}
-              <div class="standard-money-fund-heading" style="margin-top:.8rem; padding-top:.8rem; border-top:1px solid #d9e5da;">
-                <div><span>みんなで使うお金</span><h3>共同基金を使用する</h3></div>
-                <button type="button" class="standard-money-toggle" role="switch" aria-checked={fundEnabled} aria-label="共同基金を使用する" disabled={hasFundData} title={hasFundData ? '共同基金のデータがあるためOFFにできません' : undefined} onclick={toggleFundEnabled}></button>
-              </div>
-              <small>旅行メンバーは、しおり設定でまとめて管理できます。</small>
-            </div>
-          </details>
+          <button type="button" class="standard-money-open-settings" onclick={onOpenMoneySettings}>
+            <span><strong>お金の設定</strong><small>予算・共同基金・編集権限</small></span>
+            <span aria-hidden="true">›</span>
+          </button>
         {/if}
+
+        {#if !canManageMoney}<p class="standard-money-readonly">お金の登録・編集にはしおりの編集権限が必要です。</p>{/if}
 
         {#if budgetEnabled}
           <div class="standard-money-budget-heading">
@@ -655,21 +629,21 @@
             {#if displayBudget !== null}
               <div class="standard-money-budget-bar" aria-label="予算の使用状況"><i class="paid" style={`width: ${paidPercent}%`}></i><i class="planned" style={`width: ${plannedPercent}%`}></i></div>
             {/if}
-            <div class="standard-money-budget-legend"><span><i class="paid"></i>確定支出 <b>{formatYen(displayPaid)}</b></span><span><i class="planned"></i>予定支出 <b>{formatYen(displayPlanned)}</b></span><span class:standard-money-over={remainingBudget !== null && remainingBudget < 0}>残り <b>{remainingBudget === null ? '—' : formatYen(budgetView === 'perPerson' && data.members.length ? Math.round(remainingBudget / data.members.length) : remainingBudget)}</b></span></div>
+            <div class="standard-money-budget-legend"><span><i class="paid"></i>支払い済み <b>{formatYen(displayPaid)}</b></span><span><i class="planned"></i>支払予定 <b>{formatYen(displayPlanned)}</b></span><span class:standard-money-over={remainingBudget !== null && remainingBudget < 0}>残り <b>{remainingBudget === null ? '—' : formatYen(budgetView === 'perPerson' && data.members.length ? Math.round(remainingBudget / data.members.length) : remainingBudget)}</b></span></div>
           </section>
       {/if}
 
       <div class="standard-money-tabs" role="tablist"><button class:active={activeTab === 'expenses'} onclick={() => activeTab = 'expenses'} role="tab">立て替え</button><button class:active={activeTab === 'settlement'} onclick={() => activeTab = 'settlement'} role="tab">精算</button></div>
         {#if activeTab === 'settlement'}
           {#if data.members.length}
-            <section class="standard-money-settlements"><div class="standard-money-settlements-heading"><div><h3>いま精算するなら</h3><small>予定支出と精算済みの支出は、精算額に含めていません。</small></div><button class="standard-money-share-button" onclick={() => { shareMessage = ''; shareSheetOpen = true; }}>共有</button></div>{#if settlements.length}{#each settlements as settlement}<p><b>{settlement.from}</b> → <b>{settlement.to}</b><strong>{formatYen(settlement.amount)}</strong></p>{/each}{:else}<p>精算は不要です</p>{/if}</section>
+            <section class="standard-money-settlements"><div class="standard-money-settlements-heading"><div><h3>いま精算するなら</h3><small>支払予定と精算済みの支出は、精算額に含めていません。</small></div><button class="standard-money-share-button" onclick={() => { shareMessage = ''; shareSheetOpen = true; }}>共有</button></div>{#if settlements.length}{#each settlements as settlement}<p><b>{settlement.from}</b> → <b>{settlement.to}</b><strong>{formatYen(settlement.amount)}</strong></p>{/each}{:else}<p>精算は不要です</p>{/if}</section>
           {/if}
           {#if fundEnabled}
             <section class="standard-money-fund-card">
               <div class="standard-money-fund-heading"><div><span>みんなで使うお金</span><h3>共同基金</h3></div><div><small>現在の残高</small><strong class:negative={fundBalance < 0}>{formatYen(fundBalance)}</strong></div></div>
               <div class="standard-money-fund-stats"><span>入金 <b>{formatYen(fundContributed)}</b></span><span>基金払い <b>{formatYen(fundSpent)}</b></span>{#if fundRefunded}<span>返金 <b>{formatYen(fundRefunded)}</b></span>{/if}</div>
               {#if fundByMember.length}<div class="standard-money-fund-members">{#each fundByMember as member}<span>{member.name} <b>{formatYen(member.amount)}</b></span>{/each}</div>{/if}
-              {#if canEdit}<details class="standard-money-fund-details" bind:this={fundDetailsElement} bind:open={fundEntryOpen}>
+              {#if canManageMoney}<details class="standard-money-fund-details" bind:this={fundDetailsElement} bind:open={fundEntryOpen}>
                 <summary>＋ 入金・返金を記録</summary>
                 {#if data.members.length}
                   <div class="standard-money-fund-form" bind:this={fundFormElement}>
@@ -694,7 +668,7 @@
               <button class="standard-money-fund-history-toggle" aria-expanded={fundHistoryOpen} onclick={() => fundHistoryOpen = !fundHistoryOpen}>{fundHistoryOpen ? '履歴を隠す' : `履歴を見る（${fundHistoryEntries.length}件）`}</button>
               {#if fundHistoryOpen}
                 {#if fundHistoryEntries.length}
-                  <div class="standard-money-fund-list">{#each fundHistoryEntries as entry (entry.id)}<article><div><strong>{entry.title} <em class:refund={entry.kind === '返金'} class:expense={entry.kind === '支出'}>{entry.kind}</em></strong><small>{entry.date}{entry.note ? ` · ${entry.note}` : ''}</small></div><b class:negative={!entry.isIncome}>{entry.isIncome ? '+' : '-'}{formatYen(entry.amount)}</b>{#if canEdit && entry.id.startsWith('fund-')}<button aria-label="入出金履歴を編集" onclick={() => editFundTransaction(data.fund_transactions.find((transaction) => `fund-${transaction.id}` === entry.id)!)}>編集</button><button aria-label="入出金履歴を削除" onclick={() => deleteFundTransaction(entry.id.slice(5))}>削除</button>{/if}</article>{/each}</div>
+                  <div class="standard-money-fund-list">{#each fundHistoryEntries as entry (entry.id)}<article><div><strong>{entry.title} <em class:refund={entry.kind === '返金'} class:expense={entry.kind === '支出'}>{entry.kind}</em></strong><small>{entry.date}{entry.note ? ` · ${entry.note}` : ''}</small></div><b class:negative={!entry.isIncome}>{entry.isIncome ? '+' : '-'}{formatYen(entry.amount)}</b>{#if canManageMoney && entry.id.startsWith('fund-')}<button aria-label="入出金履歴を編集" onclick={() => editFundTransaction(data.fund_transactions.find((transaction) => `fund-${transaction.id}` === entry.id)!)}>編集</button><button aria-label="入出金履歴を削除" onclick={() => deleteFundTransaction(entry.id.slice(5))}>削除</button>{/if}</article>{/each}</div>
                 {:else}<p class="standard-money-fund-empty">まだ共同基金の取引はありません。</p>{/if}
               {/if}
             </section>
@@ -703,10 +677,10 @@
             <div class="standard-money-person-list">{#each memberSummaries as member}<article><div><button class="standard-money-member-history" onclick={() => openMemberHistory(member.id)} aria-label={`${member.name}の旅行中の取引履歴を見る`}><strong>{member.name}</strong><span>履歴を見る</span></button><span class="standard-money-trip-total">旅行での支出合計 <b>{formatYen(member.tripTotal)}</b></span></div><b class:positive={member.balance > 0} class:negative={member.balance < 0}>{member.balance > 0 ? '+' : ''}{formatYen(member.balance)}</b></article>{/each}</div>
           {/if}
         {:else}
-          {#if canEdit && data.members.length && !editorOpen}
+          {#if canManageMoney && data.members.length && !editorOpen}
             <button class="standard-money-add-expense" onclick={openNewExpense}>＋ 立て替えを登録</button>
           {/if}
-          {#if canEdit && data.members.length && editorOpen}
+          {#if canManageMoney && data.members.length && editorOpen}
             <section class="standard-money-form" bind:this={itemFormElement}>
               <div class="standard-money-editor-heading"><h3>{editingItemId ? '立て替えを編集' : '立て替えを登録'}</h3></div>
               <label class="standard-money-field">
@@ -762,7 +736,7 @@
               {/if}
               <div class="standard-money-status-options">
                 <label><input type="checkbox" bind:checked={isSettled} disabled={status === 'planned'} /> 精算済みにする</label>
-                <label><input type="checkbox" checked={status === 'planned'} onchange={(event) => { status = event.currentTarget.checked ? 'planned' : 'paid'; if (status === 'planned') isSettled = false; }} /> 予定支出</label>
+                <label><input type="checkbox" checked={status === 'planned'} onchange={(event) => { status = event.currentTarget.checked ? 'planned' : 'paid'; if (status === 'planned') isSettled = false; }} /> 支払予定</label>
               </div>
               {#if formError}<p class="standard-money-form-error" role="alert">{formError}</p>{/if}
               <div class="standard-money-form-actions">
@@ -778,10 +752,10 @@
           {:else if !editorOpen}
             <div class="standard-money-item-list">
               {#each data.items as item}
-                <article role="button" tabindex="0" onclick={() => canEdit && editItem(item)} onkeydown={(event) => event.key === 'Enter' && canEdit && editItem(item)}>
+                <article role="button" tabindex="0" onclick={() => canManageMoney && editItem(item)} onkeydown={(event) => event.key === 'Enter' && canManageMoney && editItem(item)}>
                   <div>
                     <div class="standard-money-item-badges">
-                      <span class:planned={item.status === 'planned'}>{item.status === 'paid' ? '確定' : '予定'}</span>
+                      <span class:planned={item.status === 'planned'}>{item.status === 'paid' ? '支払い済み' : '支払予定'}</span>
                       {#if item.status === 'paid' && item.is_settled}<span class="settled">精算済み</span>{/if}
                     </div>
                     <strong>{item.title}</strong>
@@ -794,7 +768,7 @@
                   <div class="standard-money-item-actions">
                     <b>{formatYen(item.amount)}</b>
                     {#if perPersonAmount(item) !== null}<small class="standard-money-item-per-person">1人あたり {formatYen(perPersonAmount(item)!)}</small>{/if}
-                    {#if canEdit}<small class="standard-money-item-open">タップして編集</small>{/if}
+                    {#if canManageMoney}<small class="standard-money-item-open">タップして編集</small>{/if}
                   </div>
                 </article>
               {/each}

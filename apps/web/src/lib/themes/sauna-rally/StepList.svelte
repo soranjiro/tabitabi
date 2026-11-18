@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Step } from "@tabitabi/types";
   import { getStepDate, getStepTime } from "@tabitabi/types";
-  import { openExternalSiteOverlay } from "$lib/external-site-overlay";
+  import { openExternalUrl } from "$lib/external-links";
 
   interface Props {
     steps: Step[];
@@ -74,12 +74,12 @@
     });
   }
 
-  function handleCardClick(step: Step, event: MouseEvent) {
+  function handleCardClick(step: Step) {
     if (editingStepId === step.id) return;
 
     const data = getSaunaData(step);
     if (data.sauna_url) {
-      openExternalSiteOverlay(data.sauna_url, { title: step.title });
+      openExternalUrl(data.sauna_url);
     }
   }
 
@@ -161,7 +161,7 @@
         class="stamp-card"
         class:completed={isVisited}
         class:editing={isEditing}
-        onclick={(e) => !isEditing && handleCardClick(step, e)}
+        onclick={() => !isEditing && handleCardClick(step)}
         role="button"
         tabindex="0"
       >

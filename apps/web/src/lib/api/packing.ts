@@ -1,8 +1,12 @@
-import type { CreatePackingGroupInput, CreatePackingItemInput, PackingData, PackingGroup, PackingItem, ReorderPackingGroupsInput, UpdatePackingCheckInput, UpdatePackingGroupInput, UpdatePackingItemInput } from '@tabitabi/types';
+import type { CreatePackingGroupInput, CreatePackingItemInput, PackingData, PackingGroup, PackingItem, ReorderPackingGroupsInput, TripMember, UpdatePackingCheckInput, UpdatePackingGroupInput, UpdatePackingItemInput } from '@tabitabi/types';
 import { apiClient } from './client';
 
 export const packingApi = {
   get: (itineraryId: string) => apiClient.get<PackingData>(`/itineraries/${itineraryId}/packing`, itineraryId),
+  updatePermissions: (itineraryId: string, requires_edit_permission: boolean) =>
+    apiClient.put<{ requires_edit_permission: boolean }>(`/itineraries/${itineraryId}/packing/permissions`, { requires_edit_permission }, itineraryId),
+  addMember: (itineraryId: string, name: string) =>
+    apiClient.post<TripMember>(`/itineraries/${itineraryId}/packing/members`, { name }, itineraryId),
   addItem: (itineraryId: string, input: CreatePackingItemInput) => apiClient.post<PackingItem>(`/itineraries/${itineraryId}/packing/items`, input, itineraryId),
   updateItem: (itineraryId: string, itemId: string, input: UpdatePackingItemInput) => apiClient.put<PackingItem>(`/itineraries/${itineraryId}/packing/items/${itemId}`, input, itineraryId),
   updateCheck: (itineraryId: string, itemId: string, input: UpdatePackingCheckInput) => apiClient.put<{ checked: boolean }>(`/itineraries/${itineraryId}/packing/items/${itemId}/check`, input, itineraryId),

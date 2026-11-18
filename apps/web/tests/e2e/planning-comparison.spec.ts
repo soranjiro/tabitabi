@@ -92,6 +92,9 @@ test('sample comparison is editable without backend writes and survives reload',
   await page.setViewportSize({ width:390,height:844 });
   await page.goto('/demo/planning-comparison');
   await expect(page.locator('.graph-node')).toHaveCount(9);
+  // The compact branching overview takes precedence in the first viewport.
+  await expect(page.locator('.mobile-branch-map')).toBeInViewport();
+  await page.locator('.graph-node').first().scrollIntoViewIfNeeded();
   await expect(page.locator('.graph-node').first()).toBeInViewport();
   await page.getByRole('button',{name:'京都駅周辺のホテルを選択',exact:true}).click();
   await page.reload();

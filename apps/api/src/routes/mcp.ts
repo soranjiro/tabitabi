@@ -201,6 +201,13 @@ async function invoke(env: Env, userId: string, name: string, args: Args) {
 
 // Stateless Streamable HTTP: one JSON-RPC response per POST; no server-initiated SSE.
 mcp.post('/mcp', async c => {
+  // Reject browser calls from unrelated origins (MCP DNS rebinding defense).
+  // Non-browser ChatGPT requests normally have no Origin header.
+  const origin = c.req.header('Origin');
+  if (origin && origin !== new URL(c.env.APP_ORIGIN || 'http://localhost:5173').origin &&
+      origin !== 'https://chatgpt.com' && origin !== new URL(c.req.url).origin) {
+    return c.json({ error: 'Forbidden origin' }, 403, { 'Cache-Control': 'no-store' });
+  }
   const len = Number(c.req.header('Content-Length') || '0');
   if (len > 32_768) return failure(null, -32600, 'Request too large');
   const raw = await c.req.text();

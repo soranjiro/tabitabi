@@ -852,7 +852,7 @@
         <MobileComparisonGrid nodes={drawn.nodes} edges={displayEdges.filter(edge => !folded.includes(edge.id))}
           {canEdit} {selectedId} joining={joinSourceId !== null}
           onSelect={id => { const node = displayNodes.find(value => value.id === id); if (node) void chooseNode(node); }}
-          onInsert={(from, to) => openGap(from, to)} />
+          onInsert={(from, to) => openGap(from, to)} onAppend={id => newStep(id)} />
       {/if}
       <div class="graph-scroll" class:single={!isBranched} class:mobile-graph-hidden={isBranched}
         role="region" aria-label="分岐したプランの予定一覧">

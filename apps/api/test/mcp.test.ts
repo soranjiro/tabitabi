@@ -55,6 +55,7 @@ describe('MCP OAuth security and discovery', () => {
       CREATE TABLE IF NOT EXISTS user_bookmarks (user_id TEXT NOT NULL, itinerary_id TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY(user_id,itinerary_id));
       CREATE TABLE IF NOT EXISTS itinerary_editor_grants (itinerary_id TEXT NOT NULL, user_id TEXT NOT NULL, granted_at TEXT NOT NULL, PRIMARY KEY(itinerary_id,user_id));
       CREATE TABLE IF NOT EXISTS mcp_oauth_tokens (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, client_id TEXT NOT NULL, kind TEXT NOT NULL, resource TEXT NOT NULL, expires_at INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS mcp_oauth_clients (client_id TEXT PRIMARY KEY, redirect_uris TEXT NOT NULL, created_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS steps (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, start_at INTEGER NOT NULL, end_at INTEGER NOT NULL, scheduled_start_at INTEGER, scheduled_end_at INTEGER, time_unspecified INTEGER NOT NULL DEFAULT 0, location TEXT, notes TEXT, notes_text TEXT, link TEXT, type TEXT, is_all_day INTEGER NOT NULL DEFAULT 0, pin_latitude REAL, pin_longitude REAL, is_priority INTEGER NOT NULL DEFAULT 0, sort_order REAL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
     `.replaceAll('\\`','`'));
     const owner = crypto.randomUUID();
@@ -80,6 +81,8 @@ describe('MCP OAuth security and discovery', () => {
         .bind(other,unrelated,now,now),
       env.DB.prepare('INSERT INTO itinerary_editor_grants (itinerary_id,user_id,granted_at) VALUES (?,?,?)')
         .bind(editable,owner,now),
+      env.DB.prepare('INSERT INTO mcp_oauth_clients (client_id,redirect_uris,created_at) VALUES (?,?,?)')
+        .bind('test-client','[]',Date.now()),
       env.DB.prepare('INSERT INTO mcp_oauth_tokens (token_hash,user_id,client_id,kind,resource,expires_at) VALUES (?,?,?,?,?,?)')
         .bind(hash,owner,'test-client','access','http://localhost/mcp',Date.now()+60_000),
     ]);
@@ -163,6 +166,20 @@ describe('MCP OAuth security and discovery', () => {
     const denial = await env.DB.prepare('SELECT COUNT(*) AS count FROM steps WHERE itinerary_id = ?')
       .bind(saved).first<{ count: number }>();
     expect(denial?.count).toBe(0);
+
+    const revoked = await request('/oauth/revoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ client_id: 'test-client', token: bearer }).toString(),
+    });
+    expect(revoked.status).toBe(200);
+    const afterRevoke = await request('/mcp', {
+      method: 'POST', headers, body: JSON.stringify({
+        jsonrpc: '2.0', id: 13, method: 'tools/call',
+        params: { name: 'list_itineraries', arguments: {} },
+      }),
+    });
+    expect(afterRevoke.status).toBe(401);
   });
 
 });

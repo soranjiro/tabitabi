@@ -235,9 +235,25 @@ mcp.post('/mcp', async c => {
   if (!name || !tools.some(tool => tool.name === name)) return failure(body.id, -32602, 'Unknown tool');
   const args = body.params?.arguments ?? {};
   if (!args || typeof args !== 'object' || Array.isArray(args)) return failure(body.id, -32602, 'Invalid arguments');
+  // Minimal mutation audit for Cloudflare observability. Never log raw URLs,
+  // notes, titles, OAuth tokens, or request bodies.
+  const audit = (outcome: 'completed' | 'rejected' | 'failed') => {
+    if (name !== 'add_step' && name !== 'update_step') return;
+    console.info('[MCP_MUTATION]', JSON.stringify({
+      action: name,
+      actor_id: userId,
+      itinerary_id: normalizeItineraryId(args.itinerary_id),
+      step_id: typeof args.step_id === 'string' && UUID.test(args.step_id) ? args.step_id : null,
+      outcome,
+      at: new Date().toISOString(),
+    }));
+  };
   try {
-    return response(body.id, await invoke(c.env, userId, name, args));
+    const result = await invoke(c.env, userId, name, args);
+    audit(result.isError ? 'rejected' : 'completed');
+    return response(body.id, result);
   } catch {
+    audit('failed');
     return response(body.id, output({ error: '更新に失敗しました。日付や入力値を確認してください。' }, true));
   }
 });

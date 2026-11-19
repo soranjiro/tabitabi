@@ -29,3 +29,28 @@ OAuthリソースメタデータは \`/.well-known/oauth-protected-resource\`、
 - プレビューの認証にはPreview側のFirebase認証ドメイン許可が必要。未承認のPreviewドメインではログインに進めない。
 - ChatGPT側でカスタムMCPプラグイン追加・OAuth連携は別途必要。PRをデプロイしただけではChatGPTの接続一覧には自動登録されない。
 - 本実装はしおりの削除・変更履歴や連携解除のUIを提供しない。正式公開前にOAuth連携の管理・失効UI、監査ログ、セキュリティレビューを追加する。
+
+## URLからの操作と認可
+
+- `get_itinerary`、`add_step`、`update_step` の `itinerary_id` は UUID または tabitabi のしおりURL（例: `https://tabitabi.pages.dev/s/<UUID>#money`）を受け付ける。
+- URLはサーバーから取得しない。許可ホストとパスを検査してUUIDに変換し、`itinerary_editor_grants` と現在のOAuthユーザーを照合する。URLを知っているだけではMCPで編集できない。任意の外部URLは拒否する。
+- 読み取り専用の場合は `/s/<UUID>`、編集権限がある場合は `/<UUID>` を返す。共有URL内のフラグメントは編集権限に影響しない。
+- 書き込み操作はMCP側で毎回権限を確認し、入力値と対象予定の所属しおりを検証する。変更系の操作を追加する際は、必ず同様の検証を実装する。
+
+## トークン失効・セキュリティ
+
+- OAuth認可コード・リフレッシュトークンは、クライアントID・リダイレクトURI・PKCE・対象リソースの検証**後**に単回消費する。不正な交換要求では有効なコードを破棄しない。
+- `POST /oauth/revoke` はOAuth 2.0のトークン失効を行う。フォームの `client_id` と `token` を検査し、該当クライアントのトークンだけを失効させる。
+- `POST /oauth/revoke-all` は、本人の有効なFirebase IDトークン（Authorization Bearer）が必要な緊急失効API。連携済みChatGPTのアクセストークン・リフレッシュトークン・未使用の認可コードを一括失効させる。ブラウザーUIは本PRでは追加しない。
+- ブラウザーからの `POST /mcp` について予期しないOriginを拒否する。サーバー間のOriginなしリクエストは許可し、OAuth Bearerの対象リソースと有効期限を都度確認する。
+- 認証トークンや編集トークンをChatGPTへのプロンプトやMCP応答に含めない。MCP操作時にURLから認証トークンを取得しない。
+
+## 本番マージ前の必須受け入れテスト
+
+1. プレビューに専用の検証用アカウント・しおりを用意し、ChatGPTの利用可能なプランでカスタムMCP `/mcp` を接続・OAuth認証する。
+2. **ChatGPTのチャットに `/s/<UUID>` の完全なURLを貼るだけで** `get_itinerary` → `add_step` → `update_step` を呼び、プレビューUIの再読み込みとDBの両方で保存結果を確認する。
+3. 未接続、閲覧専用ブックマーク、別アカウント、別のしおりのstep_id、偽ホストのURL、期限切れ/失効したOAuthトークンを使った更新をすべて拒否する。
+4. OAuthトークンの失効を実行し、同じチャットからの追加入力が401になることを確認する。
+5. CIとPreview CIが最新コミットで成功し、baseブランチとのコンフリクトがないことを確認する。
+
+**実際のChatGPT連携での書き込みが確認できるまで、マージしない。** テストコードによる疑似MCP呼び出しは本物のChatGPT接続の代わりにならない。OpenAIの現行案内では書き込み可能なカスタムMCPはBusiness・Enterprise/Eduで利用でき、Plusでの実機書き込み試験は提供範囲外。

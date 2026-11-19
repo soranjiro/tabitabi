@@ -55,6 +55,7 @@ describe('MCP OAuth security and discovery', () => {
       CREATE TABLE IF NOT EXISTS user_bookmarks (user_id TEXT NOT NULL, itinerary_id TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY(user_id,itinerary_id));
       CREATE TABLE IF NOT EXISTS itinerary_editor_grants (itinerary_id TEXT NOT NULL, user_id TEXT NOT NULL, granted_at TEXT NOT NULL, PRIMARY KEY(itinerary_id,user_id));
       CREATE TABLE IF NOT EXISTS mcp_oauth_tokens (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, client_id TEXT NOT NULL, kind TEXT NOT NULL, resource TEXT NOT NULL, expires_at INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS steps (id TEXT PRIMARY KEY, itinerary_id TEXT NOT NULL, title TEXT NOT NULL, start_at INTEGER NOT NULL, end_at INTEGER NOT NULL, scheduled_start_at INTEGER, scheduled_end_at INTEGER, time_unspecified INTEGER NOT NULL DEFAULT 0, location TEXT, notes TEXT, notes_text TEXT, link TEXT, type TEXT, is_all_day INTEGER NOT NULL DEFAULT 0, pin_latitude REAL, pin_longitude REAL, is_priority INTEGER NOT NULL DEFAULT 0, sort_order REAL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
     `.replaceAll('\\`','`'));
     const owner = crypto.randomUUID();
     const other = crypto.randomUUID();
@@ -92,15 +93,76 @@ describe('MCP OAuth security and discovery', () => {
     expect(entries).toContainEqual(expect.objectContaining({ id: saved, can_edit: false }));
     expect(entries).toContainEqual(expect.objectContaining({ id: editable, can_edit: true }));
     expect(entries.some(entry => entry.id === unrelated)).toBe(false);
+    expect(entries.find(entry => entry.id === editable)).toEqual(expect.objectContaining({
+      url: 'https://tabitabi.pages.dev/' + editable,
+    }));
+    expect(entries.find(entry => entry.id === saved)).toEqual(expect.objectContaining({
+      url: 'https://tabitabi.pages.dev/s/' + saved,
+    }));
+
+    // A complete shared URL (including a fragment) resolves to the same grant.
+    const addByUrl = await request('/mcp', {
+      method: 'POST', headers, body: JSON.stringify({
+        jsonrpc: '2.0', id: 10, method: 'tools/call',
+        params: { name: 'add_step', arguments: {
+          itinerary_id: 'https://tabitabi.pages.dev/s/' + editable + '#schedule',
+          title: 'MCP URLから追加', start_at: null, end_at: null,
+        } },
+      }),
+    });
+    expect(addByUrl.status).toBe(200);
+    const added = await addByUrl.json() as { result: { content: Array<{ text: string }>; isError: boolean } };
+    expect(added.result.isError).toBe(false);
+    const created = JSON.parse(added.result.content[0]!.text) as { id: string; saved: boolean };
+    expect(created.saved).toBe(true);
+    const row = await env.DB.prepare('SELECT title FROM steps WHERE id = ? AND itinerary_id = ?')
+      .bind(created.id, editable).first<{ title: string }>();
+    expect(row?.title).toBe('MCP URLから追加');
+
+    const updateByUrl = await request('/mcp', {
+      method: 'POST', headers, body: JSON.stringify({
+        jsonrpc: '2.0', id: 11, method: 'tools/call',
+        params: { name: 'update_step', arguments: {
+          itinerary_id: 'https://tabitabi.pages.dev/' + editable,
+          step_id: created.id, title: 'URLから更新済み',
+        } },
+      }),
+    });
+    const updated = await updateByUrl.json() as { result: { isError: boolean } };
+    expect(updated.result.isError).toBe(false);
+    const verified = await env.DB.prepare('SELECT title FROM steps WHERE id = ?')
+      .bind(created.id).first<{ title: string }>();
+    expect(verified?.title).toBe('URLから更新済み');
+
+    // A forged external host cannot be turned into an itinerary edit.
+    const external = await request('/mcp', {
+      method: 'POST', headers, body: JSON.stringify({
+        jsonrpc: '2.0', id: 12, method: 'tools/call',
+        params: { name: 'add_step', arguments: {
+          itinerary_id: 'https://tabitabi.pages.dev.attacker.example/s/' + editable,
+          title: '不正', start_at: null,
+        } },
+      }),
+    });
+    const rejectedExternal = await external.json() as { result: { isError: boolean; content: Array<{ text: string }> } };
+    expect(rejectedExternal.result.isError).toBe(true);
+    expect(rejectedExternal.result.content[0]!.text).toContain('正しいしおりID');
+
+    const after = await env.DB.prepare('SELECT COUNT(*) AS count FROM steps WHERE itinerary_id = ?')
+      .bind(editable).first<{ count: number }>();
+    expect(after?.count).toBe(1);
 
     const attemptedEdit = await request('/mcp', {
       method: 'POST', headers, body: JSON.stringify({
         jsonrpc: '2.0', id: 2, method: 'tools/call',
-        params: { name: 'add_step', arguments: { itinerary_id: saved, title: '変更不可', start_at: null } },
+        params: { name: 'add_step', arguments: { itinerary_id: 'https://tabitabi.pages.dev/s/' + saved + '#money', title: '変更不可', start_at: null } },
       }),
     });
     const reply = await attemptedEdit.json() as { result: { isError: boolean } };
     expect(reply.result.isError).toBe(true);
+    const denial = await env.DB.prepare('SELECT COUNT(*) AS count FROM steps WHERE itinerary_id = ?')
+      .bind(saved).first<{ count: number }>();
+    expect(denial?.count).toBe(0);
   });
 
 });

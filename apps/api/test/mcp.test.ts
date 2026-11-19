@@ -38,6 +38,15 @@ describe('MCP OAuth security and discovery', () => {
     expect(called.headers.get('WWW-Authenticate')).toContain('oauth-protected-resource');
   });
 
+  it('rejects unrelated browser origins before processing any tool request', async () => {
+    const result = await request('/mcp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: 'https://untrusted.example' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize' }),
+    });
+    expect(result.status).toBe(403);
+  });
+
   it('does not register a client that redirects outside ChatGPT', async () => {
     const response = await request('/oauth/register', {
       method: 'POST',

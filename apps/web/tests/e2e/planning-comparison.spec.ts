@@ -58,6 +58,9 @@ test('comparison moves stops, keeps candidates through themes, and edits a publi
     await expect(page.getByRole('button',{name:'京都駅前のホテルを選択',exact:true})).toHaveAttribute('aria-pressed','true');
     await page.screenshot({path:'test-results/comparison-desktop.png',fullPage:true});
     await page.setViewportSize({width:390,height:844});
+    await expect(page.locator('.mobile-compare')).toBeVisible();
+    await expect(page.locator('.mobile-compare .route-heading')).toHaveCount(2);
+    await expect(page.locator('.mobile-compare .common-stop').first()).toBeVisible();
     expect(await page.locator('main').last().evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(2);
     await page.screenshot({path:'test-results/comparison-mobile.png',fullPage:true});
     expect((await request.put(apiBase+'/itineraries/'+id,{headers,data:{theme_id:'list'}})).ok()).toBeTruthy();
@@ -92,8 +95,12 @@ test('sample comparison is editable without backend writes and survives reload',
   await page.setViewportSize({ width:390,height:844 });
   await page.goto('/demo/planning-comparison');
   await expect(page.locator('.graph-node')).toHaveCount(9);
-  // The compact branching overview takes precedence in the first viewport.
-  await expect(page.locator('.mobile-branch-map')).toBeInViewport();
+  // The default mobile view retains parallel paths, times and shared stops.
+  await expect(page.locator('.mobile-compare')).toBeInViewport();
+  await expect(page.locator('.mobile-compare .route-heading')).toHaveCount(2);
+  await expect(page.locator('.mobile-compare .common-stop').first()).toBeVisible();
+  await page.getByRole('button', { name: '縦一覧' }).click();
+  await expect(page.locator('.mobile-branch-map')).toBeVisible();
   await page.locator('.graph-node').first().scrollIntoViewIfNeeded();
   await expect(page.locator('.graph-node').first()).toBeInViewport();
   await page.getByRole('button',{name:'京都駅周辺のホテルを選択',exact:true}).click();
@@ -108,6 +115,8 @@ test('mobile comparison offers gap insertion and direct existing-step merge', as
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/demo/planning-comparison');
   await expect(page.locator('.graph-node')).toHaveCount(9);
+  await expect(page.locator('.mobile-compare')).toBeVisible();
+  await page.getByRole('button', { name: '縦一覧' }).click();
   const branches = page.locator('.mobile-branch-map');
   await expect(branches).toBeVisible();
   await expect(branches.locator('.route-choice')).toHaveCount(2);

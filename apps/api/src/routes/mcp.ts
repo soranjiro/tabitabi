@@ -18,14 +18,14 @@ const tools = [
   {
     name: 'get_itinerary',
     title: 'しおりと予定を確認',
-    description: 'アカウントに保存したしおりのタイトル・URL・予定を取得します。編集権限がない保護付きしおりの予定や、未公開のシークレット予定は取得できません。can_edit が true の場合だけ変更できます。',
+    description: 'しおりID、または https://tabitabi.pages.dev/s/… などのtabitabiしおりURLから予定を取得します。URLに含まれる編集トークンは認証に使いません。アカウントに紐付く権限だけを照合します。',
     inputSchema: { type: 'object', properties: { itinerary_id: stringField }, required: ['itinerary_id'], additionalProperties: false },
     annotations: { readOnlyHint: true },
   },
   {
     name: 'add_step',
     title: 'しおりに予定を追加',
-    description: '旅行の予定を1件作成します。start_at/end_at はUTC Unixミリ秒です。日付未定なら null にしてください。重複がないか先にget_itineraryで確認してください。',
+    description: '指定したしおりIDまたはtabitabi URLに予定を1件作成します。start_at/end_at はUTC Unixミリ秒です。日付未定なら null にしてください。先にget_itineraryで予定と編集権限を確認してください。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -45,7 +45,7 @@ const tools = [
   {
     name: 'update_step',
     title: 'しおりの予定を変更',
-    description: '対象予定を更新します。変更前にget_itineraryで必ずstep_idを確認してください。時刻はUnixミリ秒です。',
+    description: '指定したしおりIDまたはtabitabi URLの予定を更新します。先にget_itineraryでstep_idと編集権限を確認してください。時刻はUnixミリ秒です。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -84,6 +84,27 @@ function isDate(value: unknown) {
 function invalidFields(args: Args, fields: Array<[keyof Args, number]>) {
   return fields.some(([key, limit]) => args[key] !== undefined && args[key] !== null && !isString(args[key], limit));
 }
+// Never fetch a user-provided URL. Resolve only links on the known tabitabi host
+// into a UUID, then apply the same account-scoped grant checks as raw IDs.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function normalizeItineraryId(value: unknown): string | null {
+  if (typeof value !== 'string' || value.length > 2048) return null;
+  const input = value.trim();
+  if (UUID.test(input)) return input.toLowerCase();
+  let url: URL;
+  try { url = new URL(input); } catch { return null; }
+  if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
+  const hostname = url.hostname.toLowerCase();
+  if (hostname !== 'tabitabi.pages.dev' &&
+      !/^(?:preview-pr-[0-9]+|[a-f0-9]{8})\.tabitabi\.pages\.dev$/.test(hostname)) return null;
+  const matched = /^\/(?:s\/|itineraries\/)?([0-9a-f-]{36})\/?$/i.exec(url.pathname);
+  return matched && UUID.test(matched[1]!) ? matched[1]!.toLowerCase() : null;
+}
+function itineraryUrl(env: Env, id: string, canEdit: boolean): string {
+  const origin = new URL(env.APP_ORIGIN || 'https://tabitabi.pages.dev').origin;
+  return origin + (canEdit ? '/' : '/s/') + encodeURIComponent(id);
+}
+
 async function accessFor(env: Env, userId: string, id: string) {
   const row = await env.DB.prepare(`
     SELECT
@@ -107,11 +128,11 @@ async function invoke(env: Env, userId: string, name: string, args: Args) {
     return output((result.results ?? []).map(row => ({
       id: row.id, title: row.title, updated_at: row.updated_at,
       can_edit: Boolean(row.can_edit),
-      url: (env.APP_ORIGIN || 'https://tabitabi.pages.dev') + '/itineraries/' + encodeURIComponent(row.id),
+      url: itineraryUrl(env, row.id, Boolean(row.can_edit)),
     })));
   }
-  const id = args.itinerary_id;
-  if (!isString(id, 128, true)) return output({ error: '正しいしおりIDを指定してください。' }, true);
+  const id = normalizeItineraryId(args.itinerary_id);
+  if (!id) return output({ error: '正しいしおりID、またはtabitabiのしおりURLを指定してください。' }, true);
   const access = await accessFor(env, userId, id);
   if (name === 'get_itinerary') {
     if (!access.isSaved && !access.canEdit) return output({ error: 'このアカウントに保存されていないしおりです。' }, true);
@@ -124,7 +145,7 @@ async function invoke(env: Env, userId: string, name: string, args: Args) {
       secret && !access.canEdit ? { currentTime: Date.now(), offsetMinutes: itinerary.secret_settings?.offset_minutes ?? 60, maskSecrets: true } : undefined);
     return output({
       id, title: itinerary.title, can_edit: access.canEdit,
-      url: (env.APP_ORIGIN || 'https://tabitabi.pages.dev') + '/itineraries/' + encodeURIComponent(id),
+      url: itineraryUrl(env, id, access.canEdit),
       ...(isProtected && !access.canEdit ? { notice: 'パスワード保護されたしおりです。予定を読むには編集権限をアカウントに紐付けてください。' } : {}),
       steps: entries.filter(s => access.canEdit || !s.is_hidden).map(s => ({
         id: s.id, title: s.title, start_at: s.start_at, end_at: s.end_at,

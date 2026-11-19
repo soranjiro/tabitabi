@@ -7,6 +7,7 @@ import { mcpUserId, mcpResource } from './mcp-auth';
 const mcp = new Hono<{ Bindings: Env }>();
 const securitySchemes = [{ type: 'oauth2', scopes: ['itineraries:read', 'itineraries:write'] }];
 const stringField = { type: 'string' } as const;
+const itineraryReference = { type: 'string', description: 'しおりID、または https://tabitabi.pages.dev/s/<ID> 形式のしおりURL（共有URLも可）' } as const;
 const tools = [
   {
     name: 'list_itineraries',
@@ -19,7 +20,7 @@ const tools = [
     name: 'get_itinerary',
     title: 'しおりと予定を確認',
     description: 'しおりID、または https://tabitabi.pages.dev/s/… などのtabitabiしおりURLから予定を取得します。URLに含まれる編集トークンは認証に使いません。アカウントに紐付く権限だけを照合します。',
-    inputSchema: { type: 'object', properties: { itinerary_id: stringField }, required: ['itinerary_id'], additionalProperties: false },
+    inputSchema: { type: 'object', properties: { itinerary_id: itineraryReference }, required: ['itinerary_id'], additionalProperties: false },
     annotations: { readOnlyHint: true },
   },
   {
@@ -29,7 +30,7 @@ const tools = [
     inputSchema: {
       type: 'object',
       properties: {
-        itinerary_id: stringField,
+        itinerary_id: itineraryReference,
         title: stringField,
         start_at: { type: ['number', 'null'], description: 'Unix時刻（ミリ秒）、未定ならnull' },
         end_at: { type: ['number', 'null'] },
@@ -49,7 +50,7 @@ const tools = [
     inputSchema: {
       type: 'object',
       properties: {
-        itinerary_id: stringField,
+        itinerary_id: itineraryReference,
         step_id: stringField,
         title: stringField,
         start_at: { type: ['number', 'null'] },

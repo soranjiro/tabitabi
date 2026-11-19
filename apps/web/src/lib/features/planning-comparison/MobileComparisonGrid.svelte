@@ -3,7 +3,7 @@
   import StepTypeIcon from '$lib/themes/standard/core/icons/StepTypeIcon.svelte';
   import { buildMobileComparisonGrid, type MobileDrawNode } from './mobile-grid-layout';
 
-  let { nodes, edges, selectedId, canEdit, joining = false, onSelect, onInsert }: {
+  let { nodes, edges, selectedId, canEdit, joining = false, onSelect, onInsert, onAppend }: {
     nodes: MobileDrawNode[];
     edges: PlanGraphEdge[];
     selectedId: string | null;
@@ -11,6 +11,7 @@
     joining?: boolean;
     onSelect: (id: string) => void;
     onInsert: (from: string | null, to: string | null) => void;
+    onAppend: (from: string) => void;
   } = $props();
 
   const grid = $derived(buildMobileComparisonGrid(nodes, edges));
@@ -68,9 +69,14 @@
               </button>
               {#if canEdit}
                 <div class="insert-actions">
-                  {#if entry.outgoing.length <= 1}
+                  {#if entry.outgoing.length === 0}
+                    <button class="insert-step" aria-label={node.title + 'の次の予定を追加'}
+                      onclick={() => onAppend(node.id)}>＋ <span>次の予定</span></button>
+                    <button class="insert-step more-step" aria-label={node.title + 'の後に予定を追加・接続'}
+                      onclick={() => onInsert(node.id, null)}>⋯</button>
+                  {:else if entry.outgoing.length === 1}
                     <button class="insert-step" aria-label={node.title + 'の後に予定を追加・接続'}
-                      onclick={() => onInsert(node.id, entry.outgoing[0]?.to ?? null)}>＋ <span>追加</span></button>
+                      onclick={() => onInsert(node.id, entry.outgoing[0].to)}>＋ <span>途中に追加</span></button>
                   {:else}
                     {#each entry.outgoing as edge (edge.id)}
                       <button class="insert-step" aria-label={(titles.get(edge.to) ?? '次の予定') + 'の前に予定を追加'}
@@ -122,6 +128,7 @@
     .insert-step{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:4px;max-width:100%;min-height:30px;padding:4px 9px;border:1px dashed #87b49b;border-radius:999px;background:white;color:#2f6657;font-size:14px;font-weight:700}
     .insert-step span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
     .before-step{justify-self:center}
+    .more-step{min-width:30px;font-size:18px}
     button:focus-visible,.compare-scroll:focus-visible{outline:2px solid #357764;outline-offset:2px}
   }
 </style>

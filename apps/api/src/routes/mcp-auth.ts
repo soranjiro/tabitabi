@@ -69,6 +69,7 @@ oauth.get('/.well-known/oauth-authorization-server', c => c.json({
   issuer: issuer(c),
   authorization_endpoint: issuer(c) + '/oauth/authorize',
   token_endpoint: issuer(c) + '/oauth/token',
+  revocation_endpoint: issuer(c) + '/oauth/revoke',
   registration_endpoint: issuer(c) + '/oauth/register',
   response_types_supported: ['code'],
   grant_types_supported: ['authorization_code', 'refresh_token'],
@@ -173,20 +174,31 @@ oauth.post('/oauth/token', async c => {
     const redirectUri = form.get('redirect_uri');
     const verifier = form.get('code_verifier');
     if (!code || !verifier || !/^[A-Za-z0-9._~-]{43,128}$/.test(verifier)) return errorResponse('invalid_grant');
-    const row = await c.env.DB.prepare('DELETE FROM mcp_oauth_codes WHERE code_hash = ? AND expires_at > ? RETURNING *')
-      .bind(await sha256(code), Date.now()).first<{
+    const codeHash = await sha256(code);
+    const row = await c.env.DB.prepare('SELECT client_id, user_id, redirect_uri, code_challenge, resource FROM mcp_oauth_codes WHERE code_hash = ? AND expires_at > ?')
+      .bind(codeHash, Date.now()).first<{
         client_id: string; user_id: string; redirect_uri: string; code_challenge: string; resource: string;
       }>();
+    // An incorrect verifier/client must not consume someone else's authorization code.
     if (!row || row.client_id !== clientId || row.redirect_uri !== redirectUri || await pkce(verifier) !== row.code_challenge ||
       (form.get('resource') && form.get('resource') !== row.resource)) return errorResponse('invalid_grant');
+    // Atomic single-use consume. Concurrent exchanges cannot both succeed.
+    const consumed = await c.env.DB.prepare('DELETE FROM mcp_oauth_codes WHERE code_hash = ? AND expires_at > ? RETURNING code_hash')
+      .bind(codeHash, Date.now()).first();
+    if (!consumed) return errorResponse('invalid_grant');
     userId = row.user_id;
     resource = row.resource;
   } else if (grant === 'refresh_token') {
     const refresh = form.get('refresh_token');
     if (!refresh) return errorResponse('invalid_grant');
-    const row = await c.env.DB.prepare("DELETE FROM mcp_oauth_tokens WHERE token_hash = ? AND kind = 'refresh' AND expires_at > ? RETURNING *")
-      .bind(await sha256(refresh), Date.now()).first<{ client_id: string; user_id: string; resource: string }>();
+    const refreshHash = await sha256(refresh);
+    const row = await c.env.DB.prepare("SELECT client_id, user_id, resource FROM mcp_oauth_tokens WHERE token_hash = ? AND kind = 'refresh' AND expires_at > ?")
+      .bind(refreshHash, Date.now()).first<{ client_id: string; user_id: string; resource: string }>();
     if (!row || row.client_id !== clientId || (form.get('resource') && form.get('resource') !== row.resource)) return errorResponse('invalid_grant');
+    // Consume only after client and audience checks succeed.
+    const consumed = await c.env.DB.prepare("DELETE FROM mcp_oauth_tokens WHERE token_hash = ? AND kind = 'refresh' AND expires_at > ? RETURNING token_hash")
+      .bind(refreshHash, Date.now()).first();
+    if (!consumed) return errorResponse('invalid_grant');
     userId = row.user_id;
     resource = row.resource;
   } else return errorResponse('unsupported_grant_type');
@@ -202,6 +214,39 @@ oauth.post('/oauth/token', async c => {
   ]);
   noStore(c);
   return c.json({ access_token: access, token_type: 'Bearer', expires_in: ACCESS_LIFETIME, refresh_token: refresh, scope: AUTH_SCOPE });
+});
+
+// OAuth 2.0 token revocation (RFC 7009): idempotent, no token existence disclosure.
+// ChatGPT can invalidate its access or refresh token on disconnect.
+oauth.post('/oauth/revoke', async c => {
+  noStore(c);
+  const raw = await c.req.text();
+  if (raw.length > 4096) return errorResponse('invalid_request');
+  const form = new URLSearchParams(raw);
+  const clientId = form.get('client_id');
+  const provided = form.get('token');
+  if (!clientId || !provided || !/^[a-f0-9]{64}$/.test(provided)) return errorResponse('invalid_request');
+  const client = await c.env.DB.prepare('SELECT 1 FROM mcp_oauth_clients WHERE client_id = ?')
+    .bind(clientId).first();
+  if (!client) return errorResponse('invalid_client', 401);
+  await c.env.DB.prepare('DELETE FROM mcp_oauth_tokens WHERE token_hash = ? AND client_id = ?')
+    .bind(await sha256(provided), clientId).run();
+  return c.body(null, 200);
+});
+
+// Account-level emergency disconnect. A fresh verified Firebase ID token is
+// required; the API never accepts a ChatGPT access token for this operation.
+oauth.post('/oauth/revoke-all', async c => {
+  noStore(c);
+  const jwt = extractBearerToken(c.req.header('Authorization'));
+  const profile = jwt && await verifyFirebaseIdToken(jwt, c.env.FIREBASE_PROJECT_ID);
+  if (!profile?.email_verified) return errorResponse('login_required', 401);
+  const user = await c.env.DB.prepare('SELECT id FROM users WHERE id = ? AND email_verified_at IS NOT NULL')
+    .bind(profile.sub).first();
+  if (!user) return errorResponse('login_required', 401);
+  await c.env.DB.prepare('DELETE FROM mcp_oauth_tokens WHERE user_id = ?').bind(profile.sub).run();
+  await c.env.DB.prepare('DELETE FROM mcp_oauth_codes WHERE user_id = ?').bind(profile.sub).run();
+  return c.json({ revoked: true });
 });
 
 export async function mcpUserId(c: { req: { header: (key: string) => string | undefined; url: string }; env: Env }) {

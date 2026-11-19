@@ -152,9 +152,9 @@ test('mobile comparison offers gap insertion and direct existing-step merge', as
   const panel = page.getByRole('region', { name: '選択した予定の操作' });
   await expect(panel).toBeVisible();
   await panel.getByRole('button', { name: '既存予定に合流' }).click();
-  await expect(page.getByText('合流先の予定を選択')).toBeVisible();
+  await expect(page.locator('.mobile-join-banner')).toBeVisible();
   await page.getByRole('button', { name: '京都のホテルに集合に合流' }).click();
-  await expect(page.getByText('合流先の予定を選択')).toHaveCount(0);
+  await expect(page.locator('.mobile-join-banner')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '元に戻す' })).toBeVisible();
   await page.getByRole('button', { name: '元に戻す' }).click();
   await expect(page.getByRole('button', { name: '元に戻す' })).toHaveCount(0);

@@ -60,7 +60,7 @@ test('comparison moves stops, keeps candidates through themes, and edits a publi
     await page.setViewportSize({width:390,height:844});
     await expect(page.locator('.mobile-compare')).toBeVisible();
     await expect(page.locator('.mobile-compare .route-heading')).toHaveCount(2);
-    await expect(page.locator('.mobile-compare .common-stop').first()).toBeVisible();
+    await expect(page.locator('.mobile-compare .shared-cell .stop-card').first()).toBeVisible();
     expect(await page.locator('main').last().evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(2);
     await page.screenshot({path:'test-results/comparison-mobile.png',fullPage:true});
     expect((await request.put(apiBase+'/itineraries/'+id,{headers,data:{theme_id:'list'}})).ok()).toBeTruthy();
@@ -98,11 +98,11 @@ test('sample comparison is editable without backend writes and survives reload',
   // The default mobile view retains parallel paths, times and shared stops.
   await expect(page.locator('.mobile-compare')).toBeInViewport();
   await expect(page.locator('.mobile-compare .route-heading')).toHaveCount(2);
-  await expect(page.locator('.mobile-compare .common-stop').first()).toBeVisible();
-  await page.getByRole('button', { name: '縦一覧' }).click();
-  await expect(page.locator('.mobile-branch-map')).toBeVisible();
-  await page.locator('.graph-node').first().scrollIntoViewIfNeeded();
-  await expect(page.locator('.graph-node').first()).toBeInViewport();
+  await expect(page.locator('.mobile-compare .shared-cell .stop-card').first()).toBeVisible();
+  await expect(page.getByRole('button', { name: '縦一覧' })).toHaveCount(0);
+  await expect(page.locator('.mobile-compare .stop-card')).toHaveCount(9);
+  await page.locator('.mobile-compare .stop-card').first().scrollIntoViewIfNeeded();
+  await expect(page.locator('.mobile-compare .stop-card').first()).toBeInViewport();
   await page.getByRole('button',{name:'京都駅周辺のホテルを選択',exact:true}).click();
   await page.reload();
   await expect(page.getByRole('button',{name:'京都駅周辺のホテルを選択',exact:true})).toHaveAttribute('aria-pressed','true');
@@ -116,22 +116,21 @@ test('mobile comparison offers gap insertion and direct existing-step merge', as
   await page.goto('/demo/planning-comparison');
   await expect(page.locator('.graph-node')).toHaveCount(9);
   await expect(page.locator('.mobile-compare')).toBeVisible();
-  await page.getByRole('button', { name: '縦一覧' }).click();
-  const branches = page.locator('.mobile-branch-map');
-  await expect(branches).toBeVisible();
-  await expect(branches.locator('.route-choice')).toHaveCount(2);
-  await expect(branches.getByText('プラン A')).toBeVisible();
-  await expect(branches.getByText('プラン B')).toBeVisible();
-  await expect(branches.getByText('東京 出発')).toBeVisible();
-  await expect(branches.getByText('京都のホテルに集合')).toBeVisible();
-  await branches.getByRole('button', { name: '京都のホテルに集合の合流予定を開く' }).click();
+  await expect(page.getByRole('button', { name: '縦一覧' })).toHaveCount(0);
+  await expect(page.locator('.mobile-compare .route-heading')).toHaveCount(2);
+  await expect(page.locator('.mobile-compare .stop-card')).toHaveCount(9);
+  await expect(page.locator('.mobile-compare')).toContainText('プラン A');
+  await expect(page.locator('.mobile-compare')).toContainText('プラン B');
+  await expect(page.locator('.mobile-compare')).toContainText('東京 出発');
+  await expect(page.locator('.mobile-compare')).toContainText('京都のホテルに集合');
+  await page.getByRole('button', { name: '京都のホテルに集合の予定を開く' }).click();
   await expect(page.locator('.detail-panel h3')).toHaveText('京都のホテルに集合');
   await page.locator('.detail-panel .panel-heading > button').click();
   expect(await page.locator('main').last().evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
-  const train = page.locator('.graph-node').filter({
-    has: page.locator('.node-copy strong').getByText('東京 → 京都（新幹線）', { exact: true }),
+  const train = page.locator('.mobile-compare .lane-cell').filter({
+    has: page.locator('.stop-title strong').getByText('東京 → 京都（新幹線）', { exact: true }),
   });
-  await train.getByRole('button', { name: '東山でランチの前に予定を追加' }).click();
+  await train.getByRole('button', { name: '東京 → 京都（新幹線）の後に予定を追加・接続' }).click();
   const actions = page.getByRole('dialog', { name: '予定を追加・接続' });
   await expect(actions).toBeVisible();
   await actions.getByRole('button', { name: '既存の予定を挿入' }).click();
@@ -139,7 +138,7 @@ test('mobile comparison offers gap insertion and direct existing-step merge', as
   await expect(existing.getByRole('searchbox', { name: '予定を検索' })).toBeVisible();
   await existing.getByRole('button', { name: '閉じる' }).click();
 
-  await train.getByRole('button', { name: '東山でランチの前に予定を追加' }).click();
+  await train.getByRole('button', { name: '東京 → 京都（新幹線）の後に予定を追加・接続' }).click();
   await page.getByRole('dialog', { name: '予定を追加・接続' })
     .getByRole('button', { name: '既存の予定を複製' }).click();
   const copy = page.getByRole('dialog', { name: '既存の予定を複製' });
@@ -149,17 +148,16 @@ test('mobile comparison offers gap insertion and direct existing-step merge', as
   await expect(copyForm.getByRole('textbox', { name: 'タイトル' })).toHaveValue('京都の夜を楽しむ（コピー）');
   await copyForm.getByRole('button', { name: '閉じる' }).click();
 
-  await train.locator('.node-main').click();
+  await train.locator('.stop-card').click();
   const panel = page.getByRole('region', { name: '選択した予定の操作' });
   await expect(panel).toBeVisible();
   await panel.getByRole('button', { name: '既存予定に合流' }).click();
-  await expect(page.getByText('合流先の予定を選択')).toBeVisible();
-  await page.locator('.graph-node').filter({
-    has: page.locator('.node-copy strong').getByText('京都のホテルに集合', { exact: true }),
-  }).locator('.node-main').click();
-  await expect(page.getByText('合流先の予定を選択')).toHaveCount(0);
+  await expect(page.locator('.mobile-join-banner')).toBeVisible();
+  await page.getByRole('button', { name: '京都のホテルに集合に合流' }).click();
+  await expect(page.locator('.mobile-join-banner')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '元に戻す' })).toBeVisible();
   await page.getByRole('button', { name: '元に戻す' }).click();
   await expect(page.getByRole('button', { name: '元に戻す' })).toHaveCount(0);
   await expect(page.locator('.graph-node')).toHaveCount(9);
+  await expect(page.locator('.mobile-compare .stop-card')).toHaveCount(9);
 });

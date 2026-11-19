@@ -27,10 +27,9 @@ test('classic single-column planning remains usable on mobile, then branches and
     // On mobile, the selected Step is edited in a modal bottom sheet.
     const panel = page.locator('.detail-panel');
     if (await panel.isVisible()) await panel.getByRole('button', { name: '閉じる', exact: true }).first().click();
-    const card = page.locator('.graph-node').filter({
-      has: page.locator('.node-copy strong').getByText(label, { exact: true }),
+    const button = page.locator('.mobile-compare .stop-card').filter({
+      has: page.locator('.stop-title strong').getByText(label, { exact: true }),
     });
-    const button = card.locator('.node-main');
     if (await button.getAttribute('aria-pressed') !== 'true') await button.click();
   }
 
@@ -64,9 +63,9 @@ test('classic single-column planning remains usable on mobile, then branches and
     await expect(page.locator('.graph-node')).toHaveCount(3);
     await expect(page.locator('.mobile-compare')).toBeVisible();
     await expect(page.locator('.mobile-compare .route-heading')).toHaveCount(2);
-    await expect(page.getByRole('button', { name: '並べて比較' })).toHaveAttribute('aria-pressed', 'true');
-    await page.getByRole('button', { name: '縦一覧' }).click();
-    await expect(page.locator('.graph-scroll')).toBeVisible();
+    await expect(page.getByRole('button', { name: '縦一覧' })).toHaveCount(0);
+    await expect(page.locator('.graph-scroll')).toBeHidden();
+    await expect(page.locator('.mobile-compare .stop-card')).toHaveCount(3);
     await page.screenshot({ path: 'test-results/plan-branches-mobile.png', fullPage: false });
     // Both branches have a persistent + action at their ends. Continue the second
     // branch without selecting its card or scrolling to a separate detail panel.
@@ -93,9 +92,9 @@ test('classic single-column planning remains usable on mobile, then branches and
 
     await pick('東京集合');
     await page.locator('.branches button').filter({ hasText: '閉じる' }).first().click();
-    await expect(page.locator('.graph-footer')).toContainText('3件');
+    await expect(page.locator('.mobile-compare .stop-card')).toHaveCount(3);
     await page.locator('.branches button').filter({ hasText: '展開' }).first().click();
-    await expect(page.locator('.graph-footer')).toContainText('4件');
+    await expect(page.locator('.mobile-compare .stop-card')).toHaveCount(4);
 
     // Inline comparison belongs to the same Step.
     await pick('プランB');
@@ -106,13 +105,11 @@ test('classic single-column planning remains usable on mobile, then branches and
     await candidateDialog.getByLabel('リンク').fill('https://example.com/booking?token=private');
     await candidateDialog.getByRole('button', { name: '保存', exact: true }).click();
     await expect(candidateDialog).toBeHidden();
-    // Dismiss the mobile editing sheet before opening comparison details in the timeline.
+    // The candidate sidebar remains accessible without the removed vertical canvas.
     if (await page.locator('.detail-panel').isVisible()) {
       await page.locator('.detail-panel').getByRole('button', { name: '閉じる', exact: true }).first().click();
     }
-    await page.locator('.graph-node').filter({
-      has: page.locator('.node-copy strong').getByText('プランB', { exact: true }),
-    }).getByRole('button', { name: /比較する/ }).click();
+    await expect(page.locator('.mobile-compare .stop-card')).toHaveCount(4);
     await expect(page.getByText('京都駅前ホテル').first()).toBeVisible();
     const sidebarOption = page.locator('.comparison-sidebar .option-card').filter({ hasText: '京都駅前ホテル' });
     await expect(sidebarOption).toBeVisible();
@@ -135,8 +132,8 @@ test('classic single-column planning remains usable on mobile, then branches and
 
     await page.goto('/itineraries/' + publicId);
     await expect(page.locator('.mobile-compare')).toBeVisible();
-    await page.getByRole('button', { name: '縦一覧' }).click();
-    await expect(page.locator('.graph-node')).toHaveCount(4);
+    await expect(page.getByRole('button', { name: '縦一覧' })).toHaveCount(0);
+    await expect(page.locator('.mobile-compare .stop-card')).toHaveCount(4);
     await expect(page.getByRole('button', { name: 'プランBの続きの次の予定を追加' })).toBeVisible();
     await expect(page.getByRole('button', { name: '＋ 新しいプラン' })).toBeVisible();
     await page.screenshot({ path: 'test-results/plan-graph-public.png', fullPage: false });

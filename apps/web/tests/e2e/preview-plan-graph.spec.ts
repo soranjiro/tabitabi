@@ -62,6 +62,10 @@ test('classic single-column planning remains usable on mobile, then branches and
     await page.getByRole('button', { name: '東京集合から分岐' }).click();
     await addBranch('プランB');
     await expect(page.locator('.graph-node')).toHaveCount(3);
+    await expect(page.locator('.mobile-compare')).toBeVisible();
+    await expect(page.locator('.mobile-compare .route-heading')).toHaveCount(2);
+    await expect(page.getByRole('button', { name: '並べて比較' })).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: '縦一覧' }).click();
     await expect(page.locator('.graph-scroll')).toBeVisible();
     await page.screenshot({ path: 'test-results/plan-branches-mobile.png', fullPage: false });
     // Both branches have a persistent + action at their ends. Continue the second
@@ -130,6 +134,8 @@ test('classic single-column planning remains usable on mobile, then branches and
     expect(JSON.stringify(snapshot)).not.toContain('token=private');
 
     await page.goto('/itineraries/' + publicId);
+    await expect(page.locator('.mobile-compare')).toBeVisible();
+    await page.getByRole('button', { name: '縦一覧' }).click();
     await expect(page.locator('.graph-node')).toHaveCount(4);
     await expect(page.getByRole('button', { name: 'プランBの続きの次の予定を追加' })).toBeVisible();
     await expect(page.getByRole('button', { name: '＋ 新しいプラン' })).toBeVisible();

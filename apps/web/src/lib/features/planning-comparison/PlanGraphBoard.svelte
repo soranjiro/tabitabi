@@ -10,7 +10,6 @@
   import { insertCreatedStop, placeExistingStop, chronologicalLinearEdges, chronologicalBranchEdges, isReverseTimeOrder } from './graph';
   import StepTypeIcon from '$lib/themes/standard/core/icons/StepTypeIcon.svelte';
   import CandidateOptionCard from './CandidateOptionCard.svelte';
-  import MobileBranchMap from './MobileBranchMap.svelte';
   import MobileComparisonGrid from './MobileComparisonGrid.svelte';
 
   let { itineraryId, steps, canEdit, demo = false, showGraph = false, branchRequest = null, optionRequest = null, selectRequest = null, createdStepRequest = null, localGraph = null, onSaveLocalGraph, onRequestCreate, onGraphState, onGraphError, onEditExistingStep, onOpenExistingStep, onCreateStep, onUpdateStep, onDeleteStep, onPlan }: {
@@ -244,7 +243,6 @@
   let optionAmountText = $state('');
   let optionOpen = $state(false);
   let mobileHelpOpen = $state(false);
-  let mobileView = $state<'compare' | 'list'>('compare');
   let recentlyCreatedIds = $state<string[]>([]);
   let failedAttachment = $state<{ step: Step; parentId: string | null; label: string } | null>(null);
 
@@ -843,23 +841,20 @@
       {#if canEdit}<button class="primary" onclick={() => newStep()}>＋ 予定を追加</button>{/if}
     </div>
   {:else}
-    {#if isBranched}
-      <div class="mobile-view-toggle" role="group" aria-label="モバイルのプラン比較表示">
-        <button aria-pressed={mobileView === 'compare'} onclick={() => mobileView = 'compare'}>並べて比較</button>
-        <button aria-pressed={mobileView === 'list'} onclick={() => mobileView = 'list'}>縦一覧</button>
-      </div>
-    {/if}
     <div class="comparison-workspace"><div class="timeline-column">
-      {#if isBranched && mobileView === 'compare'}
+      {#if isBranched}
+        {#if joinSourceId}
+          <div class="mobile-join-banner" role="status">
+            <strong>合流先の予定を選択</strong>
+            <button onclick={() => joinSourceId = null}>キャンセル</button>
+          </div>
+        {/if}
         <MobileComparisonGrid nodes={drawn.nodes} edges={displayEdges.filter(edge => !folded.includes(edge.id))}
-          {canEdit} {selectedId}
+          {canEdit} {selectedId} joining={joinSourceId !== null}
           onSelect={id => { const node = displayNodes.find(value => value.id === id); if (node) void chooseNode(node); }}
-          onInsert={(from, to) => openGap(from, to)} />
+          onInsert={(from, to) => openGap(from, to)} onAppend={id => newStep(id)} />
       {/if}
-      <div class:mobile-list-hidden={isBranched && mobileView === 'compare'}>
-        <MobileBranchMap nodes={displayNodes} edges={displayEdges} onSelect={id => { selectedId = id; moveTarget = ''; joinTarget = ''; }} />
-      </div>
-      <div class="graph-scroll" class:single={!isBranched} class:mobile-list-hidden={isBranched && mobileView === 'compare'}
+      <div class="graph-scroll" class:single={!isBranched} class:mobile-graph-hidden={isBranched}
         role="region" aria-label="分岐したプランの予定一覧">
       {#if joinSourceId}
         <div class="join-banner" role="status">
@@ -972,7 +967,7 @@
         {/each}
       </div>
     </div>
-    {#if isBranched}<div class="graph-footer" class:mobile-list-hidden={mobileView === 'compare'}><span>{drawn.count}件を表示</span></div>{/if}
+    {#if isBranched}<div class="graph-footer" class:mobile-graph-hidden={isBranched}><span>{drawn.count}件を表示</span></div>{/if}
     </div>
     <aside class="comparison-sidebar" aria-label="プランと候補">
     {#if selected}
@@ -1292,7 +1287,7 @@
   .node-extras{font-size:11px;color:#608072!important}
   .join-banner{position:sticky;top:0;z-index:6;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;padding:12px 14px;background:#e9f5ee;border:1px solid #a4cbb6;border-radius:12px;font-size:13px;color:#285c48}
   .join-banner button{border:1px solid #90bda5;border-radius:999px;padding:7px 12px;background:white;color:#2f6657}
-  .mobile-view-toggle{display:none}
+  .mobile-join-banner{display:none}
   .mobile-detail-overlay{display:none}
   .existing-search{display:grid;gap:8px;font-weight:650;font-size:13px;color:#39574a;margin:16px 0}
   .existing-search input{padding:12px;border:1px solid #c7d7cc;border-radius:10px;font-size:16px}
@@ -1323,10 +1318,9 @@
     .comparison-sidebar .detail-panel{grid-column:1/-1;max-height:none}
   }
   @media(max-width:670px){
-    .mobile-view-toggle{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin:10px 0 12px;padding:4px;border:1px solid #dce7de;border-radius:12px;background:#f0f5f0}
-    .mobile-view-toggle button{min-height:38px;border:0;border-radius:9px;background:transparent;color:#587364;font-size:13px;font-weight:700}
-    .mobile-view-toggle button[aria-pressed="true"]{background:#fff;color:#2d6850;box-shadow:0 2px 7px #2b4b3517}
-    .mobile-list-hidden{display:none!important}
+    .mobile-graph-hidden{display:none!important}
+    .mobile-join-banner{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 10px;padding:10px 12px;border:1px solid #a4cbb6;border-radius:11px;background:#e9f5ee;color:#285c48;font-size:12px}
+    .mobile-join-banner button{min-height:32px;padding:5px 10px;border:1px solid #90bda5;border-radius:999px;background:#fff;color:#2f6657}
     .graph-scroll.single .graph-canvas{min-width:0}
     .graph-scroll.single .graph-node{left:auto!important;width:100%}
     .graph-gap{display:none}
